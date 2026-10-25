@@ -97,5 +97,19 @@ With ShadowMountPlus and elfldr running.
 | --- | --- | --- | --- |
 | 39 | A game that looks up its drive at start (one that crashed with `write access to 0000002C` before 1.3.1) | it gets past the start | no `Unhandled page fault` at that point |
 
+## Memory, threads and logs (1.4.0)
+
+| # | Do | Expect | Expect in the log |
+| --- | --- | --- | --- |
+| 40 | Any game | it starts as before | `wine-ps5: memory for programs: … MiB of … MiB direct memory free, reported as 16384 MiB`; `wine-ps5: address space for programs: 16 GiB at 0x1000000000, more when needed up to …` |
+| 41 | A game that checks for enough memory (one that said "minimum specs" or "not enough memory") | no memory warning | |
+| 42 | A 64-bit game that crashed with `map_view anon mmap error Cannot allocate memory` | it goes on past that point | `wine-ps5: address space for programs grows by …`, no `anon mmap error` |
+| 43 | A 32-bit game without the large-address flag | it starts as before | `wine-ps5: a 32-bit program without the large-address flag: 4 GiB of address space…` |
+| 44 | △ on a 32-bit game › Memory to 2 GB, start it | it starts | `PC5 game … memory_32bit=2gb` and `…: 2 GiB of address space (PW_LARGE_ADDRESS_AWARE=0)` |
+| 45 | A game that starts hundreds of threads (one that logged `kqueue failed with error: 24`) | it goes on past that point | no `kqueue failed`; `wine-ps5: threads in the server's table: 256` and more, no `cannot register thread` |
+| 46 | Play a game for a while, then close it, and open its kept log (Keep all logs) | the log starts with the session's first lines | `…-start.log` beside it when the session was long; repeated lines as `the line before came N more times` |
+| 47 | A game with sound | it sounds as before | `wineps5: stream … opened: 48000 Hz, …`; any `ran short in … of 1000 grains` names a stream the game fed late |
+| 48 | A game with Direct3D 9 and 11 movies (one that shares a picture between them) | its movies play | `PC5 prefix DXVK updated` once (a game installed before 1.4.0); `LocalShare: … textures shared within the process (… MiB), … added, … removed` |
+
 A non-zero `rc=` on the light bar or triggers lines means the console refused that call; send
 that log.

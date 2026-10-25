@@ -16,10 +16,12 @@ or later. Parts from elsewhere, each under its own licence:
 | Mozilla's root certificates | Debian's `ca-certificates` package (`/usr/share/ca-certificates/mozilla`) on the build machine | MPL 2.0 | the app's `pc5/ca-certificates.crt`, unchanged |
 | stb_image 2.30 and stb_image_write 1.16 (a7d4c21) | <https://github.com/nothings/stb> | public domain or MIT | `title/third_party/stb_image.h` and `stb_image_write.h`, unchanged |
 | Inter 4.1 | <https://github.com/rsms/inter> | SIL Open Font License 1.1 | `fonts/` (three of its files, unchanged, and `OFL.txt`) |
+| Wine patches of PS5_MihawkOS v3.0.0-alpha-3, by mihawk-99 | <https://github.com/mihawk-99/PS5_MihawkOS> (`wine/patches/`) | LGPL 2.1 or later, as Wine | its patches 0910, 0913, 0914, 0965 and 1170, unchanged but for their context, as prospero-win's Wine patches 0915 and 0917 to 0920 (in `patches/prospero-win/`); patch 0914's free-memory count follows its patch 0912 |
+| NFS Black Box's prospero-win patch 0004, by lavavex | <https://github.com/lavavex/nfs-blackbox-ps5> | LGPL 2.1 or later, as prospero-win | `patches/prospero-win/` (its author kept): the audio driver logs streams whose buffer runs short |
 
-Blur5 (<https://github.com/bornaradusin/Blur5>), sahin (<https://github.com/7tg/sahin>) and
-PS5_MihawkOS (<https://github.com/mihawk-99/PS5_MihawkOS>) were looked at for ideas only.
-None of their code is in PC5.
+Blur5 (<https://github.com/bornaradusin/Blur5>) and sahin (<https://github.com/7tg/sahin>)
+were looked at for ideas only. None of their code is in PC5. PS5_MihawkOS's own code (GPL
+3.0) is not in PC5 either: only the Wine patches above, which are under Wine's licence.
 
 Game covers are not part of PC5. On the console it downloads them, for the games the player
 installs, from Steam's store, GOG's catalogue and Wikipedia, and keeps them with each game.

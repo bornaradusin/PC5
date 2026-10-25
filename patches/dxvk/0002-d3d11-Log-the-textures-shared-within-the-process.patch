@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 25 Oct 2026 09:14:57 +0000
+Subject: [PATCH] d3d11: Log the textures shared within the process
+
+A game whose memory grew while its movies played (Warriors Orochi 3)
+shares a texture between its Direct3D 9Ex and Direct3D 11 devices for
+each movie frame source. The log now says how many textures the
+process list holds, and how much memory they take, each time the list
+reaches a new multiple of 16 and every 256th texture added, with how
+many were added and removed: a list that only grows is a leak.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01W9bbTPMqftZ2Yv6sJzUsWv
+---
+ src/d3d11/d3d11_local_share.cpp | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+
+diff --git a/src/d3d11/d3d11_local_share.cpp b/src/d3d11/d3d11_local_share.cpp
+index a8824fa..92e54d0 100644
+--- a/src/d3d11/d3d11_local_share.cpp
++++ b/src/d3d11/d3d11_local_share.cpp
+@@ -3,6 +3,7 @@
+ 
+ #include "d3d11_local_share.h"
+ 
++#include "../util/log/log.h"
+ #include "../util/thread.h"
+ 
+ namespace dxvk {
+@@ -21,8 +22,30 @@ namespace dxvk {
+     };
+     std::vector<Image>               images;
+     uint32_t                         next = 0;
++    /* Counts for the log: a game whose memory grows while it shares
++     * textures shows whether they are ever removed again. */
++    VkDeviceSize                     bytes = 0;
++    uint64_t                         added = 0;
++    uint64_t                         removed = 0;
++    size_t                           reported = 0;
+   };
+ 
++  /* Lock held. The list's size each time it reaches a new multiple of 16
++   * textures, and every 256th texture added. */
++  static void LocalShareReport(LocalShareList& shared) {
++    size_t count = shared.images.size();
++    bool peak = count >= shared.reported + 16;
++
++    if (!peak && (shared.added % 256u))
++      return;
++
++    if (peak)
++      shared.reported = count - count % 16;
++
++    Logger::info(str::format("LocalShare: ", count, " textures shared within the process (",
++      shared.bytes >> 20, " MiB), ", shared.added, " added, ", shared.removed, " removed"));
++  }
++
+   static LocalShareList& list() {
+     static LocalShareList* list = new LocalShareList();
+     return *list;
+@@ -76,6 +99,9 @@ extern "C" {
+     // no handle a game gets elsewhere looks like.
+     HANDLE handle = reinterpret_cast<HANDLE>(uintptr_t(0x7d900000u + 4u * (++shared.next & 0x3ffffu)));
+     shared.images.push_back({ handle, device, *image, *metadata });
++    shared.bytes += (*image)->getMemoryInfo().size;
++    shared.added += 1;
++    LocalShareReport(shared);
+     return handle;
+   }
+ 
+@@ -111,6 +137,8 @@ extern "C" {
+           // Released outside the lock: the last reference frees the image.
+           image = std::move(i->image);
+           images.erase(i);
++          list().bytes -= std::min(list().bytes, image->getMemoryInfo().size);
++          list().removed += 1;
+           break;
+         }
+       }

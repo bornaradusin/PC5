@@ -5,7 +5,7 @@
 A launcher for your own PC games on a PS5 that runs homebrew. PC5 shows your games as a row
 of covers, installs games from a USB drive in one copy each, and uninstalls them with their
 saves. It runs the games with [prospero-win](https://github.com/mpereiraesaa/prospero-win)
-(Wine on the PS5). The app is `PPSA11018`, its tile is called **PC5**. This is version 1.3.1.
+(Wine on the PS5). The app is `PPSA11018`, its tile is called **PC5**. This is version 1.4.0.
 
 No game is part of PC5, and PC5 downloads none: you install the games you own.
 
@@ -33,8 +33,8 @@ No game is part of PC5, and PC5 downloads none: you install the games you own.
    **touchpad** and **Options** for two seconds: the game is asked to close (it can save),
    and if it hasn't after five seconds it is ended. You are back in PC5.
 
-Each game has a menu (**△**): Play, Controller, Frame generation, Change program (when PC5
-started the wrong `.exe`), Home screen tile and Uninstall. Uninstalling deletes the game and everything it made: its saves, its settings,
+Each game has a menu (**△**): Play, Controller, Frame generation, Memory (32-bit games),
+Change program (when PC5 started the wrong `.exe`), Home screen tile and Uninstall. Uninstalling deletes the game and everything it made: its saves, its settings,
 its shader cache, its cover, its home screen tile's folder. There is no backup and no undo. The USB drive is never
 written to.
 
@@ -85,6 +85,17 @@ the screen's edges, and the game reacts a little later than without it. The over
 counts every frame shown, the made ones too. It applies to games drawn with Direct3D 8 to
 12, Vulkan or OpenGL, not to DirectDraw or plain Windows drawing, nor to 10-bit (HDR)
 output. A change takes effect the next time the game starts.
+
+## Memory
+
+Games are told the console has 16 GB of memory, and how much of it is free, as a PC tells
+them: a game that checks for enough memory before it starts finds it (the console's own
+figures said about half a gigabyte).
+
+A 32-bit game gets 4 GB of address space, what Windows gives one built to ask for it, and
+what Proton gives every 32-bit game: room for big textures and mods. A game that misbehaves
+with it can be set back to 2 GB (**△** › Memory, kept for that game). A 64-bit game's room
+grows as it needs it, up to near the top of what the console gives a program.
 
 ## Home screen tiles
 
@@ -158,6 +169,10 @@ PC5's DXVK lets a game share a picture between Direct3D 9 and Direct3D 11 (some 
 their movies that way) within the game, as the console can't share it through Windows'
 handles. A game installed with an older PC5 gets this DXVK the next time it starts.
 
+Every game runs with OpenSSL's SHA code turned off (`OPENSSL_ia32cap`), as Proton does:
+games that carry OpenSSL 1.0.2 up to 1.0.2k, Unreal Engine 4.13 to 4.21 among them, crash
+with it on the console's CPU.
+
 What won't run: games that need Steam, Epic, EA or Ubisoft's launcher running, online DRM
 or anti-cheat; .NET Framework games (prospero-win has no .NET yet); programs that aren't
 Windows programs. Whether a game runs is only known by trying it: PC5 makes no promise
@@ -205,7 +220,12 @@ PC5 keeps everything where prospero-win keeps it, in `/data/prospero-win`:
 
 A session's log is written while it runs (`logs/session-N.log`); when PC5 next opens, a
 session that went well has its log deleted, and one that went wrong keeps it as
-`issue-…`. Nothing in `logs/` is kept longer than seven days.
+`issue-…`. Nothing in `logs/` is kept longer than seven days. A long session's log is in
+parts: how it began (`-start`), the part before the newest (`-earlier`) and the newest. A
+line that repeats is saved once, then counted (`the line before came N more times`).
+
+Problems go to [GitHub's issues](https://github.com/bornaradusin/PC5/issues) with the log
+attached, not to ProsperoStore's comments: the log is what shows the cause.
 
 Games already in `/data/prospero-win` (installed some other way) show up in PC5 too, and get
 a cover the first time PC5 opens. An install or uninstall cut short (the console switched
@@ -276,11 +296,13 @@ own release is; its source is `PPSA11018-sources.tar.xz`.
 
 It is built on prospero-win by mpereiraesaa and the projects it uses: Wine, DXVK, Mesa
 (RADV, Zink; including mihawk-99's PS5 work), the PS5 payload SDK and boilerplate, and the
-Lapy helper. Also FFmpeg (LGPL 2.1 or later), ps5-framegen by Swordpdf (GPL 3.0 or later,
+Lapy helper. Also Wine patches from PS5_MihawkOS by mihawk-99 (LGPL 2.1 or later: thread
+alerts without a descriptor, mains power, a missing program, dnsapi, dxcore; the console's
+free memory), a logging patch from NFS Black Box by lavavex (LGPL 2.1 or later), FFmpeg (LGPL 2.1 or later), ps5-framegen by Swordpdf (GPL 3.0 or later,
 its shaders from AMD's FSR3 under MIT), VKD3D-Proton (LGPL 2.1 or later), Mbed TLS (Apache 2.0 or GPL 2.0 or
 later), Mozilla's root certificates (MPL 2.0), stb_image and stb_image_write (public domain /
 MIT), the PS5 Forwarder Format by heydemoura (its tile program and psfwd, GPL 3.0 or later)
-and the Inter font (SIL OFL 1.1, `fonts/OFL.txt`). Blur5, sahin and PS5_MihawkOS were inspiration
-only; no code was taken from them. See `NOTICE.md`.
+and the Inter font (SIL OFL 1.1, `fonts/OFL.txt`). Blur5 and sahin were inspiration only; no
+code was taken from them. See `NOTICE.md`.
 
 PC5 is not made by or connected to Sony, Valve, GOG, GitHub or the Wikimedia Foundation.

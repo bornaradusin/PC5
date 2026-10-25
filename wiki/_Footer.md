@@ -1,1 +1,1 @@
-PC5 1.3.1 · [Releases](https://github.com/bornaradusin/PC5/releases) · [Report a problem](https://github.com/bornaradusin/PC5/issues) (with the game's log, see [Reporting a problem](Reporting-a-problem))
+PC5 1.4.0 · [Releases](https://github.com/bornaradusin/PC5/releases) · [Report a problem](https://github.com/bornaradusin/PC5/issues) (with the game's log, see [Reporting a problem](Reporting-a-problem))

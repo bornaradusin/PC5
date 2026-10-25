@@ -1,0 +1,103 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 25 Oct 2026 08:44:04 +0000
+Subject: [PATCH] PC5: room for 4096 threads in the in-process server, ended
+ threads dropped when it is full, and the count logged
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01W9bbTPMqftZ2Yv6sJzUsWv
+---
+ tests/test_pw_wine_threads.c |  4 +++-
+ wine/ps5/pw_wine_threads.c   | 29 ++++++++++++++++++++++++++---
+ wine/ps5/pw_wine_threads.h   |  7 +++++--
+ 3 files changed, 34 insertions(+), 6 deletions(-)
+
+diff --git a/tests/test_pw_wine_threads.c b/tests/test_pw_wine_threads.c
+index 6b7f037..862e49c 100644
+--- a/tests/test_pw_wine_threads.c
++++ b/tests/test_pw_wine_threads.c
+@@ -62,9 +62,11 @@ int main(void)
+     assert(!pw_wine_thread_kill(getpid(),4243,0));
+     pw_wine_thread_unregister(4243);pw_wine_thread_unregister(99);
+ 
+-    /* A full table refuses new ids but still replaces known ones. */
++    /* A table full of live threads refuses new ids, dropping none of
++     * them, but still replaces known ones. */
+     for(long tid=1;tid<=PW_WINE_THREADS_MAX;tid++)assert(!pw_wine_thread_register(tid,thread));
+     assert(pw_wine_thread_register(PW_WINE_THREADS_MAX+1,thread)==-1);
++    for(long tid=1;tid<=PW_WINE_THREADS_MAX;tid++)assert(!pw_wine_thread_kill(getpid(),tid,0));
+     assert(!pw_wine_thread_register(1,pthread_self()));
+ 
+     atomic_store(&stop,1);assert(!pthread_join(thread,NULL));
+diff --git a/wine/ps5/pw_wine_threads.c b/wine/ps5/pw_wine_threads.c
+index 2dad159..6ba6fda 100644
+--- a/wine/ps5/pw_wine_threads.c
++++ b/wine/ps5/pw_wine_threads.c
+@@ -3,6 +3,7 @@
+ #include <errno.h>
+ #include <sched.h>
+ #include <signal.h>
++#include <stdio.h>
+ #include <unistd.h>
+ 
+ typedef struct Entry { long tid; pthread_t thread; } Entry;
+@@ -18,15 +19,37 @@ static Entry *find_locked(long tid)
+     return NULL;
+ }
+ 
++/* Entries whose thread has ended: pthread_kill finds no such thread (the
++ * thread list of FreeBSD's libthr, whose pthread_kill looks a handle up
++ * rather than following it). A live thread's entry is never dropped. */
++static unsigned drop_ended_locked(void)
++{
++    unsigned dropped=0;
++    for(unsigned i=0;i<count;)
++        if(pthread_kill(entries[i].thread,0)==ESRCH){entries[i]=entries[--count];dropped++;}
++        else i++;
++    return dropped;
++}
++
+ int pw_wine_thread_register(long tid,pthread_t thread)
+ {
+-    int status=0;
++    static unsigned peak,reports;
++    unsigned dropped=0,now,report_peak=0;
++    int status=0,full=0;
+     pthread_mutex_lock(&lock);
+     Entry *entry=find_locked(tid);
+     if(entry)entry->thread=thread;
+-    else if(count<PW_WINE_THREADS_MAX)entries[count++]=(Entry){tid,thread};
+-    else status=-1;
++    else{
++        if(count==PW_WINE_THREADS_MAX){full=1;dropped=drop_ended_locked();}
++        if(count<PW_WINE_THREADS_MAX)entries[count++]=(Entry){tid,thread};
++        else status=-1;
++    }
++    now=count;
++    /* each new 256 in the table, for the log */
++    if(now>peak){peak=now;if(!(peak%256))report_peak=peak;}
+     pthread_mutex_unlock(&lock);
++    if(report_peak)fprintf(stderr,"wine-ps5: threads in the server's table: %u\n",report_peak);
++    if(full&&reports<8){reports++;fprintf(stderr,"wine-ps5: thread table full: dropped %u entries of ended threads, %u left\n",dropped,now);}
+     return status;
+ }
+ void pw_wine_thread_unregister(long tid)
+diff --git a/wine/ps5/pw_wine_threads.h b/wine/ps5/pw_wine_threads.h
+index 42b34ec..cb886e7 100644
+--- a/wine/ps5/pw_wine_threads.h
++++ b/wine/ps5/pw_wine_threads.h
+@@ -10,9 +10,12 @@
+  * kernel thread id with its pthread as the thread first talks to the
+  * server, and wineserver.prx's thr_kill2 looks the id up. Registering an
+  * id again replaces the entry, since the kernel reuses ids. */
+-enum { PW_WINE_THREADS_MAX = 1024 };
++/* A game had more than 1024 entries while a few hundred of its threads
++ * lived (PC5's logs), so the table is larger, and a full one first drops
++ * the entries of threads that have ended. */
++enum { PW_WINE_THREADS_MAX = 4096 };
+ 
+-/* 0, or -1 when the table is full. */
++/* 0, or -1 when the table is full of live threads. */
+ int pw_wine_thread_register(long tid,pthread_t thread);
+ void pw_wine_thread_unregister(long tid);
+ /* thr_kill2 on the registered threads of this process: 0, or -1 with

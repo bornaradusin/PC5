@@ -994,7 +994,15 @@ static void test_logs(void)
     path(file, sizeof(file), "%s/next.txt", logs);
     write_text(file, "2\n");                                     /* session 1 is the one running */
     log_file(logs, "session-0.log", "gtaiv", now - 600, crash);
-    log_file(logs, "session-0.previous.log", "gtaiv", now - 700, "REC seq=1 t=1.0 earlier\n");
+    /* every part of a session repeats its first line, the time it began among it */
+    log_file(logs, "session-0.previous.log", "gtaiv", now - 600, "REC seq=1 t=1.0 earlier\n");
+    log_file(logs, "session-0.start.log", "gtaiv", now - 600, "REC seq=1 t=1.0 how it began\n");
+    /* A long session: its newest part alone looks like a game that closed within a
+     * minute without a picture; how it began says otherwise. */
+    log_file(logs, "session-2.start.log", "longplay", now - 4000, "REC seq=1 t=1.0 display released to vulkan\n");
+    log_file(logs, "session-2.log", "longplay", now - 4000, "REC seq=900 t=5000.0 PW_WINE64 alive\n"
+             "REC seq=901 t=5010.0 PW_WINE64 session_end reason=wine-exit\n");
+    log_file(logs, "session-7.start.log", "blur", now - 3050, "REC seq=1 t=1.0 began\n");
     log_file(logs, "session-1.log", "launcher", now - 10, pc5_fine);
     log_file(logs, "session-7.log", "blur", now - 3000, played);
     log_file(logs, "session-6.log", "launcher", now - 3100, pc5_fine);
@@ -1015,14 +1023,18 @@ static void test_logs(void)
     CHECK(pc5_is_file(file), "the running session stays");
     path(file, sizeof(file), "%s/session-7.log", logs);
     CHECK(!pc5_exists(file), "a game that went well: deleted");
+    path(file, sizeof(file), "%s/session-7.start.log", logs);
+    CHECK(!pc5_exists(file), "with how it began");
+    path(file, sizeof(file), "%s/session-2.log", logs);
+    CHECK(!pc5_exists(file), "a long session read from how it began: went well, deleted");
     path(file, sizeof(file), "%s/session-6.log", logs);
     CHECK(!pc5_exists(file), "PC5 that went well: deleted");
     path(file, sizeof(file), "%s/issue-2026-10-01_10-00_old.log", logs);
     CHECK(!pc5_exists(file), "older than a week: deleted");
     path(file, sizeof(file), "%s/pc5/crash-3.txt", root_dir);
     CHECK(!pc5_exists(file), "the crash marker is used once");
-    CHECK(count_entries(logs, "issue-") == 5 && count_entries(logs, "session-") == 1, "kept under their names: %d",
-          count_entries(logs, "issue-"));   /* four, and the crash's earlier part */
+    CHECK(count_entries(logs, "issue-") == 6 && count_entries(logs, "session-") == 1, "kept under their names: %d",
+          count_entries(logs, "issue-"));   /* four, and the crash's earlier part and start */
     CHECK(issue.problem == PC5_LOG_CRASHED && strstr(issue.file, "/logs/issue-") && strstr(issue.file, "_launcher.log"),
           "the newest: %d %s", (int)issue.problem, issue.file);
     {
@@ -1037,6 +1049,8 @@ static void test_logs(void)
         CHECK(pc5_is_file(file), "named by when it began");
         path(file, sizeof(file), "%s/issue-2026-10-22_21-03_gtaiv-earlier.log", logs);
         CHECK(pc5_is_file(file), "with its earlier part");
+        path(file, sizeof(file), "%s/issue-2026-10-22_21-03_gtaiv-start.log", logs);
+        CHECK(pc5_is_file(file), "and how it began");
     }
     /* Keep all: one that went well is kept too, as log-... */
     path(file, sizeof(file), "%s/next.txt", logs);
@@ -1405,6 +1419,18 @@ static void test_game(const char *fonts_path)
         pc5_controls_save(game_root, "liberty", &controls);
         pc5_game_begin(&game, &ops, game_root, app, "liberty", "Liberty Town");
         CHECK(!game.frame_generation && !getenv("PW_PC5_FRAMEGEN"), "and off again");
+        /* A 32-bit game gets 4 GB unless its Memory is 2 GB, which Wine reads (patch 0921). */
+        CHECK(!getenv("PW_LARGE_ADDRESS_AWARE"), "4 GB by default");
+        controls.memory_2gb = 1;
+        CHECK(!pc5_controls_save(game_root, "liberty", &controls) && !pc5_controls_load(game_root, "liberty", &again) &&
+              again.memory_2gb == 1, "Memory is kept with the game");
+        pc5_game_begin(&game, &ops, game_root, app, "liberty", "Liberty Town");
+        env = getenv("PW_LARGE_ADDRESS_AWARE");
+        CHECK(env && !strcmp(env, "0"), "a game set to 2 GB tells Wine");
+        controls.memory_2gb = 0;
+        pc5_controls_save(game_root, "liberty", &controls);
+        pc5_game_begin(&game, &ops, game_root, app, "liberty", "Liberty Town");
+        CHECK(!getenv("PW_LARGE_ADDRESS_AWARE"), "and 4 GB again");
     }
 
     /* The light bar: the cover's colour, brought up to a light bar's brightness, once. */
@@ -1949,10 +1975,11 @@ static void test_screens(const char *fonts)
     press(ui, PC5_KEY_DOWN, &canvas);        /* Updates */
     press(ui, PC5_KEY_ACCEPT, &canvas);
     press(ui, PC5_KEY_DOWN, &canvas);        /* Check now */
-    net.release = "{\"tag_name\":\"v1.4.0\",\"html_url\":\"https://github.com/bornaradusin/PC5/releases/tag/v1.4.0\"}";
+    /* a release newer than any this test runs on */
+    net.release = "{\"tag_name\":\"v99.0.0\",\"html_url\":\"https://github.com/bornaradusin/PC5/releases/tag/v99.0.0\"}";
     press(ui, PC5_KEY_ACCEPT, &canvas);
     until_screen(ui, "settings", &canvas);
-    CHECK(console.notifications == 1 && strstr(console.told, "PC5 1.4.0 is available"), "told: %s", console.told);
+    CHECK(console.notifications == 1 && strstr(console.told, "PC5 99.0.0 is available"), "told: %s", console.told);
     press(ui, PC5_KEY_ACCEPT, &canvas);
     until_screen(ui, "settings", &canvas);
     CHECK(console.notifications == 1, "once per release");

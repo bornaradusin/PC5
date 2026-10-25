@@ -10,7 +10,9 @@
 #include <unistd.h>
 
 /* prospero-win's sessions (native/pw_diagnostics.h, PW_DIAGNOSTICS_SESSIONS):
- * session-0.log to session-7.log in turn, next.txt naming the next. */
+ * session-0.log to session-7.log in turn, next.txt naming the next. A long
+ * session also has session-N.start.log (how it began) and
+ * session-N.previous.log (the part before the newest). */
 enum { SESSIONS = 8, NO_PICTURE_S = 60 };
 
 /* The rest of the line after needle, if the line holds it. */
@@ -143,8 +145,28 @@ static int current_session(const char *logs)
     return current;
 }
 
-/* Moves session-N.log (and its .previous.log, the session's earlier part) to
- * kind-<when>_<profile>.log; the new path in out. */
+/* A session's parts in order (how it began, the part before the newest, the
+ * newest), as one text. 0, or -1 when its newest part can't be read. */
+static int read_session(const char *logs, int session, Pc5Buf *text)
+{
+    static const char *const parts[] = { "start.", "previous.", "" };
+    char path[PC5_PATH];
+
+    for (int i = 0; i < 3; i++) {
+        Pc5Buf part = { 0 };
+        int failed;
+        if (pc5_format(path, sizeof(path), "%s/session-%d.%slog", logs, session, parts[i])) return -1;
+        if (i < 2 && !pc5_is_file(path)) continue;
+        failed = pc5_read_file(path, &part, 64u << 20) || pc5_buf_put(text, part.data, part.len);
+        pc5_buf_free(&part);
+        if (failed && i == 2) return -1;
+    }
+    return 0;
+}
+
+/* Moves session-N.log (and its .previous.log and .start.log, the session's
+ * earlier parts) to kind-<when>_<profile>.log, -earlier.log and -start.log;
+ * the new path in out. */
 static int keep(const char *logs, int session, const char *kind, const Pc5LogIssue *issue, int offset_s, int64_t now,
                 char *out, size_t size)
 {
@@ -159,11 +181,14 @@ static int keep(const char *logs, int session, const char *kind, const Pc5LogIss
     }
     if (pc5_format(from, sizeof(from), "%s/session-%d.log", logs, session) || rename(from, to)) return -1;
     pc5_copy(out, size, to);
-    if (!pc5_format(from, sizeof(from), "%s/session-%d.previous.log", logs, session) && pc5_exists(from)) {
-        char earlier[PC5_PATH];
-        size_t n = strlen(to);
-        if (n > 4 && !pc5_format(earlier, sizeof(earlier), "%.*s-earlier.log", (int)(n - 4), to)) rename(from, earlier);
-    }
+    static const char *const parts[][2] = { { "previous.", "-earlier" }, { "start.", "-start" } };
+    for (int i = 0; i < 2; i++)
+        if (!pc5_format(from, sizeof(from), "%s/session-%d.%slog", logs, session, parts[i][0]) && pc5_exists(from)) {
+            char earlier[PC5_PATH];
+            size_t n = strlen(to);
+            if (n > 4 && !pc5_format(earlier, sizeof(earlier), "%.*s%s.log", (int)(n - 4), to, parts[i][1]))
+                rename(from, earlier);
+        }
     return 0;
 }
 
@@ -182,7 +207,7 @@ int pc5_logs_tidy(const char *root, int keep_all, int64_t now, int offset_s, Pc5
         Pc5Buf text = { 0 };
         Pc5LogIssue issue;
         if (session == current || pc5_format(path, sizeof(path), "%s/session-%d.log", logs, session) ||
-            !pc5_is_file(path) || pc5_read_file(path, &text, 64u << 20)) {
+            !pc5_is_file(path) || read_session(logs, session, &text)) {
             pc5_buf_free(&text);
             continue;
         }
@@ -203,19 +228,22 @@ int pc5_logs_tidy(const char *root, int keep_all, int64_t now, int offset_s, Pc5
         } else {
             unlink(path);
             if (!pc5_format(path, sizeof(path), "%s/session-%d.previous.log", logs, session)) unlink(path);
+            if (!pc5_format(path, sizeof(path), "%s/session-%d.start.log", logs, session)) unlink(path);
         }
     }
     /* Anything older than a week, but the session running now. */
     if ((dir = opendir(logs))) {
-        char now_name[32] = "", now_earlier[48] = "";
+        char now_name[32] = "", now_earlier[48] = "", now_start[48] = "";
         if (current >= 0) {
             snprintf(now_name, sizeof(now_name), "session-%d.log", current);
             snprintf(now_earlier, sizeof(now_earlier), "session-%d.previous.log", current);
+            snprintf(now_start, sizeof(now_start), "session-%d.start.log", current);
         }
         while ((entry = readdir(dir))) {
             struct stat st;
             if (!pc5_ends_with_ci(entry->d_name, ".log") || !strcmp(entry->d_name, now_name) ||
-                !strcmp(entry->d_name, now_earlier) || pc5_join(path, sizeof(path), logs, entry->d_name) ||
+                !strcmp(entry->d_name, now_earlier) || !strcmp(entry->d_name, now_start) ||
+                pc5_join(path, sizeof(path), logs, entry->d_name) ||
                 stat(path, &st) || !S_ISREG(st.st_mode))
                 continue;
             if ((int64_t)st.st_mtime < now - (int64_t)PC5_LOG_DAYS * 86400) unlink(path);

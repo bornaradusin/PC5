@@ -360,12 +360,14 @@ int pc5_library_load(const char *root, Pc5Library *library)
         if (!game->playable) snprintf(game->problem, sizeof(game->problem), "Its Windows folder is missing.");
         if (!strcmp(app->prefix, app->id) && !pc5_info_read(root, app->id, &info)) {
             game->pc5 = 1;
+            game->bits = info.bits == 64 ? 64 : 32;
             pc5_detail_text(info.bits, info.api, info.bytes, game->detail, sizeof(game->detail));
         } else {
             Pc5Api api = app->graphics == PW_APP_GRAPHICS_ZINK ? PC5_API_OPENGL :
                          app->graphics == PW_APP_GRAPHICS_DXVK ? PC5_API_D3D9 : PC5_API_GDI;
+            game->bits = app->architecture == PW_APP_ARCH_PE64 ? 64 : 32;
             snprintf(game->detail, sizeof(game->detail), "%d-bit \xc2\xb7 %s",
-                     app->architecture == PW_APP_ARCH_PE64 ? 64 : 32,
+                     game->bits,
                      api == PC5_API_D3D9 ? "DirectX" : pc5_api_name(api));
         }
     }

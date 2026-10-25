@@ -1,0 +1,196 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 25 Oct 2026 08:51:48 +0000
+Subject: [PATCH] PC5: the address space for 64-bit programs grows when it is
+ full (Wine patch 0916)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01W9bbTPMqftZ2Yv6sJzUsWv
+---
+ PUBLICATION_ALLOWLIST.txt                     |   1 +
+ ...-a-thread-alert-without-a-descriptor.patch |   2 +-
+ ...-grow-the-address-space-for-programs.patch | 151 ++++++++++++++++++
+ 3 files changed, 153 insertions(+), 1 deletion(-)
+ create mode 100644 wine/patches/0916-ntdll-ps5-grow-the-address-space-for-programs.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index 1270b4a..36e140a 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -557,6 +557,7 @@ wine/patches/0912-kernelbase-crash-report-without-a-debugger.patch
+ wine/patches/0913-kernelbase-drives-without-a-mount-manager.patch
+ wine/patches/0914-ntdll-ps5-tell-programs-the-console-s-memory.patch
+ wine/patches/0915-ntdll-ps5-wait-for-a-thread-alert-without-a-descriptor.patch
++wine/patches/0916-ntdll-ps5-grow-the-address-space-for-programs.patch
+ 
+ 
+ 
+diff --git a/wine/patches/0915-ntdll-ps5-wait-for-a-thread-alert-without-a-descriptor.patch b/wine/patches/0915-ntdll-ps5-wait-for-a-thread-alert-without-a-descriptor.patch
+index 7f5e5c3..778aa42 100644
+--- a/wine/patches/0915-ntdll-ps5-wait-for-a-thread-alert-without-a-descriptor.patch
++++ b/wine/patches/0915-ntdll-ps5-wait-for-a-thread-alert-without-a-descriptor.patch
+@@ -1,6 +1,6 @@
+ From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+ From: prospero-win <prospero-win@invalid>
+-Date: Sun, 25 Oct 2026 08:34:57 +0000
++Date: Sun, 25 Oct 2026 08:51:47 +0000
+ Subject: [PATCH] ntdll: Wait for a thread alert without a descriptor on PS5.
+ 
+ NtWaitForAlertByThreadId, under every critical section, SRW lock,
+diff --git a/wine/patches/0916-ntdll-ps5-grow-the-address-space-for-programs.patch b/wine/patches/0916-ntdll-ps5-grow-the-address-space-for-programs.patch
+new file mode 100644
+index 0000000..211fc88
+--- /dev/null
++++ b/wine/patches/0916-ntdll-ps5-grow-the-address-space-for-programs.patch
+@@ -0,0 +1,151 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sun, 25 Oct 2026 08:51:47 +0000
++Subject: [PATCH] ntdll: Grow the PS5 address space for programs when it is full.
++
++A 64-bit game failed a 512 MiB allocation ("map_view anon mmap error
++Cannot allocate memory, size 20010000") and crashed: an allocation
++free to go anywhere is placed in the 16 GiB high reserved area
++at 0x1000000000, then in the low areas the i386 guest needs,
++and last with mmap( NULL ), whose region on the console holds
++a few hundred MiB.  The console's address space ends near 1 TiB
++(MihawkOS measured 0xffffff0000), so when the high areas cannot take
++an allocation, another piece is now reserved above them (16 GiB,
++or the allocation's size), skipping what the console has mapped in
++the way, and the search runs again. Growth stops 64 GiB below the
++top, which stays free for the console's own mappings. The log says
++how much address space programs start with and where growth may go,
++each time it grows, and what the high areas hold when it cannot.
++---
++ dlls/ntdll/unix/virtual.c | 93 +++++++++++++++++++++++++++++++++++++--
++ 1 file changed, 90 insertions(+), 3 deletions(-)
++
++diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
++--- a/dlls/ntdll/unix/virtual.c
+++++ b/dlls/ntdll/unix/virtual.c
++@@ -832,6 +832,12 @@ extern int sceKernelReserveVirtualRange( void **addr, size_t size, int flags, si
++  * the kernel grants 16 GiB at this hint (measured on FW 12.02). */
++ #define PS5_HIGH_BASE        ((void *)0x1000000000)
++ #define PS5_HIGH_RESERVE     ((size_t)16 << 30)
+++/* The high areas grow on demand, in pieces of 16 GiB or more, up to the top
+++ * of the console's address space less this much, which stays free for the
+++ * console's own mappings (a margin chosen here, not a measured need). */
+++#define PS5_HIGH_KEEP        ((size_t)64 << 30)
+++/* Where the high areas end: map_view reserves more from here. */
+++static char *ps5_high_top = (char *)PS5_HIGH_BASE;
++ #endif
++ 
++ static void *anon_mmap_tryfixed( void *start, size_t size, int prot, int flags )
++@@ -1034,7 +1040,13 @@ static void mmap_init( const struct preload_info *preload_info )
++             mmap_add_reserved_area( heap, PS5_HEAP_RESERVE );
++         if (!sceKernelReserveVirtualRange( &high, PS5_HIGH_RESERVE, PS5_MAP_FIXED | PS5_MAP_NO_OVERWRITE,
++                                            granularity_mask + 1 ))
+++        {
++             mmap_add_reserved_area( high, PS5_HIGH_RESERVE );
+++            ps5_high_top = (char *)high + PS5_HIGH_RESERVE;
+++        }
+++        fprintf( stderr, "wine-ps5: address space for programs: %zu GiB at %p, more when needed up to %p "
+++                 "(the console's ends at %p)\n", (size_t)(ps5_high_top - (char *)PS5_HIGH_BASE) >> 30,
+++                 PS5_HIGH_BASE, (char *)host_addr_space_limit - PS5_HIGH_KEEP, host_addr_space_limit );
++     }
++ #else
++     reserve_area( (void *)0x7ffffe000000, (void *)0x7fffffff0000 );
++@@ -2569,6 +2581,76 @@ failed:
++     return status;
++ }
++ 
+++#ifdef __PROSPERO__
+++/***********************************************************************
+++ *           ps5_grow_high_area
+++ *
+++ * The high reserved areas could not take an allocation of size below
+++ * limit: reserve another piece of address space above them, 16 GiB or the
+++ * allocation's size, skipping whatever the console has mapped in the way.
+++ * Growth stops PS5_HIGH_KEEP below the top of the console's address space,
+++ * and the first refusals say what the high areas hold.
+++ * virtual_mutex must be held by caller.
+++ */
+++static BOOL ps5_grow_high_area( void *limit, size_t size )
+++{
+++    static unsigned int grown, refused;
+++    const size_t piece = (size_t)1 << 30;
+++    size_t need = ROUND_SIZE( 0, size, piece - 1 ), want = max( PS5_HIGH_RESERVE, need );
+++    char *top = (char *)host_addr_space_limit - PS5_HIGH_KEEP, *addr = ps5_high_top;
+++    unsigned int tries = 0;
+++    BOOL limited = FALSE;
+++
+++    if ((char *)host_addr_space_limit <= (char *)PS5_HIGH_BASE + PS5_HIGH_KEEP) return FALSE;
+++    if ((char *)limit < top)
+++    {
+++        top = limit;
+++        limited = TRUE;  /* the allocation's own limit: nothing to report */
+++    }
+++
+++    while (addr < top && (size_t)(top - addr) >= need && tries < 256)
+++    {
+++        size_t length = min( want, (size_t)(top - addr) );
+++
+++        /* the largest piece the console grants here, halving down to what
+++         * the allocation needs, then on to the next GiB */
+++        for (; length >= size; length = (length / 2) & ~(piece - 1))
+++        {
+++            void *ptr = addr;
+++
+++            tries++;
+++            if (sceKernelReserveVirtualRange( &ptr, length, PS5_MAP_FIXED | PS5_MAP_NO_OVERWRITE,
+++                                              granularity_mask + 1 )) continue;
+++            mmap_add_reserved_area( addr, length );
+++            ps5_high_top = addr + length;
+++            if (grown++ < 16)
+++                fprintf( stderr, "wine-ps5: address space for programs grows by %zu GiB at %p for an allocation "
+++                         "of %#zx bytes\n", length >> 30, addr, size );
+++            return TRUE;
+++        }
+++        addr += piece;
+++    }
+++    /* what lies below addr was refused: the next growth starts above it */
+++    ps5_high_top = addr;
+++    if (!limited && refused++ < 4)
+++    {
+++        struct reserved_area *area;
+++        struct file_view *view;
+++        size_t reserved = 0, used = 0;
+++        unsigned int views = 0;
+++
+++        LIST_FOR_EACH_ENTRY( area, &reserved_areas, struct reserved_area, entry )
+++            if (area->base >= PS5_HIGH_BASE) reserved += area->size;
+++        WINE_RB_FOR_EACH_ENTRY( view, &views_tree, struct file_view, entry )
+++            if (view->base >= PS5_HIGH_BASE) { views++; used += view->size; }
+++        fprintf( stderr, "wine-ps5: no address space for an allocation of %#zx bytes: the high areas hold "
+++                 "%zu MiB, %u views use %zu MiB, growth stopped at %p (limit %p, %u tries)\n", size,
+++                 reserved >> 20, views, used >> 20, addr, top, tries );
+++    }
+++    return FALSE;
+++}
+++#endif
+++
++ /***********************************************************************
++  *           map_view
++  *
++@@ -2637,10 +2719,15 @@ static NTSTATUS map_view( struct file_view **view_ret, void *base, size_t size,
++ 
++ #ifdef __PROSPERO__
++         /* An allocation free to go anywhere goes above 4 GiB first, leaving
++-         * the low reserved areas to the i386 guest. */
+++         * the low reserved areas to the i386 guest. When the high areas
+++         * cannot take it, they grow (a 64-bit game's 512 MiB allocation found
+++         * no room in the first 16 GiB and failed, 2026-10-24). */
++         if ((char *)end > (char *)PS5_HIGH_BASE &&
++-            (ptr = map_reserved_area( max( start, PS5_HIGH_BASE ), end, host_size, top_down,
++-                                      unix_prot, align_mask )))
+++            ((ptr = map_reserved_area( max( start, PS5_HIGH_BASE ), end, host_size, top_down,
+++                                       unix_prot, align_mask )) ||
+++             (ps5_grow_high_area( end, view_size ) &&
+++              (ptr = map_reserved_area( max( start, PS5_HIGH_BASE ), end, host_size, top_down,
+++                                        unix_prot, align_mask )))))
++         {
++             TRACE( "got mem in the high reserved area %p-%p\n", ptr, (char *)ptr + size );
++             goto done;
++-- 
++2.43.0
++

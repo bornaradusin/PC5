@@ -181,19 +181,25 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         int dxvk = pc5_prefix_dxvk(root, prefix, app);
         if (dxvk) say(game, "PC5 prefix DXVK %s", dxvk > 0 ? "updated" : "update failed");
     }
-    /* Frame generation, which libvulkan.prx reads from the environment. */
+    /* Frame generation, which libvulkan.prx reads from the environment, and a
+     * 32-bit game's address space, which Wine does (patch 0921: 4 GB unless
+     * PW_LARGE_ADDRESS_AWARE=0). */
+    int memory_2gb = 0;
     if (prefix && prefix[0]) {
         Pc5Controls controls;
         pc5_controls_load(root, prefix, &controls);
         game->frame_generation = controls.frame_generation;
+        memory_2gb = controls.memory_2gb;
     }
     if (game->frame_generation) setenv("PW_PC5_FRAMEGEN", "1", 1);
     else unsetenv("PW_PC5_FRAMEGEN");
+    if (memory_2gb) setenv("PW_LARGE_ADDRESS_AWARE", "0", 1);
+    else unsetenv("PW_LARGE_ADDRESS_AWARE");
     say(game, "PC5 game fps=%d overlay=%#x corner=%d vibration=%d light=%d triggers=%d trigger_rumble=%d "
-        "trigger_resistance=%d tint=%06x frame_generation=%d", game->settings.fps, pc5_game_overlay_lines(&game->settings),
-        (int)game->settings.fps_corner, game->settings.vibration,
+        "trigger_resistance=%d tint=%06x frame_generation=%d memory_32bit=%s", game->settings.fps,
+        pc5_game_overlay_lines(&game->settings), (int)game->settings.fps_corner, game->settings.vibration,
         (int)game->settings.light_bar, (int)game->settings.triggers, game->settings.trigger_rumble,
-        game->settings.trigger_resistance, (unsigned)game->cover_tint, game->frame_generation);
+        game->settings.trigger_resistance, (unsigned)game->cover_tint, game->frame_generation, memory_2gb ? "2gb" : "4gb");
 }
 
 const uint32_t *pc5_game_loading(Pc5GameSession *game, uint64_t now_ms)

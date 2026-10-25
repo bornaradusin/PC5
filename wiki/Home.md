@@ -1,4 +1,4 @@
-PC5 is a launcher for your own Windows PC games on a PS5 that runs homebrew. It installs games from a USB drive, shows them as a row of covers, and runs them with [prospero-win](https://github.com/mpereiraesaa/prospero-win) (Wine on the PS5). The app's title ID is `PPSA11018` and its tile on the home screen is called **PC5**. This wiki describes PC5 **1.3.1**.
+PC5 is a launcher for your own Windows PC games on a PS5 that runs homebrew. It installs games from a USB drive, shows them as a row of covers, and runs them with [prospero-win](https://github.com/mpereiraesaa/prospero-win) (Wine on the PS5). The app's title ID is `PPSA11018` and its tile on the home screen is called **PC5**. This wiki describes PC5 **1.4.0**.
 
 ![The PC5 library](images/library.png)
 *The library: your games as a row of covers, with the chosen one in the middle.*
@@ -40,12 +40,12 @@ PC5 contains no games and downloads none. You install the games you own.
 
 ## Good to know
 
-- Whether a game runs is only known by trying it. PC5 makes no promise about any game. See [what runs and what doesn't](Installing-games#what-runs-and-what-doesnt).
+- Whether a game runs is only known by trying it. PC5 makes no promise about any game. See [what runs and what doesn't](Installing-games#what-runs-and-what-doesnt), and what players found in the [Game compatibility list](Game-compatibility). Got a game running? [Add it to the list](https://github.com/bornaradusin/PC5/discussions/new?category=game-compatibility).
 - Games that need Steam, Epic, EA or Ubisoft's launcher running, online DRM or anti-cheat don't run. Nor do .NET Framework games.
 - To report a problem, open an issue on GitHub with the game's log. See [Reporting a problem](Reporting-a-problem).
 
 ## About the screenshots
 
-The screenshots on this wiki were drawn by PC5's own code (version 1.3.1) on a PC, with made-up sample games and covers. On the console the screens look the same, with your own games and covers.
+The screenshots on this wiki were drawn by PC5's own code on a PC, with made-up sample games and covers. On the console the screens look the same, with your own games and covers.
 
 PC5 is not made by or connected to Sony, Valve, GOG, GitHub or the Wikimedia Foundation.

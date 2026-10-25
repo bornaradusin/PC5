@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 25 Oct 2026 09:21:11 +0000
+Subject: [PATCH] PC5: every game runs with OpenSSL's SHA code off
+ (OPENSSL_ia32cap), as Proton does
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01W9bbTPMqftZ2Yv6sJzUsWv
+---
+ native/wine64_main.c | 7 ++++++-
+ src/pw_wine_start.h  | 2 +-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index f9cc3bf..d77ceb8 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -1175,7 +1175,7 @@ int main(int argc, char **argv)
+     /* The game's Windows language is the PS5's: Wine takes it from LC_ALL. */
+     static char pc5_locale[32] = "en_US.UTF-8";
+     static char radv_cache[PW_WINE_LIBRARY_PATH + PW_APP_ID_CAPACITY + 32];
+-    enum { PC5_FIXED_ENV = 1 };
++    enum { PC5_FIXED_ENV = 2 };
+ #else
+     static char radv_cache[PW_WINE_LIBRARY_PATH + 16];
+     enum { PC5_FIXED_ENV = 0 };
+@@ -1201,6 +1201,11 @@ int main(int argc, char **argv)
+         { "MESA_SHADER_CACHE_DIR", radv_cache },
+ #ifdef PW_PC5
+         { "LC_ALL", pc5_locale },
++        /* OpenSSL 1.0.2 up to 1.0.2k, which games bundle (Unreal Engine 4.13
++         * to 4.21 among them), crashes on a CPU with the SHA instructions,
++         * as the console's has: its SHA code is left out, as Proton does for
++         * every game (Intel's article on the OpenSSL SHA crash). */
++        { "OPENSSL_ia32cap", ":~0x20000000" },
+ #endif
+         { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, /* profile-specific environment */
+     };
+diff --git a/src/pw_wine_start.h b/src/pw_wine_start.h
+index f09d980..2645cb2 100644
+--- a/src/pw_wine_start.h
++++ b/src/pw_wine_start.h
+@@ -18,7 +18,7 @@
+ #include "pw_wine_launch.h"
+ 
+ enum {
+-    PW_WINE_START_MAX_ENV = 25,
++    PW_WINE_START_MAX_ENV = 32,
+     /* wine, the executable and every word a profile's arguments may split into */
+     PW_WINE_START_MAX_ARGS = 2 + PW_WINE_LAUNCH_WORDS,
+     /* Stages, reported so a failed start names where it stopped. */

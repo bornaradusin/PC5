@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 25 Oct 2026 08:58:34 +0000
+Subject: [PATCH] PC5: the log names each audio stream a game opens or is
+ refused, with its format
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01W9bbTPMqftZ2Yv6sJzUsWv
+---
+ wine/wineps5/unix.c | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+
+diff --git a/wine/wineps5/unix.c b/wine/wineps5/unix.c
+index bc95e44..0b9457c 100644
+--- a/wine/wineps5/unix.c
++++ b/wine/wineps5/unix.c
+@@ -259,6 +259,29 @@ static void free_stream(struct ps5_stream *stream)
+     free(stream);
+ }
+ 
++/* Each stream an application opens, and each one refused, is logged (the
++ * first 32 of each): a game whose music is silent shows here whether its
++ * music stream was opened, and in what format. */
++static void log_stream(const struct create_stream_params *params, const struct ps5_stream *stream, HRESULT result)
++{
++    static LONG opened, refused;
++    const WAVEFORMATEX *fmt = params->fmt;
++    const WAVEFORMATEXTENSIBLE *fmtex = (const WAVEFORMATEXTENSIBLE *)fmt;
++    UINT32 mask = fmt->wFormatTag == WAVE_FORMAT_EXTENSIBLE ? fmtex->dwChannelMask : 0;
++
++    if (SUCCEEDED(result) && InterlockedIncrement(&opened) <= 32)
++        MESSAGE("wineps5: stream %p opened: %u Hz, %u channels, %u bits, tag %#x, mask %#x, "
++                "buffer %u frames, period %u frames, %s, flags %#x\n", stream, (unsigned)fmt->nSamplesPerSec,
++                fmt->nChannels, fmt->wBitsPerSample, fmt->wFormatTag, mask, stream->bufsize_frames,
++                stream->period_frames, params->share == AUDCLNT_SHAREMODE_EXCLUSIVE ? "exclusive" : "shared",
++                (unsigned)params->flags);
++    else if (FAILED(result) && InterlockedIncrement(&refused) <= 32)
++        ERR("stream refused (%#x): %u Hz, %u channels, %u bits, tag %#x, mask %#x, %s, flags %#x\n",
++            (unsigned)result, (unsigned)fmt->nSamplesPerSec, fmt->nChannels, fmt->wBitsPerSample,
++            fmt->wFormatTag, mask, params->share == AUDCLNT_SHAREMODE_EXCLUSIVE ? "exclusive" : "shared",
++            (unsigned)params->flags);
++}
++
+ static NTSTATUS ps5_create_stream(void *args)
+ {
+     struct create_stream_params *params = args;
+@@ -273,7 +296,10 @@ static NTSTATUS ps5_create_stream(void *args)
+         return STATUS_SUCCESS;
+     }
+     if (FAILED(params->result = mix_format(params->fmt, &format)))
++    {
++        log_stream(params, NULL, params->result);
+         return STATUS_SUCCESS;
++    }
+ 
+     stream = calloc(1, sizeof(*stream));
+     if (!stream)
+@@ -332,6 +358,7 @@ exit:
+         *params->channel_count = params->fmt->nChannels;
+         *params->stream = (stream_handle)(UINT_PTR)stream;
+     }
++    log_stream(params, stream, params->result);
+ 
+     return STATUS_SUCCESS;
+ }

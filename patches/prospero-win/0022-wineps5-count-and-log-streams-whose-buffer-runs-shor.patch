@@ -1,0 +1,81 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: lavavex <27239435+lavavex@users.noreply.github.com>
+Date: Wed, 7 Oct 2026 19:35:31 -0500
+Subject: [PATCH] wineps5: count and log streams whose buffer runs short
+
+The mixer ignored how many frames pw_audio_mix_add() could take, so an
+application that refilled late was heard as gaps with nothing logged.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01A9xZzd6eUvy4WLFbfGr4Yi
+(cherry picked from commit dd172b447f563f3232656f53d5cf10805f570be5)
+---
+ wine/wineps5/unix.c | 33 ++++++++++++++++++++++++++++++++-
+ 1 file changed, 32 insertions(+), 1 deletion(-)
+
+diff --git a/wine/wineps5/unix.c b/wine/wineps5/unix.c
+index d302aef..bc95e44 100644
+--- a/wine/wineps5/unix.c
++++ b/wine/wineps5/unix.c
+@@ -55,6 +55,7 @@ struct ps5_stream
+     UINT64 written_frames, last_pos_frames;
+     UINT32 period_frames, bufsize_frames, tmp_buffer_frames;
+     UINT32 period_output_frames, since_event;   /* at the console's rate */
++    UINT32 short_grains, short_frames;          /* grains the buffer could not fill */
+     REFERENCE_TIME period;
+ 
+     BYTE *local_buffer, *tmp_buffer;
+@@ -363,6 +364,8 @@ static void mixer_loop(void *args)
+     static int16_t grain[2 * PW_WINE_AUDIO_GRAIN];
+     struct ps5_stream *stream;
+     BOOL playing;
++    UINT32 grains_since_report = 0, report_short;
++    struct { struct ps5_stream *stream; UINT32 grains, frames, bufsize; } short_report[8];
+ 
+     pthread_mutex_lock(&lock);
+     for (;;)
+@@ -380,7 +383,14 @@ static void mixer_loop(void *args)
+         for (stream = streams; stream; stream = stream->next)
+         {
+             if (!stream->playing) continue;
+-            pw_audio_mix_add(&stream->mix, accumulator, PW_WINE_AUDIO_GRAIN);
++            {
++                UINT32 got = pw_audio_mix_add(&stream->mix, accumulator, PW_WINE_AUDIO_GRAIN);
++                if (got < PW_WINE_AUDIO_GRAIN)
++                {
++                    stream->short_grains++;
++                    stream->short_frames += PW_WINE_AUDIO_GRAIN - got;
++                }
++            }
+             stream->since_event += PW_WINE_AUDIO_GRAIN;
+             if (stream->since_event >= stream->period_output_frames)
+             {
+@@ -389,7 +399,28 @@ static void mixer_loop(void *args)
+             }
+         }
+         pw_audio_mix_store(accumulator, grain, PW_WINE_AUDIO_GRAIN);
++        /* Every 1000 grains (about 5.3 s), name the streams whose buffer ran
++         * short: the application did not refill it in time. */
++        report_short = 0;
++        if (++grains_since_report >= 1000)
++        {
++            grains_since_report = 0;
++            for (stream = streams; stream; stream = stream->next)
++            {
++                if (!stream->short_grains || report_short >= ARRAY_SIZE(short_report)) continue;
++                short_report[report_short].stream = stream;
++                short_report[report_short].grains = stream->short_grains;
++                short_report[report_short].frames = stream->short_frames;
++                short_report[report_short].bufsize = stream->bufsize_frames;
++                report_short++;
++                stream->short_grains = stream->short_frames = 0;
++            }
++        }
+         pthread_mutex_unlock(&lock);
++        for (UINT32 i = 0; i < report_short; i++)
++            ERR( "stream %p ran short in %u of 1000 grains, %u frames missing (buffer %u frames)\n",
++                 short_report[i].stream, short_report[i].grains, short_report[i].frames,
++                 short_report[i].bufsize );
+ 
+         if (!audio_output || audio_output(grain))
+         {

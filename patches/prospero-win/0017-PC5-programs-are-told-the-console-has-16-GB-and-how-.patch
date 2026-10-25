@@ -1,0 +1,180 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 25 Oct 2026 08:44:04 +0000
+Subject: [PATCH] PC5: programs are told the console has 16 GB, and how much is
+ free (Wine patch 0914)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01W9bbTPMqftZ2Yv6sJzUsWv
+---
+ PUBLICATION_ALLOWLIST.txt                     |   1 +
+ ...5-tell-programs-the-console-s-memory.patch | 148 ++++++++++++++++++
+ 2 files changed, 149 insertions(+)
+ create mode 100644 wine/patches/0914-ntdll-ps5-tell-programs-the-console-s-memory.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index a899e64..a4f6528 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -555,6 +555,7 @@ wine/patches/0910-win32u-ps5-worker-desktop-cache.patch
+ wine/patches/0911-win32u-ps5-dialog-keys.patch
+ wine/patches/0912-kernelbase-crash-report-without-a-debugger.patch
+ wine/patches/0913-kernelbase-drives-without-a-mount-manager.patch
++wine/patches/0914-ntdll-ps5-tell-programs-the-console-s-memory.patch
+ 
+ 
+ 
+diff --git a/wine/patches/0914-ntdll-ps5-tell-programs-the-console-s-memory.patch b/wine/patches/0914-ntdll-ps5-tell-programs-the-console-s-memory.patch
+new file mode 100644
+index 0000000..b173e36
+--- /dev/null
++++ b/wine/patches/0914-ntdll-ps5-tell-programs-the-console-s-memory.patch
+@@ -0,0 +1,148 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sun, 25 Oct 2026 08:51:47 +0000
++Subject: [PATCH] ntdll: Tell programs the console's memory on PS5.
++
++GlobalMemoryStatusEx reported a total of 546 MB with none of it free:
++the total is SystemBasicInformation's page count, which sysconf gives
++as a small pool of the process on the console, and the free memory
++and commit limit come from SystemPerformanceInformation, whose
++hw.physmem and hw.usermem sysctls the console refuses. A game that
++checks its memory crashed or warned that the machine was below its
++minimum. The total is now the console's 16 GB, and the free memory is
++the free part of the console's direct memory, which every allocation of
++the process and of the GPU comes from, asked of the kernel as
++MihawkOS's patches 0912 and 1005 (LGPL-2.1-or-later) ask it, capped at
++the total and kept for a quarter of a second. The figures are logged
++once.
++---
++ dlls/ntdll/unix/system.c  | 81 +++++++++++++++++++++++++++++++++++++++
++ dlls/ntdll/unix/virtual.c |  8 ++++
++ 2 files changed, 89 insertions(+)
++
++diff --git a/dlls/ntdll/unix/system.c b/dlls/ntdll/unix/system.c
++--- a/dlls/ntdll/unix/system.c
+++++ b/dlls/ntdll/unix/system.c
++@@ -2612,6 +2612,80 @@ static NTSTATUS get_firmware_info( SYSTEM_FIRMWARE_TABLE_INFORMATION *sfti, ULON
++     }
++ }
++ 
+++#ifdef __PROSPERO__
+++extern size_t sceKernelGetDirectMemorySize(void);
+++extern int sceKernelAvailableDirectMemorySize( long long start, long long end, size_t alignment,
+++                                               long long *start_out, size_t *size_out );
+++
+++/* The memory a program is told the machine has: the console's 16 GB, as a PC
+++ * with that much memory reports it. The FreeBSD figures are refused (the
+++ * sysctls) or are a small pool of the process (sysconf): Windows told games
+++ * the console had 546 MB with none of it free. */
+++ULONGLONG ps5_total_memory(void)
+++{
+++    return (ULONGLONG)16 << 30;
+++}
+++
+++/* The free part of the console's direct memory, which every allocation of
+++ * the process and of the GPU comes from (from MihawkOS's patch 0912,
+++ * LGPL-2.1-or-later). The kernel can only be asked where the first free run
+++ * in a range is, so each answer splits the range into the part before it and
+++ * the part after, and both are asked in turn. The figure is a lower bound: a
+++ * run that cannot be asked about (the questions and the ranges waiting are
+++ * capped) is not counted. It is kept for a quarter of a second, since
+++ * programs ask for it every frame. */
+++static ULONGLONG ps5_free_direct_memory(void)
+++{
+++    static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+++    static ULONGLONG cached, cached_at;
+++    static int reported;
+++    struct range { long long low, high; } waiting[64], now;
+++    const size_t alignment = 0x4000;
+++    unsigned int count = 0, questions = 0;
+++    ULONGLONG free_bytes = 0, when;
+++    LARGE_INTEGER time;
+++
+++    NtQuerySystemTime( &time );
+++    when = time.QuadPart;
+++    pthread_mutex_lock( &lock );
+++    if (cached_at && when - cached_at < 2500000)
+++    {
+++        free_bytes = cached;
+++        pthread_mutex_unlock( &lock );
+++        return free_bytes;
+++    }
+++    now.low = 0;
+++    now.high = (long long)sceKernelGetDirectMemorySize();
+++    for (;;)
+++    {
+++        long long start = 0;
+++        size_t size = 0;
+++
+++        if (now.high - now.low >= (long long)alignment && questions++ < 512 &&
+++            !sceKernelAvailableDirectMemorySize( now.low, now.high, alignment, &start, &size ) &&
+++            size && start >= now.low && size <= (unsigned long long)(now.high - start))
+++        {
+++            struct range after = { start + (long long)size, now.high };
+++
+++            free_bytes += size;
+++            if (after.high - after.low >= (long long)alignment && count < ARRAY_SIZE(waiting)) waiting[count++] = after;
+++            now.high = start;
+++            continue;
+++        }
+++        if (!count) break;
+++        now = waiting[--count];
+++    }
+++    if (!reported++)
+++        fprintf( stderr, "wine-ps5: memory for programs: %llu MiB of %llu MiB direct memory free, reported as %llu MiB\n",
+++                 (unsigned long long)(free_bytes >> 20), (unsigned long long)(sceKernelGetDirectMemorySize() >> 20),
+++                 (unsigned long long)(ps5_total_memory() >> 20) );
+++    cached = free_bytes;
+++    cached_at = when;
+++    pthread_mutex_unlock( &lock );
+++    return free_bytes;
+++}
+++#endif
+++
++ static void get_performance_info( SYSTEM_PERFORMANCE_INFORMATION *info )
++ {
++     unsigned long long totalram = 0, freeram = 0, totalswap = 0, freeswap = 0;
++@@ -2757,6 +2831,13 @@ static void get_performance_info( SYSTEM_PERFORMANCE_INFORMATION *info )
++             size_sys = sizeof(val);
++             if (!sysctl(mib, 2, &val, &size_sys, NULL, 0) && size_sys == sizeof(val)) freeram = val;
++         }
+++#ifdef __PROSPERO__
+++        /* the console refuses both sysctls: a free figure of 0 makes a program
+++         * think the machine is out of memory */
+++        totalram = ps5_total_memory();
+++        if (!freeram) freeram = ps5_free_direct_memory();
+++        if (freeram > totalram) freeram = totalram;
+++#endif
++ #ifdef VM_SWAPUSAGE
++         {
++             struct xsw_usage swap;
++diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
++--- a/dlls/ntdll/unix/virtual.c
+++++ b/dlls/ntdll/unix/virtual.c
++@@ -4173,6 +4173,10 @@ UINT_PTR get_host_page_size(void)
++ /***********************************************************************
++  *           virtual_get_system_info
++  */
+++#ifdef __PROSPERO__
+++extern ULONGLONG ps5_total_memory(void); /* system.c */
+++#endif
+++
++ void virtual_get_system_info( SYSTEM_BASIC_INFORMATION *info, BOOL wow64 )
++ {
++ #if defined(HAVE_SYSINFO) \
++@@ -4193,6 +4197,10 @@ void virtual_get_system_info( SYSTEM_BASIC_INFORMATION *info, BOOL wow64 )
++ 
++     if (!sysctlbyname( "hw.memsize", &memsize, &len, NULL, 0 ))
++         info->MmHighestPhysicalPage = max(1, memsize / page_size);
+++#elif defined(__PROSPERO__)
+++    /* sysconf counts a small pool of the process; the machine's memory is
+++     * what a program is told it has (system.c) */
+++    info->MmHighestPhysicalPage = max(1, ps5_total_memory() / page_size);
++ #elif defined(_SC_PHYS_PAGES)
++     LONG64 phys_pages = sysconf( _SC_PHYS_PAGES );
++ 
++-- 
++2.43.0
++

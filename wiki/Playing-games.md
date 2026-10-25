@@ -72,6 +72,7 @@ Choose a game in the library and press **△**.
 | Controller | What the game sees: **Xbox controller** (the default), **DualSense**, or **Keyboard & mouse**. Press **✕** or left / right to change it. See [Controllers](Controllers). |
 | Button mapping | Only with Keyboard & mouse: what each button and stick sends. See [Controllers](Controllers#button-mapping). |
 | Frame generation | **Off** (the default) or **30 → 60 fps**. See [Frame generation](#frame-generation) below. |
+| Memory | Only for 32-bit games: **4 GB** (the default since 1.4.0) or **2 GB**. A 32-bit game gets 4 GB of address space, room for big textures and mods. Set 2 GB for a game that misbehaves with it. |
 | Change program | The program PC5 starts for this game ("Now: …"). Choose another one if PC5 picked the wrong one. See [Choosing the right program](Installing-games#choosing-the-right-program). |
 | Home screen tile | **Off** or **On**: a tile on the PS5's home screen that starts this game. See [Home screen tiles](Home-screen-tiles). |
 | Uninstall | Deletes the game with its saves and settings, after asking. See [Uninstalling a game](Installing-games#uninstalling-a-game). |

@@ -21,5 +21,7 @@
 - [Reporting a problem](Reporting-a-problem)
 
 **Links**
+- [Game compatibility list](Game-compatibility)
+- [Add a game to it](https://github.com/bornaradusin/PC5/discussions/new?category=game-compatibility)
 - [Releases](https://github.com/bornaradusin/PC5/releases)
 - [Issues](https://github.com/bornaradusin/PC5/issues)

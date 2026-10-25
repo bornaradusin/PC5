@@ -1,0 +1,173 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 25 Oct 2026 08:44:04 +0000
+Subject: [PATCH] PC5: a thread waits for an alert without a file descriptor
+ (Wine patch 0915, from Mihawk OS)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01W9bbTPMqftZ2Yv6sJzUsWv
+---
+ PUBLICATION_ALLOWLIST.txt                     |   1 +
+ ...-a-thread-alert-without-a-descriptor.patch | 141 ++++++++++++++++++
+ 2 files changed, 142 insertions(+)
+ create mode 100644 wine/patches/0915-ntdll-ps5-wait-for-a-thread-alert-without-a-descriptor.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index a4f6528..1270b4a 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -556,6 +556,7 @@ wine/patches/0911-win32u-ps5-dialog-keys.patch
+ wine/patches/0912-kernelbase-crash-report-without-a-debugger.patch
+ wine/patches/0913-kernelbase-drives-without-a-mount-manager.patch
+ wine/patches/0914-ntdll-ps5-tell-programs-the-console-s-memory.patch
++wine/patches/0915-ntdll-ps5-wait-for-a-thread-alert-without-a-descriptor.patch
+ 
+ 
+ 
+diff --git a/wine/patches/0915-ntdll-ps5-wait-for-a-thread-alert-without-a-descriptor.patch b/wine/patches/0915-ntdll-ps5-wait-for-a-thread-alert-without-a-descriptor.patch
+new file mode 100644
+index 0000000..7f5e5c3
+--- /dev/null
++++ b/wine/patches/0915-ntdll-ps5-wait-for-a-thread-alert-without-a-descriptor.patch
+@@ -0,0 +1,141 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sun, 25 Oct 2026 08:34:57 +0000
++Subject: [PATCH] ntdll: Wait for a thread alert without a descriptor on PS5.
++
++NtWaitForAlertByThreadId, under every critical section, SRW lock,
++condition variable and WaitOnAddress, held a kqueue per thread id for
++the life of the process. A PS5 process can hold only about 256 files
++and kqueues together, so a game that had started a few hundred
++threads ran out: every wait failed with EMFILE ("kqueue failed with
++error: 24") and the game crashed during its movie. The entry is now a
++mutex, a condition variable and a flag, which cost no descriptor.
++From MihawkOS's patch 0910 (LGPL-2.1-or-later), unchanged but for its
++context.
++---
++ dlls/ntdll/unix/sync.c | 68 ++++++++++++++++++++++++++++++++++++++----
++ 1 file changed, 62 insertions(+), 6 deletions(-)
++
++diff --git a/dlls/ntdll/unix/sync.c b/dlls/ntdll/unix/sync.c
++--- a/dlls/ntdll/unix/sync.c
+++++ b/dlls/ntdll/unix/sync.c
++@@ -29,6 +29,7 @@
++ 
++ #include <assert.h>
++ #include <errno.h>
+++#include <pthread.h>
++ #include <fcntl.h>
++ #include <inttypes.h>
++ #include <limits.h>
++@@ -3472,7 +3473,15 @@ NTSTATUS WINAPI NtQueryInformationAtom( RTL_ATOM atom, ATOM_INFORMATION_CLASS cl
++ 
++ union tid_alert_entry
++ {
++-#ifdef USE_FUTEX
+++#ifdef __PROSPERO__
+++    /* A kqueue per thread id, held for the life of the process, spent the console's descriptors: a process
+++     * can hold about 256 files and kqueues together (ps5platform/fdv.h), every thread id that ever waited
+++     * kept one, and Direct3D's tests ran out of them at the 264th thread id (the thread's kevent failed with
+++     * EMFILE), as did Java's files for lack of the slots. A mutex, a condition variable and a flag cost
+++     * no descriptor, and the zeroed blocks they live in are what PTHREAD_MUTEX_INITIALIZER and
+++     * PTHREAD_COND_INITIALIZER are on this libc. */
+++    struct { pthread_mutex_t lock; pthread_cond_t cond; LONG alerted; } p;
+++#elif defined(USE_FUTEX)
++     LONG futex;
++ #elif defined(HAVE_KQUEUE)
++     int kq;
++@@ -3512,7 +3521,7 @@ static union tid_alert_entry *get_tid_alert_entry( HANDLE tid )
++ 
++     if (!tid_alert_blocks[block_idx])
++     {
++-        static const size_t size = TID_ALERT_BLOCK_SIZE * sizeof(union tid_alert_entry);
+++        static const size_t size = 65536;  /* a whole number of host pages, whatever the size of an entry */
++         void *ptr = anon_mmap_alloc( size, PROT_READ | PROT_WRITE );
++         if (ptr == MAP_FAILED) return NULL;
++         if (InterlockedCompareExchangePointer( (void **)&tid_alert_blocks[block_idx], ptr, NULL ))
++@@ -3521,7 +3530,7 @@ static union tid_alert_entry *get_tid_alert_entry( HANDLE tid )
++ 
++     entry = &tid_alert_blocks[block_idx][idx % TID_ALERT_BLOCK_SIZE];
++ 
++-#ifdef USE_FUTEX
+++#if defined(__PROSPERO__) || defined(USE_FUTEX)
++     return entry;
++ #elif defined(HAVE_KQUEUE)
++     if (!entry->kq)
++@@ -3612,7 +3621,13 @@ NTSTATUS WINAPI NtAlertThreadByThreadId( HANDLE tid )
++ 
++     if (!entry) return STATUS_INVALID_CID;
++ 
++-#ifdef USE_FUTEX
+++#ifdef __PROSPERO__
+++    pthread_mutex_lock( &entry->p.lock );
+++    entry->p.alerted = 1;
+++    pthread_cond_signal( &entry->p.cond );
+++    pthread_mutex_unlock( &entry->p.lock );
+++    return STATUS_SUCCESS;
+++#elif defined(USE_FUTEX)
++     {
++         LONG *futex = &entry->futex;
++         if (!InterlockedExchange( futex, 1 ))
++@@ -3641,7 +3656,7 @@ NTSTATUS WINAPI NtAlertThreadByThreadId( HANDLE tid )
++ }
++ 
++ 
++-#if defined(USE_FUTEX) || defined(HAVE_KQUEUE)
+++#if defined(__PROSPERO__) || defined(USE_FUTEX) || defined(HAVE_KQUEUE)
++ static LONGLONG get_absolute_timeout( const LARGE_INTEGER *timeout )
++ {
++     LARGE_INTEGER now;
++@@ -3675,7 +3690,48 @@ NTSTATUS WINAPI NtWaitForAlertByThreadId( const void *address, const LARGE_INTEG
++ 
++     if (!entry) return STATUS_INVALID_CID;
++ 
++-#ifdef USE_FUTEX
+++#ifdef __PROSPERO__
+++    {
+++        ULONGLONG end = 0;
+++        NTSTATUS status = STATUS_ALERTED;
+++
+++        if (timeout)
+++        {
+++            if (timeout->QuadPart == TIMEOUT_INFINITE)
+++                timeout = NULL;
+++            else
+++                end = get_absolute_timeout( timeout );
+++        }
+++
+++        pthread_mutex_lock( &entry->p.lock );
+++        while (!entry->p.alerted)
+++        {
+++            int ret;
+++
+++            if (timeout)
+++            {
+++                LONGLONG timeleft = update_timeout( end );
+++                struct timespec when;
+++
+++                if (timeleft <= 0)
+++                {
+++                    status = STATUS_TIMEOUT;
+++                    break;
+++                }
+++                clock_gettime( CLOCK_REALTIME, &when );
+++                when.tv_sec += timeleft / (ULONGLONG)TICKSPERSEC;
+++                when.tv_nsec += (timeleft % TICKSPERSEC) * 100;
+++                if (when.tv_nsec >= 1000000000) { when.tv_sec++; when.tv_nsec -= 1000000000; }
+++                ret = pthread_cond_timedwait( &entry->p.cond, &entry->p.lock, &when );
+++                if (ret == ETIMEDOUT && !entry->p.alerted) { status = STATUS_TIMEOUT; break; }
+++            }
+++            else pthread_cond_wait( &entry->p.cond, &entry->p.lock );
+++        }
+++        if (status == STATUS_ALERTED) entry->p.alerted = 0;
+++        pthread_mutex_unlock( &entry->p.lock );
+++        return status;
+++    }
+++#elif defined(USE_FUTEX)
++     {
++         LONG *futex = &entry->futex;
++         ULONGLONG end;
++-- 
++2.43.0
++

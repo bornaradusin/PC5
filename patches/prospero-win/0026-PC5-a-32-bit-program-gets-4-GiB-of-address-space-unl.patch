@@ -1,0 +1,92 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 25 Oct 2026 09:21:11 +0000
+Subject: [PATCH] PC5: a 32-bit program gets 4 GiB of address space unless
+ PW_LARGE_ADDRESS_AWARE=0 (Wine patch 0921)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01W9bbTPMqftZ2Yv6sJzUsWv
+---
+ PUBLICATION_ALLOWLIST.txt                     |  1 +
+ ...-ntdll-ps5-4-gib-for-32-bit-programs.patch | 60 +++++++++++++++++++
+ 2 files changed, 61 insertions(+)
+ create mode 100644 wine/patches/0921-ntdll-ps5-4-gib-for-32-bit-programs.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index 7ba2d55..4a254f9 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -562,6 +562,7 @@ wine/patches/0917-ntdll-freebsd-no-battery-means-mains-power.patch
+ wine/patches/0918-ntdll-ps5-a-missing-image-is-not-found.patch
+ wine/patches/0919-dnsapi-report-unavailable-unix-backend.patch
+ wine/patches/0920-dxcore-a-gpu-adapter-has-the-graphics-and-compute-attributes.patch
++wine/patches/0921-ntdll-ps5-4-gib-for-32-bit-programs.patch
+ 
+ 
+ 
+diff --git a/wine/patches/0921-ntdll-ps5-4-gib-for-32-bit-programs.patch b/wine/patches/0921-ntdll-ps5-4-gib-for-32-bit-programs.patch
+new file mode 100644
+index 0000000..c48f301
+--- /dev/null
++++ b/wine/patches/0921-ntdll-ps5-4-gib-for-32-bit-programs.patch
+@@ -0,0 +1,60 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sun, 25 Oct 2026 09:17:23 +0000
++Subject: [PATCH] ntdll: Give a 32-bit program 4 GiB of address space on PS5.
++
++Under WoW64 a 32-bit program gets 2 GiB of address space unless its
++image is large-address-aware, and many 32-bit games run out of it with
++high-resolution textures or mods. Proton gives every game the 4 GiB
++(WINE_LARGE_ADDRESS_AWARE, on by default) and turns it off for the few
++that break. A 32-bit program now gets 4 GiB whatever its image says;
++PW_LARGE_ADDRESS_AWARE=0 in a game's environment keeps the 2 GiB, for a
++game that takes an address above 2 GiB for a negative number. The log
++says which a program without the flag got.
++---
++ dlls/ntdll/unix/virtual.c | 23 ++++++++++++++++++++++-
++ 1 file changed, 22 insertions(+), 1 deletion(-)
++
++diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
++--- a/dlls/ntdll/unix/virtual.c
+++++ b/dlls/ntdll/unix/virtual.c
++@@ -5605,6 +5605,27 @@ static void virtual_release_address_space(void)
++  *
++  * Enable use of a large address space when allowed by the application.
++  */
+++#ifdef __PROSPERO__
+++/* A 32-bit program gets the 4 GiB a large-address-aware one gets, whatever
+++ * its image says, as Proton gives every game (WINE_LARGE_ADDRESS_AWARE):
+++ * many 32-bit games run out of their 2 GiB with modern textures and mods.
+++ * PW_LARGE_ADDRESS_AWARE=0 in a game's environment keeps the 2 GiB, for a
+++ * game that takes an address above 2 GiB for a negative number. */
+++static BOOL ps5_large_address_aware(void)
+++{
+++    const char *value = getenv( "PW_LARGE_ADDRESS_AWARE" );
+++    BOOL on = !value || strcmp( value, "0" );
+++
+++    if (!(main_image_info.ImageCharacteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE))
+++        fprintf( stderr, "wine-ps5: a 32-bit program without the large-address flag: %s\n",
+++                 on ? "4 GiB of address space, as one with it (PW_LARGE_ADDRESS_AWARE=0 keeps 2 GiB)"
+++                    : "2 GiB of address space (PW_LARGE_ADDRESS_AWARE=0)" );
+++    return on;
+++}
+++#else
+++static BOOL ps5_large_address_aware(void) { return FALSE; }
+++#endif
+++
++ void virtual_set_large_address_space(void)
++ {
++     if (is_win64)
++@@ -5618,7 +5639,7 @@ void virtual_set_large_address_space(void)
++                 free_reserved_memory( 0, (char *)0x7ffe0000 );
++ #endif
++         }
++-        else if (main_image_info.ImageCharacteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE)
+++        else if ((main_image_info.ImageCharacteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE) || ps5_large_address_aware())
++         {
++             user_space_wow_limit = limit_4g - 1;
++             /* reserve space for top-down allocations; some apps break if the entire high 2G is available */
++-- 
++2.43.0
++

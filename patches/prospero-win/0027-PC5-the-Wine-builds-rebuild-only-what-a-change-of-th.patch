@@ -1,0 +1,164 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 25 Oct 2026 09:24:44 +0000
+Subject: [PATCH] PC5: the Wine builds rebuild only what a change of the series
+ touches
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01W9bbTPMqftZ2Yv6sJzUsWv
+---
+ tools/build_host_wine.sh | 39 +++++++++++++++++++++++++------------
+ tools/build_wine_ps5.sh  | 42 +++++++++++++++++++++++++---------------
+ 2 files changed, 53 insertions(+), 28 deletions(-)
+
+diff --git a/tools/build_host_wine.sh b/tools/build_host_wine.sh
+index 0ee019e..5512be2 100755
+--- a/tools/build_host_wine.sh
++++ b/tools/build_host_wine.sh
+@@ -47,26 +47,36 @@ for tool in i686-w64-mingw32-gcc x86_64-w64-mingw32-gcc i686-w64-mingw32-strip x
+     command -v "$tool" >/dev/null || fail "$tool is required"
+ done
+ 
++command -v rsync >/dev/null || fail "rsync is required"
++
++# The tree is made in a fresh checkout (prepared), then the build's tree
++# (source) takes only the files that differ from it: a file that is the same
++# as at the last build keeps its time, so make rebuilds only what a change of
++# the series touches (minutes, where a build from nothing takes over an hour).
+ mkdir -p "$work"
+ tree=$work/source
+-[ -d "$tree/.git" ] || git clone -q --shared --no-checkout "$source_dir" "$tree"
+-git -C "$tree" checkout -q --force "$commit"
+-git -C "$tree" clean -q -fdx
++prepared=$work/prepared
++rm -rf "$prepared"
++git clone -q --shared --no-checkout "$source_dir" "$prepared"
++git -C "$prepared" checkout -q --force "$commit"
+ for patch in $ordered; do
+-    git -C "$tree" apply --index "$patches/$patch" || fail "patch does not apply: $patch"
++    git -C "$prepared" apply --index "$patches/$patch" || fail "patch does not apply: $patch"
+ done
+ 
+ # The series includes sources that live in wine/ps5 (the Vulkan batching
+ # runtime, the shared clock and key-state ABIs); stage them as the console
+ # build does, or the tree does not configure.
+-python3 "$root/tools/stage_vk_batch.py" --source "$tree" --repo "$root" ||
++python3 "$root/tools/stage_vk_batch.py" --source "$prepared" --repo "$root" ||
+     fail "cannot stage Vulkan command-stream runtime"
+-cp "$root/wine/ps5/time/pw_qpc_clock.h" "$tree/dlls/ntdll/pw_qpc_clock.h" ||
++cp "$root/wine/ps5/time/pw_qpc_clock.h" "$prepared/dlls/ntdll/pw_qpc_clock.h" ||
+     fail "cannot stage shared-clock ABI"
+-cp "$root/wine/ps5/input/pw_key_shared.h" "$tree/dlls/win32u/pw_key_shared.h" ||
++cp "$root/wine/ps5/input/pw_key_shared.h" "$prepared/dlls/win32u/pw_key_shared.h" ||
+     fail "cannot stage shared-input ABI"
+-cp "$root/wine/ps5/input/pw_dualsense.h" "$tree/dlls/xinput1_3/pw_dualsense.h" ||
++cp "$root/wine/ps5/input/pw_dualsense.h" "$prepared/dlls/xinput1_3/pw_dualsense.h" ||
+     fail "cannot stage the DualSense's reports"
++mkdir -p "$tree"
++rsync -rlc --delete --exclude=/.git "$prepared/" "$tree/" || fail "cannot update $tree"
++rm -rf "$prepared"
+ 
+ # winegstreamer's PE side is the console's media decoders and parsers (patch
+ # 0490), built here whether or not the PC has GStreamer; its Unix side and
+@@ -74,16 +84,21 @@ cp "$root/wine/ps5/input/pw_dualsense.h" "$tree/dlls/xinput1_3/pw_dualsense.h" |
+ # FFmpeg are left out and the build is the same on every PC.
+ configure_args="--prefix=/usr --enable-archs=i386,x86_64 --disable-tests --enable-winegstreamer
+  --without-gstreamer --without-ffmpeg"
+-stamp=$({ printf '%s\n' "$commit" "$configure_args"
+-          for patch in $ordered; do cat "$patches/$patch"; done; } | sha256sum | cut -c1-64)
++# configure runs again only when it, or what it is given, changed; a build
++# that has none is made from nothing. Makefile.in changes the build's own
++# rules pick up.
++stamp=$({ printf '%s\n' "$commit" "$configure_args"; cat "$tree/configure" "$tree/configure.ac"; } |
++        sha256sum | cut -c1-64)
+ build=$work/build
+-if [ ! -f "$build/Makefile" ] || [ "$(cat "$build/.prospero-stamp" 2>/dev/null)" != "$stamp" ]; then
++if [ ! -f "$build/Makefile" ]; then
+     rm -rf "$build"
+     mkdir -p "$build"
++fi
++if [ "$(cat "$build/.prospero-configure" 2>/dev/null)" != "$stamp" ]; then
+     # shellcheck disable=SC2086
+     (cd "$build" && "$tree/configure" $configure_args > "$work/configure.log" 2>&1) ||
+         fail "configure failed; see $work/configure.log"
+-    echo "$stamp" > "$build/.prospero-stamp"
++    echo "$stamp" > "$build/.prospero-configure"
+ fi
+ # What the PC's Wine could not find is worth knowing: an installer without
+ # X11 or FreeType shows nothing, and without Vulkan DXVK cannot be tried.
+diff --git a/tools/build_wine_ps5.sh b/tools/build_wine_ps5.sh
+index 0ca5361..c7ef2c4 100755
+--- a/tools/build_wine_ps5.sh
++++ b/tools/build_wine_ps5.sh
+@@ -260,45 +260,55 @@ if [ -f "$tls/lib/libgnutls.a" ]; then
+ else
+     gnutls_args="--without-gnutls"
+ fi
++# The tree is made in a fresh checkout (prepared), then the build's tree
++# (source) takes only the files that differ from it: a file that is the same
++# as at the last build keeps its time, so make rebuilds only what a change of
++# the series touches.
++command -v rsync >/dev/null || fail "rsync is required"
+ tree=$work/source
+-if [ ! -d "$tree/.git" ]; then
+-    git clone -q --shared --no-checkout "$source_dir" "$tree"
+-fi
+-git -C "$tree" checkout -q --force "$WINE_COMMIT"
+-git -C "$tree" clean -q -fdx
++prepared=$work/prepared
++rm -rf "$prepared"
++git clone -q --shared --no-checkout "$source_dir" "$prepared"
++git -C "$prepared" checkout -q --force "$WINE_COMMIT"
+ for patch in $ordered; do
+-    git -C "$tree" apply --index "$patches/$patch" || fail "patch does not apply: $patch"
++    git -C "$prepared" apply --index "$patches/$patch" || fail "patch does not apply: $patch"
+     echo "applied $patch"
+ done
+ 
+ # Stage Vulkan batching after the complete patch series. Failure must stop the
+ # build before either half can be emitted with a different dispatch table.
+-python3 "$root/tools/stage_vk_batch.py" --source "$tree" --repo "$root" ||
++python3 "$root/tools/stage_vk_batch.py" --source "$prepared" --repo "$root" ||
+     fail "cannot stage Vulkan command-stream runtime"
+ 
+ # Stage the pointer-free shared-clock ABI used by PE32 and the provider.
+-cp "$root/wine/ps5/time/pw_qpc_clock.h" "$tree/dlls/ntdll/pw_qpc_clock.h" ||
++cp "$root/wine/ps5/time/pw_qpc_clock.h" "$prepared/dlls/ntdll/pw_qpc_clock.h" ||
+     fail "cannot stage shared-clock ABI"
+-cp "$root/wine/ps5/input/pw_key_shared.h" "$tree/dlls/win32u/pw_key_shared.h" ||
++cp "$root/wine/ps5/input/pw_key_shared.h" "$prepared/dlls/win32u/pw_key_shared.h" ||
+     fail "cannot stage shared-input ABI"
+ # The DualSense's reports, which xinput's Unix library makes (patch 0475).
+-cp "$root/wine/ps5/input/pw_dualsense.h" "$tree/dlls/xinput1_3/pw_dualsense.h" ||
++cp "$root/wine/ps5/input/pw_dualsense.h" "$prepared/dlls/xinput1_3/pw_dualsense.h" ||
+     fail "cannot stage the DualSense's reports"
++mkdir -p "$tree"
++rsync -rlc --delete --exclude=/.git "$prepared/" "$tree/" || fail "cannot update $tree"
++rm -rf "$prepared"
+ 
+ cflags=${CFLAGS:--g -O2}
+ 
+-# Reconfigure whenever the patches, staged Vulkan sources or arguments change.
++# Reconfigure whenever configure, or what it is given, changes; the sources'
++# changes (the series, the staged Vulkan runtime) make picks up by their times.
++# A new compiler or new compile flags start from nothing.
++fresh=$({ printf '%s\n' "$sdk" "$cflags"; } | sha256sum | cut -c1-64)
+ stamp=$(
+     { printf '%s\n' "$WINE_COMMIT" "$CONFIGURE_ARGS" "$sdk" "$FREETYPE_SHA256" \
+         "$cflags" "$gnutls_args" "${GNUTLS_LIBS:-}"
+-      for patch in $ordered; do cat "$patches/$patch"; done
+-      cat "$root/tools/stage_vk_batch.py" "$root/tools/generate_vk_codecs.py" "$root"/wine/ps5/pw_vk_*.[ch] \
+-          "$root"/wine/ps5/vulkan/*.[ch] "$root/wine/ps5/time/pw_qpc_clock.h" "$root/wine/ps5/input/pw_key_shared.h" \
+-          "$root/wine/ps5/input/pw_dualsense.h"; } | sha256sum | cut -c1-64)
++      cat "$tree/configure" "$tree/configure.ac"; } | sha256sum | cut -c1-64)
+ build=$work/build
+-if [ ! -f "$build/Makefile" ] || [ "$(cat "$build/.prospero-stamp" 2>/dev/null)" != "$stamp" ]; then
++if [ ! -f "$build/Makefile" ] || [ "$(cat "$build/.prospero-fresh" 2>/dev/null)" != "$fresh" ]; then
+     rm -rf "$build"
+     mkdir -p "$build"
++    echo "$fresh" > "$build/.prospero-fresh"
++fi
++if [ "$(cat "$build/.prospero-stamp" 2>/dev/null)" != "$stamp" ]; then
+     # shellcheck disable=SC2086
+     # FreeType is found by its flags; its soname is the name Wine dlopens,
+     # which pw_wine_dl turns into libfreetype.prx beside ntdll.prx.

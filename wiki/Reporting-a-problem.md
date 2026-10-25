@@ -15,7 +15,7 @@ Please don't report problems in ProsperoStore comments. Comments can't hold a lo
 
 ## What to include
 
-1. **The PC5 version**, from **Settings › About PC5** (press **Options** in the library). For example `1.3.1`.
+1. **The PC5 version**, from **Settings › About PC5** (press **Options** in the library). For example `1.4.0`.
 2. **The game**: its name, and the program PC5 starts for it (shown in the game's menu under **Change program**).
 3. **What happened**: what you did, where it stopped, what was on screen, and whether it happens every time.
 4. **How the game is set up**, if you changed anything: its controller mode, frame generation, and any [launch options](Launch-options).
@@ -51,21 +51,22 @@ When a session went wrong, PC5 tells you the next time it opens, and names the k
 
 Attach the newest `issue-…` log for that game. Attach the file itself, not parts of it pasted into the issue.
 
-### Logs in two parts
+### Logs in parts
 
-A long session's log is written in parts. The part before the last one is kept beside it, with `-earlier` added to its name:
+A long session's log is written in parts. How the session began is kept with `-start` added to its name, and the part before the newest with `-earlier`:
 
 ```text
 issue-2026-10-25_14-17_neon-drift.log
 issue-2026-10-25_14-17_neon-drift-earlier.log
+issue-2026-10-25_14-17_neon-drift-start.log
 ```
 
-Attach both files.
+Attach all of them. A line that repeats many times is saved once, followed by `the line before came N more times`.
 
 ### When there is no issue log
 
 - **You started the game from its [home screen tile](Home-screen-tiles).** Leaving the game goes back to the home screen, so PC5 hasn't opened since. Open PC5 once: it files the log then.
-- **The game froze, or you had to restart the console**, but it had shown pictures. PC5 may not see a problem in such a log, and deletes it when it next opens. Turn **Settings › Keep all logs** on, make the problem happen again, then attach the newest `log-…` file for that game.
+- **The game froze, or you had to restart the console**, but it had shown pictures. PC5 may not see a problem in such a log. Open an issue anyway and say what happened and when: you'll be asked for what's needed.
 - **An install or uninstall went wrong.** PC5 keeps that session's log as `issue-<when>_launcher.log`, once PC5 has been closed and opened again. It doesn't show a message for it.
 
 ### Copying the log off the console

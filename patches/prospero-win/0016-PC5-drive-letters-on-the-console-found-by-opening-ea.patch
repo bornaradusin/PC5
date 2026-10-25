@@ -1,0 +1,112 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 25 Oct 2026 08:32:39 +0000
+Subject: [PATCH] PC5: drive letters on the console, found by opening each root
+ (Wine patch 0913)
+
+1.3.1's GetLogicalDrives fallback asked for each drive root's attributes,
+which the console's runtime-made drive links do not answer, so games
+still saw no drives. The fallback now opens each root, as MihawkOS's
+patch 0161 does, always counts the drive Windows is on, and logs the
+letters it found.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01W9bbTPMqftZ2Yv6sJzUsWv
+---
+ ...lbase-drives-without-a-mount-manager.patch | 48 +++++++++++--------
+ 1 file changed, 29 insertions(+), 19 deletions(-)
+
+diff --git a/wine/patches/0913-kernelbase-drives-without-a-mount-manager.patch b/wine/patches/0913-kernelbase-drives-without-a-mount-manager.patch
+index ad64b89..ef3bb79 100644
+--- a/wine/patches/0913-kernelbase-drives-without-a-mount-manager.patch
++++ b/wine/patches/0913-kernelbase-drives-without-a-mount-manager.patch
+@@ -1,6 +1,6 @@
+ From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+ From: prospero-win <prospero-win@invalid>
+-Date: Sat, 24 Oct 2026 22:45:00 +0100
++Date: Sun, 25 Oct 2026 08:32:23 +0000
+ Subject: [PATCH] kernelbase: Find the drives without a mount manager.
+ 
+ GetLogicalDrives lists the drive letters the mount manager named in
+@@ -8,41 +8,51 @@ GetLogicalDrives lists the drive letters the mount manager named in
+ a process on the PS5 starts no other processes, so on the console the
+ list was empty: a game that looks up the drive it runs from among them
+ found none, and one crashed on the empty result. When no drive is
+-named, take the letters whose root folder exists, which on the console
+-are the prefix's C: and Z:. With a mount manager running nothing
+-changes.
++named, the drives are the letters whose root folder opens, as
++MihawkOS's patch 0161 (LGPL-2.1-or-later) finds them, and always the
++drive Windows is on. Asking for each root's attributes instead, as this
++patch first did, found none on the console, where the prefix's drive
++links are made by the runtime rather than the file system. The letters
++found are logged once. With a mount manager running nothing changes.
+ ---
+- dlls/kernelbase/volume.c | 23 +++++++++++++++++++++++
+- 1 file changed, 23 insertions(+)
++ dlls/kernelbase/volume.c | 33 +++++++++++++++++++++++++++++++++
++ 1 file changed, 33 insertions(+)
+ 
+ diff --git a/dlls/kernelbase/volume.c b/dlls/kernelbase/volume.c
+ --- a/dlls/kernelbase/volume.c
+ +++ b/dlls/kernelbase/volume.c
+-@@ -489,6 +489,31 @@
++@@ -489,6 +489,38 @@ DWORD WINAPI QueryDosDeviceW( LPCWSTR devname, LPWSTR target, DWORD bufsize )
+  }
+  
+  
+-+/* The drives whose root folder exists, asked for one letter at a time:
+-+ * for when no mount manager has named any drive (it runs in a service,
+-+ * and a process on the PS5 starts no others), so that a game still sees
+-+ * C: and the prefix's other drives. */
+-+static DWORD drives_with_a_root(void)
+++/* The drives, for when no mount manager has named any: it runs in a
+++ * service (winedevice.exe), and a process on the PS5 starts no others. They
+++ * are the letters whose root folder opens (as MihawkOS's patch 0161 finds
+++ * them), and always the drive Windows itself is on. */
+++static DWORD drives_without_a_mount_manager(void)
+ +{
+++    static LONG reported;
+ +    WCHAR root[] = L"\\??\\A:\\";
+-+    UNICODE_STRING nt_name;
+++    UNICODE_STRING nt_name = { sizeof(root) - sizeof(WCHAR), sizeof(root), root };
+ +    OBJECT_ATTRIBUTES attr;
+-+    FILE_BASIC_INFORMATION info;
+++    IO_STATUS_BLOCK io;
+ +    DWORD bitmask = 0;
+++    HANDLE handle;
+ +    int drive;
+ +
+-+    RtlInitUnicodeString( &nt_name, root );
+ +    InitializeObjectAttributes( &attr, &nt_name, OBJ_CASE_INSENSITIVE, 0, NULL );
+ +    for (drive = 0; drive < 26; drive++)
+ +    {
+ +        root[4] = 'A' + drive;
+-+        if (!NtQueryAttributesFile( &attr, &info ) && (info.FileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+-+            bitmask |= 1 << drive;
+++        if (NtOpenFile( &handle, SYNCHRONIZE | FILE_LIST_DIRECTORY, &attr, &io,
+++                        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+++                        FILE_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT )) continue;
+++        bitmask |= 1 << drive;
+++        NtClose( handle );
+ +    }
+++    if (windows_dir[0] >= 'A' && windows_dir[0] <= 'Z') bitmask |= 1 << (windows_dir[0] - 'A');
+++    if (!InterlockedExchange( &reported, 1 ))
+++        MESSAGE( "wine: drive letters without a mount manager: %08lx\n", bitmask );
+ +    return bitmask;
+ +}
+ +
+@@ -50,11 +60,11 @@ diff --git a/dlls/kernelbase/volume.c b/dlls/kernelbase/volume.c
+  /***********************************************************************
+   *           GetLogicalDrives   (kernelbase.@)
+   */
+-@@ -516,6 +541,7 @@
++@@ -516,6 +548,7 @@ DWORD WINAPI DECLSPEC_HOTPATCH GetLogicalDrives(void)
+          NtClose( handle );
+      }
+  
+-+    if (!bitmask) bitmask = drives_with_a_root();
+++    if (!bitmask) bitmask = drives_without_a_mount_manager();
+      return bitmask;
+  }
+  

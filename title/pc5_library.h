@@ -40,6 +40,7 @@ typedef struct Pc5Game {
     char executable[PC5_PATH];   /* the profile's program, C:\\... */
     char detail[128];            /* "64-bit · DirectX 11 · 23.4 GB" */
     int pc5;                     /* installed by PC5 (has its notes) */
+    int bits;                    /* 32 or 64 */
     int playable;                /* the profile is valid and its prefix is there */
     char problem[128];           /* why not, when it isn't */
 } Pc5Game;

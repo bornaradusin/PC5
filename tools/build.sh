@@ -58,7 +58,7 @@ MBEDTLS_SHA256=a7e8bcbec0e6f761b4af24f25677626b35f762f68eef79c08677a363212d11f6
 # patches/dxvk; app/pc5/dxvk.txt names the result, and PC5 gives installed games its DLLs.
 DXVK_URL=https://github.com/mpereiraesaa/dxvk.git
 DXVK_COMMIT=a6f6dcc1eaa67946482ebdded0d1d5dc13293133      # tag v2.6.2-prospero2
-DXVK_NAME=2.6.2-prospero2-pc5.1
+DXVK_NAME=2.6.2-prospero2-pc5.2
 # The PS5 Forwarder Format: the home screen tiles' program (template/) and psfwd, which
 # title/third_party/psfwd holds unchanged.
 FORWARDER_URL=https://github.com/heydemoura/ps5-forwarder-format.git
@@ -274,6 +274,7 @@ step_dxvk() {
     local arch out=$B/dxvk tree
     tree=$(git -C "$B/dxvk-source" rev-parse HEAD)
     if [[ -f $out/NAME && $(cat "$out/SOURCE" 2>/dev/null) == "$tree" ]]; then
+        echo "$DXVK_NAME" > "$out/NAME"   # the name may have changed without the source
         echo "DXVK $(cat "$out/NAME") already built from $tree"
         return 0
     fi

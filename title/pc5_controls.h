@@ -43,6 +43,7 @@ typedef struct Pc5Controls {
     int speed;                    /* 1..PC5_SPEEDS */
     uint8_t key[PC5_CONTROLS];    /* an index into pc5_keys */
     int frame_generation;         /* 1: the game held at 30 fps, shown at 60 (libvulkan.prx's frame generation) */
+    int memory_2gb;               /* 1: a 32-bit game keeps 2 GB of address space, not the 4 GB it gets */
 } Pc5Controls;
 
 /* A key, mouse button or nothing, as prospero-win names it in a profile, and as

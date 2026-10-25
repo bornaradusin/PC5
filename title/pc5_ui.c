@@ -108,26 +108,28 @@ static int page_rows(const Pc5Settings *set, int page, SettingRow rows[PAGE_ROWS
 }
 
 /* A game's menu: its rows; Button mapping only while it plays the keyboard and mouse. */
-typedef enum GameRow { GR_PLAY, GR_CONTROLLER, GR_BUTTONS, GR_FRAMEGEN, GR_PROGRAM, GR_HOME, GR_UNINSTALL } GameRow;
-enum { GAME_ROWS = 7 };
+typedef enum GameRow { GR_PLAY, GR_CONTROLLER, GR_BUTTONS, GR_FRAMEGEN, GR_MEMORY, GR_PROGRAM, GR_HOME, GR_UNINSTALL } GameRow;
+enum { GAME_ROWS = 8 };
 
-static int game_rows(const Pc5Controls *controls, GameRow rows[GAME_ROWS])
+/* bits: the game's, 32 or 64 (Memory is a 32-bit game's). */
+static int game_rows(const Pc5Controls *controls, int bits, GameRow rows[GAME_ROWS])
 {
     int n = 0;
     rows[n++] = GR_PLAY;
     rows[n++] = GR_CONTROLLER;
     if (controls->mode == PC5_PAD_KEYBOARD) rows[n++] = GR_BUTTONS;
     rows[n++] = GR_FRAMEGEN;
+    if (bits == 32) rows[n++] = GR_MEMORY;
     rows[n++] = GR_PROGRAM;
     rows[n++] = GR_HOME;
     rows[n++] = GR_UNINSTALL;
     return n;
 }
 
-static int game_row_at(const Pc5Controls *controls, GameRow row)
+static int game_row_at(const Pc5Controls *controls, int bits, GameRow row)
 {
     GameRow rows[GAME_ROWS];
-    int n = game_rows(controls, rows);
+    int n = game_rows(controls, bits, rows);
     for (int i = 0; i < n; i++)
         if (rows[i] == row) return i;
     return 0;
@@ -248,6 +250,13 @@ struct Pc5Ui {
     uint32_t composed_glow;
     int composed_ready;
 };
+
+/* The bits of the game whose menu is open (64 when it isn't found). */
+static int ui_game_bits(const Pc5Ui *ui)
+{
+    int index = pc5_library_find(&ui->library, ui->launch_id);
+    return index >= 0 && ui->library.games[index].bits == 32 ? 32 : 64;
+}
 
 const char *pc5_ui_screen(const Pc5Ui *ui)
 {
@@ -1171,9 +1180,9 @@ static void controls_changed(Pc5Ui *ui)
 {
     const Pc5Controls *k = &ui->controls;
     if (pc5_controls_save(ui->root, ui->launch_id, k)) say(ui, "PC5 problem controls %s: can't write them", ui->launch_id);
-    say(ui, "PC5 controls id=%s mode=%s left=%s right=%s speed=%d frame_generation=%d", ui->launch_id,
+    say(ui, "PC5 controls id=%s mode=%s left=%s right=%s speed=%d frame_generation=%d memory_32bit=%s", ui->launch_id,
         pc5_pad_mode_name(k->mode), pc5_stick_use_name(k->stick[0]), pc5_stick_use_name(k->stick[1]), k->speed,
-        k->frame_generation);
+        k->frame_generation, k->memory_2gb ? "2gb" : "4gb");
 }
 
 /* A Button mapping row moves to its next (step 1) or previous (-1) value: 1 when it changed. */
@@ -1605,7 +1614,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
     case S_PROGRAMS:
         if (list_move(&ui->menu, ui->folder.exe_count, k)) ui->dirty = 1;
         if (k & back) {
-            if (ui->program_for) ui->menu = game_row_at(&ui->controls, GR_PROGRAM);
+            if (ui->program_for) ui->menu = game_row_at(&ui->controls, ui_game_bits(ui), GR_PROGRAM);
             go(ui, ui->program_for ? S_GAME_MENU : S_REVIEW);
         }
         else if (k & accept) {
@@ -1634,7 +1643,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
     case S_GAME_MENU: {
         int index = pc5_library_find(&ui->library, ui->launch_id);
         GameRow rows[GAME_ROWS];
-        int count = game_rows(&ui->controls, rows);
+        int count = game_rows(&ui->controls, ui_game_bits(ui), rows);
         if (index < 0) { go(ui, S_LIBRARY); break; }
         const Pc5Game *game = &ui->library.games[index];
         if (ui->menu >= count) ui->menu = count - 1;
@@ -1648,6 +1657,10 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             ui->dirty = 1;
         } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_FRAMEGEN) {
             ui->controls.frame_generation = !ui->controls.frame_generation;
+            controls_changed(ui);
+            ui->dirty = 1;
+        } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_MEMORY) {
+            ui->controls.memory_2gb = !ui->controls.memory_2gb;
             controls_changed(ui);
             ui->dirty = 1;
         } else if ((k & accept) && row == GR_HOME) {
@@ -1681,7 +1694,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         PadRow row = rows[ui->pad_row];
         int bindable = row.kind == PR_BUTTON || row.kind == PR_DIRECTION;
         if (k & back) {
-            ui->menu = game_row_at(&ui->controls, GR_BUTTONS);
+            ui->menu = game_row_at(&ui->controls, ui_game_bits(ui), GR_BUTTONS);
             go(ui, S_GAME_MENU);
         } else if (k & (PC5_KEY_LEFT | PC5_KEY_RIGHT)) {
             changed = pad_change(ui, row, (k & PC5_KEY_LEFT) ? -1 : 1);
@@ -1795,11 +1808,11 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
     case S_UNINSTALL_CONFIRM:
         if (k & (PC5_KEY_LEFT | PC5_KEY_RIGHT)) { ui->button = !ui->button; ui->dirty = 1; }
         if (k & back) {
-            if (ui->uninstall_back == S_GAME_MENU) ui->menu = game_row_at(&ui->controls, GR_UNINSTALL);
+            if (ui->uninstall_back == S_GAME_MENU) ui->menu = game_row_at(&ui->controls, ui_game_bits(ui), GR_UNINSTALL);
             go(ui, ui->uninstall_back);
         } else if ((k & accept) && ui->now - ui->entered > 400) {
             if (!ui->button) {
-                if (ui->uninstall_back == S_GAME_MENU) ui->menu = game_row_at(&ui->controls, GR_UNINSTALL);
+                if (ui->uninstall_back == S_GAME_MENU) ui->menu = game_row_at(&ui->controls, ui_game_bits(ui), GR_UNINSTALL);
                 go(ui, ui->uninstall_back);
             } else {
                 const Pc5Game *game = &ui->library.games[ui->menu];
@@ -2163,9 +2176,9 @@ static void game_menu_screen(Pc5Ui *ui, Pc5Canvas *c, int chosen)
     char about[200];
 
     GameRow rows[GAME_ROWS];
-    int count = game_rows(&ui->controls, rows);
+    int count = game_rows(&ui->controls, ui_game_bits(ui), rows);
 
-    float pitch = count > 6 ? 104 : 118;   /* seven rows fit above the hints */
+    float pitch = count > 7 ? 92 : count > 6 ? 104 : 118;   /* eight rows fit above the hints */
     pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 64, 182, C_DIM, game->playable ? game->detail : game->problem, 760 - 128, 0);
     for (int i = 0; i < count; i++) {
         float y = 226 + pitch * i;
@@ -2189,6 +2202,12 @@ static void game_menu_screen(Pc5Ui *ui, Pc5Canvas *c, int chosen)
                        ui->controls.frame_generation ? "Held at 30 fps and shown at 60"
                                                      : "The game's frames as it makes them",
                        ui->controls.frame_generation ? "30 \xe2\x86\x92 60 fps" : "Off");
+            break;
+        case GR_MEMORY:
+            drawer_row(ui, c, x, y, pitch, chosen == i, "Memory",
+                       ui->controls.memory_2gb ? "What Windows gives a 32-bit game that doesn't ask for more"
+                                               : "Room for big textures and mods; 2 GB if the game misbehaves",
+                       ui->controls.memory_2gb ? "2 GB" : "4 GB");
             break;
         case GR_PROGRAM: {
             const char *exe = strrchr(game->executable, '\\');
@@ -2719,7 +2738,7 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
     }
     case S_UNINSTALL_CONFIRM: {
         const Pc5Game *game = &ui->library.games[ui->menu];
-        if (ui->uninstall_back == S_GAME_MENU) game_menu_screen(ui, c, game_row_at(&ui->controls, GR_UNINSTALL));
+        if (ui->uninstall_back == S_GAME_MENU) game_menu_screen(ui, c, game_row_at(&ui->controls, ui_game_bits(ui), GR_UNINSTALL));
         snprintf(line, sizeof(line), "Uninstall %s?", game->title);
         confirm_dialog(ui, c, line,
                        "This deletes the game and all its saves and settings. There is no backup and no undo.",

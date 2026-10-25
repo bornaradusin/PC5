@@ -1,0 +1,250 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 25 Oct 2026 08:54:42 +0000
+Subject: [PATCH] PC5: four fixes from Mihawk OS (Wine patches 0917-0920):
+ mains power, a missing program is not found, no crash in dnsapi without its
+ resolver, the GPU is a graphics adapter in dxcore
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01W9bbTPMqftZ2Yv6sJzUsWv
+---
+ PUBLICATION_ALLOWLIST.txt                     |  4 +
+ ...freebsd-no-battery-means-mains-power.patch | 34 ++++++++
+ ...dll-ps5-a-missing-image-is-not-found.patch | 83 +++++++++++++++++++
+ ...sapi-report-unavailable-unix-backend.patch | 30 +++++++
+ ...-the-graphics-and-compute-attributes.patch | 43 ++++++++++
+ 5 files changed, 194 insertions(+)
+ create mode 100644 wine/patches/0917-ntdll-freebsd-no-battery-means-mains-power.patch
+ create mode 100644 wine/patches/0918-ntdll-ps5-a-missing-image-is-not-found.patch
+ create mode 100644 wine/patches/0919-dnsapi-report-unavailable-unix-backend.patch
+ create mode 100644 wine/patches/0920-dxcore-a-gpu-adapter-has-the-graphics-and-compute-attributes.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index 36e140a..7ba2d55 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -558,6 +558,10 @@ wine/patches/0913-kernelbase-drives-without-a-mount-manager.patch
+ wine/patches/0914-ntdll-ps5-tell-programs-the-console-s-memory.patch
+ wine/patches/0915-ntdll-ps5-wait-for-a-thread-alert-without-a-descriptor.patch
+ wine/patches/0916-ntdll-ps5-grow-the-address-space-for-programs.patch
++wine/patches/0917-ntdll-freebsd-no-battery-means-mains-power.patch
++wine/patches/0918-ntdll-ps5-a-missing-image-is-not-found.patch
++wine/patches/0919-dnsapi-report-unavailable-unix-backend.patch
++wine/patches/0920-dxcore-a-gpu-adapter-has-the-graphics-and-compute-attributes.patch
+ 
+ 
+ 
+diff --git a/wine/patches/0917-ntdll-freebsd-no-battery-means-mains-power.patch b/wine/patches/0917-ntdll-freebsd-no-battery-means-mains-power.patch
+new file mode 100644
+index 0000000..2018e4c
+--- /dev/null
++++ b/wine/patches/0917-ntdll-freebsd-no-battery-means-mains-power.patch
+@@ -0,0 +1,34 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sun, 25 Oct 2026 08:54:10 +0000
++Subject: [PATCH] ntdll: a FreeBSD machine without a battery is on mains power
++
++fill_battery_state starts from zeros and sets AcOnLine only when the hw.acpi.battery sysctls exist, so a machine
++without a battery (a desktop, the PS5) reported BatteryPresent FALSE and AcOnLine FALSE: GetSystemPowerStatus
++answered ACLineStatus 0, "offline", which kernel32's power test notices and a game that throttles itself on battery
++power would act on. Windows reports AC online for a machine with no battery, and so does this now.
++
++From MihawkOS's patch 0913 (LGPL-2.1-or-later), unchanged but for its
++context.
++---
++ dlls/ntdll/unix/system.c | 5 +++++
++ 1 file changed, 5 insertions(+)
++
++diff --git a/dlls/ntdll/unix/system.c b/dlls/ntdll/unix/system.c
++--- a/dlls/ntdll/unix/system.c
+++++ b/dlls/ntdll/unix/system.c
++@@ -4769,6 +4769,11 @@ static NTSTATUS fill_battery_state( SYSTEM_BATTERY_STATE *bs )
++             bs->MaxCapacity = 100;
++         }
++     }
+++    else
+++    {
+++        /* no battery (a desktop, a console): the machine is on mains power, as Windows reports it */
+++        bs->AcOnLine = TRUE;
+++    }
++     return STATUS_SUCCESS;
++ }
++ 
++-- 
++2.43.0
++
+diff --git a/wine/patches/0918-ntdll-ps5-a-missing-image-is-not-found.patch b/wine/patches/0918-ntdll-ps5-a-missing-image-is-not-found.patch
+new file mode 100644
+index 0000000..0bf463f
+--- /dev/null
++++ b/wine/patches/0918-ntdll-ps5-a-missing-image-is-not-found.patch
+@@ -0,0 +1,83 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sun, 25 Oct 2026 08:54:10 +0000
++Subject: [PATCH] ntdll: on PS5, a process whose image is missing is not found
++
++Patch 0550 made NtCreateUserProcess return STATUS_NOT_SUPPORTED before it looked at its arguments, so
++CreateProcess of a file that does not exist failed with ERROR_NOT_SUPPORTED instead of
++ERROR_FILE_NOT_FOUND (kernel32 process.c:1131 and 1136). A program that tries an optional helper and
++checks for "not found" took that as something else. The image is now opened first, as on Windows: a
++missing or unreadable one fails with the status get_pe_file_info gives, and only an image that is there
++is refused as not supported. The not-a-PE-file branch, which forks a Unix program on Linux, is left out
++on the console, and so is fork_and_exec itself.
++
++From MihawkOS's patch 0914 (LGPL-2.1-or-later), unchanged but for its
++context.
++---
++ dlls/ntdll/unix/process.c | 21 ++++++++++++++-------
++ 1 file changed, 14 insertions(+), 7 deletions(-)
++
++diff --git a/dlls/ntdll/unix/process.c b/dlls/ntdll/unix/process.c
++--- a/dlls/ntdll/unix/process.c
+++++ b/dlls/ntdll/unix/process.c
++@@ -558,6 +558,7 @@ NTSTATUS wow64_wine_spawnvp( void *args )
++ }
++ #endif
++ 
+++#ifndef __PROSPERO__
++ /***********************************************************************
++  *           fork_and_exec
++  *
++@@ -655,6 +656,7 @@ static NTSTATUS fork_and_exec( OBJECT_ATTRIBUTES *attr, const char *unix_name, i
++     if (stdout_fd != -1 && stdout_fd != 1) close( stdout_fd );
++     return status;
++ }
+++#endif  /* __PROSPERO__: a title cannot fork */
++ 
++ static NTSTATUS alloc_handle_list( const PS_ATTRIBUTE *handles_attr, obj_handle_t **handles, data_size_t *handles_len )
++ {
++@@ -710,13 +712,6 @@ NTSTATUS WINAPI NtCreateUserProcess( HANDLE *process_handle_ptr, HANDLE *thread_
++     data_size_t handles_size, jobs_size;
++     obj_handle_t *handles, *jobs;
++ 
++-#ifdef __PROSPERO__
++-    /* A PS5 title is a single process: it can neither fork nor exec, so
++-     * Windows process creation fails cleanly instead of spawning a loader. */
++-    TRACE( "process creation is not supported on PS5\n" );
++-    return STATUS_NOT_SUPPORTED;
++-#endif
++-
++     if (thread_flags & THREAD_CREATE_FLAGS_HIDE_FROM_DEBUGGER)
++     {
++         WARN( "Invalid thread flags %#x.\n", thread_flags );
++@@ -770,6 +765,7 @@ NTSTATUS WINAPI NtCreateUserProcess( HANDLE *process_handle_ptr, HANDLE *thread_
++     InitializeObjectAttributes( &attr, &path, OBJ_CASE_INSENSITIVE, 0, 0 );
++     if ((status = get_pe_file_info( &attr, &nt_name, &unix_name, &file_handle, &pe_info )))
++     {
+++#ifndef __PROSPERO__
++         if (status == STATUS_INVALID_IMAGE_NOT_MZ && !fork_and_exec( &attr, unix_name, unixdir, params ))
++         {
++             *process_handle_ptr = *thread_handle_ptr = 0;
++@@ -778,8 +774,19 @@ NTSTATUS WINAPI NtCreateUserProcess( HANDLE *process_handle_ptr, HANDLE *thread_
++             free( nt_name.Buffer );
++             return STATUS_SUCCESS;
++         }
+++#endif
++         goto done;
++     }
+++#ifdef __PROSPERO__
+++    /* A PS5 title is a single process: it can neither fork nor exec, so Windows process
+++     * creation fails cleanly instead of spawning a loader. The image is opened first, as on
+++     * Windows, so a missing or unreadable one fails with the status Windows gives
+++     * (ERROR_FILE_NOT_FOUND for CreateProcess), which programs check; only an image that is
+++     * there is refused as not supported. */
+++    TRACE( "process creation is not supported on PS5\n" );
+++    status = STATUS_NOT_SUPPORTED;
+++    goto done;
+++#endif
++     if (!machine)
++     {
++         machine = pe_info.machine;
++-- 
++2.43.0
++
+diff --git a/wine/patches/0919-dnsapi-report-unavailable-unix-backend.patch b/wine/patches/0919-dnsapi-report-unavailable-unix-backend.patch
+new file mode 100644
+index 0000000..d7b217a
+--- /dev/null
++++ b/wine/patches/0919-dnsapi-report-unavailable-unix-backend.patch
+@@ -0,0 +1,30 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sun, 25 Oct 2026 08:54:10 +0000
++Subject: [PATCH] dnsapi: report unavailable Unix backend without dispatching through null
++
++DllMain logs an unavailable resolver backend but still permits PE imports.
++DnsQueryConfig must report that unavailable capability, rather than dispatch
++through a null Unix function table. A console GetAdaptersAddresses trace
++reproduces STATUS_ACCESS_VIOLATION at table index 1 with handle zero.
++Keep the ordinary error visible; this does not provide DNS configuration.
++
++From MihawkOS's patch 0965 (LGPL-2.1-or-later), unchanged but for its
++context.
++---
++ dlls/dnsapi/dnsapi.h | 3 ++-
++ 1 file changed, 2 insertions(+), 1 deletion(-)
++
++diff --git a/dlls/dnsapi/dnsapi.h b/dlls/dnsapi/dnsapi.h
++--- a/dlls/dnsapi/dnsapi.h
+++++ b/dlls/dnsapi/dnsapi.h
++@@ -130,4 +130,5 @@ enum unix_funcs
++     unix_funcs_count
++ };
++ 
++-#define RESOLV_CALL( func, params ) WINE_UNIX_CALL( unix_ ## func, params )
+++#define RESOLV_CALL( func, params ) \
+++    (__wine_unixlib_handle ? WINE_UNIX_CALL( unix_ ## func, params ) : ERROR_NOT_SUPPORTED)
++-- 
++2.43.0
++
+diff --git a/wine/patches/0920-dxcore-a-gpu-adapter-has-the-graphics-and-compute-attributes.patch b/wine/patches/0920-dxcore-a-gpu-adapter-has-the-graphics-and-compute-attributes.patch
+new file mode 100644
+index 0000000..43d45f8
+--- /dev/null
++++ b/wine/patches/0920-dxcore-a-gpu-adapter-has-the-graphics-and-compute-attributes.patch
+@@ -0,0 +1,43 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sun, 25 Oct 2026 08:54:10 +0000
++Subject: [PATCH] dxcore: a GPU adapter has the graphics and compute attributes
++
++IDXCoreAdapter::IsAttributeSupported answered FALSE for everything, so a program that sorts adapters by attribute
++took the console's GPU for something else. Chromium (CEF 150, MihawkBrowser) collects NPUs as the hardware adapters
++that support neither DXCORE_ADAPTER_ATTRIBUTE_D3D12_GRAPHICS nor ..._D3D11_GRAPHICS
++(gpu/config/gpu_info_collector_win.cc, CollectNPUInformation), took the GPU for one, and read its driver description
++with GetProperty(DriverDescription, &char_pointer): eight bytes, which the four of "PS5" fit, so the pointer became
++0x00355350 and its std::string read faulted in the browser's GPU thread at startup (console run
++2026-10-16; record removed from the tree; in git history). Every adapter dxcore lists is a wined3d GPU, so it reports Direct3D 11 and 12 graphics
++and core compute; other attributes stay unimplemented.
++
++From MihawkOS's patch 1170 (LGPL-2.1-or-later), unchanged but for its
++context.
++---
++ dlls/dxcore/dxcore.c | 10 +++++++++-
++ 1 file changed, 9 insertions(+), 1 deletion(-)
++
++diff --git a/dlls/dxcore/dxcore.c b/dlls/dxcore/dxcore.c
++--- a/dlls/dxcore/dxcore.c
+++++ b/dlls/dxcore/dxcore.c
++@@ -91,7 +91,15 @@ static BOOL STDMETHODCALLTYPE dxcore_adapter_IsValid(IDXCoreAdapter *iface)
++ 
++ static BOOL STDMETHODCALLTYPE dxcore_adapter_IsAttributeSupported(IDXCoreAdapter *iface, REFGUID attribute)
++ {
++-    FIXME("iface %p, attribute %s stub!\n", iface, debugstr_guid(attribute));
+++    TRACE("iface %p, attribute %s.\n", iface, debugstr_guid(attribute));
+++
+++    /* Every adapter here is a wined3d GPU: it draws through Direct3D 11 and 12 and computes. */
+++    if (IsEqualGUID(attribute, &DXCORE_ADAPTER_ATTRIBUTE_D3D11_GRAPHICS)
+++            || IsEqualGUID(attribute, &DXCORE_ADAPTER_ATTRIBUTE_D3D12_GRAPHICS)
+++            || IsEqualGUID(attribute, &DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE))
+++        return TRUE;
+++
+++    FIXME("iface %p, attribute %s not implemented.\n", iface, debugstr_guid(attribute));
++     return FALSE;
++ }
++ 
++-- 
++2.43.0
++

@@ -9,7 +9,7 @@ No. PC5 contains no games and downloads none. You install the games you own, fro
 Whether a game runs is only known by trying it. PC5 makes no promise about any game. Games that need Steam, Epic, EA or Ubisoft's launcher running, online DRM or anti-cheat don't run, and nor do .NET Framework games. See [What runs and what doesn't](Installing-games#what-runs-and-what-doesnt).
 
 **Is there a list of games that work?**
-No. Try the game: if it doesn't run, uninstalling it removes everything it made.
+Yes: the [Game compatibility list](Game-compatibility), made from players' reports in Discussions. To add a game, open [the report form](https://github.com/bornaradusin/PC5/discussions/new?category=game-compatibility), fill it in and post it: the game appears in the list within a minute or two.
 
 **Does PC5 need internet?**
 No. PC5 itself only goes online to find covers and to check for a newer version. Without internet, games get a cover made from their icon, or [your own picture](Covers#using-your-own-cover).
@@ -50,6 +50,9 @@ Yes. A USB keyboard and mouse work in every controller mode. For games without c
 
 **Can I make a game run at 60 fps?**
 For a game that keeps 30 fps, turn on **△ › Frame generation**. It shows the game at 60 fps with frames made in between. See [Frame generation](Playing-games#frame-generation).
+
+**A game says the PC doesn't meet its minimum specs, or has too little memory.**
+Update PC5. Before 1.4.0, games were told the console had about half a gigabyte of memory. From 1.4.0 they're told it has 16 GB, and how much of it is free.
 
 **Which language do games use?**
 The PS5's. Each game's Windows language is the console's, so a game that follows the Windows language follows the console.
