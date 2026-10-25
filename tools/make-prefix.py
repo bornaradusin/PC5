@@ -4,7 +4,8 @@
 console reads.
 
     tools/make-prefix.py --pw PROSPERO_WIN --wine HOST_WINE --cpu-dll WOWPROSPERO_DLL \\
-                         --vkd3d VKD3D_PROTON_TAR_ZST --dxvk DXVK_DIR --out APP_DIR
+                         --vkd3d VKD3D_PROTON_TAR_ZST --dxvk DXVK_DIR \\
+                         --mono WINE_MONO_MSI --mono-version VERSION --out APP_DIR
 
 1. prospero-win's tools/pw_install.py makes the prefix from profile/template-prefix.yml
    with the host Wine (the console's revision and patches, built for the PC), as the user
@@ -24,6 +25,21 @@ console reads.
    adds to system.reg: the sections the prefix has that unregistering it takes away. A game
    installed before winegstreamer was built has none of it, and wineboot cannot run on the
    console, so PC5 appends these sections to that game's system.reg (title/pc5_game.c).
+6. Wine Mono (.NET Framework) is installed into the prefix from its MSI with the host Wine.
+   Its runtime (C:\\windows\\mono, some 230 MB) is not in the template, which every game
+   copies: it goes to APP_DIR/pc5/mono, listed in APP_DIR/pc5/mono.list, and PC5 copies it
+   once to the console's /data, where every game's Wine finds it (HKCU\\Software\\Wine\\Mono
+   RuntimePath, which PC5 sets: title/pc5_game.c). The installer's own copy of the MSI is
+   left out. APP_DIR/pc5/prefix-dotnet.reg holds what installing it added to system.reg,
+   for games installed before (as prefix-media.reg), and APP_DIR/pc5/mono-version.txt names
+   the version.
+7. Fonts: tools/build.sh puts Liberation and Droid Sans Fallback in Wine's own fonts folder,
+   which Wine loads for every game. HKCU\\Software\\Wine\\Fonts\\Replacements gives them the
+   names games ask for (FONT_REPLACEMENTS: Arial, Times New Roman, Courier New, and the
+   Chinese, Japanese and Korean fonts of Windows); Wine already falls back to MS UI Gothic,
+   SimSun, Gulim and PMingLiU for characters a font lacks, which are then Droid Sans
+   Fallback. APP_DIR/pc5/prefix-fonts.reg holds what that adds to user.reg, which PC5 adds
+   to the prefix of a game installed before (title/pc5_game.c).
 """
 import argparse
 import os
@@ -36,6 +52,27 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 RECIPE = REPO / "profile" / "template-prefix.yml"
 SLUG = "pc5-template"
+
+# Windows' fonts, by the names games ask for, and the font in Wine's fonts folder that takes
+# each one's place. Wine leaves out a replacement whose font is there itself.
+CJK = "Droid Sans Fallback"
+FONT_REPLACEMENTS = {
+    "Arial": "Liberation Sans", "Helvetica": "Liberation Sans",
+    "Times New Roman": "Liberation Serif", "Times": "Liberation Serif",
+    "Courier New": "Liberation Mono",
+    # Japanese, in English and as Japanese Windows names them
+    "MS Gothic": CJK, "MS PGothic": CJK, "MS UI Gothic": CJK, "MS Mincho": CJK, "MS PMincho": CJK,
+    "Meiryo": CJK, "Meiryo UI": CJK, "Yu Gothic": CJK, "Yu Gothic UI": CJK, "Yu Mincho": CJK,
+    "ＭＳ ゴシック": CJK, "ＭＳ Ｐゴシック": CJK, "ＭＳ 明朝": CJK, "ＭＳ Ｐ明朝": CJK, "メイリオ": CJK, "游ゴシック": CJK,
+    # Chinese, simplified and traditional
+    "SimSun": CJK, "NSimSun": CJK, "SimHei": CJK, "Microsoft YaHei": CJK, "Microsoft YaHei UI": CJK,
+    "PMingLiU": CJK, "MingLiU": CJK, "Microsoft JhengHei": CJK, "Microsoft JhengHei UI": CJK,
+    "宋体": CJK, "新宋体": CJK, "黑体": CJK, "微软雅黑": CJK, "新細明體": CJK, "細明體": CJK, "微軟正黑體": CJK,
+    # Korean
+    "Gulim": CJK, "GulimChe": CJK, "Dotum": CJK, "DotumChe": CJK, "Batang": CJK, "BatangChe": CJK,
+    "Gungsuh": CJK, "Malgun Gothic": CJK,
+    "굴림": CJK, "굴림체": CJK, "돋움": CJK, "돋움체": CJK, "바탕": CJK, "바탕체": CJK, "궁서": CJK, "맑은 고딕": CJK,
+}
 
 
 def vkd3d_files(archive: Path) -> dict:
@@ -94,6 +131,46 @@ def media_fragment(wine: Path, made: Path, work: Path, env: dict) -> str:
     return "".join("\n" + "\n".join(registered[key]) + "\n" for key in added)
 
 
+def install_mono(wine: Path, msi: Path, made: Path, env: dict) -> str:
+    """Wine Mono installed into made; the sections it added to system.reg."""
+    before = registry_sections((made / "system.reg").read_text(encoding="latin-1"))
+    installer = made / "drive_c" / "windows" / "Installer"
+    cached = set(installer.iterdir()) if installer.is_dir() else set()
+    into = dict(env, WINEPREFIX=str(made))
+    subprocess.run([str(wine), "msiexec", "/i", str(msi), "/qn"], check=True, env=into)
+    subprocess.run([str(wine.parent / "wineserver"), "-w"], check=True, env=into)
+    after = registry_sections((made / "system.reg").read_text(encoding="latin-1"))
+    def body(lines):
+        return [line for line in lines[1:] if not line.startswith("#time=")]
+    added = [key for key, lines in after.items() if key not in before or body(lines) != body(before[key])]
+    if not any(key.startswith("[Software\\\\Microsoft\\\\NET Framework Setup\\\\NDP\\\\v4\\\\Full]") for key in added):
+        sys.exit("make-prefix: installing Wine Mono registered no .NET Framework 4")
+    if not (made / "drive_c" / "windows" / "mono" / "mono-2.0").is_dir():
+        sys.exit("make-prefix: Wine Mono's runtime is not in C:\\windows\\mono\\mono-2.0")
+    for package in set(installer.iterdir()) - cached if installer.is_dir() else ():
+        package.unlink()   # the installer's copy of the MSI (80 MB), which nothing runs again
+    return "".join("\n" + "\n".join(after[key]) + "\n" for key in added)
+
+
+def name_fonts(wine: Path, made: Path, work: Path, env: dict) -> str:
+    """FONT_REPLACEMENTS imported into made; the section that added to user.reg."""
+    def quoted(text: str) -> str:
+        return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    lines = ["Windows Registry Editor Version 5.00", "", "[HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements]"]
+    lines += [f"{quoted(name)}={quoted(font)}" for name, font in FONT_REPLACEMENTS.items()]
+    reg = work / "fonts.reg"
+    reg.write_bytes(b"\xff\xfe" + ("\r\n".join(lines) + "\r\n").encode("utf-16-le"))
+    into = dict(env, WINEPREFIX=str(made))
+    subprocess.run([str(wine), "reg", "import", str(reg)], check=True, env=into)
+    subprocess.run([str(wine.parent / "wineserver"), "-w"], check=True, env=into)
+    key = "[Software\\\\Wine\\\\Fonts\\\\Replacements]"
+    section = registry_sections((made / "user.reg").read_text(encoding="latin-1")).get(key)
+    values = [line for line in section or [] if line.startswith('"')]
+    if len(values) != len(FONT_REPLACEMENTS) or '"Arial"="Liberation Sans"' not in values:
+        sys.exit(f"make-prefix: user.reg has {len(values)} of the {len(FONT_REPLACEMENTS)} font replacements")
+    return "\n" + "\n".join(section) + "\n"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--pw", type=Path, required=True, help="the prospero-win checkout")
@@ -101,9 +178,11 @@ def main() -> int:
     parser.add_argument("--cpu-dll", type=Path, required=True, help="build_wowprospero.sh's wowprospero.dll")
     parser.add_argument("--vkd3d", type=Path, required=True, help="vkd3d-proton-<version>.tar.zst")
     parser.add_argument("--dxvk", type=Path, required=True, help="DXVK as built, with x64/ and x32/")
+    parser.add_argument("--mono", type=Path, required=True, help="wine-mono-<version>-x86.msi")
+    parser.add_argument("--mono-version", required=True, help="its version, as Wine names it")
     parser.add_argument("--out", type=Path, required=True, help="the app folder being put together")
     args = parser.parse_args()
-    for needed in (args.wine, args.cpu_dll, args.vkd3d, args.pw / "tools" / "pw_install.py"):
+    for needed in (args.wine, args.cpu_dll, args.vkd3d, args.mono, args.pw / "tools" / "pw_install.py"):
         if not needed.is_file():
             sys.exit(f"make-prefix: missing {needed}")
     sys.path.insert(0, str(args.pw / "tools"))
@@ -126,8 +205,18 @@ def main() -> int:
             sys.exit(f"make-prefix: DXVK's {dll} is not in both system32 and syswow64")
 
     media = media_fragment(args.wine, made, work, env)
+    dotnet = install_mono(args.wine, args.mono, made, env)
+    fonts = name_fonts(args.wine, made, work, env)
 
     files, dirs, links = pw_prefix.local_tree(made)
+    # Wine Mono's runtime goes beside the template, not in it (6. above).
+    runtime = "drive_c/windows/mono/"
+    mono_files = {key[len(runtime):]: path for key, path in files.items() if key.startswith(runtime)}
+    mono_dirs = {d[len(runtime):] for d in dirs if d.startswith(runtime) and d != runtime.rstrip("/")}
+    files = {key: path for key, path in files.items() if not key.startswith(runtime)}
+    dirs = {d for d in dirs if not d.startswith(runtime) and d != runtime.rstrip("/")}
+    if any(folder.startswith(runtime) or folder == runtime.rstrip("/") for folder in links):
+        sys.exit("make-prefix: Wine Mono's runtime has links, which its copy can't keep")
     files[pw_prefix.CPU_DLL] = args.cpu_dll
     files.update(vkd3d_files(args.vkd3d))
     for bits, folder in (("x64", "system32"), ("x32", "syswow64")):
@@ -167,11 +256,29 @@ def main() -> int:
         sys.exit("make-prefix: system.reg doesn't name wowprospero.dll as the WoW64 CPU")
     (args.out / "pc5" / "prefix.list").write_text("".join(f"{line}\n" for line in listed))
     (args.out / "pc5" / "prefix-media.reg").write_bytes(media.encode("latin-1"))
+    (args.out / "pc5" / "prefix-dotnet.reg").write_bytes(dotnet.encode("latin-1"))
+    (args.out / "pc5" / "prefix-fonts.reg").write_bytes(fonts.encode("latin-1"))
+    mono =args.out / "pc5" / "mono"
+    if mono.exists():
+        shutil.rmtree(mono)
+    mono_listed = []
+    for folder in sorted(d for d in mono_dirs if d):
+        (mono / folder).mkdir(parents=True, exist_ok=True)
+        mono_listed.append(folder + "/")
+    for key in sorted(mono_files):
+        (mono / key).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(mono_files[key], mono / key)
+        mono_listed.append(key)
+    (args.out / "pc5" / "mono.list").write_text("".join(f"{line}\n" for line in mono_listed))
+    (args.out / "pc5" / "mono-version.txt").write_text(f"{args.mono_version}\n")
     shutil.rmtree(work)
     shutil.rmtree(args.vkd3d.parent / (args.vkd3d.name + ".unpacked"), ignore_errors=True)
     size = sum((target / key).stat().st_size for key in listed if not key.endswith("/"))
+    mono_size = sum((mono / key).stat().st_size for key in mono_listed if not key.endswith("/"))
     print(f"make-prefix: {target}: {len(listed)} entries, {size >> 20} MB; "
-          f"prefix-media.reg: {media.count(chr(10) + '[')} keys")
+          f"prefix-media.reg: {media.count(chr(10) + '[')} keys; prefix-dotnet.reg: {dotnet.count(chr(10) + '[')} keys; "
+          f"prefix-fonts.reg: {len(FONT_REPLACEMENTS)} font names; "
+          f"Wine Mono {args.mono_version}: {len(mono_listed)} entries, {mono_size >> 20} MB")
     return 0
 
 

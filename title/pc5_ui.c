@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 /* PC5: the launcher's screens (pc5_ui.h). */
 #include "pc5_ui.h"
+#include "pc5_game.h"
 #include "pc5_home.h"
 #include "pc5_image.h"
 #include "pc5_library.h"
@@ -108,28 +109,33 @@ static int page_rows(const Pc5Settings *set, int page, SettingRow rows[PAGE_ROWS
 }
 
 /* A game's menu: its rows; Button mapping only while it plays the keyboard and mouse. */
-typedef enum GameRow { GR_PLAY, GR_CONTROLLER, GR_BUTTONS, GR_FRAMEGEN, GR_MEMORY, GR_PROGRAM, GR_HOME, GR_UNINSTALL } GameRow;
-enum { GAME_ROWS = 8 };
+typedef enum GameRow {
+    GR_PLAY, GR_CONTROLLER, GR_BUTTONS, GR_FRAMEGEN, GR_RESOLUTION, GR_MEMORY, GR_PROGRAM, GR_HOME, GR_UNINSTALL
+} GameRow;
+enum { GAME_ROWS = 9 };
+/* What a game is, for its menu's rows. */
+enum { GAME_32BIT = 1, GAME_VULKAN = 2 };
 
-/* bits: the game's, 32 or 64 (Memory is a 32-bit game's). */
-static int game_rows(const Pc5Controls *controls, int bits, GameRow rows[GAME_ROWS])
+/* kind: GAME_32BIT for Memory, GAME_VULKAN for Resolution. */
+static int game_rows(const Pc5Controls *controls, int kind, GameRow rows[GAME_ROWS])
 {
     int n = 0;
     rows[n++] = GR_PLAY;
     rows[n++] = GR_CONTROLLER;
     if (controls->mode == PC5_PAD_KEYBOARD) rows[n++] = GR_BUTTONS;
     rows[n++] = GR_FRAMEGEN;
-    if (bits == 32) rows[n++] = GR_MEMORY;
+    if (kind & GAME_VULKAN) rows[n++] = GR_RESOLUTION;
+    if (kind & GAME_32BIT) rows[n++] = GR_MEMORY;
     rows[n++] = GR_PROGRAM;
     rows[n++] = GR_HOME;
     rows[n++] = GR_UNINSTALL;
     return n;
 }
 
-static int game_row_at(const Pc5Controls *controls, int bits, GameRow row)
+static int game_row_at(const Pc5Controls *controls, int kind, GameRow row)
 {
     GameRow rows[GAME_ROWS];
-    int n = game_rows(controls, bits, rows);
+    int n = game_rows(controls, kind, rows);
     for (int i = 0; i < n; i++)
         if (rows[i] == row) return i;
     return 0;
@@ -170,7 +176,11 @@ typedef struct Cover {
 
 struct Pc5Ui {
     Pc5UiConfig config;
-    char root[PC5_PATH], template_prefix[PC5_PATH];
+    char root[PC5_PATH], template_prefix[PC5_PATH], app[PC5_PATH];
+    /* Starting a .NET game the first time: the runtime's copy (pc5_game.h). 0: not looked
+     * at yet, 1: copying, 2: nothing (more) to do. */
+    Pc5Runtime runtime;
+    int runtime_state;
     const char *const *usb_roots;
     Pc5Platform platform;
     Pc5Fonts fonts;
@@ -251,11 +261,12 @@ struct Pc5Ui {
     int composed_ready;
 };
 
-/* The bits of the game whose menu is open (64 when it isn't found). */
-static int ui_game_bits(const Pc5Ui *ui)
+/* GAME_32BIT, GAME_VULKAN of the game whose menu is open (0 when it isn't found). */
+static int ui_game_kind(const Pc5Ui *ui)
 {
     int index = pc5_library_find(&ui->library, ui->launch_id);
-    return index >= 0 && ui->library.games[index].bits == 32 ? 32 : 64;
+    if (index < 0) return 0;
+    return (ui->library.games[index].bits == 32 ? GAME_32BIT : 0) | (ui->library.games[index].vulkan ? GAME_VULKAN : 0);
 }
 
 const char *pc5_ui_screen(const Pc5Ui *ui)
@@ -277,6 +288,8 @@ static void say(Pc5Ui *ui, const char *format, ...)
 
 static void go(Pc5Ui *ui, Screen screen)
 {
+    if (ui->runtime_state == 1) pc5_runtime_end(&ui->runtime);
+    if (screen == S_LAUNCH || ui->runtime_state == 1) ui->runtime_state = 0;
     ui->screen = screen;
     ui->entered = ui->now;
     ui->drawn = 0;
@@ -512,6 +525,13 @@ Pc5Ui *pc5_ui_create(const Pc5UiConfig *config, const Pc5Platform *platform)
     ui->config = *config;
     pc5_copy(ui->root, sizeof(ui->root), config->root);
     pc5_copy(ui->template_prefix, sizeof(ui->template_prefix), config->template_prefix);
+    /* The app's folder: the template is its pc5/prefix. */
+    pc5_copy(ui->app, sizeof(ui->app), config->template_prefix);
+    {
+        size_t n = strlen(ui->app);
+        if (n > 11 && !strcmp(ui->app + n - 11, "/pc5/prefix")) ui->app[n - 11] = 0;
+        else ui->app[0] = 0;
+    }
     if (config->start) pc5_copy(ui->start, sizeof(ui->start), config->start);
     ui->usb_roots = config->usb_roots;
     ui->platform = *platform;
@@ -530,6 +550,7 @@ Pc5Ui *pc5_ui_create(const Pc5UiConfig *config, const Pc5Platform *platform)
 void pc5_ui_destroy(Pc5Ui *ui)
 {
     if (!ui) return;
+    if (ui->runtime_state == 1) pc5_runtime_end(&ui->runtime);
     covers_clear(ui);
     queue_free(ui);
     pc5_picture_free(&ui->review);
@@ -1180,9 +1201,10 @@ static void controls_changed(Pc5Ui *ui)
 {
     const Pc5Controls *k = &ui->controls;
     if (pc5_controls_save(ui->root, ui->launch_id, k)) say(ui, "PC5 problem controls %s: can't write them", ui->launch_id);
-    say(ui, "PC5 controls id=%s mode=%s left=%s right=%s speed=%d frame_generation=%d memory_32bit=%s", ui->launch_id,
-        pc5_pad_mode_name(k->mode), pc5_stick_use_name(k->stick[0]), pc5_stick_use_name(k->stick[1]), k->speed,
-        k->frame_generation, k->memory_2gb ? "2gb" : "4gb");
+    say(ui, "PC5 controls id=%s mode=%s left=%s right=%s speed=%d frame_generation=%d memory_32bit=%s resolution=%s",
+        ui->launch_id, pc5_pad_mode_name(k->mode), pc5_stick_use_name(k->stick[0]), pc5_stick_use_name(k->stick[1]),
+        k->speed, k->frame_generation, k->memory_2gb ? "2gb" : "4gb",
+        k->resolution == 2 ? "2160p" : k->resolution == 1 ? "1440p" : "1080p");
 }
 
 /* A Button mapping row moves to its next (step 1) or previous (-1) value: 1 when it changed. */
@@ -1614,7 +1636,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
     case S_PROGRAMS:
         if (list_move(&ui->menu, ui->folder.exe_count, k)) ui->dirty = 1;
         if (k & back) {
-            if (ui->program_for) ui->menu = game_row_at(&ui->controls, ui_game_bits(ui), GR_PROGRAM);
+            if (ui->program_for) ui->menu = game_row_at(&ui->controls, ui_game_kind(ui), GR_PROGRAM);
             go(ui, ui->program_for ? S_GAME_MENU : S_REVIEW);
         }
         else if (k & accept) {
@@ -1643,7 +1665,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
     case S_GAME_MENU: {
         int index = pc5_library_find(&ui->library, ui->launch_id);
         GameRow rows[GAME_ROWS];
-        int count = game_rows(&ui->controls, ui_game_bits(ui), rows);
+        int count = game_rows(&ui->controls, ui_game_kind(ui), rows);
         if (index < 0) { go(ui, S_LIBRARY); break; }
         const Pc5Game *game = &ui->library.games[index];
         if (ui->menu >= count) ui->menu = count - 1;
@@ -1657,6 +1679,11 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             ui->dirty = 1;
         } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_FRAMEGEN) {
             ui->controls.frame_generation = !ui->controls.frame_generation;
+            controls_changed(ui);
+            ui->dirty = 1;
+        } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_RESOLUTION) {
+            int step = (k & PC5_KEY_LEFT) ? -1 : 1;
+            ui->controls.resolution = (ui->controls.resolution + 3 + step) % 3;
             controls_changed(ui);
             ui->dirty = 1;
         } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_MEMORY) {
@@ -1694,7 +1721,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         PadRow row = rows[ui->pad_row];
         int bindable = row.kind == PR_BUTTON || row.kind == PR_DIRECTION;
         if (k & back) {
-            ui->menu = game_row_at(&ui->controls, ui_game_bits(ui), GR_BUTTONS);
+            ui->menu = game_row_at(&ui->controls, ui_game_kind(ui), GR_BUTTONS);
             go(ui, S_GAME_MENU);
         } else if (k & (PC5_KEY_LEFT | PC5_KEY_RIGHT)) {
             changed = pad_change(ui, row, (k & PC5_KEY_LEFT) ? -1 : 1);
@@ -1808,11 +1835,11 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
     case S_UNINSTALL_CONFIRM:
         if (k & (PC5_KEY_LEFT | PC5_KEY_RIGHT)) { ui->button = !ui->button; ui->dirty = 1; }
         if (k & back) {
-            if (ui->uninstall_back == S_GAME_MENU) ui->menu = game_row_at(&ui->controls, ui_game_bits(ui), GR_UNINSTALL);
+            if (ui->uninstall_back == S_GAME_MENU) ui->menu = game_row_at(&ui->controls, ui_game_kind(ui), GR_UNINSTALL);
             go(ui, ui->uninstall_back);
         } else if ((k & accept) && ui->now - ui->entered > 400) {
             if (!ui->button) {
-                if (ui->uninstall_back == S_GAME_MENU) ui->menu = game_row_at(&ui->controls, ui_game_bits(ui), GR_UNINSTALL);
+                if (ui->uninstall_back == S_GAME_MENU) ui->menu = game_row_at(&ui->controls, ui_game_kind(ui), GR_UNINSTALL);
                 go(ui, ui->uninstall_back);
             } else {
                 const Pc5Game *game = &ui->library.games[ui->menu];
@@ -1856,6 +1883,44 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         {
             int index = pc5_library_find(&ui->library, ui->launch_id);
             char error[PC5_ERROR] = "", title[200];
+            /* A .NET game started the first time: Wine Mono's runtime is copied to the
+             * console first, a step each frame, under "Starting". */
+            if (ui->runtime_state == 0) {
+                Pc5Info info;
+                char program[PC5_PATH];
+                ui->runtime_state = 2;
+                if (index >= 0 && ui->library.games[index].pc5 && ui->app[0] &&
+                    !pc5_info_read(ui->root, ui->launch_id, &info) &&
+                    !pc5_format(program, sizeof(program), "%s/prefixes/%s/drive_c/Games/%s/%s", ui->root, ui->launch_id,
+                                info.folder, info.exe)) {
+                    int begun = pc5_runtime_begin(&ui->runtime, ui->root, ui->app, program);
+                    if (begun < 0) {
+                        snprintf(title, sizeof(title), "%s can't start", ui->library.games[index].title);
+                        say(ui, "PC5 problem play %s: %s", ui->launch_id, ui->runtime.error);
+                        message(ui, 0, title, ui->runtime.error, S_LIBRARY);
+                        break;
+                    }
+                    if (begun > 0) {
+                        ui->runtime_state = 1;
+                        say(ui, "PC5 dotnet runtime copy to=%s entries=%u", ui->runtime.to, (unsigned)ui->runtime.total);
+                    }
+                }
+            }
+            if (ui->runtime_state == 1) {
+                int step = pc5_runtime_step(&ui->runtime, 30);
+                ui->dirty = 1;
+                if (!step) break;
+                if (step < 0) {
+                    pc5_copy(error, sizeof(error), ui->runtime.error);
+                    snprintf(title, sizeof(title), "%s can't start", index >= 0 ? ui->library.games[index].title : "The game");
+                    say(ui, "PC5 problem play %s: %s", ui->launch_id, error);
+                    message(ui, 0, title, error, S_LIBRARY);   /* ends the copy; the next start goes on with it */
+                    break;
+                }
+                say(ui, "PC5 dotnet runtime copied entries=%u", (unsigned)ui->runtime.done);
+                pc5_runtime_end(&ui->runtime);
+                ui->runtime_state = 2;
+            }
             if (index >= 0 && ui->library.games[index].pc5 &&
                 pc5_profile_refresh(ui->root, ui->launch_id, error, sizeof(error))) {
                 snprintf(title, sizeof(title), "%s can't start", ui->library.games[index].title);
@@ -2087,7 +2152,7 @@ static void library_screen(Pc5Ui *ui, Pc5Canvas *c)
     if (ui->clock[0]) pc5_text(c, &ui->fonts, PC5_FACE_LABEL, W - MARGIN, 88, C_TEXT, ui->clock, 0, 2);
     if (!ui->library.count) {
         pc5_text(c, &ui->fonts, PC5_FACE_TITLE, 960, 470, C_TEXT, "No games yet", 0, 1);
-        pc5_text(c, &ui->fonts, PC5_FACE_BODY, 960, 540, C_DIM, "Press OPTIONS and choose Install game from USB.", 0, 1);
+        pc5_text(c, &ui->fonts, PC5_FACE_BODY, 960, 540, C_DIM, "Press OPTIONS and choose Install games from USB.", 0, 1);
         Hint list[] = { { G_OPTIONS, "Settings" } };
         hints(ui, c, MARGIN, 1012, list, 1);
         return;
@@ -2176,9 +2241,9 @@ static void game_menu_screen(Pc5Ui *ui, Pc5Canvas *c, int chosen)
     char about[200];
 
     GameRow rows[GAME_ROWS];
-    int count = game_rows(&ui->controls, ui_game_bits(ui), rows);
+    int count = game_rows(&ui->controls, ui_game_kind(ui), rows);
 
-    float pitch = count > 7 ? 92 : count > 6 ? 104 : 118;   /* eight rows fit above the hints */
+    float pitch = count > 8 ? 84 : count > 7 ? 92 : count > 6 ? 104 : 118;   /* nine rows fit above the hints */
     pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 64, 182, C_DIM, game->playable ? game->detail : game->problem, 760 - 128, 0);
     for (int i = 0; i < count; i++) {
         float y = 226 + pitch * i;
@@ -2203,6 +2268,13 @@ static void game_menu_screen(Pc5Ui *ui, Pc5Canvas *c, int chosen)
                                                      : "The game's frames as it makes them",
                        ui->controls.frame_generation ? "30 \xe2\x86\x92 60 fps" : "Off");
             break;
+        case GR_RESOLUTION:
+            drawer_row(ui, c, x, y, pitch, chosen == i, "Resolution",
+                       ui->controls.resolution == 2   ? "Drawn at 4K, as the console shows it; four times the work of 1080p"
+                       : ui->controls.resolution == 1 ? "Drawn at 1440p and shown at 4K; sharper than 1080p, slower"
+                                                      : "Drawn at 1080p and shown at 4K by the console",
+                       ui->controls.resolution == 2 ? "4K" : ui->controls.resolution == 1 ? "1440p" : "1080p");
+            break;
         case GR_MEMORY:
             drawer_row(ui, c, x, y, pitch, chosen == i, "Memory",
                        ui->controls.memory_2gb ? "What Windows gives a 32-bit game that doesn't ask for more"
@@ -2226,6 +2298,7 @@ static void game_menu_screen(Pc5Ui *ui, Pc5Canvas *c, int chosen)
         }
     }
     Hint list[] = { { accept_glyph(ui), chosen < count && (rows[chosen] == GR_CONTROLLER || rows[chosen] == GR_FRAMEGEN ||
+                                                           rows[chosen] == GR_RESOLUTION || rows[chosen] == GR_MEMORY ||
                                                            rows[chosen] == GR_HOME)
                                             ? "Change" : "Choose" },
                     { back_glyph(ui), "Back" } };
@@ -2497,8 +2570,8 @@ static void review_screen(Pc5Ui *ui, Pc5Canvas *c)
         pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)ny, (int)tw, 2, 40, C_BAD, ui->folder.problem, 0);
         ny += 90;
     } else if (exe && (exe->pe.imports & PC5_IMPORT_DOTNET)) {
-        pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)ny, (int)tw, 2, 40, C_WARN,
-                      "This is a .NET program, and PC5 has no .NET yet: it may not start.", 0);
+        pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)ny, (int)tw, 2, 40, C_DIM,
+                      "A .NET program: it runs with Wine Mono, which PC5 sets up the first time a .NET game starts.", 0);
         ny += 90;
     }
     pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)ny, (int)tw, 3, 40, C_DIM,
@@ -2738,7 +2811,7 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
     }
     case S_UNINSTALL_CONFIRM: {
         const Pc5Game *game = &ui->library.games[ui->menu];
-        if (ui->uninstall_back == S_GAME_MENU) game_menu_screen(ui, c, game_row_at(&ui->controls, ui_game_bits(ui), GR_UNINSTALL));
+        if (ui->uninstall_back == S_GAME_MENU) game_menu_screen(ui, c, game_row_at(&ui->controls, ui_game_kind(ui), GR_UNINSTALL));
         snprintf(line, sizeof(line), "Uninstall %s?", game->title);
         confirm_dialog(ui, c, line,
                        "This deletes the game and all its saves and settings. There is no backup and no undo.",
@@ -2757,7 +2830,14 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
     case S_LAUNCH: {
         int index = pc5_library_find(&ui->library, ui->launch_id);
         snprintf(line, sizeof(line), "Starting %s", index >= 0 ? ui->library.games[index].title : "the game");
-        busy_dialog(ui, c, line, NULL, 0);
+        if (ui->runtime_state == 1) {
+            char count[96];
+            snprintf(count, sizeof(count), "Setting up .NET for your games, once: %u of %u", (unsigned)ui->runtime.done,
+                     (unsigned)ui->runtime.total);
+            busy_dialog(ui, c, line, count, 0);
+        } else {
+            busy_dialog(ui, c, line, NULL, 0);
+        }
         break;
     }
     default: break;

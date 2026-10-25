@@ -5,7 +5,7 @@
 A launcher for your own PC games on a PS5 that runs homebrew. PC5 shows your games as a row
 of covers, installs games from a USB drive in one copy each, and uninstalls them with their
 saves. It runs the games with [prospero-win](https://github.com/mpereiraesaa/prospero-win)
-(Wine on the PS5). The app is `PPSA11018`, its tile is called **PC5**. This is version 1.4.0.
+(Wine on the PS5). The app is `PPSA11018`, its tile is called **PC5**. This is version 1.5.0.
 
 No game is part of PC5, and PC5 downloads none: you install the games you own.
 
@@ -33,7 +33,7 @@ No game is part of PC5, and PC5 downloads none: you install the games you own.
    **touchpad** and **Options** for two seconds: the game is asked to close (it can save),
    and if it hasn't after five seconds it is ended. You are back in PC5.
 
-Each game has a menu (**△**): Play, Controller, Frame generation, Memory (32-bit games),
+Each game has a menu (**△**): Play, Controller, Frame generation, Resolution, Memory (32-bit games),
 Change program (when PC5 started the wrong `.exe`), Home screen tile and Uninstall. Uninstalling deletes the game and everything it made: its saves, its settings,
 its shader cache, its cover, its home screen tile's folder. There is no backup and no undo. The USB drive is never
 written to.
@@ -156,7 +156,7 @@ or 64-bit and what it draws with, and writes the same kind of prospero-win profi
 | The game uses | Through |
 | --- | --- |
 | Direct3D 8, 9, 10, 11 | DXVK 2.6.2-prospero2, with PC5's patch |
-| Direct3D 12 | VKD3D-Proton 2.14.1 |
+| Direct3D 12 | VKD3D-Proton 3.0.1 |
 | Vulkan | RADV directly |
 | OpenGL | Mesa Zink |
 | DirectDraw / plain Windows drawing | Wine itself |
@@ -174,12 +174,33 @@ games that carry OpenSSL 1.0.2 up to 1.0.2k, Unreal Engine 4.13 to 4.21 among th
 with it on the console's CPU.
 
 What won't run: games that need Steam, Epic, EA or Ubisoft's launcher running, online DRM
-or anti-cheat; .NET Framework games (prospero-win has no .NET yet); programs that aren't
+or anti-cheat; programs that aren't
 Windows programs. Whether a game runs is only known by trying it: PC5 makes no promise
 about any game. When a game closes before showing anything, or crashes, PC5 says so the
 next time it opens, and keeps the log. A crash's log also says where it happened: the
 faulting thread's registers and the code addresses on its stack, as module+offset
 (`speed.exe+0x1a2b3c`), which shows the game's code that led to it.
+
+**.NET Framework**: .NET games and tools (XNA through FNA, MonoGame, WinForms) run with
+[Wine Mono](https://gitlab.winehq.org/mono/wine-mono), the open-source stand-in for
+Microsoft's .NET Framework that Wine itself uses. The first time a .NET game starts, PC5
+copies its runtime (some 230 MB, once for every game) to `/data/prospero-win/pc5/`. It isn't
+Microsoft's .NET: programs mixing .NET and C++ (C++/CLI) don't run, and some WPF doesn't.
+
+**Fonts**: games that write text with Windows' fonts find Arial, Times New Roman and Courier
+New (Liberation, made to take the same space) and Windows' Chinese, Japanese and Korean
+fonts (Droid Sans Fallback), so their text has the size it was laid out for and those
+languages show instead of empty boxes. Every game has them, including those installed with
+an older PC5.
+
+**Resolution**: a game drawn with Direct3D, Vulkan or OpenGL can be drawn at 1080p, 1440p
+or 4K (**△** › Resolution, kept for that game). The console shows 1080p and 4K pictures as
+they are, and a 1440p one scaled up to 4K. A higher resolution is slower: 4K is four times
+the work of 1080p.
+
+**The game's own DLLs**: a game that carries Microsoft's Visual C++ runtimes, Direct3D
+compilers or D3DX helpers beside its program uses its own copies first, as Proton does for
+the runtimes; Wine's own stand in for those it doesn't carry.
 
 **Launch options**: a `launch.txt` beside the game's `.exe` holds its options (its first
 line that isn't a `#` comment). PC5 reads it each time the game starts.
@@ -298,11 +319,14 @@ It is built on prospero-win by mpereiraesaa and the projects it uses: Wine, DXVK
 (RADV, Zink; including mihawk-99's PS5 work), the PS5 payload SDK and boilerplate, and the
 Lapy helper. Also Wine patches from PS5_MihawkOS by mihawk-99 (LGPL 2.1 or later: thread
 alerts without a descriptor, mains power, a missing program, dnsapi, dxcore; the console's
-free memory), a logging patch from NFS Black Box by lavavex (LGPL 2.1 or later), FFmpeg (LGPL 2.1 or later), ps5-framegen by Swordpdf (GPL 3.0 or later,
+free memory), a logging patch from NFS Black Box by lavavex (LGPL 2.1 or later), Wine Mono
+(MIT, its parts under their own licences, `LICENSES/wine-mono/COPYING`), FFmpeg (LGPL 2.1 or later), ps5-framegen by Swordpdf (GPL 3.0 or later,
 its shaders from AMD's FSR3 under MIT), VKD3D-Proton (LGPL 2.1 or later), Mbed TLS (Apache 2.0 or GPL 2.0 or
 later), Mozilla's root certificates (MPL 2.0), stb_image and stb_image_write (public domain /
-MIT), the PS5 Forwarder Format by heydemoura (its tile program and psfwd, GPL 3.0 or later)
-and the Inter font (SIL OFL 1.1, `fonts/OFL.txt`). Blur5 and sahin were inspiration only; no
+MIT), the PS5 Forwarder Format by heydemoura (its tile program and psfwd, GPL 3.0 or later),
+the Liberation fonts (SIL OFL 1.1, `LICENSES/liberation-fonts/LICENSE`), Droid Sans Fallback
+(Apache 2.0, `LICENSES/droid-sans-fallback/NOTICE`) and the Inter font (SIL OFL 1.1,
+`fonts/OFL.txt`). Blur5 and sahin were inspiration only; no
 code was taken from them. See `NOTICE.md`.
 
 PC5 is not made by or connected to Sony, Valve, GOG, GitHub or the Wikimedia Foundation.

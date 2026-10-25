@@ -2,6 +2,7 @@
 /* PC5 in a game's process (pc5_game.h). */
 #include "pc5_game.h"
 #include "pc5_controls.h"
+#include "pc5_pe.h"
 #include "pw_pc5_hud.h"
 
 #include <fcntl.h>
@@ -9,6 +10,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 enum { LIGHT_EVERY_MS = 100 };
@@ -131,7 +134,8 @@ static int copy_file(const char *from, const char *to)
 
 int pc5_prefix_dxvk(const char *root, const char *prefix, const char *app)
 {
-    static const char *const dlls[] = { "d3d8.dll", "d3d9.dll", "d3d10core.dll", "d3d11.dll", "dxgi.dll" };
+    static const char *const dlls[] = { "d3d8.dll", "d3d9.dll", "d3d10core.dll", "d3d11.dll", "dxgi.dll",
+                                        "d3d12.dll", "d3d12core.dll" };   /* and VKD3D-Proton's */
     static const char *const folders[] = { "system32", "syswow64" };
     char wanted[128], has[128], note[PC5_PATH];
 
@@ -163,6 +167,201 @@ int pc5_prefix_dxvk(const char *root, const char *prefix, const char *app)
     return pc5_write_file(note, text, strlen(text)) ? -1 : 1;
 }
 
+/* text appended to the file at path: 0, or -1 */
+static int append_text(const char *path, const char *text)
+{
+    FILE *out = fopen(path, "ab");
+    int ok = out && fwrite(text, 1, strlen(text), out) == strlen(text);
+    if (out) ok = !fclose(out) && ok;
+    return ok ? 0 : -1;
+}
+
+/* The app's file at from appended to the file at to: 0, or -1 */
+static int append_file(const char *from, const char *to)
+{
+    Pc5Buf text = { 0 };
+    int status = pc5_read_file(from, &text, 64u << 20) || pc5_buf_terminate(&text) ? -1
+                                                                                    : append_text(to, (char *)text.data);
+    pc5_buf_free(&text);
+    return status;
+}
+
+/* The version of the app's Wine Mono (pc5/mono-version.txt), "" when it has none. */
+static void mono_version(const char *app, char *out, size_t size)
+{
+    char note[PC5_PATH];
+    out[0] = 0;
+    if (!pc5_format(note, sizeof(note), "%s/pc5/mono-version.txt", app)) first_line(note, out, size);
+    for (char *p = out; *p; p++)
+        if (!((*p >= '0' && *p <= '9') || *p == '.')) { out[0] = 0; break; }
+}
+
+int pc5_prefix_dotnet(const char *root, const char *prefix, const char *app)
+{
+    char version[32], system[PC5_PATH], user[PC5_PATH], from[PC5_PATH], value[PC5_PATH * 2], needle[64], text[PC5_PATH * 2 + 96];
+    int changed = 0, held;
+
+    if (!prefix || !prefix[0] || !strcmp(prefix, "default") || !app || !app[0]) return 0;
+    mono_version(app, version, sizeof(version));
+    if (!version[0]) return 0;   /* an app without Wine Mono */
+    if (pc5_format(system, sizeof(system), "%s/prefixes/%s/system.reg", root, prefix) ||
+        pc5_format(user, sizeof(user), "%s/prefixes/%s/user.reg", root, prefix))
+        return -1;
+    /* What its installer registers: the template has it, a game installed before doesn't. */
+    if ((held = file_holds(system, "NET Framework Setup\\\\NDP\\\\v4\\\\Full]")) < 0) return -1;
+    if (!held) {
+        Pc5Buf list = { 0 };
+        int failed = 0;
+        if (pc5_format(from, sizeof(from), "%s/pc5/prefix.list", app) || pc5_read_file(from, &list, 64u << 20) ||
+            pc5_buf_terminate(&list)) {
+            pc5_buf_free(&list);
+            return -1;
+        }
+        /* C:\windows\Microsoft.NET, which it puts beside the runtime (fusion.dll, mscorlib.dll, ...) */
+        static const char net[] = "drive_c/windows/Microsoft.NET/";
+        for (char *line = (char *)list.data, *next; !failed && line && *line; line = next) {
+            char to[PC5_PATH], source[PC5_PATH], part[PC5_PATH];
+            size_t n;
+            next = strchr(line, '\n');
+            if (next) *next++ = 0;
+            if (strncmp(line, net, sizeof(net) - 1)) continue;
+            n = strlen(line);
+            if (pc5_format(to, sizeof(to), "%s/prefixes/%s/%s", root, prefix, line) ||
+                pc5_format(source, sizeof(source), "%s/pc5/prefix/%s", app, line)) { failed = 1; break; }
+            if (line[n - 1] == '/') { failed = pc5_mkdirs(to) != 0; continue; }
+            if (pc5_format(part, sizeof(part), "%s.pc5-part", to) || copy_file(source, part) || rename(part, to)) {
+                unlink(part);
+                failed = 1;
+            }
+        }
+        pc5_buf_free(&list);
+        if (failed || pc5_format(from, sizeof(from), "%s/pc5/prefix-dotnet.reg", app) || append_file(from, system))
+            return -1;
+        changed = 1;
+    }
+    /* Where the runtime is: root as a Windows path on Z:, with the registry's doubled
+     * backslashes. Appended again when the version (and so the folder) changes: the last
+     * value read wins. */
+    size_t at = 0;
+    at += (size_t)snprintf(value + at, sizeof(value) - at, "Z:");
+    for (const char *p = root; *p && at + 3 < sizeof(value); p++) {
+        if (*p == '/') { value[at++] = '\\'; value[at++] = '\\'; }
+        else value[at++] = *p;
+    }
+    value[at] = 0;
+    if ((size_t)snprintf(needle, sizeof(needle), "pc5\\\\mono-%s\\\\mono-2.0\"", version) >= sizeof(needle) ||
+        (size_t)snprintf(text, sizeof(text), "\n[Software\\\\Wine\\\\Mono]\n\"RuntimePath\"=\"%s\\\\pc5\\\\mono-%s\\\\mono-2.0\"\n",
+                         value, version) >= sizeof(text))
+        return -1;
+    if ((held = file_holds(user, needle)) < 0) return -1;
+    if (!held) {
+        if (append_text(user, text)) return -1;
+        changed = 1;
+    }
+    return changed;
+}
+
+int pc5_prefix_fonts(const char *root, const char *prefix, const char *app)
+{
+    char user[PC5_PATH], from[PC5_PATH];
+
+    if (!app || !app[0]) return 0;
+    if (pc5_format(from, sizeof(from), "%s/pc5/prefix-fonts.reg", app)) return -1;
+    if (!pc5_is_file(from)) return 0;   /* an app without the fonts */
+    if (!prefix || !prefix[0] || !strcmp(prefix, "default")
+            ? pc5_format(user, sizeof(user), "%s/prefix/user.reg", root)
+            : pc5_format(user, sizeof(user), "%s/prefixes/%s/user.reg", root, prefix))
+        return -1;
+    int held = file_holds(user, "\"Arial\"=\"Liberation Sans\"");
+    if (held) return held > 0 ? 0 : -1;
+    return append_file(from, user) ? -1 : 1;
+}
+
+/* ---- the runtime's copy ------------------------------------------------------------------- */
+
+static uint64_t now_ms(void)
+{
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return (uint64_t)t.tv_sec * 1000u + (uint64_t)t.tv_nsec / 1000000u;
+}
+
+int pc5_runtime_begin(Pc5Runtime *runtime, const char *root, const char *app, const char *program)
+{
+    char version[32], done[PC5_PATH], list[PC5_PATH];
+    Pc5PeInfo pe;
+
+    memset(runtime, 0, sizeof(*runtime));
+    if (!program || pc5_pe_read(program, &pe) || !(pe.imports & PC5_IMPORT_DOTNET)) return 0;
+    mono_version(app, version, sizeof(version));
+    if (!version[0]) return 0;
+    if (pc5_format(runtime->from, sizeof(runtime->from), "%s/pc5/mono", app) ||
+        pc5_format(runtime->to, sizeof(runtime->to), "%s/pc5/mono-%s", root, version) ||
+        pc5_format(done, sizeof(done), "%s/.complete", runtime->to) ||
+        pc5_format(list, sizeof(list), "%s/pc5/mono.list", app)) {
+        snprintf(runtime->error, sizeof(runtime->error), "The app's path is too long.");
+        return -1;
+    }
+    if (pc5_exists(done)) return 0;
+    if (pc5_read_file(list, &runtime->list, 16u << 20) || pc5_buf_terminate(&runtime->list) || pc5_mkdirs(runtime->to)) {
+        snprintf(runtime->error, sizeof(runtime->error), "PC5 can't read the app's .NET runtime.");
+        pc5_buf_free(&runtime->list);
+        return -1;
+    }
+    for (size_t i = 0; i < runtime->list.len; i++) {
+        if (runtime->list.data[i] == '\n') {
+            runtime->list.data[i] = 0;
+            runtime->total++;
+        }
+    }
+    return 1;
+}
+
+int pc5_runtime_step(Pc5Runtime *runtime, int budget_ms)
+{
+    uint64_t until = now_ms() + (uint64_t)(budget_ms > 0 ? budget_ms : 1);
+    char from[PC5_PATH], to[PC5_PATH], part[PC5_PATH];
+
+    while (runtime->at < runtime->list.len) {
+        const char *line = (const char *)runtime->list.data + runtime->at;
+        size_t n = strlen(line);
+        runtime->at += n + 1;
+        if (!n) continue;
+        if (pc5_format(from, sizeof(from), "%s/%s", runtime->from, line) ||
+            pc5_format(to, sizeof(to), "%s/%s", runtime->to, line) || pc5_format(part, sizeof(part), "%s.pc5-part", to)) {
+            snprintf(runtime->error, sizeof(runtime->error), "A path of the .NET runtime is too long.");
+            return -1;
+        }
+        if (line[n - 1] == '/') {
+            if (pc5_mkdirs(to)) {
+                snprintf(runtime->error, sizeof(runtime->error), "PC5 can't make the .NET runtime's folders: is the console full?");
+                return -1;
+            }
+        } else {
+            char folder[PC5_PATH];
+            pc5_copy(folder, sizeof(folder), to);
+            *strrchr(folder, '/') = 0;   /* its folder, should the list not name it */
+            if (pc5_mkdirs(folder) || copy_file(from, part) || rename(part, to)) {
+                unlink(part);
+                snprintf(runtime->error, sizeof(runtime->error), "PC5 can't copy the .NET runtime: is the console full?");
+                return -1;
+            }
+        }
+        runtime->done++;
+        if (now_ms() >= until) return 0;
+    }
+    if (pc5_format(to, sizeof(to), "%s/.complete", runtime->to) || pc5_write_file(to, "", 0)) {
+        snprintf(runtime->error, sizeof(runtime->error), "PC5 can't finish the .NET runtime's copy.");
+        return -1;
+    }
+    return 1;
+}
+
+void pc5_runtime_end(Pc5Runtime *runtime)
+{
+    pc5_buf_free(&runtime->list);
+}
+
 void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *root, const char *app,
                     const char *prefix, const char *title)
 {
@@ -180,6 +379,10 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         if (media) say(game, "PC5 prefix media %s", media > 0 ? "registered" : "registration failed");
         int dxvk = pc5_prefix_dxvk(root, prefix, app);
         if (dxvk) say(game, "PC5 prefix DXVK %s", dxvk > 0 ? "updated" : "update failed");
+        int dotnet = pc5_prefix_dotnet(root, prefix, app);
+        if (dotnet) say(game, "PC5 prefix .NET %s", dotnet > 0 ? "updated" : "update failed");
+        int fonts = pc5_prefix_fonts(root, prefix, app);
+        if (fonts) say(game, "PC5 prefix fonts %s", fonts > 0 ? "named" : "naming failed");
     }
     /* Frame generation, which libvulkan.prx reads from the environment, and a
      * 32-bit game's address space, which Wine does (patch 0921: 4 GB unless

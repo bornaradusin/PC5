@@ -50,7 +50,14 @@ def main() -> int:
                    "win/wine/lib/wine/x86_64-unix/ntdll.prx", "win/wine/lib/wine/x86_64-unix/libvulkan.prx",
                    "win/mesa-zink/x86_64-windows/opengl32.dll", "win/mesa-zink/i386-windows/opengl32.dll",
                    "pc5/forwarder/eboot.bin", "pc5/forwarder/sce_module/libc.prx",
-                   "LICENSES/ps5-forwarder-format/LICENSE", "pc5/dxvk.txt", "LICENSES/dxvk/LICENSE"):
+                   "LICENSES/ps5-forwarder-format/LICENSE", "pc5/dxvk.txt", "LICENSES/dxvk/LICENSE",
+                   "pc5/mono.list", "pc5/mono-version.txt", "pc5/prefix-dotnet.reg",
+                   "pc5/mono/mono-2.0/bin/libmono-2.0-x86_64.dll", "pc5/mono/mono-2.0/bin/libmono-2.0-x86.dll",
+                   "LICENSES/wine-mono/COPYING", "pc5/prefix-fonts.reg",
+                   "win/wine/share/wine/fonts/LiberationSans-Regular.ttf",
+                   "win/wine/share/wine/fonts/LiberationMono-BoldItalic.ttf",
+                   "win/wine/share/wine/fonts/DroidSansFallbackFull.ttf",
+                   "LICENSES/liberation-fonts/LICENSE", "LICENSES/droid-sans-fallback/NOTICE"):
         if not (app / needed).is_file():
             problems.append(f"no {needed}")
     if (app / "dev.conf").exists():
@@ -63,14 +70,20 @@ def main() -> int:
     roots = bundle.read_text(errors="replace").count("-----BEGIN CERTIFICATE-----") if bundle.is_file() else 0
     if bundle.is_file() and roots < 100:
         problems.append(f"pc5/ca-certificates.crt holds {roots} certificates, not Mozilla's set")
-    listed = (app / "pc5" / "prefix.list").read_text().split("\n") if (app / "pc5/prefix.list").is_file() else []
-    for line in filter(None, listed):
-        if not (app / "pc5" / "prefix" / line.rstrip("/")).exists():
-            problems.append(f"pc5/prefix.list names {line}, which isn't there")
-            break
+    for name, folder in (("prefix.list", "prefix"), ("mono.list", "mono")):
+        listed = (app / "pc5" / name).read_text().split("\n") if (app / "pc5" / name).is_file() else []
+        for line in filter(None, listed):
+            if not (app / "pc5" / folder / line.rstrip("/")).exists():
+                problems.append(f"pc5/{name} names {line}, which isn't there")
+                break
+    if any(line.startswith("drive_c/windows/mono/") for line in
+           ((app / "pc5" / "prefix.list").read_text().split("\n") if (app / "pc5/prefix.list").is_file() else [])):
+        problems.append("pc5/prefix.list holds Wine Mono's runtime, which every game would copy")
     if problems:
         sys.exit("make-app: " + "; ".join(problems))
 
+    mono_note = app / "pc5" / "mono-version.txt"
+    mono_version = mono_note.read_text().strip() if mono_note.is_file() else "?"
     ca_version = subprocess.run(["dpkg-query", "-W", "-f=${Version}", "ca-certificates"], capture_output=True,
                                 text=True).stdout.strip() or "(version not recorded)"
     version = (args.repo / "title" / "pc5.h").read_text().split('#define PC5_VERSION "', 1)[1].split('"', 1)[0]
@@ -101,11 +114,26 @@ Built from <https://github.com/bornaradusin/PC5> at commit {repo_commit}:
 - `pc5/prefix`: an empty Wine prefix made by prospero-win's `pw_install.py`, with DXVK
   2.6.2-prospero2 (<https://github.com/mpereiraesaa/dxvk>, zlib licence) built with that
   repository's `patches/dxvk` (textures shared within the game's process; `pc5/dxvk.txt`
-  names the build) and VKD3D-Proton 2.14.1 (<https://github.com/HansKristian-Work/vkd3d-proton>,
+  names the build) and VKD3D-Proton 3.0.1 (<https://github.com/HansKristian-Work/vkd3d-proton>,
   LGPL 2.1 or later, its release's DLLs unchanged). Each game PC5 installs gets its own
   copy, and a game installed with an earlier DXVK gets this one's DLLs when it next starts.
   `pc5/prefix-media.reg` is what registering Wine's media decoders adds to it, which PC5
   adds to the prefix of a game installed before they were part of the app.
+- `pc5/mono`: Wine Mono {mono_version}
+  (<https://gitlab.winehq.org/mono/wine-mono>, .NET Framework for Windows programs; its
+  own code MIT, its parts under their own licences, `LICENSES/wine-mono/COPYING`),
+  installed into the prefix from its MSI and kept here once: PC5 copies it to the console's
+  `/data/prospero-win/pc5/` the first time a .NET game starts, and every game's Wine finds it
+  there. `pc5/prefix-dotnet.reg` is what installing it adds to the registry, which PC5 adds
+  to the prefix of a game installed before it was part of the app. Its source is
+  `wine-mono-*-src.tar.xz` in the sources archive.
+- `win/wine/share/wine/fonts`: beside Wine's own fonts, Liberation 2.1.5
+  (<https://github.com/liberationfonts/liberation-fonts>, SIL Open Font License 1.1,
+  `LICENSES/liberation-fonts/LICENSE`) as Ubuntu 24.04's fonts-liberation 1:2.1.5-3 ships
+  it, and Droid Sans Fallback from Android 7.1.2 (Apache 2.0,
+  `LICENSES/droid-sans-fallback/NOTICE`), unchanged. Games find them as Arial, Times New
+  Roman, Courier New and Windows' Chinese, Japanese and Korean fonts; `pc5/prefix-fonts.reg`
+  gives them those names, which PC5 adds to the prefix of a game installed before.
 - `pc5/fonts.bin`: Inter 4.1 (<https://github.com/rsms/inter>, SIL Open Font License 1.1)
   drawn into an atlas by `tools/make-font.py`.
 - `pc5/ca-certificates.crt`: Mozilla's root certificates as Debian's ca-certificates

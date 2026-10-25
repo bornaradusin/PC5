@@ -98,6 +98,10 @@ int pc5_controls_load(const char *root, const char *id, Pc5Controls *controls)
         } else if (!strcmp(name, "frame_generation")) {
             if (!strcmp(value, "on")) controls->frame_generation = 1;
             else if (!strcmp(value, "off")) controls->frame_generation = 0;
+        } else if (!strcmp(name, "resolution")) {
+            if (!strcmp(value, "1080p")) controls->resolution = 0;
+            else if (!strcmp(value, "1440p")) controls->resolution = 1;
+            else if (!strcmp(value, "2160p")) controls->resolution = 2;
         } else if (!strcmp(name, "memory_32bit")) {
             if (!strcmp(value, "2gb")) controls->memory_2gb = 1;
             else if (!strcmp(value, "4gb")) controls->memory_2gb = 0;
@@ -133,10 +137,12 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
     status = pc5_buf_printf(&text, "# This game's controller in PC5 (Triangle on the game, then Controller)\n"
                                    "mode = %s\nleft_stick = %s\nright_stick = %s\npointer_speed = %d\n"
                                    "# Triangle on the game, then Frame generation\nframe_generation = %s\n"
-                                   "# Triangle on a 32-bit game, then Memory\nmemory_32bit = %s\n",
+                                   "# Triangle on a 32-bit game, then Memory\nmemory_32bit = %s\n"
+                                   "# Triangle on the game, then Resolution\nresolution = %s\n",
                             mode_keys[controls->mode % PC5_PAD_MODES], stick_keys[controls->stick[0] % PC5_STICK_USES],
                             stick_keys[controls->stick[1] % PC5_STICK_USES], controls->speed,
-                            controls->frame_generation ? "on" : "off", controls->memory_2gb ? "2gb" : "4gb");
+                            controls->frame_generation ? "on" : "off", controls->memory_2gb ? "2gb" : "4gb",
+                            controls->resolution == 2 ? "2160p" : controls->resolution == 1 ? "1440p" : "1080p");
     for (int i = 0; i < PC5_CONTROLS && !status; i++)
         status = pc5_buf_printf(&text, "%s = %s\n", control_keys[i], pc5_keys[controls->key[i] % pc5_key_count].name);
     if (!status) status = pc5_write_file(path, text.data, text.len);

@@ -15,7 +15,7 @@ Please don't report problems in ProsperoStore comments. Comments can't hold a lo
 
 ## What to include
 
-1. **The PC5 version**, from **Settings › About PC5** (press **Options** in the library). For example `1.4.0`.
+1. **The PC5 version**, from **Settings › About PC5** (press **Options** in the library). For example `1.5.0`.
 2. **The game**: its name, and the program PC5 starts for it (shown in the game's menu under **Change program**).
 3. **What happened**: what you did, where it stopped, what was on screen, and whether it happens every time.
 4. **How the game is set up**, if you changed anything: its controller mode, frame generation, and any [launch options](Launch-options).

@@ -83,7 +83,7 @@ static void make_library(const char *root, int count, int with_covers)
         pc5_info_text(&info, text, sizeof(text));
         fmt(file, sizeof(file), "%s/prefixes/%s/pc5/info.txt", root, id);
         put(file, text);
-        pc5_profile_text(id, &info, "", NULL, text, sizeof(text));
+        pc5_profile_text(id, &info, "", NULL, NULL, text, sizeof(text));
         fmt(file, sizeof(file), "%s/profiles/%s.profile", root, id);
         put(file, text);
         if (with_covers) {

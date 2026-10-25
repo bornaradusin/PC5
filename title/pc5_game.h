@@ -98,6 +98,35 @@ int pc5_prefix_media(const char *root, const char *prefix, const char *app);
  * 1 replaced, 0 already the app's (or nothing to do), -1 when it couldn't be
  * done (tried again at the next start). */
 int pc5_prefix_dxvk(const char *root, const char *prefix, const char *app);
+/* .NET (Wine Mono, the app's pc5/mono): a prefix made before the app had it gets what its
+ * installer adds to system.reg (pc5/prefix-dotnet.reg) and C:\windows\Microsoft.NET; and
+ * every prefix's Wine is told where the runtime is (HKCU\Software\Wine\Mono RuntimePath:
+ * root/pc5/mono-<version>/mono-2.0). 1 when it changed something, 0 when it had it all,
+ * -1 on a failure (tried again next time). */
+int pc5_prefix_dotnet(const char *root, const char *prefix, const char *app);
+/* Fonts: a prefix made before the app had them gets the names Windows' fonts have for
+ * Liberation and Droid Sans Fallback (HKCU\Software\Wine\Fonts\Replacements, the app's
+ * pc5/prefix-fonts.reg, appended to user.reg). 1 when it added them, 0 when it had them or
+ * the app has none, -1 on a failure (tried again next time). */
+int pc5_prefix_fonts(const char *root, const char *prefix, const char *app);
+
+/* The runtime's copy on the console: the app can't be listed, and every game's prefix
+ * would otherwise hold its own 230 MB. Made once, from pc5/mono.list, by the first .NET
+ * game to start. */
+typedef struct Pc5Runtime {
+    char from[PC5_PATH], to[PC5_PATH];   /* app/pc5/mono, root/pc5/mono-<version> */
+    Pc5Buf list;                         /* NUL-separated, folders end in '/' */
+    size_t at;
+    uint32_t total, done;
+    char error[PC5_ERROR];
+} Pc5Runtime;
+/* program: the game's program on the console. 1 when it is a .NET program and root has no
+ * whole copy of the app's runtime: the copy begins (pc5_runtime_step); 0 when nothing is
+ * needed; -1 when the copy can't begin (error set). */
+int pc5_runtime_begin(Pc5Runtime *runtime, const char *root, const char *app, const char *program);
+/* Copies for about budget_ms: 1 when the copy is whole, 0 to go on, -1 on a failure. */
+int pc5_runtime_step(Pc5Runtime *runtime, int budget_ms);
+void pc5_runtime_end(Pc5Runtime *runtime);
 /* At the game's start: PC5's settings, the game's cover colour, its
  * prefix's media registrations and its DXVK, from root (/data/prospero-win),
  * the game's prefix and the app's folder. */

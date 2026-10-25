@@ -41,6 +41,7 @@ typedef struct Pc5Game {
     char detail[128];            /* "64-bit · DirectX 11 · 23.4 GB" */
     int pc5;                     /* installed by PC5 (has its notes) */
     int bits;                    /* 32 or 64 */
+    int vulkan;                  /* drawn through Vulkan (Direct3D, Vulkan, OpenGL), so Resolution applies */
     int playable;                /* the profile is valid and its prefix is there */
     char problem[128];           /* why not, when it isn't */
 } Pc5Game;
@@ -57,9 +58,14 @@ int pc5_library_find(const Pc5Library *library, const char *id);
 
 int pc5_info_read(const char *root, const char *id, Pc5Info *info);
 int pc5_info_text(const Pc5Info *info, char *out, size_t size);
-/* The profile prospero-win reads for a PC5 game; arguments may be "". */
-int pc5_profile_text(const char *id, const Pc5Info *info, const char *arguments, const Pc5Controls *controls, char *out,
-                     size_t size);
+/* The profile prospero-win reads for a PC5 game; arguments may be "", own_dlls NULL or
+ * "" (pc5_own_dlls: the game's own Microsoft DLLs, which then go first). */
+int pc5_profile_text(const char *id, const Pc5Info *info, const char *arguments, const Pc5Controls *controls,
+                     const char *own_dlls, char *out, size_t size);
+/* The Microsoft DLLs (Visual C++ runtimes, Direct3D compilers, D3DX) the game's program
+ * folder holds, lower case and without .dll, "," between them, in name order, as many as
+ * fit; how many were found. */
+int pc5_own_dlls(const char *folder, char *out, size_t size);
 /* Writes the game's profile again, with the launch options in launch.txt
  * beside its program (so options can be changed without reinstalling). */
 int pc5_profile_refresh(const char *root, const char *id, char *error, size_t size);

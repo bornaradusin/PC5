@@ -123,10 +123,82 @@ static void windows_path(const char *folder, const char *relative, int keep_file
     else snprintf(out, size, "C:\\Games\\%s", folder);
 }
 
-int pc5_profile_text(const char *id, const Pc5Info *info, const char *arguments, const Pc5Controls *controls, char *out,
-                     size_t size)
+/* A Microsoft DLL a game may carry, which then goes first (native, then Wine's builtin):
+ * the Visual C++ runtimes Proton sets so for every game (its wine.inf's ProtonOverrides;
+ * not the *80 and *90 ones, which would need Wine's manifests gone), and the Direct3D
+ * compilers and D3DX helpers, whose own copies games ship and Wine's lack parts of. name
+ * is lower case, without .dll. */
+static int own_dll(const char *name)
 {
-    char exe[PC5_PATH + 32], cwd[PC5_PATH + 32], options[600] = "", input[1600];
+    static const char *const runtimes[] = {
+        "atl100", "msvcp100", "msvcr100", "vcomp100", "atl110", "msvcp110", "msvcr110", "vcomp110", "atl120",
+        "msvcp120", "msvcr120", "vcomp120", "api-ms-win-crt-conio-l1-1-0", "api-ms-win-crt-heap-l1-1-0",
+        "api-ms-win-crt-locale-l1-1-0", "api-ms-win-crt-math-l1-1-0", "api-ms-win-crt-runtime-l1-1-0",
+        "api-ms-win-crt-stdio-l1-1-0", "api-ms-win-crt-time-l1-1-0", "atl140", "concrt140", "msvcp140", "msvcp140_1",
+        "msvcp140_2", "msvcp140_atomic_wait", "msvcp140_codecvt_ids", "msvcr140", "ucrtbase", "vcomp140",
+        "vcruntime140", "vcruntime140_1",
+    };
+    static const char *const families[] = { "d3dcompiler_", "d3dx9_", "d3dx10_", "d3dx11_" };
+    for (size_t i = 0; i < sizeof(runtimes) / sizeof(runtimes[0]); i++)
+        if (!strcmp(name, runtimes[i])) return 1;
+    for (size_t i = 0; i < sizeof(families) / sizeof(families[0]); i++) {
+        size_t n = strlen(families[i]);
+        if (!strncmp(name, families[i], n) && name[n] >= '0' && name[n] <= '9') return 1;
+    }
+    return 0;
+}
+
+static int by_name(const void *a, const void *b)
+{
+    return strcmp(*(const char *const *)a, *(const char *const *)b);
+}
+
+int pc5_own_dlls(const char *folder, char *out, size_t size)
+{
+    char names[64][40], *sorted[64];
+    size_t count = 0, used = 0;
+    DIR *dir;
+    struct dirent *entry;
+
+    if (size) out[0] = 0;
+    if (!size || !(dir = opendir(folder))) return 0;
+    while ((entry = readdir(dir)) && count < 64) {
+        size_t n = strlen(entry->d_name);
+        if (n < 5 || n - 4 >= sizeof(names[0]) || !pc5_ends_with_ci(entry->d_name, ".dll")) continue;
+        for (size_t i = 0; i < n - 4; i++)
+            names[count][i] = (char)((entry->d_name[i] >= 'A' && entry->d_name[i] <= 'Z') ? entry->d_name[i] + 32
+                                                                                          : entry->d_name[i]);
+        names[count][n - 4] = 0;
+        if (own_dll(names[count])) {
+            sorted[count] = names[count];
+            count++;
+        }
+    }
+    closedir(dir);
+    qsort(sorted, count, sizeof(sorted[0]), by_name);
+    for (size_t i = 0; i < count; i++) {
+        size_t n = strlen(sorted[i]);
+        if (i && !strcmp(sorted[i], sorted[i - 1])) continue;
+        if (used + n + 2 > size) break;
+        if (used) out[used++] = ',';
+        memcpy(out + used, sorted[i], n + 1);
+        used += n;
+    }
+    return (int)count;
+}
+
+/* The desktop of a game drawn through Vulkan (Direct3D, Vulkan, OpenGL), as its
+ * Resolution says; others draw on the CPU at 1080p. */
+static const char *desktop_size(const Pc5Info *info, const Pc5Controls *controls)
+{
+    if (info->api <= PC5_API_DDRAW || !controls) return "1920x1080";
+    return controls->resolution == 2 ? "3840x2160" : controls->resolution == 1 ? "2560x1440" : "1920x1080";
+}
+
+int pc5_profile_text(const char *id, const Pc5Info *info, const char *arguments, const Pc5Controls *controls,
+                     const char *own_dlls, char *out, size_t size)
+{
+    char exe[PC5_PATH + 32], cwd[PC5_PATH + 32], options[600] = "", input[1600], dlls[260];
     Pc5Controls defaults;
     const char *graphics = info->api == PC5_API_OPENGL ? "opengl" : info->api <= PC5_API_DDRAW ? "gdi" : "dxvk";
     /* Direct3D 8 to 11 and DXGI through DXVK, as prospero-win's own profiles. Direct3D 12
@@ -146,6 +218,15 @@ int pc5_profile_text(const char *id, const Pc5Info *info, const char *arguments,
         controls = &defaults;
     }
     if (pc5_controls_input(controls, input, sizeof(input))) return -1;
+    /* prospero-win takes 256 characters of overrides: the game's own DLLs fill what is left. */
+    if (pc5_format(dlls, sizeof(dlls), "%s", overrides)) return -1;
+    if (own_dlls && own_dlls[0]) {
+        size_t base = strlen(dlls), room = 256 > base + 5 ? 256 - base - 5 : 0, n = strlen(own_dlls);
+        while (n > room) {   /* whole names only */
+            do n--; while (n && own_dlls[n] != ',');
+        }
+        if (n) snprintf(dlls + base, sizeof(dlls) - base, ";%.*s=n,b", (int)n, own_dlls);
+    }
     return pc5_format(out, size,
         "; %s, installed by PC5 from the folder \"%s\".\n"
         "; PC5 writes this file again each time the game starts: launch options go in\n"
@@ -163,12 +244,25 @@ int pc5_profile_text(const char *id, const Pc5Info *info, const char *arguments,
         "graphics = %s\n"
         "\n"
         "[display]\n"
-        "desktop = 1920x1080\n"
+        "desktop = %s\n"
         "show_fps = false\n"
         "\n"
         "%s",
-        info->title, info->folder, id, info->title, exe, cwd, options, overrides, id,
-        info->bits == 64 ? "pe64" : "pe32", graphics, input);
+        info->title, info->folder, id, info->title, exe, cwd, options, dlls, id,
+        info->bits == 64 ? "pe64" : "pe32", graphics, desktop_size(info, controls), input);
+}
+
+/* The folder the game's program is in, on the console. */
+static void program_folder(const char *root, const char *id, const Pc5Info *info, char *out, size_t size)
+{
+    char dir[PC5_PATH];
+    char *slash;
+
+    pc5_copy(dir, sizeof(dir), info->exe);
+    slash = strrchr(dir, '/');
+    if (slash) *slash = 0; else dir[0] = 0;
+    if (pc5_format(out, size, "%s/prefixes/%s/drive_c/Games/%s%s%s", root, id, info->folder, dir[0] ? "/" : "", dir))
+        out[0] = 0;
 }
 
 /* The first line of launch.txt that says something: launch options. */
@@ -273,7 +367,7 @@ int pc5_profile_refresh(const char *root, const char *id, char *error, size_t si
 {
     Pc5Info info;
     Pc5Controls controls;
-    char arguments[512], path[PC5_PATH], file[PC5_ID + 16];
+    char arguments[512], path[PC5_PATH], file[PC5_ID + 16], folder[PC5_PATH], own[256];
     static char text[4096];
     Pc5Buf old = { 0 };
     int status = 0;
@@ -284,8 +378,10 @@ int pc5_profile_refresh(const char *root, const char *id, char *error, size_t si
     }
     launch_options(root, id, &info, arguments, sizeof(arguments));
     pc5_controls_load(root, id, &controls);
+    program_folder(root, id, &info, folder, sizeof(folder));
+    pc5_own_dlls(folder, own, sizeof(own));
     snprintf(file, sizeof(file), "%s.profile", id);
-    if (pc5_profile_text(id, &info, arguments, &controls, text, sizeof(text)) ||
+    if (pc5_profile_text(id, &info, arguments, &controls, own, text, sizeof(text)) ||
         pc5_format(path, sizeof(path), "%s/profiles/%s", root, file)) {
         snprintf(error, size, "The game's path is too long for Windows.");
         return -1;
@@ -361,11 +457,13 @@ int pc5_library_load(const char *root, Pc5Library *library)
         if (!strcmp(app->prefix, app->id) && !pc5_info_read(root, app->id, &info)) {
             game->pc5 = 1;
             game->bits = info.bits == 64 ? 64 : 32;
+            game->vulkan = info.api > PC5_API_DDRAW;
             pc5_detail_text(info.bits, info.api, info.bytes, game->detail, sizeof(game->detail));
         } else {
             Pc5Api api = app->graphics == PW_APP_GRAPHICS_ZINK ? PC5_API_OPENGL :
                          app->graphics == PW_APP_GRAPHICS_DXVK ? PC5_API_D3D9 : PC5_API_GDI;
             game->bits = app->architecture == PW_APP_ARCH_PE64 ? 64 : 32;
+            game->vulkan = 0;   /* not PC5's: its profile's desktop is its own */
             snprintf(game->detail, sizeof(game->detail), "%d-bit \xc2\xb7 %s",
                      game->bits,
                      api == PC5_API_D3D9 ? "DirectX" : pc5_api_name(api));

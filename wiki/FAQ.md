@@ -6,7 +6,7 @@ Short answers to questions people often ask about PC5, with links to the pages t
 No. PC5 contains no games and downloads none. You install the games you own, from a USB drive.
 
 **Which games run?**
-Whether a game runs is only known by trying it. PC5 makes no promise about any game. Games that need Steam, Epic, EA or Ubisoft's launcher running, online DRM or anti-cheat don't run, and nor do .NET Framework games. See [What runs and what doesn't](Installing-games#what-runs-and-what-doesnt).
+Whether a game runs is only known by trying it. PC5 makes no promise about any game. Games that need Steam, Epic, EA or Ubisoft's launcher running, online DRM or anti-cheat don't run. See [What runs and what doesn't](Installing-games#what-runs-and-what-doesnt).
 
 **Is there a list of games that work?**
 Yes: the [Game compatibility list](Game-compatibility), made from players' reports in Discussions. To add a game, open [the report form](https://github.com/bornaradusin/PC5/discussions/new?category=game-compatibility), fill it in and post it: the game appears in the list within a minute or two.
@@ -50,6 +50,15 @@ Yes. A USB keyboard and mouse work in every controller mode. For games without c
 
 **Can I make a game run at 60 fps?**
 For a game that keeps 30 fps, turn on **△ › Frame generation**. It shows the game at 60 fps with frames made in between. See [Frame generation](Playing-games#frame-generation).
+
+**Do .NET games run?**
+Since 1.5.0, yes: .NET Framework games and tools (XNA through FNA, MonoGame, WinForms) run with Wine Mono, the open-source stand-in for Microsoft's .NET that Wine itself uses. The first time a .NET game starts, PC5 sets it up once for every game. Programs that mix .NET and C++ (C++/CLI) don't run, and some WPF doesn't. See [.NET games](Playing-games#net-games).
+
+**Can a game run at 1440p or 4K?**
+Yes, a game drawn with Direct3D, Vulkan or OpenGL: **△ › Resolution**. 1080p is the default. 4K is four times the work of 1080p, so a game that is already slow gets slower. See [Resolution](Playing-games#resolution).
+
+**A game shows empty boxes instead of Japanese, Chinese or Korean text.**
+Update PC5. Since 1.5.0, games find Windows' Chinese, Japanese and Korean fonts (Droid Sans Fallback stands in for them), and Arial, Times New Roman and Courier New (Liberation). A game that draws text with its own font isn't changed.
 
 **A game says the PC doesn't meet its minimum specs, or has too little memory.**
 Update PC5. Before 1.4.0, games were told the console had about half a gigabyte of memory. From 1.4.0 they're told it has 16 GB, and how much of it is free.

@@ -69,7 +69,7 @@ The review screen shows what PC5 is about to do:
 | □ | Choose another program, when the folder has more than one |
 | ○ | Back to the folder list |
 
-If the program is a .NET program, the review screen warns that it may not start: prospero-win has no .NET yet.
+If the program is a .NET program, the review screen says so: it runs with Wine Mono, which PC5 sets up the first time a .NET game starts. See [.NET games](Playing-games#net-games).
 
 ## Installing several games in a row
 
@@ -143,10 +143,15 @@ PC5 handles every game the same way. It reads the game's program to see whether 
 | The game uses | It runs through |
 | --- | --- |
 | Direct3D 8, 9, 10, 11 | DXVK 2.6.2-prospero2, with PC5's patch |
-| Direct3D 12 | VKD3D-Proton 2.14.1 |
+| Direct3D 12 | VKD3D-Proton 3.0.1 |
 | Vulkan | RADV directly |
 | OpenGL | Mesa Zink |
 | DirectDraw or plain Windows drawing | Wine itself |
+| .NET Framework | Wine Mono 11.3.0 |
+
+Games that write text with Windows' fonts get Liberation for Arial, Times New Roman and Courier New (made to take the same space), and Droid Sans Fallback for Windows' Chinese, Japanese and Korean fonts.
+
+A game that carries Microsoft's Visual C++ runtimes, Direct3D shader compilers (`d3dcompiler_*.dll`) or D3DX helpers (`d3dx9_*.dll`, `d3dx10_*.dll`, `d3dx11_*.dll`) beside its program uses its own copies first, as Proton does. Wine's own stand in for those it doesn't carry.
 
 Games' videos and compressed sound (Media Foundation, DirectShow, Windows Media and DMOs) are decoded with FFmpeg: H.264, WMV and VC-1, MPEG-1 and 2, AAC, WMA, MP3 and others.
 
@@ -154,7 +159,7 @@ What won't run:
 
 - Games that need Steam, Epic, EA or Ubisoft's launcher running.
 - Games with online DRM or anti-cheat.
-- .NET Framework games (prospero-win has no .NET yet).
+- .NET programs that mix .NET and C++ (C++/CLI), and some WPF programs. Other .NET games run with Wine Mono.
 - Programs that aren't Windows programs.
 
 Whether a game runs is only known by trying it. PC5 makes no promise about any game. If a game doesn't start or crashes, PC5 keeps its log: see [Reporting a problem](Reporting-a-problem).

@@ -561,7 +561,7 @@ static void test_install(void)
         Pc5Info twelve = info;
         static char text[4096];
         twelve.api = PC5_API_D3D12;
-        CHECK(!pc5_profile_text("twelve", &twelve, "", NULL, text, sizeof(text)) &&
+        CHECK(!pc5_profile_text("twelve", &twelve, "", NULL, NULL, text, sizeof(text)) &&
               strstr(text, "dll_overrides = d3d8,d3d9,d3d10core,d3d11,d3d12,d3d12core,dxgi=n\n"), "d3d12 overrides");
     }
     /* Changed launch options take effect at the next start. */
@@ -573,6 +573,66 @@ static void test_install(void)
         pw_wine_library_load(pw, root);
         profile = pw_wine_library_find(pw, "neondrift");
         CHECK(profile && !strcmp(profile->app.arguments, "-fullscreen"), "new options");
+    }
+    /* The game's own Microsoft DLLs go first (native, then builtin), in name order, the
+     * others Wine's; a Resolution of 4K or 1440p is the game's desktop. */
+    path(file, sizeof(file), "%s/neondrift/drive_c/Games/NeonDrift/MSVCP140.dll", prefixes);
+    write_text(file, "MZ");
+    path(file, sizeof(file), "%s/neondrift/drive_c/Games/NeonDrift/d3dcompiler_47.dll", prefixes);
+    write_text(file, "MZ");
+    path(file, sizeof(file), "%s/neondrift/drive_c/Games/NeonDrift/xinput1_3.dll", prefixes);
+    write_text(file, "MZ");
+    path(file, sizeof(file), "%s/neondrift/drive_c/Games/NeonDrift/d3dx9.dll", prefixes);
+    write_text(file, "MZ");
+    {
+        char error[PC5_ERROR], own[256];
+        Pc5Controls controls;
+        path(file, sizeof(file), "%s/neondrift/drive_c/Games/NeonDrift", prefixes);
+        CHECK(pc5_own_dlls(file, own, sizeof(own)) == 2 && !strcmp(own, "d3dcompiler_47,msvcp140"), "own DLLs: %s", own);
+        pc5_controls_load(root, "neondrift", &controls);
+        controls.resolution = 2;
+        pc5_controls_save(root, "neondrift", &controls);
+        CHECK(!pc5_profile_refresh(root, "neondrift", error, sizeof(error)), "refresh again");
+        pw_wine_library_load(pw, root);
+        profile = pw_wine_library_find(pw, "neondrift");
+        CHECK(profile && !strcmp(profile->app.dll_overrides,
+                                 "d3d8,d3d9,d3d10core,d3d11,dxgi=n;d3d12,d3d12core=b;d3dcompiler_47,msvcp140=n,b"),
+              "overrides with its own DLLs: %s", profile ? profile->app.dll_overrides : "");
+        CHECK(profile && profile->display.width == 3840 && profile->display.height == 2160, "4K desktop");
+        controls.resolution = 1;
+        pc5_controls_save(root, "neondrift", &controls);
+        pc5_profile_refresh(root, "neondrift", error, sizeof(error));
+        pw_wine_library_load(pw, root);
+        profile = pw_wine_library_find(pw, "neondrift");
+        CHECK(profile && profile->display.width == 2560 && profile->display.height == 1440, "1440p desktop");
+        controls.resolution = 0;
+        pc5_controls_save(root, "neondrift", &controls);
+        pc5_profile_refresh(root, "neondrift", error, sizeof(error));
+        pw_wine_library_load(pw, root);
+        profile = pw_wine_library_find(pw, "neondrift");
+        CHECK(profile && profile->display.width == 1920, "and 1080p again");
+    }
+    /* A game drawn without Vulkan stays at 1080p, whatever its Resolution says. */
+    {
+        Pc5Info flat = info;
+        Pc5Controls controls;
+        static char text[4096];
+        pc5_controls_default(&controls);
+        controls.resolution = 2;
+        flat.api = PC5_API_DDRAW;
+        CHECK(!pc5_profile_text("flat", &flat, "", &controls, NULL, text, sizeof(text)) && strstr(text, "desktop = 1920x1080\n"),
+              "DirectDraw at 1080p");
+    }
+    /* Overrides stay within prospero-win's 256 characters: whole names only. */
+    {
+        static char text[4096], many[400];
+        snprintf(many, sizeof(many), "%s", "api-ms-win-crt-conio-l1-1-0,api-ms-win-crt-heap-l1-1-0,api-ms-win-crt-locale-l1-1-0,"
+                 "api-ms-win-crt-math-l1-1-0,api-ms-win-crt-runtime-l1-1-0,api-ms-win-crt-stdio-l1-1-0,"
+                 "api-ms-win-crt-time-l1-1-0,msvcp140,vcruntime140");
+        CHECK(!pc5_profile_text("many", &info, "", NULL, many, text, sizeof(text)), "long list");
+        char *line = strstr(text, "dll_overrides = "), *end = line ? strchr(line, '\n') : NULL;
+        CHECK(line && end && end - line - 16 <= 256 && !memcmp(end - 4, "=n,b", 4) && *(end - 5) != ',', "cut at a name: %.*s",
+              line && end ? (int)(end - line) : 0, line ? line : "");
     }
 
     /* More games: an engine game (a second id from the same name isn't needed), an OpenGL one. */
@@ -1129,16 +1189,122 @@ static int fake_memory(uint64_t *used, uint64_t *total)
 
 /* A game's prefix from before winegstreamer gets its registrations once. */
 /* An installed game's DXVK follows the app's: replaced once when the app names another. */
+/* .NET: what an older game's prefix lacks, the runtime's path, and the runtime's one copy. */
+static void test_dotnet(void)
+{
+    char root[PC5_PATH], app[PC5_PATH], file[PC5_PATH], program[PC5_PATH];
+    Pc5Buf text = { 0 };
+    Pc5Runtime runtime;
+
+    path(root, sizeof(root), "%s/dotnet-root", work);
+    path(app, sizeof(app), "%s/dotnet-app", work);
+    path(file, sizeof(file), "%s/prefixes/game/system.reg", root);
+    write_text(file, "WINE REGISTRY Version 2\n");
+    path(file, sizeof(file), "%s/prefixes/game/user.reg", root);
+    write_text(file, "WINE REGISTRY Version 2\n");
+    CHECK(pc5_prefix_dotnet(root, "game", app) == 0, "an app without Wine Mono: nothing done");
+    path(file, sizeof(file), "%s/pc5/mono-version.txt", app);
+    write_text(file, "11.3.0\n");
+    path(file, sizeof(file), "%s/pc5/prefix.list", app);
+    write_text(file, "drive_c/windows/\ndrive_c/windows/Microsoft.NET/\ndrive_c/windows/Microsoft.NET/Framework/\n"
+                     "drive_c/windows/Microsoft.NET/Framework/fusion.dll\ndrive_c/windows/system32/kernel32.dll\n");
+    path(file, sizeof(file), "%s/pc5/prefix/drive_c/windows/Microsoft.NET/Framework/fusion.dll", app);
+    write_text(file, "fusion");
+    path(file, sizeof(file), "%s/pc5/prefix-dotnet.reg", app);
+    write_text(file, "\n[Software\\\\Microsoft\\\\NET Framework Setup\\\\NDP\\\\v4\\\\Full] 1792921398\n\"Install\"=dword:00000001\n");
+    CHECK(pc5_prefix_dotnet(root, "game", app) == 1, "an older game's prefix gets .NET");
+    path(file, sizeof(file), "%s/prefixes/game/system.reg", root);
+    CHECK(!pc5_read_file(file, &text, 4096) && !pc5_buf_terminate(&text) &&
+          strstr((char *)text.data, "NDP\\\\v4\\\\Full] 1792921398\n\"Install\""), "its registry");
+    pc5_buf_free(&text);
+    path(file, sizeof(file), "%s/prefixes/game/drive_c/windows/Microsoft.NET/Framework/fusion.dll", root);
+    CHECK(pc5_is_file(file), "its files");
+    path(file, sizeof(file), "%s/prefixes/game/drive_c/windows/system32/kernel32.dll", root);
+    CHECK(!pc5_exists(file), "and nothing else of the template");
+    path(file, sizeof(file), "%s/prefixes/game/user.reg", root);
+    CHECK(!pc5_read_file(file, &text, 4096) && !pc5_buf_terminate(&text) &&
+          strstr((char *)text.data, "[Software\\\\Wine\\\\Mono]\n\"RuntimePath\"=\"Z:\\\\") &&
+          strstr((char *)text.data, "dotnet-root\\\\pc5\\\\mono-11.3.0\\\\mono-2.0\"\n"), "the runtime's path: %s",
+          text.len ? (char *)text.data : "");
+    pc5_buf_free(&text);
+    CHECK(pc5_prefix_dotnet(root, "game", app) == 0, "only once");
+    path(file, sizeof(file), "%s/pc5/mono-version.txt", app);
+    write_text(file, "11.4.0\n");
+    CHECK(pc5_prefix_dotnet(root, "game", app) == 1, "a new version: the new path");
+    path(file, sizeof(file), "%s/prefixes/game/user.reg", root);
+    CHECK(!pc5_read_file(file, &text, 4096) && !pc5_buf_terminate(&text) && strstr((char *)text.data, "mono-11.4.0"),
+          "the new path");
+    pc5_buf_free(&text);
+    path(file, sizeof(file), "%s/prefixes/game/system.reg", root);
+    {
+        int times = 0;
+        if (!pc5_read_file(file, &text, 4096) && !pc5_buf_terminate(&text))
+            for (const char *at = (char *)text.data; (at = strstr(at, "NDP")); at++) times++;
+        CHECK(times == 1, "the registry once: %d", times);
+        pc5_buf_free(&text);
+    }
+    CHECK(pc5_prefix_dotnet(root, "default", app) == 0, "the default prefix is left alone");
+
+    /* Fonts: the names Windows' fonts have, added once to an older prefix's user.reg. */
+    CHECK(pc5_prefix_fonts(root, "game", app) == 0, "an app without the fonts: nothing done");
+    path(file, sizeof(file), "%s/pc5/prefix-fonts.reg", app);
+    write_text(file, "\n[Software\\\\Wine\\\\Fonts\\\\Replacements] 1792921398\n#time=1dc4\n"
+                     "\"Arial\"=\"Liberation Sans\"\n\"MS Gothic\"=\"Droid Sans Fallback\"\n");
+    CHECK(pc5_prefix_fonts(root, "game", app) == 1, "an older game's prefix gets the font names");
+    CHECK(pc5_prefix_fonts(root, "game", app) == 0, "only once");
+    path(file, sizeof(file), "%s/prefixes/game/user.reg", root);
+    {
+        int times = 0;
+        if (!pc5_read_file(file, &text, 8192) && !pc5_buf_terminate(&text))
+            for (const char *at = (char *)text.data; (at = strstr(at, "Fonts\\\\Replacements]")); at++) times++;
+        CHECK(times == 1 && strstr((char *)text.data, "\"MS Gothic\"=\"Droid Sans Fallback\"\n") &&
+              strstr((char *)text.data, "mono-11.4.0"), "the names once, after what it had: %d", times);
+        pc5_buf_free(&text);
+    }
+    CHECK(pc5_prefix_fonts(root, "missing", app) == -1, "no prefix: nothing done");
+
+    /* The runtime: copied once, for a .NET program only. */
+    path(file, sizeof(file), "%s/pc5/mono.list", app);
+    write_text(file, "mono-2.0/\nmono-2.0/bin/\nmono-2.0/bin/libmono-2.0-x86_64.dll\nmono-2.0/lib/mono/4.5/mscorlib.dll\n");
+    path(file, sizeof(file), "%s/pc5/mono/mono-2.0/bin/libmono-2.0-x86_64.dll", app);
+    write_text(file, "libmono");
+    path(file, sizeof(file), "%s/pc5/mono/mono-2.0/lib/mono/4.5/mscorlib.dll", app);
+    write_text(file, "mscorlib");
+    path(program, sizeof(program), "%s/game64.exe", programs);
+    CHECK(pc5_runtime_begin(&runtime, root, app, program) == 0, "not a .NET program: nothing to copy");
+    path(program, sizeof(program), "%s/dotnet.exe", programs);
+    CHECK(pc5_runtime_begin(&runtime, root, app, program) == 1 && runtime.total == 4, "a .NET program: %u entries",
+          (unsigned)runtime.total);
+    int step = 0, steps = 0;
+    while (!(step = pc5_runtime_step(&runtime, 1)) && steps < 100) steps++;
+    pc5_runtime_end(&runtime);
+    path(file, sizeof(file), "%s/pc5/mono-11.4.0/mono-2.0/lib/mono/4.5/mscorlib.dll", root);
+    CHECK(step == 1 && runtime.done == 4 && !pc5_read_file(file, &text, 4096) && text.len == 8, "copied: %d %u", step,
+          (unsigned)runtime.done);
+    pc5_buf_free(&text);
+    path(file, sizeof(file), "%s/pc5/mono-11.4.0/.complete", root);
+    CHECK(pc5_is_file(file), "and marked whole");
+    CHECK(pc5_runtime_begin(&runtime, root, app, program) == 0, "once");
+    path(file, sizeof(file), "%s/pc5/mono-11.4.0/.complete", root);
+    unlink(file);
+    path(file, sizeof(file), "%s/pc5/mono/mono-2.0/bin/libmono-2.0-x86_64.dll", app);
+    unlink(file);
+    CHECK(pc5_runtime_begin(&runtime, root, app, program) == 1, "a copy cut short is made again");
+    while (!(step = pc5_runtime_step(&runtime, 1)) && steps < 200) steps++;
+    pc5_runtime_end(&runtime);
+    CHECK(step == -1 && strstr(runtime.error, "can't copy"), "a missing file fails: %s", runtime.error);
+}
+
 static void test_prefix_dxvk(void)
 {
     char root[PC5_PATH], app[PC5_PATH], file[PC5_PATH];
-    static const char *const dlls[] = { "d3d8", "d3d9", "d3d10core", "d3d11", "dxgi" };
+    static const char *const dlls[] = { "d3d8", "d3d9", "d3d10core", "d3d11", "dxgi", "d3d12", "d3d12core" };
     Pc5Buf text = { 0 };
 
     path(root, sizeof(root), "%s/dxvk-root", work);
     path(app, sizeof(app), "%s/dxvk-app", work);
     for (int f = 0; f < 2; f++)
-        for (int d = 0; d < 5; d++) {
+        for (int d = 0; d < 7; d++) {
             char data[64];
             snprintf(data, sizeof(data), "old %s %d", dlls[d], f);
             path(file, sizeof(file), "%s/prefixes/game/drive_c/windows/%s/%s.dll", root, f ? "syswow64" : "system32", dlls[d]);
@@ -1153,6 +1319,10 @@ static void test_prefix_dxvk(void)
     CHECK(pc5_prefix_dxvk(root, "game", app) == 1, "replaced");
     path(file, sizeof(file), "%s/prefixes/game/drive_c/windows/syswow64/d3d11.dll", root);
     CHECK(!pc5_read_file(file, &text, 4096) && text.len == 11 && !memcmp(text.data, "new d3d11 1", 11), "the app's DLL");
+    pc5_buf_free(&text);
+    path(file, sizeof(file), "%s/prefixes/game/drive_c/windows/system32/d3d12core.dll", root);
+    CHECK(!pc5_read_file(file, &text, 4096) && text.len == 15 && !memcmp(text.data, "new d3d12core 0", 15),
+          "and VKD3D-Proton's");
     pc5_buf_free(&text);
     path(file, sizeof(file), "%s/prefixes/game/drive_c/windows/syswow64/d3d8.dll", root);
     CHECK(!pc5_exists(file), "none added where the game's Windows had none");
@@ -2002,6 +2172,13 @@ static void test_screens(const char *fonts)
           "Frame generation on: %s", pc5_ui_screen(ui));
     press(ui, PC5_KEY_RIGHT, &canvas);
     CHECK(controls_has("orbital-nine", "frame_generation = off\n"), "and off");
+    press(ui, PC5_KEY_DOWN, &canvas);       /* Resolution: 1440p, 4K, back round to 1080p */
+    press(ui, PC5_KEY_ACCEPT, &canvas);
+    CHECK(controls_has("orbital-nine", "resolution = 1440p\n"), "Resolution 1440p");
+    press(ui, PC5_KEY_RIGHT, &canvas);
+    CHECK(controls_has("orbital-nine", "resolution = 2160p\n"), "then 4K");
+    press(ui, PC5_KEY_RIGHT, &canvas);
+    CHECK(controls_has("orbital-nine", "resolution = 1080p\n"), "then 1080p again");
     press(ui, PC5_KEY_DOWN, &canvas);       /* Change program */
     press(ui, PC5_KEY_ACCEPT, &canvas);
     until_screen(ui, "programs", &canvas);
@@ -2024,7 +2201,8 @@ static void test_screens(const char *fonts)
 
     /* A game's menu: Home screen tile, made, then taken away. */
     press(ui, PC5_KEY_TRIANGLE, &canvas);
-    for (int i = 0; i < 4; i++) press(ui, PC5_KEY_DOWN, &canvas);   /* Play, Controller, Frame generation, Change program */
+    for (int i = 0; i < 5; i++) press(ui, PC5_KEY_DOWN, &canvas);   /* Play, Controller, Frame generation, Resolution,
+                                                                       Change program */
     press(ui, PC5_KEY_ACCEPT, &canvas);
     CHECK(!strcmp(pc5_ui_screen(ui), "message") && pc5_home_find(tiles, "orbital-nine", tile), "tile made: %s %s",
           pc5_ui_screen(ui), tile);
@@ -2094,6 +2272,7 @@ int main(int argc, char **argv)
     test_home();
     test_own_covers();
     test_prefix_dxvk();
+    test_dotnet();
     test_game(fonts);
     test_screens(fonts);
     test_tile_start(fonts);

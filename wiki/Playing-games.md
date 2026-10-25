@@ -72,6 +72,7 @@ Choose a game in the library and press **△**.
 | Controller | What the game sees: **Xbox controller** (the default), **DualSense**, or **Keyboard & mouse**. Press **✕** or left / right to change it. See [Controllers](Controllers). |
 | Button mapping | Only with Keyboard & mouse: what each button and stick sends. See [Controllers](Controllers#button-mapping). |
 | Frame generation | **Off** (the default) or **30 → 60 fps**. See [Frame generation](#frame-generation) below. |
+| Resolution | Only for games drawn with Direct3D, Vulkan or OpenGL: **1080p** (the default), **1440p** or **4K**. See [Resolution](#resolution) below. |
 | Memory | Only for 32-bit games: **4 GB** (the default since 1.4.0) or **2 GB**. A 32-bit game gets 4 GB of address space, room for big textures and mods. Set 2 GB for a game that misbehaves with it. |
 | Change program | The program PC5 starts for this game ("Now: …"). Choose another one if PC5 picked the wrong one. See [Choosing the right program](Installing-games#choosing-the-right-program). |
 | Home screen tile | **Off** or **On**: a tile on the PS5's home screen that starts this game. See [Home screen tiles](Home-screen-tiles). |
@@ -96,6 +97,23 @@ What to expect:
 - The overlay's FPS counts every frame shown, the made ones too, so it shows about 60.
 - It works with games drawn with Direct3D 8 to 12, Vulkan or OpenGL. It doesn't apply to DirectDraw or plain Windows drawing, nor to 10-bit (HDR) output.
 - A change takes effect the next time the game starts.
+
+## Resolution
+
+A game drawn with Direct3D, Vulkan or OpenGL can be drawn at **1080p** (the default), **1440p** or **4K**: **△ › Resolution**, kept for that game.
+
+- The console shows 1080p and 4K pictures as they are, and a 1440p one scaled up to 4K.
+- A higher resolution is slower: 1440p is nearly twice the work of 1080p, and 4K four times. A game that is already slow at 1080p gets slower.
+- Games drawn with DirectDraw or plain Windows drawing are drawn at 1080p, so the row isn't shown for them.
+- A change takes effect the next time the game starts.
+
+## .NET games
+
+.NET Framework games and tools (XNA through FNA, MonoGame, WinForms) run with [Wine Mono](https://gitlab.winehq.org/mono/wine-mono), the open-source stand-in for Microsoft's .NET Framework that Wine itself uses.
+
+- The first time a .NET game starts, PC5 shows **Setting up .NET for your games, once** while it copies the runtime (some 230 MB) to `/data/prospero-win/pc5/`. Every .NET game uses that one copy, so the next ones start straight away.
+- A .NET game installed with an older PC5 gets what it needs the next time it starts.
+- It isn't Microsoft's .NET: programs that mix .NET and C++ (C++/CLI) don't run, and some WPF doesn't.
 
 ## The overlay
 

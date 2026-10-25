@@ -48,10 +48,31 @@ WINE_URL=https://github.com/wine-mirror/wine.git
 # (build_wine_ps5.sh), the title's boilerplate (build_native.sh), the PRX
 # boilerplate (build_wine_ps5.sh), PS5_Mesa for RADV (build-radv.sh) and for Zink
 # (build_mesa_zink.sh, with its llvm-mingw), the SDK fork (setup-native-dependencies.sh).
-VKD3D_VERSION=2.14.1                                      # pairs with DXVK 2.6.2's dxgi
+VKD3D_VERSION=3.0.1                                       # needs DXVK 2.1's dxgi or newer (its CHANGELOG)
 VKD3D_URL=https://github.com/HansKristian-Work/vkd3d-proton/releases/download/v$VKD3D_VERSION/vkd3d-proton-$VKD3D_VERSION.tar.zst
-VKD3D_SHA256=ac70ccfe01d610b51ca67a0a44e4f24f5da29c665facc0c2faf47e0818d23168
+VKD3D_SHA256=3cf2315522af5e43605ef6d3c41dad91387040bf97199934f3f7ab76caaa2f0c
 MBEDTLS_VERSION=3.6.7                                     # LTS: the covers' HTTPS
+# Wine Mono, .NET Framework for the games: the version and SHA-256 Wine's appwiz.cpl names
+# (dlls/appwiz.cpl/addons.c, MONO_VERSION and MONO_SHA), from its release on GitHub.
+MONO_VERSION=11.3.0
+MONO_URL=https://github.com/madewokherd/wine-mono/releases/download/wine-mono-$MONO_VERSION/wine-mono-$MONO_VERSION-x86.msi
+MONO_SHA256=df2dfc1665c2511882e7cabd56eafd0c0a3d94e5a7e86f969277f6c189d418d3
+MONO_SOURCE_URL=https://github.com/madewokherd/wine-mono/releases/download/wine-mono-$MONO_VERSION/wine-mono-$MONO_VERSION-src.tar.xz
+MONO_SOURCE_SHA256=9f4f03285fbeed484980efbb1eba1c19069244aea401d2ff1585e3990782edf7
+MONO_COPYING_URL=https://raw.githubusercontent.com/madewokherd/wine-mono/wine-mono-$MONO_VERSION/COPYING
+MONO_COPYING_SHA256=0265443ffc97c9450dbcf402c2430bf9fe87d7a6c92d5d7684fcecfe749bf75d
+# Fonts in Wine's own fonts folder, which every game finds: Liberation 2.1.5 (Arial, Times New
+# Roman and Courier New's metrics) as Ubuntu 24.04 packages it, and Droid Sans Fallback
+# (Chinese, Japanese and Korean) from Android 7.1.2. make-prefix.py names them for Windows.
+LIBERATION_VERSION=2.1.5
+LIBERATION_URL=https://archive.ubuntu.com/ubuntu/pool/main/f/fonts-liberation/fonts-liberation_$LIBERATION_VERSION-3_all.deb
+LIBERATION_SHA256=065c2ab1abc9108b17d401016dc594b79750904390f095845c93bb06e1153acc
+LIBERATION_LICENSE_URL=https://raw.githubusercontent.com/liberationfonts/liberation-fonts/$LIBERATION_VERSION/LICENSE
+LIBERATION_LICENSE_SHA256=93fed46019c38bbe566b479d22148e2e8a1e85ada614accb0211c37b2c61c19b
+DROID_FALLBACK_URL=https://raw.githubusercontent.com/aosp-mirror/platform_frameworks_base/android-7.1.2_r39/data/fonts/DroidSansFallbackFull.ttf
+DROID_FALLBACK_SHA256=acb6440a713d880a13a21b468ba7cd43f5a2b2934972e51be791c880730777b8
+DROID_FALLBACK_NOTICE_URL=https://raw.githubusercontent.com/aosp-mirror/platform_frameworks_base/android-7.1.2_r39/data/fonts/NOTICE
+DROID_FALLBACK_NOTICE_SHA256=38751245389e1e23f73e6f5384b5cbe7fa972cc4410c5adc9c04b082a0b9561a
 MBEDTLS_URL=https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-$MBEDTLS_VERSION/mbedtls-$MBEDTLS_VERSION.tar.bz2
 MBEDTLS_SHA256=a7e8bcbec0e6f761b4af24f25677626b35f762f68eef79c08677a363212d11f6
 # DXVK: the release prospero-win's pw_install.py pins (2.6.2-prospero2), built here with
@@ -64,7 +85,7 @@ DXVK_NAME=2.6.2-prospero2-pc5.2
 FORWARDER_URL=https://github.com/heydemoura/ps5-forwarder-format.git
 FORWARDER_COMMIT=22e8762ad7dbd01e18bd8c0e95f86461fdf8aaf4
 VKD3D_SOURCE_URL=https://github.com/HansKristian-Work/vkd3d-proton.git
-VKD3D_SOURCE_COMMIT=0d66699b1b1e250ef19d793f2649d9288b0808ff   # tag v2.14.1, the release's build
+VKD3D_SOURCE_COMMIT=3b10bd7a7ec6a7347e616cf8bea59333afec2255   # tag v3.0.1, the release's build
 
 TITLE=PPSA11018
 STEPS="sources title radv hostwine wineps5 cpu dxvk zink package app bundle"
@@ -189,6 +210,14 @@ step_sources() {
         "$(value "$zink" LLVM_MINGW_SHA256)"
     download "$B/downloads/vkd3d-proton-$VKD3D_VERSION.tar.zst" "$VKD3D_URL" "$VKD3D_SHA256"
     download "$B/downloads/mbedtls-$MBEDTLS_VERSION.tar.bz2" "$MBEDTLS_URL" "$MBEDTLS_SHA256"
+    download "$B/downloads/wine-mono-$MONO_VERSION-x86.msi" "$MONO_URL" "$MONO_SHA256"
+    # Its source, unchanged, for the source bundle (parts of Mono are under the LGPL and GPL).
+    download "$B/downloads/wine-mono-$MONO_VERSION-src.tar.xz" "$MONO_SOURCE_URL" "$MONO_SOURCE_SHA256"
+    download "$B/downloads/wine-mono-$MONO_VERSION-COPYING" "$MONO_COPYING_URL" "$MONO_COPYING_SHA256"
+    download "$B/downloads/fonts-liberation_$LIBERATION_VERSION-3_all.deb" "$LIBERATION_URL" "$LIBERATION_SHA256"
+    download "$B/downloads/liberation-fonts-$LIBERATION_VERSION-LICENSE" "$LIBERATION_LICENSE_URL" "$LIBERATION_LICENSE_SHA256"
+    download "$B/downloads/DroidSansFallbackFull.ttf" "$DROID_FALLBACK_URL" "$DROID_FALLBACK_SHA256"
+    download "$B/downloads/DroidSansFallbackFull-NOTICE" "$DROID_FALLBACK_NOTICE_URL" "$DROID_FALLBACK_NOTICE_SHA256"
     # VKD3D-Proton's source at its release's commit, for the source bundle.
     fetch "$B/vkd3d-proton-source" "$VKD3D_SOURCE_URL" "$VKD3D_SOURCE_COMMIT"
     git -C "$B/vkd3d-proton-source" submodule -q update --init --recursive
@@ -362,11 +391,25 @@ EOF_SOURCES
     for root in /usr/share/ca-certificates/mozilla/*.crt; do cat "$root"; echo; done > "$app/pc5/ca-certificates.crt"
     python3 "$here/tools/make-prefix.py" --pw "$PW" --wine "$PW/.deps/wine-host/install/usr/bin/wine" \
         --cpu-dll "$PW/.deps/wine-host/build/dlls/wowprospero/x86_64-windows/wowprospero.dll" \
-        --vkd3d "$B/downloads/vkd3d-proton-$VKD3D_VERSION.tar.zst" --dxvk "$B/dxvk" --out "$app"
+        --vkd3d "$B/downloads/vkd3d-proton-$VKD3D_VERSION.tar.zst" --dxvk "$B/dxvk" \
+        --mono "$B/downloads/wine-mono-$MONO_VERSION-x86.msi" --mono-version "$MONO_VERSION" --out "$app"
     # The DXVK the template has, which PC5 gives games installed with an earlier one (pc5_game.c).
-    cp "$B/dxvk/NAME" "$app/pc5/dxvk.txt"
-    mkdir -p "$app/LICENSES/dxvk"
+    # DXVK and VKD3D-Proton by name: a game installed before either changed gets both again.
+    printf '%s vkd3d-proton-%s\n' "$(cat "$B/dxvk/NAME")" "$VKD3D_VERSION" > "$app/pc5/dxvk.txt"
+    mkdir -p "$app/LICENSES/dxvk" "$app/LICENSES/wine-mono"
     cp "$B/dxvk-source/LICENSE" "$app/LICENSES/dxvk/LICENSE"
+    cp "$B/downloads/wine-mono-$MONO_VERSION-COPYING" "$app/LICENSES/wine-mono/COPYING"
+    # The fonts, beside Wine's own: Wine loads every font in that folder for every game.
+    local fonts=$app/win/wine/share/wine/fonts unpacked=$B/fonts-liberation
+    rm -rf "$unpacked" && mkdir -p "$unpacked"
+    dpkg-deb -x "$B/downloads/fonts-liberation_$LIBERATION_VERSION-3_all.deb" "$unpacked"
+    [[ $(ls "$unpacked"/usr/share/fonts/truetype/liberation/Liberation*.ttf | wc -l) == 12 ]] ||
+        { echo "build.sh: fonts-liberation $LIBERATION_VERSION doesn't hold Liberation's 12 fonts" >&2; return 1; }
+    cp "$unpacked"/usr/share/fonts/truetype/liberation/Liberation*.ttf "$B/downloads/DroidSansFallbackFull.ttf" "$fonts/"
+    rm -rf "$unpacked"
+    mkdir -p "$app/LICENSES/liberation-fonts" "$app/LICENSES/droid-sans-fallback"
+    cp "$B/downloads/liberation-fonts-$LIBERATION_VERSION-LICENSE" "$app/LICENSES/liberation-fonts/LICENSE"
+    cp "$B/downloads/DroidSansFallbackFull-NOTICE" "$app/LICENSES/droid-sans-fallback/NOTICE"
     python3 "$here/tools/make-app.py" "$app" "$release/$TITLE.zip" --repo "$here" --pw "$PW"
 }
 
@@ -417,6 +460,9 @@ step_bundle() {
     cp -a "$B/PS5_Vulkan/.deps/work/radv-src/subprojects/"zlib-*/. "$stage/zlib/"
     printf '%-28s %s\n' "zlib/" "zlib, the subproject RADV's shader cache was built with" >> "$stage/PARTS.txt"
     cp "$B/downloads/mbedtls-$MBEDTLS_VERSION.tar.bz2" "$stage/"
+    cp "$B/downloads/wine-mono-$MONO_VERSION-src.tar.xz" "$stage/"
+    printf '%-28s %s (the source of the app'"'"'s pc5/mono, Wine Mono %s)\n' "wine-mono-$MONO_VERSION-src.tar.xz" \
+        "$MONO_SOURCE_URL" "$MONO_VERSION" >> "$stage/PARTS.txt"
     printf '%-28s %s\n' "mbedtls-$MBEDTLS_VERSION.tar.bz2" "$MBEDTLS_URL" >> "$stage/PARTS.txt"
     mkdir -p "$stage/dxvk"
     tar -C "$B/dxvk-source" --exclude=.git -cf - . | tar -x -C "$stage/dxvk"

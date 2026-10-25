@@ -111,5 +111,17 @@ With ShadowMountPlus and elfldr running.
 | 47 | A game with sound | it sounds as before | `wineps5: stream … opened: 48000 Hz, …`; any `ran short in … of 1000 grains` names a stream the game fed late |
 | 48 | A game with Direct3D 9 and 11 movies (one that shares a picture between them) | its movies play | `PC5 prefix DXVK updated` once (a game installed before 1.4.0); `LocalShare: … textures shared within the process (… MiB), … added, … removed` |
 
+## Resolution, .NET, fonts and the game's own DLLs (1.5.0)
+
+| # | Do | Expect | Expect in the log |
+| --- | --- | --- | --- |
+| 49 | △ on a Direct3D game › Resolution to 1440p, then 4K, starting it each time | its picture is sharper each time, and fills the screen | `PC5 controls … resolution=1440p`, then `resolution=2160p` |
+| 50 | A .NET game (XNA/FNA, MonoGame or WinForms), the first time | "Setting up .NET for your games, once" counts up, then the game starts | `PC5 dotnet runtime copy to=…/pc5/mono-11.3.0 entries=…`, `PC5 dotnet runtime copied entries=…` |
+| 51 | A second .NET game | it starts without setting up .NET again | no `PC5 dotnet runtime copy` |
+| 52 | A .NET game installed before 1.5.0 | it starts | `PC5 prefix .NET updated` once |
+| 53 | A game with Japanese, Chinese or Korean text drawn with Windows' fonts (or a launcher in one of those languages) | the text shows, not empty boxes | `PC5 prefix fonts named` once (a game installed before 1.5.0) |
+| 54 | A Direct3D 12 game | it starts as before or better (VKD3D-Proton 3.0.1) | `PC5 prefix DXVK updated` once (a game installed before 1.5.0) |
+| 55 | A game that carries its own `d3dcompiler_47.dll` or Visual C++ runtime beside its .exe | it starts as before | |
+
 A non-zero `rc=` on the light bar or triggers lines means the console refused that call; send
 that log.

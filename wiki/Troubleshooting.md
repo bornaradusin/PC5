@@ -17,7 +17,7 @@ When something doesn't work, PC5 usually says why in a message. This page lists 
 | The copy of … doesn't match the USB drive | A file read back from the console differs from the USB drive. The drive or its cable may be failing. Nothing was kept: try again with another drive or USB port. |
 | The USB drive stopped answering while PC5 copied … | The drive was unplugged or stopped working. Plug it in again and install again. |
 | PC5's Windows template is missing from the app, or is damaged | The app's folder is incomplete. Copy the `PPSA11018` folder to the console again. See [Updating PC5](Installing-and-updating#updating-pc5). |
-| This is a .NET program, and PC5 has no .NET yet: it may not start | A warning on the review screen. .NET Framework games don't run yet, as prospero-win has no .NET. See [What runs and what doesn't](Installing-games#what-runs-and-what-doesnt). |
+| A .NET program: it runs with Wine Mono, which PC5 sets up the first time a .NET game starts | Not a problem: a note on the review screen. See [.NET games](Playing-games#net-games). |
 
 ## Starting a game
 
@@ -26,6 +26,8 @@ When something doesn't work, PC5 usually says why in a message. This page lists 
 | *Game* can't start: Its Windows folder is missing | The game's files are gone or incomplete. Uninstall it from its menu (**△**) and install it again. |
 | *Game* can't start: Its profile has a mistake | The game's prospero-win profile can't be read. If PC5 installed the game, uninstall it and install it again. |
 | *Game* can't start: PC5's notes on this game are missing | Uninstall the game from its menu (**△**) and install it again. |
+| *Game* can't start: PC5 can't copy the .NET runtime (or make its folders, or finish its copy): is the console full? | Setting up .NET the first time needs about 300 MB free. Free up space on the console, then start the game again to finish setting it up. |
+| *Game* can't start: PC5 can't read the app's .NET runtime | The app's folder is incomplete. Copy the `PPSA11018` folder to the console again. See [Updating PC5](Installing-and-updating#updating-pc5). |
 | *Game* didn't start: The console refused to start it | Try again. If it happens again, close PC5 and open it again. |
 | *Game* closed before showing anything | PC5 may have started the wrong program: use **△ › Change program**. If you added [launch options](Launch-options), try without them. Otherwise, [report it](Reporting-a-problem). |
 | *Game* stopped with an error | The game crashed. Try the newest PC5, then [report it](Reporting-a-problem) with the log PC5 names. |
