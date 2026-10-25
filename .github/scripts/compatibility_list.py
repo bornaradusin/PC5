@@ -78,7 +78,7 @@ def main() -> int:
               discussions(first: 100, after: $after, categoryId: $category,
                           orderBy: {field: CREATED_AT, direction: ASC}) {
                 pageInfo { hasNextPage endCursor }
-                nodes { id number title url body createdAt author { login } upvoteCount }
+                nodes { id number title url body createdAt author { login } upvoteCount locked }
               } } }""", owner=owner, name=name, category=category["id"], after=after)
         discussions = page["repository"]["discussions"]
         for discussion in discussions["nodes"]:
@@ -136,9 +136,17 @@ def main() -> int:
               discussion { url } } }""", repo=repo["id"], category=category["id"], title=LIST_TITLE, body=body)
         print(f"compatibility list: made {made['createDiscussion']['discussion']['url']} (pin it)")
     elif listing["body"].replace("\r\n", "\n") != body:
+        # A locked discussion (replies off, so reports go through the form) can't be edited
+        # by the Action: unlocked for the edit, and locked again.
+        if listing.get("locked"):
+            graphql("""mutation($id: ID!) { unlockLockable(input: {lockableId: $id}) { unlockedRecord { locked } } }""",
+                    id=listing["id"])
         graphql("""mutation($id: ID!, $body: String!) {
             updateDiscussion(input: {discussionId: $id, body: $body}) { discussion { url } } }""",
                 id=listing["id"], body=body)
+        if listing.get("locked"):
+            graphql("""mutation($id: ID!) { lockLockable(input: {lockableId: $id}) { lockedRecord { locked } } }""",
+                    id=listing["id"])
         print(f"compatibility list: {len(reports)} reports of {len(games)} games, in {listing['url']}")
     else:
         print("compatibility list: already up to date")
