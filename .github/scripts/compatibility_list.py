@@ -104,9 +104,13 @@ def main() -> int:
     reports.sort(key=lambda r: (r["game"].casefold(), order.index(r["result"]), r["date"]))
     games = {r["game"].casefold() for r in reports}
     counts = {result: sum(1 for r in reports if r["result"] == result) for result in RESULTS}
+    add = f"https://github.com/{owner}/{name}/discussions/new?category=game-compatibility"
     lines = [
-        "Every report in this category, collected by a GitHub Action each time one is posted or edited.",
-        "**To add a game**, start a new discussion in this category: its form asks what the list needs.",
+        f"## ➕ [Add a game: tell how it runs]({add})",
+        "",
+        f"That link opens the report form: the game's name, how it runs (works, playable with issues, "
+        "starts but isn't playable, doesn't start), your PC5 version and controller mode. Post it, and the game "
+        "appears in the table below within a minute or two. Please don't reply here: each report is its own discussion.",
         "",
         f"**{len(games)} games, {len(reports)} reports:** "
         + ", ".join(f"{RESULTS[result]} {counts[result]}" for result in RESULTS) + ".",
