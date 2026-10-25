@@ -31,6 +31,8 @@ def graphql(query: str, **variables) -> dict:
     with urllib.request.urlopen(request, timeout=60) as response:
         answer = json.load(response)
     if answer.get("errors"):
+        # As an annotation too, which the run's page shows without opening its log.
+        print(f"::error::compatibility list: {json.dumps(answer['errors'])[:900]}")
         sys.exit(f"compatibility list: {answer['errors']}")
     return answer["data"]
 
@@ -144,4 +146,9 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except Exception as error:   # shown on the run's page as an annotation
+        import traceback
+        print("::error::compatibility list: " + " | ".join(traceback.format_exception(error))[-900:].replace("\n", " "))
+        raise
