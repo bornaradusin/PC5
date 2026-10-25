@@ -1,0 +1,69 @@
+title: "[Game name]"
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One report per game and PC5 version: how the game runs in PC5. Every report is collected into the **Game compatibility list** discussion of this category.
+
+        A game that crashes or doesn't start is a problem to fix: please also open an [issue](https://github.com/bornaradusin/PC5/issues) with its log from `/data/prospero-win/logs/`.
+  - type: input
+    id: game
+    attributes:
+      label: Game
+      description: Its name, as the store or its title screen has it.
+      placeholder: "Example: Stardew Valley"
+    validations:
+      required: true
+  - type: input
+    id: edition
+    attributes:
+      label: Store and version
+      description: Where it's from, and its version if you know it.
+      placeholder: "Example: GOG, 1.6.15"
+    validations:
+      required: false
+  - type: dropdown
+    id: result
+    attributes:
+      label: How it runs
+      options:
+        - Works perfectly
+        - Playable with issues
+        - Starts but not playable
+        - Doesn't start
+    validations:
+      required: true
+  - type: input
+    id: pc5
+    attributes:
+      label: PC5 version
+      description: Options › About PC5.
+      placeholder: "Example: 1.4.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: controller
+    attributes:
+      label: Controller mode
+      description: △ on the game › Controller.
+      options:
+        - Xbox controller
+        - DualSense
+        - Keyboard & mouse
+    validations:
+      required: false
+  - type: textarea
+    id: settings
+    attributes:
+      label: Settings that helped
+      description: Anything you changed for it to run well, such as launch options (launch.txt), Change program, Resolution, Memory or Frame generation.
+    validations:
+      required: false
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: What works, what doesn't, and how well it runs (frame rate, sound, movies, saves).
+    validations:
+      required: false

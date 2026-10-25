@@ -1,0 +1,30 @@
+# The "Game compatibility list" discussion: every report of the "Game compatibility"
+# category in one table (.github/scripts/compatibility_list.py), made again whenever a
+# discussion is posted, edited or moved, and once a day.
+name: Compatibility list
+
+on:
+  discussion:
+    types: [created, edited, deleted, category_changed, transferred]
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  discussions: write
+
+concurrency:
+  group: compatibility-list
+  cancel-in-progress: false
+
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Collect the reports
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 .github/scripts/compatibility_list.py
