@@ -126,7 +126,7 @@ Built from <https://github.com/bornaradusin/PC5> at commit {repo_commit}:
   `/data/prospero-win/pc5/` the first time a .NET game starts, and every game's Wine finds it
   there. `pc5/prefix-dotnet.reg` is what installing it adds to the registry, which PC5 adds
   to the prefix of a game installed before it was part of the app. Its source is
-  `wine-mono-*-src.tar.xz` in the sources archive.
+  `wine-mono-*-src.tar.xz`, released beside the app.
 - `win/wine/share/wine/fonts`: beside Wine's own fonts, Liberation 2.1.5
   (<https://github.com/liberationfonts/liberation-fonts>, SIL Open Font License 1.1,
   `LICENSES/liberation-fonts/LICENSE`) as Ubuntu 24.04's fonts-liberation 1:2.1.5-3 ships

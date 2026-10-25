@@ -460,9 +460,11 @@ step_bundle() {
     cp -a "$B/PS5_Vulkan/.deps/work/radv-src/subprojects/"zlib-*/. "$stage/zlib/"
     printf '%-28s %s\n' "zlib/" "zlib, the subproject RADV's shader cache was built with" >> "$stage/PARTS.txt"
     cp "$B/downloads/mbedtls-$MBEDTLS_VERSION.tar.bz2" "$stage/"
-    cp "$B/downloads/wine-mono-$MONO_VERSION-src.tar.xz" "$stage/"
-    printf '%-28s %s (the source of the app'"'"'s pc5/mono, Wine Mono %s)\n' "wine-mono-$MONO_VERSION-src.tar.xz" \
-        "$MONO_SOURCE_URL" "$MONO_VERSION" >> "$stage/PARTS.txt"
+    # Wine Mono's source (300 MB) is released beside this archive, as it came: a file of its own.
+    ln -f "$B/downloads/wine-mono-$MONO_VERSION-src.tar.xz" "$release/" 2>/dev/null ||
+        cp "$B/downloads/wine-mono-$MONO_VERSION-src.tar.xz" "$release/"
+    printf '%-28s %s (the source of the app'"'"'s pc5/mono, Wine Mono %s: released beside this archive)\n' \
+        "wine-mono-$MONO_VERSION-src.tar.xz" "$MONO_SOURCE_URL" "$MONO_VERSION" >> "$stage/PARTS.txt"
     printf '%-28s %s\n' "mbedtls-$MBEDTLS_VERSION.tar.bz2" "$MBEDTLS_URL" >> "$stage/PARTS.txt"
     mkdir -p "$stage/dxvk"
     tar -C "$B/dxvk-source" --exclude=.git -cf - . | tar -x -C "$stage/dxvk"
@@ -480,7 +482,7 @@ step_bundle() {
 for s in $STEPS; do
     if want "$s"; then run "$s" "step_$s"; fi
 done
-for made in "$TITLE.zip" "$TITLE-sources.tar.xz"; do
+for made in "$TITLE.zip" "$TITLE-sources.tar.xz" "wine-mono-$MONO_VERSION-src.tar.xz"; do
     if { [[ $made == *.zip ]] && want app; } || { [[ $made == *.xz ]] && want bundle; }; then
         echo "==> $release/$made: $(du -h "$release/$made" | cut -f1), SHA-256 $(sha256sum "$release/$made" | cut -c1-16)…"
     fi

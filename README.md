@@ -262,7 +262,8 @@ tools/build.sh
 ```
 
 The app is `release/PPSA11018/` and `release/PPSA11018.zip`, with the source of everything in
-it as `release/PPSA11018-sources.tar.xz`; or all three in the folder `PC5_RELEASE` names
+it as `release/PPSA11018-sources.tar.xz` and Wine Mono's own source archive beside it
+(`release/wine-mono-11.3.0-src.tar.xz`); or all of these in the folder `PC5_RELEASE` names
 (`PC5_RELEASE=/mnt/media/builder/releases/PC5 tools/build.sh`). Everything else the build
 makes stays in the repo's `.build/`. Each step prints one line and writes
 `.build/logs/<step>.log`; run one step again with `tools/build.sh <step>`. Elsewhere the
@@ -275,8 +276,8 @@ it Wine; Zink's link wants about 8 GB of memory per job (`PC5_ZINK_JOBS`, defaul
 
 **Releasing**: the update check reads the newest release of
 <https://github.com/bornaradusin/PC5>, by its tag (`v1.0.0`, `v1.1.0`, …). Publish each
-version as a GitHub release with that tag, with `PPSA11018.zip` and
-`PPSA11018-sources.tar.xz` attached, and raise `PC5_VERSION` in `title/pc5.h` and
+version as a GitHub release with that tag, with `PPSA11018.zip`,
+`PPSA11018-sources.tar.xz` and `wine-mono-11.3.0-src.tar.xz` attached, and raise `PC5_VERSION` in `title/pc5.h` and
 `contentVersion` in `sce_sys/param.json` with it.
 
 ## How it is made
@@ -313,7 +314,8 @@ version as a GitHub release with that tag, with `PPSA11018.zip` and
 PC5's own code is free software under the GNU LGPL 2.1 or later (`LICENSE`), like
 prospero-win. The app as built holds the PS5 boilerplate's startup code and `libc.prx`
 (GPL 3.0 or later), so the app as a whole is under the GPL 3.0 or later, as prospero-win's
-own release is; its source is `PPSA11018-sources.tar.xz`.
+own release is; its source is `PPSA11018-sources.tar.xz`, with Wine Mono's in
+`wine-mono-11.3.0-src.tar.xz`.
 
 It is built on prospero-win by mpereiraesaa and the projects it uses: Wine, DXVK, Mesa
 (RADV, Zink; including mihawk-99's PS5 work), the PS5 payload SDK and boilerplate, and the
