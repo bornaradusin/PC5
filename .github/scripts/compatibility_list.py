@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Collects the reports in the "Game compatibility" discussions category into one table,
-the body of the category's "Game compatibility list" discussion (made the first time).
+"""Collects the reports in the "Game compatibility" discussions category into one table, the
+wiki's "Game compatibility" page. The category's "Game compatibility list" discussion (made
+the first time, for pinning) points there and to the report form: an Action can make a
+discussion but not edit one afterwards ("Resource not accessible by integration").
 
 Run by .github/workflows/compatibility.yml with GITHUB_TOKEN and GITHUB_REPOSITORY. Each
 report is a discussion made with .github/DISCUSSION_TEMPLATE/game-compatibility.yml, whose
@@ -10,8 +12,11 @@ body GitHub writes as "### <label>" headings, each followed by its answer.
 import json
 import os
 import re
+import subprocess
 import sys
+import tempfile
 import urllib.request
+from pathlib import Path
 
 CATEGORY = "Game compatibility"
 LIST_TITLE = "Game compatibility list"
@@ -108,13 +113,9 @@ def main() -> int:
     counts = {result: sum(1 for r in reports if r["result"] == result) for result in RESULTS}
     add = f"https://github.com/{owner}/{name}/discussions/new?category=game-compatibility"
     lines = [
-        f"## ➕ [Add a game: tell how it runs]({add})",
+        f"**[➕ Add a game]({add})**: the report form, which asks what this list needs.",
         "",
-        f"That link opens the report form: the game's name, how it runs (works, playable with issues, "
-        "starts but isn't playable, doesn't start), your PC5 version and controller mode. Post it, and the game "
-        "appears in the table below within a minute or two. Please don't reply here: each report is its own discussion.",
-        "",
-        f"**{len(games)} games, {len(reports)} reports:** "
+        f"**{len(games)} game{'s' * (len(games) != 1)}, {len(reports)} report{'s' * (len(reports) != 1)}:** "
         + ", ".join(f"{RESULTS[result]} {counts[result]}" for result in RESULTS) + ".",
         "",
         "| Game | How it runs | PC5 | Store and version | Controller | Settings that helped | Report |",
@@ -128,30 +129,51 @@ def main() -> int:
         lines.append("| *No reports yet* | | | | | | |")
     lines += ["", "A game that crashes or doesn't start: please also open an "
               f"[issue](https://github.com/{owner}/{name}/issues) with its log, so it can be fixed."]
-    body = "\n".join(lines) + "\n"
 
+    page = "\n".join([
+        "Which games run in PC5, as players found: every report of the [Game compatibility]"
+        f"(https://github.com/{owner}/{name}/discussions/categories/game-compatibility) discussions, collected by a "
+        "GitHub Action each time one is posted or edited.",
+        "",
+    ] + lines) + "\n"
+    publish(owner, name, page)
+
+    pointer = "\n".join([
+        f"## ➕ [Add a game: tell how it runs]({add})",
+        "",
+        "That link opens the report form: the game's name, how it runs, your PC5 version and controller mode. "
+        "Post it, and within a minute or two the game is in the list:",
+        "",
+        f"## 📋 [The game compatibility list](https://github.com/{owner}/{name}/wiki/Game-compatibility)",
+        "",
+        "Please don't reply here: each report is its own discussion.",
+    ]) + "\n"
     if listing is None:
         made = graphql("""mutation($repo: ID!, $category: ID!, $title: String!, $body: String!) {
             createDiscussion(input: {repositoryId: $repo, categoryId: $category, title: $title, body: $body}) {
-              discussion { url } } }""", repo=repo["id"], category=category["id"], title=LIST_TITLE, body=body)
+              discussion { url } } }""", repo=repo["id"], category=category["id"], title=LIST_TITLE, body=pointer)
         print(f"compatibility list: made {made['createDiscussion']['discussion']['url']} (pin it)")
-    elif listing["body"].replace("\r\n", "\n") != body:
-        # A locked discussion (replies off, so reports go through the form) can't be edited
-        # by the Action: unlocked for the edit, and locked again.
-        if listing.get("locked"):
-            graphql("""mutation($id: ID!) { unlockLockable(input: {lockableId: $id}) { unlockedRecord { locked } } }""",
-                    id=listing["id"])
-        graphql("""mutation($id: ID!, $body: String!) {
-            updateDiscussion(input: {discussionId: $id, body: $body}) { discussion { url } } }""",
-                id=listing["id"], body=body)
-        if listing.get("locked"):
-            graphql("""mutation($id: ID!) { lockLockable(input: {lockableId: $id}) { lockedRecord { locked } } }""",
-                    id=listing["id"])
-        print(f"compatibility list: {len(reports)} reports of {len(games)} games, in {listing['url']}")
-    else:
-        print("compatibility list: already up to date")
     return 0
 
+
+def publish(owner: str, name: str, page: str) -> None:
+    """The page as the wiki's Game-compatibility.md, pushed when it changed."""
+    token = os.environ["GITHUB_TOKEN"]
+    with tempfile.TemporaryDirectory() as work:
+        wiki = Path(work) / "wiki"
+        subprocess.run(["git", "clone", "-q", "--depth", "1",
+                        f"https://x-access-token:{token}@github.com/{owner}/{name}.wiki.git", str(wiki)], check=True)
+        target = wiki / "Game-compatibility.md"
+        if target.is_file() and target.read_text() == page:
+            print("compatibility list: the wiki page is up to date")
+            return
+        target.write_text(page)
+        git = ["git", "-C", str(wiki), "-c", "user.name=github-actions[bot]",
+               "-c", "user.email=41898282+github-actions[bot]@users.noreply.github.com"]
+        subprocess.run(git + ["add", "Game-compatibility.md"], check=True)
+        subprocess.run(git + ["commit", "-q", "-m", "Game compatibility list from the reports"], check=True)
+        subprocess.run(git + ["push", "-q", "origin", "HEAD"], check=True)
+        print("compatibility list: the wiki page is updated")
 
 if __name__ == "__main__":
     try:

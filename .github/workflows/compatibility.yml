@@ -1,4 +1,4 @@
-# The "Game compatibility list" discussion: every report of the "Game compatibility"
+# The wiki's "Game compatibility" page: every report of the "Game compatibility" discussions
 # category in one table (.github/scripts/compatibility_list.py), made again whenever a
 # discussion is posted, edited or moved, and once a day.
 name: Compatibility list
@@ -12,6 +12,7 @@ on:
 
 permissions:
   discussions: write
+  contents: write
 
 concurrency:
   group: compatibility-list
