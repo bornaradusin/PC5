@@ -57,9 +57,10 @@ void pc5_detail_text(int bits, Pc5Api api, uint64_t bytes, char *out, size_t siz
 int pc5_info_text(const Pc5Info *info, char *out, size_t size)
 {
     return pc5_format(out, size,
-                      "title = %s\nfolder = %s\nexe = %s\nbits = %d\napi = %s\nbytes = %llu\nfiles = %u\ncover = %s\n",
+                      "title = %s\nfolder = %s\nexe = %s\nbits = %d\napi = %s\nbytes = %llu\nfiles = %u\ncover = %s\n%s%s%s",
                       info->title, info->folder, info->exe, info->bits, api_key(info->api),
-                      (unsigned long long)info->bytes, (unsigned)info->files, info->cover);
+                      (unsigned long long)info->bytes, (unsigned)info->files, info->cover,
+                      info->usb[0] ? "usb = " : "", info->usb, info->usb[0] ? "\n" : "");
 }
 
 static void trim(char **begin, char **end)
@@ -98,6 +99,7 @@ static int info_read_file(const char *path, Pc5Info *info)
         else if (!strcmp(line, "bytes")) info->bytes = strtoull(value, NULL, 10);
         else if (!strcmp(line, "files")) info->files = (uint32_t)strtoul(value, NULL, 10);
         else if (!strcmp(line, "cover")) pc5_copy(info->cover, sizeof(info->cover), value);
+        else if (!strcmp(line, "usb") && !strstr(value, "..") && value[0] != '/') pc5_copy(info->usb, sizeof(info->usb), value);
     }
     pc5_buf_free(&text);
     if (info->bits != 32 && info->bits != 64) info->bits = 32;
@@ -113,6 +115,92 @@ int pc5_info_read(const char *root, const char *id, Pc5Info *info)
         return -1;
     }
     return info_read_file(path, info);
+}
+
+/* ---- games played from a USB drive --------------------------------------------------- */
+
+static const char *const default_usb_roots[] = { "/mnt/usb0", "/mnt/usb1", "/mnt/usb2", "/mnt/usb3", "/mnt/usb4",
+                                                 "/mnt/usb5", "/mnt/usb6", "/mnt/usb7", NULL };
+static const char *const *usb_roots = default_usb_roots;
+
+/* The link table Wine on the console reads in a directory (wine/ps5/pw_wine_cwd.h,
+ * PW_CWD_LINK_TABLE): a line "name<TAB>target" for each link in it. */
+#define LINK_TABLE ".pw-symlinks"
+
+void pc5_usb_roots(const char *const *roots)
+{
+    usb_roots = roots ? roots : default_usb_roots;
+}
+
+int pc5_usb_relative(const char *path, char *out, size_t size)
+{
+    for (int i = 0; usb_roots[i]; i++) {
+        size_t n = strlen(usb_roots[i]);
+        if (!strncmp(path, usb_roots[i], n) && path[n] == '/' && path[n + 1] && !strstr(path + n, "/.."))
+            return pc5_format(out, size, "%s", path + n + 1);
+    }
+    return -1;
+}
+
+int pc5_usb_game_dir(const Pc5Info *info, char *out, size_t size)
+{
+    char program[PC5_PATH];
+
+    out[0] = 0;
+    if (!info->usb[0]) return -1;
+    for (int i = 0; usb_roots[i]; i++)
+        if (!pc5_format(out, size, "%s/%s", usb_roots[i], info->usb) && pc5_is_dir(out) &&
+            !pc5_format(program, sizeof(program), "%s/%s", out, info->exe) && pc5_exists(program))
+            return 0;
+    out[0] = 0;
+    return -1;
+}
+
+int pc5_usb_link(const char *root, const char *id, const Pc5Info *info, char *error, size_t size)
+{
+    char dir[PC5_PATH], games[PC5_PATH], table[PC5_PATH];
+    Pc5Buf old = { 0 }, text = { 0 };
+    int status = 0;
+
+    if (pc5_usb_game_dir(info, dir, sizeof(dir))) {
+        snprintf(error, size, "Plug in the USB drive with %.100s: it plays from the folder %.200s on it.", info->title,
+                 info->usb);
+        return -1;
+    }
+    if (pc5_format(games, sizeof(games), "%s/prefixes/%s/drive_c/Games", root, id) || pc5_mkdirs(games) ||
+        pc5_format(table, sizeof(table), "%s/" LINK_TABLE, games)) {
+        snprintf(error, size, "PC5 can't make the game's folder: %s.", strerror(errno));
+        return -1;
+    }
+    /* The other links kept (Wine's own, made by the game), this one for the drive it is in now. */
+    if (!pc5_read_file(table, &old, 65536) && !pc5_buf_terminate(&old)) {
+        size_t n = strlen(info->folder);
+        for (char *line = (char *)old.data, *next; line && *line; line = next) {
+            next = strchr(line, '\n');
+            if (next) *next++ = 0;
+            if (!strncmp(line, info->folder, n) && line[n] == '\t') continue;
+            status |= pc5_buf_puts(&text, line) || pc5_buf_puts(&text, "\n");
+        }
+    }
+    status |= pc5_buf_puts(&text, info->folder) || pc5_buf_puts(&text, "\t") || pc5_buf_puts(&text, dir) ||
+              pc5_buf_puts(&text, "\n");
+    if (!status && !(old.len == text.len && !memcmp(old.data, text.data, text.len)))
+        status = pc5_write_file(table, text.data, text.len);
+    pc5_buf_free(&old);
+    pc5_buf_free(&text);
+    if (status) {
+        snprintf(error, size, "PC5 can't link the game's folder on the USB drive: %s.", strerror(errno));
+        return -1;
+    }
+    return 0;
+}
+
+/* The game's folder, where PC5 reads it: in its Windows, or on its USB drive. -1 when the
+ * drive isn't there. */
+static int game_dir(const char *root, const char *id, const Pc5Info *info, char *out, size_t size)
+{
+    if (info->usb[0]) return pc5_usb_game_dir(info, out, size);
+    return pc5_format(out, size, "%s/prefixes/%s/drive_c/Games/%s", root, id, info->folder);
 }
 
 /* ---- profiles ---------------------------------------------------------------------- */
@@ -306,7 +394,8 @@ static void program_folder(const char *root, const char *id, const Pc5Info *info
     pc5_copy(dir, sizeof(dir), info->exe);
     slash = strrchr(dir, '/');
     if (slash) *slash = 0; else dir[0] = 0;
-    if (pc5_format(out, size, "%s/prefixes/%s/drive_c/Games/%s%s%s", root, id, info->folder, dir[0] ? "/" : "", dir))
+    char top[PC5_PATH];
+    if (game_dir(root, id, info, top, sizeof(top)) || pc5_format(out, size, "%s%s%s", top, dir[0] ? "/" : "", dir))
         out[0] = 0;
 }
 
@@ -321,8 +410,9 @@ static void launch_options(const char *root, const char *id, const Pc5Info *info
     pc5_copy(dir, sizeof(dir), info->exe);
     slash = strrchr(dir, '/');
     if (slash) *slash = 0; else dir[0] = 0;
-    if (pc5_format(path, sizeof(path), "%s/prefixes/%s/drive_c/Games/%s%s%s/launch.txt", root, id, info->folder,
-                   dir[0] ? "/" : "", dir) ||
+    char top[PC5_PATH];
+    if (game_dir(root, id, info, top, sizeof(top)) ||
+        pc5_format(path, sizeof(path), "%s%s%s/launch.txt", top, dir[0] ? "/" : "", dir) ||
         pc5_read_file(path, &text, 4096)) {
         pc5_buf_free(&text);
         return;
@@ -348,7 +438,7 @@ int pc5_game_folder(const char *root, const char *id, char *out, size_t size)
     Pc5Info info;
 
     if (pc5_info_read(root, id, &info)) return -1;
-    return pc5_format(out, size, "%s/prefixes/%s/drive_c/Games/%s", root, id, info.folder);
+    return game_dir(root, id, &info, out, size);
 }
 
 int pc5_game_set_program(const char *root, const char *id, const Pc5Folder *folder, int exe, char *error, size_t size)
@@ -396,8 +486,7 @@ static int start_program(const char *root, const char *id, const Pc5Info *info, 
         snprintf(error, size, "PC5 is out of memory.");
         return -1;
     }
-    if (pc5_format(top, sizeof(top), "%s/prefixes/%s/drive_c/Games/%s", root, id, info->folder) ||
-        pc5_batch_read(top, info->exe, batch)) {
+    if (game_dir(root, id, info, top, sizeof(top)) || pc5_batch_read(top, info->exe, batch)) {
         snprintf(error, size, "%.200s doesn't start any of the game's programs.", info->exe);
         pc5_free(batch);
         return -1;
@@ -428,7 +517,8 @@ int pc5_game_program(const char *root, const char *id, char *out, size_t size)
     if (pc5_info_read(root, id, &info) ||
         start_program(root, id, &info, &program, arguments, sizeof(arguments), work, sizeof(work), error, sizeof(error)))
         return -1;
-    return pc5_format(out, size, "%s/prefixes/%s/drive_c/Games/%s/%s", root, id, info.folder, program.exe);
+    char top[PC5_PATH];
+    return game_dir(root, id, &info, top, sizeof(top)) || pc5_format(out, size, "%s/%s", top, program.exe);
 }
 
 /* profiles.lst, when there is one: the line for file added or taken out. */
@@ -508,13 +598,17 @@ int pc5_profile_refresh(const char *root, const char *id, char *error, size_t si
         snprintf(error, size, "PC5's notes on this game are missing.");
         return -1;
     }
+    /* A game played from its USB drive: its folder linked to the drive it is in now. */
+    if (info.usb[0] && pc5_usb_link(root, id, &info, error, size)) return -1;
+    char top[PC5_PATH];
+    if (game_dir(root, id, &info, top, sizeof(top))) top[0] = 0;
     /* A game started from a batch file: the program it starts, with its arguments and folder. */
     if (start_program(root, id, &info, &program, arguments, sizeof(arguments), work, sizeof(work), error, size))
         return -1;
     /* A game installed as drawing with Windows itself may load Direct3D or Vulkan at run
      * time (before 1.6.1 PC5 didn't look): what its program names, kept in its notes. */
     if (info.api == PC5_API_GDI &&
-        !pc5_format(path, sizeof(path), "%s/prefixes/%s/drive_c/Games/%s/%s", root, id, info.folder, program.exe)) {
+        top[0] && !pc5_format(path, sizeof(path), "%s/%s", top, program.exe)) {
         uint32_t named = pc5_pe_named_libraries(path) & PC5_IMPORT_DRAWING;
         if (named) {
             info.api = program.api = pc5_api_from_imports(named);
@@ -532,7 +626,7 @@ int pc5_profile_refresh(const char *root, const char *id, char *error, size_t si
         Pc5PeInfo pe;
         program_folder(root, id, &program, dir, sizeof(dir));
         if (dir[0] && pc5_java_beside(dir) &&
-            !pc5_format(path, sizeof(path), "%s/prefixes/%s/drive_c/Games/%s/%s", root, id, info.folder, program.exe) &&
+            top[0] && !pc5_format(path, sizeof(path), "%s/%s", top, program.exe) &&
             !pc5_pe_read(path, &pe) && !(pe.imports & PC5_IMPORT_DRAWING) && !(pc5_dll_imports_in(dir) & PC5_IMPORT_DRAWING)) {
             info.api = program.api = PC5_API_OPENGL;
             if (!pc5_info_text(&info, text, sizeof(text)) &&
@@ -690,7 +784,8 @@ int pc5_handoff_take(const char *root, const char *id, char *error, size_t size)
     int ok = starts_with_case(line[0], dir) && *inside && !strstr(inside, "..") && dot && !pc5_casecmp(dot, ".exe") &&
              !pc5_format(relative, sizeof(relative), "%s", inside);
     for (char *p = relative; ok && *p; p++) if (*p == '\\') *p = '/';
-    ok = ok && !pc5_format(path, sizeof(path), "%s/prefixes/%s/drive_c/Games/%s/%s", root, id, info.folder, relative) &&
+    char top[PC5_PATH];
+    ok = ok && !game_dir(root, id, &info, top, sizeof(top)) && !pc5_format(path, sizeof(path), "%s/%s", top, relative) &&
          pc5_is_file(path);
     if (!ok) {
         snprintf(error, size, "The program its launcher started isn't one of the game's: %.200s", line[0]);
@@ -826,6 +921,12 @@ int pc5_library_load(const char *root, Pc5Library *library)
             game->vulkan = info.api > PC5_API_DDRAW;
             game->api = (int)info.api;
             pc5_detail_text(info.bits, info.api, info.bytes, game->detail, sizeof(game->detail));
+            /* Played from its USB drive: said first ("USB · 64-bit · ..."). */
+            if ((game->usb = info.usb[0] != 0)) {
+                char detail[sizeof(game->detail)];
+                snprintf(detail, sizeof(detail), "USB \xc2\xb7 %s", game->detail);
+                pc5_copy(game->detail, sizeof(game->detail), detail);
+            }
         } else {
             Pc5Api api = app->graphics == PW_APP_GRAPHICS_ZINK ? PC5_API_OPENGL :
                          app->graphics == PW_APP_GRAPHICS_DXVK ? PC5_API_D3D9 : PC5_API_GDI;
@@ -1644,6 +1745,12 @@ uint64_t pc5_install_needs(const Pc5Folder *folder)
     return folder->bytes + TEMPLATE_ROOM + SPARE_ROOM;
 }
 
+uint64_t pc5_install_needs_usb(const Pc5Folder *folder)
+{
+    (void)folder;
+    return TEMPLATE_ROOM + SPARE_ROOM;
+}
+
 static int fail(Pc5Install *install, const char *format, ...) __attribute__((format(printf, 2, 3)));
 static int fail(Pc5Install *install, const char *format, ...)
 {
@@ -1700,11 +1807,11 @@ static int template_paths(Pc5Install *install)
     return 0;
 }
 
-int pc5_install_begin(Pc5Install *install, const char *root, const char *template_prefix, const Pc5Folder *folder,
-                      int exe, Pc5Image *cover, uint32_t tint, const char *cover_source)
+static int install_begin(Pc5Install *install, const char *root, const char *template_prefix, const Pc5Folder *folder,
+                         int exe, Pc5Image *cover, uint32_t tint, const char *cover_source, int in_place)
 {
     char path[PC5_PATH], exe_path[PC5_PATH + 32];
-    uint64_t free_bytes = 0;
+    uint64_t free_bytes = 0, needs = in_place ? pc5_install_needs_usb(folder) : pc5_install_needs(folder);
 
     memset(install, 0, sizeof(*install));
     install->in_fd = install->out_fd = -1;
@@ -1726,14 +1833,17 @@ int pc5_install_begin(Pc5Install *install, const char *root, const char *templat
     info->bytes = folder->bytes;
     info->files = folder->files;
     pc5_copy(info->cover, sizeof(info->cover), cover_source && cover_source[0] ? cover_source : "icon");
+    install->in_place = in_place;
+    if (in_place && pc5_usb_relative(folder->path, info->usb, sizeof(info->usb)))
+        return fail(install, "Only a game on a USB drive can play from it: this folder isn't on one.");
     windows_path(info->folder, info->exe, 1, exe_path, sizeof(exe_path));
     if (strlen(exe_path) >= 260) return fail(install, "The game's program is too deep in its folder for Windows.");
     if (pc5_format(path, sizeof(path), "%s/profiles", root) || pc5_mkdirs(path) ||
         pc5_format(path, sizeof(path), "%s/prefixes", root) || pc5_mkdirs(path))
         return fail(install, "PC5 can't make its folders in %s: %s.", root, strerror(errno));
-    if (pc5_free_bytes(path, &free_bytes) == 0 && free_bytes < pc5_install_needs(folder)) {
+    if (pc5_free_bytes(path, &free_bytes) == 0 && free_bytes < needs) {
         char need[32], have[32];
-        pc5_size_text(pc5_install_needs(folder), need, sizeof(need));
+        pc5_size_text(needs, need, sizeof(need));
         pc5_size_text(free_bytes, have, sizeof(have));
         return fail(install, "Not enough space: the game needs %s and the console has %s free.", need, have);
     }
@@ -1753,6 +1863,18 @@ int pc5_install_begin(Pc5Install *install, const char *root, const char *templat
     /* Step 1's progress: the template's bytes and files (template_paths). */
     install->phase = PC5_INSTALL_PREFIX;
     return 0;
+}
+
+int pc5_install_begin(Pc5Install *install, const char *root, const char *template_prefix, const Pc5Folder *folder,
+                      int exe, Pc5Image *cover, uint32_t tint, const char *cover_source)
+{
+    return install_begin(install, root, template_prefix, folder, exe, cover, tint, cover_source, 0);
+}
+
+int pc5_install_begin_usb(Pc5Install *install, const char *root, const char *template_prefix, const Pc5Folder *folder,
+                          int exe, Pc5Image *cover, uint32_t tint, const char *cover_source)
+{
+    return install_begin(install, root, template_prefix, folder, exe, cover, tint, cover_source, 1);
 }
 
 /* One template entry: a folder made or a file copied whole. */
@@ -1900,8 +2022,9 @@ static int finish(Pc5Install *install)
     if (pc5_info_text(&install->info, text, sizeof(text)) ||
         pc5_format(path, sizeof(path), "%s/pc5/info.txt", install->staging) || pc5_write_file(path, text, strlen(text)))
         return fail(install, "PC5 can't write its notes: %s.", strerror(errno));
-    /* The game's files as copied: what else is in its folder later, the game made (kept saves). */
-    {
+    /* The game's files as copied: what else is in its folder later, the game made (kept saves).
+     * None for a game played from its USB drive: its folder isn't the console's. */
+    if (!install->in_place) {
         Pc5Buf files = { 0 };
         int failed = manifest_add_list(&files, &install->list) ||
                      pc5_format(path, sizeof(path), "%s/pc5/files.txt", install->staging) ||
@@ -2005,6 +2128,9 @@ int pc5_update_begin(Pc5Install *install, const char *root, const char *id, cons
     pc5_copy(install->id, sizeof(install->id), id);
     pc5_copy(install->source, sizeof(install->source), folder->path);
     if (pc5_info_read(root, id, &old)) return fail(install, "PC5 didn't install this game, so it can't update it.");
+    if (old.usb[0])
+        return fail(install, "%s plays from its USB drive: copy the newer version over its folder %s there.", old.title,
+                    old.usb);
     install->info = old;
     if (pc5_format(install->game_dir, sizeof(install->game_dir), "%s/prefixes/%s/drive_c/Games/%s", root, id, old.folder) ||
         !pc5_is_dir(install->game_dir))
@@ -2061,6 +2187,8 @@ static int saves_keep(const char *relative, int folder)
 
 int pc5_install_use_saves(Pc5Install *install, const char *path)
 {
+    /* A game played from its USB drive: what it made in its own folder would go onto the drive. */
+    if (install->in_place) return fail(install, "Kept saves can't be put back for a game that plays from its USB drive.");
     Pc5Buf found = { 0 }, ordered = { 0 };
     int has_system = 0, failed;
 
@@ -2107,6 +2235,12 @@ Pc5InstallPhase pc5_install_step(Pc5Install *install, int budget_ms)
     while (pc5_now_ms() < until) {
         switch (install->phase) {
         case PC5_INSTALL_PREFIX:
+            if (install->at >= install->template_list.len && install->in_place) {
+                /* Played from its USB drive: nothing to copy, its folder linked as it finishes. */
+                install->at = 0;
+                install->phase = PC5_INSTALL_FINISH;
+                break;
+            }
             if (install->at >= install->template_list.len) {
                 install->at = 0;
                 /* Steps 2 and 3 count the game's bytes and files. */

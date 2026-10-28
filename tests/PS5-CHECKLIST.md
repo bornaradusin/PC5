@@ -358,3 +358,15 @@ controller's speaker.
 | 171 | The same in a Vulkan or Direct3D 12 game | the same | `pw_pc5_hud: overlay magnified=1 rc=0` |
 | 172 | Each corner (Settings › Overlay › Corner) | the overlay fully on screen in each | |
 | 173 | Size back to Large, then Normal | its own size again | `magnified=0 rc=0` |
+
+## Play from USB (1.9.5-usb-test, a test build)
+
+| # | Do | Expect | Expect in the log |
+| --- | --- | --- | --- |
+| 174 | Install games from USB › a game › △ Play from USB | done in seconds, nothing copied; the library shows `USB ·` before its details | `PC5 install id=… usb=1` |
+| 175 | Start it | it starts and plays as a copied one would | `PC5 play from usb dir=/mnt/usb…`; no `can't open` or `not found` for its files |
+| 176 | Save in the game, quit, start again | the save is there | |
+| 177 | A game that saves into its own folder | it saves (or the log shows the write refused on the drive) | |
+| 178 | Unplug the drive, start it | "Plug in the USB drive with …", no start | `PC5 problem play …: Plug in the USB drive` |
+| 179 | Plug the drive into another port, start it | it starts | `dir=/mnt/usb<other>` |
+| 180 | Uninstall it (Keep saves, then Delete all) | the console's part gone; the game's folder on the drive unchanged | |

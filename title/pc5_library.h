@@ -30,6 +30,9 @@ typedef struct Pc5Info {
     uint64_t bytes;
     uint32_t files;
     char cover[64];              /* where the cover came from */
+    /* Played from a USB drive, not copied: its folder on the drive, from the drive's top
+     * ("Games/Neon Drift"), on whichever drive it is plugged into; "" for a game copied. */
+    char usb[PC5_PATH];
 } Pc5Info;
 
 typedef struct Pc5Game {
@@ -44,6 +47,7 @@ typedef struct Pc5Game {
     int vulkan;                  /* drawn through Vulkan (Direct3D, Vulkan, OpenGL), so Resolution applies */
     int api;                     /* what it draws with (Pc5Api), for its Graphics API; PC5_API_GDI when not PC5's */
     int playable;                /* the profile is valid and its prefix is there */
+    int usb;                     /* played from a USB drive (Pc5Info.usb) */
     char problem[128];           /* why not, when it isn't */
 } Pc5Game;
 
@@ -105,6 +109,24 @@ int pc5_new_id(const char *root, const char *name, char *id, size_t size);
 /* "64-bit · DirectX 11 · 23.4 GB" */
 void pc5_detail_text(int bits, Pc5Api api, uint64_t bytes, char *out, size_t size);
 
+/* ---- games played from a USB drive ----------------------------------------------
+ * A game installed to play from its USB drive keeps its files there: only its Windows is
+ * on the console. Its folder in that Windows, C:\Games\<folder>, is a link to the folder on
+ * the drive (a line of drive_c/Games/.pw-symlinks, which Wine on the console follows, as
+ * it does dosdevices' links), written again before each start for the drive it is in now. */
+
+/* The drives looked at, NULL-terminated: by default /mnt/usb0 to /mnt/usb7. NULL: those. */
+void pc5_usb_roots(const char *const *roots);
+/* A path on a USB drive from the drive's top ("Games/Neon Drift"). 0, or -1 when path isn't
+ * on one. */
+int pc5_usb_relative(const char *path, char *out, size_t size);
+/* Where a game played from a USB drive is now: its folder on the drive plugged in that has
+ * it, with its program. 0, or -1 when no drive has it (or the game isn't played from one). */
+int pc5_usb_game_dir(const Pc5Info *info, char *out, size_t size);
+/* The game's link to its folder on the drive, for the drive it is in now. 0, or -1 with a
+ * sentence in error when no drive has it, or the link can't be written. */
+int pc5_usb_link(const char *root, const char *id, const Pc5Info *info, char *error, size_t size);
+
 /* ---- installing ----------------------------------------------------------------- */
 
 typedef enum Pc5InstallPhase {
@@ -156,12 +178,21 @@ typedef struct Pc5Install {
     int update, moving;
     char game_dir[PC5_PATH];
     uint32_t skipped;
+    /* pc5_install_begin_usb: the game played from its USB drive, nothing copied */
+    int in_place;
 } Pc5Install;
 
 /* Checks the space and starts. -1 (with error set) when it can't begin. The
  * cover is taken over. */
 int pc5_install_begin(Pc5Install *install, const char *root, const char *template_prefix,
                       const Pc5Folder *folder, int exe, Pc5Image *cover, uint32_t tint, const char *cover_source);
+/* The same for a game played from its USB drive (folder on one): only its Windows is made
+ * on the console, and its folder there is a link to the drive's (pc5_usb_link). */
+int pc5_install_begin_usb(Pc5Install *install, const char *root, const char *template_prefix,
+                          const Pc5Folder *folder, int exe, Pc5Image *cover, uint32_t tint, const char *cover_source);
+/* Bytes an install of folder to play from its USB drive needs on the console: its Windows
+ * and some room. */
+uint64_t pc5_install_needs_usb(const Pc5Folder *folder);
 /* Works for about budget_ms. Returns the phase reached. */
 Pc5InstallPhase pc5_install_step(Pc5Install *install, int budget_ms);
 void pc5_install_cancel(Pc5Install *install);
