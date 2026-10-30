@@ -4,11 +4,13 @@
 #include "pc5_pe.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 /* In the order the key picker shows them. */
 const Pc5Key pc5_keys[] = {
     { "mouse_left", "Left click" }, { "mouse_right", "Right click" }, { "mouse_middle", "Middle click" },
+    { "mouse_wheel_up", "Wheel up" }, { "mouse_wheel_down", "Wheel down" },
     { "a", "A" }, { "b", "B" }, { "c", "C" }, { "d", "D" }, { "e", "E" }, { "f", "F" }, { "g", "G" }, { "h", "H" },
     { "i", "I" }, { "j", "J" }, { "k", "K" }, { "l", "L" }, { "m", "M" }, { "n", "N" }, { "o", "O" }, { "p", "P" },
     { "q", "Q" }, { "r", "R" }, { "s", "S" }, { "t", "T" }, { "u", "U" }, { "v", "V" }, { "w", "W" }, { "x", "X" },
@@ -92,6 +94,8 @@ void pc5_controls_default(Pc5Controls *controls)
     controls->stick[0] = PC5_STICK_KEYS;
     controls->stick[1] = PC5_STICK_POINTER;
     controls->speed = 4;
+    controls->slow_button = -1;
+    controls->slow_percent = PC5_SLOW_DEFAULT;
     for (int i = 0; i < PC5_CONTROLS; i++) controls->key[i] = (uint8_t)key_index(default_keys[i]);
 }
 
@@ -145,6 +149,14 @@ int pc5_controls_load(const char *root, const char *id, Pc5Controls *controls)
         } else if (!strcmp(name, "graphics_api")) {
             for (int i = 0; i < PC5_GRAPHICS_COUNT; i++)
                 if (!strcmp(value, graphics_keys[i])) controls->graphics = (Pc5Graphics)i;
+        } else if (!strcmp(name, "slow_button")) {
+            controls->slow_button = -1;
+            for (int i = 0; i < PC5_BUTTONS; i++)
+                if (!strcmp(value, control_keys[i])) controls->slow_button = i;
+        } else if (!strcmp(name, "slow_percent")) {
+            int percent = atoi(value);
+            if (percent >= PC5_SLOW_STEP && percent <= PC5_SLOW_MAX && percent % PC5_SLOW_STEP == 0)
+                controls->slow_percent = percent;
         } else if (!strcmp(name, "pointer_speed")) {
             int speed = 0, digits = 0;
             for (const char *p = value; *p >= '0' && *p <= '9' && digits < 3; p++, digits++) speed = speed * 10 + *p - '0';
@@ -176,6 +188,8 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
         return -1;
     status = pc5_buf_printf(&text, "# This game's controller in PC5 (Triangle on the game, then Controller)\n"
                                    "mode = %s\nleft_stick = %s\nright_stick = %s\npointer_speed = %d\n"
+                                   "# The button that slows the pointer while held, and by how much (%%)\n"
+                                   "slow_button = %s\nslow_percent = %d\n"
                                    "# Triangle on the game, then Frame generation\nframe_generation = %s\n"
                                    "# Triangle on a 32-bit game, then Memory: auto (as Windows) or 4gb\nmemory = %s\n"
                                    "# Triangle on a 32-bit game, then Video memory: auto (2 GB at most) or full\n"
@@ -186,6 +200,9 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                                    "# Triangle on the game, then Graphics API\ngraphics_api = %s\n",
                             mode_keys[controls->mode % PC5_PAD_MODES], stick_keys[controls->stick[0] % PC5_STICK_USES],
                             stick_keys[controls->stick[1] % PC5_STICK_USES], controls->speed,
+                            controls->slow_button >= 0 && controls->slow_button < PC5_BUTTONS
+                                ? control_keys[controls->slow_button] : "none",
+                            controls->slow_percent,
                             controls->frame_generation ? "on" : "off", controls->memory_4gb ? "4gb" : "auto",
                             controls->video_memory_full ? "full" : "auto",
                             controls->resolution == 2 ? "2160p" : controls->resolution == 1 ? "1440p" : "1080p",
@@ -210,6 +227,10 @@ int pc5_controls_input(const Pc5Controls *controls, char *out, size_t size)
     } else {
         status = pc5_buf_printf(&text, "[input]\nmode = keyboard\nmouse = %s\nmouse_speed = %d\n", mouse,
                                 pc5_controls_pixels(controls));
+        /* The button that slows the pointer, while a stick moves it (prospero-win's mouse_slow). */
+        if (!status && strcmp(mouse, "none") && controls->slow_button >= 0 && controls->slow_button < PC5_BUTTONS)
+            status = pc5_buf_printf(&text, "mouse_slow = %s\nmouse_slow_percent = %d\n",
+                                    control_keys[controls->slow_button], controls->slow_percent);
         for (int i = 0; i < PC5_CONTROLS && !status; i++) {
             /* A stick's directions only while it sends keys. */
             if (i >= PC5_STICK_FIRST && controls->stick[(i - PC5_STICK_FIRST) / 4] != PC5_STICK_KEYS) continue;
@@ -233,6 +254,14 @@ const char *pc5_control_name(int control)
 const char *pc5_pad_mode_name(Pc5PadMode mode) { return mode_names[mode % PC5_PAD_MODES]; }
 const char *pc5_stick_use_name(Pc5StickUse use) { return stick_names[use % PC5_STICK_USES]; }
 const char *pc5_key_label(int key) { return key >= 0 && key < pc5_key_count ? pc5_keys[key].label : ""; }
+
+void pc5_controls_next_slow(Pc5Controls *controls, int step)
+{
+    /* -1 (none), 0..PC5_BUTTONS - 1 in turn. */
+    int next = controls->slow_button + 1 + (step < 0 ? -1 : 1);
+    next = (next % (PC5_BUTTONS + 1) + PC5_BUTTONS + 1) % (PC5_BUTTONS + 1);
+    controls->slow_button = next - 1;
+}
 
 void pc5_controls_next_stick(Pc5Controls *controls, int stick, int step)
 {

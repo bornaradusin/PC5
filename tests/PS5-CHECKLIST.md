@@ -447,3 +447,6 @@ controller's speaker.
 | 225 | INSTALL on a different drive from PC5's library | it is copied instead of moved, and the copy is left in INSTALL | |
 | 226 | Cancel while a game from INSTALL is installing | the game is back in INSTALL | |
 | 227 | Update PC5 with a game in INSTALL | INSTALL and its game survive the update | |
+| 228 | A USB mouse's wheel in a game (a Ren'Py visual novel: up rolls back) | the game scrolls, the right way round | |
+| 229 | Keyboard & mouse: △ › Button mapping › L1 = Wheel up, R1 = Wheel down | each press turns the wheel one notch | `PC5 controls … ` and the profile's `l1 = mouse_wheel_up` |
+| 230 | Slow pointer button = L2, Slower by 50 %, then hold L2 while moving the pointer | the pointer moves at half speed while L2 is held, L2 sends nothing else | `PC5 controls … slow=L2/50` |

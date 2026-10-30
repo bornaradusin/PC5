@@ -221,7 +221,7 @@ static int game_row_find(const Pc5Controls *controls, int kind, GameRow row, int
 
 /* Button mapping: the sticks (with their four keys while they send keys), the
  * pointer's speed while a stick moves it, the buttons, and the default layout. */
-typedef enum PadRowKind { PR_STICK, PR_DIRECTION, PR_SPEED, PR_BUTTON, PR_RESET } PadRowKind;
+typedef enum PadRowKind { PR_STICK, PR_DIRECTION, PR_SPEED, PR_SLOW, PR_SLOW_PERCENT, PR_BUTTON, PR_RESET } PadRowKind;
 typedef struct PadRow { PadRowKind kind; int index; } PadRow;
 enum { PAD_ROWS = 32, PAD_VISIBLE = 10, PAD_PITCH = 74, KEY_COLS = 8 };
 
@@ -233,8 +233,11 @@ static int pad_rows(const Pc5Controls *controls, PadRow rows[PAD_ROWS])
         if (controls->stick[stick] == PC5_STICK_KEYS)
             for (int d = 0; d < 4; d++) rows[n++] = (PadRow){ PR_DIRECTION, PC5_STICK_FIRST + 4 * stick + d };
     }
-    if (controls->stick[0] == PC5_STICK_POINTER || controls->stick[1] == PC5_STICK_POINTER)
+    if (controls->stick[0] == PC5_STICK_POINTER || controls->stick[1] == PC5_STICK_POINTER) {
         rows[n++] = (PadRow){ PR_SPEED, 0 };
+        rows[n++] = (PadRow){ PR_SLOW, 0 };
+        if (controls->slow_button >= 0) rows[n++] = (PadRow){ PR_SLOW_PERCENT, 0 };
+    }
     for (int button = 0; button < PC5_BUTTONS; button++) rows[n++] = (PadRow){ PR_BUTTON, button };
     rows[n++] = (PadRow){ PR_RESET, 0 };
     return n;
@@ -2181,9 +2184,10 @@ static void controls_changed(Pc5Ui *ui)
 {
     const Pc5Controls *k = &ui->controls;
     if (pc5_controls_save(ui->root, ui->launch_id, k)) say(ui, "PC5 problem controls %s: can't write them", ui->launch_id);
-    say(ui, "PC5 controls id=%s mode=%s left=%s right=%s speed=%d frame_generation=%d memory_32bit=%s video_memory=%s "
-        "resolution=%s aspect_ratio=%s cpu_sharing=%d graphics_api=%s", ui->launch_id, pc5_pad_mode_name(k->mode),
-        pc5_stick_use_name(k->stick[0]), pc5_stick_use_name(k->stick[1]), k->speed, k->frame_generation,
+    say(ui, "PC5 controls id=%s mode=%s left=%s right=%s speed=%d slow=%s/%d frame_generation=%d memory_32bit=%s "
+        "video_memory=%s resolution=%s aspect_ratio=%s cpu_sharing=%d graphics_api=%s", ui->launch_id,
+        pc5_pad_mode_name(k->mode), pc5_stick_use_name(k->stick[0]), pc5_stick_use_name(k->stick[1]), k->speed,
+        k->slow_button >= 0 ? pc5_control_name(k->slow_button) : "none", k->slow_percent, k->frame_generation,
         k->memory_4gb ? "4gb" : "auto", k->video_memory_full ? "full" : "auto", k->resolution == 2 ? "2160p" : k->resolution == 1 ? "1440p" : "1080p",
         k->stretch ? "stretch" : "keep", k->cpu_sharing, pc5_graphics_name(k->graphics, ui_game_api(ui)));
 }
@@ -2198,6 +2202,13 @@ static int pad_change(Pc5Ui *ui, PadRow row, int step)
         int speed = k->speed + (step < 0 ? -1 : 1);
         if (speed < 1 || speed > PC5_SPEEDS) return 0;
         k->speed = speed;
+        return 1;
+    }
+    case PR_SLOW: pc5_controls_next_slow(k, step); return 1;
+    case PR_SLOW_PERCENT: {
+        int percent = k->slow_percent + (step < 0 ? -PC5_SLOW_STEP : PC5_SLOW_STEP);
+        if (percent < PC5_SLOW_STEP || percent > PC5_SLOW_MAX) return 0;
+        k->slow_percent = percent;
         return 1;
     }
     case PR_BUTTON:
@@ -3684,6 +3695,9 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             } else if (row.kind == PR_SPEED) {
                 ui->controls.speed = ui->controls.speed % PC5_SPEEDS + 1;
                 changed = 1;
+            } else if (row.kind == PR_SLOW_PERCENT) {
+                ui->controls.slow_percent = ui->controls.slow_percent % PC5_SLOW_MAX + PC5_SLOW_STEP;
+                changed = 1;
             } else {
                 changed = pad_change(ui, row, 1);
             }
@@ -4728,9 +4742,18 @@ static void buttons_screen(Pc5Ui *ui, Pc5Canvas *c)
             pc5_copy(label, sizeof(label), "Pointer speed");
             snprintf(value, sizeof(value), "%d of %d", k->speed, PC5_SPEEDS);
             break;
+        case PR_SLOW:
+            pc5_copy(label, sizeof(label), "Slow pointer button");
+            pc5_copy(value, sizeof(value), k->slow_button >= 0 ? pc5_control_name(k->slow_button) : "None");
+            break;
+        case PR_SLOW_PERCENT:
+            pc5_copy(label, sizeof(label), "    Slower by");
+            snprintf(value, sizeof(value), "%d%%", k->slow_percent);
+            break;
         case PR_BUTTON:
             pc5_copy(label, sizeof(label), pc5_control_name(row.index));
-            pc5_copy(value, sizeof(value), pc5_key_label(k->key[row.index]));
+            pc5_copy(value, sizeof(value), row.index == k->slow_button ? "Slows the pointer"
+                                                                       : pc5_key_label(k->key[row.index]));
             break;
         case PR_RESET:
             pc5_copy(label, sizeof(label), "Reset to default");

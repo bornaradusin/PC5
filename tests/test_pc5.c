@@ -2267,6 +2267,31 @@ static void test_controls(void)
               back.stick[1] == PC5_STICK_POINTER && back.speed == 4 && !strcmp(pc5_keys[back.key[0]].name, "space") &&
               !strcmp(pc5_keys[back.key[1]].name, "ctrl") && !strcmp(pc5_keys[back.key[2]].name, "m"),
           "an odd file");
+    /* The slow pointer button: none by default; one chosen reaches prospero-win, which slows the pointer
+     * while it is held and sends nothing else for it. The wheel as two keys. */
+    pc5_controls_default(&k);
+    CHECK(k.slow_button == -1 && k.slow_percent == 50, "no slow button by default");
+    k.mode = PC5_PAD_KEYBOARD;
+    CHECK(!pc5_controls_input(&k, text, sizeof(text)) && !strstr(text, "mouse_slow"), "none: not written");
+    pc5_controls_next_slow(&k, 1);
+    CHECK(k.slow_button == 0, "then Cross");
+    pc5_controls_next_slow(&k, -1);
+    pc5_controls_next_slow(&k, -1);
+    CHECK(k.slow_button == PC5_BUTTONS - 1, "back round to the touchpad");
+    k.slow_button = 6;   /* L2 */
+    k.slow_percent = 70;
+    k.key[4] = (uint8_t)3;   /* L1: Wheel up */
+    CHECK(!strcmp(pc5_keys[3].name, "mouse_wheel_up") && !strcmp(pc5_keys[4].name, "mouse_wheel_down"), "the wheel's keys");
+    CHECK(!pc5_controls_input(&k, text, sizeof(text)) && strstr(text, "mouse_slow = l2\nmouse_slow_percent = 70\n") &&
+              strstr(text, "l1 = mouse_wheel_up\n"), "written: %s", text);
+    pw_game_input_init(&input);
+    CHECK(pw_game_input_parse((const uint8_t *)text, strlen(text), &input) == 0 && input.slow_mask == 0x100u &&
+              input.slow_percent == 70 && input.bindings[4].kind == PW_GAME_BIND_WHEEL && input.bindings[4].code == 0,
+          "prospero-win reads them");
+    CHECK(!pc5_controls_save(dir, "slow", &k) && !pc5_controls_load(dir, "slow", &back) && back.slow_button == 6 &&
+              back.slow_percent == 70 && back.key[4] == 3, "kept and read back");
+    k.stick[1] = PC5_STICK_KEYS;   /* no pointer: no slow button */
+    CHECK(!pc5_controls_input(&k, text, sizeof(text)) && !strstr(text, "mouse_slow"), "no pointer: not written");
     CHECK(!strcmp(pc5_control_name(0), "Cross") && !strcmp(pc5_control_name(24), "Right stick right") &&
               !strcmp(pc5_control_name(25), "") && !strcmp(pc5_pad_mode_name(PC5_PAD_DUALSENSE), "DualSense"),
           "names");
@@ -5530,12 +5555,19 @@ static void test_controller_screens(Pc5Ui *ui, Pc5Canvas *canvas)
     for (int i = 0; i < 6; i++) press(ui, PC5_KEY_DOWN, canvas);
     press(ui, PC5_KEY_RIGHT, canvas);
     CHECK(controls_has("orbital-nine", "pointer_speed = 5\n"), "faster pointer");
+    /* The slow pointer button below it, then how much slower once there is one. */
+    press(ui, PC5_KEY_DOWN, canvas);
+    press(ui, PC5_KEY_RIGHT, canvas);
+    CHECK(controls_has("orbital-nine", "slow_button = cross\n"), "slow button: Cross");
+    press(ui, PC5_KEY_DOWN, canvas);
+    press(ui, PC5_KEY_ACCEPT, canvas);
+    CHECK(controls_has("orbital-nine", "slow_percent = 60\n"), "slower by 60 %%");
     /* Reset to default, the last row. */
     for (int i = 0; i < 40; i++) press(ui, PC5_KEY_DOWN, canvas);
     press(ui, PC5_KEY_ACCEPT, canvas);
     CHECK(controls_has("orbital-nine", "mode = keyboard\n") && controls_has("orbital-nine", "left_stick = keys\n") &&
               controls_has("orbital-nine", "right_stick = pointer\n") && controls_has("orbital-nine", "left_stick_up = w\n") &&
-              controls_has("orbital-nine", "pointer_speed = 4\n"),
+              controls_has("orbital-nine", "pointer_speed = 4\n") && controls_has("orbital-nine", "slow_button = none\n"),
           "reset: the default layout, still Keyboard & mouse");
     /* The touchpad (the row above) sends nothing, the last key, found down the picker's column. */
     press(ui, PC5_KEY_UP, canvas);

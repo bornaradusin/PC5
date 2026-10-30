@@ -50,12 +50,17 @@ enum {
     PC5_CONTROLS = 25,
     PC5_STICK_FIRST = 17,         /* the left stick's up; the right stick's is 21 */
     PC5_SPEEDS = 10,              /* pointer speed levels, 300 pixels a second each at full tilt */
+    PC5_SLOW_STEP = 10, PC5_SLOW_MAX = 90, PC5_SLOW_DEFAULT = 50,
 };
 
 typedef struct Pc5Controls {
     Pc5PadMode mode;
     Pc5StickUse stick[2];         /* left, right */
     int speed;                    /* 1..PC5_SPEEDS */
+    /* The button that slows the pointer while held (it sends nothing else), -1 for none, and by
+     * how much: PC5_SLOW_STEP..PC5_SLOW_MAX percent (prospero-win's mouse_slow, Wine patch 0942). */
+    int slow_button;
+    int slow_percent;
     uint8_t key[PC5_CONTROLS];    /* an index into pc5_keys */
     int frame_generation;         /* 1: the game held at 30 fps, shown at 60 (libvulkan.prx's frame generation) */
     /* A 32-bit game's address space. 0, Auto (the default from 1.9.8): as on Windows, 4 GB for a
@@ -112,6 +117,8 @@ const char *pc5_key_label(int key);
 /* A stick's next use (step 1 or -1); the other stick stops being the pointer when
  * this one becomes it. */
 void pc5_controls_next_stick(Pc5Controls *controls, int stick, int step);
+/* The slow button's next choice (step 1 or -1): none, then each button in turn. */
+void pc5_controls_next_slow(Pc5Controls *controls, int step);
 /* The pointer speed in pixels a second at full tilt. */
 int pc5_controls_pixels(const Pc5Controls *controls);
 

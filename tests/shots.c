@@ -313,7 +313,7 @@ int main(int argc, char **argv)
     save("15b-game-menu-keyboard");
     step(ui, PC5_KEY_DOWN, 1);
     step(ui, PC5_KEY_ACCEPT, 1);
-    for (int i = 0; i < 7; i++) step(ui, PC5_KEY_DOWN, 1);   /* Cross */
+    for (int i = 0; i < 8; i++) step(ui, PC5_KEY_DOWN, 1);   /* Cross */
     settle(ui);
     save("15c-button-mapping");
     step(ui, PC5_KEY_ACCEPT, 1);

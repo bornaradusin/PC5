@@ -1,0 +1,485 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Fri, 30 Oct 2026 12:00:00 +0000
+Subject: [PATCH 63/63] PC5: the mouse wheel (a USB mouse's, or a button bound to it)
+ and a button that slows the pointer (Wine patch 0942)
+
+---
+ PUBLICATION_ALLOWLIST.txt                     |  1 +
+ docs/CONTROLS.md                              |  9 +++-
+ docs/WINE_PS5_BUILD.md                        |  1 +
+ native/pw_wine_display.c                      | 17 ++++++-
+ native/pw_wine_display.h                      |  9 +++-
+ native/wine64_main.c                          | 10 +++-
+ src/pw_game_profile.c                         | 35 ++++++++++++--
+ src/pw_game_profile.h                         | 14 ++++--
+ tests/test_pw_game_profile.c                  |  7 +++
+ tests/test_pw_wine_display.c                  | 30 +++++++++++-
+ tests/test_pw_wine_sink.c                     |  7 ++-
+ ...0942-win32u-ps5-turn-the-mouse-wheel.patch | 47 +++++++++++++++++++
+ wine/ps5/pw_wine_sink.c                       |  1 +
+ wine/ps5/pw_wine_sink.h                       |  5 +-
+ 14 files changed, 176 insertions(+), 17 deletions(-)
+ create mode 100644 wine/patches/0942-win32u-ps5-turn-the-mouse-wheel.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index 7048e53..b8456a2 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -589,6 +589,7 @@ wine/patches/0938-ntdll-ps5-log-which-step-refuses-a-directory-listing.patch
+ wine/patches/0939-kernelbase-crash-report-names-a-c-exception-and-shows-the-code.patch
+ wine/patches/0940-ntdll-ps5-make-the-missing-parents-of-a-folder-in-a-user-s-folders.patch
+ wine/patches/0941-ntdll-ps5-clear-the-nested-task-flag-a-program-set.patch
++wine/patches/0942-win32u-ps5-turn-the-mouse-wheel.patch
+ 
+ 
+ 
+diff --git a/docs/CONTROLS.md b/docs/CONTROLS.md
+index 095b6f6..e9f362e 100644
+--- a/docs/CONTROLS.md
++++ b/docs/CONTROLS.md
+@@ -9,8 +9,8 @@ Plug them into the PS5 and they work in every game, alongside the
+ controller. You can plug them in after the game has started; the app looks
+ for them every few seconds. Keys reach the game just as they would on a PC,
+ modifiers included (Ctrl, Shift, Alt, the Windows keys), and the mouse moves
+-the same pointer the DualSense's stick does. The mouse wheel doesn't work
+-yet.
++the same pointer the DualSense's stick does. The mouse wheel turns as on a
++PC.
+ 
+ ## The DualSense
+ 
+@@ -61,8 +61,13 @@ touchpad = space
+     `backslash`, `rbracket`, `quote`;
+   - any Windows key code as `vk:0xNN`;
+   - `mouse_left`, `mouse_right` or `mouse_middle`;
++  - `mouse_wheel_up` or `mouse_wheel_down`: a notch of the wheel each press;
+   - `none`.
+ - **`mouse`:** `left_stick`, `right_stick` or `none`.
++- **`mouse_slow`:** a button (`l2`, say) that slows the pointer while it is
++  held, for aiming or placing precisely; it sends nothing else. `none` by
++  default. **`mouse_slow_percent`** is how much slower, 1 to 95 (50 by
++  default).
+ - **The sticks' directions:** `left_stick_up`, `left_stick_down`,
+   `left_stick_left`, `left_stick_right`, and the same for `right_stick_`,
+   take keys like buttons. A direction is down while its stick is pushed
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index ac4c547..8698717 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -145,6 +145,7 @@ before evaluating a candidate built from that cache.
+ | 0939 | `kernelbase`: the crash report (0912, 0924) names a C++ exception a program threw and didn't catch (0xe06d7363): its type as the compiler names it and, for a `std::exception`, its message; and it shows the flags register and the 16 bytes of code at the fault. Call of Juarez Gunslinger's engine gave up with an uncaught C++ exception in every log, none saying why; Far Cry's CrySystem.dll faulted on an instruction reported only as a read of FFFFFFFF. Both are read under an exception handler and only add lines to the report |
+ | 0940 | `ntdll`: a folder a program makes (or opens if there) as a folder, by its full name, under `C:\users\<name>\`, whose parent isn't there, gets its missing parents made first, as the program's installer would have made them on Windows: a game copied from a PC was never installed here. Call of Juarez Gunslinger's engine makes `AppData\Local\Techland\COJGunslinger`, whose `Techland` its installer makes, and stopped with an uncaught C++ exception when that failed. The users folder and a user's own folder are never made; each parent made is logged |
+ | 0941 | `ntdll`: a general protection fault with the nested-task flag (NT, 0x4000) set in the frame clears it and runs the instruction again, logged the first time. A program that sets NT with `popf` (Far Cry's CPU check in CrySystem.dll) made the next `iretq` back to it fault, from Wine's 64-bit side or the kernel's, reported as a read of FFFFFFFF (Wine bug 33275; Linux and Windows clear NT on entry). No program uses NT, and no fault without it changes |
++| 0942 | `win32u`: input event 6 turns the mouse wheel, `x` notches away from the player positive (`MOUSEEVENTF_WHEEL` of `x` times `WHEEL_DELTA`): a USB mouse's wheel, or a controller button bound to `mouse_wheel_up` or `mouse_wheel_down`. Before, the title read a USB mouse's wheel and dropped it, and a button couldn't turn it |
+ | 0972 | `faudio` (Wine's bundled FAudio 26.09): upstream FAudio a3b49d6 and 2ead980 (2026-09-26). A source voice that played at the output rate never advanced `resampleOffset`, so when it started resampling, the tap loops of `FAudio_INTERNAL_MixSource` ran from the stale offset, `toResample - tap_samples` wrapped and the SSE2 resampler wrote far past `resampled_audio`. A game corrupted its process heap and crashed in the mixer, or in the heap. FAudio is a static library, so every `xaudio2_*` and `xactengine*` module is in `PE_MODULES` |
+ 
+ ## Allocator
+diff --git a/native/pw_wine_display.c b/native/pw_wine_display.c
+index ac55d02..6881711 100644
+--- a/native/pw_wine_display.c
++++ b/native/pw_wine_display.c
+@@ -74,8 +74,13 @@ static size_t add_edges(const PwGameInput *input, uint32_t edges, uint32_t down,
+ {
+     for (size_t i = 0; i < PW_GAME_BUTTON_COUNT && used < max; i++) {
+         const PwGameBinding *b = &input->bindings[i];
+-        if (!(edges & b->mask) || (b->kind != PW_GAME_BIND_KEY && b->kind != PW_GAME_BIND_MOUSE))
++        if (!(edges & b->mask) || (input->slow_mask && b->mask == input->slow_mask)) continue;
++        if (b->kind == PW_GAME_BIND_WHEEL) {
++            /* A notch as it is pressed: away from the player for up. */
++            if (down) out[used++] = (PwWineInput){ PW_WINE_INPUT_MOUSE_WHEEL, 0, b->code ? -1 : 1, 0, 0 };
+             continue;
++        }
++        if (b->kind != PW_GAME_BIND_KEY && b->kind != PW_GAME_BIND_MOUSE) continue;
+         out[used].type = b->kind == PW_GAME_BIND_KEY ? PW_WINE_INPUT_KEY : PW_WINE_INPUT_MOUSE_BUTTON;
+         out[used].code = b->code;
+         out[used].x = out[used].y = 0;
+@@ -232,6 +237,16 @@ static int64_t travel(uint8_t stick, uint32_t speed, uint32_t elapsed_us)
+     return axis < 0 ? -v : v;
+ }
+ 
++uint32_t pw_wine_pointer_speed(const PwGameInput *input, uint32_t held)
++{
++    uint32_t percent;
++
++    if (!input) return 0;
++    if (!input->slow_mask || !(held & input->slow_mask)) return input->mouse_speed;
++    percent = input->slow_percent >= 1 && input->slow_percent <= 95 ? input->slow_percent : 50;
++    return input->mouse_speed * (100u - percent) / 100u;
++}
++
+ int pw_wine_pointer_step(PwWinePointer *pointer, uint8_t stick_x, uint8_t stick_y,
+                          uint32_t speed, uint32_t elapsed_us, PwWineInput *out)
+ {
+diff --git a/native/pw_wine_display.h b/native/pw_wine_display.h
+index 230331e..f1a6ae9 100644
+--- a/native/pw_wine_display.h
++++ b/native/pw_wine_display.h
+@@ -47,8 +47,9 @@ int pw_wine_frame_box_take(PwWineFrameBox *box, uint64_t *seen, uint8_t *out,
+ 
+ /* Wine input for one pad batch's edges under a profile's bindings: a
+  * release for each bound button in released, then a press for each in
+- * pressed, as a key or a mouse button. Returns how many were written (at
+- * most max). */
++ * pressed, as a key or a mouse button; a button bound to the wheel turns it
++ * a notch as it is pressed. The button that slows the pointer sends nothing.
++ * Returns how many were written (at most max). */
+ size_t pw_wine_game_inputs(const PwGameInput *input, uint32_t pressed, uint32_t released,
+                            PwWineInput *out, size_t max);
+ 
+@@ -93,6 +94,10 @@ typedef struct PwWinePointer {
+ 
+ enum { PW_WINE_POINTER_DEADZONE = 20 };   /* of 128, stick noise at rest */
+ 
++/* The pointer's speed while the buttons in held are down: the profile's,
++ * slowed by its slow_percent while its slow button is held. */
++uint32_t pw_wine_pointer_speed(const PwGameInput *input, uint32_t held);
++
+ /* Move by a stick position (0..255 each axis, 0x80 centred) held for
+  * elapsed_us, at up to speed pixels per second at full tilt, on a squared
+  * curve past the dead zone. 1 and a MOUSE_MOVE of the whole pixels moved
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index aeca653..5b23211 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -1813,6 +1813,13 @@ int main(int argc, char **argv)
+                 if (post_input(&input) == 0) posted++;
+                 else refused++;
+             }
++            /* The wheel's notches, away from the player positive (Wine patch 0942). */
++            if (poll.wheel) {
++                int32_t notches = poll.wheel < -120 ? -120 : poll.wheel > 120 ? 120 : poll.wheel;
++                input = (PwWineInput){ PW_WINE_INPUT_MOUSE_WHEEL, 0, notches, 0, 0 };
++                if (post_input(&input) == 0) posted++;
++                else refused++;
++            }
+             for (size_t i = 0; i < poll.count; i++) {
+                 input = (PwWineInput){ poll.events[i].kind == PW_HID_EVENT_KEY ? PW_WINE_INPUT_KEY :
+                                        PW_WINE_INPUT_MOUSE_BUTTON, poll.events[i].code, 0, 0,
+@@ -1907,7 +1914,8 @@ int main(int argc, char **argv)
+                 const PwPadPs5Stick *stick = game_input.mouse == PW_GAME_STICK_LEFT ?
+                                              &pad.left_stick : &pad.right_stick;
+                 count += (size_t)pw_wine_pointer_step(&pointer, stick->x, stick->y,
+-                                                      game_input.mouse_speed,
++                                                      pw_wine_pointer_speed(&game_input,
++                                                                            pad.core.previous_buttons),
+                                                       PW_WINE64_TICK_US, &events[count]);
+             }
+             for (size_t i = 0; i < count; i++) {
+diff --git a/src/pw_game_profile.c b/src/pw_game_profile.c
+index 25a3b98..0679d11 100644
+--- a/src/pw_game_profile.c
++++ b/src/pw_game_profile.c
+@@ -2,7 +2,8 @@
+ #include "pw_game_profile.h"
+ #include <string.h>
+ 
+-enum { SET_MODE = 1u << 0, SET_MOUSE = 1u << 1, SET_SPEED = 1u << 2, SET_PRESET = 1u << 3 };
++enum { SET_MODE = 1u << 0, SET_MOUSE = 1u << 1, SET_SPEED = 1u << 2, SET_PRESET = 1u << 3, SET_SLOW = 1u << 4,
++       SET_SLOW_PERCENT = 1u << 5 };
+ 
+ /* DualSense buttons in PW_GAME_BUTTON order, with their scePadRead bits. */
+ static const struct { const char *name; uint32_t mask; } buttons[PW_GAME_BUTTON_COUNT] = {
+@@ -66,10 +67,15 @@ static int hex_digit(uint8_t c)
+     return c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 : -1;
+ }
+ 
+-/* A key name, a letter, a digit, f1-f24, vk:0xNN, mouse_* or none. */
++/* A key name, a letter, a digit, f1-f24, vk:0xNN, mouse_* (buttons and the wheel) or none. */
+ static int binding(const uint8_t *v, size_t n, PwGameBinding *out)
+ {
+     if (is(v, n, "none")) { out->kind = PW_GAME_BIND_NONE; out->code = 0; return PW_OK; }
++    if (is(v, n, "mouse_wheel_up") || is(v, n, "mouse_wheel_down")) {
++        out->kind = PW_GAME_BIND_WHEEL;
++        out->code = is(v, n, "mouse_wheel_up") ? 0 : 1;
++        return PW_OK;
++    }
+     if (is(v, n, "mouse_left") || is(v, n, "mouse_right") || is(v, n, "mouse_middle")) {
+         out->kind = PW_GAME_BIND_MOUSE;
+         out->code = is(v, n, "mouse_left") ? 0 : is(v, n, "mouse_right") ? 1 : 2;
+@@ -144,6 +150,26 @@ static int input_field(PwGameInput *input, const uint8_t *key, size_t key_length
+         input->set |= SET_SPEED;
+         return PW_OK;
+     }
++    if (is(key, key_length, "mouse_slow")) {
++        if (input->set & SET_SLOW) return PW_ERR_MALFORMED;
++        if (is(v, n, "none")) input->slow_mask = 0;
++        else {
++            size_t i = 0;
++            while (i < PW_GAME_PAD_BUTTONS && !is(v, n, buttons[i].name)) i++;
++            if (i == PW_GAME_PAD_BUTTONS) return PW_ERR_UNSUPPORTED;
++            input->slow_mask = buttons[i].mask;
++        }
++        input->set |= SET_SLOW;
++        return PW_OK;
++    }
++    if (is(key, key_length, "mouse_slow_percent")) {
++        uint32_t percent;
++        if ((input->set & SET_SLOW_PERCENT) || number(v, n, &percent) != PW_OK || percent < 1 || percent > 95)
++            return PW_ERR_MALFORMED;
++        input->slow_percent = percent;
++        input->set |= SET_SLOW_PERCENT;
++        return PW_OK;
++    }
+     for (size_t i = 0; i < PW_GAME_BUTTON_COUNT; i++) {
+         if (!is(key, key_length, buttons[i].name)) continue;
+         PwGameBinding parsed = { buttons[i].mask, 0, 0 };
+@@ -467,6 +493,7 @@ void pw_game_input_init(PwGameInput *input)
+     if (!input) return;
+     memset(input, 0, sizeof(*input));
+     input->mouse_speed = PW_GAME_MOUSE_SPEED_DEFAULT;
++    input->slow_percent = PW_GAME_SLOW_PERCENT_DEFAULT;
+     for (size_t i = 0; i < PW_GAME_BUTTON_COUNT; i++) input->bindings[i].mask = buttons[i].mask;
+ }
+ 
+@@ -517,7 +544,9 @@ void pw_game_input_overlay(PwGameInput *base, const PwGameInput *overrides)
+     if (overrides->set & SET_MODE) base->mode = overrides->mode;
+     if (overrides->set & SET_MOUSE) base->mouse = overrides->mouse;
+     if (overrides->set & SET_SPEED) base->mouse_speed = overrides->mouse_speed;
+-    base->set |= overrides->set & (SET_MODE | SET_MOUSE | SET_SPEED);
++    if (overrides->set & SET_SLOW) base->slow_mask = overrides->slow_mask;
++    if (overrides->set & SET_SLOW_PERCENT) base->slow_percent = overrides->slow_percent;
++    base->set |= overrides->set & (SET_MODE | SET_MOUSE | SET_SPEED | SET_SLOW | SET_SLOW_PERCENT);
+     for (size_t i = 0; i < PW_GAME_BUTTON_COUNT; i++)
+         if (overrides->bindings[i].kind != PW_GAME_BIND_UNSET) base->bindings[i] = overrides->bindings[i];
+ }
+diff --git a/src/pw_game_profile.h b/src/pw_game_profile.h
+index 83e8287..c71634d 100644
+--- a/src/pw_game_profile.h
++++ b/src/pw_game_profile.h
+@@ -22,8 +22,12 @@
+  *                          ; xinput when nothing is bound, keyboard otherwise
+  *   mouse = right_stick    ; a stick moves the pointer: left_stick, right_stick, none
+  *   mouse_speed = 1200     ; pointer pixels per second at full tilt
++ *   mouse_slow = l2        ; a button that slows the pointer while held (it
++ *                          ; sends nothing else): a button's name or none
++ *   mouse_slow_percent = 50 ; how much slower, 1-95 % (default 50)
+  *   cross = space          ; <button> = <key> | mouse_left | mouse_right |
+- *   r2 = mouse_left        ;            mouse_middle | vk:0xNN | none
++ *   r2 = mouse_left        ;            mouse_middle | mouse_wheel_up |
++ *                          ;            mouse_wheel_down | vk:0xNN | none
+  *   left_stick_up = w      ; a stick's direction, bound like a button: down
+  *                          ; while the stick is pushed that way (the stick
+  *                          ; the pointer follows sends no keys)
+@@ -84,6 +88,8 @@ enum {
+ 
+ enum {
+     PW_GAME_BUTTON_COUNT = 25,
++    PW_GAME_PAD_BUTTONS = 17,               /* the buttons, before the sticks' directions */
++    PW_GAME_SLOW_PERCENT_DEFAULT = 50,
+     PW_GAME_DESKTOP_MIN_W = 320, PW_GAME_DESKTOP_MIN_H = 200,
+     PW_GAME_DESKTOP_MAX_W = 3840, PW_GAME_DESKTOP_MAX_H = 2160,
+     PW_GAME_MOUSE_SPEED_DEFAULT = 1200, PW_GAME_MOUSE_SPEED_MAX = 20000,
+@@ -99,18 +105,20 @@ typedef enum PwGameView { PW_GAME_VIEW_WINDOW = 0, PW_GAME_VIEW_DESKTOP } PwGame
+ typedef enum PwGameInputMode { PW_GAME_INPUT_KEYBOARD = 0, PW_GAME_INPUT_XINPUT, PW_GAME_INPUT_DUALSENSE } PwGameInputMode;
+ typedef enum PwGameStick { PW_GAME_STICK_NONE = 0, PW_GAME_STICK_LEFT, PW_GAME_STICK_RIGHT } PwGameStick;
+ typedef enum PwGameBindKind { PW_GAME_BIND_UNSET = 0, PW_GAME_BIND_NONE, PW_GAME_BIND_KEY,
+-                              PW_GAME_BIND_MOUSE } PwGameBindKind;
++                              PW_GAME_BIND_MOUSE, PW_GAME_BIND_WHEEL } PwGameBindKind;
+ 
+ typedef struct PwGameBinding {
+     uint32_t mask;      /* the DualSense button (scePadRead bit) */
+     uint8_t kind;       /* PwGameBindKind */
+-    uint16_t code;      /* KEY: Windows virtual key; MOUSE: 0 left, 1 right, 2 middle */
++    uint16_t code;      /* KEY: Windows virtual key; MOUSE: 0 left, 1 right, 2 middle; WHEEL: 0 up, 1 down */
+ } PwGameBinding;
+ 
+ typedef struct PwGameInput {
+     PwGameInputMode mode;
+     PwGameStick mouse;
+     uint32_t mouse_speed;
++    uint32_t slow_mask;     /* the button that slows the pointer while held (0: none) */
++    uint32_t slow_percent;  /* by how much, 1..95 */
+     PwGameBinding bindings[PW_GAME_BUTTON_COUNT];   /* in PW_GAME_BUTTON order */
+     char preset[PW_APP_ID_CAPACITY];
+     uint32_t set;       /* which of mode/mouse/mouse_speed a file set (overlay) */
+diff --git a/tests/test_pw_game_profile.c b/tests/test_pw_game_profile.c
+index 1e67235..f08ba07 100644
+--- a/tests/test_pw_game_profile.c
++++ b/tests/test_pw_game_profile.c
+@@ -272,6 +272,13 @@ static void test_refusals(void)
+         APP "[input]\nmouse_speed = fast\n",
+         APP "[input]\nmouse_speed = 10\nmouse_speed = 10\n",
+         APP "[input]\nmouse_speed = 1234567890\n",
++        APP "[input]\nmouse_slow = left_stick_up\n",
++        APP "[input]\nmouse_slow = start\n",
++        APP "[input]\nmouse_slow = l2\nmouse_slow = r2\n",
++        APP "[input]\nmouse_slow_percent = 0\n",
++        APP "[input]\nmouse_slow_percent = 96\n",
++        APP "[input]\nmouse_slow_percent = half\n",
++        APP "[input]\ncross = mouse_wheel\n",
+         APP "[input]\ncross = space\ncross = enter\n",
+         APP "[input]\ncross = hyperspace\n",
+         APP "[input]\ncross = f0\n",
+diff --git a/tests/test_pw_wine_display.c b/tests/test_pw_wine_display.c
+index afc9da8..6286fa6 100644
+--- a/tests/test_pw_wine_display.c
++++ b/tests/test_pw_wine_display.c
+@@ -115,6 +115,33 @@ static void test_inputs(void)
+     assert(pw_wine_game_inputs(NULL, L1, 0, events, 8) == 0 && pw_wine_game_inputs(&input, L1, 0, NULL, 8) == 0);
+ }
+ 
++/* A button bound to the wheel turns it a notch as it is pressed (up away from the player),
++ * and nothing as it is released; the button that slows the pointer sends nothing and slows
++ * it by its percent while held. */
++static void test_wheel_and_slow(void)
++{
++    static const char text[] = "[input]\nmode = keyboard\nmouse = right_stick\nmouse_speed = 1200\n"
++                               "l1 = mouse_wheel_up\nr1 = mouse_wheel_down\nl2 = space\nmouse_slow = l2\n"
++                               "mouse_slow_percent = 75\n";
++    PwGameInput input;
++    PwWineInput events[8];
++
++    pw_game_input_init(&input);
++    assert(pw_game_input_parse((const uint8_t *)text, sizeof(text) - 1, &input) == PW_OK);
++    assert(pw_wine_game_inputs(&input, L1, 0, events, 8) == 1);
++    assert(events[0].type == PW_WINE_INPUT_MOUSE_WHEEL && events[0].x == 1 && !events[0].y);
++    assert(pw_wine_game_inputs(&input, R1, L1, events, 8) == 1 && events[0].x == -1);
++    assert(pw_wine_game_inputs(&input, 0, R1, events, 8) == 0);
++    assert(pw_wine_game_inputs(&input, L2, 0, events, 8) == 0 && pw_wine_game_inputs(&input, 0, L2, events, 8) == 0);
++    assert(pw_wine_pointer_speed(&input, 0) == 1200 && pw_wine_pointer_speed(&input, L1) == 1200);
++    assert(pw_wine_pointer_speed(&input, L2) == 300 && pw_wine_pointer_speed(&input, L2 | L1) == 300);
++    /* Without a slow button, the speed is the profile's whatever is held. */
++    pw_game_input_init(&input);
++    assert(input.slow_percent == 50 && !input.slow_mask);
++    assert(pw_wine_pointer_speed(&input, 0xffffffffu) == PW_GAME_MOUSE_SPEED_DEFAULT);
++    assert(pw_wine_pointer_speed(NULL, 0) == 0);
++}
++
+ /* Cross and the D-pad as dialog keys: Enter and the arrows, releases first;
+  * other buttons send none. */
+ static void test_dialog_inputs(void)
+@@ -421,6 +448,7 @@ int main(void)
+     test_frames();
+     test_threads();
+     test_inputs();
++    test_wheel_and_slow();
+     test_dialog_inputs();
+     test_pointer();
+     test_pointer_fraction();
+@@ -429,7 +457,7 @@ int main(void)
+     test_stick_buttons();
+     test_script_pad();
+     printf("wine display passed: frame box copy, newest frame, refusals, concurrent put/take, "
+-           "profile bindings to keys and mouse buttons, Cross and the D-pad as dialog keys, stick pointer, "
++           "profile bindings to keys, mouse buttons and the wheel, the slow button, Cross and the D-pad as dialog keys, stick pointer, "
+            "resized frames, "
+            "DualSense as XInput, stick directions as keys, scripted controller added to it\n");
+     return 0;
+diff --git a/tests/test_pw_wine_sink.c b/tests/test_pw_wine_sink.c
+index 4e9fd45..f0012b5 100644
+--- a/tests/test_pw_wine_sink.c
++++ b/tests/test_pw_wine_sink.c
+@@ -324,10 +324,13 @@ int main(void)
+     /* A character is one UTF-16 unit, a surrogate too. */
+     e=(PwWineInput){PW_WINE_INPUT_CHAR,0xd83d,0,0,1};assert(!pw_wine_post_input(&e));
+     assert(pw_wine_next_input(&out) && out.type==PW_WINE_INPUT_CHAR && out.code==0xd83d && out.down==1);
++    e=(PwWineInput){PW_WINE_INPUT_MOUSE_WHEEL,0,-2,0,0};assert(!pw_wine_post_input(&e));
++    assert(pw_wine_next_input(&out) && out.type==PW_WINE_INPUT_MOUSE_WHEEL && out.x==-2);
+     PwWineInput bad[]={{0,1,0,0,1},{PW_WINE_INPUT_KEY,0,0,0,1},{PW_WINE_INPUT_KEY,256,0,0,1},
+                        {PW_WINE_INPUT_DIALOG_KEY,0,0,0,1},{PW_WINE_INPUT_DIALOG_KEY,300,0,0,1},
+                        {PW_WINE_INPUT_KEY,65,0,0,2},{PW_WINE_INPUT_MOUSE_BUTTON,3,0,0,1},{99,0,0,0,0},
+-                       {PW_WINE_INPUT_CHAR,0,0,0,1},{PW_WINE_INPUT_CHAR,0x10000,0,0,1},{PW_WINE_INPUT_CHAR,'a',0,0,0}};
++                       {PW_WINE_INPUT_CHAR,0,0,0,1},{PW_WINE_INPUT_CHAR,0x10000,0,0,1},{PW_WINE_INPUT_CHAR,'a',0,0,0},
++                       {PW_WINE_INPUT_MOUSE_WHEEL,0,0,0,0},{PW_WINE_INPUT_MOUSE_WHEEL,0,121,0,0}};
+     for(unsigned i=0;i<sizeof(bad)/sizeof(bad[0]);i++)assert(pw_wine_post_input(&bad[i])==-1);
+     assert(pw_wine_post_input(NULL)==-1);
+     e=(PwWineInput){PW_WINE_INPUT_MOUSE_MOVE,0,1,2,0};
+@@ -336,7 +339,7 @@ int main(void)
+     for(int i=0;i<PW_WINE_INPUT_QUEUE;i++)assert(pw_wine_next_input(&out) && out.x==1 && out.y==2);
+     assert(!pw_wine_next_input(&out));
+     pw_wine_sink_stats(&s);
+-    assert(s.inputs_posted==4+PW_WINE_INPUT_QUEUE && s.inputs_delivered==s.inputs_posted);
++    assert(s.inputs_posted==5+PW_WINE_INPUT_QUEUE && s.inputs_delivered==s.inputs_posted);
+     assert(s.inputs_dropped==sizeof(bad)/sizeof(bad[0])+2);
+ 
+     /* The wake pipe: readable after a post, empty once drained. */
+diff --git a/wine/patches/0942-win32u-ps5-turn-the-mouse-wheel.patch b/wine/patches/0942-win32u-ps5-turn-the-mouse-wheel.patch
+new file mode 100644
+index 0000000..2c87701
+--- /dev/null
++++ b/wine/patches/0942-win32u-ps5-turn-the-mouse-wheel.patch
+@@ -0,0 +1,47 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Fri, 30 Oct 2026 12:00:00 +0000
++Subject: [PATCH] win32u: Turn the mouse wheel on PS5.
++
++The title read a USB mouse's wheel but had no way to send it, and a
++controller button couldn't be bound to it: games that scroll or step
++back with the wheel (a visual novel's rollback, a strategy game's zoom)
++didn't. Event 6 is the wheel, x notches away from the player positive,
++sent as MOUSEEVENTF_WHEEL of x times WHEEL_DELTA.
++---
++diff --git a/dlls/win32u/ps5drv.c b/dlls/win32u/ps5drv.c
++--- a/dlls/win32u/ps5drv.c
+++++ b/dlls/win32u/ps5drv.c
++@@ -66,9 +66,9 @@ WINE_DEFAULT_DEBUG_CHANNEL(ps5drv);
++ /* the layout of PwWineInput in wine/ps5/pw_wine_sink.h */
++ struct ps5_input
++ {
++-    UINT type;              /* 1 key, 2 mouse move, 3 mouse button, 4 dialog key, 5 character */
+++    UINT type;              /* 1 key, 2 mouse move, 3 mouse button, 4 dialog key, 5 character, 6 wheel */
++     UINT code;              /* virtual key, button 0 left 1 right 2 middle, or a UTF-16 unit */
++-    INT  x, y;              /* mouse move: relative motion in desktop pixels */
+++    INT  x, y;              /* mouse move: relative motion in desktop pixels; wheel: x notches */
++     UINT down;
++ };
++ 
++@@ -675,6 +675,17 @@ static BOOL ps5_ProcessEvents( DWORD mask )
++         case 3:
++             if (event.code < 3) send_mouse( hwnd, button_flags[event.code][event.down != 0], 0, 0 );
++             break;
+++        case 6:
+++            /* The wheel: x notches, away from the player positive, as a mouse's
+++             * wheel turned (a USB mouse's, or a button bound to it). */
+++            if (event.x && event.x >= -120 && event.x <= 120)
+++            {
+++                INPUT wheel = {.type = INPUT_MOUSE};
+++                wheel.mi.mouseData = (DWORD)(event.x * WHEEL_DELTA);
+++                wheel.mi.dwFlags = MOUSEEVENTF_WHEEL;
+++                NtUserSendHardwareInput( hwnd, 0, &wheel, 0 );
+++            }
+++            break;
++         }
++     }
++     /* The wake pipe is every GUI thread's queue fd, so a byte sets QS_DRIVER
++-- 
++2.43.0
++
+diff --git a/wine/ps5/pw_wine_sink.c b/wine/ps5/pw_wine_sink.c
+index de2aa28..ae7a283 100644
+--- a/wine/ps5/pw_wine_sink.c
++++ b/wine/ps5/pw_wine_sink.c
+@@ -108,6 +108,7 @@ static int valid(const PwWineInput *e)
+     case PW_WINE_INPUT_MOUSE_MOVE:return 1;
+     case PW_WINE_INPUT_MOUSE_BUTTON:return e->code<=2 && e->down<=1;
+     case PW_WINE_INPUT_CHAR:return e->code>0 && e->code<=0xffff && e->down==1;
++    case PW_WINE_INPUT_MOUSE_WHEEL:return e->x!=0 && e->x>=-120 && e->x<=120;
+     default:return 0;
+     }
+ }
+diff --git a/wine/ps5/pw_wine_sink.h b/wine/ps5/pw_wine_sink.h
+index b53d8bc..c02f491 100644
+--- a/wine/ps5/pw_wine_sink.h
++++ b/wine/ps5/pw_wine_sink.h
+@@ -31,13 +31,14 @@ typedef int (*PwWinePresentSink)(void *context,const void *bgra,uint32_t width,u
+  * CHAR: one UTF-16 unit of text typed on the console's on-screen keyboard,
+  * which the driver types as Windows types a character from an input method
+  * (Wine patch 0922); a character beyond the BMP is its two surrogates. */
++/* MOUSE_WHEEL: x notches of the wheel, away from the player positive (Wine patch 0942). */
+ enum { PW_WINE_INPUT_KEY=1,PW_WINE_INPUT_MOUSE_MOVE,PW_WINE_INPUT_MOUSE_BUTTON,PW_WINE_INPUT_DIALOG_KEY,
+-       PW_WINE_INPUT_CHAR,PW_WINE_INPUT_QUEUE=256 };
++       PW_WINE_INPUT_CHAR,PW_WINE_INPUT_MOUSE_WHEEL,PW_WINE_INPUT_QUEUE=256 };
+ typedef struct PwWineInput {
+     uint32_t type;
+     uint32_t code;      /* KEY, DIALOG_KEY: Windows virtual key; MOUSE_BUTTON: 0 left, 1 right, 2 middle;
+                            CHAR: a UTF-16 unit */
+-    int32_t x,y;        /* MOUSE_MOVE: relative motion in desktop pixels */
++    int32_t x,y;        /* MOUSE_MOVE: relative motion in desktop pixels; MOUSE_WHEEL: x notches */
+     uint32_t down;      /* KEY, MOUSE_BUTTON: 1 pressed, 0 released; CHAR: 1 */
+ } PwWineInput;
+ 
+-- 
+2.43.0
+
