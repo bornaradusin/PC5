@@ -3170,6 +3170,24 @@ static void test_upgrade(void)
         write_text(moved, "PC5 INSTALLED BY HAND\n");
         CHECK(!pc5_upgrade_tidy(&next, finished, sizeof(finished)) && !pc5_exists(work) &&
               file_is(moved, "PC5 INSTALLED BY HAND\n"), "a PC5 installed again isn't touched");
+        /* What a finished update set aside (work-old-<n>, its marker in it) and a restart cut
+         * short is deleted on a thread when PC5 starts; a folder without the marker stays. */
+        {
+            char aside[1024], stranger[1024], inner[1100];
+            path(aside, sizeof(aside), "%s-old-3", work);
+            path(inner, sizeof(inner), "%s/new/PPSA11018/big.bin", aside);
+            write_text(inner, "left by an update\n");
+            path(inner, sizeof(inner), "%s/pc5-update.txt", aside);
+            write_text(inner, "PC5's update work folder.\n");
+            path(stranger, sizeof(stranger), "%s-old-9/keep.txt", work);
+            write_text(stranger, "not PC5's\n");
+            CHECK(!pc5_upgrade_tidy(&next, finished, sizeof(finished)), "nothing to finish");
+            for (int i = 0; i < 400 && pc5_exists(aside); i++) usleep(5000);
+            CHECK(!pc5_exists(aside) && pc5_is_file(stranger), "set aside: deleted, and a stranger kept");
+            path(stranger, sizeof(stranger), "%s-old-9", work);
+            snprintf(command, sizeof(command), "rm -rf '%s'", stranger);
+            run(command);
+        }
         snprintf(command, sizeof(command), "mv '%s' '%s'", usb1, usb0);
         run(command);
     }

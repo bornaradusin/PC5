@@ -737,6 +737,95 @@ static int delete_work(const char *work)
     return 0;
 }
 
+/* A finished update's work folder is moved aside (work-old-<n>, a rename: no wait) and
+ * deleted on a thread of its own: deleting a big one, file by file, took minutes on the
+ * console while the update screen waited. What a restart cuts short is deleted the next
+ * time PC5 starts, again on a thread. */
+static void *delete_aside_main(void *argument)
+{
+    char *paths = argument;
+    for (char *path = paths; *path; path += strlen(path) + 1) (void)delete_work(path);
+    free(paths);
+    return NULL;
+}
+
+/* Deletes the work folders in paths (each NUL-ended, an empty one last) on a detached
+ * thread; here when no thread can start. Takes paths over. */
+static void delete_aside(char *paths)
+{
+    pthread_t thread;
+    pthread_attr_t attributes;
+    int started = 0;
+    if (!paths[0]) { free(paths); return; }
+    if (!pthread_attr_init(&attributes)) {
+        (void)pthread_attr_setdetachstate(&attributes, PTHREAD_CREATE_DETACHED);
+        started = !pthread_create(&thread, &attributes, delete_aside_main, paths);
+        pthread_attr_destroy(&attributes);
+    }
+    if (!started) delete_aside_main(paths);
+}
+
+/* work renamed to work-old-<n> (its marker with it). 0, or -1 when it couldn't be. */
+static int set_aside(const char *work, char *aside, size_t size)
+{
+    for (unsigned n = 1; n < 1000; n++) {
+        if (pc5_format(aside, size, "%s-old-%u", work, n)) return -1;
+        if (pc5_exists(aside)) continue;
+        return rename(work, aside) ? -1 : 0;
+    }
+    return -1;
+}
+
+/* The work folders an earlier update set aside beside work (work-old-<n>, PC5's marker in
+ * them), as a list for delete_aside; NULL when there are none. */
+static char *asides_of(const char *work)
+{
+    char parent[PC5_PATH], path[PC5_PATH];
+    const char *slash = strrchr(work, '/'), *base;
+    size_t used = 0, room = 0, prefix;
+    char *list = NULL;
+    DIR *dir;
+    struct dirent *entry;
+    if (!slash || slash == work || (size_t)(slash - work) >= sizeof(parent)) return NULL;
+    memcpy(parent, work, (size_t)(slash - work));
+    parent[slash - work] = 0;
+    base = slash + 1;
+    prefix = strlen(base);
+    if (!(dir = opendir(parent))) return NULL;
+    while ((entry = readdir(dir))) {
+        if (strncmp(entry->d_name, base, prefix) || strncmp(entry->d_name + prefix, "-old-", 5) ||
+            pc5_join(path, sizeof(path), parent, entry->d_name) || !is_work(path))
+            continue;
+        size_t n = strlen(path) + 1;
+        if (used + n + 1 > room) {
+            size_t want = (room ? room * 2 : 1024) + n;
+            char *grown = realloc(list, want);
+            if (!grown) break;
+            list = grown;
+            room = want;
+        }
+        memcpy(list + used, path, n);
+        used += n;
+        list[used] = 0;
+    }
+    closedir(dir);
+    return list;
+}
+
+/* Deletes work: moved aside and deleted on a thread, or here when it can't be moved. */
+static int delete_work_soon(const char *work)
+{
+    char aside[PC5_PATH];
+    if (set_aside(work, aside, sizeof(aside))) return delete_work(work);
+    size_t n = strlen(aside) + 1;
+    char *paths = malloc(n + 1);
+    if (!paths) return 0;   /* deleted the next time PC5 starts */
+    memcpy(paths, aside, n);
+    paths[n] = 0;
+    delete_aside(paths);
+    return 0;
+}
+
 /* The journal: an earlier update is being put in place there. */
 static int has_journal(const char *work)
 {
@@ -1322,7 +1411,7 @@ void pc5_upgrade_run(Pc5Upgrade *upgrade)
     else atomic_store(&upgrade->step, PC5_UPGRADE_TIDYING);
     /* What the update left (the old files, or everything when it stopped); kept when the
      * next start must finish putting files in place. */
-    if (work[0] && is_work(work) && !has_journal(work) && delete_work(work))
+    if (work[0] && is_work(work) && !has_journal(work) && delete_work_soon(work))
         note(&upgrade->config, "PC5 update can't delete %s", work);
     if (!result) note(&upgrade->config, "PC5 update done version=%s", upgrade->version);
     atomic_store(&upgrade->step, !result ? PC5_UPGRADE_DONE
@@ -1441,6 +1530,13 @@ int pc5_upgrade_tidy(const Pc5UpgradeConfig *config, char *finished, size_t size
     int restart = 0;
 
     if (finished && size) finished[0] = 0;
+    /* What earlier updates set aside and a restart cut short (before this start sets any aside), deleted on a thread. */
+    for (const char *const *drive = drives_of(config); *drive; drive++) {
+        char *asides;
+        if (drive_work(config, *drive, work, sizeof(work)) || !(asides = asides_of(work))) continue;
+        note(config, "PC5 update deleting what an earlier one set aside beside %s", work);
+        delete_aside(asides);
+    }
     for (const char *const *drive = drives_of(config); *drive; drive++) {
         if (drive_work(config, *drive, work, sizeof(work)) || !pc5_is_dir(work)) continue;
         if (!is_work(work)) {
@@ -1456,7 +1552,7 @@ int pc5_upgrade_tidy(const Pc5UpgradeConfig *config, char *finished, size_t size
                 if (finished) pc5_copy(finished, size, version);
             }
         }
-        note(config, "PC5 update leftover %s deleted=%d", work, !delete_work(work));
+        note(config, "PC5 update leftover %s deleted=%d", work, !delete_work_soon(work));
     }
     return restart;
 }
