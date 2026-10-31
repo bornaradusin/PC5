@@ -44,6 +44,13 @@ typedef struct Pc5PadOutput {
     Pc5Trigger trigger[2];/* L2, R2: PC5_TRIGGER_GAME or off */
 } Pc5PadOutput;
 
+/* A thread's CPU time so far (Pc5GameOps.thread_times). */
+typedef struct Pc5ThreadTime {
+    int tid, cpu;
+    uint64_t runtime_us;
+    char name[24];
+} Pc5ThreadTime;
+
 typedef struct Pc5GameOps {
     int (*light_bar)(int handle, uint32_t rgb);         /* 0xRRGGBB */
     int (*light_bar_reset)(int handle);
@@ -65,6 +72,10 @@ typedef struct Pc5GameOps {
      * it gave, up to most, 0 when it can't be read (the overlay then shows the
      * game's process, cpu_time_us). */
     unsigned (*cpu_ticks)(uint64_t *busy, uint64_t *total, unsigned most);
+    /* The title process's threads (the game's are among them): each one's id, CPU time
+     * so far in microseconds, name, and the CPU it last ran on. How many, 0 when the
+     * console doesn't say. */
+    unsigned (*thread_times)(Pc5ThreadTime *threads, unsigned most);
     int (*temperature)(int sensor, int *celsius);
     int (*memory)(uint64_t *used, uint64_t *total);
     /* The console's on-screen keyboard over the game: open it for text written to
@@ -79,7 +90,7 @@ typedef struct Pc5GameOps {
 /* The on-screen keyboard's text, in UTF-16 units with the terminator. */
 enum { PC5_KEYBOARD_TEXT = 256 };
 /* The most CPUs the overlay counts the console's time of. */
-enum { PC5_CPU_MOST = 32 };
+enum { PC5_CPU_MOST = 32, PC5_THREADS_MOST = 256 };
 
 typedef struct Pc5GameSession {
     Pc5GameOps ops;
@@ -104,6 +115,9 @@ typedef struct Pc5GameSession {
     uint64_t stats_at, stats_cpu_us;
     uint64_t stats_cpu_busy[PC5_CPU_MOST], stats_cpu_total[PC5_CPU_MOST];   /* cpu_ticks' last */
     unsigned stats_cpus;          /* how many cpu_ticks gave last, 0 none yet */
+    Pc5ThreadTime stats_threads[PC5_THREADS_MOST];   /* thread_times' last */
+    unsigned stats_thread_count;
+    uint64_t stats_threads_at;    /* when, in ms (0 none yet) */
     int stats_logged;
     int frame_generation;         /* the game's Frame generation (PW_PC5_FRAMEGEN for libvulkan.prx) */
     /* The on-screen keyboard: open, its text, how much of the accepted text is typed,

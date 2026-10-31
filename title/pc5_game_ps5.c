@@ -8,12 +8,15 @@
 #include "pc5_console.h"
 #include "pc5_logs.h"
 
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
 #include <sys/resource.h>
 #include <sys/sysctl.h>
+#include <sys/types.h>
+#include <sys/user.h>
 #include <unistd.h>
 #include <x86intrin.h>
 
@@ -166,6 +169,30 @@ static unsigned cpu_ticks(uint64_t *busy, uint64_t *total, unsigned most)
         for (unsigned state = 0; state < STATES; state++) all += (uint64_t)times[i * STATES + state];
         total[i] = all;
         busy[i] = all - (uint64_t)times[i * STATES + IDLE];
+    }
+    return count;
+}
+
+/* This process's threads from the kernel (kern.proc.pid.<pid>, a kinfo_proc a thread):
+ * each one's CPU time, name and last CPU. 0 when the console says no, or answers with a
+ * kinfo_proc of another size than this SDK's. */
+static unsigned thread_times(Pc5ThreadTime *out, unsigned most)
+{
+    static struct kinfo_proc kp[PC5_THREADS_MOST];
+    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID | KERN_PROC_INC_THREAD, (int)getpid() };
+    size_t length = sizeof(kp);
+
+    /* more threads than room: the first ones, as many as fit (ENOMEM) */
+    if ((sysctl(mib, 4, kp, &length, NULL, 0) && errno != ENOMEM) || length < sizeof(kp[0]) ||
+        kp[0].ki_structsize != (int)sizeof(kp[0]))
+        return 0;
+    unsigned count = (unsigned)(length / sizeof(kp[0]));
+    if (count > most) count = most;
+    for (unsigned i = 0; i < count; i++) {
+        out[i].tid = kp[i].ki_tid;
+        out[i].cpu = kp[i].ki_lastcpu;
+        out[i].runtime_us = kp[i].ki_runtime;
+        snprintf(out[i].name, sizeof(out[i].name), "%s", kp[i].ki_tdname);
     }
     return count;
 }
@@ -385,7 +412,7 @@ void pc5_game_ps5_ops(Pc5GameOps *ops, void (*log)(const char *line))
     pc5_system_text(system, sizeof(system));
     if (log) log(system);
     *ops = (Pc5GameOps){ .light_bar = light_bar, .light_bar_reset = light_bar_reset, .triggers = triggers,
-                         .cursor = cursor, .cursor_magnify = cursor_magnify, .log = log, .cpu_time_us = cpu_time_us, .cpu_count = cpu_count, .cpu_ticks = cpu_ticks,
+                         .cursor = cursor, .cursor_magnify = cursor_magnify, .log = log, .cpu_time_us = cpu_time_us, .cpu_count = cpu_count, .cpu_ticks = cpu_ticks, .thread_times = thread_times,
                          .temperature = temperature, .memory = memory, .keyboard_open = keyboard_open,
                          .keyboard_state = keyboard_state, .keyboard_close = keyboard_close };
 }

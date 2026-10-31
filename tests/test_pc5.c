@@ -4089,6 +4089,19 @@ static unsigned fake_cpu_ticks(uint64_t *busy, uint64_t *total, unsigned most)
     memcpy(total, console_ticks.total, count * sizeof(*total));
     return count;
 }
+/* The title's threads: a game thread, a graphics thread and an idle one, times added between samples. */
+static Pc5ThreadTime fake_threads[3] = { { 101, 0, 0, "" }, { 102, 3, 0, "dxvk-cs" }, { 103, 5, 0, "idle" } };
+static unsigned fake_thread_times(Pc5ThreadTime *out, unsigned most)
+{
+    unsigned count = most < 3 ? most : 3;
+    memcpy(out, fake_threads, count * sizeof(*out));
+    return count;
+}
+static char thread_line[300];
+static void fake_thread_log(const char *line)
+{
+    if (strstr(line, "PC5 threads=")) snprintf(thread_line, sizeof(thread_line), "%s", line);
+}
 static int fake_temperature(int sensor, int *celsius)
 {
     if (sensor) return measured.soc_rc;
@@ -5537,6 +5550,21 @@ static void test_game(const char *fonts_path)
             CHECK(pc5_game_overlay_sample(&game, 53000, &stats) && stats.cpu_percent == 25 && stats.cpu_top_percent == -1,
                   "the console gives none: the process's, %d%%", stats.cpu_percent);
             game.ops.cpu_ticks = NULL;
+        }
+        /* The busiest threads, for the log: each as a share of one CPU since the last sample. */
+        {
+            void (*was_log)(const char *) = game.ops.log;
+            game.ops.thread_times = fake_thread_times;
+            game.ops.log = fake_thread_log;
+            game.stats_at = 0;
+            (void)pc5_game_overlay_sample(&game, 60000, &stats);
+            CHECK(!thread_line[0], "no line from the first sample: %s", thread_line);
+            fake_threads[0].runtime_us += 950000, fake_threads[1].runtime_us += 400000, fake_threads[2].runtime_us += 1000;
+            (void)pc5_game_overlay_sample(&game, 61000, &stats);
+            CHECK(strstr(thread_line, "PC5 threads=3 busiest ?/101:95%@0 dxvk-cs/102:40%@3 idle/103:0%@5") != NULL,
+                  "the busiest threads: %s", thread_line);
+            game.ops.thread_times = NULL;
+            game.ops.log = was_log;
         }
         /* The GPU's line (libvulkan.prx measures it) after the CPU's, and with seven lines
          * the box keeps to the image: 61 rows. */

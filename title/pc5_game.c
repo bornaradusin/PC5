@@ -862,6 +862,48 @@ static int console_cpu(Pc5GameSession *game, int *percent, int *top)
     return rc;
 }
 
+/* For the log, a line a second while the overlay is on: the three busiest threads of the
+ * title's process (the game's, Wine's, the graphics' among them) since the last sample, each
+ * as a share of one CPU, so a thread that holds the rest back shows near 100 even when the
+ * console as a whole is mostly idle. */
+static void busiest_threads(Pc5GameSession *game, uint64_t now_ms)
+{
+    static Pc5ThreadTime now[PC5_THREADS_MOST];
+    unsigned count = game->ops.thread_times ? game->ops.thread_times(now, PC5_THREADS_MOST) : 0;
+    if (count > PC5_THREADS_MOST) count = PC5_THREADS_MOST;
+    if (count && game->stats_threads_at && now_ms > game->stats_threads_at) {
+        uint64_t span_us = (now_ms - game->stats_threads_at) * 1000u;
+        int top[3] = { -1, -1, -1 }, share[3] = { -1, -1, -1 };
+        for (unsigned i = 0; i < count; i++) {
+            const Pc5ThreadTime *was = NULL;
+            for (unsigned j = 0; j < game->stats_thread_count && !was; j++)
+                if (game->stats_threads[j].tid == now[i].tid) was = &game->stats_threads[j];
+            if (!was || now[i].runtime_us < was->runtime_us) continue;
+            int percent = (int)(((now[i].runtime_us - was->runtime_us) * 100u + span_us / 2) / span_us);
+            for (int k = 0; k < 3; k++)
+                if (percent > share[k]) {
+                    for (int m = 2; m > k; m--) { share[m] = share[m - 1]; top[m] = top[m - 1]; }
+                    share[k] = percent;
+                    top[k] = (int)i;
+                    break;
+                }
+        }
+        char text[200] = "";
+        size_t at = 0;
+        for (int k = 0; k < 3 && top[k] >= 0 && at < sizeof(text); k++) {
+            const Pc5ThreadTime *t = &now[top[k]];
+            /* name/kernel thread id:share of one CPU%@the CPU it last ran on */
+            int n = snprintf(text + at, sizeof(text) - at, "%s%s/%d:%d%%@%d", k ? " " : "", t->name[0] ? t->name : "?",
+                             t->tid, share[k] > 100 ? 100 : share[k], t->cpu);
+            if (n > 0) at += (size_t)n;
+        }
+        say(game, "PC5 threads=%u busiest %s", count, text);
+    }
+    memcpy(game->stats_threads, now, count * sizeof(now[0]));
+    game->stats_thread_count = count;
+    game->stats_threads_at = count ? now_ms : 0;
+}
+
 int pc5_game_overlay_sample(Pc5GameSession *game, uint64_t now_ms, PwPc5HudStats *stats)
 {
     unsigned lines = pc5_game_overlay_lines(&game->settings);
@@ -908,6 +950,7 @@ int pc5_game_overlay_sample(Pc5GameSession *game, uint64_t now_ms, PwPc5HudStats
             (unsigned)memory_rc);
         game->stats_logged = 1;
     }
+    busiest_threads(game, now_ms);
     game->stats_at = now_ms;
     game->stats = s;
     *stats = s;
