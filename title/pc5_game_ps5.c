@@ -9,6 +9,7 @@
 #include "pc5_logs.h"
 
 #include <errno.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <time.h>
@@ -173,27 +174,56 @@ static unsigned cpu_ticks(uint64_t *busy, uint64_t *total, unsigned most)
     return count;
 }
 
+static void (*ps5_log)(const char *line);
+
 /* This process's threads from the kernel (kern.proc.pid.<pid>, a kinfo_proc a thread):
- * each one's CPU time, name and last CPU. 0 when the console says no, or answers with a
- * kinfo_proc of another size than this SDK's. */
+ * each one's CPU time, name and last CPU. The entries are taken at the size the console
+ * gives (the first field), as its kinfo_proc may be longer than this SDK's; what it
+ * answered is logged once. 0 when it says no. */
 static unsigned thread_times(Pc5ThreadTime *out, unsigned most)
 {
-    static struct kinfo_proc kp[PC5_THREADS_MOST];
+    static uint8_t buffer[PC5_THREADS_MOST * 2048];
+    static int noted;
+    const size_t need_tid = offsetof(struct kinfo_proc, ki_tid) + sizeof(lwpid_t),
+                 need_name = offsetof(struct kinfo_proc, ki_tdname) + sizeof(((struct kinfo_proc *)0)->ki_tdname),
+                 need_cpu = offsetof(struct kinfo_proc, ki_lastcpu) + sizeof(int),
+                 need = need_tid > need_name ? (need_tid > need_cpu ? need_tid : need_cpu) : (need_name > need_cpu ? need_name : need_cpu);
     int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID | KERN_PROC_INC_THREAD, (int)getpid() };
-    size_t length = sizeof(kp);
+    size_t length = sizeof(buffer);
+    int rc = sysctl(mib, 4, buffer, &length, NULL, 0), error = rc ? errno : 0, size = 0;
+    char line[200];
 
+    if (length >= sizeof(int)) memcpy(&size, buffer, sizeof(int));
     /* more threads than room: the first ones, as many as fit (ENOMEM) */
-    if ((sysctl(mib, 4, kp, &length, NULL, 0) && errno != ENOMEM) || length < sizeof(kp[0]) ||
-        kp[0].ki_structsize != (int)sizeof(kp[0]))
+    if ((rc && error != ENOMEM) || size < (int)need || (size_t)size > length) {
+        if (!noted && ps5_log) {
+            snprintf(line, sizeof(line), "PC5 threads unknown: rc=%d errno=%d length=%zu size=%d (this SDK's %zu)", rc,
+                     error, length, size, sizeof(struct kinfo_proc));
+            ps5_log(line);
+        }
+        noted = 1;
         return 0;
-    unsigned count = (unsigned)(length / sizeof(kp[0]));
+    }
+    unsigned count = (unsigned)(length / (size_t)size);
     if (count > most) count = most;
     for (unsigned i = 0; i < count; i++) {
-        out[i].tid = kp[i].ki_tid;
-        out[i].cpu = kp[i].ki_lastcpu;
-        out[i].runtime_us = kp[i].ki_runtime;
-        snprintf(out[i].name, sizeof(out[i].name), "%s", kp[i].ki_tdname);
+        const uint8_t *k = buffer + (size_t)i * (size_t)size;
+        int32_t tid;
+        uint64_t runtime;
+        memcpy(&tid, k + offsetof(struct kinfo_proc, ki_tid), sizeof(tid));
+        memcpy(&out[i].cpu, k + offsetof(struct kinfo_proc, ki_lastcpu), sizeof(int));
+        memcpy(&runtime, k + offsetof(struct kinfo_proc, ki_runtime), sizeof(runtime));
+        out[i].tid = tid;
+        out[i].runtime_us = runtime;
+        snprintf(out[i].name, sizeof(out[i].name), "%.*s", (int)sizeof(((struct kinfo_proc *)0)->ki_tdname),
+                 (const char *)(k + offsetof(struct kinfo_proc, ki_tdname)));
     }
+    if (!noted && ps5_log) {
+        snprintf(line, sizeof(line), "PC5 threads: %u, %d bytes each (this SDK's %zu); first tid=%d time=%lluus name=%s",
+                 count, size, sizeof(struct kinfo_proc), out[0].tid, (unsigned long long)out[0].runtime_us, out[0].name);
+        ps5_log(line);
+    }
+    noted = 1;
     return count;
 }
 
@@ -270,8 +300,6 @@ static struct {
     int (*term)(void);
     int (*common_init)(void);
 } ime;
-static void (*ps5_log)(const char *line);
-
 static void *ime_symbol(const char *name)
 {
     void *address = NULL;
