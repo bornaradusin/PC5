@@ -606,7 +606,7 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
      * whose large-address flag asks for it, as on Windows), and CPU sharing, which Wine's server
      * reads (patch 0882, WINE_PS5_SCHED=1; the profile says it too, but PC5 writes
      * only the profiles of the games it installed). */
-    int memory_4gb = 0, stretch = 0, cpu_sharing = 0;
+    int memory_4gb = 0, stretch = 0, cpu_sharing = 0, video_memory_full = 0;
     if (prefix && prefix[0]) {
         Pc5Controls controls;
         pc5_controls_load(root, prefix, &controls);
@@ -614,7 +614,15 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         memory_4gb = controls.memory_4gb;
         stretch = controls.stretch;
         cpu_sharing = controls.cpu_sharing;
+        video_memory_full = controls.video_memory_full;
     }
+    /* Video memory: the console's 12 GB are shared between the game and its graphics, but
+     * DXGI said 8 GB were the graphics' own, and a Direct3D 11 or 12 game that sized its
+     * textures to that ran the console out of memory. Auto tells it 4 GB (DXVK's dxgi, with
+     * patches/dxvk 0005 for the budget); Full the whole heap. A game's env.txt, applied
+     * after, can set DXVK_CONFIG itself. */
+    if (!video_memory_full) setenv("DXVK_CONFIG", "dxgi.maxDeviceMemory = 4096", 1);
+    else unsetenv("DXVK_CONFIG");
     if (game->frame_generation) setenv("PW_PC5_FRAMEGEN", "1", 1);
     else unsetenv("PW_PC5_FRAMEGEN");
     if (stretch) setenv("PW_PC5_STRETCH", "1", 1);

@@ -184,7 +184,7 @@ static const char *const game_page_titles[GAME_PAGES] = { "", "Graphics", "Appea
 /* The first page's row that opens each page. */
 static const GameRow game_page_rows[GAME_PAGES] = { GR_PLAY, GR_GRAPHICS, GR_APPEARANCE, GR_MANAGE };
 /* What a game is, for its menu's rows. */
-enum { GAME_32BIT = 1, GAME_VULKAN = 2, GAME_PC5 = 4, GAME_API = 8, GAME_STEAM = 16 };
+enum { GAME_32BIT = 1, GAME_VULKAN = 2, GAME_PC5 = 4, GAME_API = 8, GAME_STEAM = 16, GAME_DXGI = 32 };
 
 /* kind: GAME_32BIT for Memory, GAME_VULKAN for Resolution, GAME_PC5 (PC5 installed it) for Game files and Update,
  * GAME_API (it draws with DirectDraw or Direct3D) for Graphics API, GAME_STEAM (it has Steam's library) for
@@ -199,7 +199,7 @@ static int game_rows(const Pc5Controls *controls, int kind, int page, GameRow ro
         if (kind & GAME_VULKAN) rows[n++] = GR_RESOLUTION;
         rows[n++] = GR_ASPECT;
         if (kind & GAME_32BIT) rows[n++] = GR_MEMORY;
-        if (kind & GAME_32BIT) rows[n++] = GR_VIDEO_MEMORY;
+        if (kind & (GAME_32BIT | GAME_DXGI)) rows[n++] = GR_VIDEO_MEMORY;
         rows[n++] = GR_CPU_SHARING;
         break;
     case GP_APPEARANCE:
@@ -527,7 +527,9 @@ static int ui_game_kind(const Pc5Ui *ui)
     return (ui->library.games[index].bits == 32 ? GAME_32BIT : 0) | (ui->library.games[index].vulkan ? GAME_VULKAN : 0) |
            (ui->library.games[index].pc5 ? GAME_PC5 : 0) |
            (pc5_graphics_choices(ui->library.games[index].api, choices) > 1 ? GAME_API : 0) |
-           (ui->steam_dlls > 0 ? GAME_STEAM : 0);
+           (ui->steam_dlls > 0 ? GAME_STEAM : 0) |
+           (ui->library.games[index].bits != 32 && ui->library.games[index].api >= PC5_API_D3D10 &&
+                    ui->library.games[index].api <= PC5_API_D3D12 ? GAME_DXGI : 0);
 }
 
 /* What the game whose menu is open draws with (Pc5Api), PC5_API_GDI when it isn't found. */
@@ -5575,8 +5577,12 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
         break;
     case GR_VIDEO_MEMORY:
         *label = "Video memory";
-        *text = ui->controls.video_memory_full ? "All the console's; Auto if the game says there is too little"
-                                               : "2 GB at most, a number older games' checks can read";
+        if (!(kind & GAME_32BIT))
+            *text = ui->controls.video_memory_full ? "All 8 GB: the game may take memory the rest of it needs"
+                                                   : "4 GB, so the game leaves room for the rest: the console's memory is shared";
+        else
+            *text = ui->controls.video_memory_full ? "All the console's; Auto if the game says there is too little"
+                                                   : "2 GB at most, a number older games' checks can read";
         *value = ui->controls.video_memory_full ? "Full" : "Auto";
         break;
     case GR_CPU_SHARING:

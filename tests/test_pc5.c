@@ -6577,7 +6577,12 @@ static void test_screens(const char *fonts)
     CHECK(controls_has("orbital-nine", "aspect_ratio = stretch\n"), "Aspect ratio: Stretch");
     press(ui, PC5_KEY_LEFT, &canvas);
     CHECK(controls_has("orbital-nine", "aspect_ratio = keep\n"), "then Keep");
-    press(ui, PC5_KEY_DOWN, &canvas);       /* CPU sharing (a 64-bit game: no Memory): on, then off again */
+    press(ui, PC5_KEY_DOWN, &canvas);       /* Video memory (a 64-bit Direct3D game: no Memory): Full, then Auto */
+    press(ui, PC5_KEY_ACCEPT, &canvas);
+    CHECK(controls_has("orbital-nine", "video_memory = full\n"), "Video memory: Full");
+    press(ui, PC5_KEY_RIGHT, &canvas);
+    CHECK(controls_has("orbital-nine", "video_memory = auto\n"), "then Auto");
+    press(ui, PC5_KEY_DOWN, &canvas);       /* CPU sharing: on, then off again */
     press(ui, PC5_KEY_ACCEPT, &canvas);
     CHECK(controls_has("orbital-nine", "cpu_sharing = on\n"), "CPU sharing on");
     press(ui, PC5_KEY_RIGHT, &canvas);

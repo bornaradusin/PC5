@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 19:30:00 +0000
+Subject: [PATCH] dxgi: The video memory budget follows dxgi.maxDeviceMemory
+ and dxgi.maxSharedMemory
+
+QueryVideoMemoryInfo reported each heap's whole budget whatever the
+adapter's description was capped to, and engines size their texture
+pools from the budget. On a device whose video memory is shared with
+the CPU's (a console), a game that took the whole 8 GB heap as its
+own ran the system out of memory: the budget and the memory that can
+be reserved now keep to the same cap.
+---
+ src/dxgi/dxgi_adapter.cpp | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/src/dxgi/dxgi_adapter.cpp b/src/dxgi/dxgi_adapter.cpp
+index 27152e6..31774bd 100644
+--- a/src/dxgi/dxgi_adapter.cpp
++++ b/src/dxgi/dxgi_adapter.cpp
+@@ -287,6 +287,19 @@ namespace dxvk {
+       pVideoMemoryInfo->AvailableForReservation += memInfo.heaps[i].heapSize / 2;
+     }
+ 
++    // The memory reported to the game is capped (dxgi.maxDeviceMemory, dxgi.maxSharedMemory):
++    // the budget too, which engines size their texture pools from, not only the adapter's
++    // description. On a device whose video memory is shared with the CPU's, a game that
++    // sized itself from the whole heap ran the system out of memory.
++    const DxgiOptions* options = m_factory->GetOptions();
++    VkDeviceSize limit = MemorySegmentGroup == DXGI_MEMORY_SEGMENT_GROUP_LOCAL
++      ? options->maxDeviceMemory : options->maxSharedMemory;
++
++    if (limit > 0) {
++      pVideoMemoryInfo->Budget = std::min<UINT64>(pVideoMemoryInfo->Budget, limit);
++      pVideoMemoryInfo->AvailableForReservation = std::min<UINT64>(pVideoMemoryInfo->AvailableForReservation, limit / 2);
++    }
++
+     // We don't implement reservation, but the observable
+     // behaviour should match that of Windows drivers
+     uint32_t segmentId = uint32_t(MemorySegmentGroup);

@@ -92,7 +92,7 @@ MBEDTLS_SHA256=a7e8bcbec0e6f761b4af24f25677626b35f762f68eef79c08677a363212d11f6
 # patches/dxvk; app/pc5/dxvk.txt names the result, and PC5 gives installed games its DLLs.
 DXVK_URL=https://github.com/mpereiraesaa/dxvk.git
 DXVK_COMMIT=a6f6dcc1eaa67946482ebdded0d1d5dc13293133      # tag v2.6.2-prospero2
-DXVK_NAME=2.6.2-prospero2-pc5.3
+DXVK_NAME=2.6.2-prospero2-pc5.4
 # gbe_fork, a Steamworks emulator (LGPL 3.0), its release build unchanged: PC5 puts its
 # steam_api.dll or steam_api64.dll in place of Valve's in a game that has it
 # (title/pc5_steam.c). The DLLs are pinned by SHA-256 too; its source, at the release's
