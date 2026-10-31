@@ -7916,6 +7916,23 @@ static void test_steam(void)
     path(from, sizeof(from), "%s/game32.exe", programs);
     pe_variant(from, file, NULL, NULL, 0, ".bind");
     CHECK(pc5_steam_stub(file), "a 32-bit one too");
+    /* The wrapper taken off (Steamless) with its section kept: the program starts in its own code,
+     * so it isn't wrapped. Here the first section is named back and the second one is .bind. */
+    {
+        Pc5Buf data = { 0 };
+        CHECK(!pc5_read_file(file, &data, 64u << 20), "the 32-bit one read");
+        uint8_t *p = data.data;
+        uint32_t lfanew = (uint32_t)(p[0x3c] | p[0x3d] << 8 | p[0x3e] << 16 | (uint32_t)p[0x3f] << 24);
+        uint32_t table = lfanew + 24 + (uint32_t)(p[lfanew + 20] | p[lfanew + 21] << 8);
+        uint32_t sections = (uint32_t)(p[lfanew + 6] | p[lfanew + 7] << 8);
+        if (sections > 1) {
+            memcpy(p + table, ".text\0\0\0", 8);
+            memcpy(p + table + 40, ".bind\0\0\0", 8);
+            pc5_write_file(file, data.data, data.len);
+        }
+        pc5_buf_free(&data);
+        CHECK(sections > 1 && !pc5_steam_stub(file), "a .bind section it doesn't start in: not wrapped");
+    }
     /* Its menu's setting. */
     Pc5Controls controls;
     pc5_controls_load(root_steam, "steamgame", &controls);

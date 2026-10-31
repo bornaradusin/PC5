@@ -23,6 +23,7 @@ typedef struct Pe {
     uint16_t machine, characteristics, subsystem;
     int bits;
     uint32_t dir_rva[16], dir_size[16];
+    uint32_t entry;   /* AddressOfEntryPoint */
     Section sections[96];
     int section_count;
 } Pe;
@@ -129,6 +130,7 @@ static int pe_open(const char *path, Pe *pe)
         goto fail;
     }
     pe->subsystem = u16(opt + 68);
+    pe->entry = u32(opt + 16);
     dir_count = u32(opt + dirs_at - 4);
     if (dir_count > 16) dir_count = 16;
     for (uint32_t i = 0; i < dir_count && dirs_at + 8 * i + 8 <= optional_size; i++) {
@@ -544,6 +546,20 @@ int pc5_pe_section(const char *path, const char *name)
     int found = 0;
     if (pe_open(path, &pe)) return 0;
     for (int i = 0; i < pe.section_count && !found; i++) found = !strcmp(pe.sections[i].name, name);
+    pe_close(&pe);
+    return found;
+}
+
+int pc5_pe_entry_in(const char *path, const char *name)
+{
+    Pe pe;
+    int found = 0;
+    if (pe_open(path, &pe)) return 0;
+    for (int i = 0; i < pe.section_count && !found; i++) {
+        const Section *s = &pe.sections[i];
+        uint32_t size = s->vsize > s->rawsize ? s->vsize : s->rawsize;
+        found = !strcmp(s->name, name) && pe.entry >= s->va && pe.entry - s->va < size;
+    }
     pe_close(&pe);
     return found;
 }

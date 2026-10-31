@@ -23,7 +23,8 @@ int pc5_steam_find(const char *root, const char *id, const char *game_dir, const
  * put back. How many changed, or -1 with why in error. app: the app's folder (pc5/steam). */
 int pc5_steam_prepare(const char *root, const char *id, const char *game_dir, const char *program, const char *app,
                       int on, char *error, size_t size);
-/* 1 when the program is wrapped in SteamStub (a section named .bind). */
+/* 1 when the program is wrapped in SteamStub: it starts in its section named .bind (one with the
+ * wrapper taken off may keep the section, starting in its own code: not wrapped). */
 int pc5_steam_stub(const char *program);
 /* For the tests: the Steam interfaces named in a steam_api DLL's bytes, one a line, as
  * gbe_fork's generate_interfaces finds them. */

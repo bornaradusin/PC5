@@ -75,7 +75,7 @@ int pc5_steam_find(const char *root, const char *id, const char *game_dir, const
 
 int pc5_steam_stub(const char *program)
 {
-    return program && pc5_pe_section(program, ".bind");
+    return program && pc5_pe_entry_in(program, ".bind");
 }
 
 /* ---- the interfaces Valve's library has (steam_interfaces.txt) ------------------------------- */
