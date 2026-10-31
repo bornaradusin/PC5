@@ -4382,6 +4382,7 @@ static void test_java(void)
         CHECK(!pc5_game_env_name_ok("WineDllOverrides") && !pc5_game_env_name_ok("pw_x") && !pc5_game_env_name_ok("PATH") &&
               pc5_game_env_name_ok("SteamAppId") && pc5_game_env_name_ok("_X1") &&
               pc5_game_env_name_ok("PW_NATIVE_PROFILE") && pc5_game_env_name_ok("PW_VK_RADV_PROFILE") &&
+              pc5_game_env_name_ok("WINE_PS5_SYNC_SPIN_US") && !pc5_game_env_name_ok("WINEDEBUG") &&
               !pc5_game_env_name_ok("PW_VK_BATCH"), "the names it takes");
         unsetenv("MEMORIES_NO_MONITOR");
         unsetenv("GAME_LOG");

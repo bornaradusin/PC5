@@ -1,0 +1,618 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 19:00:00 +0000
+Subject: [PATCH 81/81] PC5: a wait on an event or a semaphore spins briefly before
+ it sleeps (Wine patch 0998)
+
+A game that hands many small jobs to worker threads sets their events
+thousands of times a frame. A worker asleep on its event makes each set
+go through Wine's server and wake it, several microseconds each on the
+console. A worker now checks its event for up to 100 microseconds before
+it sleeps (WINE_PS5_SYNC_SPIN_US, 0 off): a set in that time takes the
+fast path and nothing has to be woken.
+---
+ Makefile                                      |   1 +
+ PUBLICATION_ALLOWLIST.txt                     |   3 +
+ docs/WINE_PS5_BUILD.md                        |   1 +
+ tests/fixtures/wine_sync_spin.c               | 213 ++++++++++++++
+ tests/test_wine_sync_spin.py                  |  46 +++
+ ...5-waits-spin-briefly-before-blocking.patch | 276 ++++++++++++++++++
+ 6 files changed, 540 insertions(+)
+ create mode 100644 tests/fixtures/wine_sync_spin.c
+ create mode 100644 tests/test_wine_sync_spin.py
+ create mode 100644 wine/patches/0998-ntdll-ps5-waits-spin-briefly-before-blocking.patch
+
+diff --git a/Makefile b/Makefile
+index 01ea311..268fc2f 100644
+--- a/Makefile
++++ b/Makefile
+@@ -212,6 +212,7 @@ test: $(addprefix $(BUILD)/,$(TESTS)) $(BUILD)/classify_x86 $(BUILD)/dbt_differe
+ 	CC="$(CC)" CFLAGS="$(CFLAGS)" python3 tests/test_wine_shared_sync_word.py
+ 	CC="$(CC)" CFLAGS="$(CFLAGS)" python3 tests/test_wine_shared_sync_server.py
+ 	CC="$(CC)" CFLAGS="$(CFLAGS)" python3 tests/test_wine_shared_sync_client.py
++	CC="$(CC)" CFLAGS="$(CFLAGS)" python3 tests/test_wine_sync_spin.py
+ 	CC="$(CC)" CFLAGS="$(CFLAGS)" python3 tests/test_wine_shared_mutex_client.py
+ 	CC="$(CC)" CFLAGS="$(CFLAGS)" python3 tests/test_ws2_fqdn_cache.py
+ 	CC="$(CC)" CFLAGS="$(CFLAGS)" python3 tests/test_wine_lookup_misses.py
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index d2a7a78..c5716a4 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -619,6 +619,9 @@ wine/patches/0994-server-ps5-a-parked-file-or-folder-opened-again-under-another-
+ wine/patches/0995-ntdll-ps5-a-crash-handler-is-not-handed-off.patch
+ wine/patches/0996-server-ps5-open-an-absolute-unix-name-that-comes-with-a-root-folder.patch
+ wine/patches/0997-kernelbase-ps5-def-values-without-an-exponent-and-vs-1-x-as-vs-2-0.patch
++wine/patches/0998-ntdll-ps5-waits-spin-briefly-before-blocking.patch
++tests/test_wine_sync_spin.py
++tests/fixtures/wine_sync_spin.c
+ 
+ 
+ 
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index a3d26f8..8f8634f 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -172,6 +172,7 @@ before evaluating a candidate built from that cache.
+ | 0995 | `ntdll`: a program whose name has `handler` in it, or whose command line has `--database=`, `crashpad` or `--url=` in it (in any case), is a helper for the PS5 title's hand-off (`PW_HANDOFF`), as a crash reporter is: it isn't handed off, its start fails, and the game that started it carries on. Mina the Hollower starts its crash handler, `handler.exe --database=…\Crashpad … --url=https://submit.backtrace.io/…`, at boot; it was handed off, so the game ended |
+ | 0996 | `server`: on PS5, a `create_file`, rename or hard link with a root folder and an absolute unix name (what 0943 gives when it looks a name up by the folder's own name) is taken instead of failing with `STATUS_OBJECT_PATH_SYNTAX_BAD`: the unix name is opened as it is and the NT name is still made from the folder's. Heroes of Might and Magic: Olden Era got "path invalid" (`ERROR_BAD_PATHNAME`) for `StreamingAssets\maps\Story_maps` right after 0943's log line |
+ | 0997 | `kernelbase`: on PS5, the listing 0988 writes for `fxc.exe` gives a `def` line's values as plain decimals (`1.0`, `-0.5`, `0.333333343`; vkd3d-shader writes `1.00000000e+00`, and `D3DXAssembleShader` takes no exponent), and a `vs_1_x` shader that fails to compile (vkd3d-shader's `E7002` for `sincos`) is compiled for `vs_2_0` instead, as Far Cry only assembles the listing again on a device that takes `vs_3_0` |
++| 0998 | `ntdll`: on PS5, a non-alertable `NtWaitForSingleObject` on an event or semaphore whose one try on the shared word (0885, 0887) fails spins up to `WINE_PS5_SYNC_SPIN_US` microseconds (100 by default, 0 off, 1000 at most; never longer than a relative timeout, none for a poll or an absolute time) re-trying the word before it blocks in the server, and stops at once when the server holds the word. While it spins the word stays the client's, so `SetEvent`/`ReleaseSemaphore` need no server call either. Blur sets six events about 2000 times a frame, each waking a worker that waits again, and each of those waits and sets cost several microseconds through the server (5 to 10 ms a frame). The log says `wine-ps5: waits spin up to N us before blocking` at the first such wait, and every 65536 spins how many took the object (`wine-ps5: wait spins: …`); `tests/test_wine_sync_spin.py` runs the spin on the actual word header |
+ 
+ ## Allocator
+ 
+diff --git a/tests/fixtures/wine_sync_spin.c b/tests/fixtures/wine_sync_spin.c
+new file mode 100644
+index 0000000..d1bcd9b
+--- /dev/null
++++ b/tests/fixtures/wine_sync_spin.c
+@@ -0,0 +1,213 @@
++/* SPDX-License-Identifier: LGPL-2.1-or-later */
++/* The spin before a blocking wait (patch 0998) on the exact patch headers,
++ * with a fake clock and with threads. No Wine process or server. */
++#include <pthread.h>
++#include <sched.h>
++#include <stdio.h>
++#include <time.h>
++#include "ps5_sync_spin.h"
++
++static void init_fast(struct pw_sync_word *cell, unsigned kind, unsigned value, unsigned max)
++{
++    pw_sync_word_init(cell, kind, value, max);
++    assert(pw_sync_word_publish(cell, value));
++}
++
++static void parse(void)
++{
++    assert(pw_sync_spin_parse(NULL) == 100 && pw_sync_spin_parse("") == 100);
++    assert(pw_sync_spin_parse("0") == 0 && pw_sync_spin_parse("15") == 15);
++    assert(pw_sync_spin_parse("1000") == 1000 && pw_sync_spin_parse("1001") == 1000);
++    assert(pw_sync_spin_parse("99999999999999999999999") == 1000);
++    assert(pw_sync_spin_parse("abc") == 100 && pw_sync_spin_parse("-5") == 100);
++    assert(pw_sync_spin_parse("12x") == 100 && pw_sync_spin_parse(" 12") == 100);
++}
++
++static void budget(void)
++{
++    assert(pw_sync_spin_budget(40, 0, 0) == 40);              /* infinite */
++    assert(pw_sync_spin_budget(40, 1, INT64_MAX) == 40);      /* Wine's infinite */
++    assert(pw_sync_spin_budget(40, 1, 0) == 0);               /* a poll */
++    assert(pw_sync_spin_budget(40, 1, 5000) == 0);            /* an absolute time */
++    assert(pw_sync_spin_budget(40, 1, -10000) == 40);         /* 1 ms */
++    assert(pw_sync_spin_budget(40, 1, -400) == 40);
++    assert(pw_sync_spin_budget(40, 1, -200) == 20);           /* 20 us */
++    assert(pw_sync_spin_budget(40, 1, -5) == 0);              /* under a microsecond */
++    assert(pw_sync_spin_budget(40, 1, INT64_MIN) == 40);
++    assert(pw_sync_spin_budget(0, 0, 0) == 0 && pw_sync_spin_budget(0, 1, -10000) == 0);
++    assert(pw_sync_spin_budget(1000, 1, -10000000) == 1000);
++}
++
++static void rest(void)
++{
++    assert(pw_sync_spin_rest(-1000, 30) == -700);
++    assert(pw_sync_spin_rest(-1000, 100) == 0 && pw_sync_spin_rest(-1000, 200) == 0);
++    assert(pw_sync_spin_rest(-15, 1) == -5 && pw_sync_spin_rest(-1000, 0) == -1000);
++    assert(pw_sync_spin_rest(INT64_MIN, 5) == INT64_MIN + 50);
++    assert(pw_sync_spin_rest(0, 7) == 0);
++}
++
++/* A fake clock: each read advances it by fake_step microseconds and may run
++ * one action on the cell at a given read, as another thread would. */
++static uint64_t fake_now, fake_step;
++static unsigned fake_reads, fake_at;
++static struct pw_sync_word *fake_cell;
++static enum { NOTHING, SET, FREEZE, RELEASE } fake_action;
++
++static uint64_t fake_clock(void)
++{
++    unsigned previous;
++    if (++fake_reads == fake_at && fake_cell)
++    {
++        if (fake_action == SET) assert(pw_sync_word_try_event(fake_cell, 1, &previous));
++        if (fake_action == RELEASE) assert(pw_sync_word_try_release(fake_cell, 1, &previous));
++        if (fake_action == FREEZE) assert(pw_sync_word_freeze(fake_cell, &previous));
++    }
++    return fake_now += fake_step;
++}
++
++static void fake(uint64_t step, unsigned at, struct pw_sync_word *cell, int action)
++{
++    fake_now = 1000;
++    fake_step = step;
++    fake_reads = 0;
++    fake_at = at;
++    fake_cell = cell;
++    fake_action = action;
++}
++
++static void spin_fake_clock(void)
++{
++    struct pw_sync_word cell;
++    uint64_t spent;
++    unsigned kind, snapshot;
++
++    /* no budget: nothing read, nothing changed */
++    init_fast(&cell, PW_SYNC_AUTO_EVENT, 0, 1);
++    fake(1, 0, NULL, NOTHING);
++    spent = 99;
++    assert(!pw_sync_word_spin_wait(&cell, 0, fake_clock, &spent));
++    assert(spent == 0 && fake_reads == 0 && pw_sync_word_load(&cell) == 0);
++
++    /* unsignaled for the whole budget: blocks after it, the word unchanged */
++    for (kind = PW_SYNC_AUTO_EVENT; kind <= PW_SYNC_SEMAPHORE; ++kind)
++    {
++        init_fast(&cell, kind, 0, kind == PW_SYNC_SEMAPHORE ? 5 : 1);
++        fake(1, 0, NULL, NOTHING);
++        assert(!pw_sync_word_spin_wait(&cell, 10, fake_clock, &spent));
++        assert(spent >= 10 && spent <= 12 && fake_reads <= 12);
++        assert(pw_sync_word_load(&cell) == 0);
++    }
++
++    /* signaled: taken at the first try, without reading the clock again */
++    init_fast(&cell, PW_SYNC_AUTO_EVENT, 1, 1);
++    fake(1, 0, NULL, NOTHING);
++    assert(pw_sync_word_spin_wait(&cell, 40, fake_clock, &spent));
++    assert(fake_reads == 1 && pw_sync_word_load(&cell) == 0);
++    init_fast(&cell, PW_SYNC_MANUAL_EVENT, 1, 1);
++    assert(pw_sync_word_spin_wait(&cell, 40, fake_clock, &spent));
++    assert(pw_sync_word_load(&cell) == 1);
++    init_fast(&cell, PW_SYNC_SEMAPHORE, 3, 5);
++    assert(pw_sync_word_spin_wait(&cell, 40, fake_clock, &spent));
++    assert(pw_sync_word_load(&cell) == 2);
++
++    /* set during the spin: taken */
++    init_fast(&cell, PW_SYNC_AUTO_EVENT, 0, 1);
++    fake(1, 3, &cell, SET);
++    assert(pw_sync_word_spin_wait(&cell, 40, fake_clock, &spent));
++    assert(fake_reads == 3 && pw_sync_word_load(&cell) == 0);
++    init_fast(&cell, PW_SYNC_SEMAPHORE, 0, 2);
++    fake(1, 2, &cell, RELEASE);
++    assert(pw_sync_word_spin_wait(&cell, 40, fake_clock, &spent));
++    assert(pw_sync_word_load(&cell) == 0);
++
++    /* set only after the budget: not taken, left set for the blocking wait */
++    init_fast(&cell, PW_SYNC_AUTO_EVENT, 0, 1);
++    fake(5, 4, &cell, SET);
++    assert(!pw_sync_word_spin_wait(&cell, 10, fake_clock, &spent));
++    assert(pw_sync_word_load(&cell) == 1);
++
++    /* the server's from the start: stops at once, unchanged */
++    init_fast(&cell, PW_SYNC_AUTO_EVENT, 1, 1);
++    assert(pw_sync_word_freeze(&cell, &snapshot) && snapshot == 1);
++    fake(1, 0, NULL, NOTHING);
++    assert(!pw_sync_word_spin_wait(&cell, 1000, fake_clock, &spent));
++    assert(fake_reads == 2 && spent == 1);
++    assert(pw_sync_word_load(&cell) == (PW_SYNC_WORD_SLOW | 1));
++
++    /* the server takes it during the spin: stops at the next load */
++    init_fast(&cell, PW_SYNC_AUTO_EVENT, 0, 1);
++    fake(1, 2, &cell, FREEZE);
++    assert(!pw_sync_word_spin_wait(&cell, 1000, fake_clock, &spent));
++    assert(fake_reads == 3 && spent == 2);
++    assert(pw_sync_word_load(&cell) == PW_SYNC_WORD_SLOW);
++
++    /* an invalid value: stops at once, unchanged */
++    init_fast(&cell, PW_SYNC_AUTO_EVENT, 0, 1);
++    __atomic_store_n(&cell.word, 2, __ATOMIC_RELEASE);
++    fake(1, 0, NULL, NOTHING);
++    assert(!pw_sync_word_spin_wait(&cell, 1000, fake_clock, &spent));
++    assert(fake_reads == 2 && pw_sync_word_load(&cell) == 2);
++}
++
++static uint64_t real_clock(void)
++{
++    struct timespec ts;
++    clock_gettime(CLOCK_MONOTONIC, &ts);
++    return (uint64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
++}
++
++/* Threads: releases are never lost or taken twice, whether a spin takes
++ * them or the "blocking" wait (here: polling) does after it. */
++static struct pw_sync_word shared;
++static unsigned spin_took, spin_blocked, polled, left_over;
++#define RELEASES 20000u
++
++static void *consumer(void *unused)
++{
++    unsigned took = 0, blocked = 0, poll = 0;
++    uint64_t spent;
++    (void)unused;
++    for (;;)
++    {
++        unsigned done = __atomic_load_n(&left_over, __ATOMIC_ACQUIRE);
++        if (pw_sync_word_spin_wait(&shared, 50, real_clock, &spent)) { ++took; continue; }
++        ++blocked;
++        if (pw_sync_word_try_wait(&shared)) { ++poll; continue; }
++        if (done) break;
++        sched_yield();
++    }
++    __atomic_add_fetch(&spin_took, took, __ATOMIC_RELAXED);
++    __atomic_add_fetch(&spin_blocked, blocked, __ATOMIC_RELAXED);
++    __atomic_add_fetch(&polled, poll, __ATOMIC_RELAXED);
++    return NULL;
++}
++
++static void threads(void)
++{
++    pthread_t thread[3];
++    unsigned i, previous;
++    init_fast(&shared, PW_SYNC_SEMAPHORE, 0, 64);
++    for (i = 0; i < 3; ++i) assert(!pthread_create(&thread[i], NULL, consumer, NULL));
++    for (i = 0; i < RELEASES; )
++    {
++        if (pw_sync_word_try_release(&shared, 1, &previous)) ++i;
++        else sched_yield();
++        if (!(i % 256)) sched_yield();
++    }
++    __atomic_store_n(&left_over, 1, __ATOMIC_RELEASE);
++    for (i = 0; i < 3; ++i) assert(!pthread_join(thread[i], NULL));
++    assert(spin_took + polled + pw_sync_word_load(&shared) == RELEASES);
++    printf("wine_sync_spin: %u of %u releases taken spinning, %u spins blocked\n",
++           spin_took, RELEASES, spin_blocked);
++}
++
++int main(void)
++{
++    parse();
++    budget();
++    rest();
++    spin_fake_clock();
++    threads();
++    return 0;
++}
+diff --git a/tests/test_wine_sync_spin.py b/tests/test_wine_sync_spin.py
+new file mode 100644
+index 0000000..250abca
+--- /dev/null
++++ b/tests/test_wine_sync_spin.py
+@@ -0,0 +1,46 @@
++#!/usr/bin/env python3
++# SPDX-License-Identifier: LGPL-2.1-or-later
++"""Exercise the actual spin-before-blocking header (patch 0998) on the actual
++shared event/semaphore word header, without starting Wine."""
++from pathlib import Path
++import os
++import shlex
++import subprocess
++import tempfile
++
++ROOT = Path(__file__).resolve().parents[1]
++WORD = ROOT / "wine/patches/0885-server-ps5-shared-sync-word.patch"
++PATCH = ROOT / "wine/patches/0998-ntdll-ps5-waits-spin-briefly-before-blocking.patch"
++
++
++def additions(patch, file):
++    part = next(part for part in patch.read_text().split("diff --git ")[1:]
++                if part.splitlines()[0].endswith(" b/" + file))
++    return "\n".join(line[1:] for line in part.splitlines()
++                     if line.startswith("+") and not line.startswith("+++")) + "\n"
++
++
++def main():
++    # Only the single-object, non-alertable wait spins, after the one-shot try
++    # and the mutex try and before the ordinary server wait.
++    calls = additions(PATCH, "dlls/ntdll/unix/sync.c")
++    assert calls.count("server_spin_shared_sync(") == 1
++    assert "!alertable && server_spin_shared_sync( handle, &timeout, &rest )" in calls
++    client = additions(PATCH, "dlls/ntdll/unix/server.c")
++    assert "PW_SYNC_SLOT_SYNCHRONIZE" in client and "PW_SYNC_WORD_SLOW" in client
++    assert 'getenv("WINE_PS5_SYNC_SPIN_US")' in client
++    with tempfile.TemporaryDirectory(prefix="pw-sync-spin-") as temp:
++        folder = Path(temp)
++        (folder / "ps5_sync_word.h").write_text(additions(WORD, "include/wine/ps5_sync_word.h"))
++        (folder / "ps5_sync_spin.h").write_text(additions(PATCH, "include/wine/ps5_sync_spin.h"))
++        command = shlex.split(os.environ.get("CC", "cc"))
++        command += shlex.split(os.environ.get("CFLAGS", "-O2 -g -Wall -Wextra -Werror"))
++        command += ["-std=gnu11", "-pthread", "-I", str(folder),
++                    str(ROOT / "tests/fixtures/wine_sync_spin.c"),
++                    "-o", str(folder / "test")]
++        subprocess.run(command, check=True)
++        subprocess.run([str(folder / "test")], check=True, timeout=60)
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/wine/patches/0998-ntdll-ps5-waits-spin-briefly-before-blocking.patch b/wine/patches/0998-ntdll-ps5-waits-spin-briefly-before-blocking.patch
+new file mode 100644
+index 0000000..bd6a2ba
+--- /dev/null
++++ b/wine/patches/0998-ntdll-ps5-waits-spin-briefly-before-blocking.patch
+@@ -0,0 +1,276 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sat, 31 Oct 2026 19:00:00 +0000
++Subject: [PATCH] ntdll: PS5: a wait on an event or a semaphore spins
++ briefly before it blocks.
++
++Blur's main thread sets six events about 2000 times a frame, each one
++waking one of six worker threads, which does a little work and waits
++again. Each wait found its event not set yet, so it blocked in the
++server, and the server then holds the event's shared word (patches
++0885 and 0887) while a thread waits on it: the SetEvent that followed
++went through the server too. On the PS5 each of those costs several
++microseconds, 5 to 10 ms a frame.
++
++A wait on one event or semaphore that isn't alertable and whose one
++try on the shared word fails now tries again for up to 100 microseconds
++before it blocks, only reading the word and pausing between tries.
++While it spins, the word stays the client's, so SetEvent or
++ReleaseSemaphore sets it without the server and the spinning wait
++takes it. The spin stops at once when the server holds the word (a
++thread blocks on it, or the object went away), and there is none for a
++wait with no time (a poll) or an absolute time; a relative time shorter
++than the spin bounds it, and what is left of it is the time of the wait
++that follows. Alertable waits, waits on several objects, mutexes and
++objects without a shared word wait as before.
++
++WINE_PS5_SYNC_SPIN_US sets the spin in microseconds (0 turns it off,
++1000 at most). The log says "wine-ps5: waits spin up to N us before
++blocking" at the first wait that can spin, and every 65536 spins how
++many took the object and how many blocked. The spin is in a header of
++its own, include/wine/ps5_sync_spin.h, listed in include/Makefile.in as
++patch 0899 lists the other PS5 sync headers.
++---
++diff --git a/dlls/ntdll/unix/server.c b/dlls/ntdll/unix/server.c
++index 830564f..551b384 100644
++--- a/dlls/ntdll/unix/server.c
+++++ b/dlls/ntdll/unix/server.c
++@@ -595,8 +595,87 @@ static void server_clear_shared_sync_slot(HANDLE handle)
++     uintptr_t *slot = shared_sync_slot(wine_server_obj_handle(handle), 0);
++     if (slot) __atomic_store_n(slot, 0, __ATOMIC_RELEASE);
++ }
+++
+++#include "wine/ps5_sync_spin.h"
+++/* WINE_PS5_SYNC_SPIN_US, read once */
+++static unsigned int shared_sync_spin_us(void)
+++{
+++    static int spin = -1;
+++    int value = __atomic_load_n(&spin, __ATOMIC_RELAXED);
+++    if (value >= 0) return value;
+++    value = pw_sync_spin_parse(getenv("WINE_PS5_SYNC_SPIN_US"));
+++    if (__atomic_exchange_n(&spin, value, __ATOMIC_RELAXED) < 0)
+++        fprintf(stderr, "wine-ps5: waits spin up to %u us before blocking\n", value);
+++    return value;
+++}
+++
+++/* One atomic add a spin: the low half counts spins, the high half those that
+++ * took the object. On a cache line of its own, as worker threads all add. */
+++static struct { unsigned long long count; char pad[56]; } shared_sync_spins __attribute__((aligned(64)));
+++
+++static void shared_sync_spin_count(int took)
+++{
+++    unsigned long long now = __atomic_add_fetch(&shared_sync_spins.count, took ? (1ull << 32) + 1 : 1,
+++                                                __ATOMIC_RELAXED);
+++    unsigned int spins = (unsigned int)now, took_it = (unsigned int)(now >> 32);
+++    if (!(spins & 0xffff))
+++        fprintf(stderr, "wine-ps5: wait spins: %u, %u took the object, %u blocked\n",
+++                spins, took_it, spins - took_it);
+++}
+++
+++static uint64_t shared_sync_now_us(void)
+++{
+++    return ps5_now_us();
+++}
+++
+++/* After the one-shot try failed: spin on the cached word of a handle that
+++ * already has one (no fill, no lock, no signal mask), only while the word is
+++ * the client's and unsignaled. A relative timeout is shortened by the spin. */
+++static unsigned int server_spin_shared_sync_inprocess(HANDLE handle, const LARGE_INTEGER **timeout,
+++                                                      LARGE_INTEGER *rest)
+++{
+++    struct thread_data *data = get_thread_data();
+++    uintptr_t *slot, value;
+++    uint64_t spent, word;
+++    unsigned int budget;
+++    int took;
+++    if (!data->tid || !pw_sync_backend_ready(shared_sync_backend)) return STATUS_NOT_IMPLEMENTED;
+++    slot = shared_sync_slot(wine_server_obj_handle(handle), 0);
+++    value = slot ? __atomic_load_n(slot, __ATOMIC_ACQUIRE) : 0;
+++    if (!value || value == PW_SYNC_SLOT_NEGATIVE || !(value & PW_SYNC_SLOT_SYNCHRONIZE))
+++        return STATUS_NOT_IMPLEMENTED;
+++    if (!(budget = shared_sync_spin_us())) return STATUS_NOT_IMPLEMENTED;
+++    if (!(budget = pw_sync_spin_budget(budget, *timeout != NULL, *timeout ? (*timeout)->QuadPart : 0)))
+++        return STATUS_NOT_IMPLEMENTED;
+++    word = pw_sync_word_load(pw_sync_slot_word(value));
+++    /* the server's (a thread already blocks on it): no spin, the ordinary wait */
+++    if ((word & PW_SYNC_WORD_SLOW) || !pw_sync_word_value_valid(pw_sync_slot_word(value), (uint32_t)word))
+++        return STATUS_NOT_IMPLEMENTED;
+++    took = pw_sync_word_spin_wait(pw_sync_slot_word(value), budget, shared_sync_now_us, &spent);
+++    shared_sync_spin_count(took);
+++    if (took) return STATUS_SUCCESS;
+++    if (*timeout && (*timeout)->QuadPart < 0)
+++    {
+++        rest->QuadPart = pw_sync_spin_rest((*timeout)->QuadPart, spent);
+++        *timeout = rest;
+++    }
+++    return STATUS_NOT_IMPLEMENTED;
+++}
++ #endif
++ 
+++/* PS5: a non-alertable wait whose one-shot try on a shared event/semaphore
+++ * failed spins briefly on it (WINE_PS5_SYNC_SPIN_US) before it blocks.
+++ * STATUS_SUCCESS when the spin took the object; otherwise *timeout may now
+++ * point to rest, the relative timeout left. */
+++unsigned int server_spin_shared_sync(HANDLE handle, const LARGE_INTEGER **timeout, LARGE_INTEGER *rest)
+++{
+++#ifdef WINE_INPROCESS_SERVER
+++    return server_spin_shared_sync_inprocess(handle, timeout, rest);
+++#else
+++    return STATUS_NOT_IMPLEMENTED;
+++#endif
+++}
+++
++ unsigned int server_try_shared_sync(HANDLE handle, unsigned int operation, unsigned int count,
++                                     const LARGE_INTEGER *timeout, unsigned int *previous)
++ {
++diff --git a/dlls/ntdll/unix/sync.c b/dlls/ntdll/unix/sync.c
++index ac4e5da..b9a77e9 100644
++--- a/dlls/ntdll/unix/sync.c
+++++ b/dlls/ntdll/unix/sync.c
++@@ -2370,6 +2370,7 @@ NTSTATUS WINAPI NtWaitForSingleObject( HANDLE handle, BOOLEAN alertable, const L
++ {
++     union select_op select_op;
++     UINT flags = SELECT_INTERRUPTIBLE;
+++    LARGE_INTEGER rest;
++     unsigned int ret;
++ 
++     TRACE( "handle %p, alertable %u, timeout %s\n", handle, alertable, debugstr_timeout(timeout) );
++@@ -2386,6 +2387,11 @@ NTSTATUS WINAPI NtWaitForSingleObject( HANDLE handle, BOOLEAN alertable, const L
++     if (!alertable && (ret = server_try_fast_mutex( handle, 0, timeout, NULL )) != STATUS_NOT_IMPLEMENTED)
++         return ret;
++ 
+++    /* PS5: on a shared event/semaphore, spin briefly before blocking; a relative
+++     * timeout is then what is left of it */
+++    if (!alertable && server_spin_shared_sync( handle, &timeout, &rest ) == STATUS_SUCCESS)
+++        return STATUS_SUCCESS;
+++
++     if (alertable) flags |= SELECT_ALERTABLE;
++     select_op.wait.op = SELECT_WAIT;
++     select_op.wait.handles[0] = wine_server_obj_handle( handle );
++diff --git a/dlls/ntdll/unix/unix_private.h b/dlls/ntdll/unix/unix_private.h
++index a1fcb5b..2b3c78b 100644
++--- a/dlls/ntdll/unix/unix_private.h
+++++ b/dlls/ntdll/unix/unix_private.h
++@@ -254,6 +254,7 @@ extern void server_clear_fast_mutex_hint( HANDLE handle );
++ extern void server_clear_shared_mutex_slot( HANDLE handle );
++ extern unsigned int server_try_shared_sync(HANDLE handle, unsigned int operation, unsigned int count,
++                                             const LARGE_INTEGER *timeout, unsigned int *previous);
+++extern unsigned int server_spin_shared_sync(HANDLE handle, const LARGE_INTEGER **timeout, LARGE_INTEGER *rest);
++ extern void server_enter_uninterrupted_section( pthread_mutex_t *mutex, sigset_t *sigset );
++ extern int ps5_slow_log(void);
++ extern ULONGLONG ps5_now_us(void);
++diff --git a/include/Makefile.in b/include/Makefile.in
++index 9e923b8..78f64d4 100644
++--- a/include/Makefile.in
+++++ b/include/Makefile.in
++@@ -1143,6 +1143,7 @@ SOURCES = \
++ 	wine/ps5_mutex_backend.h \
++ 	wine/ps5_mutex_word.h \
++ 	wine/ps5_sync_backend.h \
+++	wine/ps5_sync_spin.h \
++ 	wine/ps5_sync_word.h \
++ 	wine/rbtree.h \
++ 	wine/schrpc.idl \
++diff --git a/include/wine/ps5_sync_spin.h b/include/wine/ps5_sync_spin.h
++new file mode 100644
++index 0000000..a817bf6
++--- /dev/null
+++++ b/include/wine/ps5_sync_spin.h
++@@ -0,0 +1,94 @@
+++/* SPDX-License-Identifier: LGPL-2.1-or-later */
+++/* A short spin on a shared event/semaphore word before a wait blocks in the
+++ * server. Only a successful pw_sync_word_try_wait changes the word; every
+++ * other step only loads it. The spin ends at once when the server holds the
+++ * word (SLOW) or its value is invalid, so it never races a waiter the server
+++ * has queued, and the caller then takes the ordinary blocking wait.
+++ */
+++#ifndef WINE_PS5_SYNC_SPIN_H
+++#define WINE_PS5_SYNC_SPIN_H
+++#include <stdint.h>
+++#include "ps5_sync_word.h"
+++
+++#define PW_SYNC_SPIN_DEFAULT_US 100u
+++#define PW_SYNC_SPIN_MAX_US 1000u
+++/* loads (each followed by a pause) between two reads of the clock */
+++#define PW_SYNC_SPIN_POLLS 64u
+++
+++static inline void pw_sync_spin_pause(void)
+++{
+++#if defined(__i386__) || defined(__x86_64__)
+++    __builtin_ia32_pause();
+++#elif defined(__aarch64__)
+++    __asm__ __volatile__("yield" ::: "memory");
+++#else
+++    __asm__ __volatile__("" ::: "memory");
+++#endif
+++}
+++
+++/* WINE_PS5_SYNC_SPIN_US: decimal microseconds. Unset, empty or anything but
+++ * digits gives the default; 0 turns the spin off; more than the maximum is
+++ * the maximum. */
+++static inline unsigned int pw_sync_spin_parse(const char *text)
+++{
+++    unsigned int value = 0;
+++    if (!text || !*text) return PW_SYNC_SPIN_DEFAULT_US;
+++    for (; *text; ++text)
+++    {
+++        if (*text < '0' || *text > '9') return PW_SYNC_SPIN_DEFAULT_US;
+++        value = value * 10 + (unsigned int)(*text - '0');
+++        if (value > PW_SYNC_SPIN_MAX_US) value = PW_SYNC_SPIN_MAX_US + 1;
+++    }
+++    return value > PW_SYNC_SPIN_MAX_US ? PW_SYNC_SPIN_MAX_US : value;
+++}
+++
+++/* Microseconds a wait may spin, given its NT timeout: none (infinite), or
+++ * 100 ns units, negative relative, 0 a poll, positive an absolute time.
+++ * A poll and an absolute time don't spin; a relative timeout shorter than
+++ * the spin bounds it. INT64_MAX is Wine's infinite. */
+++static inline unsigned int pw_sync_spin_budget(unsigned int spin_us, int has_timeout, int64_t timeout)
+++{
+++    if (!has_timeout || timeout == INT64_MAX) return spin_us;
+++    if (timeout >= 0) return 0;
+++    if (timeout < -(int64_t)spin_us * 10) return spin_us;
+++    return (unsigned int)(-timeout / 10);
+++}
+++
+++/* The relative timeout left after spinning spent_us of a relative timeout
+++ * (negative); 0 (a poll) when it has all gone. */
+++static inline int64_t pw_sync_spin_rest(int64_t timeout, uint64_t spent_us)
+++{
+++    if (timeout >= 0) return timeout;
+++    /* spent_us * 10 >= -timeout, without negating INT64_MIN */
+++    if (spent_us >= (uint64_t)INT64_MAX / 10 || (int64_t)spent_us * 10 - 1 >= -(timeout + 1)) return 0;
+++    return timeout + (int64_t)spent_us * 10;
+++}
+++
+++/* Retries the wait on cell for up to budget_us of now_us's clock. 1 when the
+++ * wait took the object; 0 when the caller should block, with *spent_us the
+++ * time spun. */
+++static inline int pw_sync_word_spin_wait(struct pw_sync_word *cell, unsigned int budget_us,
+++                                         uint64_t (*now_us)(void), uint64_t *spent_us)
+++{
+++    uint64_t start;
+++    uint64_t word;
+++    unsigned int i;
+++    *spent_us = 0;
+++    if (!budget_us) return 0;
+++    start = now_us();
+++    do
+++    {
+++        for (i = 0; i < PW_SYNC_SPIN_POLLS; ++i)
+++        {
+++            word = pw_sync_word_load(cell);
+++            if ((word & PW_SYNC_WORD_SLOW) || !pw_sync_word_value_valid(cell, (uint32_t)word))
+++                goto done;
+++            if (word && pw_sync_word_try_wait(cell)) return 1;
+++            pw_sync_spin_pause();
+++        }
+++    } while (now_us() - start < budget_us);
+++done:
+++    *spent_us = now_us() - start;
+++    return 0;
+++}
+++#endif
++-- 
++2.43.0
++
+-- 
+2.43.0
+

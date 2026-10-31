@@ -68,7 +68,9 @@ MY_GAME_NO_MONITOR=1
 
 - PC5 reads the file each time the game starts, so a change takes effect at the next start.
 - Lines starting with `#` are comments. Up to 32 variables are used.
-- A name has letters, digits and `_` only. Names PC5, prospero-win and Wine set themselves are left out: those starting with `WINE`, `PW_`, `LD_`, `PS5` or `PC5`, and `PATH`, `HOME` and `TMPDIR`.
+- A name has letters, digits and `_` only. Names PC5, prospero-win and Wine set themselves are left out: those starting with `WINE`, `PW_`, `LD_`, `PS5` or `PC5`, and `PATH`, `HOME` and `TMPDIR`. Two kinds are let through:
+  - `WINE_PS5_SYNC_SPIN_US`: how many microseconds a game's thread keeps checking for its next job before it sleeps (100 unless set). `WINE_PS5_SYNC_SPIN_US=0` turns it off, for a game that runs worse with it; a higher value, up to 1000, may help a game that wakes its threads very often.
+  - `PW_NATIVE_PROFILE=1`, `PW_VK_RADV_PROFILE=1`, `PW_NATIVE_SLOW_SYSCALL_US` and `PW_VK_RADV_EVENT_US`: a per-frame profile that records where each frame's time goes, for finding what slows a game down. It makes the log much bigger (PC5 keeps 16 MB parts of it while it's on) and the game a little slower, so delete the lines when you're done.
 - The game's log says which were set: `PC5 env.txt set=1 MY_GAME_NO_MONITOR`.
 
 To stop using them, delete `env.txt`, or put `#` in front of a line.

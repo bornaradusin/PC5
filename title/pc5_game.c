@@ -525,9 +525,10 @@ int pc5_game_env_name_ok(const char *name)
     /* What Wine, prospero-win and PC5 set themselves, and what finds programs and libraries. */
     static const char *const kept[] = { "WINE", "PW_", "LD_", "PS5", "PC5" };
     /* ... except prospero-win's per-frame profile, for finding what slows a game down
-     * (docs/cs-thread-profile.md): its switches only add lines to the log. */
+     * (docs/cs-thread-profile.md), whose switches only add lines to the log, and how long a
+     * wait spins before it sleeps (Wine patch 0998; 0 off). */
     static const char *const profile[] = { "PW_NATIVE_PROFILE", "PW_VK_RADV_PROFILE", "PW_VK_RADV_EVENT_US",
-                                           "PW_NATIVE_SLOW_SYSCALL_US" };
+                                           "PW_NATIVE_SLOW_SYSCALL_US", "WINE_PS5_SYNC_SPIN_US" };
     for (size_t i = 0; i < sizeof(profile) / sizeof(profile[0]); i++)
         if (!strcmp(name, profile[i])) return 1;
     if (!name[0] || strlen(name) > 64 || !((name[0] >= 'A' && name[0] <= 'Z') || (name[0] >= 'a' && name[0] <= 'z') ||
