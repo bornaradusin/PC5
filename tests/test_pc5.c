@@ -4380,7 +4380,9 @@ static void test_java(void)
               !strcmp(getenv("GAME_LOG"), "C:\\logs\\a b.txt"), "with their values, spaces around them left out");
         CHECK(!getenv("PW_LARGE_ADDRESS_AWARE") || strcmp(getenv("PW_LARGE_ADDRESS_AWARE"), "1"), "never what PC5 sets");
         CHECK(!pc5_game_env_name_ok("WineDllOverrides") && !pc5_game_env_name_ok("pw_x") && !pc5_game_env_name_ok("PATH") &&
-              pc5_game_env_name_ok("SteamAppId") && pc5_game_env_name_ok("_X1"), "the names it takes");
+              pc5_game_env_name_ok("SteamAppId") && pc5_game_env_name_ok("_X1") &&
+              pc5_game_env_name_ok("PW_NATIVE_PROFILE") && pc5_game_env_name_ok("PW_VK_RADV_PROFILE") &&
+              !pc5_game_env_name_ok("PW_VK_BATCH"), "the names it takes");
         unsetenv("MEMORIES_NO_MONITOR");
         unsetenv("GAME_LOG");
         unlink(file);
