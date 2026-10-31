@@ -1,0 +1,92 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 18:00:00 +0000
+Subject: [PATCH 80/80] PC5: a larger log chunk while a detailed profile is on
+
+pw_diagnostics_set_chunk() sets the size a chunk fills to, from the usual
+1 MiB up to 64 MiB, for a session whose per-frame profile writes so much
+that the newest chunk held only its last few seconds.
+---
+ native/pw_diagnostics.c     | 11 ++++++++++-
+ native/pw_diagnostics.h     |  3 +++
+ tests/test_pw_diagnostics.c | 17 +++++++++++++++++
+ 3 files changed, 30 insertions(+), 1 deletion(-)
+
+diff --git a/native/pw_diagnostics.c b/native/pw_diagnostics.c
+index 32516af..fe6e53f 100644
+--- a/native/pw_diagnostics.c
++++ b/native/pw_diagnostics.c
+@@ -38,6 +38,7 @@ static char current[512], previous[512], first[512], crashed[512], identity[256]
+ static char buffers[2][PW_DIAGNOSTICS_PENDING];
+ static char *pending = buffers[0], *draining = buffers[1];
+ static size_t used, bytes;
++static size_t chunk = PW_DIAGNOSTICS_CHUNK; /* __atomic: set by any thread, read by the writer */
+ static uint64_t sequence, last_signal, dropped_records, dropped_bytes, dropped_total;
+ static int writing, writer_started, writer_refused;
+ /* Chunks the session has filled: the first is kept as session-N.start.log
+@@ -153,7 +154,8 @@ static void save(const char *data, size_t length)
+     while (at < length) {
+         const char *end = memchr(data + at, '\n', length - at);
+         size_t line = end ? (size_t)(end - (data + at)) + 1 : length - at;
+-        if (bytes + run + line > PW_DIAGNOSTICS_CHUNK - PW_DIAGNOSTICS_RESERVE && bytes + run > strlen(identity)) {
++        if (bytes + run + line > __atomic_load_n(&chunk, __ATOMIC_RELAXED) - PW_DIAGNOSTICS_RESERVE &&
++            bytes + run > strlen(identity)) {
+             if (put_all(fd, data + at - run, run) != 0) { disk_failed(errno); return; }
+             bytes += run; run = 0;
+             if (rotate() != 0) return;
+@@ -511,3 +513,10 @@ void pw_diagnostics_test_settle(void)
+     pthread_mutex_unlock(&lock);
+ }
+ #endif
++
++void pw_diagnostics_set_chunk(size_t size)
++{
++    if (size < PW_DIAGNOSTICS_CHUNK) size = PW_DIAGNOSTICS_CHUNK;
++    if (size > ((size_t)64 << 20)) size = (size_t)64 << 20;
++    __atomic_store_n(&chunk, size, __ATOMIC_RELAXED);
++}
+diff --git a/native/pw_diagnostics.h b/native/pw_diagnostics.h
+index d681b20..4a19d41 100644
+--- a/native/pw_diagnostics.h
++++ b/native/pw_diagnostics.h
+@@ -26,6 +26,9 @@ void pw_diagnostics_tick(uint64_t now_ns);
+ void pw_diagnostics_close(const char *reason);
+ void pw_diagnostics_resume(void);
+ void pw_diagnostics_status(char *buffer, size_t size);
++/* The size a chunk fills to from now on, for a session with a detailed profile on whose
++ * newest seconds wouldn't fit in PW_DIAGNOSTICS_CHUNK: between that and 64 MiB. */
++void pw_diagnostics_set_chunk(size_t bytes);
+ /* Signal path: fixed formatting, write() to the session file and send() to
+  * the live channel; never takes a mutex. segment is the ntdll segment holding
+  * pc (-1 when none), and segment_offset pc's offset in it. */
+diff --git a/tests/test_pw_diagnostics.c b/tests/test_pw_diagnostics.c
+index 7a3025c..5a9da31 100644
+--- a/tests/test_pw_diagnostics.c
++++ b/tests/test_pw_diagnostics.c
+@@ -188,6 +188,23 @@ int main(void)
+     assert(read_chunk(root, 0) && !strncmp(data, "PW_REPORT/1 build=test-build", 28) && strstr(data, "record=299 repeated"));
+     assert(read_chunk(root, 1) && !strncmp(data, "PW_REPORT/1 build=test-build", 28) && data[strlen(data) - 1] == '\n');
+     pw_diagnostics_status(status, sizeof(status)); assert(!strcmp(status, "LOG SAVED - OPTIONS: REPORT HELP"));
++    /* A detailed profile's session fills larger chunks once asked, and the usual size again
++     * after; below the usual size counts as it. */
++    {
++        char newest[600];
++        pw_diagnostics_set_chunk(4 * PW_DIAGNOSTICS_CHUNK);
++        for (unsigned i = 0; i < 300; i++) pw_diagnostics_log("big=%u a detailed profile's line for a larger chunk", i);
++        pw_diagnostics_tick(13200000000ull);
++        pw_diagnostics_test_settle();
++        snprintf(newest, sizeof(newest), "%s/logs/session-0.previous.log", root);
++        assert(stat(newest, &st) == 0 && st.st_size > PW_DIAGNOSTICS_CHUNK && st.st_size <= 4 * PW_DIAGNOSTICS_CHUNK);
++        pw_diagnostics_set_chunk(0);
++        for (unsigned i = 0; i < 300; i++) pw_diagnostics_log("small=%u back to the usual chunk size again", i);
++        pw_diagnostics_tick(13300000000ull);
++        pw_diagnostics_test_settle();
++        snprintf(newest, sizeof(newest), "%s/logs/session-0.log", root);
++        assert(stat(newest, &st) == 0 && st.st_size <= PW_DIAGNOSTICS_CHUNK);
++    }
+     /* The chunk with the session's first crash is kept as session-0.crash.log, though the
+      * game's crash handler and a second crash push it out of the other parts. */
+     pw_diagnostics_log("WINE wine: Unhandled page fault on read access to 0000000000000000 at address "
+-- 
+2.43.0
+

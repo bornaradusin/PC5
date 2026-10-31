@@ -76,6 +76,8 @@ typedef struct Pc5GameOps {
      * so far in microseconds, name, and the CPU it last ran on. How many, 0 when the
      * console doesn't say. */
     unsigned (*thread_times)(Pc5ThreadTime *threads, unsigned most);
+    /* The log's chunk size from now on (pw_diagnostics_set_chunk), for a detailed profile. */
+    void (*log_chunk)(size_t bytes);
     int (*temperature)(int sensor, int *celsius);
     int (*memory)(uint64_t *used, uint64_t *total);
     /* The console's on-screen keyboard over the game: open it for text written to

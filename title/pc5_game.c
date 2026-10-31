@@ -639,6 +639,13 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         char names[512];
         int set = pc5_game_env(root, prefix, names, sizeof(names));
         if (set) say(game, "PC5 env.txt set=%d %s", set, names);
+        /* A per-frame profile writes so much that the log's usual chunk holds only its last
+         * few seconds: larger chunks, so a slow stretch is in what's kept. */
+        if (set && game->ops.log_chunk &&
+            (strstr(names, "PW_NATIVE_PROFILE") || strstr(names, "PW_VK_RADV_PROFILE") || strstr(names, "DXVK_CS_PROFILE"))) {
+            game->ops.log_chunk((size_t)16 << 20);
+            say(game, "PC5 log chunks of 16 MB for the profile");
+        }
     }
     /* A Java game's launcher made with jpackage: its app folder in PATH from the start, which
      * Wine takes from WINEPATH (pc5_game_winepath); and the folders the game's redistributables

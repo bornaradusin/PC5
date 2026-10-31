@@ -7,6 +7,7 @@
 #include "pc5_game.h"
 #include "pc5_console.h"
 #include "pc5_logs.h"
+#include "pw_diagnostics.h"
 
 #include <errno.h>
 #include <stddef.h>
@@ -440,7 +441,7 @@ void pc5_game_ps5_ops(Pc5GameOps *ops, void (*log)(const char *line))
     pc5_system_text(system, sizeof(system));
     if (log) log(system);
     *ops = (Pc5GameOps){ .light_bar = light_bar, .light_bar_reset = light_bar_reset, .triggers = triggers,
-                         .cursor = cursor, .cursor_magnify = cursor_magnify, .log = log, .cpu_time_us = cpu_time_us, .cpu_count = cpu_count, .cpu_ticks = cpu_ticks, .thread_times = thread_times,
+                         .cursor = cursor, .cursor_magnify = cursor_magnify, .log = log, .cpu_time_us = cpu_time_us, .cpu_count = cpu_count, .cpu_ticks = cpu_ticks, .thread_times = thread_times, .log_chunk = pw_diagnostics_set_chunk,
                          .temperature = temperature, .memory = memory, .keyboard_open = keyboard_open,
                          .keyboard_state = keyboard_state, .keyboard_close = keyboard_close };
 }
