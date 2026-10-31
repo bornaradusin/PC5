@@ -105,17 +105,92 @@ static int controls_path(const char *root, const char *id, char *out, size_t siz
     return pc5_format(out, size, "%s/prefixes/%s/pc5/controls.txt", root, id);
 }
 
+/* The player's own mapping (Button mapping › Save as my mapping), for every game:
+ * <root>/pc5/mapping.txt, in controls.txt's words. */
+static int mapping_path(const char *root, char *out, size_t size)
+{
+    return pc5_format(out, size, "%s/pc5/mapping.txt", root);
+}
+
+static void controls_parse(char *data, Pc5Controls *controls);
+
+/* The mapping's own fields (the sticks, the pointer and the keys) from one controls into another. */
+static void mapping_copy(Pc5Controls *to, const Pc5Controls *from)
+{
+    to->stick[0] = from->stick[0];
+    to->stick[1] = from->stick[1];
+    to->speed = from->speed;
+    to->slow_button = from->slow_button;
+    to->slow_percent = from->slow_percent;
+    memcpy(to->key, from->key, sizeof(to->key));
+}
+
+int pc5_controls_mapping_load(const char *root, Pc5Controls *controls)
+{
+    char path[PC5_PATH];
+    Pc5Buf text = { 0 };
+    Pc5Controls saved;
+
+    if (mapping_path(root, path, sizeof(path)) || pc5_read_file(path, &text, 16 * 1024) || pc5_buf_terminate(&text)) {
+        pc5_buf_free(&text);
+        return -1;
+    }
+    pc5_controls_default(&saved);
+    controls_parse((char *)text.data, &saved);
+    pc5_buf_free(&text);
+    mapping_copy(controls, &saved);
+    return 0;
+}
+
+int pc5_controls_mapping_save(const char *root, const Pc5Controls *controls)
+{
+    char path[PC5_PATH];
+    Pc5Buf text = { 0 };
+    int status;
+
+    if (pc5_format(path, sizeof(path), "%s/pc5", root) || pc5_mkdirs(path) || mapping_path(root, path, sizeof(path)))
+        return -1;
+    status = pc5_buf_printf(&text, "# Your own button mapping in PC5 (a game's Button mapping, then Save as my mapping):\n"
+                                   "# new games start with it, and Use my mapping puts it on a game.\n"
+                                   "left_stick = %s\nright_stick = %s\npointer_speed = %d\nslow_button = %s\nslow_percent = %d\n",
+                            stick_keys[controls->stick[0] % PC5_STICK_USES], stick_keys[controls->stick[1] % PC5_STICK_USES],
+                            controls->speed,
+                            controls->slow_button >= 0 && controls->slow_button < PC5_BUTTONS
+                                ? control_keys[controls->slow_button] : "none",
+                            controls->slow_percent);
+    for (int i = 0; i < PC5_CONTROLS && !status; i++)
+        status = pc5_buf_printf(&text, "%s = %s\n", control_keys[i], pc5_keys[controls->key[i] % pc5_key_count].name);
+    if (!status) status = pc5_write_file(path, text.data, text.len);
+    pc5_buf_free(&text);
+    return status;
+}
+
+int pc5_controls_mapping_exists(const char *root)
+{
+    char path[PC5_PATH];
+    return !mapping_path(root, path, sizeof(path)) && pc5_is_file(path);
+}
+
 int pc5_controls_load(const char *root, const char *id, Pc5Controls *controls)
 {
     char path[PC5_PATH];
     Pc5Buf text = { 0 };
 
     pc5_controls_default(controls);
-    if (controls_path(root, id, path, sizeof(path)) || pc5_read_file(path, &text, 16 * 1024)) {
+    if (controls_path(root, id, path, sizeof(path)) || pc5_read_file(path, &text, 16 * 1024) || pc5_buf_terminate(&text)) {
         pc5_buf_free(&text);
+        /* A game set up for the first time starts with the player's own mapping. */
+        (void)pc5_controls_mapping_load(root, controls);
         return -1;
     }
-    for (char *line = (char *)text.data, *next; line && *line; line = next) {
+    controls_parse((char *)text.data, controls);
+    pc5_buf_free(&text);
+    return 0;
+}
+
+static void controls_parse(char *data, Pc5Controls *controls)
+{
+    for (char *line = data, *next; line && *line; line = next) {
         char name[32], value[32];
         next = strchr(line, '\n');
         if (next) *next++ = 0;
@@ -177,8 +252,6 @@ int pc5_controls_load(const char *root, const char *id, Pc5Controls *controls)
     /* One pointer: a file with two keeps the right stick's. */
     if (controls->stick[0] == PC5_STICK_POINTER && controls->stick[1] == PC5_STICK_POINTER)
         controls->stick[0] = PC5_STICK_KEYS;
-    pc5_buf_free(&text);
-    return 0;
 }
 
 int pc5_controls_save(const char *root, const char *id, const Pc5Controls *controls)

@@ -1592,6 +1592,31 @@ static void test_install(void)
         pc5_controls_save(root, "starfall", &k);
         CHECK(!pc5_profile_refresh(root, "starfall", why, sizeof(why)), "refreshed: %s", why);
     }
+    /* The player's own mapping: saved from one game, a new game starts with it, and it can be put
+     * on a game that has its own; the rest of a game's controls stay its own. */
+    {
+        Pc5Controls mine, fresh, other;
+        CHECK(!pc5_controls_mapping_exists(root), "no mapping of the player's yet");
+        pc5_controls_default(&mine);
+        mine.stick[0] = PC5_STICK_POINTER;
+        mine.stick[1] = PC5_STICK_KEYS;
+        mine.speed = 7;
+        mine.slow_button = 2;
+        mine.slow_percent = 30;
+        mine.key[0] = (uint8_t)(pc5_key_count - 1);
+        mine.mode = PC5_PAD_KEYBOARD;
+        CHECK(!pc5_controls_mapping_save(root, &mine) && pc5_controls_mapping_exists(root), "saved as the player's mapping");
+        CHECK(pc5_controls_load(root, "never-set-up", &fresh) && fresh.stick[0] == PC5_STICK_POINTER && fresh.speed == 7 &&
+              fresh.slow_button == 2 && fresh.slow_percent == 30 && fresh.key[0] == pc5_key_count - 1 &&
+              fresh.mode == PC5_PAD_XBOX, "a new game starts with it (its mode its own)");
+        pc5_controls_default(&other);
+        other.cpu_sharing = 1;
+        CHECK(!pc5_controls_mapping_load(root, &other) && other.speed == 7 && other.cpu_sharing == 1 &&
+              other.key[0] == pc5_key_count - 1, "put on a game: the mapping only");
+        char mapping[PC5_PATH];
+        path(mapping, sizeof(mapping), "%s/pc5/mapping.txt", root);
+        unlink(mapping);
+    }
     /* The choices each kind of game has, and their names. */
     {
         Pc5Graphics choices[PC5_GRAPHICS_COUNT];
@@ -5883,8 +5908,10 @@ static void test_controller_screens(Pc5Ui *ui, Pc5Canvas *canvas)
     press(ui, PC5_KEY_DOWN, canvas);
     press(ui, PC5_KEY_ACCEPT, canvas);
     CHECK(controls_has("orbital-nine", "slow_percent = 60\n"), "slower by 60 %%");
-    /* Reset to default, the last row. */
+    /* Reset to default, above Save as my mapping (the last row while there is no mapping of the
+     * player's yet). */
     for (int i = 0; i < 40; i++) press(ui, PC5_KEY_DOWN, canvas);
+    press(ui, PC5_KEY_UP, canvas);
     press(ui, PC5_KEY_ACCEPT, canvas);
     CHECK(controls_has("orbital-nine", "mode = keyboard\n") && controls_has("orbital-nine", "left_stick = keys\n") &&
               controls_has("orbital-nine", "right_stick = pointer\n") && controls_has("orbital-nine", "left_stick_up = w\n") &&
@@ -5896,6 +5923,19 @@ static void test_controller_screens(Pc5Ui *ui, Pc5Canvas *canvas)
     for (int i = 0; i < 5; i++) press(ui, PC5_KEY_DOWN, canvas);
     press(ui, PC5_KEY_ACCEPT, canvas);
     CHECK(controls_has("orbital-nine", "touchpad = none\n"), "touchpad: nothing");
+    /* Save as my mapping: kept for every game, said so, and Use my mapping offered below it. */
+    {
+        char mapping[PC5_PATH];
+        path(mapping, sizeof(mapping), "%s/pc5/mapping.txt", root);
+        for (int i = 0; i < 40; i++) press(ui, PC5_KEY_DOWN, canvas);
+        press(ui, PC5_KEY_ACCEPT, canvas);
+        CHECK(!strcmp(pc5_ui_screen(ui), "message") && file_holds_text(mapping, "touchpad = none\n"),
+              "saved as the player's mapping: %s", pc5_ui_screen(ui));
+        frames(ui, 0, 0, 30, canvas);
+        press(ui, PC5_KEY_ACCEPT, canvas);
+        CHECK(!strcmp(pc5_ui_screen(ui), "buttons"), "back on Button mapping: %s", pc5_ui_screen(ui));
+        unlink(mapping);
+    }
     press(ui, PC5_KEY_BACK, canvas);
     CHECK(!strcmp(pc5_ui_screen(ui), "game-menu"), "back to the menu: %s", pc5_ui_screen(ui));
     press(ui, PC5_KEY_BACK, canvas);

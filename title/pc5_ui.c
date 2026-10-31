@@ -248,11 +248,12 @@ static int game_row_find(const Pc5Controls *controls, int kind, GameRow row, int
 
 /* Button mapping: the sticks (with their four keys while they send keys), the
  * pointer's speed while a stick moves it, the buttons, and the default layout. */
-typedef enum PadRowKind { PR_STICK, PR_DIRECTION, PR_SPEED, PR_SLOW, PR_SLOW_PERCENT, PR_BUTTON, PR_RESET } PadRowKind;
+typedef enum PadRowKind { PR_STICK, PR_DIRECTION, PR_SPEED, PR_SLOW, PR_SLOW_PERCENT, PR_BUTTON, PR_RESET, PR_SAVE_MAPPING,
+                          PR_USE_MAPPING } PadRowKind;
 typedef struct PadRow { PadRowKind kind; int index; } PadRow;
 enum { PAD_ROWS = 32, PAD_VISIBLE = 10, PAD_PITCH = 74, KEY_COLS = 8 };
 
-static int pad_rows(const Pc5Controls *controls, PadRow rows[PAD_ROWS])
+static int pad_rows(const Pc5Controls *controls, PadRow rows[PAD_ROWS], int has_mapping)
 {
     int n = 0;
     for (int stick = 0; stick < 2; stick++) {
@@ -267,6 +268,10 @@ static int pad_rows(const Pc5Controls *controls, PadRow rows[PAD_ROWS])
     }
     for (int button = 0; button < PC5_BUTTONS; button++) rows[n++] = (PadRow){ PR_BUTTON, button };
     rows[n++] = (PadRow){ PR_RESET, 0 };
+    /* The player's own mapping, kept for every game (pc5/mapping.txt): saved from this one, and
+     * put on this one when there is one. */
+    rows[n++] = (PadRow){ PR_SAVE_MAPPING, 0 };
+    if (has_mapping) rows[n++] = (PadRow){ PR_USE_MAPPING, 0 };
     return n;
 }
 
@@ -4350,7 +4355,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
     }
     case S_BUTTONS: {
         PadRow rows[PAD_ROWS];
-        int count = pad_rows(&ui->controls, rows), changed = 0;
+        int count = pad_rows(&ui->controls, rows, pc5_controls_mapping_exists(ui->root)), changed = 0;
         if (ui->pad_row >= count) ui->pad_row = count - 1;
         if (list_move(&ui->pad_row, count, k)) ui->dirty = 1;
         PadRow row = rows[ui->pad_row];
@@ -4373,6 +4378,15 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 pc5_controls_default(&ui->controls);
                 ui->controls.mode = mode;
                 changed = 1;
+            } else if (row.kind == PR_SAVE_MAPPING) {
+                if (pc5_controls_mapping_save(ui->root, &ui->controls))
+                    message(ui, 0, T("Your mapping wasn't saved"), T("PC5 couldn't write it to the console's storage."),
+                            S_BUTTONS);
+                else
+                    message(ui, 0, T("Saved as your mapping"),
+                            T("Games set up from now on start with it, and Use my mapping puts it on any game."), S_BUTTONS);
+            } else if (row.kind == PR_USE_MAPPING) {
+                changed = !pc5_controls_mapping_load(ui->root, &ui->controls);
             } else if (row.kind == PR_SPEED) {
                 ui->controls.speed = ui->controls.speed % PC5_SPEEDS + 1;
                 changed = 1;
@@ -4387,7 +4401,12 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             controls_changed(ui);
             ui->dirty = 1;
         }
-        count = pad_rows(&ui->controls, rows);
+        count = pad_rows(&ui->controls, rows, pc5_controls_mapping_exists(ui->root));
+        /* The rows above can come and go (a stick's keys, the pointer's rows): the cursor stays
+         * on the row it was on (Reset, Save or Use my mapping). */
+        if (row.kind >= PR_RESET)
+            for (int i = 0; i < count; i++)
+                if (rows[i].kind == row.kind) ui->pad_row = i;
         if (ui->pad_row >= count) ui->pad_row = count - 1;
         if (ui->pad_row < ui->pad_top) ui->pad_top = ui->pad_row;
         if (ui->pad_row >= ui->pad_top + PAD_VISIBLE) ui->pad_top = ui->pad_row - PAD_VISIBLE + 1;
@@ -5742,7 +5761,7 @@ static void buttons_screen(Pc5Ui *ui, Pc5Canvas *c)
 {
     float x = drawer(ui, c, T("Button mapping"));
     PadRow rows[PAD_ROWS];
-    int count = pad_rows(&ui->controls, rows);
+    int count = pad_rows(&ui->controls, rows, pc5_controls_mapping_exists(ui->root));
     const Pc5Controls *k = &ui->controls;
 
     pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 64, 210, C_DIM,
@@ -5781,6 +5800,12 @@ static void buttons_screen(Pc5Ui *ui, Pc5Canvas *c)
         case PR_RESET:
             pc5_copy(label, sizeof(label), T("Reset to default"));
             break;
+        case PR_SAVE_MAPPING:
+            pc5_copy(label, sizeof(label), T("Save as my mapping"));
+            break;
+        case PR_USE_MAPPING:
+            pc5_copy(label, sizeof(label), T("Use my mapping"));
+            break;
         }
         drawer_row(ui, c, x, y, PAD_PITCH, i == ui->pad_row, label, NULL, value);
     }
@@ -5791,7 +5816,9 @@ static void buttons_screen(Pc5Ui *ui, Pc5Canvas *c)
                  "\xe2\x80\xa6", 0, 2);
     PadRow row = rows[ui->pad_row < count ? ui->pad_row : 0];
     int bindable = row.kind == PR_BUTTON || row.kind == PR_DIRECTION;
-    Hint list[] = { { accept_glyph(ui), bindable ? T("Choose a key") : row.kind == PR_RESET ? T("Reset") : T("Change") },
+    Hint list[] = { { accept_glyph(ui), bindable ? T("Choose a key") : row.kind == PR_RESET ? T("Reset")
+                                         : row.kind == PR_SAVE_MAPPING ? T("Save") : row.kind == PR_USE_MAPPING ? T("Use")
+                                         : T("Change") },
                     { G_SQUARE, T("Nothing") }, { back_glyph(ui), T("Back") } };
     if (bindable) hints(ui, c, (int)x + 64, 1012, list, 3);
     else {

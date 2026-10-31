@@ -97,6 +97,12 @@ void pc5_controls_default(Pc5Controls *controls);
 /* Always fills controls (the default where the file says nothing). 0 when the
  * file was read, -1 when there was none. */
 int pc5_controls_load(const char *root, const char *id, Pc5Controls *controls);
+/* The player's own mapping, for every game (<root>/pc5/mapping.txt): put on controls (its
+ * sticks, pointer and keys only), saved from them, and whether there is one. A game without
+ * controls of its own yet starts with it (pc5_controls_load). 0, or -1. */
+int pc5_controls_mapping_load(const char *root, Pc5Controls *controls);
+int pc5_controls_mapping_save(const char *root, const Pc5Controls *controls);
+int pc5_controls_mapping_exists(const char *root);
 int pc5_controls_save(const char *root, const char *id, const Pc5Controls *controls);
 /* The profile's [input] section, from its header on, and its [runtime] section
  * when CPU sharing is on. 0, or -1 when out is too small. */
