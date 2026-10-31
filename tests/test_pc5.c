@@ -1588,6 +1588,16 @@ static void test_install(void)
             pc5_controls_load(root, "starfall", &back);
             CHECK(back.video_memory_full == 1, "kept in its controls");
         }
+        /* 6 GB: kept, and Wine's own Direct3D is told nothing (it's DXVK's dxgi's). */
+        k.video_memory_full = 0;
+        k.video_memory_gb = 6;
+        pc5_controls_save(root, "starfall", &k);
+        {
+            Pc5Controls back;
+            pc5_controls_load(root, "starfall", &back);
+            CHECK(back.video_memory_gb == 6 && !back.video_memory_full, "6 GB kept in its controls");
+        }
+        k.video_memory_gb = 0;
         k.video_memory_full = 0;
         pc5_controls_save(root, "starfall", &k);
         CHECK(!pc5_profile_refresh(root, "starfall", why, sizeof(why)), "refreshed: %s", why);
@@ -6627,11 +6637,19 @@ static void test_screens(const char *fonts)
     CHECK(controls_has("orbital-nine", "aspect_ratio = stretch\n"), "Aspect ratio: Stretch");
     press(ui, PC5_KEY_LEFT, &canvas);
     CHECK(controls_has("orbital-nine", "aspect_ratio = keep\n"), "then Keep");
-    press(ui, PC5_KEY_DOWN, &canvas);       /* Video memory (a 64-bit Direct3D game: no Memory): Full, then Auto */
+    press(ui, PC5_KEY_DOWN, &canvas);       /* Video memory (a 64-bit Direct3D game: no Memory): 5 GB, 6 GB, Full, Auto */
     press(ui, PC5_KEY_ACCEPT, &canvas);
-    CHECK(controls_has("orbital-nine", "video_memory = full\n"), "Video memory: Full");
+    CHECK(controls_has("orbital-nine", "video_memory = 5gb\n"), "Video memory: 5 GB");
+    press(ui, PC5_KEY_RIGHT, &canvas);
+    CHECK(controls_has("orbital-nine", "video_memory = 6gb\n"), "then 6 GB");
+    press(ui, PC5_KEY_RIGHT, &canvas);
+    CHECK(controls_has("orbital-nine", "video_memory = full\n"), "then Full");
     press(ui, PC5_KEY_RIGHT, &canvas);
     CHECK(controls_has("orbital-nine", "video_memory = auto\n"), "then Auto");
+    press(ui, PC5_KEY_LEFT, &canvas);
+    CHECK(controls_has("orbital-nine", "video_memory = full\n"), "back to Full");
+    press(ui, PC5_KEY_RIGHT, &canvas);
+    CHECK(controls_has("orbital-nine", "video_memory = auto\n"), "and Auto again");
     press(ui, PC5_KEY_DOWN, &canvas);       /* CPU sharing: on, then off again */
     press(ui, PC5_KEY_ACCEPT, &canvas);
     CHECK(controls_has("orbital-nine", "cpu_sharing = on\n"), "CPU sharing on");

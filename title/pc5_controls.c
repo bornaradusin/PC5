@@ -217,8 +217,10 @@ static void controls_parse(char *data, Pc5Controls *controls)
             if (!strcmp(value, "4gb")) controls->memory_4gb = 1;
             else if (!strcmp(value, "auto")) controls->memory_4gb = 0;
         } else if (!strcmp(name, "video_memory")) {
-            if (!strcmp(value, "full")) controls->video_memory_full = 1;
-            else if (!strcmp(value, "auto")) controls->video_memory_full = 0;
+            if (!strcmp(value, "full")) controls->video_memory_full = 1, controls->video_memory_gb = 0;
+            else if (!strcmp(value, "auto")) controls->video_memory_full = 0, controls->video_memory_gb = 0;
+            else if (!strcmp(value, "5gb")) controls->video_memory_full = 0, controls->video_memory_gb = 5;
+            else if (!strcmp(value, "6gb")) controls->video_memory_full = 0, controls->video_memory_gb = 6;
         } else if (!strcmp(name, "cpu_sharing")) {
             if (!strcmp(value, "on")) controls->cpu_sharing = 1;
             else if (!strcmp(value, "off")) controls->cpu_sharing = 0;
@@ -269,7 +271,7 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                                    "slow_button = %s\nslow_percent = %d\n"
                                    "# Triangle on the game, then Frame generation\nframe_generation = %s\n"
                                    "# Triangle on a 32-bit game, then Memory: auto (as Windows) or 4gb\nmemory = %s\n"
-                                   "# Triangle on a 32-bit game, then Video memory: auto (2 GB at most) or full\n"
+                                   "# Triangle on the game, then Video memory: auto, 5gb or 6gb (a 64-bit Direct3D 10 to 12 game), or full\n"
                                    "video_memory = %s\n"
                                    "# Triangle on the game, then Resolution\nresolution = %s\n"
                                    "# Triangle on the game, then Aspect ratio\naspect_ratio = %s\n"
@@ -283,7 +285,10 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                                 ? control_keys[controls->slow_button] : "none",
                             controls->slow_percent,
                             controls->frame_generation ? "on" : "off", controls->memory_4gb ? "4gb" : "auto",
-                            controls->video_memory_full ? "full" : "auto",
+                            controls->video_memory_full      ? "full"
+                            : controls->video_memory_gb == 5 ? "5gb"
+                            : controls->video_memory_gb == 6 ? "6gb"
+                                                             : "auto",
                             controls->resolution == 2 ? "2160p" : controls->resolution == 1 ? "1440p" : "1080p",
                             controls->stretch ? "stretch" : "keep", controls->cpu_sharing ? "on" : "off",
                             graphics_keys[controls->graphics % PC5_GRAPHICS_COUNT], controls->steam_off ? "off" : "auto");
@@ -333,6 +338,18 @@ const char *pc5_control_name(int control)
 const char *pc5_pad_mode_name(Pc5PadMode mode) { return mode_names[mode % PC5_PAD_MODES]; }
 const char *pc5_stick_use_name(Pc5StickUse use) { return stick_names[use % PC5_STICK_USES]; }
 const char *pc5_key_label(int key) { return key >= 0 && key < pc5_key_count ? pc5_keys[key].label : ""; }
+
+const char *pc5_key_text(int key)
+{
+    /* Only the names marked for translation (the mouse's, the arrows, Nothing): a keyboard
+     * key's name is the one on the key, and "Space" read through the catalogue would come
+     * back as free space ("容量"). */
+    const char *name = key >= 0 && key < pc5_key_count ? pc5_keys[key].name : "";
+    if (!strncmp(name, "mouse_", 6) || !strcmp(name, "up") || !strcmp(name, "down") || !strcmp(name, "left") ||
+        !strcmp(name, "right") || !strcmp(name, "none"))
+        return T(pc5_key_label(key));
+    return pc5_key_label(key);
+}
 
 void pc5_controls_next_slow(Pc5Controls *controls, int step)
 {

@@ -527,9 +527,11 @@ int pc5_game_env_name_ok(const char *name)
     static const char *const kept[] = { "WINE", "PW_", "LD_", "PS5", "PC5" };
     /* ... except prospero-win's per-frame profile, for finding what slows a game down
      * (docs/cs-thread-profile.md), whose switches only add lines to the log, and how long a
-     * wait spins before it sleeps (Wine patch 0998; 0 off). */
+     * wait spins before it sleeps (Wine patch 0998; 0 off), and how long the pointer stays on
+     * screen unused (Wine patch 0999; 0 always). */
     static const char *const profile[] = { "PW_NATIVE_PROFILE", "PW_VK_RADV_PROFILE", "PW_VK_RADV_EVENT_US",
-                                           "PW_NATIVE_SLOW_SYSCALL_US", "WINE_PS5_SYNC_SPIN_US" };
+                                           "PW_NATIVE_SLOW_SYSCALL_US", "WINE_PS5_SYNC_SPIN_US",
+                                           "WINE_PS5_CURSOR_IDLE_MS" };
     for (size_t i = 0; i < sizeof(profile) / sizeof(profile[0]); i++)
         if (!strcmp(name, profile[i])) return 1;
     if (!name[0] || strlen(name) > 64 || !((name[0] >= 'A' && name[0] <= 'Z') || (name[0] >= 'a' && name[0] <= 'z') ||
@@ -607,7 +609,7 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
      * whose large-address flag asks for it, as on Windows), and CPU sharing, which Wine's server
      * reads (patch 0882, WINE_PS5_SCHED=1; the profile says it too, but PC5 writes
      * only the profiles of the games it installed). */
-    int memory_4gb = 0, stretch = 0, cpu_sharing = 0, video_memory_full = 0;
+    int memory_4gb = 0, stretch = 0, cpu_sharing = 0, video_memory_full = 0, video_memory_gb = 0;
     if (prefix && prefix[0]) {
         Pc5Controls controls;
         pc5_controls_load(root, prefix, &controls);
@@ -616,14 +618,19 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         stretch = controls.stretch;
         cpu_sharing = controls.cpu_sharing;
         video_memory_full = controls.video_memory_full;
+        video_memory_gb = controls.video_memory_gb == 5 || controls.video_memory_gb == 6 ? controls.video_memory_gb : 0;
     }
     /* Video memory: the console's 12 GB are shared between the game and its graphics, but
      * DXGI said 8 GB were the graphics' own, and a Direct3D 11 or 12 game that sized its
      * textures to that ran the console out of memory. Auto tells it 4 GB (DXVK's dxgi, with
-     * patches/dxvk 0005 for the budget); Full the whole heap. A game's env.txt, applied
-     * after, can set DXVK_CONFIG itself. */
-    if (!video_memory_full) setenv("DXVK_CONFIG", "dxgi.maxDeviceMemory = 4096", 1);
-    else unsetenv("DXVK_CONFIG");
+     * patches/dxvk 0005 for the budget), 5 GB or 6 GB 5120 or 6144 MB; Full the whole heap.
+     * A game's env.txt, applied after, can set DXVK_CONFIG itself. */
+    if (!video_memory_full) {
+        char dxvk_config[64];
+        snprintf(dxvk_config, sizeof(dxvk_config), "dxgi.maxDeviceMemory = %d",
+                 video_memory_gb ? video_memory_gb * 1024 : 4096);
+        setenv("DXVK_CONFIG", dxvk_config, 1);
+    } else unsetenv("DXVK_CONFIG");
     if (game->frame_generation) setenv("PW_PC5_FRAMEGEN", "1", 1);
     else unsetenv("PW_PC5_FRAMEGEN");
     if (stretch) setenv("PW_PC5_STRETCH", "1", 1);

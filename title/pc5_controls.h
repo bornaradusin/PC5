@@ -71,8 +71,13 @@ typedef struct Pc5Controls {
     /* A 32-bit game's video memory, as Wine's own Direct3D (its DirectDraw, its hardware check,
      * dxdiag) tells it. 0, Auto: at most 2 GB, a number an older game's check can take (the
      * console's 8 GB, past what a 32-bit number holds, reads to it as none or as negative).
-     * 1, Full: all of it. A 64-bit game is always told all of it. */
+     * 1, Full: all of it. A 64-bit Direct3D 10 to 12 game is told 4 GB by DXVK's dxgi on Auto
+     * (pc5_game.c), all 8 GB on Full. */
     int video_memory_full;
+    /* Between those for a 64-bit Direct3D 10 to 12 game: 5 or 6 (GB), what DXVK's dxgi tells it
+     * when video_memory_full is 0; 0, Auto's 4 GB. A game that warns there is too little video
+     * memory on Auto may have room for more (Gears of War: E-Day). */
+    int video_memory_gb;
     int resolution;               /* 0: 1920x1080, 1: 2560x1440, 2: 3840x2160 (games drawn through Vulkan) */
     int stretch;                  /* 1: the picture stretched to fill the 16:9 screen, 0: its own shape */
     int cpu_sharing;              /* 1: the game's threads take turns on the CPUs, as on a PC (prospero-win's
@@ -121,6 +126,8 @@ const char *pc5_pad_mode_name(Pc5PadMode mode);
 const char *pc5_stick_use_name(Pc5StickUse use);
 /* The key a control sends, by index in pc5_keys; the label of one. */
 const char *pc5_key_label(int key);
+/* The same, in the language in use where it is a word (the mouse's, the arrows, Nothing). */
+const char *pc5_key_text(int key);
 /* A stick's next use (step 1 or -1); the other stick stops being the pointer when
  * this one becomes it. */
 void pc5_controls_next_stick(Pc5Controls *controls, int stick, int step);

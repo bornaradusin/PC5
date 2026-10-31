@@ -60,6 +60,8 @@ Each stick can be:
 
 While a stick is the pointer, **Pointer speed** sets how fast it moves, from 1 to 10 (4 by default).
 
+The mouse pointer hides when you haven't moved it or clicked for 5 seconds, so a game played with the buttons doesn't keep it on screen in a corner. Move it (a stick, the touchpad or a mouse) or click, and it shows again at once. To keep it on screen all the time, put `WINE_PS5_CURSOR_IDLE_MS=0` in the game's `env.txt` (see [Launch options](Launch-options)).
+
 **Slow pointer button** picks a button that slows the pointer while you hold it, for placing and aiming precisely (None by default). **Slower by** sets how much, from 10 % to 90 % (50 % by default). While a button is the slow button it does only that: its row says **Slows the pointer**.
 
 ### The default layout

@@ -2615,7 +2615,7 @@ static void controls_changed(Pc5Ui *ui)
         "video_memory=%s resolution=%s aspect_ratio=%s cpu_sharing=%d graphics_api=%s", ui->launch_id,
         pc5_pad_mode_name(k->mode), pc5_stick_use_name(k->stick[0]), pc5_stick_use_name(k->stick[1]), k->speed,
         k->slow_button >= 0 ? pc5_control_name(k->slow_button) : "none", k->slow_percent, k->frame_generation,
-        k->memory_4gb ? "4gb" : "auto", k->video_memory_full ? "full" : "auto", k->resolution == 2 ? "2160p" : k->resolution == 1 ? "1440p" : "1080p",
+        k->memory_4gb ? "4gb" : "auto", k->video_memory_full ? "full" : k->video_memory_gb == 5 ? "5gb" : k->video_memory_gb == 6 ? "6gb" : "auto", k->resolution == 2 ? "2160p" : k->resolution == 1 ? "1440p" : "1080p",
         k->stretch ? "stretch" : "keep", k->cpu_sharing, pc5_graphics_name(k->graphics, ui_game_api(ui)));
 }
 
@@ -4252,7 +4252,17 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             controls_changed(ui);
             ui->dirty = 1;
         } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_VIDEO_MEMORY) {
-            ui->controls.video_memory_full = !ui->controls.video_memory_full;
+            if (ui_game_kind(ui) & GAME_32BIT) {
+                ui->controls.video_memory_full = !ui->controls.video_memory_full;
+                ui->controls.video_memory_gb = 0;
+            } else {
+                /* Auto (4 GB), 5 GB, 6 GB, Full: → and ✕ go on, ← back */
+                int level = ui->controls.video_memory_full ? 3 : ui->controls.video_memory_gb == 6 ? 2
+                          : ui->controls.video_memory_gb == 5 ? 1 : 0;
+                level = (level + ((k & PC5_KEY_LEFT) ? 3 : 1)) % 4;
+                ui->controls.video_memory_full = level == 3;
+                ui->controls.video_memory_gb = level == 1 ? 5 : level == 2 ? 6 : 0;
+            }
             controls_changed(ui);
             ui->dirty = 1;
         } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_CPU_SHARING) {
@@ -5310,13 +5320,16 @@ static void hero(Pc5Ui *ui, Pc5Canvas *c)
     }
     /* a line about it, or why it can't start */
     if (!game->playable)
-        pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, MARGIN, below, 860, 2, 38, C_WARN, game->problem, 0);
+        pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, MARGIN, below, 860, 2, 38, C_WARN, TX(game->problem), 0);
     else if (ready && ui->hero.description[0])
         pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, MARGIN, below, 860, 2, 38, 0xf0eef1f6u, ui->hero.description, 0);
     /* Play, and the game's menu */
     int by = 436;
-    pc5_shadow(c, MARGIN, by, 300, 72, 36, 20, 0x40000000u);
-    pc5_round_rect(c, MARGIN, by, 300, 72, 36, game->playable ? 0xf5ffffffu : 0x99ffffffu);
+    /* as wide as its words need in a longer language, 300 at least */
+    float bw = 100 + pc5_text_width(&ui->fonts, PC5_FACE_LABEL, T("Play Game")) + 44;
+    if (bw < 300) bw = 300;
+    pc5_shadow(c, MARGIN, by, bw, 72, 36, 20, 0x40000000u);
+    pc5_round_rect(c, MARGIN, by, bw, 72, 36, game->playable ? 0xf5ffffffu : 0x99ffffffu);
     float tx = MARGIN + 62, ty = by + 36;
     for (int row = -12; row <= 12; row++) {
         float half = 12 - fabsf((float)row);
@@ -5324,7 +5337,7 @@ static void hero(Pc5Ui *ui, Pc5Canvas *c)
         (void)half;
     }
     pc5_text(c, &ui->fonts, PC5_FACE_LABEL, MARGIN + 100, by + 46, 0xff111318u, T("Play Game"), 0, 0);
-    float mx = MARGIN + 300 + 30 + 36;
+    float mx = MARGIN + bw + 30 + 36;
     pc5_round_rect(c, mx - 36, by, 72, 72, 36, 0x66080a10u);
     pc5_ring(c, mx, by + 36, 35, 2, 0x99ffffffu);
     for (int d = -1; d <= 1; d++) pc5_circle(c, mx + d * 13, by + 36, 4, C_TEXT);
@@ -5597,7 +5610,7 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
     case GR_CONTROLLER:
         *label = T("Controller");
         *text = ui->controls.mode == PC5_PAD_DUALSENSE ? T("The game sees a DualSense, as one plugged into a PC") : ui->controls.mode == PC5_PAD_KEYBOARD ? T("The buttons press keys, the sticks move the mouse") : T("Games with controller support see an Xbox controller");
-        *value = pc5_pad_mode_name(ui->controls.mode);
+        *value = T(pc5_pad_mode_name(ui->controls.mode));
         break;
     case GR_BUTTONS:
         *label = T("Button mapping");
@@ -5631,7 +5644,7 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
                                                                  : T("Wine's own Direct3D on OpenGL; if it doesn't help, set it back to Auto");
         *label = T("Graphics API");
         *text = about_api;
-        *value = pc5_graphics_name(ui->controls.graphics, api);
+        *value = T(pc5_graphics_name(ui->controls.graphics, api));
         break;
     }
     case GR_FRAMEGEN:
@@ -5657,10 +5670,15 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
         break;
     case GR_VIDEO_MEMORY:
         *label = T("Video memory");
-        if (!(kind & GAME_32BIT))
+        if (!(kind & GAME_32BIT)) {
             *text = ui->controls.video_memory_full ? T("All 8 GB: the game may take memory the rest of it needs")
+                    : ui->controls.video_memory_gb ? T("More for the game's textures, less for the rest; Auto if it runs out of memory")
                                                    : T("4 GB, so the game leaves room for the rest: the console's memory is shared");
-        else
+            if (!ui->controls.video_memory_full && ui->controls.video_memory_gb) {
+                *value = ui->controls.video_memory_gb == 6 ? T("6 GB") : T("5 GB");
+                break;
+            }
+        } else
             *text = ui->controls.video_memory_full ? T("All the console's; Auto if the game says there is too little")
                                                    : T("2 GB at most, a number older games' checks can read");
         *value = ui->controls.video_memory_full ? T("Full") : T("Auto");
@@ -5740,7 +5758,7 @@ static void game_menu_screen(Pc5Ui *ui, Pc5Canvas *c, int chosen)
     GameRow rows[GAME_ROWS];
     int count = game_rows(&ui->controls, kind, page, rows);
     pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 64, 210, C_DIM,
-             page != GP_MAIN ? game->title : game->playable ? game->detail : game->problem, 760 - 128, 0);
+             page != GP_MAIN ? game->title : game->playable ? TX(game->detail) : TX(game->problem), 760 - 128, 0);
     text = "";
     if (chosen >= 0 && chosen < count) game_row_text(ui, game, kind, rows[chosen], about, sizeof(about), &label, &text, &value);
     float pitch = rows_pitch(ui, 240, count, text, &extra);
@@ -5778,7 +5796,7 @@ static void buttons_screen(Pc5Ui *ui, Pc5Canvas *c)
             break;
         case PR_DIRECTION:
             snprintf(label, sizeof(label), "    %s", T(pc5_control_name(row.index)));
-            pc5_copy(value, sizeof(value), T(pc5_key_label(k->key[row.index])));
+            pc5_copy(value, sizeof(value), pc5_key_text(k->key[row.index]));
             break;
         case PR_SPEED:
             pc5_copy(label, sizeof(label), T("Pointer speed"));
@@ -5795,7 +5813,7 @@ static void buttons_screen(Pc5Ui *ui, Pc5Canvas *c)
         case PR_BUTTON:
             pc5_copy(label, sizeof(label), T(pc5_control_name(row.index)));
             pc5_copy(value, sizeof(value), row.index == k->slow_button ? T("Slows the pointer")
-                                                                       : T(pc5_key_label(k->key[row.index])));
+                                                                       : pc5_key_text(k->key[row.index]));
             break;
         case PR_RESET:
             pc5_copy(label, sizeof(label), T("Reset to default"));
@@ -5846,7 +5864,7 @@ static void keys_dialog(Pc5Ui *ui, Pc5Canvas *c)
         pc5_round_rect(c, cx, cy, cell_w, cell_h, 12, chosen ? C_TEXT : C_ROW);
         if (now && !chosen) pc5_round_frame(c, cx, cy, cell_w, cell_h, 12, 2.5f, C_ACCENT);
         pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)(cx + cell_w / 2), (int)cy + 36, chosen ? C_PANEL : C_TEXT,
-                 T(pc5_key_label(i)), (int)cell_w - 16, 1);
+                 pc5_key_text(i), (int)cell_w - 16, 1);
     }
     Hint list[] = { { accept_glyph(ui), T("Choose") }, { back_glyph(ui), T("Back") } };
     hints(ui, c, (int)x + 60, (int)(y + h - 40), list, 2);
