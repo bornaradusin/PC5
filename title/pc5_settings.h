@@ -66,6 +66,9 @@ typedef struct Pc5Settings {
     int startup_volume;       /* how loud PC5 plays it: 10 to 100 %, in steps of 10 */
     /* The picture sources turned off (pc5_cover.h's PC5_PICTURES_*): "pictures_<key> = off". */
     uint32_t pictures_off;
+    /* PC5's language (Settings › System › Language): "" for the console's, else a code of
+     * pc5_i18n.h's ("de", "pt-BR"); "language = system" in the file for the console's. */
+    char language[16];
 } Pc5Settings;
 
 void pc5_settings_default(Pc5Settings *settings);

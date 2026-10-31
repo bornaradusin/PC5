@@ -35,6 +35,9 @@ No game is part of PC5, and PC5 downloads none: you install the games you own.
 
 Each game has its own menu (**△**) for its controller, graphics, cover, home screen tile,
 program, updating and uninstalling. PC5 updates itself from **Settings** › **System**.
+PC5 shows in the console's language, or the one chosen in **Settings** › **System** ›
+**Language**; [translations](https://github.com/bornaradusin/PC5/wiki/Translations) are
+welcome, one `.po` file a language in [`lang/`](lang).
 
 ## The wiki
 
@@ -47,6 +50,7 @@ Everything else is in the **[wiki](https://github.com/bornaradusin/PC5/wiki)**:
 | [Playing games](https://github.com/bornaradusin/PC5/wiki/Playing-games) | The game's menu: frame generation, resolution, aspect ratio, memory, .NET |
 | [Controllers](https://github.com/bornaradusin/PC5/wiki/Controllers) | Xbox controller, DualSense, keyboard and mouse, button mapping, more players |
 | [Settings](https://github.com/bornaradusin/PC5/wiki/Settings) | The overlay, vibration, light bar, adaptive triggers, updates |
+| [Translations](https://github.com/bornaradusin/PC5/wiki/Translations) | PC5's languages, and fixing or adding a translation |
 | [Covers](https://github.com/bornaradusin/PC5/wiki/Covers) | Where covers and backgrounds come from, and your own |
 | [Home screen tiles](https://github.com/bornaradusin/PC5/wiki/Home-screen-tiles) | A game on the PS5's home screen |
 | [Launch options](https://github.com/bornaradusin/PC5/wiki/Launch-options) | A game's command line (`launch.txt`) |
@@ -108,6 +112,7 @@ makes a draft release.
 - `patches/prospero-win/`: PC5's patches to prospero-win v0.2.0 and its Wine.
 - `patches/dxvk/` and `patches/radv/`: PC5's patches to DXVK and RADV.
 - `tools/`: the build, the Windows template, the font atlas and the app.
+- `lang/`: PC5's text in other languages (`pc5.pot` and a `.po` a language; `tools/update-po.py`).
 - `wiki/`: the wiki's pages, copied to the wiki when they change.
 
 ## Credits and licence
@@ -131,7 +136,8 @@ payload SDK and boilerplate, and the Lapy helper. Also:
   certificates (MPL 2.0)
 - stb_image and stb_image_write (public domain / MIT), Project Nayuki's QR Code generator (MIT)
 - the PS5 Forwarder Format by heydemoura (GPL 3.0 or later)
-- the Liberation fonts (SIL OFL 1.1), Droid Sans Fallback (Apache 2.0) and Inter (SIL OFL 1.1)
+- the Liberation fonts (SIL OFL 1.1), Droid Sans Fallback (Apache 2.0), Inter (SIL OFL 1.1) and
+  Noto Sans KR (SIL OFL 1.1)
 
 PC5 is not made by or connected to Sony, Valve, GOG, GitHub, PCGamingWiki or the Wikimedia
 Foundation.

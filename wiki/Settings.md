@@ -25,7 +25,7 @@ Changes are saved at once, in `/data/prospero-win/pc5/settings.txt`. Settings fo
 | In games › | Vibration, light bar and adaptive triggers. See [In games](#in-games). |
 | Overlay › | The overlay shown over every game. See [Overlay](#overlay). |
 | File manager › | Copy, move, rename and delete files on the console and its drives. See [File manager](File-manager). |
-| System › | The startup sound, the logs, the picture sources and updates. When a newer PC5 is out, the row says so. See [System](#system). |
+| System › | The startup sound, the logs, the picture sources, updates and PC5's language. When a newer PC5 is out, the row says so. See [System](#system). |
 | Network › | The FTP server, the web page, and the username and password they ask for. See [Network](#network). |
 | About PC5 | The version, where games are kept, the free space on the console, and a QR code for Buy Me a Coffee. |
 
@@ -74,6 +74,7 @@ These follow the settings in every game, whatever its [controller mode](Controll
 | Check when PC5 opens | **On**, Off | On: PC5 asks GitHub for a newer release each time you open it, and offers it when there is one. Off: only when you ask. |
 | Check now | | Asks GitHub straight away. The answer shows under the row. |
 | Update now | | Shows while a newer release is out: downloads it from GitHub, puts it in place of this PC5 and restarts PC5. |
+| Language | **System default**, English and the other languages, each in its own name | The language of PC5's screens and its web page. System default follows the console's language (Arabic and Thai show in English). The change shows at once. See [Translations](Translations). |
 
 When a newer PC5 is out, PC5 asks when it opens whether to update now or later. PC5 never updates without asking. See [Updating PC5](Installing-and-updating#updating-pc5).
 

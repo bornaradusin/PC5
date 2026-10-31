@@ -15,6 +15,7 @@ void pc5_ftp_host_init(void);   /* tests/pc5_ftp_host.c */
 void pc5_web_host_init(void);   /* the same */
 #include "pc5_game.h"
 #include "pc5_home.h"
+#include "pc5_i18n.h"
 #include "pc5_image.h"
 #include "pc5_json.h"
 #include "pc5_library.h"
@@ -3778,7 +3779,7 @@ static void test_background_screen(const char *fonts)
         memory.checked = 1792700000;   /* no update check now */
         pc5_update_save(root, &memory);
     }
-    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0 };
+    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, NULL };
     Pc5Ui *ui = pc5_ui_create(&config, &platform);
     until_screen(ui, "library", &canvas);
     for (int i = 0; i < 12; i++) press(ui, PC5_KEY_LEFT, &canvas);   /* the first game */
@@ -5937,7 +5938,7 @@ static void test_tile_start(const char *fonts)
     CHECK(library.count > 0, "games to start");
     if (!library.count) return;
     {
-        Pc5UiConfig config = { root, template_prefix, fonts, roots, tiles, tile_template, library.games[0].id, NULL, NULL, NULL, 0, 0, 0 };
+        Pc5UiConfig config = { root, template_prefix, fonts, roots, tiles, tile_template, library.games[0].id, NULL, NULL, NULL, 0, 0, 0, NULL };
         Pc5Ui *ui = pc5_ui_create(&config, &platform);
         for (int i = 0; i < 2000 && !console.plays; i++) frames(ui, 0, 0, 1, &canvas);
         CHECK(console.plays == 1 && !strcmp(console.played, library.games[0].id), "the tile's game started: %d %s",
@@ -5945,7 +5946,7 @@ static void test_tile_start(const char *fonts)
         pc5_ui_destroy(ui);
     }
     {
-        Pc5UiConfig config = { root, template_prefix, fonts, roots, tiles, tile_template, "not-installed", NULL, NULL, NULL, 0, 0, 0 };
+        Pc5UiConfig config = { root, template_prefix, fonts, roots, tiles, tile_template, "not-installed", NULL, NULL, NULL, 0, 0, 0, NULL };
         Pc5Ui *ui = pc5_ui_create(&config, &platform);
         until_screen(ui, "message", &canvas);
         CHECK(!strcmp(pc5_ui_screen(ui), "message") && console.plays == 1, "a game no longer there: %s",
@@ -5974,7 +5975,7 @@ static void test_tile_start(const char *fonts)
         later[0].tv_sec += 60;
         later[1] = later[0];
         utimes(file, later);
-        Pc5UiConfig config = { root, template_prefix, fonts, roots, tiles, tile_template, NULL, NULL, NULL, NULL, 0, 0, 0 };
+        Pc5UiConfig config = { root, template_prefix, fonts, roots, tiles, tile_template, NULL, NULL, NULL, NULL, 0, 0, 0, NULL };
         Pc5Ui *ui = pc5_ui_create(&config, &platform);
         until_screen(ui, "library", &canvas);
         CHECK(!pc5_exists(leftover[0]) && !pc5_exists(leftover[1]) && !pc5_exists(leftover[2]),
@@ -6121,7 +6122,7 @@ static void test_screens(const char *fonts)
     char tiles[PC5_PATH], tile_template[PC5_PATH], tile[PC5_HOME_ID];
     path(tiles, sizeof(tiles), "%s/screens-homebrew", work);
     make_tile_template(tile_template, sizeof(tile_template));
-    Pc5UiConfig config = { root, template_prefix, fonts, roots, tiles, tile_template, NULL, NULL, NULL, NULL, 0, 0, 0 };
+    Pc5UiConfig config = { root, template_prefix, fonts, roots, tiles, tile_template, NULL, NULL, NULL, NULL, 0, 0, 0, NULL };
     Pc5Canvas canvas = { pc5_alloc(1920u * 1080u * 4u), 1920, 1080, 1920, 0, 0 };
     Pc5Ui *ui = pc5_ui_create(&config, &platform);
     Pc5Library library;
@@ -6776,7 +6777,7 @@ static void test_report(const char *fonts)
         Pc5UpdateMemory memory;
         memset(&memory, 0, sizeof(memory));
         pc5_update_save(root, &memory);
-        Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0 };
+        Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, NULL };
         Pc5Ui *ui = pc5_ui_create(&config, &platform);
         until_screen(ui, "message", &canvas);
         CHECK(!strcmp(pc5_ui_screen(ui), "message"), "the crash told: %s", pc5_ui_screen(ui));
@@ -6801,7 +6802,7 @@ static void test_report(const char *fonts)
         write_text(file, "3\n");
         path(file, sizeof(file), "%s/session-0.log", logs);
         write_text(file, text);
-        Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0 };
+        Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, NULL };
         console.notifications = 0;
         Pc5Ui *ui = pc5_ui_create(&config, &platform);
         until_screen(ui, "message", &canvas);
@@ -6892,7 +6893,7 @@ static void test_upgrade_screens(const char *fonts)
         set.check_updates = 1;
         pc5_settings_save(root, &set);
     }
-    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, drives, NULL, NULL, 0, 0, 0 };
+    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, drives, NULL, NULL, 0, 0, 0, NULL };
     Pc5Ui *ui = pc5_ui_create(&config, &platform);
     /* GitHub is asked on a thread of its own: the library first, then the offer over it. */
     until_screen(ui, "library", &canvas);
@@ -7271,7 +7272,7 @@ static void test_files_screens(const char *fonts)
     path(file, sizeof(file), "%s/readme.txt", usb0); write_text(file, "hello");
     pc5_mkdirs(ext0);
     const char *drives[] = { usb0, ext0, NULL };
-    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, drives, NULL, NULL, 0, 0, 0 };
+    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, drives, NULL, NULL, 0, 0, 0, NULL };
     Pc5Canvas canvas = { pc5_alloc(1920u * 1080u * 4u), 1920, 1080, 1920, 0, 0 };
     {
         /* asked a minute ago: no update question as it opens */
@@ -7539,7 +7540,7 @@ static void test_install_folder_screens(const char *fonts)
     path(file, sizeof(file), "mkdir -p '%s' && cp -r '%s/Starfall' '%s/'", install_dir, usb, install_dir);
     run(file);
     const char *drives[] = { drive, NULL };
-    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, drives, NULL, NULL, 0, 1, 0 };
+    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, drives, NULL, NULL, 0, 1, 0, NULL };
     pc5_library_load(root, &library);
     int before = library.count;
     Pc5Ui *ui = pc5_ui_create(&config, &platform);
@@ -8090,7 +8091,7 @@ static void test_launch_extras(const char *fonts)
     Pc5Platform platform = { &console, { &net, fake_get, NULL, fake_get_authorized }, fake_clock, fake_play, fake_log, fake_notify, fake_time, 0, NULL,
                              fake_sound, fake_keyboard_open_text, fake_keyboard_state_text, fake_keyboard_close_text };
     const char *roots[] = { usb, NULL };
-    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0 };
+    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, NULL };
     Pc5Canvas canvas = { pc5_alloc(1920u * 1080u * 4u), 1920, 1080, 1920, 0, 0 };
     char game[PC5_PATH], file[PC5_PATH], from[PC5_PATH], dll[PC5_PATH], program[PC5_PATH], saved[PC5_PATH];
     Pc5Library library;
@@ -8171,6 +8172,251 @@ static void test_launch_extras(const char *fonts)
     pc5_free(canvas.px);
 }
 
+
+/* ---- languages (pc5_i18n.h) ----------------------------------------------------------------- */
+
+static int language_logs, language_left_out;
+static void language_log(void *context, const char *line)
+{
+    (void)context;
+    language_logs++;
+    language_left_out += strstr(line, "left out") != NULL;
+}
+
+static void test_language(const char *fonts_path)
+{
+    char dir[PC5_PATH], file[PC5_PATH], out[256];
+    int rejected = -1;
+
+    /* The .po reader: the header, comments, multi-line strings, escapes, msgctxt, CRLF and a BOM;
+     * fuzzy, obsolete, plural and untranslated entries give English. */
+    static const char po[] =
+        "\xef\xbb\xbf# A translator's comment\r\n"
+        "msgid \"\"\r\nmsgstr \"\"\r\n\"Language: de\\n\"\r\n\"Content-Type: text/plain; charset=UTF-8\\n\"\r\n\r\n"
+        "#. TRANSLATORS: a tab\n#: title/pc5_ui.c:57\nmsgid \"Settings\"\nmsgstr \"Einstellungen\"\n\n"
+        "msgid \"\"\n\"Two \"\n\"lines\"\nmsgstr \"\"\n\"Zwei\\n\"\n\"Zeilen \\\"so\\\" \\\\ \\t\\101\"\n\n"
+        "#, fuzzy\nmsgid \"Back\"\nmsgstr \"Zur\\u00fcck\"\n\n"
+        "msgid \"Play\"\nmsgstr \"\"\n\n"
+        "msgid \"%d game\"\nmsgid_plural \"%d games\"\nmsgstr[0] \"%d Spiel\"\nmsgstr[1] \"%d Spiele\"\n\n"
+        "msgctxt \"web\"\nmsgid \"Settings\"\nmsgstr \"Web-Einstellungen\"\n\n"
+        "#, c-format\nmsgid \"Delete %d items?\"\nmsgstr \"%1$d Elemente l\xc3\xb6schen?\"\n\n"
+        "#, c-format\nmsgid \"%s of %s\"\nmsgstr \"%2$s von %1$s\"\n\n"
+        "#, c-format\nmsgid \"%s needs %d MB\"\nmsgstr \"%d MB f\xc3\xbcr %s\"\n\n"            /* the wrong order: left out */
+        "#, c-format\nmsgid \"Starting %s\"\nmsgstr \"%s %s startet\"\n\n"                    /* one too many: left out */
+        "#, c-format\nmsgid \"Copying %s\"\nmsgstr \"Kopiere %n\"\n\n"                         /* %n: never */
+        "msgid \"Half\"\nmsgstr \"Halb\"\n"
+        "#~ msgid \"Old\"\n#~ msgstr \"Alt\"\n";
+    language_logs = language_left_out = 0;
+    Pc5Catalog *catalog = pc5_catalog_parse(po, sizeof(po) - 1, language_log, NULL, &rejected);
+    CHECK(catalog != NULL, "the catalog read");
+    if (catalog) {
+        const char *two = pc5_catalog_get(catalog, NULL, "Two lines");
+        CHECK(!strcmp(pc5_catalog_get(catalog, NULL, "Settings") ? pc5_catalog_get(catalog, NULL, "Settings") : "",
+                      "Einstellungen"), "a translation");
+        CHECK(two && !strcmp(two, "Zwei\nZeilen \"so\" \\ \tA"), "multi-line, with escapes: [%s]", two ? two : "(none)");
+        CHECK(!pc5_catalog_get(catalog, NULL, "Back") && !pc5_catalog_get(catalog, NULL, "Play") &&
+              !pc5_catalog_get(catalog, NULL, "%d game") && !pc5_catalog_get(catalog, NULL, "Old") &&
+              !pc5_catalog_get(catalog, NULL, ""), "fuzzy, empty, plural, obsolete and the header: English");
+        CHECK(pc5_catalog_get(catalog, "web", "Settings") && !strcmp(pc5_catalog_get(catalog, "web", "Settings"), "Web-Einstellungen"),
+              "msgctxt keeps its own");
+        CHECK(pc5_catalog_get(catalog, NULL, "Delete %d items?") && pc5_catalog_get(catalog, NULL, "%s of %s"),
+              "formats with positions kept");
+        CHECK(!pc5_catalog_get(catalog, NULL, "%s needs %d MB") && !pc5_catalog_get(catalog, NULL, "Starting %s") &&
+              !pc5_catalog_get(catalog, NULL, "Copying %s") && rejected == 3 && language_left_out == 3,
+              "formats unlike the English's left out, each logged: %d, %d logged", rejected, language_left_out);
+        CHECK(pc5_catalog_get(catalog, NULL, "Half") && pc5_catalog_size(catalog) == 6, "the last entry, with no blank line: %d",
+              pc5_catalog_size(catalog));
+        pc5_catalog_free(catalog);
+    }
+    CHECK(pc5_format_matches("%d of %s", "%2$s: %1$d") && pc5_format_matches("%u%%", "%u %%") &&
+          pc5_format_matches("%.120s in %s", "%s, %.40s") && pc5_format_matches("Off", "Aus") &&
+          !pc5_format_matches("%d of %s", "%s %d") && !pc5_format_matches("%s", "%d") && !pc5_format_matches("%s", "%s %s") &&
+          !pc5_format_matches("%s %s", "%1$s") && !pc5_format_matches("%s %s", "%1$s %s") && !pc5_format_matches("%llu", "%lu") &&
+          !pc5_format_matches("%s", "%3$s") && !pc5_format_matches("%s", "%n"), "formats compared as pc5_tf needs them");
+
+    /* The console's languages, as SCE_SYSTEM_PARAM_LANG numbers them. */
+    {
+        static const struct { int id; const char *code; } table[] = {
+            { 0, "ja" }, { 1, "en" }, { 2, "fr" }, { 3, "es" }, { 4, "de" }, { 5, "it" }, { 6, "nl" }, { 7, "pt-PT" }, { 8, "ru" },
+            { 9, "ko" }, { 10, "zh-Hant" }, { 11, "zh-Hans" }, { 12, "fi" }, { 13, "sv" }, { 14, "da" }, { 15, "no" }, { 16, "pl" },
+            { 17, "pt-BR" }, { 18, "en" }, { 19, "tr" }, { 20, "es-419" }, { 21, "en" }, { 22, "fr-CA" }, { 23, "cs" }, { 24, "hu" },
+            { 25, "el" }, { 26, "ro" }, { 27, "en" }, { 28, "vi" }, { 29, "id" }, { 30, "uk" },
+        };
+        int right = 0;
+        for (size_t i = 0; i < sizeof(table) / sizeof(table[0]); i++) {
+            const char *code = pc5_language_of_console(table[i].id);
+            right += code && !strcmp(code, table[i].code) && pc5_language_find(code) >= 0;
+        }
+        CHECK(right == 31 && !pc5_language_of_console(-1) && !pc5_language_of_console(31), "the console's languages: %d right", right);
+        CHECK(pc5_language_count() == 28 && !strcmp(pc5_language(0)->code, "en") && pc5_language_find("ar") < 0 &&
+              pc5_language_find("th") < 0 && pc5_language_find("PT-br") == pc5_language_find("pt-BR"), "PC5's languages");
+        CHECK(!strcmp(pc5_language_choose("", "de"), "de") && !strcmp(pc5_language_choose("system", "ja"), "ja") &&
+              !strcmp(pc5_language_choose("fr", "de"), "fr") && !strcmp(pc5_language_choose("xx", "de"), "de") &&
+              !strcmp(pc5_language_choose("", NULL), "en") && !strcmp(pc5_language_choose(NULL, "ar"), "en"),
+              "the setting over the console's");
+    }
+
+    /* A language in use: its text, its fallback's, English for the rest, and formats in its order. */
+    path(dir, sizeof(dir), "%s/i18n/lang", work);
+    path(file, sizeof(file), "%s/de.po", dir);
+    write_text(file, po);
+    path(file, sizeof(file), "%s/es.po", dir);
+    write_text(file, "msgid \"Settings\"\nmsgstr \"Ajustes\"\n\nmsgid \"Language\"\nmsgstr \"Idioma\"\n");
+    path(file, sizeof(file), "%s/es-419.po", dir);
+    write_text(file, "msgid \"Language\"\nmsgstr \"Lenguaje\"\n\n"
+                     "#, c-format\nmsgid \"PC5 can't write its notes: %s.\"\nmsgstr \"PC5 no puede escribir sus notas: %s.\"\n\n"
+                     "#, c-format\nmsgid \"%s Nothing was kept.\"\nmsgstr \"%s No se guard\xc3\xb3 nada.\"\n\n"
+                     "msgid \"PC5 is out of memory.\"\nmsgstr \"PC5 no tiene memoria.\"\n");
+    CHECK(pc5_i18n_use(dir, "de", language_log, NULL) == 6 && !strcmp(pc5_i18n_code(), "de"), "German in use");
+    CHECK(!strcmp(T("Settings"), "Einstellungen") && !strcmp(T("Play"), "Play") && !strcmp(T("Not in the file"), "Not in the file") &&
+          !strcmp(pc5_trc("web", "Settings"), "Web-Einstellungen"), "T(): the translation, or English");
+    pc5_tf(out, sizeof(out), "Delete %d items?", 7);
+    CHECK(!strcmp(out, "7 Elemente l\xc3\xb6schen?"), "pc5_tf: %s", out);
+    pc5_tf(out, sizeof(out), "%s of %s", "3 GB", "8 GB");
+    CHECK(!strcmp(out, "8 GB von 3 GB"), "pc5_tf in the translation's order: %s", out);
+    CHECK(pc5_tf(out, 8, "%s of %s", "123456", "abcdef") == 17 && !strcmp(out, "abcdef "), "cut to fit, its length said: %s", out);
+    pc5_tf(out, sizeof(out), "%s needs %d MB", "Neon", 5);
+    CHECK(!strcmp(out, "Neon needs 5 MB"), "a format left out: English: %s", out);
+    {
+        Pc5Buf json = { 0 };
+        CHECK(!pc5_i18n_web_json(&json) && !pc5_buf_terminate(&json) &&
+              !strcmp((char *)json.data, "{\"lang\":\"de\",\"strings\":{\"Settings\":\"Web-Einstellungen\"}}"),
+              "the web page's text: %s", json.data ? (char *)json.data : "");
+        pc5_buf_free(&json);
+    }
+    CHECK(pc5_i18n_use(dir, "es-419", language_log, NULL) == 4 && !strcmp(T("Language"), "Lenguaje") &&
+          !strcmp(T("Settings"), "Ajustes"), "Latin American Spanish, with Spain's where it has none");
+    /* Text made in English elsewhere (an install's error): its format's translation, the values kept. */
+    CHECK(!strcmp(TX("PC5 can't write its notes: No space left on device."), "PC5 no puede escribir sus notas: No space left on device."),
+          "an error from its format: %s", TX("PC5 can't write its notes: No space left on device."));
+    CHECK(!strcmp(TX("PC5 is out of memory. Nothing was kept."), "PC5 no tiene memoria. No se guard\xc3\xb3 nada."),
+          "a sentence and the reason in it: %s", TX("PC5 is out of memory. Nothing was kept."));
+    CHECK(!strcmp(TX("Something else entirely."), "Something else entirely."), "nothing like it: as it is");
+    CHECK(pc5_i18n_use(dir, "fi", language_log, NULL) == -1 && !strcmp(pc5_i18n_code(), "fi") && !strcmp(T("Settings"), "Settings"),
+          "no file for the language: English");
+    pc5_i18n_use(dir, "tr", NULL, NULL);
+    pc5_upper("caf\xc3\xa9 \xd0\xbf\xd1\x80\xd0\xb8\xd0\xb2\xd0\xb5\xd1\x82 \xce\xac\xce\xbb\xcf\x86\xce\xb1 i \xc8\x99", out, sizeof(out));
+    CHECK(!strcmp(out, "CAF\xc3\x89 \xd0\x9f\xd0\xa0\xd0\x98\xd0\x92\xd0\x95\xd0\xa2 \xce\x91\xce\x9b\xce\xa6\xce\x91 \xc4\xb0 \xc8\x98"),
+          "capitals: Latin, Cyrillic, Greek without its accents, Turkish's dotted I: %s", out);
+    CHECK(pc5_i18n_use(dir, "en", NULL, NULL) == 0 && !strcmp(pc5_i18n_code(), "en") && !strcmp(T("Settings"), "Settings"),
+          "back to English");
+    pc5_upper("i", out, sizeof(out));
+    CHECK(!strcmp(out, "I"), "English's capital I");
+    pc5_i18n_end();
+
+    /* The settings keep the language: a code as PC5 has it, or the console's. */
+    {
+        char settings_root[PC5_PATH];
+        Pc5Settings set, back;
+        path(settings_root, sizeof(settings_root), "%s/i18n/root", work);
+        pc5_settings_default(&set);
+        pc5_copy(set.language, sizeof(set.language), "pt-BR");
+        CHECK(!pc5_settings_save(settings_root, &set) && !pc5_settings_load(settings_root, &back) && !strcmp(back.language, "pt-BR"),
+              "a language saved: %s", back.language);
+        path(file, sizeof(file), "%s/pc5/settings.txt", settings_root);
+        write_text(file, "language = ZH-hans\n");
+        CHECK(!pc5_settings_load(settings_root, &back) && !strcmp(back.language, "zh-Hans"), "its code as PC5 has it: %s", back.language);
+        write_text(file, "language = klingon\n");
+        CHECK(!pc5_settings_load(settings_root, &back) && !back.language[0], "one PC5 doesn't have: the console's");
+        write_text(file, "language = system\n");
+        CHECK(!pc5_settings_load(settings_root, &back) && !back.language[0], "system: the console's");
+    }
+
+    /* Chinese and Japanese wrap between their characters (not before 。); their letters come from
+     * the language's own file beside fonts.bin, when the build made it. */
+    {
+        Pc5Fonts fonts;
+        static const char jp[] = "\xe3\x82\xb2\xe3\x83\xbc\xe3\x83\xa0\xe3\x82\x92\xe3\x82\xa4\xe3\x83\xb3\xe3\x82\xb9\xe3\x83\x88"
+                                 "\xe3\x83\xbc\xe3\x83\xab\xe3\x81\x97\xe3\x81\xbe\xe3\x81\x99\xe3\x80\x82\xe3\x82\xb2\xe3\x83\xbc"
+                                 "\xe3\x83\xa0\xe3\x82\x92\xe3\x82\xa4\xe3\x83\xb3\xe3\x82\xb9\xe3\x83\x88\xe3\x83\xbc\xe3\x83\xab";
+        CHECK(!pc5_fonts_load(&fonts, fonts_path), "fonts.bin read");
+        int before = pc5_text_width(&fonts, PC5_FACE_BODY, "\xe3\x82\xb2");   /* ゲ: "?" in fonts.bin */
+        CHECK(pc5_text_lines(&fonts, PC5_FACE_BODY, 200, jp) > 1 && pc5_text_lines(&fonts, PC5_FACE_BODY, 200, "Settings") == 1,
+              "Japanese wraps without spaces: %d lines", pc5_text_lines(&fonts, PC5_FACE_BODY, 200, jp));
+        char extra[PC5_PATH];
+        pc5_copy(extra, sizeof(extra), fonts_path);
+        *strrchr(extra, '/') = 0;
+        pc5_copy(extra + strlen(extra), sizeof(extra) - strlen(extra), "/fonts-ja.bin");
+        if (pc5_exists(extra)) {
+            CHECK(!pc5_fonts_extra(&fonts, extra) && fonts.extra, "fonts-ja.bin read");
+            int after = pc5_text_width(&fonts, PC5_FACE_BODY, "\xe3\x82\xb2");
+            int title = pc5_text_width(&fonts, PC5_FACE_TITLE, "\xe3\x82\xb2");
+            CHECK(after > before && title > after && pc5_text_width(&fonts, PC5_FACE_HERO, "\xe3\x82\xb2") == title,
+                  "its kana: %d wide ('?' was %d), the title face's for game titles' faces", after, before);
+            CHECK(!pc5_fonts_extra(&fonts, NULL) && !fonts.extra && pc5_text_width(&fonts, PC5_FACE_BODY, "\xe3\x82\xb2") == before,
+                  "and gone again");
+        } else {
+            printf("test_language: no fonts-ja.bin beside fonts.bin (no Droid Sans Fallback): its letters left out\n");
+        }
+        CHECK(pc5_fonts_extra(&fonts, "/nonexistent/fonts-ja.bin") == -1 && !fonts.extra, "a missing file: none");
+        pc5_fonts_free(&fonts);
+    }
+}
+
+/* Settings › System › Language: the console's at first, then one chosen, used at once and kept. */
+static void test_language_screens(const char *fonts)
+{
+    FakeConsole console = { 0 };
+    FakeNet net = { 0 };
+    Pc5Platform platform = { &console, { &net, fake_get, NULL, fake_get_authorized }, fake_clock, fake_play, fake_log, fake_notify,
+                             fake_time, 0, NULL, NULL, NULL, NULL, NULL };
+    const char *roots[] = { usb, NULL };
+    char dir[PC5_PATH], file[PC5_PATH], here[PC5_PATH], settings_file[PC5_PATH];
+    Pc5Buf bytes = { 0 };
+
+    /* fonts.bin with a lang/ beside it, as the app has them */
+    path(dir, sizeof(dir), "%s/i18n-app", work);
+    path(here, sizeof(here), "%s/fonts.bin", dir);
+    pc5_mkdirs(dir);
+    if (!pc5_read_file(fonts, &bytes, 64u << 20)) pc5_write_file(here, bytes.data, bytes.len);
+    pc5_buf_free(&bytes);
+    path(file, sizeof(file), "%s/lang/de.po", dir);
+    write_text(file, "msgid \"Settings\"\nmsgstr \"Einstellungen\"\n\nmsgid \"Language\"\nmsgstr \"Sprache\"\n\n"
+                     "msgid \"System default\"\nmsgstr \"Systemstandard\"\n");
+    path(file, sizeof(file), "%s/lang/da.po", dir);
+    write_text(file, "msgid \"Settings\"\nmsgstr \"Indstillinger\"\n");
+    path(settings_file, sizeof(settings_file), "%s/pc5/settings.txt", root);
+    {
+        Pc5UpdateMemory memory;
+        memset(&memory, 0, sizeof(memory));
+        memory.checked = fake_time(NULL, NULL) - 60;
+        memory.last.state = PC5_UPDATE_CURRENT;
+        pc5_update_save(root, &memory);
+    }
+    Pc5UiConfig config = { root, template_prefix, here, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, "de" };
+    Pc5Canvas canvas = { pc5_alloc(1920u * 1080u * 4u), 1920, 1080, 1920, 0, 0 };
+    Pc5Ui *ui = pc5_ui_create(&config, &platform);
+    CHECK(!strcmp(pc5_i18n_code(), "de") && !strcmp(T("Settings"), "Einstellungen"), "the console's German as PC5 opens");
+    until_screen(ui, "library", &canvas);
+    for (int i = 0; i < 5 && strcmp(pc5_ui_screen(ui), "library"); i++) { press(ui, PC5_KEY_ACCEPT, &canvas); until_screen(ui, "library", &canvas); }
+    press(ui, PC5_KEY_OPTIONS, &canvas);
+    for (int i = 0; i < 4; i++) press(ui, PC5_KEY_DOWN, &canvas);
+    press(ui, PC5_KEY_ACCEPT, &canvas);      /* System */
+    for (int i = 0; i < 12; i++) press(ui, PC5_KEY_DOWN, &canvas);   /* Language, the last row */
+    pc5_ui_draw(ui, &canvas);
+    save_shot(&canvas, "settings-language");
+    rows_uncut(ui, &canvas, "System with Language", 0);
+    for (int i = 0; i < 4; i++) press(ui, PC5_KEY_RIGHT, &canvas);   /* English, Bahasa Indonesia, Čeština, Dansk */
+    CHECK(!strcmp(pc5_i18n_code(), "da") && !strcmp(T("Settings"), "Indstillinger") && file_holds_text(settings_file, "language = da\n"),
+          "Dansk, used at once and kept: %s", pc5_i18n_code());
+    press(ui, PC5_KEY_LEFT, &canvas);
+    press(ui, PC5_KEY_LEFT, &canvas);
+    press(ui, PC5_KEY_LEFT, &canvas);
+    CHECK(!strcmp(pc5_i18n_code(), "en") && !strcmp(T("Settings"), "Settings") && file_holds_text(settings_file, "language = en\n"),
+          "English, chosen over the console's German: %s", pc5_i18n_code());
+    press(ui, PC5_KEY_LEFT, &canvas);
+    CHECK(!strcmp(pc5_i18n_code(), "de") && file_holds_text(settings_file, "language = system\n"), "System default: German again");
+    press(ui, PC5_KEY_LEFT, &canvas);        /* round to the last, 繁體中文 */
+    CHECK(!strcmp(pc5_i18n_code(), "zh-Hant") && !strcmp(T("Settings"), "Settings"), "a language with no file yet: English text");
+    pc5_ui_draw(ui, &canvas);
+    save_shot(&canvas, "settings-language-zh-hant");
+    press(ui, PC5_KEY_RIGHT, &canvas);
+    CHECK(!strcmp(pc5_i18n_code(), "de"), "and System default again");
+    pc5_ui_destroy(ui);
+    CHECK(!strcmp(pc5_i18n_code(), "en"), "English once the screens are gone");
+    pc5_free(canvas.px);
+}
+
 int main(int argc, char **argv)
 {
     char fonts[PC5_PATH];
@@ -8235,6 +8481,8 @@ int main(int argc, char **argv)
     test_background_screen(fonts);
     test_files_screens(fonts);
     test_install_folder_screens(fonts);
+    test_language(fonts);
+    test_language_screens(fonts);
     printf("test_pc5: %d checks, %d failed\n", checks, failures);
     return failures ? 1 : 0;
 }

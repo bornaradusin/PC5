@@ -32,9 +32,15 @@ typedef struct Pc5Fonts {
     const uint8_t *atlas;
     int atlas_w, atlas_h;
     Pc5Buf file;
+    /* A language's own letters (Chinese, Japanese, Korean: pc5/fonts-<code>.bin, made as
+     * fonts.bin is), looked in when these fonts haven't a letter; NULL: none. */
+    struct Pc5Fonts *extra;
 } Pc5Fonts;
 
 int pc5_fonts_load(Pc5Fonts *fonts, const char *path);
+/* The extra letters from path (replacing those there were), or none (path NULL). 0, or -1
+ * when the file couldn't be read (none then). */
+int pc5_fonts_extra(Pc5Fonts *fonts, const char *path);
 void pc5_fonts_free(Pc5Fonts *fonts);
 /* Width of text in pixels. */
 int pc5_text_width(const Pc5Fonts *fonts, Pc5Face face, const char *text);
@@ -45,6 +51,8 @@ extern int pc5_text_cuts;
  * width drawn. */
 int pc5_text(Pc5Canvas *c, const Pc5Fonts *fonts, Pc5Face face, int x, int y, uint32_t color, const char *text,
              int max_width, int align);
+/* Text wraps at spaces, and between the characters of Chinese and Japanese (not before the
+ * punctuation that closes, nor after what opens). */
 /* Text wrapped into lines of max_width, at most max_lines (the last cut with
  * "…"), each centred (align 1) or left (0). Returns the lines drawn. */
 int pc5_text_wrap(Pc5Canvas *c, const Pc5Fonts *fonts, Pc5Face face, int x, int y, int max_width, int max_lines,

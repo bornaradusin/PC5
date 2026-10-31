@@ -2,6 +2,7 @@
 /* PC5: its page for a browser (pc5_web.h). A thread takes the connections; each one has a
  * thread of its own, which reads its request, answers it and closes. */
 #include "pc5_web.h"
+#include "pc5_i18n.h"
 
 #include "pc5_library.h"
 #include "pc5_logs.h"
@@ -522,7 +523,11 @@ static void api_games(Conn *c)
         pc5_buf_puts(&buf, ",\"folder\":");
         json_string(&buf, name);
         pc5_buf_printf(&buf, ",\"playable\":%s,\"problem\":", g->playable ? "true" : "false");
-        json_string(&buf, g->problem);
+        {
+            /* The reason in the player's language, as the console shows it (pc5_i18n.h). */
+            char problem[PC5_ERROR * 3];
+            json_string(&buf, pc5_tr_text(g->problem, problem, sizeof(problem)));
+        }
         pc5_buf_printf(&buf, ",\"log\":%s", pc5_logs_newest(web.root, g->id, path, sizeof(path)) ? "false" : "true");
         int launch = !launch_path(g->id, path, sizeof(path));
         pc5_buf_printf(&buf, ",\"editable\":%s,\"launch\":", launch ? "true" : "false");
@@ -798,6 +803,11 @@ static void answer(Conn *c)
         if (send_head(c, 200, "text/html; charset=utf-8", size, NULL)) return;
         for (int i = 0; pc5_web_page[i]; i++)
             if (send_all(c->sock, pc5_web_page[i], strlen(pc5_web_page[i]))) return;
+    } else if (!strcmp(p, "/lang.json")) {
+        /* The page's text in PC5's language: the page puts it in place of its English. */
+        Pc5Buf buf = { 0 };
+        if (pc5_i18n_web_json(&buf)) pc5_buf_free(&buf);
+        respond_buf(c, &buf);
     } else if (!strcmp(p, "/api/status")) api_status(c);
     else if (!strcmp(p, "/api/games")) api_games(c);
     else if (!strncmp(p, "/api/games/", 11)) api_game(c, p + 11);
@@ -871,12 +881,12 @@ int pc5_web_start(const Pc5WebConfig *config, uint16_t port, char *error, size_t
     uint32_t ip = 0;
 
     pc5_web_stop();
-    if (!web.have_ops) return pc5_format(error, size, "There's no network here."), -1;
-    if (!config || !config->root || !config->root[0]) return pc5_format(error, size, "PC5 has no folder to show."), -1;
+    if (!web.have_ops) return pc5_format(error, size, N_("There's no network here.")), -1;
+    if (!config || !config->root || !config->root[0]) return pc5_format(error, size, N_("PC5 has no folder to show.")), -1;
     pc5_copy(web.root, sizeof(web.root), config->root);
     pc5_copy(web.install, sizeof(web.install), config->install_dir ? config->install_dir : "");
     web.listener = web.ops.listen(port, 8);
-    if (web.listener < 0) return pc5_format(error, size, "Port %u is taken, or there's no network.", (unsigned)port), -1;
+    if (web.listener < 0) return pc5_format(error, size, N_("Port %u is taken, or there's no network."), (unsigned)port), -1;
     if (!web.ops.lan_ip || web.ops.lan_ip(&ip) || !ip) snprintf(web.address, sizeof(web.address), ":%u", (unsigned)port);
     else {
         const uint8_t *b = (const uint8_t *)&ip;
@@ -890,7 +900,7 @@ int pc5_web_start(const Pc5WebConfig *config, uint16_t port, char *error, size_t
     if (pc5_thread_start(&web.thread, listen_thread, NULL, 0)) {
         web.ops.close(web.listener);
         web.listener = -1;
-        return pc5_format(error, size, "PC5 can't start it."), -1;
+        return pc5_format(error, size, N_("PC5 can't start it.")), -1;
     }
     web.running = 1;
     say("PC5 web on address=%s install=%s", web.address, web.install[0] ? web.install : "-");

@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 /* PC5: game folders on USB drives (pc5_source.h). */
 #include "pc5_source.h"
+#include "pc5_i18n.h"
 #include "pc5_cover.h"
 #include "pc5_identity.h"
 
@@ -312,11 +313,11 @@ int pc5_folder_inspect(const char *path, const char *name, Pc5Folder *folder)
         for (const char *p = relative; *p; p++) depth += *p == '/';
         if (relative[0] ? pc5_join(dir_path, sizeof(dir_path), path, relative)
                         : pc5_format(dir_path, sizeof(dir_path), "%s", path)) {
-            snprintf(folder->problem, sizeof(folder->problem), "A path in the folder is too long.");
+            snprintf(folder->problem, sizeof(folder->problem), N_("A path in the folder is too long."));
             continue;
         }
         if (!(dir = opendir(dir_path))) {
-            snprintf(folder->problem, sizeof(folder->problem), "PC5 can't read %.200s.", relative[0] ? relative : name);
+            snprintf(folder->problem, sizeof(folder->problem), N_("PC5 can't read %.200s."), relative[0] ? relative : name);
             continue;
         }
         while ((entry = readdir(dir))) {
@@ -325,16 +326,16 @@ int pc5_folder_inspect(const char *path, const char *name, Pc5Folder *folder)
             if ((relative[0] ? pc5_format(child, sizeof(child), "%s/%s", relative, entry->d_name)
                              : pc5_format(child, sizeof(child), "%s", entry->d_name)) ||
                 pc5_join(entry_path, sizeof(entry_path), path, child)) {
-                snprintf(folder->problem, sizeof(folder->problem), "A path in the folder is too long.");
+                snprintf(folder->problem, sizeof(folder->problem), N_("A path in the folder is too long."));
                 continue;
             }
             if (lstat(entry_path, &st)) continue;
             if (bad_windows_name(entry->d_name) && !folder->problem[0])
-                snprintf(folder->problem, sizeof(folder->problem), "Windows can't use the name \"%.180s\".", child);
+                snprintf(folder->problem, sizeof(folder->problem), N_("Windows can't use the name \"%.180s\"."), child);
             if (S_ISDIR(st.st_mode)) {
                 folder->folders++;
                 if (depth + 1 > 40 || top >= STACK) {
-                    snprintf(folder->problem, sizeof(folder->problem), "The folder goes too many levels deep.");
+                    snprintf(folder->problem, sizeof(folder->problem), N_("The folder goes too many levels deep."));
                     continue;
                 }
                 memcpy(stack[top++], child, PC5_PATH);
@@ -458,9 +459,9 @@ int pc5_folder_inspect(const char *path, const char *name, Pc5Folder *folder)
         }
     }
     if (!folder->exe_count && !folder->problem[0])
-        snprintf(folder->problem, sizeof(folder->problem), "There is no Windows program in this folder.");
+        snprintf(folder->problem, sizeof(folder->problem), N_("There is no Windows program in this folder."));
     else if (folder->exe_count && folder->exes[0].score <= -500 && !folder->problem[0])
-        snprintf(folder->problem, sizeof(folder->problem), "This folder only has installers and tools, not a game.");
+        snprintf(folder->problem, sizeof(folder->problem), N_("This folder only has installers and tools, not a game."));
 out:
     pc5_free(stack);
     pc5_free(walk.all);

@@ -4,7 +4,9 @@
  *
  *   shots OUT_DIR WORK_DIR COVERS PROGRAMS FONTS
  *
- * Writes OUT_DIR/<name>.ppm for each screen. */
+ * Writes OUT_DIR/<name>.ppm for each screen. PC5_SHOTS_LANG=<code> (de, ja, pt-BR: pc5_i18n.h)
+ * draws them in that language, as a console set to it shows them: the .po files in lang/ beside
+ * FONTS, and for Chinese, Japanese and Korean their fonts-<code>.bin there. */
 #include "pc5.h"
 #include "pc5_image.h"
 #include "pc5_library.h"
@@ -181,7 +183,8 @@ static Pc5Ui *open_ui(const char *root, int network)
     pc5_write_file(file, "eboot", 5);
     platform = (Pc5Platform){ NULL, { NULL, network ? sample_net : offline, NULL, NULL }, fake_clock, fake_play, NULL, NULL, NULL, 0, NULL,
                               NULL, keyboard_open, keyboard_state, keyboard_close };
-    config = (Pc5UiConfig){ root, template_prefix, fonts, roots, tiles, tile_template, NULL, NULL, NULL, NULL, 0, 0, boot_shot };
+    config = (Pc5UiConfig){ root, template_prefix, fonts, roots, tiles, tile_template, NULL, NULL, NULL, NULL, 0, 0, boot_shot,
+                            getenv("PC5_SHOTS_LANG") };
     Pc5Ui *ui = pc5_ui_create(&config, &platform);
     if (boot_shot) {
         step(ui, 0, 56);   /* about 0.9 s in */
@@ -227,7 +230,8 @@ static void crash_shots(const char *root)
     fmt(usb, sizeof(usb), "%s/usb0", work);
     roots[0] = usb;
     fmt(template_prefix, sizeof(template_prefix), "%s/app0/pc5/prefix", work);
-    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0 };
+    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0,
+                           getenv("PC5_SHOTS_LANG") };
     Pc5Ui *ui = pc5_ui_create(&config, &platform);
     until(ui, "message");
     settle(ui);

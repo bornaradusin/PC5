@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 /* PC5: the games, installing and uninstalling (pc5_library.h). */
 #include "pc5_library.h"
+#include "pc5_i18n.h"
 #include "pc5_cover.h"
 #include "pc5_image.h"
 
@@ -165,13 +166,13 @@ int pc5_usb_link(const char *root, const char *id, const Pc5Info *info, char *er
     int status = 0;
 
     if (pc5_usb_game_dir(info, dir, sizeof(dir))) {
-        snprintf(error, size, "Plug in the USB drive with %.100s: it plays from the folder %.200s on it.", info->title,
+        snprintf(error, size, N_("Plug in the USB drive with %.100s: it plays from the folder %.200s on it."), info->title,
                  info->usb);
         return -1;
     }
     if (pc5_format(games, sizeof(games), "%s/prefixes/%s/drive_c/Games", root, id) || pc5_mkdirs(games) ||
         pc5_format(table, sizeof(table), "%s/" LINK_TABLE, games)) {
-        snprintf(error, size, "PC5 can't make the game's folder: %s.", strerror(errno));
+        snprintf(error, size, N_("PC5 can't make the game's folder: %s."), strerror(errno));
         return -1;
     }
     /* The other links kept (Wine's own, made by the game), this one for the drive it is in now. */
@@ -191,7 +192,7 @@ int pc5_usb_link(const char *root, const char *id, const Pc5Info *info, char *er
     pc5_buf_free(&old);
     pc5_buf_free(&text);
     if (status) {
-        snprintf(error, size, "PC5 can't link the game's folder on the USB drive: %s.", strerror(errno));
+        snprintf(error, size, N_("PC5 can't link the game's folder on the USB drive: %s."), strerror(errno));
         return -1;
     }
     return 0;
@@ -450,11 +451,11 @@ int pc5_game_set_program(const char *root, const char *id, const Pc5Folder *fold
     char path[PC5_PATH], text[2048], windows[PC5_PATH + 32];
 
     if (pc5_info_read(root, id, &info)) {
-        snprintf(error, size, "PC5's notes on this game are missing.");
+        snprintf(error, size, N_("PC5's notes on this game are missing."));
         return -1;
     }
     if (exe < 0 || exe >= folder->exe_count) {
-        snprintf(error, size, "Choose one of the game's programs.");
+        snprintf(error, size, N_("Choose one of the game's programs."));
         return -1;
     }
     pc5_copy(info.exe, sizeof(info.exe), folder->exes[exe].path);
@@ -462,12 +463,12 @@ int pc5_game_set_program(const char *root, const char *id, const Pc5Folder *fold
     info.api = pc5_folder_api(folder, exe);
     windows_path(info.folder, info.exe, 1, windows, sizeof(windows));
     if (strlen(windows) >= 260) {
-        snprintf(error, size, "That program is too deep in the game's folder for Windows.");
+        snprintf(error, size, N_("That program is too deep in the game's folder for Windows."));
         return -1;
     }
     if (pc5_info_text(&info, text, sizeof(text)) ||
         pc5_format(path, sizeof(path), "%s/prefixes/%s/pc5/info.txt", root, id) || pc5_write_file(path, text, strlen(text))) {
-        snprintf(error, size, "PC5 can't write its notes: %s.", strerror(errno));
+        snprintf(error, size, N_("PC5 can't write its notes: %s."), strerror(errno));
         return -1;
     }
     return pc5_profile_refresh(root, id, error, size);
@@ -488,11 +489,11 @@ static int start_program(const char *root, const char *id, const Pc5Info *info, 
     arguments[0] = work[0] = 0;
     if (!pc5_is_batch(info->exe)) return 0;
     if (!(batch = pc5_alloc(sizeof(*batch)))) {
-        snprintf(error, size, "PC5 is out of memory.");
+        snprintf(error, size, N_("PC5 is out of memory."));
         return -1;
     }
     if (game_dir(root, id, info, top, sizeof(top)) || pc5_batch_read(top, info->exe, batch)) {
-        snprintf(error, size, "%.200s doesn't start any of the game's programs.", info->exe);
+        snprintf(error, size, N_("%.200s doesn't start any of the game's programs."), info->exe);
         pc5_free(batch);
         return -1;
     }
@@ -600,7 +601,7 @@ int pc5_profile_refresh(const char *root, const char *id, char *error, size_t si
     int status = 0;
 
     if (pc5_info_read(root, id, &info)) {
-        snprintf(error, size, "PC5's notes on this game are missing.");
+        snprintf(error, size, N_("PC5's notes on this game are missing."));
         return -1;
     }
     /* A game played from its USB drive: its folder linked to the drive it is in now. */
@@ -692,7 +693,7 @@ int pc5_profile_refresh(const char *root, const char *id, char *error, size_t si
     if (options[0]) {
         size_t n = strlen(arguments);
         if (pc5_format(arguments + n, sizeof(arguments) - n, "%s%s", n ? " " : "", options)) {
-            snprintf(error, size, "The game's launch options are too long: 511 characters at most.");
+            snprintf(error, size, N_("The game's launch options are too long: 511 characters at most."));
             return -1;
         }
     }
@@ -702,7 +703,7 @@ int pc5_profile_refresh(const char *root, const char *id, char *error, size_t si
     snprintf(file, sizeof(file), "%s.profile", id);
     if (pc5_profile_text_at(id, &program, arguments, &controls, own, work[0] ? work : NULL, text, sizeof(text)) ||
         pc5_format(path, sizeof(path), "%s/profiles/%s", root, file)) {
-        snprintf(error, size, "The game's path is too long for Windows.");
+        snprintf(error, size, N_("The game's path is too long for Windows."));
         return -1;
     }
     {
@@ -718,7 +719,7 @@ int pc5_profile_refresh(const char *root, const char *id, char *error, size_t si
     if (pc5_read_file(path, &old, sizeof(text)) || old.len != strlen(text) || memcmp(old.data, text, old.len))
         status = pc5_write_file(path, text, strlen(text));
     pc5_buf_free(&old);
-    if (status) snprintf(error, size, "PC5 can't write the game's profile: %s.", strerror(errno));
+    if (status) snprintf(error, size, N_("PC5 can't write the game's profile: %s."), strerror(errno));
     else index_update(root, file, 1);
     /* A start of the game's own program: any hand-offs before it are done with. */
     if (!pc5_format(path, sizeof(path), "%s/prefixes/%s/pc5/handoff-count.txt", root, id)) unlink(path);
@@ -817,7 +818,7 @@ int pc5_handoff_take(const char *root, const char *id, char *error, size_t size)
 
     error[0] = 0;
     if (pc5_handoff_env(root, id, file, sizeof(file), dir, sizeof(dir))) {
-        snprintf(error, size, "PC5's notes on this game are missing.");
+        snprintf(error, size, N_("PC5's notes on this game are missing."));
         return -1;
     }
     if (pc5_read_file(file, &handed, 16384) || pc5_buf_terminate(&handed)) {
@@ -842,7 +843,7 @@ int pc5_handoff_take(const char *root, const char *id, char *error, size_t size)
     ok = ok && !game_dir(root, id, &info, top, sizeof(top)) && !pc5_format(path, sizeof(path), "%s/%s", top, relative) &&
          pc5_is_file(path);
     if (!ok) {
-        snprintf(error, size, "The program its launcher started isn't one of the game's: %.200s", line[0]);
+        snprintf(error, size, N_("The program its launcher started isn't one of the game's: %.200s"), line[0]);
         pc5_buf_free(&handed);
         return -1;
     }
@@ -856,7 +857,7 @@ int pc5_handoff_take(const char *root, const char *id, char *error, size_t size)
     }
     while (*args == ' ' || *args == '\t') args++;
     if (pc5_format(arguments, sizeof(arguments), "%s", args)) {
-        snprintf(error, size, "The arguments its launcher gave are too long.");
+        snprintf(error, size, N_("The arguments its launcher gave are too long."));
         pc5_buf_free(&handed);
         return -1;
     }
@@ -878,7 +879,7 @@ int pc5_handoff_take(const char *root, const char *id, char *error, size_t size)
     pc5_buf_free(&count_text);
     if (count >= HANDOFFS_IN_A_ROW) {
         unlink(count_file);
-        snprintf(error, size, "Its programs kept starting each other: %d hand-offs in a row.", count);
+        snprintf(error, size, N_("Its programs kept starting each other: %d hand-offs in a row."), count);
         return -1;
     }
     snprintf(note, sizeof(note), "%d\n", count + 1);
@@ -892,11 +893,11 @@ int pc5_handoff_take(const char *root, const char *id, char *error, size_t size)
     pc5_own_dlls(folder, own, sizeof(own));
     if (pc5_profile_text_at(id, &program, arguments, &controls, own, work, text, sizeof(text)) ||
         pc5_format(path, sizeof(path), "%s/profiles/%s.profile", root, id)) {
-        snprintf(error, size, "The program's path is too long for Windows.");
+        snprintf(error, size, N_("The program's path is too long for Windows."));
         return -1;
     }
     if (pc5_write_file(path, text, strlen(text))) {
-        snprintf(error, size, "PC5 can't write the game's profile: %s.", strerror(errno));
+        snprintf(error, size, N_("PC5 can't write the game's profile: %s."), strerror(errno));
         return -1;
     }
     snprintf(path, sizeof(path), "%s.profile", id);
@@ -951,7 +952,7 @@ int pc5_library_load(const char *root, Pc5Library *library)
             snprintf(game->id, sizeof(game->id), "%.*s", (int)(strlen(entry->file) > 8 ? strlen(entry->file) - 8 : 0),
                      entry->file);
             pc5_copy(game->title, sizeof(game->title), game->id);
-            snprintf(game->problem, sizeof(game->problem), "Its profile has a mistake (%s).", pw_result_name(entry->status));
+            snprintf(game->problem, sizeof(game->problem), N_("Its profile has a mistake (%s)."), pw_result_name(entry->status));
             /* A game PC5 installed has its own folder, named after it: uninstalling
              * it deletes that folder too, not only the profile. */
             if (!pc5_info_read(root, game->id, &info)) {
@@ -968,7 +969,7 @@ int pc5_library_load(const char *root, Pc5Library *library)
         if (strcmp(app->prefix, "default")) pc5_format(marker, sizeof(marker), "%s/prefixes/%s/system.reg", root, app->prefix);
         else pc5_format(marker, sizeof(marker), "%s/prefix/system.reg", root);
         game->playable = pc5_is_file(marker);
-        if (!game->playable) snprintf(game->problem, sizeof(game->problem), "Its Windows folder is missing.");
+        if (!game->playable) snprintf(game->problem, sizeof(game->problem), N_("Its Windows folder is missing."));
         if (!strcmp(app->prefix, app->id) && !pc5_info_read(root, app->id, &info)) {
             game->pc5 = 1;
             game->bits = info.bits == 64 ? 64 : 32;
@@ -1108,7 +1109,7 @@ int pc5_remove_step(Pc5Remove *remove, int budget_ms)
         continue;
 failed:
         remove->failed = 1;
-        snprintf(remove->error, sizeof(remove->error), "PC5 can't delete %s: %s.", path, strerror(errno));
+        snprintf(remove->error, sizeof(remove->error), N_("PC5 can't delete %s: %s."), path, strerror(errno));
         return 0;
     }
     if (!remove->top && !remove->failed) remove->done = 1;
@@ -1207,7 +1208,7 @@ int pc5_remove_begin(Pc5Remove *remove, const char *root, const Pc5Game *game, c
             if (!pc5_exists(to)) break;
         }
         if (pc5_exists(from) && rename(from, to)) {
-            snprintf(remove->error, sizeof(remove->error), "PC5 can't move the game's folder: %s.", strerror(errno));
+            snprintf(remove->error, sizeof(remove->error), N_("PC5 can't move the game's folder: %s."), strerror(errno));
             remove->failed = 1;
             return -1;
         }
@@ -1216,7 +1217,7 @@ int pc5_remove_begin(Pc5Remove *remove, const char *root, const Pc5Game *game, c
     }
     if (pc5_format(profile, sizeof(profile), "%s/profiles/%s", root, game->file)) goto too_long;
     if (unlink(profile) && errno != ENOENT) {
-        snprintf(remove->error, sizeof(remove->error), "PC5 can't delete the game's profile: %s.", strerror(errno));
+        snprintf(remove->error, sizeof(remove->error), N_("PC5 can't delete the game's profile: %s."), strerror(errno));
         remove->failed = 1;
         return -1;
     }
@@ -1230,7 +1231,7 @@ int pc5_remove_begin(Pc5Remove *remove, const char *root, const Pc5Game *game, c
     remove->done = 1;
     return 0;
 too_long:
-    snprintf(remove->error, sizeof(remove->error), "A path is too long.");
+    snprintf(remove->error, sizeof(remove->error), N_("A path is too long."));
     remove->failed = 1;
     return -1;
 }
@@ -1433,7 +1434,7 @@ static int keep_game_files(const char *keeping, char *error, size_t error_size)
         pc5_format(path, sizeof(path), "%s/pc5/files.txt", keeping) || manifest_load(path, &manifest))
         return 0;
     if (walk_tree(game, &list, NULL)) {
-        snprintf(error, error_size, "PC5 can't read the game's folder.");
+        snprintf(error, error_size, N_("PC5 can't read the game's folder."));
         status = -1;
     }
     for (size_t at = 0; !status && at < list.len; at += strlen((char *)list.data + at) + 1) {
@@ -1441,7 +1442,7 @@ static int keep_game_files(const char *keeping, char *error, size_t error_size)
         size_t length = strlen(relative);
         if (relative[length - 1] == '/' || manifest_has(&manifest, relative)) continue;
         if (pc5_join(from, sizeof(from), game, relative) || pc5_format(to, sizeof(to), "%s/pc5-game/%s", keeping, relative)) {
-            snprintf(error, error_size, "A path in the game is too long: %s.", relative);
+            snprintf(error, error_size, N_("A path in the game is too long: %s."), relative);
             status = -1;
             break;
         }
@@ -1450,7 +1451,7 @@ static int keep_game_files(const char *keeping, char *error, size_t error_size)
         int made = pc5_mkdirs(to);
         *slash = '/';
         if (made || rename(from, to)) {
-            snprintf(error, error_size, "PC5 can't keep %s: %s.", relative, strerror(errno));
+            snprintf(error, error_size, N_("PC5 can't keep %s: %s."), relative, strerror(errno));
             status = -1;
         }
     }
@@ -1474,7 +1475,7 @@ static int keep_finish(const char *root, const char *id, const char *profile_fil
         pc5_format(games, sizeof(games), "%s/drive_c/Games", keeping) ||
         pc5_format(prefixes, sizeof(prefixes), "%s/prefixes", root) ||
         pc5_format(profile, sizeof(profile), "%s/profiles/%s", root, profile_file)) {
-        snprintf(error, error_size, "A path is too long.");
+        snprintf(error, error_size, N_("A path is too long."));
         return -1;
     }
     snprintf(base, sizeof(base), ".removing-%s", id);
@@ -1482,12 +1483,12 @@ static int keep_finish(const char *root, const char *id, const char *profile_fil
     if (pc5_is_dir(games) &&
         (free_name(prefixes, base, leaf, sizeof(leaf)) || pc5_join(removing, removing_size, prefixes, leaf) ||
          rename(games, removing))) {
-        snprintf(error, error_size, "PC5 can't move the game's folder: %s.", strerror(errno));
+        snprintf(error, error_size, N_("PC5 can't move the game's folder: %s."), strerror(errno));
         removing[0] = 0;
         return -1;
     }
     if (unlink(profile) && errno != ENOENT) {
-        snprintf(error, error_size, "PC5 can't delete the game's profile: %s.", strerror(errno));
+        snprintf(error, error_size, N_("PC5 can't delete the game's profile: %s."), strerror(errno));
         return -1;
     }
     index_update(root, profile_file, 0);
@@ -1506,7 +1507,7 @@ static int keep_finish(const char *root, const char *id, const char *profile_fil
         }
     }
     if (free_name(saves, id, name, sizeof(name)) || pc5_join(games, sizeof(games), saves, name) || rename(keeping, games)) {
-        snprintf(error, error_size, "PC5 can't put the saves in place: %s.", strerror(errno));
+        snprintf(error, error_size, N_("PC5 can't put the saves in place: %s."), strerror(errno));
         return -1;
     }
     return 0;
@@ -1520,24 +1521,24 @@ int pc5_remove_keep_saves(Pc5Remove *remove, const char *root, const Pc5Game *ga
     pc5_copy(remove->root, sizeof(remove->root), root);
     remove->failed = 1;
     if (!pc5_remove_can_keep(game, library)) {
-        snprintf(remove->error, sizeof(remove->error), "This game's saves can't be kept apart from it.");
+        snprintf(remove->error, sizeof(remove->error), N_("This game's saves can't be kept apart from it."));
         return -1;
     }
     if (saves_dir(root, saves, sizeof(saves)) || pc5_mkdirs(saves) ||
         pc5_format(from, sizeof(from), "%s/prefixes/%s", root, game->prefix) ||
         pc5_format(keeping, sizeof(keeping), "%s/.keeping-%s", saves, game->prefix)) {
-        snprintf(remove->error, sizeof(remove->error), "PC5 can't make its saves folder: %s.", strerror(errno));
+        snprintf(remove->error, sizeof(remove->error), N_("PC5 can't make its saves folder: %s."), strerror(errno));
         return -1;
     }
     if (pc5_exists(keeping)) {
-        snprintf(remove->error, sizeof(remove->error), "PC5 is still keeping this game's saves from before: start PC5 again.");
+        snprintf(remove->error, sizeof(remove->error), N_("PC5 is still keeping this game's saves from before: start PC5 again."));
         return -1;
     }
     char usb_aside[PC5_PATH];
     usb_set_aside(root, game->prefix, usb_aside, sizeof(usb_aside));
     drop_update(root, game->prefix);
     if (rename(from, keeping)) {
-        snprintf(remove->error, sizeof(remove->error), "PC5 can't move the game's folder: %s.", strerror(errno));
+        snprintf(remove->error, sizeof(remove->error), N_("PC5 can't move the game's folder: %s."), strerror(errno));
         return -1;
     }
     /* From here on a cut-short uninstall is finished at the next start. */
@@ -1563,7 +1564,7 @@ int pc5_saves_delete_begin(Pc5Remove *remove, const char *root, const char *name
     if (!name[0] || name[0] == '.' || strchr(name, '/') || saves_dir(root, saves, sizeof(saves)) ||
         pc5_join(from, sizeof(from), saves, name) || pc5_format(prefixes, sizeof(prefixes), "%s/prefixes", root) ||
         free_name(prefixes, base, leaf, sizeof(leaf)) || pc5_join(to, sizeof(to), prefixes, leaf) || rename(from, to)) {
-        snprintf(remove->error, sizeof(remove->error), "PC5 can't move the saves: %s.", strerror(errno));
+        snprintf(remove->error, sizeof(remove->error), N_("PC5 can't move the saves: %s."), strerror(errno));
         remove->failed = 1;
         return -1;
     }
@@ -1650,7 +1651,7 @@ static int update_place(const char *staging, const char *game_dir, const char *r
     int is_dir = length && relative[length - 1] == '/';
 
     if (!length || pc5_format(from, sizeof(from), "%s/files/%s", staging, relative)) {
-        snprintf(error, size, "A path in the update is too long: %s.", relative);
+        snprintf(error, size, N_("A path in the update is too long: %s."), relative);
         return -1;
     }
     pc5_copy(at, sizeof(at), game_dir);
@@ -1692,10 +1693,10 @@ static int update_place(const char *staging, const char *game_dir, const char *r
     }
     return 0;
 too_long:
-    snprintf(error, size, "A path in the game is too long: %s.", relative);
+    snprintf(error, size, N_("A path in the game is too long: %s."), relative);
     return -1;
 failed:
-    snprintf(error, size, "PC5 can't put %s in place: %s.", relative, strerror(errno));
+    snprintf(error, size, N_("PC5 can't put %s in place: %s."), relative, strerror(errno));
     return -1;
 }
 
@@ -1712,7 +1713,7 @@ static int update_complete(const char *root, const char *id, const char *staging
 
     pc5_buf_free(&text);
     if (failed) {
-        snprintf(error, size, "PC5 can't write its notes: %s.", strerror(errno));
+        snprintf(error, size, N_("PC5 can't write its notes: %s."), strerror(errno));
         return -1;
     }
     /* The game's files: what it had and what the copy brought, once each. */
@@ -1732,7 +1733,7 @@ static int update_complete(const char *root, const char *id, const char *staging
                 pc5_buf_put(&merged, "\n", 1);
             }
             if (pc5_write_file(to, merged.data, merged.len)) {
-                snprintf(error, size, "PC5 can't write the game's list of files: %s.", strerror(errno));
+                snprintf(error, size, N_("PC5 can't write the game's list of files: %s."), strerror(errno));
                 failed = 1;
             }
         }
@@ -2050,7 +2051,7 @@ static int template_paths(Pc5Install *install)
     if (pc5_format(list_path, sizeof(list_path), "%s.list", install->template_prefix) ||
         pc5_read_file(list_path, &text, 4 * 1024 * 1024)) {
         pc5_buf_free(&text);
-        return fail(install, "PC5's Windows template is missing from the app: copy the PC5 folder again.");
+        return fail(install, N_("PC5's Windows template is missing from the app: copy the PC5 folder again."));
     }
     for (size_t i = 0; i < text.len; i++)
         if (text.data[i] == '\n' || text.data[i] == '\r') text.data[i] = 0;
@@ -2074,7 +2075,7 @@ static int template_paths(Pc5Install *install)
         }
     }
     pc5_buf_free(&text);
-    if (!has_system) return fail(install, "PC5's Windows template is damaged: copy the PC5 folder again.");
+    if (!has_system) return fail(install, N_("PC5's Windows template is damaged: copy the PC5 folder again."));
     return 0;
 }
 
@@ -2156,7 +2157,7 @@ static int install_begin(Pc5Install *install, const char *root, const char *temp
     pc5_copy(info->cover, sizeof(info->cover), cover_source && cover_source[0] ? cover_source : "icon");
     install->in_place = in_place;
     if (pc5_format(path, sizeof(path), "%s/prefixes", root) || pc5_mkdirs(path))
-        return fail(install, "PC5 can't make its folders in %s: %s.", root, strerror(errno));
+        return fail(install, N_("PC5 can't make its folders in %s: %s."), root, strerror(errno));
     install->take = !in_place && !usb_root && takes(folder->path, root);
     /* Its Windows only, for a game played from its drive, put on a USB drive, or moved from the
      * INSTALL folder. */
@@ -2167,62 +2168,62 @@ static int install_begin(Pc5Install *install, const char *root, const char *temp
         char home[PC5_PATH], leaf[PC5_PATH];
         uint64_t usb_free = 0;
         if (pc5_format(home, sizeof(home), "%s/" PC5_USB_HOME, usb_root) || pc5_mkdirs(home))
-            return fail(install, "PC5 can't make its folder on the USB drive: %s.", strerror(errno));
+            return fail(install, N_("PC5 can't make its folder on the USB drive: %s."), strerror(errno));
         if (free_name(home, folder->name, leaf, sizeof(leaf)) || pc5_join(install->usb_dest, sizeof(install->usb_dest), home, leaf) ||
             pc5_format(info->usb, sizeof(info->usb), PC5_USB_HOME "/%s", leaf))
-            return fail(install, "PC5 can't name the game's folder on the USB drive.");
+            return fail(install, N_("PC5 can't name the game's folder on the USB drive."));
         install->usb_move = in_take_dir(folder->path) && same_drive(folder->path, home);
         if (same_drive(folder->path, home)) {
             /* A slow port (USB 2.0) can't keep a game fed: refused, with where to plug in instead. */
             double speed = pc5_usb_read_speed(folder->path);
             if (speed > 0 && speed < pc5_play_min_speed)
-                return fail(install, "The drive reads at %.0f MB/s here, too slow to play from (%.0f needed). Plug it "
-                            "into a port on the back or the front USB-C port. Installing to the console still works.",
+                return fail(install, N_("The drive reads at %.0f MB/s here, too slow to play from (%.0f needed). Plug it "
+                            "into a port on the back or the front USB-C port. Installing to the console still works."),
                             speed, pc5_play_min_speed);
         }
         if (!install->usb_move && !pc5_free_bytes(home, &usb_free) && usb_free < folder->bytes + SPARE_ROOM / 4) {
             char need[32], have[32];
             pc5_size_text(folder->bytes + SPARE_ROOM / 4, need, sizeof(need));
             pc5_size_text(usb_free, have, sizeof(have));
-            return fail(install, "Not enough space on the USB drive: the game needs %s and it has %s free.", need, have);
+            return fail(install, N_("Not enough space on the USB drive: the game needs %s and it has %s free."), need, have);
         }
     }
     if (in_place && pc5_usb_relative(folder->path, info->usb, sizeof(info->usb)))
-        return fail(install, "Only a game on a USB drive can play from it: this folder isn't on one.");
+        return fail(install, N_("Only a game on a USB drive can play from it: this folder isn't on one."));
     if (in_place && take_dir[0] && !strncmp(folder->path, take_dir, strlen(take_dir)))
-        return fail(install, "A game in PC5's INSTALL folder is installed, not played from there.");
+        return fail(install, N_("A game in PC5's INSTALL folder is installed, not played from there."));
     if (in_place) {
         /* A slow port (USB 2.0) can't keep a game fed: refused, with where to plug in instead. */
         double speed = pc5_usb_read_speed(folder->path);
         if (speed > 0 && speed < pc5_play_min_speed)
-            return fail(install, "The drive reads at %.0f MB/s in this USB port, too slow to play from (at least "
+            return fail(install, N_("The drive reads at %.0f MB/s in this USB port, too slow to play from (at least "
                         "%.0f is needed). On the original PS5 the front USB-A port is the slow one: plug the drive "
-                        "into a port on the back, or the front USB-C port. Install still works from this port.",
+                        "into a port on the back, or the front USB-C port. Install still works from this port."),
                         speed, pc5_play_min_speed);
     }
     windows_path(info->folder, info->exe, 1, exe_path, sizeof(exe_path));
-    if (strlen(exe_path) >= 260) return fail(install, "The game's program is too deep in its folder for Windows.");
+    if (strlen(exe_path) >= 260) return fail(install, N_("The game's program is too deep in its folder for Windows."));
     if (pc5_format(path, sizeof(path), "%s/profiles", root) || pc5_mkdirs(path) ||
         pc5_format(path, sizeof(path), "%s/prefixes", root) || pc5_mkdirs(path))
-        return fail(install, "PC5 can't make its folders in %s: %s.", root, strerror(errno));
+        return fail(install, N_("PC5 can't make its folders in %s: %s."), root, strerror(errno));
     if (pc5_free_bytes(path, &free_bytes) == 0 && free_bytes < needs) {
         char need[32], have[32];
         pc5_size_text(needs, need, sizeof(need));
         pc5_size_text(free_bytes, have, sizeof(have));
-        return fail(install, "Not enough space: the game needs %s and the console has %s free.", need, have);
+        return fail(install, N_("Not enough space: the game needs %s and the console has %s free."), need, have);
     }
     if (pc5_new_id(root, folder->name, install->id, sizeof(install->id)))
-        return fail(install, "PC5 can't name the game.");
+        return fail(install, N_("PC5 can't name the game."));
     if (pc5_format(install->staging, sizeof(install->staging), "%s/prefixes/.installing-%s", root, install->id) ||
         mkdir(install->staging, 0777))
-        return fail(install, "PC5 can't start the install: %s.", strerror(errno));
+        return fail(install, N_("PC5 can't start the install: %s."), strerror(errno));
     if (template_paths(install)) {
         rmdir(install->staging);
         return -1;
     }
     if (!(install->chunk = pc5_alloc(CHUNK))) {
         rmdir(install->staging);
-        return fail(install, "Out of memory.");
+        return fail(install, N_("Out of memory."));
     }
     /* Step 1's progress: the template's bytes and files (template_paths). */
     install->phase = PC5_INSTALL_PREFIX;
@@ -2255,21 +2256,21 @@ static int prefix_entry(Pc5Install *install, const char *line)
              /* kept saves: what the game made in its own folder goes back there */
              ? pc5_format(target, sizeof(target), "%s/drive_c/Games/%s/%s", install->staging, install->info.folder, line + 9)
              : pc5_join(target, sizeof(target), install->staging, line)))
-        return fail(install, "A path in the Windows template is too long.");
+        return fail(install, N_("A path in the Windows template is too long."));
     if (line[length - 1] == '/') {
         target[strlen(target) - 1] = 0;
-        return pc5_mkdirs(target) ? fail(install, "PC5 can't make %s: %s.", line, strerror(errno)) : 0;
+        return pc5_mkdirs(target) ? fail(install, N_("PC5 can't make %s: %s."), line, strerror(errno)) : 0;
     }
     {
         char *slash = strrchr(target, '/');
         *slash = 0;
-        if (pc5_mkdirs(target)) return fail(install, "PC5 can't make %s: %s.", target, strerror(errno));
+        if (pc5_mkdirs(target)) return fail(install, N_("PC5 can't make %s: %s."), target, strerror(errno));
         *slash = '/';
     }
-    if ((in = open(source, O_RDONLY)) < 0) return fail(install, "PC5's Windows template is missing %s.", line);
+    if ((in = open(source, O_RDONLY)) < 0) return fail(install, N_("PC5's Windows template is missing %s."), line);
     if ((out = open(target, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0) {
         close(in);
-        return fail(install, "PC5 can't write %s: %s.", line, strerror(errno));
+        return fail(install, N_("PC5 can't write %s: %s."), line, strerror(errno));
     }
     while (ok && (got = read(in, install->chunk, CHUNK)) != 0) {
         if (got < 0) { ok = 0; break; }
@@ -2284,7 +2285,7 @@ static int prefix_entry(Pc5Install *install, const char *line)
     if (ok && install->kept[0] && fsync(out)) ok = 0;
     if (close(out)) ok = 0;
     install->files_done++;
-    return ok ? 0 : fail(install, "PC5 can't copy %s: %s.", line, errno == ENOSPC ? "the console is full" : strerror(errno));
+    return ok ? 0 : fail(install, N_("PC5 can't copy %s: %s."), line, errno == ENOSPC ? "the console is full" : strerror(errno));
 }
 
 /* Every folder and file of the game, in walking order. */
@@ -2295,7 +2296,7 @@ static int game_paths(Pc5Install *install)
     int top = 0;
     uint32_t files = 0;
 
-    if (!stack) return fail(install, "Out of memory.");
+    if (!stack) return fail(install, N_("Out of memory."));
     stack[top++][0] = 0;
     while (top > 0) {
         char relative[PC5_PATH], dir_path[PC5_PATH], child[PC5_PATH], full[PC5_PATH];
@@ -2309,7 +2310,7 @@ static int game_paths(Pc5Install *install)
             continue;
         if (!(dir = opendir(dir_path))) {
             pc5_free(stack);
-            return fail(install, "PC5 can't read %s on the USB drive: %s.", relative[0] ? relative : "the folder",
+            return fail(install, N_("PC5 can't read %s on the USB drive: %s."), relative[0] ? relative : "the folder",
                         strerror(errno));
         }
         while ((entry = readdir(dir))) {
@@ -2331,7 +2332,7 @@ static int game_paths(Pc5Install *install)
     }
     pc5_free(stack);
     install->files_total = files;
-    if (!(install->hashes = pc5_alloc(32u * (files ? files : 1)))) return fail(install, "Out of memory.");
+    if (!(install->hashes = pc5_alloc(32u * (files ? files : 1)))) return fail(install, N_("Out of memory."));
     return 0;
 }
 
@@ -2350,7 +2351,7 @@ static int copy_piece(Pc5Install *install, int verify, const char *relative)
     ssize_t got = read(install->in_fd, install->chunk, CHUNK);
 
     if (got < 0)
-        return fail(install, verify ? "PC5 can't read back %s: %s." : "The USB drive stopped answering while PC5 copied %s (%s).",
+        return fail(install, verify ? N_("PC5 can't read back %s: %s.") : N_("The USB drive stopped answering while PC5 copied %s (%s)."),
                     relative, strerror(errno));
     if (got == 0) return 1;
     pc5_sha256_update(&install->sha, install->chunk, (size_t)got);
@@ -2358,7 +2359,7 @@ static int copy_piece(Pc5Install *install, int verify, const char *relative)
         for (ssize_t done = 0; done < got;) {
             ssize_t put = write(install->out_fd, install->chunk + done, (size_t)(got - done));
             if (put <= 0)
-                return fail(install, "PC5 can't write %s: %s.", relative,
+                return fail(install, N_("PC5 can't write %s: %s."), relative,
                             errno == ENOSPC ? "the console's storage is full" : strerror(errno));
             done += put;
         }
@@ -2378,7 +2379,7 @@ static void start_cleanup(Pc5Install *install, int cancelled)
             install->taken = 0;
         } else {
             snprintf(install->error, sizeof(install->error),
-                     "The game couldn't be put back in the INSTALL folder: it is in %.180s.", games);
+                     N_("The game couldn't be put back in the INSTALL folder: it is in %.180s."), games);
             install->cancelled = 0;
             install->phase = PC5_INSTALL_FAILED;
             return;
@@ -2390,7 +2391,7 @@ static void start_cleanup(Pc5Install *install, int cancelled)
             install->usb_dest[0] = 0;
         } else {
             snprintf(install->error, sizeof(install->error),
-                     "The game couldn't be put back in the INSTALL folder: it is in %.180s.", install->usb_dest);
+                     N_("The game couldn't be put back in the INSTALL folder: it is in %.180s."), install->usb_dest);
             install->cancelled = 0;
             install->phase = PC5_INSTALL_FAILED;
             return;
@@ -2413,10 +2414,10 @@ static int finish(Pc5Install *install)
     char path[PC5_PATH], target[PC5_PATH], text[2048], error[PC5_ERROR];
 
     if (pc5_format(path, sizeof(path), "%s/pc5", install->staging) || pc5_mkdirs(path))
-        return fail(install, "PC5 can't write its notes: %s.", strerror(errno));
+        return fail(install, N_("PC5 can't write its notes: %s."), strerror(errno));
     if (pc5_info_text(&install->info, text, sizeof(text)) ||
         pc5_format(path, sizeof(path), "%s/pc5/info.txt", install->staging) || pc5_write_file(path, text, strlen(text)))
-        return fail(install, "PC5 can't write its notes: %s.", strerror(errno));
+        return fail(install, N_("PC5 can't write its notes: %s."), strerror(errno));
     /* The game's files as copied: what else is in its folder later, the game made (kept saves).
      * None for a game played from its USB drive: its folder isn't the console's. */
     if (!install->in_place && !install->usb_dest[0]) {
@@ -2425,18 +2426,18 @@ static int finish(Pc5Install *install)
                      pc5_format(path, sizeof(path), "%s/pc5/files.txt", install->staging) ||
                      pc5_write_file(path, files.data, files.len);
         pc5_buf_free(&files);
-        if (failed) return fail(install, "PC5 can't write its notes: %s.", strerror(errno));
+        if (failed) return fail(install, N_("PC5 can't write its notes: %s."), strerror(errno));
     }
     if (install->cover.px && (pc5_format(path, sizeof(path), "%s/pc5/cover.bin", install->staging) ||
                               pc5_cover_save(path, &install->cover, install->tint)))
-        return fail(install, "PC5 can't save the cover: %s.", strerror(errno));
+        return fail(install, N_("PC5 can't save the cover: %s."), strerror(errno));
     /* Where the cover's background is, for the background fetched after the install. */
     if ((install->background[0] || install->background_appid) &&
         !pc5_format(path, sizeof(path), "%s/pc5/background.txt", install->staging) &&
         !pc5_format(text, sizeof(text), "%s\n%u\n", install->background, (unsigned)install->background_appid))
         pc5_write_file(path, text, strlen(text));
     if (pc5_format(target, sizeof(target), "%s/prefixes/%s", install->root, install->id) || rename(install->staging, target))
-        return fail(install, "PC5 can't put the game in place: %s.", strerror(errno));
+        return fail(install, N_("PC5 can't put the game in place: %s."), strerror(errno));
     pc5_copy(install->staging, sizeof(install->staging), target);
     install->taken = 0;   /* the game is the library's now */
     install->usb_moved = 0;
@@ -2497,7 +2498,7 @@ static int update_finish_step(Pc5Install *install, uint64_t until)
         /* The notes last: they mark the copy whole. */
         if (failed || pc5_info_text(&install->info, text, sizeof(text)) ||
             pc5_format(path, sizeof(path), "%s/info.txt", install->staging) || pc5_write_file(path, text, strlen(text)))
-            return fail(install, "PC5 can't write its notes: %s.", strerror(errno));
+            return fail(install, N_("PC5 can't write its notes: %s."), strerror(errno));
         install->moving = 1;
         install->at = 0;
         install->files_done = 0;
@@ -2543,17 +2544,17 @@ int pc5_update_begin(Pc5Install *install, const char *root, const char *id, cons
     pc5_copy(install->root, sizeof(install->root), root);
     pc5_copy(install->id, sizeof(install->id), id);
     pc5_copy(install->source, sizeof(install->source), folder->path);
-    if (pc5_info_read(root, id, &old)) return fail(install, "PC5 didn't install this game, so it can't update it.");
+    if (pc5_info_read(root, id, &old)) return fail(install, N_("PC5 didn't install this game, so it can't update it."));
     if (old.usb[0])
-        return fail(install, "%s plays from its USB drive: copy the newer version over its folder %s there.", old.title,
+        return fail(install, N_("%s plays from its USB drive: copy the newer version over its folder %s there."), old.title,
                     old.usb);
     install->info = old;
     if (pc5_format(install->game_dir, sizeof(install->game_dir), "%s/prefixes/%s/drive_c/Games/%s", root, id, old.folder) ||
         !pc5_is_dir(install->game_dir))
-        return fail(install, "The game's folder is missing: uninstall it and install it again.");
+        return fail(install, N_("The game's folder is missing: uninstall it and install it again."));
     /* The copy of the same game: it has the game's program. */
     if (resolve_ci(folder->path, old.exe, program, sizeof(program)) || !pc5_is_file(program))
-        return fail(install, "This folder doesn't have %s, the program %s starts. Choose the folder of a newer copy of %s.",
+        return fail(install, N_("This folder doesn't have %s, the program %s starts. Choose the folder of a newer copy of %s."),
                     old.exe, old.title, old.title);
     install->info.bytes = folder->bytes;
     install->info.files = folder->files;
@@ -2562,23 +2563,23 @@ int pc5_update_begin(Pc5Install *install, const char *root, const char *id, cons
             install->info.bits = folder->exes[i].pe.bits;
             install->info.api = pc5_folder_api(folder, i);
         }
-    if (pc5_format(path, sizeof(path), "%s/prefixes", root)) return fail(install, "A path is too long.");
+    if (pc5_format(path, sizeof(path), "%s/prefixes", root)) return fail(install, N_("A path is too long."));
     if (pc5_free_bytes(path, &free_bytes) == 0 && free_bytes < pc5_update_needs(folder)) {
         char need[32], have[32];
         pc5_size_text(pc5_update_needs(folder), need, sizeof(need));
         pc5_size_text(free_bytes, have, sizeof(have));
-        return fail(install, "Not enough space: the update needs %s and the console has %s free.", need, have);
+        return fail(install, N_("Not enough space: the update needs %s and the console has %s free."), need, have);
     }
     if (pc5_format(install->staging, sizeof(install->staging), "%s/prefixes/.updating-%s", root, id))
-        return fail(install, "A path is too long.");
+        return fail(install, N_("A path is too long."));
     if (pc5_exists(install->staging)) {
         install->staging[0] = 0;   /* not this update's: left alone */
-        return fail(install, "An earlier update of this game isn't finished: close PC5 and open it again to finish it.");
+        return fail(install, N_("An earlier update of this game isn't finished: close PC5 and open it again to finish it."));
     }
-    if (mkdir(install->staging, 0777)) return fail(install, "PC5 can't start the update: %s.", strerror(errno));
+    if (mkdir(install->staging, 0777)) return fail(install, N_("PC5 can't start the update: %s."), strerror(errno));
     if (!(install->chunk = pc5_alloc(CHUNK))) {
         rmdir(install->staging);
-        return fail(install, "Out of memory.");
+        return fail(install, N_("Out of memory."));
     }
     install->bytes_total = install->info.bytes;
     install->files_total = install->info.files;
@@ -2604,11 +2605,11 @@ static int saves_keep(const char *relative, int folder)
 int pc5_install_use_saves(Pc5Install *install, const char *path)
 {
     /* A game played from its USB drive: what it made in its own folder would go onto the drive. */
-    if (install->in_place) return fail(install, "Kept saves can't be put back for a game that plays from its USB drive.");
+    if (install->in_place) return fail(install, N_("Kept saves can't be put back for a game that plays from its USB drive."));
     Pc5Buf found = { 0 }, ordered = { 0 };
     int has_system = 0, failed;
 
-    if (install->phase != PC5_INSTALL_PREFIX || install->at) return fail(install, "The install has begun already.");
+    if (install->phase != PC5_INSTALL_PREFIX || install->at) return fail(install, N_("The install has begun already."));
     failed = walk_tree(path, &found, saves_keep);
     /* As template_paths orders the template's: the registry after the rest, system.reg last. */
     for (int pass = 0; pass < 3 && !failed; pass++)
@@ -2624,7 +2625,7 @@ int pc5_install_use_saves(Pc5Install *install, const char *path)
     pc5_buf_free(&found);
     if (failed || !has_system) {
         pc5_buf_free(&ordered);
-        return fail(install, failed ? "PC5 can't read the kept saves." : "The kept saves are damaged: they have no registry.");
+        return fail(install, failed ? N_("PC5 can't read the kept saves.") : N_("The kept saves are damaged: they have no registry."));
     }
     pc5_buf_free(&install->template_list);
     install->template_list = ordered;
@@ -2676,7 +2677,7 @@ Pc5InstallPhase pc5_install_step(Pc5Install *install, int budget_ms)
         case PC5_INSTALL_LIST: {
             char games[PC5_PATH];
             if (game_paths(install) || game_target(install, "", games, sizeof(games)) || pc5_mkdirs(games)) {
-                if (!install->error[0]) fail(install, "PC5 can't make the game's folder: %s.", strerror(errno));
+                if (!install->error[0]) fail(install, N_("PC5 can't make the game's folder: %s."), strerror(errno));
                 start_cleanup(install, 0);
                 break;
             }
@@ -2689,7 +2690,7 @@ Pc5InstallPhase pc5_install_step(Pc5Install *install, int budget_ms)
                 if (pc5_format(marker, sizeof(marker), "%s/" USB_FILE, install->staging) ||
                     pc5_format(note, sizeof(note), "%s\n%s\n%d\n", install->usb_dest, install->source, install->usb_move) ||
                     pc5_write_file(marker, note, strlen(note))) {
-                    fail(install, "PC5 can't write its notes: %s.", strerror(errno));
+                    fail(install, N_("PC5 can't write its notes: %s."), strerror(errno));
                     start_cleanup(install, 0);
                     break;
                 }
@@ -2701,7 +2702,7 @@ Pc5InstallPhase pc5_install_step(Pc5Install *install, int budget_ms)
                     return install->phase;
                 }
                 if (install->usb_move && pc5_mkdirs(games)) {
-                    fail(install, "PC5 can't make the game's folder on the USB drive: %s.", strerror(errno));
+                    fail(install, N_("PC5 can't make the game's folder on the USB drive: %s."), strerror(errno));
                     start_cleanup(install, 0);
                     break;
                 }
@@ -2727,7 +2728,7 @@ Pc5InstallPhase pc5_install_step(Pc5Install *install, int budget_ms)
             if (install->take && !pc5_format(marker, sizeof(marker), "%s/" TAKEN_FILE, install->staging))
                 unlink(marker);   /* not moved after all: nothing to put back */
             if (install->take && pc5_mkdirs(games)) {
-                fail(install, "PC5 can't make the game's folder: %s.", strerror(errno));
+                fail(install, N_("PC5 can't make the game's folder: %s."), strerror(errno));
                 start_cleanup(install, 0);
                 break;
             }
@@ -2757,14 +2758,14 @@ Pc5InstallPhase pc5_install_step(Pc5Install *install, int budget_ms)
             char source[PC5_PATH], target[PC5_PATH];
             if (game_target(install, relative, target, sizeof(target)) ||
                 pc5_join(source, sizeof(source), install->source, relative)) {
-                fail(install, "A path in the game is too long: %s.", relative);
+                fail(install, N_("A path in the game is too long: %s."), relative);
                 start_cleanup(install, 0);
                 break;
             }
             if (relative[length - 1] == '/') {
                 target[strlen(target) - 1] = 0;
                 if (!verify && pc5_mkdirs(target)) {
-                    fail(install, "PC5 can't make %s: %s.", relative, strerror(errno));
+                    fail(install, N_("PC5 can't make %s: %s."), relative, strerror(errno));
                     start_cleanup(install, 0);
                     break;
                 }
@@ -2774,13 +2775,13 @@ Pc5InstallPhase pc5_install_step(Pc5Install *install, int budget_ms)
             if (install->in_fd < 0) {
                 install->in_fd = open(verify ? target : source, O_RDONLY);
                 if (install->in_fd < 0) {
-                    fail(install, verify ? "PC5 can't read back %s: %s." : "PC5 can't open %s on the USB drive: %s.",
+                    fail(install, verify ? N_("PC5 can't read back %s: %s.") : N_("PC5 can't open %s on the USB drive: %s."),
                          relative, strerror(errno));
                     start_cleanup(install, 0);
                     break;
                 }
                 if (!verify && (install->out_fd = open(target, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0) {
-                    fail(install, "PC5 can't write %s: %s.", relative, strerror(errno));
+                    fail(install, N_("PC5 can't write %s: %s."), relative, strerror(errno));
                     start_cleanup(install, 0);
                     break;
                 }
@@ -2795,13 +2796,13 @@ Pc5InstallPhase pc5_install_step(Pc5Install *install, int budget_ms)
                 if (!verify && install->out_fd >= 0 && install->update && fsync(install->out_fd)) {
                     close(install->out_fd);
                     install->out_fd = -1;
-                    fail(install, "PC5 can't write %s: %s.", relative, strerror(errno));
+                    fail(install, N_("PC5 can't write %s: %s."), relative, strerror(errno));
                     start_cleanup(install, 0);
                     break;
                 }
                 if (!verify && install->out_fd >= 0 && close(install->out_fd)) {
                     install->out_fd = -1;
-                    fail(install, "PC5 can't write %s: %s.", relative, strerror(errno));
+                    fail(install, N_("PC5 can't write %s: %s."), relative, strerror(errno));
                     start_cleanup(install, 0);
                     break;
                 }
@@ -2812,8 +2813,8 @@ Pc5InstallPhase pc5_install_step(Pc5Install *install, int budget_ms)
                     if (!verify) {
                         memcpy(install->hashes[install->file_index], digest, 32);
                     } else if (memcmp(install->hashes[install->file_index], digest, 32)) {
-                        fail(install, "The copy of %s doesn't match the USB drive. The drive or its cable may be "
-                                      "failing; nothing was kept.", relative);
+                        fail(install, N_("The copy of %s doesn't match the USB drive. The drive or its cable may be "
+                                      "failing; nothing was kept."), relative);
                         start_cleanup(install, 0);
                         break;
                     }

@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 /* PC5 in a game's process (pc5_game.h). */
 #include "pc5_game.h"
+#include "pc5_i18n.h"
 #include "pc5_controls.h"
 #include "pc5_library.h"
 #include "pc5_pe.h"
@@ -411,13 +412,13 @@ int pc5_runtime_begin(Pc5Runtime *runtime, const char *root, const char *app, co
         pc5_format(runtime->to, sizeof(runtime->to), "%s/pc5/mono-%s", root, version) ||
         pc5_format(done, sizeof(done), "%s/.complete", runtime->to) ||
         pc5_format(list, sizeof(list), "%s/pc5/mono.list", app)) {
-        snprintf(runtime->error, sizeof(runtime->error), "The app's path is too long.");
+        snprintf(runtime->error, sizeof(runtime->error), N_("The app's path is too long."));
         return -1;
     }
     if (pc5_exists(done)) return 0;
     if (!dotnet && !beside_dotnet(program)) return 0;
     if (pc5_read_file(list, &runtime->list, 16u << 20) || pc5_buf_terminate(&runtime->list) || pc5_mkdirs(runtime->to)) {
-        snprintf(runtime->error, sizeof(runtime->error), "PC5 can't read the app's .NET runtime.");
+        snprintf(runtime->error, sizeof(runtime->error), N_("PC5 can't read the app's .NET runtime."));
         pc5_buf_free(&runtime->list);
         return -1;
     }
@@ -442,12 +443,12 @@ int pc5_runtime_step(Pc5Runtime *runtime, int budget_ms)
         if (!n) continue;
         if (pc5_format(from, sizeof(from), "%s/%s", runtime->from, line) ||
             pc5_format(to, sizeof(to), "%s/%s", runtime->to, line) || pc5_format(part, sizeof(part), "%s.pc5-part", to)) {
-            snprintf(runtime->error, sizeof(runtime->error), "A path of the .NET runtime is too long.");
+            snprintf(runtime->error, sizeof(runtime->error), N_("A path of the .NET runtime is too long."));
             return -1;
         }
         if (line[n - 1] == '/') {
             if (pc5_mkdirs(to)) {
-                snprintf(runtime->error, sizeof(runtime->error), "PC5 can't make the .NET runtime's folders: is the console full?");
+                snprintf(runtime->error, sizeof(runtime->error), N_("PC5 can't make the .NET runtime's folders: is the console full?"));
                 return -1;
             }
         } else {
@@ -458,13 +459,13 @@ int pc5_runtime_step(Pc5Runtime *runtime, int budget_ms)
                 /* Not a full disk: the app's own copy lacks it (copied off a PC without it). */
                 const char *name = strrchr(line, '/');
                 snprintf(runtime->error, sizeof(runtime->error),
-                         "The app's .NET runtime has no %.80s. Copy the PPSA11018 folder to the console again.",
+                         N_("The app's .NET runtime has no %.80s. Copy the PPSA11018 folder to the console again."),
                          name ? name + 1 : line);
                 return -1;
             }
             if (pc5_mkdirs(folder) || copy_file(from, part) || rename(part, to)) {
                 unlink(part);
-                snprintf(runtime->error, sizeof(runtime->error), "PC5 can't copy the .NET runtime: is the console full?");
+                snprintf(runtime->error, sizeof(runtime->error), N_("PC5 can't copy the .NET runtime: is the console full?"));
                 return -1;
             }
         }
@@ -472,7 +473,7 @@ int pc5_runtime_step(Pc5Runtime *runtime, int budget_ms)
         if (now_ms() >= until) return 0;
     }
     if (pc5_format(to, sizeof(to), "%s/.complete", runtime->to) || pc5_write_file(to, "", 0)) {
-        snprintf(runtime->error, sizeof(runtime->error), "PC5 can't finish the .NET runtime's copy.");
+        snprintf(runtime->error, sizeof(runtime->error), N_("PC5 can't finish the .NET runtime's copy."));
         return -1;
     }
     return 1;

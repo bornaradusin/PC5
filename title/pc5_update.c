@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 /* PC5: the update check (pc5_update.h). */
 #include "pc5_update.h"
+#include "pc5_i18n.h"
 #include "pc5_json.h"
 
 #include <stdio.h>
@@ -121,11 +122,11 @@ int pc5_update_small(const Pc5Update *update, const char *current)
 void pc5_update_text(const Pc5Update *update, char *out, size_t size)
 {
     switch (update->state) {
-    case PC5_UPDATE_AVAILABLE: snprintf(out, size, "PC5 %s is available on GitHub", update->version); break;
-    case PC5_UPDATE_CURRENT: snprintf(out, size, "You have the newest PC5 (%s)", PC5_VERSION); break;
-    case PC5_UPDATE_NONE: snprintf(out, size, "No PC5 release is published on GitHub yet"); break;
-    case PC5_UPDATE_FAILED: snprintf(out, size, "GitHub didn't answer: is the console online?"); break;
-    default: snprintf(out, size, "Not checked yet"); break;
+    case PC5_UPDATE_AVAILABLE: pc5_tf(out, size, "PC5 %s is available on GitHub", update->version); break;
+    case PC5_UPDATE_CURRENT: pc5_tf(out, size, "You have the newest PC5 (%s)", PC5_VERSION); break;
+    case PC5_UPDATE_NONE: pc5_tf(out, size, "No PC5 release is published on GitHub yet"); break;
+    case PC5_UPDATE_FAILED: pc5_tf(out, size, "GitHub didn't answer: is the console online?"); break;
+    default: pc5_tf(out, size, "Not checked yet"); break;
     }
 }
 

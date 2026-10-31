@@ -2,6 +2,7 @@
 /* PC5: the INSTALL folder's FTP server (pc5_ftp.h). A thread takes the connections; each
  * client has a thread of its own, which reads its commands and does its transfers. */
 #include "pc5_ftp.h"
+#include "pc5_i18n.h"
 
 #include <dirent.h>
 #include <errno.h>
@@ -622,14 +623,14 @@ int pc5_ftp_start(const char *root, uint16_t port, char *error, size_t size)
     uint32_t ip = 0;
 
     pc5_ftp_stop();
-    if (!ftp.have_ops) return pc5_format(error, size, "There's no network here."), -1;
+    if (!ftp.have_ops) return pc5_format(error, size, N_("There's no network here.")), -1;
     if (!root || stat(root, &st) || !S_ISDIR(st.st_mode))
-        return pc5_format(error, size, "PC5's INSTALL folder isn't there."), -1;
+        return pc5_format(error, size, N_("PC5's INSTALL folder isn't there.")), -1;
     pc5_copy(ftp.root, sizeof(ftp.root), root);
     size_t n = strlen(ftp.root);
     while (n > 1 && ftp.root[n - 1] == '/') ftp.root[--n] = 0;
     ftp.listener = ftp.ops.listen(port, 4);
-    if (ftp.listener < 0) return pc5_format(error, size, "Port %u is taken, or there's no network.", (unsigned)port), -1;
+    if (ftp.listener < 0) return pc5_format(error, size, N_("Port %u is taken, or there's no network."), (unsigned)port), -1;
     if (!ftp.ops.lan_ip || ftp.ops.lan_ip(&ip) || !ip) snprintf(ftp.address, sizeof(ftp.address), ":%u", (unsigned)port);
     else {
         const uint8_t *b = (const uint8_t *)&ip;
@@ -643,7 +644,7 @@ int pc5_ftp_start(const char *root, uint16_t port, char *error, size_t size)
     if (pc5_thread_start(&ftp.thread, listen_thread, NULL, 0)) {
         ftp.ops.close(ftp.listener);
         ftp.listener = -1;
-        return pc5_format(error, size, "PC5 can't start it."), -1;
+        return pc5_format(error, size, N_("PC5 can't start it.")), -1;
     }
     ftp.running = 1;
     say("PC5 ftp on address=%s root=%s", ftp.address, ftp.root);

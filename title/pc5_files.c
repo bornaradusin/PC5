@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 #include "pc5_files.h"
+#include "pc5_i18n.h"
 
 #include <dirent.h>
 #include <errno.h>
@@ -96,15 +97,15 @@ int pc5_files_within(const char *root, const char *path)
 int pc5_files_name_ok(const char *name, char *why, size_t size)
 {
     size_t n = strlen(name);
-    if (!n) return pc5_format(why, size, "The name is empty."), -1;
-    if (!strcmp(name, ".") || !strcmp(name, "..")) return pc5_format(why, size, "\"%s\" can't be a name.", name), -1;
-    if (n >= PC5_FILES_NAME) return pc5_format(why, size, "The name is too long: 255 bytes at most."), -1;
+    if (!n) return pc5_format(why, size, N_("The name is empty.")), -1;
+    if (!strcmp(name, ".") || !strcmp(name, "..")) return pc5_format(why, size, N_("\"%s\" can't be a name."), name), -1;
+    if (n >= PC5_FILES_NAME) return pc5_format(why, size, N_("The name is too long: 255 bytes at most.")), -1;
     for (const unsigned char *p = (const unsigned char *)name; *p; p++)
         if (*p < 32 || strchr("/\\:*?\"<>|", *p))
-            return pc5_format(why, size, "A name can't have %s in it.", *p < 32 ? "a control character" :
+            return pc5_format(why, size, N_("A name can't have %s in it."), *p < 32 ? "a control character" :
                               *p == '/' ? "/" : *p == '\\' ? "\\" : *p == ':' ? ":" : *p == '*' ? "*" : *p == '?' ? "?" :
                               *p == '"' ? "\"" : *p == '<' ? "<" : *p == '>' ? ">" : "|"), -1;
-    if (name[n - 1] == ' ' || name[n - 1] == '.') return pc5_format(why, size, "A name can't end in a space or a dot."), -1;
+    if (name[n - 1] == ' ' || name[n - 1] == '.') return pc5_format(why, size, N_("A name can't end in a space or a dot.")), -1;
     return 0;
 }
 
@@ -236,8 +237,8 @@ static int plan_tree(Pc5FilesJob *job, const char *src, const char *dst, int dep
     struct stat st, there;
     int exists = !lstat(dst, &there);
 
-    if (depth > DEPTH) return fail(job, "%s has folders too deep to copy.", base_name(src));
-    if (stat(src, &st) && lstat(src, &st)) return fail(job, "PC5 can't read %s: %s.", base_name(src), strerror(errno));
+    if (depth > DEPTH) return fail(job, N_("%s has folders too deep to copy."), base_name(src));
+    if (stat(src, &st) && lstat(src, &st)) return fail(job, N_("PC5 can't read %s: %s."), base_name(src), strerror(errno));
     if (!S_ISDIR(st.st_mode)) {
         if (exists && S_ISDIR(there.st_mode) && add_task(job, T_REMOVE, dst, NULL, 0, 0)) goto memory;
         if (add_task(job, T_COPY, src, dst, (uint64_t)st.st_size, (uint32_t)(st.st_mode & 0777))) goto memory;
@@ -247,12 +248,12 @@ static int plan_tree(Pc5FilesJob *job, const char *src, const char *dst, int dep
     if ((!exists || !S_ISDIR(there.st_mode)) && add_task(job, T_MKDIR, NULL, dst, 0, 0777)) goto memory;
     {
         Pc5FileList list;
-        if (pc5_files_list(src, &list)) return fail(job, "PC5 can't read %s: %s.", base_name(src), strerror(list.error));
+        if (pc5_files_list(src, &list)) return fail(job, N_("PC5 can't read %s: %s."), base_name(src), strerror(list.error));
         for (int i = 0; i < list.count; i++) {
             char from[PC5_PATH], to[PC5_PATH];
             if (pc5_join(from, sizeof(from), src, list.items[i].name) || pc5_join(to, sizeof(to), dst, list.items[i].name)) {
                 pc5_files_list_free(&list);
-                return fail(job, "A path in %s is too long.", base_name(src));
+                return fail(job, N_("A path in %s is too long."), base_name(src));
             }
             if (plan_tree(job, from, to, depth + 1)) {
                 pc5_files_list_free(&list);
@@ -263,7 +264,7 @@ static int plan_tree(Pc5FilesJob *job, const char *src, const char *dst, int dep
     }
     return 0;
 memory:
-    return fail(job, "PC5 ran out of memory planning the copy.");
+    return fail(job, N_("PC5 ran out of memory planning the copy."));
 }
 
 int pc5_files_begin(Pc5FilesJob *job, Pc5FilesOp op, const char *const *sources, int count, const char *dest,
@@ -277,30 +278,30 @@ int pc5_files_begin(Pc5FilesJob *job, Pc5FilesOp op, const char *const *sources,
     job->op = op;
     job->in = job->out = -1;
     job->state = PC5_FILES_WORKING;
-    if (count <= 0) return fail(job, "Nothing is chosen.");
+    if (count <= 0) return fail(job, N_("Nothing is chosen."));
     if (op == PC5_FILES_DELETE) {
         for (int i = 0; i < count; i++)
-            if (add_task(job, T_REMOVE, sources[i], NULL, 0, 0)) return fail(job, "PC5 ran out of memory.");
+            if (add_task(job, T_REMOVE, sources[i], NULL, 0, 0)) return fail(job, N_("PC5 ran out of memory."));
         return 0;
     }
     if (stat(dest, &dest_st) || !S_ISDIR(dest_st.st_mode))
-        return fail(job, "The folder to paste into isn't there any more.");
-    if (!(removals = pc5_alloc(sizeof(*removals) * (size_t)count))) return fail(job, "PC5 ran out of memory.");
+        return fail(job, N_("The folder to paste into isn't there any more."));
+    if (!(removals = pc5_alloc(sizeof(*removals) * (size_t)count))) return fail(job, N_("PC5 ran out of memory."));
     for (int i = 0; i < count; i++) {
         const char *src = sources[i];
         char target[PC5_PATH], free_name[PC5_FILES_NAME];
         struct stat st, there;
         if (lstat(src, &st)) {
             pc5_free(removals);
-            return fail(job, "%s isn't there any more.", base_name(src));
+            return fail(job, N_("%s isn't there any more."), base_name(src));
         }
         if (S_ISDIR(st.st_mode) && pc5_files_within(src, dest)) {
             pc5_free(removals);
-            return fail(job, "%s can't go into itself or a folder inside it.", base_name(src));
+            return fail(job, N_("%s can't go into itself or a folder inside it."), base_name(src));
         }
         if (pc5_join(target, sizeof(target), dest, base_name(src))) {
             pc5_free(removals);
-            return fail(job, "The path of %s would be too long.", base_name(src));
+            return fail(job, N_("The path of %s would be too long."), base_name(src));
         }
         int same = !strcmp(target, src), exists = !lstat(target, &there);
         if (same && (op == PC5_FILES_MOVE || conflict != PC5_FILES_KEEP_BOTH)) {
@@ -315,7 +316,7 @@ int pc5_files_begin(Pc5FilesJob *job, Pc5FilesOp op, const char *const *sources,
             if (pc5_files_free_name(dest, base_name(src), free_name, sizeof(free_name)) ||
                 pc5_join(target, sizeof(target), dest, free_name)) {
                 pc5_free(removals);
-                return fail(job, "PC5 can't find a free name for %s.", base_name(src));
+                return fail(job, N_("PC5 can't find a free name for %s."), base_name(src));
             }
             exists = 0;
         }
@@ -347,13 +348,13 @@ int pc5_files_begin(Pc5FilesJob *job, Pc5FilesOp op, const char *const *sources,
             char need[32], have[32];
             pc5_size_text(job->total_bytes, need, sizeof(need));
             pc5_size_text(room, have, sizeof(have));
-            return fail(job, "There isn't room: it needs %s and the drive has %s free.", need, have);
+            return fail(job, N_("There isn't room: it needs %s and the drive has %s free."), need, have);
         }
     }
     return 0;
 memory:
     pc5_free(removals);
-    return fail(job, "PC5 ran out of memory planning the work.");
+    return fail(job, N_("PC5 ran out of memory planning the work."));
 }
 
 static void close_copy(Pc5FilesJob *job, int keep)
@@ -377,24 +378,24 @@ static int copy_some(Pc5FilesJob *job, const Pc5FilesTask *t, uint64_t until)
     snprintf(part, sizeof(part), "%s" PART, dst);
     if (job->in < 0) {
         if ((job->in = open(src, O_RDONLY)) < 0)
-            return fail(job, "PC5 can't read %s: %s.", base_name(src), strerror(errno));
+            return fail(job, N_("PC5 can't read %s: %s."), base_name(src), strerror(errno));
         if ((job->out = open(part, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0) {
             int saved = errno;
             close_copy(job, 0);
-            return fail(job, "PC5 can't write %s: %s.", base_name(dst), strerror(saved));
+            return fail(job, N_("PC5 can't write %s: %s."), base_name(dst), strerror(saved));
         }
         job->copied = 0;
     }
     if (!job->chunk && !(job->chunk = pc5_alloc(CHUNK))) {
         close_copy(job, 0);
-        return fail(job, "PC5 ran out of memory copying %s.", base_name(src));
+        return fail(job, N_("PC5 ran out of memory copying %s."), base_name(src));
     }
     do {
         ssize_t got = read(job->in, job->chunk, CHUNK);
         if (got < 0) {
             int saved = errno;
             close_copy(job, 0);
-            return fail(job, "PC5 can't read %s: %s.", base_name(src), strerror(saved));
+            return fail(job, N_("PC5 can't read %s: %s."), base_name(src), strerror(saved));
         }
         if (got == 0) break;
         for (ssize_t put = 0; put < got;) {
@@ -402,7 +403,7 @@ static int copy_some(Pc5FilesJob *job, const Pc5FilesTask *t, uint64_t until)
             if (n <= 0) {
                 int saved = n < 0 ? errno : ENOSPC;
                 close_copy(job, 0);
-                return fail(job, "PC5 can't write %s: %s.", base_name(dst), strerror(saved));
+                return fail(job, N_("PC5 can't write %s: %s."), base_name(dst), strerror(saved));
             }
             put += n;
         }
@@ -415,7 +416,7 @@ static int copy_some(Pc5FilesJob *job, const Pc5FilesTask *t, uint64_t until)
         job->out = -1;
         close_copy(job, 0);
         unlink(part);
-        return fail(job, "PC5 can't write %s: %s.", base_name(dst), strerror(errno));
+        return fail(job, N_("PC5 can't write %s: %s."), base_name(dst), strerror(errno));
     }
     job->out = -1;
     close(job->in);
@@ -423,7 +424,7 @@ static int copy_some(Pc5FilesJob *job, const Pc5FilesTask *t, uint64_t until)
     if (rename(part, dst)) {
         int saved = errno;
         unlink(part);
-        return fail(job, "PC5 can't put %s in place: %s.", base_name(dst), strerror(saved));
+        return fail(job, N_("PC5 can't put %s in place: %s."), base_name(dst), strerror(saved));
     }
     /* the bytes counted as read: a file whose size changed since the plan keeps the total right */
     job->total_bytes += job->copied > t->size ? job->copied - t->size : 0;
@@ -449,18 +450,18 @@ int pc5_files_step(Pc5FilesJob *job, int budget_ms)
         case T_MKDIR: {
             const char *dst = name_at(job, t->dst);
             if (mkdir(dst, 0777) && !(errno == EEXIST && pc5_is_dir(dst)))
-                return fail(job, "PC5 can't make the folder %s: %s.", base_name(dst), strerror(errno)), 0;
+                return fail(job, N_("PC5 can't make the folder %s: %s."), base_name(dst), strerror(errno)), 0;
             (void)chmod(dst, 0777);
             break;
         }
         case T_RENAME:
             if (rename(name_at(job, t->src), name_at(job, t->dst)))
-                return fail(job, "PC5 can't move %s: %s.", base_name(name_at(job, t->src)), strerror(errno)), 0;
+                return fail(job, N_("PC5 can't move %s: %s."), base_name(name_at(job, t->src)), strerror(errno)), 0;
             break;
         case T_REMOVE:
             if (!job->removing) {
                 if (pc5_tree_delete_begin(&job->remove, name_at(job, t->src)))
-                    return fail(job, "PC5 ran out of memory deleting %s.", job->current), 0;
+                    return fail(job, N_("PC5 ran out of memory deleting %s."), job->current), 0;
                 job->removing = 1;
             }
             {

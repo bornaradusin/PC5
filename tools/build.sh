@@ -86,6 +86,13 @@ DROID_FALLBACK_URL=https://raw.githubusercontent.com/aosp-mirror/platform_framew
 DROID_FALLBACK_SHA256=acb6440a713d880a13a21b468ba7cd43f5a2b2934972e51be791c880730777b8
 DROID_FALLBACK_NOTICE_URL=https://raw.githubusercontent.com/aosp-mirror/platform_frameworks_base/android-7.1.2_r39/data/fonts/NOTICE
 DROID_FALLBACK_NOTICE_SHA256=38751245389e1e23f73e6f5384b5cbe7fa972cc4410c5adc9c04b082a0b9561a
+# PC5's own text in Korean (pc5/fonts-ko.bin, tools/make-font.py): Droid Sans Fallback has no
+# Hangul, so Noto Sans KR 2.004 (SIL OFL 1.1), the subset OTFs of Noto CJK's release, regular and
+# bold (4.6 and 4.8 MB, read at build time only: the app gets the letters its ko.po uses).
+NOTO_KR_URL=https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004
+NOTO_KR_REGULAR_SHA256=69975a0ac8472717870aefeab0a4d52739308d90856b9955313b2ad5e0148d68
+NOTO_KR_BOLD_SHA256=5a6ceb287ed2fc6cfc6213144ebea68cbd94b20fc9eb873d8486493bf02d9bda
+NOTO_KR_LICENSE_SHA256=6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2
 MBEDTLS_URL=https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-$MBEDTLS_VERSION/mbedtls-$MBEDTLS_VERSION.tar.bz2
 MBEDTLS_SHA256=a7e8bcbec0e6f761b4af24f25677626b35f762f68eef79c08677a363212d11f6
 # DXVK: the release prospero-win's pw_install.py pins (2.6.2-prospero2), built here with
@@ -296,6 +303,9 @@ src_fonts() {
     download "$B/downloads/liberation-fonts-$LIBERATION_VERSION-LICENSE" "$LIBERATION_LICENSE_URL" "$LIBERATION_LICENSE_SHA256"
     download "$B/downloads/DroidSansFallbackFull.ttf" "$DROID_FALLBACK_URL" "$DROID_FALLBACK_SHA256"
     download "$B/downloads/DroidSansFallbackFull-NOTICE" "$DROID_FALLBACK_NOTICE_URL" "$DROID_FALLBACK_NOTICE_SHA256"
+    download "$B/downloads/NotoSansKR-Regular.otf" "$NOTO_KR_URL/Sans/SubsetOTF/KR/NotoSansKR-Regular.otf" "$NOTO_KR_REGULAR_SHA256"
+    download "$B/downloads/NotoSansKR-Bold.otf" "$NOTO_KR_URL/Sans/SubsetOTF/KR/NotoSansKR-Bold.otf" "$NOTO_KR_BOLD_SHA256"
+    download "$B/downloads/NotoSansCJK-LICENSE" "$NOTO_KR_URL/LICENSE" "$NOTO_KR_LICENSE_SHA256"
 }
 # FreeType's release archive, as build_wine_ps5.sh pins it (PROSPERO_FREETYPE_TARBALL names a
 # local copy), unpacked for the source bundle.
@@ -592,7 +602,14 @@ EOF_SOURCES
     cp "$B/ps5-forwarder-format/LICENSE" "$app/LICENSES/ps5-forwarder-format/LICENSE"
     mkdir -p "$app/LICENSES/qrcodegen"
     cp "$here/title/third_party/qrcodegen/LICENSE" "$app/LICENSES/qrcodegen/LICENSE"
-    python3 "$here/tools/make-font.py" "$app/pc5/fonts.bin"
+    # PC5's text faces, with the letters of every language in lang/, and Chinese, Japanese and
+    # Korean's own (fonts-<code>.bin, only the language in use is loaded); the languages' text,
+    # which players may edit (pc5_i18n.h).
+    python3 "$here/tools/make-font.py" "$app/pc5/fonts.bin" --lang "$here/lang" --cjk "$B/downloads/DroidSansFallbackFull.ttf" \
+        --korean "$B/downloads/NotoSansKR-Regular.otf" "$B/downloads/NotoSansKR-Bold.otf"
+    mkdir -p "$app/pc5/lang" "$app/LICENSES/noto-sans-kr"
+    cp "$here"/lang/*.po "$app/pc5/lang/"
+    cp "$B/downloads/NotoSansCJK-LICENSE" "$app/LICENSES/noto-sans-kr/LICENSE"
     # The startup sounds to choose from, on the controller's speaker when PC5 is opened (pc5_sound.h).
     mkdir -p "$app/pc5/sounds"
     cp "$here"/art/sounds/*.wav "$app/pc5/sounds/"

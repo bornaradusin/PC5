@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 /* PC5: a game's tile on the PS5's home screen (pc5_home.h). */
 #include "pc5_home.h"
+#include "pc5_i18n.h"
 #include "pc5_image.h"
 #include "pc5_tile.h"
 #include "third_party/psfwd/psfwd.h"
@@ -153,15 +154,15 @@ int pc5_home_add(const char *root, const char *template_dir, const char *library
     out[0] = 0;
     if (pc5_format(path, sizeof(path), "%s/eboot.bin", template_dir) || !pc5_is_file(path) ||
         pc5_format(path, sizeof(path), "%s/sce_module/libc.prx", template_dir) || !pc5_is_file(path)) {
-        pc5_format(error, size, "The tile's program is missing from PC5's app (pc5/forwarder).");
+        pc5_format(error, size, N_("The tile's program is missing from PC5's app (pc5/forwarder)."));
         return -1;
     }
     if (!pc5_home_find(root, id, out) && (pc5_mkdirs(root) || !psfwd_new_title_id(root, out))) {
-        pc5_format(error, size, "PC5 can't use %s: %s.", root, strerror(errno));
+        pc5_format(error, size, N_("PC5 can't use %s: %s."), root, strerror(errno));
         return -1;
     }
     if (pc5_home_picture(library_root, prefix, &png)) {
-        pc5_format(error, size, "PC5 ran out of memory making the tile's picture.");
+        pc5_format(error, size, N_("PC5 ran out of memory making the tile's picture."));
         goto done;
     }
     {
@@ -176,7 +177,7 @@ int pc5_home_add(const char *root, const char *template_dir, const char *library
         spec.creator = "PC5 " PC5_VERSION;
         spec.icon0_png = (psfwd_blob){ png.data, png.len };
         if (!psfwd_write(root, template_dir, &spec, reason, sizeof(reason))) {
-            pc5_format(error, size, "PC5 can't write the tile in %s: %s.", root, reason);
+            pc5_format(error, size, N_("PC5 can't write the tile in %s: %s."), root, reason);
             goto done;
         }
     }

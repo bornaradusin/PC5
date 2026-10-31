@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 /* PC5 updates itself (pc5_upgrade.h). */
 #include "pc5_upgrade.h"
+#include "pc5_i18n.h"
 #include "pc5_json.h"
 #include "pc5_library.h"
 #include "pc5_update.h"
@@ -288,11 +289,11 @@ int pc5_unzip(const char *path, const char *prefix, const char *folder, atomic_u
     if (done) atomic_store(done, 0);
     if (names) names->len = 0;
     if (!prefix_length || prefix[prefix_length - 1] != '/') {
-        snprintf(error, error_size, "PC5 can't unpack this zip.");
+        snprintf(error, error_size, N_("PC5 can't unpack this zip."));
         return -1;
     }
     if ((fd = open(path, O_RDONLY)) < 0 || fstat(fd, &st) || st.st_size < 22) {
-        snprintf(error, error_size, "The download can't be read.");
+        snprintf(error, error_size, N_("The download can't be read."));
         goto out;
     }
     /* The end of the central directory: within the last 64 KiB and its 22 bytes. */
@@ -307,7 +308,7 @@ int pc5_unzip(const char *path, const char *prefix, const char *folder, atomic_u
         uint64_t directory_size = le32(end + 12), directory_at = le32(end + 16), end_at = size - take + (uint64_t)at;
         count = le16(end + 10);
         if (count == 0xffff || le32(end + 16) == 0xffffffffu) {
-            snprintf(error, error_size, "The download is a zip PC5 can't read (ZIP64).");
+            snprintf(error, error_size, N_("The download is a zip PC5 can't read (ZIP64)."));
             goto out;
         }
         if (!count || directory_at + directory_size > end_at || directory_size > (64u << 20)) goto bad;
@@ -336,7 +337,7 @@ int pc5_unzip(const char *path, const char *prefix, const char *folder, atomic_u
                 (e->method == 0 && e->packed != e->size) || (uint64_t)e->local + 30 > end_at ||
                 strncmp(name, prefix, prefix_length) || memchr(name, 0, e->name_length) || strchr(name, '\n') ||
                 (name[prefix_length] && !safe_name(name + prefix_length))) {
-                snprintf(error, error_size, "The download holds a file PC5 won't unpack: %.120s", name);
+                snprintf(error, error_size, N_("The download holds a file PC5 won't unpack: %.120s"), name);
                 goto out;
             }
             sum += e->size;
@@ -347,11 +348,11 @@ int pc5_unzip(const char *path, const char *prefix, const char *folder, atomic_u
     if (sum > room) {
         char need[32];
         pc5_size_text(sum, need, sizeof(need));
-        snprintf(error, error_size, "There isn't room on the drive to unpack it: it needs %s.", need);
+        snprintf(error, error_size, N_("There isn't room on the drive to unpack it: it needs %s."), need);
         goto out;
     }
     if (pc5_mkdirs(folder)) {
-        snprintf(error, error_size, "The folder to unpack it in can't be made.");
+        snprintf(error, error_size, N_("The folder to unpack it in can't be made."));
         goto out;
     }
     for (uint32_t i = 0; i < count; i++) {
@@ -359,7 +360,7 @@ int pc5_unzip(const char *path, const char *prefix, const char *folder, atomic_u
         char rel[PC5_PATH], target[PC5_PATH];
         uint8_t local[30];
 
-        if (cancel && atomic_load(cancel)) { snprintf(error, error_size, "Cancelled."); goto out; }
+        if (cancel && atomic_load(cancel)) { snprintf(error, error_size, N_("Cancelled.")); goto out; }
         memcpy(rel, e->name + prefix_length, e->name_length - prefix_length);
         rel[e->name_length - prefix_length] = 0;
         if (!rel[0]) continue;                          /* the prefix's own folder */
@@ -404,16 +405,16 @@ int pc5_unzip(const char *path, const char *prefix, const char *folder, atomic_u
     result = 0;
     goto out;
 damaged:
-    snprintf(error, error_size, "The download is damaged (a file in it doesn't match its checksum).");
+    snprintf(error, error_size, N_("The download is damaged (a file in it doesn't match its checksum)."));
     goto out;
 write_failed:
-    snprintf(error, error_size, "Files can't be written on the drive (%s).", strerror(errno));
+    snprintf(error, error_size, N_("Files can't be written on the drive (%s)."), strerror(errno));
     goto out;
 memory:
-    snprintf(error, error_size, "PC5 ran out of memory unpacking it.");
+    snprintf(error, error_size, N_("PC5 ran out of memory unpacking it."));
     goto out;
 bad:
-    if (!error[0]) snprintf(error, error_size, "The download isn't a zip PC5 can read.");
+    if (!error[0]) snprintf(error, error_size, N_("The download isn't a zip PC5 can read."));
 out:
     if (fd >= 0) close(fd);
     pc5_free(directory);
@@ -585,7 +586,7 @@ static int check_top(const Release *r, const char *fresh, const char *folder, ch
     for (size_t i = 0; i < r->count; i++) {
         const char *name = r->names[i].name, *slash = strchr(name, '/');
         if (pc5_join(path, sizeof(path), fresh, name) || pc5_join(path, sizeof(path), folder, name)) {
-            snprintf(error, error_size, "A path in PC5's folder is too long.");
+            snprintf(error, error_size, N_("A path in PC5's folder is too long."));
             return -1;
         }
         pc5_copy(top, sizeof(top), name);
@@ -593,8 +594,8 @@ static int check_top(const Release *r, const char *fresh, const char *folder, ch
         if (pc5_join(path, sizeof(path), folder, top)) return -1;
         int folder_wanted = slash != NULL;
         if ((folder_wanted && pc5_exists(path) && !pc5_is_dir(path)) || (!folder_wanted && pc5_is_dir(path))) {
-            snprintf(error, error_size, "PC5's folder has %.100s where the new version has a %s of that name. Move it "
-                     "out of the folder and try again.", top, folder_wanted ? "folder" : "file");
+            snprintf(error, error_size, N_("PC5's folder has %.100s where the new version has a %s of that name. Move it "
+                     "out of the folder and try again."), top, folder_wanted ? "folder" : "file");
             return -1;
         }
     }
@@ -633,7 +634,7 @@ static int place_files(const Pc5UpgradeConfig *config, const Release *r, const c
 
     *eboot_placed = 0;
     if (!touched) {
-        snprintf(error, error_size, "PC5 ran out of memory.");
+        snprintf(error, error_size, N_("PC5 ran out of memory."));
         return -1;
     }
     memset(touched, 0, r->folder_count + 1);
@@ -706,13 +707,13 @@ static int place_files(const Pc5UpgradeConfig *config, const Release *r, const c
          flushed, r->folder_count, folder);
     return 0;
 too_long:
-    snprintf(error, error_size, "A path in PC5's folder is too long.");
+    snprintf(error, error_size, N_("A path in PC5's folder is too long."));
     goto failed;
 missing:
-    snprintf(error, error_size, "A new file is missing: %.200s.", rel);
+    snprintf(error, error_size, N_("A new file is missing: %.200s."), rel);
     goto failed;
 failed_at:
-    snprintf(error, error_size, "PC5 can't put its new files in place (%.150s: %s).", rel, strerror(errno));
+    snprintf(error, error_size, N_("PC5 can't put its new files in place (%.150s: %s)."), rel, strerror(errno));
 failed:
     pc5_free(touched);
     return -1;
@@ -1081,7 +1082,7 @@ static int download(Pc5Upgrade *upgrade, const char *url, uint64_t size, const c
     saving.expected = size;
     pc5_sha256_init(&saving.sha);
     if ((saving.fd = open(part, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0)
-        return fail(upgrade, "The download can't be saved (%s).", strerror(errno));
+        return fail(upgrade, N_("The download can't be saved (%s)."), strerror(errno));
     {
         Pc5Sink sink = { &saving, saving_begin, saving_write, saving_stop };
         rc = config->http.download(config->http.context, url, &sink, &status);
@@ -1089,19 +1090,19 @@ static int download(Pc5Upgrade *upgrade, const char *url, uint64_t size, const c
     if (fsync(saving.fd) && !rc) rc = -1;
     if (close(saving.fd) && !rc) rc = -1;
     note(config, "PC5 update download rc=%d status=%d bytes=%llu", rc, status, (unsigned long long)saving.got);
-    if (atomic_load(&upgrade->cancel)) return fail(upgrade, "Cancelled.");
+    if (atomic_load(&upgrade->cancel)) return fail(upgrade, N_("Cancelled."));
     if (rc || status != 200)
-        return fail(upgrade, status && status != 200 ? "GitHub answered the download with an error (HTTP %d)."
-                                                     : "The download stopped (%d). Is the console still online?", status);
-    if (saving.got != size) return fail(upgrade, "The download was cut short.");
+        return fail(upgrade, status && status != 200 ? N_("GitHub answered the download with an error (HTTP %d).")
+                                                     : N_("The download stopped (%d). Is the console still online?"), status);
+    if (saving.got != size) return fail(upgrade, N_("The download was cut short."));
     if (sha256[0]) {
         uint8_t digest[32];
         char hex[65];
         pc5_sha256_final(&saving.sha, digest);
         for (int i = 0; i < 32; i++) snprintf(hex + i * 2, 3, "%02x", digest[i]);
-        if (strcmp(hex, sha256)) return fail(upgrade, "The download doesn't match the checksum GitHub lists for it.");
+        if (strcmp(hex, sha256)) return fail(upgrade, N_("The download doesn't match the checksum GitHub lists for it."));
     }
-    if (rename(part, zip)) return fail(upgrade, "The download can't be saved (%s).", strerror(errno));
+    if (rename(part, zip)) return fail(upgrade, N_("The download can't be saved (%s)."), strerror(errno));
     return 0;
 }
 
@@ -1240,7 +1241,7 @@ static int use_update_zip(Pc5Upgrade *upgrade, const Pc5Update *update, const ch
     result = 1;
     goto out;
 cancelled:
-    result = fail(upgrade, "Cancelled.");
+    result = fail(upgrade, N_("Cancelled."));
     goto out;
 fall_back:
     note(config, "PC5 update can't use the update zip (%s); downloading the whole app", why);
@@ -1273,46 +1274,46 @@ static int run(Pc5Upgrade *upgrade, char *work, size_t work_size)
 
     pc5_update_check(&config->http, PC5_VERSION, &update);
     if (update.state == PC5_UPDATE_FAILED || update.state == PC5_UPDATE_UNKNOWN)
-        return fail(upgrade, "GitHub didn't answer. Is the console online?");
+        return fail(upgrade, N_("GitHub didn't answer. Is the console online?"));
     if (update.state != PC5_UPDATE_AVAILABLE)
-        return fail(upgrade, "You already have the newest PC5 (%s).", PC5_VERSION);
+        return fail(upgrade, N_("You already have the newest PC5 (%s)."), PC5_VERSION);
     pc5_copy(upgrade->version, sizeof(upgrade->version), update.version);
     if (!update.asset_url[0] || !config->http.download)
-        return fail(upgrade, "PC5 %s's release on GitHub has no %s.zip to install. Download it from GitHub instead.",
+        return fail(upgrade, N_("PC5 %s's release on GitHub has no %s.zip to install. Download it from GitHub instead."),
                     update.version, PC5_TITLE_ID);
     rc = pc5_upgrade_find(config, upgrade->folder, sizeof(upgrade->folder), other, sizeof(other));
     if (rc == -2)
-        return fail(upgrade, "PC5 is on the console more than once (%.200s and %.200s), so it can't tell which to "
-                             "update. Delete the copy you don't use, or install PC5 %s from GitHub as before.",
+        return fail(upgrade, N_("PC5 is on the console more than once (%.200s and %.200s), so it can't tell which to "
+                             "update. Delete the copy you don't use, or install PC5 %s from GitHub as before."),
                     upgrade->folder, other, update.version);
     if (rc)
-        return fail(upgrade, "PC5's folder wasn't found on the console's drives (in homebrew, etaHEN/games or at the "
-                             "top of a drive). Install PC5 %s from GitHub as before.", update.version);
+        return fail(upgrade, N_("PC5's folder wasn't found on the console's drives (in homebrew, etaHEN/games or at the "
+                             "top of a drive). Install PC5 %s from GitHub as before."), update.version);
     note(config, "PC5 update version=%s folder=%s size=%llu sha256=%s update_zip=%llu", update.version, upgrade->folder,
          (unsigned long long)update.asset_size, update.asset_sha256[0] ? update.asset_sha256 : "-",
          (unsigned long long)(update.delta_url[0] ? update.delta_size : 0));
     if (!(drive = drive_of(config, upgrade->folder, &rest)) || drive_work(config, drive, work, work_size) ||
         overlap(work, upgrade->folder))
-        return fail(upgrade, "PC5 can't update itself where it is (%s).", upgrade->folder);
+        return fail(upgrade, N_("PC5 can't update itself where it is (%s)."), upgrade->folder);
     if (pc5_format(probe, sizeof(probe), "%s/.pc5-update-test", upgrade->folder) || pc5_write_file(probe, "x", 1))
-        return fail(upgrade, "PC5 can't write to its folder (%s).", upgrade->folder);
+        return fail(upgrade, N_("PC5 can't write to its folder (%s)."), upgrade->folder);
     unlink(probe);
     if (pc5_is_dir(work) && is_work(work) && has_journal(work)) {
         work[0] = 0;   /* kept: the next start finishes it */
-        return fail(upgrade, "An earlier update isn't finished. Close PC5 and open it again: it finishes it then.");
+        return fail(upgrade, N_("An earlier update isn't finished. Close PC5 and open it again: it finishes it then."));
     }
     if (make_work(work)) {
         char failed[PC5_PATH];
         pc5_copy(failed, sizeof(failed), work);
         work[0] = 0;   /* not PC5's, or not made: left as it is */
-        return fail(upgrade, "PC5 can't make its work folder (%s).", failed);
+        return fail(upgrade, N_("PC5 can't make its work folder (%s)."), failed);
     }
     if (pc5_format(zip, sizeof(zip), "%s/%s.zip", work, PC5_TITLE_ID) ||
         pc5_format(part, sizeof(part), "%s/%s.zip.part", work, PC5_TITLE_ID) ||
         pc5_format(fresh, sizeof(fresh), "%s/new/%s", work, PC5_TITLE_ID) ||
         pc5_format(list, sizeof(list), "%s/" LIST, work) || pc5_format(journal, sizeof(journal), "%s/" JOURNAL, work) ||
         pc5_format(trash, sizeof(trash), "%s/old", work))
-        return fail(upgrade, "A path in PC5's folder is too long.");
+        return fail(upgrade, N_("A path in PC5's folder is too long."));
     /* Only the files that changed, when the release has them in its update zip and the
      * console has the rest; otherwise the whole app. */
     rc = use_update_zip(upgrade, &update, work, fresh, list);
@@ -1322,9 +1323,9 @@ static int run(Pc5Upgrade *upgrade, char *work, size_t work_size)
         /* The zip, and its files unpacked: about four times the zip. */
         if (!pc5_free_bytes(work, &room) && room < update.asset_size * 4 + MARGIN) {
             pc5_size_text(update.asset_size * 4 + MARGIN, text, sizeof(text));
-            return fail(upgrade, "There isn't room on PC5's drive for the update: it needs about %s free.", text);
+            return fail(upgrade, N_("There isn't room on PC5's drive for the update: it needs about %s free."), text);
         }
-        if (atomic_load(&upgrade->cancel)) return fail(upgrade, "Cancelled.");
+        if (atomic_load(&upgrade->cancel)) return fail(upgrade, N_("Cancelled."));
         note(config, "PC5 update using %s.zip size=%llu", PC5_TITLE_ID, (unsigned long long)update.asset_size);
         if (download(upgrade, update.asset_url, update.asset_size, update.asset_sha256, part, zip)) return -1;
 
@@ -1335,14 +1336,14 @@ static int run(Pc5Upgrade *upgrade, char *work, size_t work_size)
         else room = room > MARGIN ? room - MARGIN : 0;
         rc = pc5_unzip(zip, PREFIX, fresh, &upgrade->done, &upgrade->total, &upgrade->cancel, room, &names,
                        upgrade->error, sizeof(upgrade->error));
-        if (!rc && pc5_write_file(list, names.data, names.len)) rc = fail(upgrade, "The work folder can't be written.");
+        if (!rc && pc5_write_file(list, names.data, names.len)) rc = fail(upgrade, N_("The work folder can't be written."));
         pc5_buf_free(&names);
         if (rc) return -1;
         unlink(zip);
     }
     if (check_new(fresh, used_update ? upgrade->folder : NULL))
-        return fail(upgrade, "The download isn't PC5 (%s is missing something).", PC5_TITLE_ID);
-    if (release_load(work, &release)) return fail(upgrade, "The work folder can't be read.");
+        return fail(upgrade, N_("The download isn't PC5 (%s is missing something)."), PC5_TITLE_ID);
+    if (release_load(work, &release)) return fail(upgrade, N_("The work folder can't be read."));
     /* The unpacked files' folders on the disk before the journal says they are being moved. */
     for (size_t f = 0; f < release.folder_count; f++) {
         char path[PC5_PATH];
@@ -1351,7 +1352,7 @@ static int run(Pc5Upgrade *upgrade, char *work, size_t work_size)
     sync_folder(fresh);
     if (atomic_load(&upgrade->cancel)) {
         release_free(&release);
-        return fail(upgrade, "Cancelled.");
+        return fail(upgrade, N_("Cancelled."));
     }
 
     /* From here the job is finished, now or by the next start: the journal says where. */
@@ -1374,7 +1375,7 @@ static int run(Pc5Upgrade *upgrade, char *work, size_t work_size)
             pc5_format(text, sizeof(text), "%s\n%s\n%s\n%s\n", rest, update.version, old_mark, new_mark) ||
             pc5_write_file(journal, text, strlen(text))) {
             release_free(&release);
-            return fail(upgrade, "The work folder can't be written.");
+            return fail(upgrade, N_("The work folder can't be written."));
         }
     }
     sync_folder(work);
@@ -1386,8 +1387,8 @@ static int run(Pc5Upgrade *upgrade, char *work, size_t work_size)
         pc5_copy(why, sizeof(why), upgrade->error);
         upgrade->partial = 1;
         note(config, "PC5 update not finished: %s", why);
-        return fail(upgrade, "%.120s Close PC5 and open it again: it finishes the update then. If it still can't, "
-                             "install PC5 %s from GitHub.", why, update.version);
+        return fail(upgrade, N_("%.120s Close PC5 and open it again: it finishes the update then. If it still can't, "
+                             "install PC5 %s from GitHub."), why, update.version);
     }
     refresh_registered(config, upgrade->folder);
     unlink(journal);
@@ -1445,7 +1446,7 @@ int pc5_upgrade_start(Pc5Upgrade *upgrade, const Pc5UpgradeConfig *config)
     rc = pthread_create(&thread, &attributes, worker, upgrade);
     pthread_attr_destroy(&attributes);
     if (rc) {
-        fail(upgrade, "PC5 can't start the update (%d).", rc);
+        fail(upgrade, N_("PC5 can't start the update (%d)."), rc);
         atomic_store(&upgrade->step, PC5_UPGRADE_FAILED);
         return -1;
     }

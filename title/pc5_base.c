@@ -386,6 +386,9 @@ void pc5_copy(char *out, size_t size, const char *text)
 
     if (!size) return;
     while (text && text[n] && n + 1 < size) n++;
+    /* Cut short: not in the middle of a character (translated text is often longer). */
+    if (text && text[n])
+        while (n > 0 && ((unsigned char)text[n] & 0xc0) == 0x80) n--;
     memmove(out, text ? text : "", n);
     out[n] = 0;
 }

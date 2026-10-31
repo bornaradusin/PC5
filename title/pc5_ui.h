@@ -80,6 +80,10 @@ typedef struct Pc5UiConfig {
     int opened;
     /* 1: PC5's logo comes up as it opens (about two seconds, over whatever shows). */
     int boot;
+    /* The console's language as one of pc5_i18n.h's codes (pc5_language_of_console), which
+     * PC5 uses unless Settings › System › Language chooses one; NULL: English. The texts are
+     * the .po files in lang/ beside fonts (pc5/lang/<code>.po). */
+    const char *language;
 } Pc5UiConfig;
 
 typedef struct Pc5Ui Pc5Ui;

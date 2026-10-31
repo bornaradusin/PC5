@@ -3,6 +3,7 @@
  * keyboard, the console's clock and settings, its HTTPS, the startup sound on
  * the controller's speaker, and closing PC5 after it updated itself. */
 #include "pc5_console.h"
+#include "pc5_i18n.h"
 #include "pc5_home.h"
 #include "pc5.h"
 #include "pc5_game.h"
@@ -477,10 +478,18 @@ void pc5_console_run(const Pc5Console *config)
     platform = (Pc5Platform){ NULL, { NULL, pc5_net_get, pc5_net_download, pc5_net_get_authorized }, clock_text, play, log_line, notify_text,
                               unix_time, enter == 0, restart, sound_try, keyboard_open, keyboard_state, keyboard_close };
     {
+        /* The console's language (SCE_SYSTEM_SERVICE_PARAM_ID_LANG), which PC5 shows unless its
+         * Language setting says another. */
+        int language = -1;
+        if (sceSystemServiceParamGetInt(PARAM_LANG, &language)) language = -1;
         Pc5UiConfig ui_config = { config->root, template_prefix, fonts, usb_roots, PC5_HOME_ROOT, tile_template,
                                   config->start, pc5_upgrade_drives, "/user", finished, 1,
                                   !config->cycle && !(config->start && config->start[0]),
-                                  !config->cycle && !(config->start && config->start[0]) };
+                                  !config->cycle && !(config->start && config->start[0]),
+                                  pc5_language_of_console(language) };
+        snprintf(line, sizeof(line), "PC5 console language=%d code=%s", language,
+                 ui_config.language ? ui_config.language : "-");
+        plain_log(line);
         ui = pc5_ui_create(&ui_config, &platform);
     }
     if (!ui) {

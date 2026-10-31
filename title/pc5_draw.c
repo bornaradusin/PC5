@@ -546,7 +546,8 @@ void pc5_draw_image(Pc5Canvas *c, const Pc5Image *image, float x, float y, float
 
 static uint32_t get32(const uint8_t *p) { return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24; }
 
-int pc5_fonts_load(Pc5Fonts *fonts, const char *path)
+/* A font file's faces: an extra one (a language's letters) may have faces without glyphs. */
+static int fonts_read(Pc5Fonts *fonts, const char *path)
 {
     const uint8_t *d;
     uint32_t faces, glyph_total = 0;
@@ -576,7 +577,8 @@ int pc5_fonts_load(Pc5Fonts *fonts, const char *path)
         size_t face_at = 20, first;
         for (uint32_t f = 0; f < faces; f++, face_at += 24) {
             first = get32(d + face_at + 20);
-            fonts->glyphs[f] = (const Pc5Glyph *)(d + at + first * 20);
+            if (first + fonts->count[f] > glyph_total) goto bad;
+            fonts->glyphs[f] = fonts->count[f] ? (const Pc5Glyph *)(d + at + first * 20) : NULL;
         }
     }
     fonts->atlas = d + at + (size_t)glyph_total * 20;
@@ -586,8 +588,35 @@ bad:
     return -1;
 }
 
+int pc5_fonts_load(Pc5Fonts *fonts, const char *path)
+{
+    return fonts_read(fonts, path);
+}
+
+int pc5_fonts_extra(Pc5Fonts *fonts, const char *path)
+{
+    if (fonts->extra) {
+        pc5_fonts_free(fonts->extra);
+        pc5_free(fonts->extra);
+        fonts->extra = NULL;
+    }
+    if (!path) return 0;
+    Pc5Fonts *extra = pc5_alloc(sizeof(*extra));
+    if (!extra) return -1;
+    if (fonts_read(extra, path)) {
+        pc5_free(extra);
+        return -1;
+    }
+    fonts->extra = extra;
+    return 0;
+}
+
 void pc5_fonts_free(Pc5Fonts *fonts)
 {
+    if (fonts->extra) {
+        pc5_fonts_free(fonts->extra);
+        pc5_free(fonts->extra);
+    }
     pc5_buf_free(&fonts->file);
     memset(fonts, 0, sizeof(*fonts));
 }
@@ -605,7 +634,7 @@ static uint32_t next_codepoint(const char **text)
     return c;
 }
 
-static const Pc5Glyph *glyph(const Pc5Fonts *fonts, Pc5Face face, uint32_t codepoint)
+static const Pc5Glyph *find_glyph(const Pc5Fonts *fonts, Pc5Face face, uint32_t codepoint)
 {
     const Pc5Glyph *g = fonts->glyphs[face];
     int lo = 0, hi = (int)fonts->count[face] - 1;
@@ -617,7 +646,25 @@ static const Pc5Glyph *glyph(const Pc5Fonts *fonts, Pc5Face face, uint32_t codep
         if (g[mid].codepoint < codepoint) lo = mid + 1;
         else hi = mid - 1;
     }
-    return codepoint != '?' ? glyph(fonts, face, '?') : NULL;
+    return NULL;
+}
+
+/* A letter, from the fonts or their extra letters (*from: the fonts it is in). The game-title
+ * faces (hero, card) have only fonts.bin's letters: others come from the title face. */
+static const Pc5Glyph *glyph(const Pc5Fonts *fonts, Pc5Face face, uint32_t codepoint, const Pc5Fonts **from)
+{
+    Pc5Face near = face == PC5_FACE_HERO || face == PC5_FACE_CARD ? PC5_FACE_TITLE : face;
+    const Pc5Glyph *g = find_glyph(fonts, face, codepoint);
+
+    *from = fonts;
+    if (g) return g;
+    if (near != face && (g = find_glyph(fonts, near, codepoint))) return g;
+    if (fonts->extra) {
+        *from = fonts->extra;
+        if ((g = find_glyph(fonts->extra, face, codepoint)) || (g = find_glyph(fonts->extra, near, codepoint))) return g;
+        *from = fonts;
+    }
+    return codepoint != '?' ? find_glyph(fonts, face, '?') : NULL;
 }
 
 /* Width in 64ths of a pixel of text's first `bytes` bytes. */
@@ -627,7 +674,8 @@ static int width_64(const Pc5Fonts *fonts, Pc5Face face, const char *text, size_
     int width = 0;
 
     while (text < end && *text) {
-        const Pc5Glyph *g = glyph(fonts, face, next_codepoint(&text));
+        const Pc5Fonts *from;
+        const Pc5Glyph *g = glyph(fonts, face, next_codepoint(&text), &from);
         if (g) width += g->advance;
     }
     return width;
@@ -645,13 +693,14 @@ static void draw_run(Pc5Canvas *c, const Pc5Fonts *fonts, Pc5Face face, int x, i
     int pen = x * 64;
 
     while (text < end && *text) {
-        const Pc5Glyph *g = glyph(fonts, face, next_codepoint(&text));
+        const Pc5Fonts *from;
+        const Pc5Glyph *g = glyph(fonts, face, next_codepoint(&text), &from);
         if (!g) continue;
         int gx = (pen + 32) / 64 + g->left, gy = y + g->top;
         for (int row = 0; row < g->h; row++) {
             int py = gy + row;
             if (py < 0 || py >= c->h) continue;
-            const uint8_t *src = fonts->atlas + (size_t)(g->y + row) * (size_t)fonts->atlas_w + g->x;
+            const uint8_t *src = from->atlas + (size_t)(g->y + row) * (size_t)from->atlas_w + g->x;
             uint32_t *dst = c->px + (size_t)py * (size_t)c->stride;
             for (int col = 0; col < g->w; col++) {
                 int px = gx + col;
@@ -691,25 +740,74 @@ int pc5_text(Pc5Canvas *c, const Pc5Fonts *fonts, Pc5Face face, int x, int y, ui
     return width;
 }
 
+/* Where a line may end in Chinese and Japanese, which have no spaces: between any two of
+ * their characters, but not before the punctuation that closes (nor small kana and the
+ * long-sound mark), nor after what opens. Korean has spaces. */
+static int cjk(uint32_t c)
+{
+    return (c >= 0x2e80 && c <= 0x9fff) || (c >= 0xf900 && c <= 0xfaff) || (c >= 0xff00 && c <= 0xffef);
+}
+
+static int no_start(uint32_t c)
+{
+    static const uint32_t marks[] = { 0x3001, 0x3002, 0xff0c, 0xff0e, 0xff01, 0xff1f, 0xff1a, 0xff1b, 0xff09, 0x300d,
+                                      0x300f, 0x3011, 0x3015, 0x3009, 0x300b, 0x30fc, 0x3041, 0x3043, 0x3045, 0x3047,
+                                      0x3049, 0x3063, 0x3083, 0x3085, 0x3087, 0x30a1, 0x30a3, 0x30a5, 0x30a7, 0x30a9,
+                                      0x30c3, 0x30e3, 0x30e5, 0x30e7, 0x30fb, 0x2026, ')', ']', '.', ',', '!', '?', ':', ';' };
+    for (size_t i = 0; i < sizeof(marks) / sizeof(marks[0]); i++)
+        if (c == marks[i]) return 1;
+    return 0;
+}
+
+static int no_end(uint32_t c)
+{
+    return c == 0x300c || c == 0x300e || c == 0x3010 || c == 0x3014 || c == 0x3008 || c == 0x300a || c == 0xff08 ||
+           c == '(' || c == '[';
+}
+
+/* The end of the word at text + at (not a space): the next space, or a place between two
+ * characters where a line may end. At least one character. */
+static size_t word_end(const char *text, size_t at, size_t length)
+{
+    const char *p = text + at, *end = text + length;
+    uint32_t c = next_codepoint(&p);
+
+    while (p < end && *p != ' ') {
+        const char *q = p;
+        uint32_t d = next_codepoint(&q);
+        if ((cjk(c) || cjk(d)) && !no_start(d) && !no_end(c)) break;
+        c = d;
+        p = q;
+    }
+    return (size_t)(p > end ? length : (size_t)(p - text));
+}
+
+/* How much of text (its first length bytes) goes on a line of max_width: whole words while
+ * they fit, at least one. */
+static size_t line_fit(const Pc5Fonts *fonts, Pc5Face face, const char *text, size_t length, int max_width)
+{
+    size_t take = 0, fit = 0;
+    while (take < length) {
+        size_t next = take;
+        while (next < length && text[next] == ' ') next++;
+        if (next < length) next = word_end(text, next, length);
+        if (width_64(fonts, face, text, next) > max_width * 64 && fit) break;
+        fit = next;
+        take = next;
+        if (width_64(fonts, face, text, next) > max_width * 64) break;
+    }
+    return fit ? fit : length;
+}
+
 int pc5_text_wrap(Pc5Canvas *c, const Pc5Fonts *fonts, Pc5Face face, int x, int y, int max_width, int max_lines,
                   int line_height, uint32_t color, const char *text, int align)
 {
     int lines = 0;
 
     while (*text && lines < max_lines) {
-        size_t take = 0, fit = 0, length = strlen(text);
+        size_t length = strlen(text);
         while (*text == ' ') { text++; length--; }
-        /* As many words as fit. */
-        while (take < length) {
-            size_t next = take;
-            while (next < length && text[next] == ' ') next++;
-            while (next < length && text[next] != ' ') next++;
-            if (width_64(fonts, face, text, next) > max_width * 64 && fit) break;
-            fit = next;
-            take = next;
-            if (width_64(fonts, face, text, next) > max_width * 64) break;
-        }
-        if (!fit) fit = length;
+        size_t fit = line_fit(fonts, face, text, length, max_width);
         char line[512];
         size_t n = fit < sizeof(line) - 1 ? fit : sizeof(line) - 1;
         if (lines + 1 == max_lines && fit < length) n = length < sizeof(line) - 1 ? length : sizeof(line) - 1;
@@ -729,22 +827,9 @@ int pc5_text_lines(const Pc5Fonts *fonts, Pc5Face face, int max_width, const cha
 
     if (!fonts->atlas) return *text ? 1 : 0;
     while (*text) {
-        size_t take = 0, fit = 0, length;
         while (*text == ' ') text++;
         if (!*text) break;
-        length = strlen(text);
-        /* As many words as fit, as pc5_text_wrap takes them. */
-        while (take < length) {
-            size_t next = take;
-            while (next < length && text[next] == ' ') next++;
-            while (next < length && text[next] != ' ') next++;
-            if (width_64(fonts, face, text, next) > max_width * 64 && fit) break;
-            fit = next;
-            take = next;
-            if (width_64(fonts, face, text, next) > max_width * 64) break;
-        }
-        if (!fit) fit = length;
-        text += fit;
+        text += line_fit(fonts, face, text, strlen(text), max_width);
         lines++;
     }
     return lines;

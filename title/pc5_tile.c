@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 /* PC5: a home screen tile that is an app of its own (pc5_tile.h). */
 #include "pc5_tile.h"
+#include "pc5_i18n.h"
 #include "pc5_dds.h"
 #include "pc5_home.h"
 #include "pc5_image.h"
@@ -51,25 +52,25 @@ int pc5_tile_read_all(const char *app, char game[PC5_ID], char *runtime, size_t 
     if (runtime && runtime_size) runtime[0] = 0;
     if (error && size) error[0] = 0;
     if (!app || pc5_format(path, sizeof(path), "%s/" PC5_TILE_FILE, app)) {
-        snprintf(error, size, "The tile's folder path is too long.");
+        snprintf(error, size, N_("The tile's folder path is too long."));
         return -1;
     }
     if (!pc5_exists(path)) return 0;
     if (pc5_read_file(path, &text, 64 * 1024) || pc5_json_parse(&json, (const char *)text.data, text.len, 256)) {
-        snprintf(error, size, "The tile's " PC5_TILE_FILE " can't be read.");
+        snprintf(error, size, N_("The tile's %s can't be read."), PC5_TILE_FILE);
         goto done;
     }
     value = pc5_json_get(&json, 0, "format");
     if (!value || json.tokens[value].type != PC5_JSON_STRING || pc5_json_text(&json, value, format, sizeof(format)) ||
         strcmp(format, PC5_TILE_FORMAT)) {
-        snprintf(error, size, "The tile was made by a PC5 this one doesn't know: make it again.");
+        snprintf(error, size, N_("The tile was made by a PC5 this one doesn't know: make it again."));
         goto done;
     }
     value = pc5_json_get(&json, 0, "game");
     if (!value || json.tokens[value].type != PC5_JSON_STRING || pc5_json_text(&json, value, game, PC5_ID) ||
         !valid_id(game)) {
         game[0] = 0;
-        snprintf(error, size, "The tile doesn't say which game it starts: make it again.");
+        snprintf(error, size, N_("The tile doesn't say which game it starts: make it again."));
         goto done;
     }
     /* Where its Wine and PC5's files are: PC5's folder. None: they are in the tile. */
@@ -78,7 +79,7 @@ int pc5_tile_read_all(const char *app, char game[PC5_ID], char *runtime, size_t 
         (json.tokens[value].type != PC5_JSON_STRING || pc5_json_text(&json, value, runtime, runtime_size) ||
          !absolute_path(runtime))) {
         game[0] = runtime[0] = 0;
-        snprintf(error, size, "The tile doesn't say where PC5 is: make it again.");
+        snprintf(error, size, N_("The tile doesn't say where PC5 is: make it again."));
         goto done;
     }
     status = 1;
@@ -112,7 +113,7 @@ int pc5_tile_lapy_patch(uint8_t *data, size_t size, const char *title_id, char *
 
     _Static_assert(sizeof(old) == 10, "a title ID is nine characters");
     if (!title_id || !tile_id(title_id)) {
-        snprintf(error, error_size, "A tile's ID is PPSA and five digits.");
+        snprintf(error, error_size, N_("A tile's ID is PPSA and five digits."));
         return -1;
     }
     for (size_t i = 0; i + 10 <= size; i++) {
@@ -136,7 +137,7 @@ int pc5_tile_lapy_patch(uint8_t *data, size_t size, const char *title_id, char *
     for (int s = 0; s < sites; s++) memcpy(data + at[s], title_id + (length[s] == 1 ? 8 : 0), length[s]);
     return 0;
 unknown:
-    snprintf(error, error_size, "PC5's lapy.elf isn't the one this PC5 can make tiles from (%d compares, %d names).",
+    snprintf(error, error_size, N_("PC5's lapy.elf isn't the one this PC5 can make tiles from (%d compares, %d names)."),
              compares, strings);
     return -1;
 }
@@ -245,17 +246,17 @@ static int program_files(const char *pc5, const char *dir, const char *title_id,
     /* The tile finds its runtime with this path: as long as Wine's own (tile_runtime in
      * wine64_main.c, 128 bytes) holds it. */
     if (strlen(pc5) >= PC5_TILE_RUNTIME) {
-        snprintf(error, size, "PC5's folder path is too long for a tile (%d characters at most).", PC5_TILE_RUNTIME - 1);
+        snprintf(error, size, N_("PC5's folder path is too long for a tile (%d characters at most)."), PC5_TILE_RUNTIME - 1);
         return -1;
     }
     if (pc5_format(from, sizeof(from), "%s/eboot.bin", pc5) || pc5_read_file(from, &eboot, 64u << 20) ||
         pc5_format(from, sizeof(from), "%s/sce_module/libc.prx", pc5) || pc5_read_file(from, &libc, 64u << 20)) {
-        snprintf(error, size, "PC5 can't read its own program to copy into the tile.");
+        snprintf(error, size, N_("PC5 can't read its own program to copy into the tile."));
         goto done;
     }
     /* lapy.elf: a copy, with the tile's ID in place of PC5's. */
     if (pc5_format(from, sizeof(from), "%s/lapy.elf", pc5) || pc5_read_file(from, &lapy, 16u << 20)) {
-        snprintf(error, size, "PC5's folder has no lapy.elf.");
+        snprintf(error, size, N_("PC5's folder has no lapy.elf."));
         goto done;
     }
     if (pc5_tile_lapy_patch(lapy.data, lapy.len, title_id, error, size)) goto done;
@@ -266,28 +267,28 @@ static int program_files(const char *pc5, const char *dir, const char *title_id,
         failed = *c == '"' || *c == '\\' ? pc5_buf_printf(&text, "\\%c", *c) : pc5_buf_put(&text, c, 1);
     if (!failed) failed = pc5_buf_printf(&text, "\",\n  \"pc5\": \"" PC5_VERSION "\"\n}\n");
     if (failed) {
-        snprintf(error, size, "PC5 ran out of memory making the tile.");
+        snprintf(error, size, N_("PC5 ran out of memory making the tile."));
         goto done;
     }
     if (pc5_format(to, sizeof(to), "%s/sce_module", dir) || pc5_mkdirs(to)) {
-        snprintf(error, size, "PC5 can't make the tile's folders.");
+        snprintf(error, size, N_("PC5 can't make the tile's folders."));
         goto done;
     }
     if (pc5_format(to, sizeof(to), "%s/sce_module/libc.prx", dir) || pc5_write_file(to, libc.data, libc.len) ||
         chmod(to, 0755)) {
-        snprintf(error, size, "PC5 can't copy its sce_module/libc.prx into the tile.");
+        snprintf(error, size, N_("PC5 can't copy its sce_module/libc.prx into the tile."));
         goto done;
     }
     if (pc5_format(to, sizeof(to), "%s/lapy.elf", dir) || pc5_write_file(to, lapy.data, lapy.len) || chmod(to, 0755)) {
-        snprintf(error, size, "PC5 can't write the tile's lapy.elf.");
+        snprintf(error, size, N_("PC5 can't write the tile's lapy.elf."));
         goto done;
     }
     if (pc5_format(to, sizeof(to), "%s/" PC5_TILE_FILE, dir) || pc5_write_file(to, text.data, text.len)) {
-        snprintf(error, size, "PC5 can't write the tile's " PC5_TILE_FILE ".");
+        snprintf(error, size, N_("PC5 can't write the tile's %s."), PC5_TILE_FILE);
         goto done;
     }
     if (pc5_format(to, sizeof(to), "%s/eboot.bin", dir) || pc5_write_file(to, eboot.data, eboot.len) || chmod(to, 0755)) {
-        snprintf(error, size, "PC5 can't copy its eboot.bin into the tile.");
+        snprintf(error, size, N_("PC5 can't copy its eboot.bin into the tile."));
         goto done;
     }
     status = 0;
@@ -390,11 +391,11 @@ int pc5_tile_art(const char *tile, const char *title_id, const char *library_roo
 
     memset(&art, 0, sizeof(art));
     if (pc5_format(path, sizeof(path), "%s/sce_sys", tile) || pc5_mkdirs(path)) {
-        snprintf(error, size, "PC5 can't make the tile's sce_sys.");
+        snprintf(error, size, N_("PC5 can't make the tile's sce_sys."));
         return -1;
     }
     if (pc5_home_picture(library_root, prefix, &art.icon0)) {
-        snprintf(error, size, "PC5 can't make the tile's picture.");
+        snprintf(error, size, N_("PC5 can't make the tile's picture."));
         goto done;
     }
     /* The game's background behind its tile; PC5's own when it has none. */
@@ -408,7 +409,7 @@ int pc5_tile_art(const char *tile, const char *title_id, const char *library_roo
         }
     }
     if (art_write(path, &art)) {
-        snprintf(error, size, "PC5 can't write the tile's pictures.");
+        snprintf(error, size, N_("PC5 can't write the tile's pictures."));
         goto done;
     }
     /* The console's copies of a registered tile's sce_sys, which ShadowMountPlus made once when it
@@ -433,14 +434,14 @@ static int tile_sce_sys(const Pc5TileMake *make, const char *dir, const char *ti
     int status = -1;
 
     if (pc5_format(to, sizeof(to), "%s/sce_sys", dir) || pc5_mkdirs(to)) {
-        snprintf(error, size, "PC5 can't make the tile's sce_sys.");
+        snprintf(error, size, N_("PC5 can't make the tile's sce_sys."));
         return -1;
     }
     if (pc5_format(from, sizeof(from), "%s/sce_sys/param.json", make->pc5) || pc5_read_file(from, &data, 256 * 1024) ||
         pc5_tile_param((const char *)data.data, data.len, title_id, make->name && make->name[0] ? make->name : make->id,
                        &text) ||
         pc5_format(to, sizeof(to), "%s/sce_sys/param.json", dir) || pc5_write_file(to, text.data, text.len)) {
-        snprintf(error, size, "PC5 can't write the tile's param.json from its own.");
+        snprintf(error, size, N_("PC5 can't write the tile's param.json from its own."));
         goto done;
     }
     if (pc5_tile_art(dir, title_id, make->library_root, make->prefix ? make->prefix : make->id, make->pc5, make->user,
@@ -492,12 +493,12 @@ int pc5_tile_make(const Pc5TileMake *make, char out[16], char *error, size_t siz
     error[0] = 0;
     if (!make->tiles || !make->pc5 || !make->library_root || !make->id || !valid_id(make->id) ||
         !absolute_path(make->pc5)) {
-        snprintf(error, size, "PC5 doesn't know where to make the tile.");
+        snprintf(error, size, N_("PC5 doesn't know where to make the tile."));
         return PC5_TILE_FAILED;
     }
     again = pc5_home_find(make->tiles, make->id, out);
     if (!again && (pc5_mkdirs(make->tiles) || !new_tile_id(make->tiles, make->user, out))) {
-        snprintf(error, size, "PC5 can't find a free title ID for the tile in %s.", make->tiles);
+        snprintf(error, size, N_("PC5 can't find a free title ID for the tile in %s."), make->tiles);
         out[0] = 0;
         return PC5_TILE_FAILED;
     }
@@ -507,7 +508,7 @@ int pc5_tile_make(const Pc5TileMake *make, char out[16], char *error, size_t siz
     if (pc5_format(stage, sizeof(stage), "%s/.staging-%s", make->tiles, out) ||
         pc5_format(old, sizeof(old), "%s/.old-%s", make->tiles, out) ||
         pc5_format(final, sizeof(final), "%s/%s", make->tiles, out)) {
-        snprintf(error, size, "The tiles' folder path is too long.");
+        snprintf(error, size, N_("The tiles' folder path is too long."));
         out[0] = 0;
         return PC5_TILE_FAILED;
     }
@@ -515,7 +516,7 @@ int pc5_tile_make(const Pc5TileMake *make, char out[16], char *error, size_t siz
     delete_tree(old);
     if (pc5_mkdirs(stage) || program_files(make->pc5, stage, out, make->id, make->prefix, error, size) ||
         tile_sce_sys(&tile, stage, out, error, size)) {
-        if (!error[0]) snprintf(error, size, "PC5 can't make %s: %s.", stage, strerror(errno));
+        if (!error[0]) snprintf(error, size, N_("PC5 can't make %s: %s."), stage, strerror(errno));
         delete_tree(stage);
         out[0] = 0;
         return PC5_TILE_FAILED;
@@ -523,13 +524,13 @@ int pc5_tile_make(const Pc5TileMake *make, char out[16], char *error, size_t siz
     /* The old tile goes only once the new one is in its place: moved aside first, and put
      * back should the new one not go in. */
     if (pc5_exists(final) && rename(final, old)) {
-        snprintf(error, size, "PC5 can't replace the tile: %s.", strerror(errno));
+        snprintf(error, size, N_("PC5 can't replace the tile: %s."), strerror(errno));
         delete_tree(stage);
         out[0] = 0;
         return PC5_TILE_FAILED;
     }
     if (rename(stage, final)) {
-        snprintf(error, size, "PC5 can't put the tile in place: %s.", strerror(errno));
+        snprintf(error, size, N_("PC5 can't put the tile in place: %s."), strerror(errno));
         delete_tree(stage);
         if (pc5_exists(old)) (void)rename(old, final);
         out[0] = 0;
@@ -627,12 +628,12 @@ static int find(Pc5TilePrep *prep)
     char program[PC5_PATH];
     int index, begun;
 
-    if (!library) return fail(prep, "PC5 ran out of memory.");
+    if (!library) return fail(prep, N_("PC5 ran out of memory."));
     pc5_library_load(prep->root, library);
     index = pc5_library_find(library, prep->id);
     if (index < 0) {
         pc5_free(library);
-        return fail(prep, "It isn't in PC5 any more. Take the tile off the home screen, or install the game again.");
+        return fail(prep, N_("It isn't in PC5 any more. Take the tile off the home screen, or install the game again."));
     }
     pc5_copy(prep->title, sizeof(prep->title), library->games[index].title);
     prep->found = 1;
@@ -693,7 +694,7 @@ int pc5_tile_prepare_step(Pc5TilePrep *prep, int budget_ms)
             break;
         }
         default:
-            return fail(prep, "PC5 lost its place readying the game.");
+            return fail(prep, N_("PC5 lost its place readying the game."));
         }
         if (prep->stage != STAGE_READY && pc5_now_ms() >= until) return 0;
     }

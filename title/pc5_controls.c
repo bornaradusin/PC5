@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 /* PC5: a game's controller (pc5_controls.h). */
 #include "pc5_controls.h"
+#include "pc5_i18n.h"
 #include "pc5_pe.h"
 
 #include <stdio.h>
@@ -9,8 +10,8 @@
 
 /* In the order the key picker shows them. */
 const Pc5Key pc5_keys[] = {
-    { "mouse_left", "Left click" }, { "mouse_right", "Right click" }, { "mouse_middle", "Middle click" },
-    { "mouse_wheel_up", "Wheel up" }, { "mouse_wheel_down", "Wheel down" },
+    { "mouse_left", N_("Left click") }, { "mouse_right", N_("Right click") }, { "mouse_middle", N_("Middle click") },
+    { "mouse_wheel_up", N_("Wheel up") }, { "mouse_wheel_down", N_("Wheel down") },
     { "a", "A" }, { "b", "B" }, { "c", "C" }, { "d", "D" }, { "e", "E" }, { "f", "F" }, { "g", "G" }, { "h", "H" },
     { "i", "I" }, { "j", "J" }, { "k", "K" }, { "l", "L" }, { "m", "M" }, { "n", "N" }, { "o", "O" }, { "p", "P" },
     { "q", "Q" }, { "r", "R" }, { "s", "S" }, { "t", "T" }, { "u", "U" }, { "v", "V" }, { "w", "W" }, { "x", "X" },
@@ -21,12 +22,12 @@ const Pc5Key pc5_keys[] = {
     { "f8", "F8" }, { "f9", "F9" }, { "f10", "F10" }, { "f11", "F11" }, { "f12", "F12" },
     { "space", "Space" }, { "enter", "Enter" }, { "escape", "Esc" }, { "tab", "Tab" }, { "backspace", "Backspace" },
     { "shift", "Shift" }, { "ctrl", "Ctrl" }, { "alt", "Alt" },
-    { "up", "Up arrow" }, { "down", "Down arrow" }, { "left", "Left arrow" }, { "right", "Right arrow" },
+    { "up", N_("Up arrow") }, { "down", N_("Down arrow") }, { "left", N_("Left arrow") }, { "right", N_("Right arrow") },
     { "insert", "Insert" }, { "delete", "Delete" }, { "home", "Home" }, { "end", "End" }, { "pageup", "Page up" },
     { "pagedown", "Page down" }, { "pause", "Pause" },
     { "semicolon", ";" }, { "equals", "=" }, { "comma", "," }, { "minus", "-" }, { "period", "." }, { "slash", "/" },
     { "backquote", "`" }, { "lbracket", "[" }, { "backslash", "\\" }, { "rbracket", "]" }, { "quote", "'" },
-    { "none", "Nothing" },
+    { "none", N_("Nothing") },
 };
 const int pc5_key_count = (int)(sizeof(pc5_keys) / sizeof(pc5_keys[0]));
 
@@ -38,10 +39,10 @@ static const char *const control_keys[PC5_CONTROLS] = {
     "right_stick_up", "right_stick_down", "right_stick_left", "right_stick_right",
 };
 static const char *const control_names[PC5_CONTROLS] = {
-    "Cross", "Circle", "Square", "Triangle", "L1", "R1", "L2", "R2", "L3 (left stick press)", "R3 (right stick press)",
-    "D-pad up", "D-pad down", "D-pad left", "D-pad right", "OPTIONS", "Create", "Touchpad",
-    "Left stick up", "Left stick down", "Left stick left", "Left stick right",
-    "Right stick up", "Right stick down", "Right stick left", "Right stick right",
+    N_("Cross"), N_("Circle"), N_("Square"), N_("Triangle"), "L1", "R1", "L2", "R2", N_("L3 (left stick press)"), N_("R3 (right stick press)"),
+    N_("D-pad up"), N_("D-pad down"), N_("D-pad left"), N_("D-pad right"), "OPTIONS", N_("Create"), N_("Touchpad"),
+    N_("Left stick up"), N_("Left stick down"), N_("Left stick left"), N_("Left stick right"),
+    N_("Right stick up"), N_("Right stick down"), N_("Right stick left"), N_("Right stick right"),
 };
 /* The default layout, by key name. */
 static const char *const default_keys[PC5_CONTROLS] = {
@@ -51,9 +52,9 @@ static const char *const default_keys[PC5_CONTROLS] = {
     "up", "down", "left", "right",
 };
 static const char *const mode_keys[PC5_PAD_MODES] = { "xinput", "dualsense", "keyboard" };
-static const char *const mode_names[PC5_PAD_MODES] = { "Xbox controller", "DualSense", "Keyboard & mouse" };
+static const char *const mode_names[PC5_PAD_MODES] = { N_("Xbox controller"), "DualSense", N_("Keyboard & mouse") };
 static const char *const stick_keys[PC5_STICK_USES] = { "keys", "pointer", "nothing" };
-static const char *const stick_names[PC5_STICK_USES] = { "Keys", "Mouse pointer", "Nothing" };
+static const char *const stick_names[PC5_STICK_USES] = { N_("Keys"), N_("Mouse pointer"), N_("Nothing") };
 
 static int key_index(const char *name)
 {
@@ -82,9 +83,9 @@ int pc5_graphics_choices(int api, Pc5Graphics choices[PC5_GRAPHICS_COUNT])
 
 const char *pc5_graphics_name(Pc5Graphics graphics, int api)
 {
-    if (graphics == PC5_GRAPHICS_AUTO) return "Auto";
-    if (api == PC5_API_D3D12) return "Wine's VKD3D";
-    return graphics == PC5_GRAPHICS_WINE_VULKAN ? "WineD3D on Vulkan" : "WineD3D";
+    if (graphics == PC5_GRAPHICS_AUTO) return N_("Auto");
+    if (api == PC5_API_D3D12) return N_("Wine's VKD3D");
+    return graphics == PC5_GRAPHICS_WINE_VULKAN ? N_("WineD3D on Vulkan") : "WineD3D";
 }
 
 void pc5_controls_default(Pc5Controls *controls)

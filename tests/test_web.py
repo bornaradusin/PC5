@@ -95,7 +95,14 @@ def main():
         page = page.decode()
         assert page.startswith("<!doctype html>") and "Send a game" in page and "webkitdirectory" in page
         assert "…" in page and page.rstrip().endswith("</html>")
+        assert 'data-i18n>Send a game<' in page and 'fetch("lang.json"' in page
         checks += 2
+
+        # The page's text in PC5's language (English here: no language in use).
+        status, body, headers = request(server.base, "lang.json")
+        assert status == 200 and headers["Content-Type"].startswith("application/json"), (status, headers)
+        assert json.loads(body) == {"lang": "en", "strings": {}}, body
+        checks += 1
 
         status, body, _ = request(server.base, "api/status")
         s = json.loads(body)

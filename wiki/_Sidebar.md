@@ -13,6 +13,7 @@
 - [Launch options](Launch-options)
 - [File manager](File-manager)
 - [Web page](Web-page)
+- [Translations](Translations)
 
 **Reference**
 - [Files and folders](Files-and-folders)

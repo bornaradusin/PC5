@@ -8,6 +8,7 @@
 #include "pc5_files.h"
 #include "pc5_game.h"
 #include "pc5_home.h"
+#include "pc5_i18n.h"
 #include "pc5_tile.h"
 #include "pc5_image.h"
 #include "pc5_library.h"
@@ -53,10 +54,10 @@ enum { COVER_W = 200, COVER_H = 300, COVER_GAP = 18, ROW_TOP = 612, CHOSEN_W = 2
 
 /* The library's tabs (Settings and Install open their pages), and the Library tab's lists. */
 enum { TAB_HOME, TAB_LIBRARY, TAB_INSTALL, TAB_SETTINGS, TABS };
-static const char *const tab_names[TABS] = { "Home", "Library", "Install", "Settings" };
+static const char *const tab_names[TABS] = { N_("Home"), N_("Library"), N_("Install"), N_("Settings") };
 /* The Library tab's filters, its pills (L2 and R2 move between them). */
 enum { LIST_ALL, LIST_RECENT, LIST_FAVOURITES, LIST_USB, LIST_ATTENTION, LISTS };
-static const char *const list_names[LISTS] = { "All", "Recently played", "Favourites", "USB drive", "Needs attention" };
+static const char *const list_names[LISTS] = { N_("All"), N_("Recently played"), N_("Favourites"), N_("USB drive"), N_("Needs attention") };
 
 typedef enum Screen {
     S_START, S_COVERS, S_LIBRARY, S_SETTINGS, S_ABOUT, S_SCAN, S_SOURCES, S_READING, S_SEARCH, S_REVIEW,
@@ -103,14 +104,14 @@ typedef enum SettingRow {
     SR_FPS, SR_FRAME_TIME, SR_CPU_USAGE, SR_GPU_USAGE, SR_CPU_TEMPERATURE, SR_SOC_TEMPERATURE, SR_MEMORY, SR_FPS_CORNER,
     SR_OVERLAY_SIZE, SR_VIBRATION, SR_LIGHT, SR_TRIGGERS, SR_TRIGGER_RUMBLE, SR_TRIGGER_RESISTANCE,
     SR_STARTUP_SOUND, SR_STARTUP_VOLUME, SR_KEEP_LOGS, SR_PICTURES, SR_CHECK_ON_OPEN, SR_CHECK_NOW, SR_UPDATE_NOW,
-    SR_FILES, SR_FTP, SR_WEB, SR_NETWORK, SR_REMOTE_USER, SR_REMOTE_PASSWORD,
+    SR_FILES, SR_FTP, SR_WEB, SR_NETWORK, SR_REMOTE_USER, SR_REMOTE_PASSWORD, SR_LANGUAGE,
     SR_SOURCE   /* a picture source: SR_SOURCE + its index (pc5_cover.h) */
 } SettingRow;
 
 enum { PAGE_ROWS = 9, PAGE_GAMES = 1, PAGE_SYSTEM = 2, PAGE_OVERLAY = 3, PAGE_PICTURES = 4, PAGE_MAINTENANCE = 5,
        PAGE_NETWORK = 6, SETTING_PAGES = 7 };
-static const char *const page_titles[SETTING_PAGES] = { "Settings", "In games", "System", "Overlay", "Picture sources",
-                                                        "Game maintenance", "Network" };
+static const char *const page_titles[SETTING_PAGES] = { N_("Settings"), N_("In games"), N_("System"), N_("Overlay"), N_("Picture sources"),
+                                                        N_("Game maintenance"), N_("Network") };
 /* Where each page's row is on the first page (Back goes there); System's rows move with its
  * startup sound (system_row). */
 enum { ROW_MAINTENANCE = 0, ROW_GAMES = 1, ROW_OVERLAY = 2, ROW_FILES = 3, ROW_SYSTEM = 4, ROW_NETWORK = 5, ROW_ABOUT = 6 };
@@ -150,6 +151,7 @@ static int page_rows(const Pc5Settings *set, int page, int offer_update, Setting
         rows[n++] = SR_CHECK_ON_OPEN;
         rows[n++] = SR_CHECK_NOW;
         if (offer_update) rows[n++] = SR_UPDATE_NOW;
+        rows[n++] = SR_LANGUAGE;
     } else if (page == PAGE_MAINTENANCE) {
         rows[n++] = SR_INSTALL;
         rows[n++] = SR_UNINSTALL;
@@ -180,7 +182,7 @@ typedef enum GameRow {
     GR_PROGRAM, GR_STEAM, GR_FILES, GR_UPDATE, GR_REPORT, GR_UNINSTALL
 } GameRow;
 enum { GAME_ROWS = 7, GAME_PAGES = 4, GP_MAIN = 0, GP_GRAPHICS = 1, GP_APPEARANCE = 2, GP_MANAGE = 3 };
-static const char *const game_page_titles[GAME_PAGES] = { "", "Graphics", "Appearance", "Manage" };
+static const char *const game_page_titles[GAME_PAGES] = { "", N_("Graphics"), N_("Appearance"), N_("Manage") };
 /* The first page's row that opens each page. */
 static const GameRow game_page_rows[GAME_PAGES] = { GR_PLAY, GR_GRAPHICS, GR_APPEARANCE, GR_MANAGE };
 /* What a game is, for its menu's rows. */
@@ -270,8 +272,9 @@ static int pad_rows(const Pc5Controls *controls, PadRow rows[PAD_ROWS])
 
 static void percent_text(int percent, char *out, size_t size)
 {
-    if (!percent) pc5_copy(out, size, "Off");
-    else snprintf(out, size, "%d%%", percent);
+    if (!percent) pc5_copy(out, size, T("Off"));
+    /* TRANSLATORS: a percentage (Vibration 50%); put a space before % where your language does. */
+    else pc5_tf(out, size, "%d%%", percent);
 }
 
 typedef struct BgJob {
@@ -288,7 +291,7 @@ typedef struct BgJob {
 /* The file manager's start: a place to open (Settings › File manager). */
 enum { FILES_PLACES = 16 };
 typedef struct FilesPlace {
-    char name[64], path[PC5_PATH];
+    char name[128], path[PC5_PATH];
     int read_only;
 } FilesPlace;
 
@@ -380,7 +383,7 @@ struct Pc5Ui {
     /* startup: finishing leftovers, then covers for the games without one */
     int cover_queue[PC5_MAX_GAMES], cover_count, cover_at, cover_searching;
 
-    char message_title[160], message_body[700];
+    char message_title[320], message_body[1400];
     int message_good;
     int message_report;               /* the message is about a kept log: Triangle reports it */
     Pc5LogIssue report;               /* Report on GitHub: the log, its game, the form's link as a QR code */
@@ -582,10 +585,12 @@ static void go(Pc5Ui *ui, Screen screen)
     say(ui, "PC5 screen=%s", screen_names[screen]);
 }
 
+/* title and body in the player's language: T() or pc5_tf's, or English from elsewhere (an
+ * install's error), which TX translates here. */
 static void message(Pc5Ui *ui, int good, const char *title, const char *body, Screen back_to)
 {
-    pc5_copy(ui->message_title, sizeof(ui->message_title), title);
-    pc5_copy(ui->message_body, sizeof(ui->message_body), body);
+    pc5_copy(ui->message_title, sizeof(ui->message_title), TX(title));
+    pc5_copy(ui->message_body, sizeof(ui->message_body), TX(body));
     ui->message_good = good;
     ui->message_report = 0;
     ui->back_to = back_to;
@@ -845,15 +850,15 @@ static void update_how(const Pc5Ui *ui, char *out, size_t size)
 
     if (listed && pc5_update_small(u, PC5_VERSION)) {
         pc5_size_text(u->delta_size, bytes, sizeof(bytes));
-        snprintf(out, size, "You have %s, the version before: PC5 downloads only what changed (%s)", PC5_VERSION, bytes);
+        pc5_tf(out, size, "You have %s, the version before: PC5 downloads only what changed (%s)", PC5_VERSION, bytes);
         return;
     }
     pc5_size_text(u->asset_size, bytes, sizeof(bytes));
     if (u->delta_from[0] && pc5_version_compare(PC5_VERSION, u->delta_from) < 0)
-        snprintf(out, size, "You have %s, more than one version behind: PC5 downloads the whole app (%s)", PC5_VERSION,
+        pc5_tf(out, size, "You have %s, more than one version behind: PC5 downloads the whole app (%s)", PC5_VERSION,
                  bytes);
     else
-        snprintf(out, size, "You have %s: PC5 downloads the whole app (%s)", PC5_VERSION, bytes);
+        pc5_tf(out, size, "You have %s: PC5 downloads the whole app (%s)", PC5_VERSION, bytes);
 }
 
 static int64_t unix_now(Pc5Ui *ui, int *offset_s)
@@ -871,6 +876,8 @@ static int image_copy(Pc5Image *to, const Pc5Image *from)
     memcpy(to->px, from->px, (size_t)from->w * (size_t)from->h * 4);
     return 0;
 }
+
+static void language_apply(Pc5Ui *ui);
 
 Pc5Ui *pc5_ui_create(const Pc5UiConfig *config, const Pc5Platform *platform)
 {
@@ -901,6 +908,7 @@ Pc5Ui *pc5_ui_create(const Pc5UiConfig *config, const Pc5Platform *platform)
     ui->screen = S_START;
     ui->dirty = 1;
     pc5_settings_load(ui->root, &ui->settings);
+    language_apply(ui);
     pc5_update_load(ui->root, &ui->update);
     return ui;
 }
@@ -936,6 +944,8 @@ void pc5_ui_destroy(Pc5Ui *ui)
     pc5_free(ui->clip.paths);
     pc5_free(ui->clip.list);
     pc5_fonts_free(&ui->fonts);
+    /* Back to English, the languages read freed: the web page's server, which reads them, is stopped. */
+    pc5_i18n_end();
     pc5_free(ui->saves);
     pc5_free(ui->falloff);
     pc5_free(ui->backdrop);
@@ -1494,16 +1504,16 @@ static void picture_open(Pc5Ui *ui, const Pc5Game *game, int kind)
 {
     char path[PC5_PATH];
     if (!game->pc5 || !game->prefix[0] || !strcmp(game->prefix, "default")) {
-        message(ui, 0, "PC5 didn't install this game",
-                kind == PICK_COVER ? "Its cover can only be changed as in Covers on the wiki: a picture of your own."
-                : kind == PICK_ICON ? "Only a game PC5 installed has a tile picture."
-                                    : "Its background can only be changed as in Covers on the wiki: a picture of your own.",
+        message(ui, 0, T("PC5 didn't install this game"),
+                kind == PICK_COVER ? T("Its cover can only be changed as in Covers on the wiki: a picture of your own.")
+                : kind == PICK_ICON ? T("Only a game PC5 installed has a tile picture.")
+                                    : T("Its background can only be changed as in Covers on the wiki: a picture of your own."),
                 S_GAME_MENU);
         return;
     }
     picture_close(ui);
     if (!(ui->pick = pc5_alloc(sizeof(*ui->pick)))) {
-        message(ui, 0, "PC5 ran out of memory", "Close PC5 and open it again.", S_GAME_MENU);
+        message(ui, 0, T("PC5 ran out of memory"), T("Close PC5 and open it again."), S_GAME_MENU);
         return;
     }
     ui->pick_kind = kind;
@@ -1677,11 +1687,11 @@ static void pick_use(Pc5Ui *ui, const Pc5Game *game)
     say(ui, "PC5 picture saved kind=%s game=%s entry=%d of=%d failed=%d", pick_kinds[ui->pick_kind], game->id, entry,
         ui->pick->count, failed);
     if (failed) {
-        message(ui, 0, ui->pick_kind == PICK_COVER ? "The cover wasn't changed"
-                       : ui->pick_kind == PICK_ICON ? "The tile picture wasn't changed" : "The background wasn't changed",
+        message(ui, 0, ui->pick_kind == PICK_COVER ? T("The cover wasn't changed")
+                       : ui->pick_kind == PICK_ICON ? T("The tile picture wasn't changed") : T("The background wasn't changed"),
                 entry < ui->pick->count || ui->pick_kind != PICK_COVER || ui->pick_image.px
-                    ? "PC5 can't write to the game's folder in /data/prospero-win/prefixes."
-                    : "PC5 couldn't make the card from the game's icon and name.",
+                    ? T("PC5 can't write to the game's folder in /data/prospero-win/prefixes.")
+                    : T("PC5 couldn't make the card from the game's icon and name."),
                 S_PICTURE);
         return;
     }
@@ -1733,7 +1743,7 @@ static void begin_install_as(Pc5Ui *ui)
     ui->installing = 1;
     if (status) {
         char title[200];
-        snprintf(title, sizeof(title), "%s can't be installed", ui->folder.name);
+        pc5_tf(title, sizeof(title), "%s can't be installed", ui->folder.name);
         say(ui, "PC5 problem install %s: %s", ui->folder.name, ui->install.error);
         message(ui, 0, title, ui->install.error, S_REVIEW);
         pc5_install_end(&ui->install);
@@ -1781,7 +1791,7 @@ static void begin_update(Pc5Ui *ui)
     int index = pc5_library_find(&ui->library, ui->launch_id);
     char title[200];
 
-    snprintf(title, sizeof(title), "%s can't be updated", index >= 0 ? ui->library.games[index].title : "The game");
+    pc5_tf(title, sizeof(title), "%s can't be updated", index >= 0 ? ui->library.games[index].title : T("The game"));
     if (pc5_update_begin(&ui->install, ui->root, ui->launch_id, &ui->folder)) {
         say(ui, "PC5 problem update %s: %s", ui->launch_id, ui->install.error);
         message(ui, 0, title, ui->install.error, S_SOURCES);
@@ -1843,12 +1853,12 @@ static void review_install(Pc5Ui *ui)
 {
     uint64_t free_bytes = 0, needs = ui->install_usb[0] ? pc5_install_needs_usb(&ui->folder) : pc5_install_needs(&ui->folder);
     if (!pc5_free_bytes(ui->root, &free_bytes) && free_bytes < needs) {
-        char need[32], have[32], body[200];
+        char need[32], have[32], body[400];
         pc5_size_text(needs, need, sizeof(need));
         pc5_size_text(free_bytes, have, sizeof(have));
-        snprintf(body, sizeof(body), ui->install_usb[0] ? "Its Windows needs %s and the console has %s free."
+        pc5_tf(body, sizeof(body), ui->install_usb[0] ? "Its Windows needs %s and the console has %s free."
                                                         : "The game needs %s and the console has %s free.", need, have);
-        message(ui, 0, "Not enough space", body, S_REVIEW);
+        message(ui, 0, T("Not enough space"), body, S_REVIEW);
     } else if (pc5_saves_find(ui->root, ui->folder.name, ui->exe >= 0 ? ui->folder.exes[ui->exe].path : NULL,
                               ui->use_saves, sizeof(ui->use_saves)) > 0) {
         ui->button = 1;   /* Put them back */
@@ -1868,7 +1878,7 @@ static void queue_next(Pc5Ui *ui)
         if (ui->queue_stop_all) { q->state = Q_STOPPED; continue; }
         if (q->folder.problem[0] || q->exe < 0) {
             q->state = Q_SKIPPED;
-            pc5_copy(q->error, sizeof(q->error), q->folder.problem[0] ? q->folder.problem : "It has no program to start.");
+            pc5_copy(q->error, sizeof(q->error), q->folder.problem[0] ? q->folder.problem : T("It has no program to start."));
             continue;
         }
         Pc5Image cover = q->cover;
@@ -1939,26 +1949,26 @@ static void install_progress(Pc5Ui *ui)
     }
     if (ui->install.update) {
         /* An update of the game in launch_id. */
-        char title[200], body[700], id[PC5_ID];
+        char title[200], body[1400], id[PC5_ID];
         int moved = ui->install.moving;
         pc5_copy(id, sizeof(id), ui->install.id);
         if (phase == PC5_INSTALL_DONE && ui->install.skipped) {
-            snprintf(title, sizeof(title), "%s is partly updated", ui->install.info.title);
-            snprintf(body, sizeof(body), "%u of its files couldn't be put in place. %s Update it again; its saves, settings "
-                     "and options are as they were.", (unsigned)ui->install.skipped, ui->install.error);
+            pc5_tf(title, sizeof(title), "%s is partly updated", ui->install.info.title);
+            pc5_tf(body, sizeof(body), "%u of its files couldn't be put in place. %s Update it again; its saves, settings "
+                     "and options are as they were.", (unsigned)ui->install.skipped, TX(ui->install.error));
             say(ui, "PC5 problem update %s: %u files left out: %s", id, (unsigned)ui->install.skipped, ui->install.error);
         } else if (phase == PC5_INSTALL_DONE) {
-            snprintf(title, sizeof(title), "%s is updated", ui->install.info.title);
-            snprintf(body, sizeof(body), "Its saves, settings and options are as they were.");
+            pc5_tf(title, sizeof(title), "%s is updated", ui->install.info.title);
+            pc5_tf(body, sizeof(body), "Its saves, settings and options are as they were.");
             say(ui, "PC5 updated id=%s files=%u", id, (unsigned)ui->install.files_done);
         } else if (phase == PC5_INSTALL_CANCELLED) {
-            snprintf(title, sizeof(title), "Update stopped");
-            snprintf(body, sizeof(body), "The copy made so far was deleted: the game is as it was. The USB drive wasn't changed.");
+            pc5_tf(title, sizeof(title), "Update stopped");
+            pc5_tf(body, sizeof(body), "The copy made so far was deleted: the game is as it was. The USB drive wasn't changed.");
             say(ui, "PC5 update ended cancelled=1 id=%s", id);
         } else {
-            snprintf(title, sizeof(title), "%s wasn't updated", ui->install.info.title);
-            snprintf(body, sizeof(body), moved ? "%s PC5 finishes the update the next time it starts."
-                                               : "%s The game is as it was.", ui->install.error);
+            pc5_tf(title, sizeof(title), "%s wasn't updated", ui->install.info.title);
+            pc5_tf(body, sizeof(body), moved ? "%s PC5 finishes the update the next time it starts."
+                                               : "%s The game is as it was.", TX(ui->install.error));
             say(ui, "PC5 problem update %s: %s", id, ui->install.error);
         }
         int good = phase == PC5_INSTALL_DONE && !ui->install.skipped;
@@ -1973,21 +1983,21 @@ static void install_progress(Pc5Ui *ui)
         char title[200], id[PC5_ID];
         int saves = ui->install.kept[0] != 0;
         pc5_copy(id, sizeof(id), ui->install.id);
-        snprintf(title, sizeof(title), "%s is installed", ui->install.info.title);
+        pc5_tf(title, sizeof(title), "%s is installed", ui->install.info.title);
         say(ui, "PC5 installed id=%s saves=%d", id, saves);
         pc5_install_end(&ui->install);
         ui->installing = 0;
         library_reload(ui, id);
-        message(ui, 1, title, saves ? "It's in your library, with the saves and settings it had before."
-                                    : "It's in your library. Press the button to play it from there.", S_LIBRARY);
+        message(ui, 1, title, saves ? T("It's in your library, with the saves and settings it had before.")
+                                    : T("It's in your library. Press the button to play it from there."), S_LIBRARY);
     } else {
-        char title[200], body[600];
+        char title[200], body[1400];
         int cancelled = phase == PC5_INSTALL_CANCELLED;
-        snprintf(title, sizeof(title), cancelled ? "Install stopped" : "%s wasn't installed", ui->install.info.title);
-        if (cancelled) snprintf(body, sizeof(body), "Everything copied so far was deleted. The USB drive wasn't changed.");
+        pc5_tf(title, sizeof(title), cancelled ? "Install stopped" : "%s wasn't installed", ui->install.info.title);
+        if (cancelled) pc5_tf(body, sizeof(body), "Everything copied so far was deleted. The USB drive wasn't changed.");
         else if (strstr(ui->install.staging, "/.installing-") || !ui->install.staging[0])
-            snprintf(body, sizeof(body), "%s Nothing was kept.", ui->install.error);
-        else snprintf(body, sizeof(body), "%s PC5 tries again the next time it starts.", ui->install.error);
+            pc5_tf(body, sizeof(body), "%s Nothing was kept.", TX(ui->install.error));
+        else pc5_tf(body, sizeof(body), "%s PC5 tries again the next time it starts.", TX(ui->install.error));
         if (cancelled) say(ui, "PC5 install ended cancelled=1 error=%s", ui->install.error);
         else say(ui, "PC5 problem install %s: %s", ui->install.info.title, ui->install.error);
         pc5_install_end(&ui->install);
@@ -2041,7 +2051,7 @@ static int queue_read_step(Pc5Ui *ui)
     switch (ui->queue_phase) {
     case 0:
         if (pc5_folder_inspect(q->source.path, q->source.name, &q->folder) && !q->folder.problem[0])
-            snprintf(q->folder.problem, sizeof(q->folder.problem), "PC5 can't read this folder.");
+            pc5_copy(q->folder.problem, sizeof(q->folder.problem), N_("PC5 can't read this folder."));
         q->exe = q->folder.exe_count ? 0 : -1;
         say(ui, "PC5 folder=%s files=%u bytes=%llu exes=%d problem=%s queue=%d/%d", q->folder.name,
             (unsigned)q->folder.files, (unsigned long long)q->folder.bytes, q->folder.exe_count, q->folder.problem,
@@ -2115,7 +2125,7 @@ static uint64_t queue_needs(const Pc5Ui *ui)
 
 static void queue_summary(Pc5Ui *ui)
 {
-    char title[160], body[700] = "", first[PC5_ID] = "";
+    char title[160], body[1400] = "", first[PC5_ID] = "";
     int installed = 0;
     size_t used = 0;
 
@@ -2125,18 +2135,18 @@ static void queue_summary(Pc5Ui *ui)
             if (!installed++) pc5_copy(first, sizeof(first), q->id);
             continue;
         }
-        const char *why = q->state == Q_STOPPED ? "stopped, nothing kept." : q->error[0] ? q->error : "not installed.";
+        const char *why = q->state == Q_STOPPED ? T("stopped, nothing kept.") : q->error[0] ? TX(q->error) : T("not installed.");
         int n = snprintf(body + used, sizeof(body) - used, "%s%s: %s", used ? "  " : "", q->folder.name[0] ? q->folder.name : q->source.name, why);
         if (n > 0) used = used + (size_t)n < sizeof(body) ? used + (size_t)n : sizeof(body) - 1;
     }
     int all = installed == ui->queue_count;
     if (all)
-        snprintf(title, sizeof(title), installed == 1 ? "1 game is installed" : "%d games are installed", installed);
+        pc5_tf(title, sizeof(title), installed == 1 ? "1 game is installed" : "%d games are installed", installed);
     else if (installed)
-        snprintf(title, sizeof(title), "%d of %d games are installed", installed, ui->queue_count);
+        pc5_tf(title, sizeof(title), "%d of %d games are installed", installed, ui->queue_count);
     else
-        snprintf(title, sizeof(title), "No game was installed");
-    if (!body[0]) snprintf(body, sizeof(body), "They're in your library. The USB drive wasn't changed.");
+        pc5_tf(title, sizeof(title), "No game was installed");
+    if (!body[0]) pc5_tf(body, sizeof(body), "They're in your library. The USB drive wasn't changed.");
     say(ui, "PC5 queue done installed=%d of=%d", installed, ui->queue_count);
     queue_free(ui);
     memset(ui->ticked, 0, sizeof(ui->ticked));
@@ -2145,6 +2155,34 @@ static void queue_summary(Pc5Ui *ui)
 }
 
 /* ---- Settings ----------------------------------------------------------------------------- */
+
+static void language_log(void *context, const char *line)
+{
+    say(context, "%s", line);
+}
+
+/* PC5's language as its setting says, from now on (pc5_i18n.h): the app's pc5/lang/<code>.po,
+ * and for Chinese, Japanese and Korean their letters, pc5/fonts-<code>.bin, beside fonts.bin. */
+static void language_apply(Pc5Ui *ui)
+{
+    char dir[PC5_PATH], path[PC5_PATH];
+    const char *code = pc5_language_choose(ui->settings.language, ui->config.language);
+    const Pc5Language *language = pc5_language(pc5_language_find(code));
+    char *slash;
+
+    pc5_copy(dir, sizeof(dir), ui->config.fonts ? ui->config.fonts : "");
+    if ((slash = strrchr(dir, '/'))) *slash = 0;
+    else pc5_copy(dir, sizeof(dir), ".");
+    int strings = pc5_format(path, sizeof(path), "%s/lang", dir) ? -1 : pc5_i18n_use(path, code, language_log, ui);
+    int font = 0;
+    if (!language->cjk) pc5_fonts_extra(&ui->fonts, NULL);
+    else if (pc5_format(path, sizeof(path), "%s/fonts-%s.bin", dir, code) || (font = pc5_fonts_extra(&ui->fonts, path)))
+        say(ui, "PC5 problem language %s: no %s, its letters show as ?", code, path);
+    say(ui, "PC5 language %s setting=%s console=%s strings=%d extra_font=%s", code,
+        ui->settings.language[0] ? ui->settings.language : "system", ui->config.language ? ui->config.language : "-",
+        strings, !language->cjk ? "none" : font ? "missing" : "loaded");
+    ui->dirty = 1;
+}
 
 static int offer_update(const Pc5Ui *ui);
 
@@ -2156,232 +2194,246 @@ static void setting_text(Pc5Ui *ui, SettingRow row, const char **label, char *ab
     about[0] = 0;
     switch (row) {
     case SR_INSTALL:
-        *label = "Install games from USB";
-        pc5_copy(about, about_size, "Copies one game, or several in a row, to the console");
+        *label = T("Install games from USB");
+        pc5_copy(about, about_size, T("Copies one game, or several in a row, to the console"));
         break;
     case SR_UNINSTALL:
-        *label = "Uninstall game";
-        pc5_copy(about, about_size, "Deletes a game (its saves can be kept), or saves kept from before");
+        *label = T("Uninstall game");
+        pc5_copy(about, about_size, T("Deletes a game (its saves can be kept), or saves kept from before"));
         break;
     case SR_COMPATIBILITY:
-        *label = "Game compatibility list";
-        pc5_copy(about, about_size, "Games players have tried, on your phone with a QR code");
+        *label = T("Game compatibility list");
+        pc5_copy(about, about_size, T("Games players have tried, on your phone with a QR code"));
         break;
     case SR_MAINTENANCE:
-        *label = "Game maintenance";
-        pc5_copy(about, about_size, "Installing, uninstalling and the compatibility list");
+        *label = T("Game maintenance");
+        pc5_copy(about, about_size, T("Installing, uninstalling and the compatibility list"));
         pc5_copy(value, value_size, "\xe2\x80\xba");
         break;
     case SR_GAMES:
-        *label = "In games";
-        pc5_copy(about, about_size, "Vibration, light bar and triggers");
+        *label = T("In games");
+        pc5_copy(about, about_size, T("Vibration, light bar and triggers"));
         pc5_copy(value, value_size, "\xe2\x80\xba");
         break;
     case SR_OVERLAY:
-        *label = "Overlay";
-        pc5_copy(about, about_size, "FPS, frame time, CPU and GPU use, temperatures and memory");
+        *label = T("Overlay");
+        pc5_copy(about, about_size, T("FPS, frame time, CPU and GPU use, temperatures and memory"));
         pc5_copy(value, value_size, "\xe2\x80\xba");
         break;
     case SR_SYSTEM:
-        *label = "System";
+        *label = T("System");
         if (ui->update.last.state == PC5_UPDATE_AVAILABLE) pc5_update_text(&ui->update.last, about, about_size);
-        else pc5_copy(about, about_size, "Startup sound, logs, picture sources and updates");
+        else pc5_copy(about, about_size, T("Startup sound, logs, picture sources, updates and language"));
         pc5_copy(value, value_size, "\xe2\x80\xba");
         break;
     case SR_PICTURES: {
         int on = 0;
         for (int i = 0; i < PC5_PICTURE_SOURCES; i++) on += !(set->pictures_off & (1u << i));
-        *label = "Picture sources";
-        pc5_copy(about, about_size, "Where covers and backgrounds are looked for");
-        snprintf(value, value_size, "%d of %d \xe2\x80\xba", on, PC5_PICTURE_SOURCES);
+        *label = T("Picture sources");
+        pc5_copy(about, about_size, T("Where covers and backgrounds are looked for"));
+        pc5_tf(value, value_size, "%d of %d \xe2\x80\xba", on, PC5_PICTURE_SOURCES);
         break;
     }
     case SR_KEEP_LOGS:
-        *label = "Keep all logs";
-        pc5_copy(about, about_size, set->keep_logs ? "Every session's log is kept for 7 days"
-                                                   : "Problem sessions and each game's newest; turn on when testing a game");
-        pc5_copy(value, value_size, set->keep_logs ? "On" : "Off");
+        *label = T("Keep all logs");
+        pc5_copy(about, about_size, set->keep_logs ? T("Every session's log is kept for 7 days")
+                                                   : T("Problem sessions and each game's newest; turn on when testing a game"));
+        pc5_copy(value, value_size, set->keep_logs ? T("On") : T("Off"));
         break;
     case SR_FTP: {
         Pc5FtpStatus ftp;
         pc5_ftp_status(&ftp);
-        *label = "FTP server";
+        *label = T("FTP server");
         if (ftp.running)
-            snprintf(about, about_size, "ftp://%s from a PC (FileZilla): the INSTALL folder, while PC5 is open",
+            pc5_tf(about, about_size, "ftp://%s from a PC (FileZilla): the INSTALL folder, while PC5 is open",
                      ftp.address);
         else if (set->ftp_server && ui->ftp_error[0])
-            snprintf(about, about_size, "Not started: %.150s", ui->ftp_error);
+            pc5_tf(about, about_size, "Not started: %.150s", TX(ui->ftp_error));
         else
-            pc5_copy(about, about_size, "Send games from a PC to PC5's INSTALL folder, then install them here");
-        pc5_copy(value, value_size, set->ftp_server ? "On" : "Off");
+            pc5_copy(about, about_size, T("Send games from a PC to PC5's INSTALL folder, then install them here"));
+        pc5_copy(value, value_size, set->ftp_server ? T("On") : T("Off"));
         break;
     }
     case SR_WEB: {
         Pc5WebStatus web;
         pc5_web_status(&web);
-        *label = "Web page";
+        *label = T("Web page");
         if (web.running)
-            snprintf(about, about_size, "http://%s in a browser on a phone or a PC; Triangle: a QR code for it", web.address);
+            pc5_tf(about, about_size, "http://%s in a browser on a phone or a PC; Triangle: a QR code for it", web.address);
         else if (set->web_page && ui->web_error[0])
-            snprintf(about, about_size, "Not started: %.150s", ui->web_error);
+            pc5_tf(about, about_size, "Not started: %.150s", TX(ui->web_error));
         else
-            pc5_copy(about, about_size, "PC5 from a browser: send games, launch options, logs");
-        pc5_copy(value, value_size, set->web_page ? "On" : "Off");
+            pc5_copy(about, about_size, T("PC5 from a browser: send games, launch options, logs"));
+        pc5_copy(value, value_size, set->web_page ? T("On") : T("Off"));
         break;
     }
     case SR_NETWORK:
-        *label = "Network";
-        pc5_copy(about, about_size, "From a PC or a phone: the FTP server, the web page, a username and password");
+        *label = T("Network");
+        pc5_copy(about, about_size, T("From a PC or a phone: the FTP server, the web page, a username and password"));
         pc5_copy(value, value_size, "\xe2\x80\xba");
         break;
     case SR_REMOTE_USER:
-        *label = "Username";
-        pc5_copy(about, about_size, set->remote_user[0] ? "The username the FTP server and the web page ask for"
-                                                        : "None set: any username will do");
-        pc5_copy(value, value_size, set->remote_user[0] ? set->remote_user : "Any");
+        *label = T("Username");
+        pc5_copy(about, about_size, set->remote_user[0] ? T("The username the FTP server and the web page ask for")
+                                                        : T("None set: any username will do"));
+        pc5_copy(value, value_size, set->remote_user[0] ? set->remote_user : T("Any"));
         break;
     case SR_REMOTE_PASSWORD:
-        *label = "Password";
-        pc5_copy(about, about_size, set->remote_password[0] ? "The password the FTP server and the web page ask for"
-                                                            : "Optional: none set, no password is asked for");
-        pc5_copy(value, value_size, set->remote_password[0] ? "\xe2\x80\xa2\xe2\x80\xa2\xe2\x80\xa2\xe2\x80\xa2\xe2\x80\xa2\xe2\x80\xa2" : "None");
+        *label = T("Password");
+        pc5_copy(about, about_size, set->remote_password[0] ? T("The password the FTP server and the web page ask for")
+                                                            : T("Optional: none set, no password is asked for"));
+        pc5_copy(value, value_size, set->remote_password[0] ? "\xe2\x80\xa2\xe2\x80\xa2\xe2\x80\xa2\xe2\x80\xa2\xe2\x80\xa2\xe2\x80\xa2" : T("None"));
         break;
     case SR_FILES:
-        *label = "File manager";
-        pc5_copy(about, about_size, "Copy, move, rename and delete files on the console and its drives");
+        *label = T("File manager");
+        pc5_copy(about, about_size, T("Copy, move, rename and delete files on the console and its drives"));
         pc5_copy(value, value_size, "\xe2\x80\xba");
         break;
     case SR_ABOUT:
-        *label = "About PC5";
-        pc5_copy(about, about_size, "Version, free space and credits");
+        *label = T("About PC5");
+        pc5_copy(about, about_size, T("Version, free space and credits"));
         break;
     case SR_FPS:
-        *label = "Show FPS";
-        pc5_copy(about, about_size, "Frames shown each second");
-        pc5_copy(value, value_size, set->fps ? "On" : "Off");
+        *label = T("Show FPS");
+        pc5_copy(about, about_size, T("Frames shown each second"));
+        pc5_copy(value, value_size, set->fps ? T("On") : T("Off"));
         break;
     case SR_FRAME_TIME:
-        *label = "Frame time";
-        pc5_copy(about, about_size, "How long a frame takes, on average, in milliseconds");
-        pc5_copy(value, value_size, set->frame_time ? "On" : "Off");
+        *label = T("Frame time");
+        pc5_copy(about, about_size, T("How long a frame takes, on average, in milliseconds"));
+        pc5_copy(value, value_size, set->frame_time ? T("On") : T("Off"));
         break;
     case SR_CPU_USAGE:
-        *label = "CPU usage";
-        pc5_copy(about, about_size, "How busy the console's CPU is, with everything it runs");
-        pc5_copy(value, value_size, set->cpu_usage ? "On" : "Off");
+        *label = T("CPU usage");
+        pc5_copy(about, about_size, T("How busy the console's CPU is, with everything it runs"));
+        pc5_copy(value, value_size, set->cpu_usage ? T("On") : T("Off"));
         break;
     case SR_GPU_USAGE:
-        *label = "GPU usage";
-        pc5_copy(about, about_size, "How busy the console's GPU is");
-        pc5_copy(value, value_size, set->gpu_usage ? "On" : "Off");
+        *label = T("GPU usage");
+        pc5_copy(about, about_size, T("How busy the console's GPU is"));
+        pc5_copy(value, value_size, set->gpu_usage ? T("On") : T("Off"));
         break;
     case SR_CPU_TEMPERATURE:
-        *label = "CPU temperature";
-        pc5_copy(about, about_size, "In degrees Celsius");
-        pc5_copy(value, value_size, set->cpu_temperature ? "On" : "Off");
+        *label = T("CPU temperature");
+        pc5_copy(about, about_size, T("In degrees Celsius"));
+        pc5_copy(value, value_size, set->cpu_temperature ? T("On") : T("Off"));
         break;
     case SR_SOC_TEMPERATURE:
-        *label = "SoC temperature";
-        pc5_copy(about, about_size, "The console chip's, in degrees Celsius");
-        pc5_copy(value, value_size, set->soc_temperature ? "On" : "Off");
+        *label = T("SoC temperature");
+        pc5_copy(about, about_size, T("The console chip's, in degrees Celsius"));
+        pc5_copy(value, value_size, set->soc_temperature ? T("On") : T("Off"));
         break;
     case SR_MEMORY:
-        *label = "Memory";
-        pc5_copy(about, about_size, "What the game uses, of what it has, in GB");
-        pc5_copy(value, value_size, set->memory ? "On" : "Off");
+        *label = T("Memory");
+        pc5_copy(about, about_size, T("What the game uses, of what it has, in GB"));
+        pc5_copy(value, value_size, set->memory ? T("On") : T("Off"));
         break;
     case SR_FPS_CORNER:
-        *label = "Corner";
-        pc5_copy(about, about_size, "Where the overlay sits on the screen");
-        pc5_copy(value, value_size, pc5_corner_name(set->fps_corner));
+        *label = T("Corner");
+        pc5_copy(about, about_size, T("Where the overlay sits on the screen"));
+        pc5_copy(value, value_size, T(pc5_corner_name(set->fps_corner)));
         break;
     case SR_OVERLAY_SIZE:
-        *label = "Size";
+        *label = T("Size");
         pc5_copy(about, about_size,
-                 set->overlay_size == PC5_OVERLAY_EXTRA_LARGE ? "Every line at once, twice the size, by the console"
-                 : set->overlay_size == PC5_OVERLAY_LARGE     ? "Twice the size, two lines at a time, taking turns"
-                                                              : "Every line at once, in small text");
-        pc5_copy(value, value_size, pc5_overlay_size_name(set->overlay_size));
+                 set->overlay_size == PC5_OVERLAY_EXTRA_LARGE ? T("Every line at once, twice the size, by the console")
+                 : set->overlay_size == PC5_OVERLAY_LARGE     ? T("Twice the size, two lines at a time, taking turns")
+                                                              : T("Every line at once, in small text"));
+        pc5_copy(value, value_size, T(pc5_overlay_size_name(set->overlay_size)));
         break;
     case SR_VIBRATION:
-        *label = "Vibration";
-        pc5_copy(about, about_size, set->vibration ? "How strongly the controller rumbles with the game"
-                                                   : "The game's rumble on the controller");
+        *label = T("Vibration");
+        pc5_copy(about, about_size, set->vibration ? T("How strongly the controller rumbles with the game")
+                                                   : T("The game's rumble on the controller"));
         percent_text(set->vibration, value, value_size);
         break;
     case SR_LIGHT:
-        *label = "Light bar";
-        pc5_copy(about, about_size, set->light_bar == PC5_LIGHT_SCREEN ? "The colour of what is on screen"
-                                    : set->light_bar == PC5_LIGHT_GAME ? "The main colour of the game's cover"
-                                                                       : "PC5 leaves the console's colour");
-        pc5_copy(value, value_size, pc5_light_name(set->light_bar));
+        *label = T("Light bar");
+        pc5_copy(about, about_size, set->light_bar == PC5_LIGHT_SCREEN ? T("The colour of what is on screen")
+                                    : set->light_bar == PC5_LIGHT_GAME ? T("The main colour of the game's cover")
+                                                                       : T("PC5 leaves the console's colour"));
+        pc5_copy(value, value_size, T(pc5_light_name(set->light_bar)));
         break;
     case SR_TRIGGERS:
-        *label = "Adaptive triggers";
-        pc5_copy(about, about_size, set->triggers == PC5_TRIGGERS_RUMBLE ? "L2 and R2 vibrate with the game's rumble"
-                                    : set->triggers == PC5_TRIGGERS_RESISTANCE ? "L2 and R2 push back as you press them"
-                                    : set->triggers == PC5_TRIGGERS_BOTH ? "L2 and R2 push back, and buzz with the rumble"
-                                    : "Rumble, resistance or both on L2 and R2");
-        pc5_copy(value, value_size, pc5_triggers_name(set->triggers));
+        *label = T("Adaptive triggers");
+        pc5_copy(about, about_size, set->triggers == PC5_TRIGGERS_RUMBLE ? T("L2 and R2 vibrate with the game's rumble")
+                                    : set->triggers == PC5_TRIGGERS_RESISTANCE ? T("L2 and R2 push back as you press them")
+                                    : set->triggers == PC5_TRIGGERS_BOTH ? T("L2 and R2 push back, and buzz with the rumble")
+                                    : T("Rumble, resistance or both on L2 and R2"));
+        pc5_copy(value, value_size, T(pc5_triggers_name(set->triggers)));
         break;
     case SR_TRIGGER_RUMBLE:
-        *label = "Trigger rumble";
-        pc5_copy(about, about_size, "How strongly L2 and R2 vibrate");
+        *label = T("Trigger rumble");
+        pc5_copy(about, about_size, T("How strongly L2 and R2 vibrate"));
         percent_text(set->trigger_rumble, value, value_size);
         break;
     case SR_TRIGGER_RESISTANCE:
-        *label = "Trigger resistance";
-        pc5_copy(about, about_size, "How firmly L2 and R2 push back");
+        *label = T("Trigger resistance");
+        pc5_copy(about, about_size, T("How firmly L2 and R2 push back"));
         percent_text(set->trigger_resistance, value, value_size);
         break;
     case SR_CHECK_ON_OPEN:
-        *label = "Check when PC5 opens";
-        pc5_copy(about, about_size, "Asks GitHub for a newer PC5 each time you open PC5, and offers it");
-        pc5_copy(value, value_size, set->check_updates ? "On" : "Off");
+        *label = T("Check when PC5 opens");
+        pc5_copy(about, about_size, T("Asks GitHub for a newer PC5 each time you open PC5, and offers it"));
+        pc5_copy(value, value_size, set->check_updates ? T("On") : T("Off"));
         break;
     case SR_CHECK_NOW:
-        *label = "Check now";
+        *label = T("Check now");
         if (ui->update.last.state == PC5_UPDATE_AVAILABLE && !offer_update(ui))
-            snprintf(about, about_size, "PC5 %s is out: copy it over this one from github.com/bornaradusin/PC5",
+            pc5_tf(about, about_size, "PC5 %s is out: copy it over this one from github.com/bornaradusin/PC5",
                      ui->update.last.version);
         else
             pc5_update_text(&ui->update.last, about, about_size);
         break;
     case SR_STARTUP_SOUND:
-        *label = "Startup sound";
-        pc5_copy(about, about_size, "On the controller's speaker when PC5 opens");
-        pc5_copy(value, value_size, strcmp(set->startup_sound, "off") ? set->startup_sound : "Off");
+        *label = T("Startup sound");
+        pc5_copy(about, about_size, T("On the controller's speaker when PC5 opens"));
+        pc5_copy(value, value_size, strcmp(set->startup_sound, "off") ? set->startup_sound : T("Off"));
         break;
     case SR_STARTUP_VOLUME:
-        *label = "Startup sound volume";
-        pc5_copy(about, about_size, "How loud the startup sound plays");
+        *label = T("Startup sound volume");
+        pc5_copy(about, about_size, T("How loud the startup sound plays"));
         percent_text(set->startup_volume, value, value_size);
         break;
+    case SR_LANGUAGE: {
+        /* The setting's language, or the console's (System default), each in its own name. */
+        const Pc5Language *in = pc5_language(pc5_language_find(pc5_language_choose(set->language, ui->config.language)));
+        *label = T("Language");
+        if (set->language[0]) {
+            pc5_copy(about, about_size, T("PC5's screens and web page; System default follows the console"));
+            pc5_copy(value, value_size, in->name);
+        } else {
+            pc5_tf(about, about_size, "As the console: %s", in->name);
+            /* TRANSLATORS: the Language setting's value when PC5 follows the console's language. */
+            pc5_copy(value, value_size, T("System default"));
+        }
+        break;
+    }
     case SR_UPDATE_NOW:
-        *label = "Update now";
+        *label = T("Update now");
     {
         char how[200];
         update_how(ui, how, sizeof(how));
-        snprintf(about, about_size, "%.160s, installs it and restarts PC5", how);
+        pc5_tf(about, about_size, "%.160s, installs it and restarts PC5", how);
     }
         break;
     default:
         if (row >= SR_SOURCE && row < SR_SOURCE + PC5_PICTURE_SOURCES) {
             static const char *const abouts[PC5_PICTURE_SOURCES] = {
-                "Its store's covers and backgrounds", "Covers and backgrounds its members made, with your key",
-                "Its catalogue's covers and backgrounds", "The cover on the game's page, and its Steam background",
-                "Steam's pictures for a game Steam's search misses"
+                N_("Its store's covers and backgrounds"), N_("Covers and backgrounds its members made, with your key"),
+                N_("Its catalogue's covers and backgrounds"), N_("The cover on the game's page, and its Steam background"),
+                N_("Steam's pictures for a game Steam's search misses")
             };
             int i = (int)(row - SR_SOURCE), off = (set->pictures_off & (1u << i)) != 0;
             *label = pc5_picture_source_name(i);
-            pc5_copy(about, about_size, abouts[i]);
-            pc5_copy(value, value_size, off ? "Off" : "On");
+            pc5_copy(about, about_size, T(abouts[i]));
+            pc5_copy(value, value_size, off ? T("Off") : T("On"));
             /* SteamGridDB asks for the player's key: where it goes, or that it was refused. */
             if (i == 1 && !ui->griddb_key[0]) {
-                pc5_copy(about, about_size, "Needs your key, in /data/prospero-win/" PC5_API_KEYS);
-                if (!off) pc5_copy(value, value_size, "No key");
+                pc5_tf(about, about_size, "Needs your key, in %s", "/data/prospero-win/" PC5_API_KEYS);
+                if (!off) pc5_copy(value, value_size, T("No key"));
             } else if (i == 1 && ui->griddb_refused) {
-                pc5_copy(about, about_size, "It refused the key in /data/prospero-win/" PC5_API_KEYS ": check it there");
+                pc5_tf(about, about_size, "It refused the key in %s: check it there", "/data/prospero-win/" PC5_API_KEYS);
             }
         }
         break;
@@ -2394,7 +2446,7 @@ static void ftp_apply(Pc5Ui *ui)
     ui->ftp_error[0] = 0;
     if (!ui->settings.ftp_server || !ui->install_dir[0]) {
         pc5_ftp_stop();
-        if (ui->settings.ftp_server) pc5_copy(ui->ftp_error, sizeof(ui->ftp_error), "PC5's INSTALL folder isn't there.");
+        if (ui->settings.ftp_server) pc5_copy(ui->ftp_error, sizeof(ui->ftp_error), N_("PC5's INSTALL folder isn't there."));
         return;
     }
     Pc5FtpStatus status;
@@ -2520,6 +2572,14 @@ static int setting_change(Pc5Ui *ui, SettingRow row, int step)
             ui->platform.sound(ui->platform.context, set->startup_sound, set->startup_volume);
         break;
     }
+    case SR_LANGUAGE: {
+        /* System default (""), then each language, round. */
+        int count = pc5_language_count() + 1, at = set->language[0] ? pc5_language_find(set->language) + 1 : 0;
+        at = ((at + (step < 0 ? -1 : 1)) % count + count) % count;
+        pc5_copy(set->language, sizeof(set->language), at ? pc5_language(at - 1)->code : "");
+        language_apply(ui);
+        break;
+    }
     case SR_STARTUP_VOLUME:
         /* The sound is played at the new volume. */
         set->startup_volume = pc5_volume_next(set->startup_volume, step);
@@ -2533,11 +2593,11 @@ static int setting_change(Pc5Ui *ui, SettingRow row, int step)
     if (pc5_settings_save(ui->root, set)) say(ui, "PC5 problem settings: can't write them");
     say(ui, "PC5 settings fps=%d frame_time=%d cpu=%d gpu=%d cpu_temp=%d soc_temp=%d memory=%d corner=%d size=%s vibration=%d light=%d "
         "triggers=%d trigger_rumble=%d trigger_resistance=%d updates=%d keep_logs=%d startup_sound=%s startup_volume=%d "
-        "pictures_off=%#x",
+        "pictures_off=%#x language=%s",
         set->fps, set->frame_time, set->cpu_usage, set->gpu_usage, set->cpu_temperature, set->soc_temperature, set->memory,
         (int)set->fps_corner, pc5_overlay_size_key(set->overlay_size), set->vibration, (int)set->light_bar, (int)set->triggers, set->trigger_rumble,
         set->trigger_resistance, set->check_updates, set->keep_logs, set->startup_sound, set->startup_volume,
-        (unsigned)set->pictures_off);
+        (unsigned)set->pictures_off, set->language[0] ? set->language : "system");
     return 1;
 }
 
@@ -2616,20 +2676,20 @@ static void home_toggle(Pc5Ui *ui, const Pc5Game *game)
     char error[PC5_ERROR] = "", body[1600];
 
     if (!ui->config.tiles_root || !ui->config.tile_template) {
-        message(ui, 0, "Home screen tiles aren't available", "This copy of PC5 has no tile program.", S_GAME_MENU);
+        message(ui, 0, T("Home screen tiles aren't available"), T("This copy of PC5 has no tile program."), S_GAME_MENU);
         return;
     }
     if (ui->tile[0]) {
         int removed = pc5_home_remove(ui->config.tiles_root, game->id);
         say(ui, "PC5 home tile removed id=%s tile=%s count=%d", game->id, ui->tile, removed);
         if (removed < 0) {
-            snprintf(body, sizeof(body), "PC5 can't delete its folder, %s/%s.", ui->config.tiles_root, ui->tile);
-            message(ui, 0, "The tile wasn't taken away", body, S_GAME_MENU);
+            pc5_tf(body, sizeof(body), "PC5 can't delete its folder, %s/%s.", ui->config.tiles_root, ui->tile);
+            message(ui, 0, T("The tile wasn't taken away"), body, S_GAME_MENU);
             return;
         }
         ui->tile[0] = 0;
-        message(ui, 1, "Taken off the home screen",
-                "The tile's folder is deleted. If the tile is still on the home screen, delete it there.", S_GAME_MENU);
+        message(ui, 1, T("Taken off the home screen"),
+                T("The tile's folder is deleted. If the tile is still on the home screen, delete it there."), S_GAME_MENU);
         return;
     }
     /* An app of its own (pc5_tile.h) that runs the game from PC5's installed folder, when
@@ -2646,15 +2706,15 @@ static void home_toggle(Pc5Ui *ui, const Pc5Game *game)
             say(ui, "PC5 home tile app id=%s runtime=%s made=%d tile=%s%s%s", game->id, folder, made, ui->tile,
                 error[0] ? " why=" : "", error);
             if (made != PC5_TILE_MADE) {
-                message(ui, 0, "The tile wasn't made", error, S_GAME_MENU);
+                message(ui, 0, T("The tile wasn't made"), error, S_GAME_MENU);
                 return;
             }
-            snprintf(body, sizeof(body),
+            pc5_tf(body, sizeof(body),
                      "Its tile, %s, appears on the home screen once you close PC5 and ShadowMountPlus finds it in %s. "
                      "It is the game's own app: it starts the game straight away, and leaving the game goes back to "
                      "the home screen. It runs from PC5's folder, %s: keep PC5 there.", ui->tile,
                      ui->config.tiles_root, folder);
-            message(ui, 1, "Added to the home screen", body, S_GAME_MENU);
+            message(ui, 1, T("Added to the home screen"), body, S_GAME_MENU);
             return;
         }
         say(ui, "PC5 home tile forwarder id=%s: PC5's folder %s", game->id, found == -2 ? "is there twice" : "not found");
@@ -2662,14 +2722,14 @@ static void home_toggle(Pc5Ui *ui, const Pc5Game *game)
     if (pc5_home_add(ui->config.tiles_root, ui->config.tile_template, ui->root, game->id, game->prefix, game->title,
                      ui->tile, error, sizeof(error))) {
         say(ui, "PC5 problem home tile %s: %s", game->id, error);
-        message(ui, 0, "The tile wasn't made", error, S_GAME_MENU);
+        message(ui, 0, T("The tile wasn't made"), error, S_GAME_MENU);
         return;
     }
     say(ui, "PC5 home tile added id=%s tile=%s", game->id, ui->tile);
-    snprintf(body, sizeof(body),
+    pc5_tf(body, sizeof(body),
              "Its tile, %s, appears on the home screen once ShadowMountPlus finds it in %s. It starts the game "
              "straight away, and leaving the game goes back to the home screen.", ui->tile, ui->config.tiles_root);
-    message(ui, 1, "Added to the home screen", body, S_GAME_MENU);
+    message(ui, 1, T("Added to the home screen"), body, S_GAME_MENU);
 }
 
 static void files_open(Pc5Ui *ui, int game);
@@ -2768,7 +2828,7 @@ static int update_answer(Pc5Ui *ui, const Pc5Update *answer, int quiet_if_offere
         pc5_copy(ui->update.told, sizeof(ui->update.told), update.version);
     } else if (update.state == PC5_UPDATE_AVAILABLE && strcmp(ui->update.told, update.version)) {
         char text[200];
-        snprintf(text, sizeof(text), "PC5 %s is available on GitHub (you have %s).", update.version, PC5_VERSION);
+        pc5_tf(text, sizeof(text), "PC5 %s is available on GitHub (you have %s).", update.version, PC5_VERSION);
         notify(ui, text);
         pc5_copy(ui->update.told, sizeof(ui->update.told), update.version);
     }
@@ -2795,30 +2855,30 @@ static void issue_message(Pc5Ui *ui)
     char title[200], body[700], file[PC5_PATH];
     const Pc5LogIssue *issue = &ui->issue;
     int index = pc5_library_find(&ui->library, issue->profile);
-    const char *name = index >= 0 ? ui->library.games[index].title : "The game";
+    const char *name = index >= 0 ? ui->library.games[index].title : T("The game");
     const char *slash = strstr(issue->file, "/logs/");
 
     ui->issue_pending = 0;
     pc5_copy(file, sizeof(file), slash ? slash + 1 : issue->file);
     switch (issue->problem) {
     case PC5_LOG_GAME_CRASHED:
-        snprintf(title, sizeof(title), "%s stopped with an error", name);
-        snprintf(body, sizeof(body), "Wine reported a crash. Its log is kept as %.120s in %.120s.", file, ui->root);
+        pc5_tf(title, sizeof(title), "%s stopped with an error", name);
+        pc5_tf(body, sizeof(body), "Wine reported a crash. Its log is kept as %.120s in %.120s.", file, ui->root);
         break;
     case PC5_LOG_NO_PICTURE:
-        snprintf(title, sizeof(title), "%s closed before showing anything", name);
-        snprintf(body, sizeof(body), "If PC5 started the wrong program, choose Change program in the game's menu "
+        pc5_tf(title, sizeof(title), "%s closed before showing anything", name);
+        pc5_tf(body, sizeof(body), "If PC5 started the wrong program, choose Change program in the game's menu "
                  "(Triangle). Its log is kept as %.120s in %.120s.", file, ui->root);
         break;
     case PC5_LOG_FORCED:
-        snprintf(title, sizeof(title), "%s had to be closed", name);
-        snprintf(body, sizeof(body), "It didn't close when asked, so PC5 ended it. Its log is kept as %.120s in %.120s.", file,
+        pc5_tf(title, sizeof(title), "%s had to be closed", name);
+        pc5_tf(body, sizeof(body), "It didn't close when asked, so PC5 ended it. Its log is kept as %.120s in %.120s.", file,
                  ui->root);
         break;
     case PC5_LOG_CRASHED:
-        if (index >= 0) snprintf(title, sizeof(title), "%s ended unexpectedly", name);
-        else snprintf(title, sizeof(title), "PC5 ended unexpectedly last time");
-        snprintf(body, sizeof(body), "Its log is kept as %.120s in %.120s.", file, ui->root);
+        if (index >= 0) pc5_tf(title, sizeof(title), "%s ended unexpectedly", name);
+        else pc5_tf(title, sizeof(title), "PC5 ended unexpectedly last time");
+        pc5_tf(body, sizeof(body), "Its log is kept as %.120s in %.120s.", file, ui->root);
         break;
     default:
         return;
@@ -2840,8 +2900,8 @@ static void report_game_log(Pc5Ui *ui, const Pc5Game *game)
     Pc5LogIssue issue;
 
     if (pc5_logs_newest(ui->root, game->id, path, sizeof(path))) {
-        snprintf(title, sizeof(title), "No log of %s yet", game->title);
-        message(ui, 0, title, "Play it once until the problem happens, then come back here: its log goes with the report.",
+        pc5_tf(title, sizeof(title), "No log of %s yet", game->title);
+        message(ui, 0, title, T("Play it once until the problem happens, then come back here: its log goes with the report."),
                 S_GAME_MENU);
         return;
     }
@@ -2855,8 +2915,8 @@ static void report_game_log(Pc5Ui *ui, const Pc5Game *game)
         pc5_copy(issue.file, sizeof(issue.file), path);
         pc5_copy(issue.exe, sizeof(issue.exe), game->executable);
     }
-    snprintf(title, sizeof(title), "Report a problem with %s", game->title);
-    snprintf(body, sizeof(body), "Its newest log, %.120s, is in %.120s/logs. Press Triangle for a QR code that opens "
+    pc5_tf(title, sizeof(title), "Report a problem with %s", game->title);
+    pc5_tf(body, sizeof(body), "Its newest log, %.120s, is in %.120s/logs. Press Triangle for a QR code that opens "
              "GitHub's form with the game, PC5 and the game's settings filled in; attach that zip there.", name, ui->root);
     message(ui, 1, title, body, S_GAME_MENU);
     ui->report = issue;
@@ -3097,11 +3157,11 @@ static void files_places(Pc5Ui *ui)
         FilesPlace *place = &ui->files_place[n++];
         const char *slash = strrchr(*d, '/'), *name = slash && slash[1] ? slash + 1 : *d;
         if (!strncmp(name, "usb", 3) && name[3] >= '0' && name[3] <= '9')
-            snprintf(place->name, sizeof(place->name), "USB drive %d", atoi(name + 3) + 1);
+            pc5_tf(place->name, sizeof(place->name), "USB drive %d", atoi(name + 3) + 1);
         else if (!strncmp(name, "ext", 3) && name[3] >= '0' && name[3] <= '9')
-            snprintf(place->name, sizeof(place->name), "Extended storage %d", atoi(name + 3) + 1);
+            pc5_tf(place->name, sizeof(place->name), "Extended storage %d", atoi(name + 3) + 1);
         else if (!strcmp(*d, "/data"))
-            pc5_copy(place->name, sizeof(place->name), "Console storage");
+            pc5_copy(place->name, sizeof(place->name), T("Console storage"));
         else
             pc5_copy(place->name, sizeof(place->name), name);
         pc5_copy(place->path, sizeof(place->path), *d);
@@ -3109,18 +3169,18 @@ static void files_places(Pc5Ui *ui)
     }
     if (ui->install_dir[0] && pc5_is_dir(ui->install_dir)) {
         FilesPlace *place = &ui->files_place[n++];
-        pc5_copy(place->name, sizeof(place->name), "PC5's INSTALL folder");
+        pc5_copy(place->name, sizeof(place->name), T("PC5's INSTALL folder"));
         pc5_copy(place->path, sizeof(place->path), ui->install_dir);
         place->read_only = 0;
     }
     if (ui->app[0] && pc5_is_dir(ui->app)) {
         FilesPlace *place = &ui->files_place[n++];
-        pc5_copy(place->name, sizeof(place->name), "PC5's app");
+        pc5_copy(place->name, sizeof(place->name), T("PC5's app"));
         pc5_copy(place->path, sizeof(place->path), ui->app);
         place->read_only = 1;
     }
     FilesPlace *place = &ui->files_place[n++];
-    pc5_copy(place->name, sizeof(place->name), "Whole console");
+    pc5_copy(place->name, sizeof(place->name), T("Whole console"));
     pc5_copy(place->path, sizeof(place->path), "/");
     place->read_only = 1;
     ui->files_place_count = n;
@@ -3153,9 +3213,9 @@ static void files_open(Pc5Ui *ui, int game)
             int index = pc5_library_find(&ui->library, ui->launch_id);
             ui->files_top[0] = 0;
             if (index >= 0 && ui->library.games[index].usb)   /* played from its USB drive */
-                message(ui, 0, "Plug in the game's USB drive", "Its files are on the USB drive it plays from.", S_GAME_MENU);
+                message(ui, 0, T("Plug in the game's USB drive"), T("Its files are on the USB drive it plays from."), S_GAME_MENU);
             else
-                message(ui, 0, "PC5 can't find the game's folder", "Its files may be missing: uninstall it and install it again.",
+                message(ui, 0, T("PC5 can't find the game's folder"), T("Its files may be missing: uninstall it and install it again."),
                         S_GAME_MENU);
             return;
         }
@@ -3233,7 +3293,7 @@ static void files_enter(Pc5Ui *ui)
         return;
     }
     if (files_join(next, sizeof(next), ui->files_path, item->name)) {
-        message(ui, 0, "PC5 can't open this folder", "Its path is too long.", S_FILES);
+        message(ui, 0, T("PC5 can't open this folder"), T("Its path is too long."), S_FILES);
         return;
     }
     pc5_copy(ui->files_path, sizeof(ui->files_path), next);
@@ -3285,7 +3345,7 @@ static void files_start(Pc5Ui *ui, Pc5FilesOp op, const FilesSel *sel, const cha
         dest ? dest : "-", (int)conflict, (unsigned)ui->files_job.total_items, (unsigned long long)ui->files_job.total_bytes, rc);
     if (rc) {
         char title[120], body[PC5_ERROR + 40];
-        snprintf(title, sizeof(title), op == PC5_FILES_DELETE ? "Nothing was deleted" : op == PC5_FILES_MOVE ? "Nothing was moved"
+        pc5_tf(title, sizeof(title), op == PC5_FILES_DELETE ? "Nothing was deleted" : op == PC5_FILES_MOVE ? "Nothing was moved"
                                                                                                               : "Nothing was copied");
         pc5_copy(body, sizeof(body), ui->files_job.error);
         say(ui, "PC5 problem files: %s", body);
@@ -3331,16 +3391,16 @@ static void files_finish(Pc5Ui *ui)
     }
     files_load(ui, keep);
     if (state == PC5_FILES_DONE) {
-        if (!done && skipped) message(ui, 1, "Nothing was pasted", "Those items are here already, and were left as they were.", S_FILES);
+        if (!done && skipped) message(ui, 1, T("Nothing was pasted"), T("Those items are here already, and were left as they were."), S_FILES);
         else go(ui, S_FILES);
     } else if (state == PC5_FILES_STOPPED) {
-        message(ui, 1, "Stopped",
-                op == PC5_FILES_DELETE ? "What was deleted so far is gone; the rest is still here."
-                : op == PC5_FILES_MOVE ? "What was moved so far is here. Nothing was deleted from where it came from."
-                                       : "What was copied so far is here; the file being copied when it stopped was deleted.",
+        message(ui, 1, T("Stopped"),
+                op == PC5_FILES_DELETE ? T("What was deleted so far is gone; the rest is still here.")
+                : op == PC5_FILES_MOVE ? T("What was moved so far is here. Nothing was deleted from where it came from.")
+                                       : T("What was copied so far is here; the file being copied when it stopped was deleted."),
                 S_FILES);
     } else {
-        snprintf(title, sizeof(title), op == PC5_FILES_DELETE ? "Not everything was deleted"
+        pc5_tf(title, sizeof(title), op == PC5_FILES_DELETE ? "Not everything was deleted"
                                        : op == PC5_FILES_MOVE ? "Not everything was moved" : "Not everything was copied");
         say(ui, "PC5 problem files: %s", body);
         message(ui, 0, title, body, S_FILES);
@@ -3352,11 +3412,11 @@ static void files_named(Pc5Ui *ui, const char *name)
 {
     char why[200], target[PC5_PATH], from[PC5_PATH], body[PC5_PATH + 80];
     if (pc5_files_name_ok(name, why, sizeof(why))) {
-        message(ui, 0, "That name can't be used", why, S_FILES);
+        message(ui, 0, T("That name can't be used"), why, S_FILES);
         return;
     }
     if (files_join(target, sizeof(target), ui->files_path, name)) {
-        message(ui, 0, "That name can't be used", "The path would be too long.", S_FILES);
+        message(ui, 0, T("That name can't be used"), T("The path would be too long."), S_FILES);
         return;
     }
     if (ui->files_typing == 0) {
@@ -3365,27 +3425,27 @@ static void files_named(Pc5Ui *ui, const char *name)
         if (!strcmp(old, name) || files_join(from, sizeof(from), ui->files_path, old)) { go(ui, S_FILES); return; }
         /* Only its case changed: on exFAT the new name is the old one. */
         if (pc5_casecmp(old, name) && pc5_exists(target)) {
-            snprintf(body, sizeof(body), "This folder has %.200s already.", name);
-            message(ui, 0, "That name is taken", body, S_FILES);
+            pc5_tf(body, sizeof(body), "This folder has %.200s already.", name);
+            message(ui, 0, T("That name is taken"), body, S_FILES);
             return;
         }
         if (rename(from, target)) {
-            snprintf(body, sizeof(body), "%s.", strerror(errno));
+            pc5_tf(body, sizeof(body), "%s.", strerror(errno));
             say(ui, "PC5 problem files rename %s: %s", from, body);
-            message(ui, 0, "PC5 can't rename it", body, S_FILES);
+            message(ui, 0, T("PC5 can't rename it"), body, S_FILES);
             return;
         }
         say(ui, "PC5 files renamed %s to %s", from, name);
     } else {
         if (pc5_exists(target)) {
-            snprintf(body, sizeof(body), "This folder has %.200s already.", name);
-            message(ui, 0, "That name is taken", body, S_FILES);
+            pc5_tf(body, sizeof(body), "This folder has %.200s already.", name);
+            message(ui, 0, T("That name is taken"), body, S_FILES);
             return;
         }
         if (mkdir(target, 0777)) {
-            snprintf(body, sizeof(body), "%s.", strerror(errno));
+            pc5_tf(body, sizeof(body), "%s.", strerror(errno));
             say(ui, "PC5 problem files new folder %s: %s", target, body);
-            message(ui, 0, "PC5 can't make the folder", body, S_FILES);
+            message(ui, 0, T("PC5 can't make the folder"), body, S_FILES);
             return;
         }
         (void)chmod(target, 0777);
@@ -3419,12 +3479,12 @@ static void files_act(Pc5Ui *ui, FilesAction action)
         int rc = -1;
         ui->files_typing = action == FA_NEW_FOLDER;
         if (ui->platform.keyboard_open)
-            rc = ui->platform.keyboard_open(ui->platform.context, action == FA_RENAME ? "Rename" : "New folder",
+            rc = ui->platform.keyboard_open(ui->platform.context, action == FA_RENAME ? T("Rename") : T("New folder"),
                                             action == FA_RENAME && ui->files_at < ui->files.count
-                                                ? ui->files.items[ui->files_at].name : "New folder");
+                                                ? ui->files.items[ui->files_at].name : T("New folder"));
         say(ui, "PC5 keyboard open rc=%d", rc);
         if (rc >= 0) go(ui, S_FILES_TYPING);
-        else message(ui, 0, "The keyboard didn't open", "The console's on-screen keyboard can't be used just now.", S_FILES);
+        else message(ui, 0, T("The keyboard didn't open"), T("The console's on-screen keyboard can't be used just now."), S_FILES);
         break;
     }
     case FA_DELETE:
@@ -3609,9 +3669,9 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                     go(ui, S_LAUNCH);
                     break;
                 }
-                message(ui, 0, "This tile's game can't start",
-                        index < 0 ? "It isn't in PC5 any more. Take the tile off the home screen, or install the "
-                                    "game again." : ui->library.games[index].problem, S_LIBRARY);
+                message(ui, 0, T("This tile's game can't start"),
+                        index < 0 ? T("It isn't in PC5 any more. Take the tile off the home screen, or install the "
+                                    "game again.") : TX(ui->library.games[index].problem), S_LIBRARY);
                 ui->start[0] = 0;
                 break;
             }
@@ -3655,8 +3715,8 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                     ui->platform.restart(ui->platform.context);
                     /* Still here: the console refused to start PC5 again or to close it. */
                     say(ui, "PC5 problem restart: the console refused");
-                    message(ui, 0, "PC5 couldn't restart",
-                            "The new version is installed. Close PC5 from the PS button and open it again.", S_LIBRARY);
+                    message(ui, 0, T("PC5 couldn't restart"),
+                            T("The new version is installed. Close PC5 from the PS button and open it again."), S_LIBRARY);
                 } else {
                     to_library(ui);
                 }
@@ -3666,10 +3726,10 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         if (step == PC5_UPGRADE_FAILED || step == PC5_UPGRADE_CANCELLED) {
             if (ui->upgrade_back == S_SETTINGS) ui->page = PAGE_SYSTEM;
             if (step == PC5_UPGRADE_CANCELLED)
-                message(ui, 0, "The update was stopped", "PC5 is as it was, and what was downloaded is deleted.",
+                message(ui, 0, T("The update was stopped"), T("PC5 is as it was, and what was downloaded is deleted."),
                         ui->upgrade_back);
             else
-                message(ui, 0, ui->upgrade.partial ? "PC5's update isn't finished" : "PC5 wasn't updated",
+                message(ui, 0, ui->upgrade.partial ? T("PC5's update isn't finished") : T("PC5 wasn't updated"),
                         ui->upgrade.error, ui->upgrade_back);
             break;
         }
@@ -3759,9 +3819,9 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                     go(ui, S_LAUNCH);
                 } else {
                     char title[200], body[400];
-                    snprintf(title, sizeof(title), "%s can't start", game->title);
-                    snprintf(body, sizeof(body), "%s You can uninstall it from its menu (Triangle) and install it again.",
-                             game->problem[0] ? game->problem : "Something it needs is missing.");
+                    pc5_tf(title, sizeof(title), "%s can't start", game->title);
+                    pc5_tf(body, sizeof(body), "%s You can uninstall it from its menu (Triangle) and install it again.",
+                             game->problem[0] ? TX(game->problem) : T("Something it needs is missing."));
                     message(ui, 0, title, body, S_LIBRARY);
                 }
             } else if (k & PC5_KEY_TRIANGLE) {
@@ -3823,12 +3883,12 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             case SR_REMOTE_PASSWORD: {
                 int rc = -1, user = row == SR_REMOTE_USER;
                 if (ui->platform.keyboard_open)
-                    rc = ui->platform.keyboard_open(ui->platform.context, user ? "Username (empty: any)" : "Password (empty: none)",
+                    rc = ui->platform.keyboard_open(ui->platform.context, user ? T("Username (empty: any)") : T("Password (empty: none)"),
                                                     user ? ui->settings.remote_user : ui->settings.remote_password);
                 say(ui, "PC5 keyboard open rc=%d", rc);
                 ui->typing_row = row;
                 if (rc >= 0) go(ui, S_SETTINGS_TYPING);
-                else message(ui, 0, "The keyboard didn't open", "The console's on-screen keyboard can't be used just now.", S_SETTINGS);
+                else message(ui, 0, T("The keyboard didn't open"), T("The console's on-screen keyboard can't be used just now."), S_SETTINGS);
                 break;
             }
             case SR_COMPATIBILITY:
@@ -3945,7 +4005,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             } else {
                 ui->install_usb[0] = 0;
                 if (!queue_begin(ui)) go(ui, S_QUEUE_READ);
-                else message(ui, 0, "Out of memory", "PC5 couldn't make room to read the folders.", S_SOURCES);
+                else message(ui, 0, T("Out of memory"), T("PC5 couldn't make room to read the folders."), S_SOURCES);
             }
         } else if ((k & accept) && ui->source_count) {
             go(ui, S_READING);
@@ -3957,7 +4017,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             const Pc5Source *source = &ui->sources[ui->menu];
             Pc5CoverHint hint;
             if (pc5_folder_inspect(source->path, source->name, &ui->folder)) {
-                message(ui, 0, "PC5 can't read that folder", "Check that the USB drive is still plugged in.", S_SOURCES);
+                message(ui, 0, T("PC5 can't read that folder"), T("Check that the USB drive is still plugged in."), S_SOURCES);
                 break;
             }
             ui->exe = ui->folder.exe_count ? 0 : -1;
@@ -4008,14 +4068,14 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         } else if (k & PC5_KEY_OPTIONS) {
             uint64_t free_bytes = 0, need = queue_needs(ui);
             if (!need) {
-                message(ui, 0, "Nothing to install", "None of these folders has a game PC5 can install.", S_QUEUE);
+                message(ui, 0, T("Nothing to install"), T("None of these folders has a game PC5 can install."), S_QUEUE);
             } else if (!pc5_free_bytes(ui->root, &free_bytes) && free_bytes < need) {
                 char needs[32], have[32], body[300];
                 pc5_size_text(need, needs, sizeof(needs));
                 pc5_size_text(free_bytes, have, sizeof(have));
-                snprintf(body, sizeof(body), "Together they need %s and the console has %s free. Go back and untick some.",
+                pc5_tf(body, sizeof(body), "Together they need %s and the console has %s free. Go back and untick some.",
                          needs, have);
-                message(ui, 0, "Not enough space for all of them", body, S_QUEUE);
+                message(ui, 0, T("Not enough space for all of them"), body, S_QUEUE);
             } else {
                 ui->queue_at = 0;
                 ui->queue_installing = 1;
@@ -4049,7 +4109,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             go(ui, S_SOURCES);
         } else if (k & accept) {
             if (ui->folder.problem[0]) {
-                message(ui, 0, "This folder can't be installed", ui->folder.problem, S_REVIEW);
+                message(ui, 0, T("This folder can't be installed"), ui->folder.problem, S_REVIEW);
             } else if (usb_target(ui, ui->folder.path, ui->where_usb, sizeof(ui->where_usb))) {
                 /* A USB drive is plugged in: the console or that drive. */
                 ui->where_for = 0;
@@ -4071,7 +4131,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             say(ui, "PC5 install where=%s", ui->install_usb[0] ? ui->install_usb : "console");
             if (ui->where_for) {
                 if (!queue_begin(ui)) go(ui, S_QUEUE_READ);
-                else message(ui, 0, "Out of memory", "PC5 couldn't make room to read the folders.", S_SOURCES);
+                else message(ui, 0, T("Out of memory"), T("PC5 couldn't make room to read the folders."), S_SOURCES);
             } else {
                 review_install(ui);
             }
@@ -4099,8 +4159,8 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 char need[32], have[32], body[200];
                 pc5_size_text(pc5_update_needs(&ui->folder), need, sizeof(need));
                 pc5_size_text(free_bytes, have, sizeof(have));
-                snprintf(body, sizeof(body), "The update needs %s and the console has %s free.", need, have);
-                message(ui, 0, "Not enough space", body, S_SOURCES);
+                pc5_tf(body, sizeof(body), "The update needs %s and the console has %s free.", need, have);
+                message(ui, 0, T("Not enough space"), body, S_SOURCES);
             } else {
                 begin_update(ui);
             }
@@ -4119,15 +4179,15 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             } else {
                 char error[PC5_ERROR] = "", title[200], body[400];
                 int index = pc5_library_find(&ui->library, ui->launch_id);
-                const char *name = index >= 0 ? ui->library.games[index].title : "The game";
+                const char *name = index >= 0 ? ui->library.games[index].title : T("The game");
                 if (pc5_game_set_program(ui->root, ui->launch_id, &ui->folder, ui->menu, error, sizeof(error))) {
                     say(ui, "PC5 problem program %s: %s", ui->launch_id, error);
-                    snprintf(title, sizeof(title), "%s's program wasn't changed", name);
+                    pc5_tf(title, sizeof(title), "%s's program wasn't changed", name);
                     message(ui, 0, title, error, S_LIBRARY);
                 } else {
                     say(ui, "PC5 program id=%s exe=%s", ui->launch_id, ui->folder.exes[ui->menu].path);
-                    snprintf(title, sizeof(title), "%s starts %s now", name, ui->folder.exes[ui->menu].path);
-                    snprintf(body, sizeof(body), "It runs as %d-bit %s.", ui->folder.exes[ui->menu].pe.bits,
+                    pc5_tf(title, sizeof(title), "%s starts %s now", name, ui->folder.exes[ui->menu].path);
+                    pc5_tf(body, sizeof(body), "It runs as %d-bit %s.", ui->folder.exes[ui->menu].pe.bits,
                              pc5_api_name(pc5_folder_api(&ui->folder, ui->menu)));
                     library_reload(ui, ui->launch_id);
                     message(ui, 1, title, body, S_LIBRARY);
@@ -4203,7 +4263,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         } else if (k & accept) {
             if (row == GR_PLAY) {
                 if (game->playable) go(ui, S_LAUNCH);
-                else message(ui, 0, "This game can't start", game->problem[0] ? game->problem : "Something it needs is missing.",
+                else message(ui, 0, T("This game can't start"), game->problem[0] ? TX(game->problem) : T("Something it needs is missing."),
                              S_GAME_MENU);
             } else if (row == GR_BUTTONS) {
                 ui->pad_row = ui->pad_top = 0;
@@ -4211,8 +4271,8 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             } else if (row == GR_COVER || row == GR_BACKGROUND || row == GR_ICON) {
                 picture_open(ui, game, row == GR_COVER ? PICK_COVER : row == GR_ICON ? PICK_ICON : PICK_BACKGROUND);
             } else if (row == GR_PROGRAM) {
-                if (!game->pc5) message(ui, 0, "PC5 didn't install this game",
-                                        "Its program is set in its prospero-win profile.", S_GAME_MENU);
+                if (!game->pc5) message(ui, 0, T("PC5 didn't install this game"),
+                                        T("Its program is set in its prospero-win profile."), S_GAME_MENU);
                 else go(ui, S_GAME_READING);
             } else if (row == GR_FILES) {
                 files_open(ui, 1);
@@ -4255,13 +4315,13 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             ui->dirty = 1;
         } else if ((k & PC5_KEY_TRIANGLE) && ui->platform.keyboard_open) {
             int rc = ui->platform.keyboard_open(ui->platform.context,
-                                                ui->pick_kind == PICK_COVER ? "Search for covers by name"
-                                                : ui->pick_kind == PICK_ICON ? "Search for tile pictures by name"
-                                                                             : "Search for backgrounds by name",
+                                                ui->pick_kind == PICK_COVER ? T("Search for covers by name")
+                                                : ui->pick_kind == PICK_ICON ? T("Search for tile pictures by name")
+                                                                             : T("Search for backgrounds by name"),
                                                 ui->pick_query[0] ? ui->pick_query : game->title);
             say(ui, "PC5 keyboard open rc=%d", rc);
             if (rc >= 0) go(ui, S_PICTURE_TYPING);
-            else message(ui, 0, "The keyboard didn't open", "The console's on-screen keyboard can't be used just now.", S_PICTURE);
+            else message(ui, 0, T("The keyboard didn't open"), T("The console's on-screen keyboard can't be used just now."), S_PICTURE);
         } else if ((k & back) && ui->now - ui->entered > 300) {
             picture_leave(ui);
         } else if ((k & accept) && ui->now - ui->entered > 300) {
@@ -4373,12 +4433,12 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             if (index < 0 || pc5_game_folder(ui->root, ui->launch_id, folder, sizeof(folder)) ||
                 pc5_info_read(ui->root, ui->launch_id, &info) ||
                 pc5_folder_inspect(folder, info.folder, &ui->folder)) {
-                message(ui, 0, "PC5 can't read the game's folder", "Its files may be missing: uninstall it and install it again.",
+                message(ui, 0, T("PC5 can't read the game's folder"), T("Its files may be missing: uninstall it and install it again."),
                         S_GAME_MENU);
                 break;
             }
             if (ui->folder.exe_count < 2) {
-                message(ui, 0, "This game has one program", "There is no other program in its folder to start.", S_GAME_MENU);
+                message(ui, 0, T("This game has one program"), T("There is no other program in its folder to start."), S_GAME_MENU);
                 break;
             }
             ui->menu = 0;
@@ -4471,8 +4531,8 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 if (begun && !pc5_format(folder, sizeof(folder), "%s/prefixes/%s", ui->root, game->prefix) &&
                     game->prefix[0] && pc5_is_dir(folder) && strcmp(game->prefix, "default")) {
                     char title[200], body[PC5_ERROR + 64];
-                    snprintf(title, sizeof(title), "%s wasn't uninstalled", game->title);
-                    snprintf(body, sizeof(body), "%s Nothing was changed.", ui->remove.error);
+                    pc5_tf(title, sizeof(title), "%s wasn't uninstalled", game->title);
+                    pc5_tf(body, sizeof(body), "%s Nothing was changed.", TX(ui->remove.error));
                     say(ui, "PC5 problem uninstall %s: %s", game->title, ui->remove.error);
                     pc5_remove_end(&ui->remove);
                     ui->backgrounds_for = -1;   /* the worker, stopped for this, looks again */
@@ -4494,20 +4554,21 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         {
             char title[200], body[400];
             int failed = ui->remove.failed;
-            const char *tile = ui->removing_tiles > 0 ? " Its home screen tile's folder was deleted: if the tile is still on "
-                                                        "the home screen, delete it there." : "";
+            /* TRANSLATORS: added after the sentence before it, hence the space at its start. */
+            const char *tile = ui->removing_tiles > 0 ? T(" Its home screen tile's folder was deleted: if the tile is still on "
+                                                        "the home screen, delete it there.") : "";
             if (ui->removing_kind == 2) {
-                snprintf(title, sizeof(title), failed ? "The saves of %s weren't fully deleted" : "The saves of %s are deleted",
+                pc5_tf(title, sizeof(title), failed ? "The saves of %s weren't fully deleted" : "The saves of %s are deleted",
                          ui->removing_title);
-                if (failed) snprintf(body, sizeof(body), "%s PC5 finishes deleting them the next time it starts.", ui->remove.error);
-                else snprintf(body, sizeof(body), "Its saves and settings, kept when it was uninstalled, are gone.");
+                if (failed) pc5_tf(body, sizeof(body), "%s PC5 finishes deleting them the next time it starts.", TX(ui->remove.error));
+                else pc5_tf(body, sizeof(body), "Its saves and settings, kept when it was uninstalled, are gone.");
             } else {
-                snprintf(title, sizeof(title), failed ? "%s wasn't fully uninstalled" : "%s is uninstalled", ui->removing_title);
-                if (failed) snprintf(body, sizeof(body), "%s PC5 finishes it the next time it starts.", ui->remove.error);
+                pc5_tf(title, sizeof(title), failed ? "%s wasn't fully uninstalled" : "%s is uninstalled", ui->removing_title);
+                if (failed) pc5_tf(body, sizeof(body), "%s PC5 finishes it the next time it starts.", TX(ui->remove.error));
                 else if (ui->removing_kind == 1)
-                    snprintf(body, sizeof(body), "Its saves and settings are kept: installing it again puts them back. "
+                    pc5_tf(body, sizeof(body), "Its saves and settings are kept: installing it again puts them back. "
                              "Settings \xe2\x80\xba Game maintenance \xe2\x80\xba Uninstall game deletes them.%s", tile);
-                else snprintf(body, sizeof(body), "The game, its saves and its settings were deleted.%s", tile);
+                else pc5_tf(body, sizeof(body), "The game, its saves and its settings were deleted.%s", tile);
             }
             if (failed && ui->removing_kind == 2) pc5_copy(body, sizeof(body), ui->remove.error);
             if (failed) say(ui, "PC5 problem uninstall %s: %s", ui->removing_title, ui->remove.error);
@@ -4601,7 +4662,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                     !pc5_game_program(ui->root, ui->launch_id, program, sizeof(program))) {
                     int begun = pc5_runtime_begin(&ui->runtime, ui->root, ui->app, program);
                     if (begun < 0) {
-                        snprintf(title, sizeof(title), "%s can't start", ui->library.games[index].title);
+                        pc5_tf(title, sizeof(title), "%s can't start", ui->library.games[index].title);
                         say(ui, "PC5 problem play %s: %s", ui->launch_id, ui->runtime.error);
                         message(ui, 0, title, ui->runtime.error, S_LIBRARY);
                         break;
@@ -4618,7 +4679,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 if (!step) break;
                 if (step < 0) {
                     pc5_copy(error, sizeof(error), ui->runtime.error);
-                    snprintf(title, sizeof(title), "%s can't start", index >= 0 ? ui->library.games[index].title : "The game");
+                    pc5_tf(title, sizeof(title), "%s can't start", index >= 0 ? ui->library.games[index].title : T("The game"));
                     say(ui, "PC5 problem play %s: %s", ui->launch_id, error);
                     message(ui, 0, title, error, S_LIBRARY);   /* ends the copy; the next start goes on with it */
                     break;
@@ -4670,11 +4731,11 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                         say(ui, "PC5 vkd3d cache in=%s none", dir);
                 }
                 if (pc5_steam_stub(program)) {
-                    snprintf(title, sizeof(title), "%s needs Steam", ui->library.games[index].title);
+                    pc5_tf(title, sizeof(title), "%s needs Steam", ui->library.games[index].title);
                     say(ui, "PC5 problem play %s: SteamStub (.bind) in %s", ui->launch_id, program);
                     message(ui, 0, title,
-                            "Its program is wrapped in Steam's DRM (SteamStub), which starts only with Steam running, "
-                            "and Steam doesn't run on the console. A copy of the game without it can start.",
+                            T("Its program is wrapped in Steam's DRM (SteamStub), which starts only with Steam running, "
+                            "and Steam doesn't run on the console. A copy of the game without it can start."),
                             S_LIBRARY);
                     break;
                 }
@@ -4688,7 +4749,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             }
             if (index >= 0 && ui->library.games[index].pc5 &&
                 pc5_profile_refresh(ui->root, ui->launch_id, error, sizeof(error))) {
-                snprintf(title, sizeof(title), "%s can't start", ui->library.games[index].title);
+                pc5_tf(title, sizeof(title), "%s can't start", ui->library.games[index].title);
                 say(ui, "PC5 problem play %s: %s", ui->launch_id, error);
                 message(ui, 0, title, error, S_LIBRARY);
                 break;
@@ -4709,9 +4770,9 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 if (!pc5_game_folder(ui->root, ui->launch_id, where, sizeof(where))) say(ui, "PC5 play from usb dir=%s", where);
             }
             if (ui->platform.play) ui->platform.play(ui->platform.context, ui->launch_id);
-            snprintf(title, sizeof(title), "%s didn't start", index >= 0 ? ui->library.games[index].title : "The game");
+            pc5_tf(title, sizeof(title), "%s didn't start", index >= 0 ? ui->library.games[index].title : T("The game"));
             say(ui, "PC5 problem play %s: the console refused to start it", ui->launch_id);
-            message(ui, 0, title, "The console refused to start it. Try again, or restart PC5.", S_LIBRARY);
+            message(ui, 0, title, T("The console refused to start it. Try again, or restart PC5."), S_LIBRARY);
         }
         break;
     }
@@ -5029,10 +5090,8 @@ static int spaced_caps(Pc5Ui *ui, Pc5Canvas *c, Pc5Face face, int x, int y, uint
 {
     char one[8], caps[256];
     int width = 0, count = 0;
-    size_t n = 0;
 
-    for (const char *p = text; *p && n + 1 < sizeof(caps); p++) caps[n++] = (char)(*p >= 'a' && *p <= 'z' ? *p - 32 : *p);
-    caps[n] = 0;
+    pc5_upper(text, caps, sizeof(caps));
     for (size_t at = 0; caps[at];) {
         size_t len = 1;
         while (len < 4 && caps[at + len] && ((unsigned char)caps[at + len] & 0xc0) == 0x80) len++;
@@ -5113,13 +5172,14 @@ static void top_bar(Pc5Ui *ui, Pc5Canvas *c)
     pc5_line(c, x, 46, x, 96, 1.5f, 0x55ffffffu);
     x += 36;
     for (int i = 0; i < TABS; i++) {
-        int tw = pc5_text_width(&ui->fonts, PC5_FACE_LABEL, tab_names[i]), w = tw + 70;
+        const char *name = T(tab_names[i]);
+        int tw = pc5_text_width(&ui->fonts, PC5_FACE_LABEL, name), w = tw + 70;
         if (i == chosen) {
             pc5_shadow(c, x, 42, w, 58, 29, 18, 0x704d7cffu);
             pc5_round_rect(c, x, 42, w, 58, 29, 0x592a3f8cu);
             pc5_round_frame(c, x, 42, w, 58, 29, 2.5f, 0xff8fb0ffu);
         }
-        pc5_text(c, &ui->fonts, PC5_FACE_LABEL, x + 35, 81, i == chosen ? C_TEXT : 0xe6e3e7efu, tab_names[i], 0, 0);
+        pc5_text(c, &ui->fonts, PC5_FACE_LABEL, x + 35, 81, i == chosen ? C_TEXT : 0xe6e3e7efu, name, 0, 0);
         x += w + 8;
     }
     int cw = ui->clock[0] ? pc5_text_width(&ui->fonts, PC5_FACE_LABEL, ui->clock) : 0;
@@ -5208,7 +5268,7 @@ static void hero(Pc5Ui *ui, Pc5Canvas *c)
     char tags[200];
 
     /* what it is: its genres, or what PC5 knows */
-    pc5_copy(tags, sizeof(tags), ready && ui->hero.genres[0] ? ui->hero.genres : game->detail);
+    pc5_copy(tags, sizeof(tags), ready && ui->hero.genres[0] ? ui->hero.genres : TX(game->detail));
     caps_left(ui, c, PC5_FACE_SMALL, MARGIN, 196, 0xd9e6e9f0u, tags, 4);
     /* its name: the logo, fitted into 640 x 150, or the name in large letters */
     int below = 340;
@@ -5244,25 +5304,26 @@ static void hero(Pc5Ui *ui, Pc5Canvas *c)
         pc5_line(c, tx - 10, ty + row, tx - 10 + 20 * (1 - fabsf((float)row) / 12), ty + row, 1.2f, 0xff111318u);
         (void)half;
     }
-    pc5_text(c, &ui->fonts, PC5_FACE_LABEL, MARGIN + 100, by + 46, 0xff111318u, "Play Game", 0, 0);
+    pc5_text(c, &ui->fonts, PC5_FACE_LABEL, MARGIN + 100, by + 46, 0xff111318u, T("Play Game"), 0, 0);
     float mx = MARGIN + 300 + 30 + 36;
     pc5_round_rect(c, mx - 36, by, 72, 72, 36, 0x66080a10u);
     pc5_ring(c, mx, by + 36, 35, 2, 0x99ffffffu);
     for (int d = -1; d <= 1; d++) pc5_circle(c, mx + d * 13, by + 36, 4, C_TEXT);
     /* its settings, in chips */
-    char text[96];
+    char text[200];
     int x = MARGIN, y = 530;
     const char *api = pc5_api_name((Pc5Api)game->api);
     x += pill(ui, c, x, y, 42, api, -1) + 12;
-    snprintf(text, sizeof(text), "%d-bit", game->bits ? game->bits : 64);
+    /* TRANSLATORS: a chip under the game's name: 64-bit or 32-bit. Keep it short. */
+    pc5_tf(text, sizeof(text), "%d-bit", game->bits ? game->bits : 64);
     x += pill(ui, c, x, y, 42, text, -1) + 12;
     if (ready) {
         if (game->vulkan) x += pill(ui, c, x, y, 42, k->resolution == 2 ? "2160p" : k->resolution == 1 ? "1440p" : "1080p", -1) + 12;
-        if (k->frame_generation) x += pill(ui, c, x, y, 42, "Frame gen", -1) + 12;
-        snprintf(text, sizeof(text), "Controller: %s", pc5_pad_mode_name(k->mode));
+        if (k->frame_generation) x += pill(ui, c, x, y, 42, T("Frame gen"), -1) + 12;
+        pc5_tf(text, sizeof(text), "Controller: %s", T(pc5_pad_mode_name(k->mode)));
         x += pill(ui, c, x, y, 42, text, -1) + 12;
     }
-    if (game->usb) pill(ui, c, x, y, 42, "USB drive", -1);
+    if (game->usb) pill(ui, c, x, y, 42, T("USB drive"), -1);
 }
 
 /* The covers along the bottom of Home, the chosen one first, and dots for where it is. */
@@ -5335,8 +5396,8 @@ static void library_grid(Pc5Ui *ui, Pc5Canvas *c)
     const float cw = 208, ch = 312, gap_x = (W - 2 * MARGIN - GRID_COLUMNS * 208) / (GRID_COLUMNS - 1.0f), pitch = 384;
     int l = ui->list_at, n = ui->list_count[l], at = ui->list_item[l], x = MARGIN;
     for (int f = 0; f < LISTS; f++) {
-        char text[64];
-        snprintf(text, sizeof(text), "%s  %d", list_names[f], ui->list_count[f]);
+        char text[160];
+        snprintf(text, sizeof(text), "%s  %d", T(list_names[f]), ui->list_count[f]);
         if (f == l) {
             int w = pc5_text_width(&ui->fonts, PC5_FACE_SMALL, text) + 44;
             pc5_shadow(c, x, 136, w, 44, 22, 14, 0x704d7cffu);
@@ -5347,10 +5408,10 @@ static void library_grid(Pc5Ui *ui, Pc5Canvas *c)
         }
     }
     if (!n) {
-        static const char *const empty[LISTS] = { "No games yet.", "Nothing played yet: games show here once you play them.",
-                                                  "No favourites yet: press Square on a game to add it.",
-                                                  "No game is played from a USB drive.", "Every game can start." };
-        pc5_text(c, &ui->fonts, PC5_FACE_BODY, 960, 520, C_DIM, empty[l], 0, 1);
+        static const char *const empty[LISTS] = { N_("No games yet."), N_("Nothing played yet: games show here once you play them."),
+                                                  N_("No favourites yet: press Square on a game to add it."),
+                                                  N_("No game is played from a USB drive."), N_("Every game can start.") };
+        pc5_text(c, &ui->fonts, PC5_FACE_BODY, 960, 520, C_DIM, T(empty[l]), 0, 1);
         return;
     }
     int row = at / GRID_COLUMNS, top = row > 0 ? row - 1 : 0;
@@ -5373,7 +5434,7 @@ static void library_screen(Pc5Ui *ui, Pc5Canvas *c)
     if (ui->focus && ui->library.count && ui->tab == TAB_HOME) {
         pc5_text(c, &ui->fonts, PC5_FACE_TITLE, MARGIN + 2, 1014, 0x90000000u, ui->library.games[ui->selected].title, 1100, 0);
         pc5_text(c, &ui->fonts, PC5_FACE_TITLE, MARGIN, 1012, C_TEXT, ui->library.games[ui->selected].title, 1100, 0);
-        Hint list[] = { { G_R3, "Back" }, { accept_glyph(ui), "Play" } };
+        Hint list[] = { { G_R3, T("Back") }, { accept_glyph(ui), T("Play") } };
         hints_right(ui, c, 1012, list, 2);
         return;
     }
@@ -5383,13 +5444,13 @@ static void library_screen(Pc5Ui *ui, Pc5Canvas *c)
         pc5_shadow(c, 360, 380, 1200, 270, 28, 30, 0x80000000u);
         pc5_round_rect(c, 360, 380, 1200, 270, 28, 0xcc0b0f1au);
         pc5_round_frame(c, 360, 380, 1200, 270, 28, 1.5f, 0x40ffffffu);
-        pc5_text(c, &ui->fonts, PC5_FACE_TITLE, 960, 470, C_TEXT, "No games yet", 0, 1);
+        pc5_text(c, &ui->fonts, PC5_FACE_TITLE, 960, 470, C_TEXT, T("No games yet"), 0, 1);
         pc5_text(c, &ui->fonts, PC5_FACE_BODY, 960, 540, 0xf0e3e7efu,
-                 "Put a game's folder in PC5/INSTALL on a USB drive, then open Install \xe2\x80\xba Install games from USB.",
+                 T("Put a game's folder in PC5/INSTALL on a USB drive, then open Install \xe2\x80\xba Install games from USB."),
                  0, 1);
         pc5_text(c, &ui->fonts, PC5_FACE_BODY, 960, 590, 0xf0e3e7efu,
-                 "Or send it from a phone or PC: Settings \xe2\x80\xba Network \xe2\x80\xba Web page or FTP server.", 0, 1);
-        Hint list[] = { { G_L1R1, "Tabs" }, { G_OPTIONS, "Settings" } };
+                 T("Or send it from a phone or PC: Settings \xe2\x80\xba Network \xe2\x80\xba Web page or FTP server."), 0, 1);
+        Hint list[] = { { G_L1R1, T("Tabs") }, { G_OPTIONS, T("Settings") } };
         hints_right(ui, c, 1012, list, 2);
         return;
     }
@@ -5397,15 +5458,15 @@ static void library_screen(Pc5Ui *ui, Pc5Canvas *c)
         dim(c, 160);
         top_bar(ui, c);
         library_grid(ui, c);
-        Hint list[] = { { G_L2R2, "Filter" }, { accept_glyph(ui), "Play" }, { G_TRIANGLE, "Game options" }, { G_SQUARE, "Favourite" } };
+        Hint list[] = { { G_L2R2, T("Filter") }, { accept_glyph(ui), T("Play") }, { G_TRIANGLE, T("Game options") }, { G_SQUARE, T("Favourite") } };
         hints_right(ui, c, 1012, list, 4);
         return;
     }
     hero(ui, c);
     cover_row(ui, c);
-    Hint left[] = { { G_R3, "Focus mode" } };
+    Hint left[] = { { G_R3, T("Focus mode") } };
     hints(ui, c, MARGIN, 1012, left, 1);
-    Hint list[] = { { accept_glyph(ui), "Play" }, { G_TRIANGLE, "Game options" }, { G_SQUARE, "Favourite" }, { G_OPTIONS, "Settings" } };
+    Hint list[] = { { accept_glyph(ui), T("Play") }, { G_TRIANGLE, T("Game options") }, { G_SQUARE, T("Favourite") }, { G_OPTIONS, T("Settings") } };
     hints_right(ui, c, 1012, list, 4);
 }
 
@@ -5420,7 +5481,7 @@ static void busy_dialog(Pc5Ui *ui, Pc5Canvas *c, const char *title, const char *
     pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 170, (int)y + 136, C_TEXT, title, (int)w - 220, 0);
     if (line) pc5_text(c, &ui->fonts, PC5_FACE_BODY, (int)x + 170, (int)y + 190, C_DIM, line, (int)w - 220, 0);
     if (can_back) {
-        Hint list[] = { { back_glyph(ui), "Back" } };
+        Hint list[] = { { back_glyph(ui), T("Back") } };
         hints(ui, c, (int)x + 170, (int)(y + h - 34), list, 1);
     }
 }
@@ -5479,7 +5540,7 @@ static float rows_pitch(Pc5Ui *ui, float top, int count, const char *chosen_abou
 
 static void settings_screen(Pc5Ui *ui, Pc5Canvas *c)
 {
-    float x = drawer(ui, c, page_titles[ui->page]), extra;
+    float x = drawer(ui, c, T(page_titles[ui->page])), extra;
     SettingRow rows[PAGE_ROWS];
     int count = page_rows(&ui->settings, ui->page, offer_update(ui), rows);
     const char *label = "";
@@ -5496,7 +5557,7 @@ static void settings_screen(Pc5Ui *ui, Pc5Canvas *c)
     SettingRow row = rows[ui->menu < count ? ui->menu : 0];
     int changes = row == SR_KEEP_LOGS || row == SR_FTP || row == SR_WEB || (row >= SR_FPS && row <= SR_TRIGGER_RESISTANCE) || row == SR_CHECK_ON_OPEN ||
                   row == SR_STARTUP_SOUND || row == SR_STARTUP_VOLUME || row >= SR_SOURCE;
-    Hint list[] = { { accept_glyph(ui), changes ? "Change" : "Choose" }, { back_glyph(ui), "Back" }, { G_TRIANGLE, "QR code" } };
+    Hint list[] = { { accept_glyph(ui), changes ? T("Change") : T("Choose") }, { back_glyph(ui), T("Back") }, { G_TRIANGLE, T("QR code") } };
     Pc5WebStatus web = { 0 };
     if (row == SR_WEB) pc5_web_status(&web);
     hints(ui, c, (int)x + 64, 1012, list, row == SR_WEB && web.running ? 3 : 2);
@@ -5510,139 +5571,139 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
     *label = *text = *value = "";
     switch (row) {
     case GR_PLAY:
-        *label = "Play";
-        *text = "To leave it, hold the touchpad and OPTIONS for 2 s";
+        *label = T("Play");
+        *text = T("To leave it, hold the touchpad and OPTIONS for 2 s");
         *value = "";
         break;
     case GR_CONTROLLER:
-        *label = "Controller";
-        *text = ui->controls.mode == PC5_PAD_DUALSENSE ? "The game sees a DualSense, as one plugged into a PC" : ui->controls.mode == PC5_PAD_KEYBOARD ? "The buttons press keys, the sticks move the mouse" : "Games with controller support see an Xbox controller";
+        *label = T("Controller");
+        *text = ui->controls.mode == PC5_PAD_DUALSENSE ? T("The game sees a DualSense, as one plugged into a PC") : ui->controls.mode == PC5_PAD_KEYBOARD ? T("The buttons press keys, the sticks move the mouse") : T("Games with controller support see an Xbox controller");
         *value = pc5_pad_mode_name(ui->controls.mode);
         break;
     case GR_BUTTONS:
-        *label = "Button mapping";
-        *text = "The key or mouse button each one sends";
+        *label = T("Button mapping");
+        *text = T("The key or mouse button each one sends");
         *value = more;
         break;
     case GR_GRAPHICS:
-        *label = "Graphics";
-        *text = kind & GAME_VULKAN ? (kind & GAME_32BIT ? "Frames, resolution, aspect ratio, memory and CPU" : "Frame generation, resolution, aspect ratio and CPU") : (kind & GAME_32BIT ? "Frame generation, aspect ratio, memory and CPU" : "Frame generation, aspect ratio and CPU");
+        *label = T("Graphics");
+        *text = kind & GAME_VULKAN ? (kind & GAME_32BIT ? T("Frames, resolution, aspect ratio, memory and CPU") : T("Frame generation, resolution, aspect ratio and CPU")) : (kind & GAME_32BIT ? T("Frame generation, aspect ratio, memory and CPU") : T("Frame generation, aspect ratio and CPU"));
         *value = more;
         break;
     case GR_APPEARANCE:
-        *label = "Appearance";
-        *text = "Its cover, its background and a home screen tile";
+        *label = T("Appearance");
+        *text = T("Its cover, its background and a home screen tile");
         *value = more;
         break;
     case GR_MANAGE:
-        *label = "Manage";
-        *text = kind & GAME_PC5 ? "Its program, updating it and uninstalling it" : "Its program and uninstalling it";
+        *label = T("Manage");
+        *text = kind & GAME_PC5 ? T("Its program, updating it and uninstalling it") : T("Its program and uninstalling it");
         *value = more;
         break;
     case GR_GRAPHICS_API: {
         int api = ui_game_api(ui);
         const char *about_api =
             ui->controls.graphics == PC5_GRAPHICS_AUTO
-                ? (api == PC5_API_D3D12  ? "Best for most games; change it only if the picture is wrong or it won't start"
-                   : api == PC5_API_DDRAW ? "Wine's own Direct3D draws it; change it only if the picture is wrong"
-                                          : "Best for most games; change it only if the picture is wrong or it won't start")
-            : api == PC5_API_D3D12 ? "Wine's own Direct3D 12; if it doesn't help, set it back to Auto"
-            : ui->controls.graphics == PC5_GRAPHICS_WINE_VULKAN ? "Wine's own Direct3D on Vulkan; if it doesn't help, set it back to Auto"
-                                                                 : "Wine's own Direct3D on OpenGL; if it doesn't help, set it back to Auto";
-        *label = "Graphics API";
+                ? (api == PC5_API_D3D12  ? T("Best for most games; change it only if the picture is wrong or it won't start")
+                   : api == PC5_API_DDRAW ? T("Wine's own Direct3D draws it; change it only if the picture is wrong")
+                                          : T("Best for most games; change it only if the picture is wrong or it won't start"))
+            : api == PC5_API_D3D12 ? T("Wine's own Direct3D 12; if it doesn't help, set it back to Auto")
+            : ui->controls.graphics == PC5_GRAPHICS_WINE_VULKAN ? T("Wine's own Direct3D on Vulkan; if it doesn't help, set it back to Auto")
+                                                                 : T("Wine's own Direct3D on OpenGL; if it doesn't help, set it back to Auto");
+        *label = T("Graphics API");
         *text = about_api;
         *value = pc5_graphics_name(ui->controls.graphics, api);
         break;
     }
     case GR_FRAMEGEN:
-        *label = "Frame generation";
-        *text = ui->controls.frame_generation ? "Held at 30 fps and shown at 60: smoother where it runs below 60" : "Off. On holds the game at 30 fps and shows 60";
-        *value = ui->controls.frame_generation ? "30 \xe2\x86\x92 60 fps" : "Off";
+        *label = T("Frame generation");
+        *text = ui->controls.frame_generation ? T("Held at 30 fps and shown at 60: smoother where it runs below 60") : T("Off. On holds the game at 30 fps and shows 60");
+        *value = ui->controls.frame_generation ? T("30 \xe2\x86\x92 60 fps") : T("Off");
         break;
     case GR_RESOLUTION:
-        *label = "Resolution";
-        *text = ui->controls.resolution == 2 ? "Drawn at 4K, as the console shows it; four times the work of 1080p" : ui->controls.resolution == 1 ? "Drawn at 1440p and shown at 4K; sharper than 1080p, slower" : "Drawn at 1080p and shown at 4K by the console";
-        *value = ui->controls.resolution == 2 ? "4K" : ui->controls.resolution == 1 ? "1440p" : "1080p";
+        *label = T("Resolution");
+        *text = ui->controls.resolution == 2 ? T("Drawn at 4K, as the console shows it; four times the work of 1080p") : ui->controls.resolution == 1 ? T("Drawn at 1440p and shown at 4K; sharper than 1080p, slower") : T("Drawn at 1080p and shown at 4K by the console");
+        *value = ui->controls.resolution == 2 ? T("4K") : ui->controls.resolution == 1 ? "1440p" : "1080p";
         break;
     case GR_ASPECT:
-        *label = "Aspect ratio";
-        *text = ui->controls.stretch ? "Stretched to fill the screen: a 4:3 picture gets wider" : "The picture's own shape, with bars beside a 4:3 one";
-        *value = ui->controls.stretch ? "Stretch" : "Keep";
+        *label = T("Aspect ratio");
+        *text = ui->controls.stretch ? T("Stretched to fill the screen: a 4:3 picture gets wider") : T("The picture's own shape, with bars beside a 4:3 one");
+        *value = ui->controls.stretch ? T("Stretch") : T("Keep");
         break;
     case GR_MEMORY:
-        *label = "Memory";
-        *text = ui->controls.memory_4gb ? "4 GB even for a game not made for it: room for mods; Auto if it misbehaves"
-                                        : "As Windows: 4 GB for a game made for it, otherwise 2 GB";
-        *value = ui->controls.memory_4gb ? "4 GB" : "Auto";
+        *label = T("Memory");
+        *text = ui->controls.memory_4gb ? T("4 GB even for a game not made for it: room for mods; Auto if it misbehaves")
+                                        : T("As Windows: 4 GB for a game made for it, otherwise 2 GB");
+        *value = ui->controls.memory_4gb ? T("4 GB") : T("Auto");
         break;
     case GR_VIDEO_MEMORY:
-        *label = "Video memory";
+        *label = T("Video memory");
         if (!(kind & GAME_32BIT))
-            *text = ui->controls.video_memory_full ? "All 8 GB: the game may take memory the rest of it needs"
-                                                   : "4 GB, so the game leaves room for the rest: the console's memory is shared";
+            *text = ui->controls.video_memory_full ? T("All 8 GB: the game may take memory the rest of it needs")
+                                                   : T("4 GB, so the game leaves room for the rest: the console's memory is shared");
         else
-            *text = ui->controls.video_memory_full ? "All the console's; Auto if the game says there is too little"
-                                                   : "2 GB at most, a number older games' checks can read";
-        *value = ui->controls.video_memory_full ? "Full" : "Auto";
+            *text = ui->controls.video_memory_full ? T("All the console's; Auto if the game says there is too little")
+                                                   : T("2 GB at most, a number older games' checks can read");
+        *value = ui->controls.video_memory_full ? T("Full") : T("Auto");
         break;
     case GR_CPU_SHARING:
-        *label = "CPU sharing";
-        *text = ui->controls.cpu_sharing ? "Its threads take turns, as on a PC: steadier for some games" : "Fastest for most games; turn on if it freezes or stutters";
-        *value = ui->controls.cpu_sharing ? "On" : "Off";
+        *label = T("CPU sharing");
+        *text = ui->controls.cpu_sharing ? T("Its threads take turns, as on a PC: steadier for some games") : T("Fastest for most games; turn on if it freezes or stutters");
+        *value = ui->controls.cpu_sharing ? T("On") : T("Off");
         break;
     case GR_COVER:
-        *label = "Cover";
-        *text = "Another of those found, or search by another name";
+        *label = T("Cover");
+        *text = T("Another of those found, or search by another name");
         *value = more;
         break;
     case GR_BACKGROUND:
-        *label = "Background";
-        *text = "Another of those found, search by another name, or none";
+        *label = T("Background");
+        *text = T("Another of those found, search by another name, or none");
         *value = more;
         break;
     case GR_ICON:
-        *label = "Tile picture";
-        *text = "Its home screen tile's picture: a square one found online, or one made from its cover";
+        *label = T("Tile picture");
+        *text = T("Its home screen tile's picture: a square one found online, or one made from its cover");
         *value = more;
         break;
     case GR_HOME:
-        if (ui->tile[0]) snprintf(about, about_size, "Its tile, %.40s, starts the game", ui->tile);
-        *label = "Home screen tile";
-        *text = ui->tile[0] ? about : "A tile on the PS5's home screen that starts it";
-        *value = ui->tile[0] ? "On" : "Off";
+        if (ui->tile[0]) pc5_tf(about, about_size, "Its tile, %.40s, starts the game", ui->tile);
+        *label = T("Home screen tile");
+        *text = ui->tile[0] ? about : T("A tile on the PS5's home screen that starts it");
+        *value = ui->tile[0] ? T("On") : T("Off");
         break;
     case GR_PROGRAM: {
         const char *exe = strrchr(game->executable, '\\');
-        snprintf(about, about_size, "Now: %.150s", exe ? exe + 1 : game->executable);
-        *label = "Change program";
+        pc5_tf(about, about_size, "Now: %.150s", exe ? exe + 1 : game->executable);
+        *label = T("Change program");
         *text = about;
         *value = "";
         break;
     }
     case GR_STEAM:
-        *label = "Steam emulator";
-        *text = ui->controls.steam_off ? "Steam's own library: the game won't find Steam on the console"
-                                       : "Stands in for Steam, which the game asks for; Off if it misbehaves";
-        *value = ui->controls.steam_off ? "Off" : "Auto";
+        *label = T("Steam emulator");
+        *text = ui->controls.steam_off ? T("Steam's own library: the game won't find Steam on the console")
+                                       : T("Stands in for Steam, which the game asks for; Off if it misbehaves");
+        *value = ui->controls.steam_off ? T("Off") : T("Auto");
         break;
     case GR_FILES:
-        *label = "Game files";
-        *text = "Its folder: copy, move, rename and delete its files";
+        *label = T("Game files");
+        *text = T("Its folder: copy, move, rename and delete its files");
         *value = more;
         break;
     case GR_UPDATE:
-        *label = "Update";
-        *text = "A newer copy from USB; its saves and settings stay";
+        *label = T("Update");
+        *text = T("A newer copy from USB; its saves and settings stay");
         *value = more;
         break;
     case GR_REPORT:
-        *label = "Report a problem";
-        *text = "A QR code for GitHub's form, filled in from the game's newest log";
+        *label = T("Report a problem");
+        *text = T("A QR code for GitHub's form, filled in from the game's newest log");
         *value = more;
         break;
     case GR_UNINSTALL:
-        *label = "Uninstall";
-        *text = "Deletes the game, or keeps its saves for later";
+        *label = T("Uninstall");
+        *text = T("Deletes the game, or keeps its saves for later");
         *value = "";
         break;
     }
@@ -5653,7 +5714,7 @@ static void game_menu_screen(Pc5Ui *ui, Pc5Canvas *c, int chosen)
     int index = pc5_library_find(&ui->library, ui->launch_id), kind = ui_game_kind(ui), page = ui->game_page;
     if (index < 0) return;
     const Pc5Game *game = &ui->library.games[index];
-    float x = drawer(ui, c, page == GP_MAIN ? game->title : game_page_titles[page]), extra;
+    float x = drawer(ui, c, page == GP_MAIN ? game->title : T(game_page_titles[page])), extra;
     char about[200];
     const char *label, *text, *value;
 
@@ -5672,20 +5733,20 @@ static void game_menu_screen(Pc5Ui *ui, Pc5Canvas *c, int chosen)
     GameRow row = chosen >= 0 && chosen < count ? rows[chosen] : GR_PLAY;
     int changes = row == GR_CONTROLLER || row == GR_FRAMEGEN || row == GR_RESOLUTION || row == GR_ASPECT ||
                   row == GR_MEMORY || row == GR_VIDEO_MEMORY || row == GR_CPU_SHARING || row == GR_HOME || row == GR_STEAM;
-    Hint list[] = { { accept_glyph(ui), changes ? "Change" : "Choose" }, { back_glyph(ui), "Back" } };
+    Hint list[] = { { accept_glyph(ui), changes ? T("Change") : T("Choose") }, { back_glyph(ui), T("Back") } };
     hints(ui, c, (int)x + 64, 1012, list, 2);
 }
 
 /* Button mapping: what each button and stick does while the game plays the keyboard and mouse. */
 static void buttons_screen(Pc5Ui *ui, Pc5Canvas *c)
 {
-    float x = drawer(ui, c, "Button mapping");
+    float x = drawer(ui, c, T("Button mapping"));
     PadRow rows[PAD_ROWS];
     int count = pad_rows(&ui->controls, rows);
     const Pc5Controls *k = &ui->controls;
 
     pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 64, 210, C_DIM,
-             "Touchpad + OPTIONS for 2 s still leaves the game", 760 - 128, 0);
+             T("Touchpad + OPTIONS for 2 s still leaves the game"), 760 - 128, 0);
     for (int i = ui->pad_top; i < count && i < ui->pad_top + PAD_VISIBLE; i++) {
         float y = 214 + PAD_PITCH * (i - ui->pad_top);
         char label[64], value[64];
@@ -5693,32 +5754,32 @@ static void buttons_screen(Pc5Ui *ui, Pc5Canvas *c)
         value[0] = 0;
         switch (row.kind) {
         case PR_STICK:
-            pc5_copy(label, sizeof(label), row.index ? "Right stick" : "Left stick");
-            pc5_copy(value, sizeof(value), pc5_stick_use_name(k->stick[row.index]));
+            pc5_copy(label, sizeof(label), row.index ? T("Right stick") : T("Left stick"));
+            pc5_copy(value, sizeof(value), T(pc5_stick_use_name(k->stick[row.index])));
             break;
         case PR_DIRECTION:
-            snprintf(label, sizeof(label), "    %s", pc5_control_name(row.index));
-            pc5_copy(value, sizeof(value), pc5_key_label(k->key[row.index]));
+            snprintf(label, sizeof(label), "    %s", T(pc5_control_name(row.index)));
+            pc5_copy(value, sizeof(value), T(pc5_key_label(k->key[row.index])));
             break;
         case PR_SPEED:
-            pc5_copy(label, sizeof(label), "Pointer speed");
-            snprintf(value, sizeof(value), "%d of %d", k->speed, PC5_SPEEDS);
+            pc5_copy(label, sizeof(label), T("Pointer speed"));
+            pc5_tf(value, sizeof(value), "%d of %d", k->speed, PC5_SPEEDS);
             break;
         case PR_SLOW:
-            pc5_copy(label, sizeof(label), "Slow pointer button");
-            pc5_copy(value, sizeof(value), k->slow_button >= 0 ? pc5_control_name(k->slow_button) : "None");
+            pc5_copy(label, sizeof(label), T("Slow pointer button"));
+            pc5_copy(value, sizeof(value), k->slow_button >= 0 ? T(pc5_control_name(k->slow_button)) : T("None"));
             break;
         case PR_SLOW_PERCENT:
-            pc5_copy(label, sizeof(label), "    Slower by");
-            snprintf(value, sizeof(value), "%d%%", k->slow_percent);
+            pc5_copy(label, sizeof(label), T("    Slower by"));
+            pc5_tf(value, sizeof(value), "%d%%", k->slow_percent);
             break;
         case PR_BUTTON:
-            pc5_copy(label, sizeof(label), pc5_control_name(row.index));
-            pc5_copy(value, sizeof(value), row.index == k->slow_button ? "Slows the pointer"
-                                                                       : pc5_key_label(k->key[row.index]));
+            pc5_copy(label, sizeof(label), T(pc5_control_name(row.index)));
+            pc5_copy(value, sizeof(value), row.index == k->slow_button ? T("Slows the pointer")
+                                                                       : T(pc5_key_label(k->key[row.index])));
             break;
         case PR_RESET:
-            pc5_copy(label, sizeof(label), "Reset to default");
+            pc5_copy(label, sizeof(label), T("Reset to default"));
             break;
         }
         drawer_row(ui, c, x, y, PAD_PITCH, i == ui->pad_row, label, NULL, value);
@@ -5730,8 +5791,8 @@ static void buttons_screen(Pc5Ui *ui, Pc5Canvas *c)
                  "\xe2\x80\xa6", 0, 2);
     PadRow row = rows[ui->pad_row < count ? ui->pad_row : 0];
     int bindable = row.kind == PR_BUTTON || row.kind == PR_DIRECTION;
-    Hint list[] = { { accept_glyph(ui), bindable ? "Choose a key" : row.kind == PR_RESET ? "Reset" : "Change" },
-                    { G_SQUARE, "Nothing" }, { back_glyph(ui), "Back" } };
+    Hint list[] = { { accept_glyph(ui), bindable ? T("Choose a key") : row.kind == PR_RESET ? T("Reset") : T("Change") },
+                    { G_SQUARE, T("Nothing") }, { back_glyph(ui), T("Back") } };
     if (bindable) hints(ui, c, (int)x + 64, 1012, list, 3);
     else {
         list[1] = list[2];
@@ -5750,7 +5811,7 @@ static void keys_dialog(Pc5Ui *ui, Pc5Canvas *c)
 
     dim(c, 150);
     panel(c, x, y, w, h);
-    snprintf(title, sizeof(title), "What %s sends", pc5_control_name(ui->key_control));
+    pc5_tf(title, sizeof(title), "What %s sends", T(pc5_control_name(ui->key_control)));
     pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 60, (int)y + 92, C_TEXT, title, (int)w - 120, 0);
     for (int i = 0; i < pc5_key_count; i++) {
         float cx = x + 60 + (i % KEY_COLS) * (cell_w + gap), cy = y + 140 + (i / KEY_COLS) * (cell_h + gap);
@@ -5758,9 +5819,9 @@ static void keys_dialog(Pc5Ui *ui, Pc5Canvas *c)
         pc5_round_rect(c, cx, cy, cell_w, cell_h, 12, chosen ? C_TEXT : C_ROW);
         if (now && !chosen) pc5_round_frame(c, cx, cy, cell_w, cell_h, 12, 2.5f, C_ACCENT);
         pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)(cx + cell_w / 2), (int)cy + 36, chosen ? C_PANEL : C_TEXT,
-                 pc5_key_label(i), (int)cell_w - 16, 1);
+                 T(pc5_key_label(i)), (int)cell_w - 16, 1);
     }
-    Hint list[] = { { accept_glyph(ui), "Choose" }, { back_glyph(ui), "Back" } };
+    Hint list[] = { { accept_glyph(ui), T("Choose") }, { back_glyph(ui), T("Back") } };
     hints(ui, c, (int)x + 60, (int)(y + h - 40), list, 2);
 }
 
@@ -5768,14 +5829,14 @@ static void keys_dialog(Pc5Ui *ui, Pc5Canvas *c)
 static const char *graphics_about(Pc5Graphics graphics, int api)
 {
     if (graphics == PC5_GRAPHICS_AUTO)
-        return api == PC5_API_D3D12   ? "PC5's choice: VKD3D-Proton turns the game's Direct3D 12 into Vulkan. The fastest, and what most games want."
-               : api == PC5_API_DDRAW ? "PC5's choice: Wine's own Direct3D draws the game's DirectDraw with OpenGL."
-                                      : "PC5's choice: DXVK turns the game's Direct3D into Vulkan. The fastest, and what most games want.";
+        return api == PC5_API_D3D12   ? T("PC5's choice: VKD3D-Proton turns the game's Direct3D 12 into Vulkan. The fastest, and what most games want.")
+               : api == PC5_API_DDRAW ? T("PC5's choice: Wine's own Direct3D draws the game's DirectDraw with OpenGL.")
+                                      : T("PC5's choice: DXVK turns the game's Direct3D into Vulkan. The fastest, and what most games want.");
     if (api == PC5_API_D3D12)
-        return "Wine's own Direct3D 12 (VKD3D). Slower than Auto; try it if the game won't start or draws wrong.";
+        return T("Wine's own Direct3D 12 (VKD3D). Slower than Auto; try it if the game won't start or draws wrong.");
     if (graphics == PC5_GRAPHICS_WINE_VULKAN)
-        return "Wine's own Direct3D, drawing with Vulkan. Try it if the game draws wrong with Auto; often faster than WineD3D.";
-    return "Wine's own Direct3D, drawing with OpenGL. The slowest; try it if the game won't start with the others.";
+        return T("Wine's own Direct3D, drawing with Vulkan. Try it if the game draws wrong with Auto; often faster than WineD3D.");
+    return T("Wine's own Direct3D, drawing with OpenGL. The slowest; try it if the game won't start with the others.");
 }
 
 /* The Graphics API window: each choice for the game, with all it does; the one in use is marked. */
@@ -5795,8 +5856,8 @@ static void graphics_dialog(Pc5Ui *ui, Pc5Canvas *c)
     y = (H - h) / 2;
     dim(c, 150);
     panel(c, x, y, w, h);
-    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 60, (int)y + 92, C_TEXT, "Graphics API", (int)w - 120, 0);
-    snprintf(title, sizeof(title), "The game uses %s", pc5_api_name((Pc5Api)api));
+    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 60, (int)y + 92, C_TEXT, T("Graphics API"), (int)w - 120, 0);
+    pc5_tf(title, sizeof(title), "The game uses %s", pc5_api_name((Pc5Api)api));
     pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 60, (int)y + 136, C_DIM, title, (int)w - 120, 0);
     cy = y + 170;
     for (int i = 0; i < count; i++) {
@@ -5805,15 +5866,15 @@ static void graphics_dialog(Pc5Ui *ui, Pc5Canvas *c)
         pc5_round_rect(c, x + 60, cy, w - 120, bh, 16, chosen ? C_TEXT : C_ROW);
         if (now && !chosen) pc5_round_frame(c, x + 60, cy, w - 120, bh, 16, 2.5f, C_ACCENT);
         pc5_text(c, &ui->fonts, PC5_FACE_LABEL, (int)x + 84, (int)cy + 50, chosen ? C_PANEL : C_TEXT,
-                 pc5_graphics_name(choices[i], api), TEXT_W - 200, 0);
+                 T(pc5_graphics_name(choices[i], api)), TEXT_W - 200, 0);
         if (now)
             pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)(x + w) - 84, (int)cy + 48, chosen ? C_PANEL : C_ACCENT,
-                     "In use", 200, 2);
+                     T("In use"), 200, 2);
         pc5_text_wrap(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 84, (int)cy + 50 + LINE + 6, TEXT_W, lines[i], LINE,
                       chosen ? C_PANEL : C_DIM, graphics_about(choices[i], api), 0);
         cy += bh + 16;
     }
-    Hint list[] = { { accept_glyph(ui), "Choose" }, { back_glyph(ui), "Back" } };
+    Hint list[] = { { accept_glyph(ui), T("Choose") }, { back_glyph(ui), T("Back") } };
     hints(ui, c, (int)x + 60, (int)(y + h - 40), list, 2);
 }
 
@@ -5828,35 +5889,39 @@ static void about_screen(Pc5Ui *ui, Pc5Canvas *c)
     uint64_t free_bytes = 0;
     int ty = (int)y + 196;
     static const char *const paragraphs[] = {
-        ("PC5 runs your PC games with prospero-win: Wine, DXVK for Direct3D 8 to 11, VKD3D-Proton for "
+        N_("PC5 runs your PC games with prospero-win: Wine, DXVK for Direct3D 8 to 11, VKD3D-Proton for "
          "Direct3D 12, and Mesa (RADV for Vulkan, Zink for OpenGL)."),
-        "Covers come from Steam, GOG, PCGamingWiki and Wikidata, and SteamGridDB with your key. No game is part of PC5.",
-        "Free software under the GNU LGPL 2.1 or later.",
+        N_("Covers come from Steam, GOG, PCGamingWiki and Wikidata, and SteamGridDB with your key. No game is part of PC5."),
+        N_("Free software under the GNU LGPL 2.1 or later."),
     };
 
     dim(c, 150);
     panel(c, x, y, w, h);
     wordmark(ui, c, (int)x + 64, (int)y + 110);
-    pc5_text(c, &ui->fonts, PC5_FACE_BODY, (int)x + 160, (int)y + 106, C_DIM,
-             "version " PC5_VERSION " \xc2\xb7 " PC5_TITLE_ID, 0, 0);
+    {
+        char version[96];
+        /* TRANSLATORS: About PC5: the version (2.0.7 · PPSA11018). */
+        pc5_tf(version, sizeof(version), "version %s", PC5_VERSION " \xc2\xb7 " PC5_TITLE_ID);
+        pc5_text(c, &ui->fonts, PC5_FACE_BODY, (int)x + 160, (int)y + 106, C_DIM, version, 0, 0);
+    }
     /* Buy Me a Coffee, on the right: a code for a phone, the address under it. */
     const int box = 300, cx = (int)(x + w) - box - 64, column = cx - 64 - ((int)x + 64);
     if (!ui->coffee_qr.size) pc5_qr_make(PC5_COFFEE, &ui->coffee_qr);
-    pc5_text(c, &ui->fonts, PC5_FACE_LABEL, cx + box / 2, (int)y + 96, C_TEXT, "Like PC5?", box, 1);
+    pc5_text(c, &ui->fonts, PC5_FACE_LABEL, cx + box / 2, (int)y + 96, C_TEXT, T("Like PC5?"), box, 1);
     qr_draw(c, &ui->coffee_qr, cx, (int)y + 124, box);
     pc5_round_rect(c, (float)cx, y + 444, (float)box, 60, 30, 0xffffdd00u);
-    pc5_text(c, &ui->fonts, PC5_FACE_LABEL, cx + box / 2, (int)y + 484, 0xff0d0c22u, "Buy me a coffee", box - 24, 1);
+    pc5_text(c, &ui->fonts, PC5_FACE_LABEL, cx + box / 2, (int)y + 484, 0xff0d0c22u, T("Buy me a coffee"), box - 24, 1);
     pc5_text(c, &ui->fonts, PC5_FACE_SMALL, cx + box / 2, (int)y + 548, C_DIM, "buymeacoffee.com/bornaradusin", box + 100, 1);
     for (int i = 0; i < 3; i++)
-        ty += 42 * pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)x + 64, ty, column, 3, 42, C_TEXT, paragraphs[i], 0) + 22;
-    snprintf(line, sizeof(line), "Games are kept in %.150s", ui->root);
+        ty += 42 * pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)x + 64, ty, column, 3, 42, C_TEXT, T(paragraphs[i]), 0) + 22;
+    pc5_tf(line, sizeof(line), "Games are kept in %.150s", ui->root);
     pc5_text(c, &ui->fonts, PC5_FACE_BODY, (int)x + 64, ty + 20, C_DIM, line, column, 0);
     if (!pc5_free_bytes(ui->root, &free_bytes)) {
         pc5_size_text(free_bytes, space, sizeof(space));
-        snprintf(line, sizeof(line), "%s free on the console", space);
+        pc5_tf(line, sizeof(line), "%s free on the console", space);
         pc5_text(c, &ui->fonts, PC5_FACE_BODY, (int)x + 64, ty + 68, C_DIM, line, column, 0);
     }
-    Hint list[] = { { back_glyph(ui), "Back" } };
+    Hint list[] = { { back_glyph(ui), T("Back") } };
     hints(ui, c, (int)x + 64, (int)(y + h - 48), list, 1);
 }
 
@@ -5888,7 +5953,7 @@ static void list_panel(Pc5Ui *ui, Pc5Canvas *c, const char *title, int count, Ro
         }
         if (count > visible) {
             char more[48];
-            snprintf(more, sizeof(more), "%d of %d", ui->menu + 1, count);
+            pc5_tf(more, sizeof(more), "%d of %d", ui->menu + 1, count);
             pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)(x + w - 64), (int)y + 100, C_FAINT, more, 0, 2);
         }
     }
@@ -5908,15 +5973,15 @@ static void tick_box(Pc5Canvas *c, float x, float y, int ticked)
 
 static void source_row(Pc5Ui *ui, Pc5Canvas *c, int i, float x, float y, float w, int chosen)
 {
-    char line[64];
+    char line[160];
     (void)chosen;
     tick_box(c, x, y + 20, ui->ticked[i]);
     const char *from = ui->scan_roots[ui->sources[i].drive];
     char drive_root[PC5_PATH];
-    if (from == ui->install_dir) snprintf(line, sizeof(line), "INSTALL folder");
+    if (from == ui->install_dir) pc5_tf(line, sizeof(line), "INSTALL folder");
     else if (strstr(from, "/" PC5_USB_HOME "/" PC5_INSTALL_FOLDER) && !pc5_usb_install_root(from, drive_root, sizeof(drive_root)))
-        snprintf(line, sizeof(line), "INSTALL folder, %.20s", strrchr(drive_root, '/') + 1);
-    else snprintf(line, sizeof(line), "USB drive %d", ui->sources[i].drive + 1);
+        pc5_tf(line, sizeof(line), "INSTALL folder, %.20s", strrchr(drive_root, '/') + 1);
+    else pc5_tf(line, sizeof(line), "USB drive %d", ui->sources[i].drive + 1);
     pc5_text(c, &ui->fonts, PC5_FACE_LABEL, (int)x + 52, (int)y + 44, C_TEXT, ui->sources[i].name, (int)w - 272, 0);
     pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)(x + w), (int)y + 44, C_DIM, line, 0, 2);
 }
@@ -5931,11 +5996,11 @@ static void queue_row(Pc5Ui *ui, Pc5Canvas *c, int i, float x, float y, float w,
     pc5_text(c, &ui->fonts, PC5_FACE_LABEL, (int)x + 92, (int)y + 44, C_TEXT, q->folder.name, (int)w - 92, 0);
     if (q->folder.problem[0] || q->exe < 0) {
         pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 92, (int)y + 82, C_WARN,
-                 q->folder.problem[0] ? q->folder.problem : "No program found: it will be skipped", (int)w - 92, 0);
+                 q->folder.problem[0] ? TX(q->folder.problem) : T("No program found: it will be skipped"), (int)w - 92, 0);
         return;
     }
     pc5_size_text(q->folder.bytes, size, sizeof(size));
-    snprintf(line, sizeof(line), "%s \xc2\xb7 %d-bit \xc2\xb7 %s \xc2\xb7 %s", q->folder.exes[q->exe].path,
+    pc5_tf(line, sizeof(line), "%s \xc2\xb7 %d-bit \xc2\xb7 %s \xc2\xb7 %s", q->folder.exes[q->exe].path,
              q->folder.exes[q->exe].pe.bits, pc5_api_name(pc5_folder_api(&q->folder, q->exe)), size);
     pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 92, (int)y + 82, C_DIM, line, (int)w - 92, 0);
 }
@@ -5946,8 +6011,8 @@ static void program_row(Pc5Ui *ui, Pc5Canvas *c, int i, float x, float y, float 
     char line[160], size[32];
     (void)chosen;
     pc5_size_text(exe->size, size, sizeof(size));
-    snprintf(line, sizeof(line), "%d-bit \xc2\xb7 %s \xc2\xb7 %s%s", exe->pe.bits,
-             pc5_api_name(pc5_folder_api(&ui->folder, i)), size, i == ui->exe ? " \xc2\xb7 chosen" : "");
+    pc5_tf(line, sizeof(line), "%d-bit \xc2\xb7 %s \xc2\xb7 %s%s", exe->pe.bits,
+             pc5_api_name(pc5_folder_api(&ui->folder, i)), size, i == ui->exe ? T(" \xc2\xb7 chosen") : "");
     pc5_text(c, &ui->fonts, PC5_FACE_LABEL, (int)x, (int)y + 40, C_TEXT, exe->path, (int)w, 0);
     pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x, (int)y + 74, C_DIM, line, (int)w, 0);
 }
@@ -5960,10 +6025,11 @@ static void game_row(Pc5Ui *ui, Pc5Canvas *c, int i, float x, float y, float w, 
         char title[PC5_NAME + 16];
         (void)chosen;
         pc5_round_frame(c, x, y + 8, 56, 84, 6, 2, 0xff3a404cu);
-        static const char *const months[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                                               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
-        char about[160];
-        snprintf(title, sizeof(title), "Saves of %s", saves->title);
+        /* TRANSLATORS: a month, short, in the day a game's saves were kept (Kept 3 Oct 2026). */
+        static const char *const months[] = { N_("Jan"), N_("Feb"), N_("Mar"), N_("Apr"), N_("May"), N_("Jun"),
+                                               N_("Jul"), N_("Aug"), N_("Sep"), N_("Oct"), N_("Nov"), N_("Dec") };
+        char about[320];
+        pc5_tf(title, sizeof(title), "Saves of %s", saves->title);
         if (saves->kept > 0) {
             /* The day (UTC) from the days since 1970 (Howard Hinnant's civil_from_days; the
              * console's C library has no gmtime_r). */
@@ -5971,10 +6037,11 @@ static void game_row(Pc5Ui *ui, Pc5Canvas *c, int i, float x, float y, float w, 
             int64_t yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365, doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
             int64_t mp = (5 * doy + 2) / 153, d = doy - (153 * mp + 2) / 5 + 1, m = mp < 10 ? mp + 3 : mp - 9;
             int64_t y = yoe + era * 400 + (m <= 2);
-            snprintf(about, sizeof(about), "Kept %d %s %d; installing it again puts them back", (int)d,
-                     months[(m - 1) % 12], (int)y);
+            /* TRANSLATORS: the day, the month (Jan to Dec, translated on their own) and the year: put them in your order with %1$d, %2$s, %3$d. */
+            pc5_tf(about, sizeof(about), "Kept %d %s %d; installing it again puts them back", (int)d,
+                     T(months[(m - 1) % 12]), (int)y);
         } else
-            snprintf(about, sizeof(about), "Kept when it was uninstalled; installing it again puts them back");
+            pc5_tf(about, sizeof(about), "Kept when it was uninstalled; installing it again puts them back");
         pc5_text(c, &ui->fonts, PC5_FACE_LABEL, (int)x + 84, (int)y + 44, C_TEXT, title, (int)w - 84, 0);
         pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 84, (int)y + 78, C_DIM, about, (int)w - 84, 0);
         return;
@@ -6010,8 +6077,8 @@ static void review_screen(Pc5Ui *ui, Pc5Canvas *c)
     }
     {
         int at = ui->choice < 0 ? choices : ui->choice + 1;
-        if (ui->choice >= 0 && ui->choice < ui->search.count) snprintf(line, sizeof(line), "Cover %d of %d", at, choices);
-        else snprintf(line, sizeof(line), "Made from the game's icon \xc2\xb7 %d of %d", at, choices);
+        if (ui->choice >= 0 && ui->choice < ui->search.count) pc5_tf(line, sizeof(line), "Cover %d of %d", at, choices);
+        else pc5_tf(line, sizeof(line), "Made from the game's icon \xc2\xb7 %d of %d", at, choices);
         pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)(cx + cw / 2), (int)(cy + ch + 46), C_DIM, line, (int)cw + 40, 1);
     }
     float tx = cx + cw + 72, tw = x + w - 72 - tx;
@@ -6019,21 +6086,21 @@ static void review_screen(Pc5Ui *ui, Pc5Canvas *c)
     float ry = y + 300;
     const char *labels[4];
     char values[4][300];
-    labels[row] = "Program";
-    pc5_copy(values[row++], 300, exe ? exe->path : "none found");
-    labels[row] = "Runs as";
-    if (exe) snprintf(values[row++], 300, "%d-bit \xc2\xb7 %s", exe->pe.bits, pc5_api_name(pc5_folder_api(&ui->folder, ui->exe)));
+    labels[row] = T("Program");
+    pc5_copy(values[row++], 300, exe ? exe->path : T("none found"));
+    labels[row] = T("Runs as");
+    if (exe) pc5_tf(values[row++], 300, "%d-bit \xc2\xb7 %s", exe->pe.bits, pc5_api_name(pc5_folder_api(&ui->folder, ui->exe)));
     else pc5_copy(values[row++], 300, "-");
     pc5_size_text(ui->folder.bytes, size, sizeof(size));
-    labels[row] = "Size";
-    snprintf(values[row++], 300, ui->folder.files == 1 ? "%s in %u file" : "%s in %u files", size, (unsigned)ui->folder.files);
-    labels[row] = "Space";
+    labels[row] = T("Size");
+    pc5_tf(values[row++], 300, ui->folder.files == 1 ? "%s in %u file" : "%s in %u files", size, (unsigned)ui->folder.files);
+    labels[row] = T("Space");
     if (!pc5_free_bytes(ui->root, &free_bytes)) {
         uint64_t need = pc5_install_needs(&ui->folder);
         pc5_size_text(free_bytes > need ? free_bytes - ui->folder.bytes : 0, space, sizeof(space));
-        snprintf(values[row++], 300, free_bytes >= need ? "%s free after installing" : "not enough: %s free", space);
+        pc5_tf(values[row++], 300, free_bytes >= need ? "%s free after installing" : "not enough: %s free", space);
     } else {
-        pc5_copy(values[row++], 300, "unknown");
+        pc5_copy(values[row++], 300, T("unknown"));
     }
     for (int i = 0; i < row; i++) {
         pc5_text(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)(ry + 62 * i), C_FAINT, labels[i], 200, 0);
@@ -6045,18 +6112,18 @@ static void review_screen(Pc5Ui *ui, Pc5Canvas *c)
         ny += 90;
     } else if (exe && (exe->pe.imports & PC5_IMPORT_DOTNET)) {
         pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)ny, (int)tw, 2, 40, C_DIM,
-                      "A .NET program: it runs with Wine Mono, which PC5 sets up the first time a .NET game starts.", 0);
+                      T("A .NET program: it runs with Wine Mono, which PC5 sets up the first time a .NET game starts."), 0);
         ny += 90;
     }
     pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)ny, (int)tw, 4, 40, C_DIM,
-                  "The game is copied once and checked, to the console or, with a USB drive plugged in, to its PC5 "
-                  "folder. Whether a game runs is only known by trying it.", 0);
+                  T("The game is copied once and checked, to the console or, with a USB drive plugged in, to its PC5 "
+                  "folder. Whether a game runs is only known by trying it."), 0);
     Hint list[5];
     int n = 0;
-    list[n++] = (Hint){ accept_glyph(ui), ui->queue_review >= 0 ? "Done" : "Install" };
-    if (choices > 1) list[n++] = (Hint){ G_L1R1, "Other covers" };
-    if (ui->folder.exe_count > 1) list[n++] = (Hint){ G_SQUARE, "Change program" };
-    if (ui->queue_review < 0) list[n++] = (Hint){ back_glyph(ui), "Back" };
+    list[n++] = (Hint){ accept_glyph(ui), ui->queue_review >= 0 ? T("Done") : T("Install") };
+    if (choices > 1) list[n++] = (Hint){ G_L1R1, T("Other covers") };
+    if (ui->folder.exe_count > 1) list[n++] = (Hint){ G_SQUARE, T("Change program") };
+    if (ui->queue_review < 0) list[n++] = (Hint){ back_glyph(ui), T("Back") };
     hints(ui, c, (int)tx, (int)(y + h - 48), list, n);
 }
 
@@ -6065,28 +6132,28 @@ static void sources_screen(Pc5Ui *ui, Pc5Canvas *c)
     if (ui->update_for) {
         int index = pc5_library_find(&ui->library, ui->launch_id);
         char title[PC5_NAME + 32];
-        Hint list[] = { { accept_glyph(ui), "Choose" }, { G_TRIANGLE, "Look again" }, { back_glyph(ui), "Back" } };
-        snprintf(title, sizeof(title), "Update %s from USB", index >= 0 ? ui->library.games[index].title : "the game");
-        list_panel(ui, c, title, ui->source_count, source_row, "No game folders found",
-                   "Put the newer copy's folder (the one with the game's .exe in it) at the top of a USB drive formatted "
-                   "as exFAT, plug the drive into the PS5, then look again.",
+        Hint list[] = { { accept_glyph(ui), T("Choose") }, { G_TRIANGLE, T("Look again") }, { back_glyph(ui), T("Back") } };
+        pc5_tf(title, sizeof(title), "Update %s from USB", index >= 0 ? ui->library.games[index].title : T("the game"));
+        list_panel(ui, c, title, ui->source_count, source_row, T("No game folders found"),
+                   T("Put the newer copy's folder (the one with the game's .exe in it) at the top of a USB drive formatted "
+                   "as exFAT, plug the drive into the PS5, then look again."),
                    list, 3, 96);
         return;
     }
     int ticked = ticked_count(ui);
     char install[40];
-    snprintf(install, sizeof(install), "Install ticked (%d)", ticked);
+    pc5_tf(install, sizeof(install), "Install ticked (%d)", ticked);
     Hint list[5];
     int n = 0;
     if (ticked) list[n++] = (Hint){ G_OPTIONS, install };
-    list[n++] = (Hint){ accept_glyph(ui), "Install one" };
-    list[n++] = (Hint){ G_SQUARE, "Tick" };
-    list[n++] = (Hint){ G_TRIANGLE, "Look again" };
-    list[n++] = (Hint){ back_glyph(ui), "Back" };
-    list_panel(ui, c, ui->install_only ? "Install games from the INSTALL folder" : "Install games from USB",
-               ui->source_count, source_row, "No game folders found",
-               "Put each game's folder (the one with its .exe in it) at the top of a USB drive formatted as exFAT, "
-               "plug the drive into the PS5, then look again.",
+    list[n++] = (Hint){ accept_glyph(ui), T("Install one") };
+    list[n++] = (Hint){ G_SQUARE, T("Tick") };
+    list[n++] = (Hint){ G_TRIANGLE, T("Look again") };
+    list[n++] = (Hint){ back_glyph(ui), T("Back") };
+    list_panel(ui, c, ui->install_only ? T("Install games from the INSTALL folder") : T("Install games from USB"),
+               ui->source_count, source_row, T("No game folders found"),
+               T("Put each game's folder (the one with its .exe in it) at the top of a USB drive formatted as exFAT, "
+               "plug the drive into the PS5, then look again."),
                list, n, 96);
 }
 
@@ -6099,25 +6166,25 @@ static void install_screen(Pc5Ui *ui, Pc5Canvas *c)
     int number;
 
     switch (in->phase) {
-    case PC5_INSTALL_PREFIX: step = in->kept[0] ? "Putting back its saves and settings" : "Setting up the game's Windows";
+    case PC5_INSTALL_PREFIX: step = in->kept[0] ? T("Putting back its saves and settings") : T("Setting up the game's Windows");
         number = 1; break;
     case PC5_INSTALL_LIST:
-    case PC5_INSTALL_COPY: step = in->update ? "Copying the newer version" : "Copying the game"; number = in->update ? 1 : 2; break;
-    case PC5_INSTALL_VERIFY: step = "Checking the copy against the USB drive"; number = in->update ? 2 : 3; break;
-    case PC5_INSTALL_FINISH: step = in->update ? "Putting the new files in place" : "Finishing"; number = 3; break;
+    case PC5_INSTALL_COPY: step = in->update ? T("Copying the newer version") : T("Copying the game"); number = in->update ? 1 : 2; break;
+    case PC5_INSTALL_VERIFY: step = T("Checking the copy against the USB drive"); number = in->update ? 2 : 3; break;
+    case PC5_INSTALL_FINISH: step = in->update ? T("Putting the new files in place") : T("Finishing"); number = 3; break;
     default:
-        if (in->tidying) { step = "Finishing"; number = 3; break; }
-        step = in->cancel ? "Stopping: deleting what was copied" : "Deleting what was copied"; number = 0; break;
+        if (in->tidying) { step = T("Finishing"); number = 3; break; }
+        step = in->cancel ? T("Stopping: deleting what was copied") : T("Deleting what was copied"); number = 0; break;
     }
     dim(c, 150);
     panel(c, x, y, w, h);
     if (ui->queue_installing) {
-        snprintf(line, sizeof(line), "Game %d of %d", ui->queue_at + 1, ui->queue_count);
+        pc5_tf(line, sizeof(line), "Game %d of %d", ui->queue_at + 1, ui->queue_count);
         pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 64, (int)y + 62, C_ACCENT, line, (int)w - 128, 0);
     }
-    snprintf(title, sizeof(title), in->update ? "Updating %s" : "Installing %s", in->info.title);
+    pc5_tf(title, sizeof(title), in->update ? "Updating %s" : "Installing %s", in->info.title);
     pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 64, (int)y + 116, C_TEXT, title, (int)w - 128, 0);
-    if (number) snprintf(line, sizeof(line), "Step %d of 3 \xc2\xb7 %s", number, step);
+    if (number) pc5_tf(line, sizeof(line), "Step %d of 3 \xc2\xb7 %s", number, step);
     else pc5_copy(line, sizeof(line), step);
     pc5_text(c, &ui->fonts, PC5_FACE_LABEL, (int)x + 64, (int)y + 186, C_TEXT, line, (int)w - 128, 0);
     double fraction = in->bytes_total ? (double)in->bytes_done / (double)in->bytes_total : 0;
@@ -6131,19 +6198,19 @@ static void install_screen(Pc5Ui *ui, Pc5Canvas *c)
             pc5_size_text((uint64_t)ui->speed, speed, sizeof(speed));
             if (in->bytes_total > in->bytes_done) {
                 double seconds = (double)(in->bytes_total - in->bytes_done) / ui->speed;
-                if (seconds < 60) snprintf(left, sizeof(left), " \xc2\xb7 under a minute left");
-                else snprintf(left, sizeof(left), " \xc2\xb7 about %d min left", (int)(seconds / 60 + 0.5));
+                if (seconds < 60) pc5_tf(left, sizeof(left), " \xc2\xb7 under a minute left");
+                else pc5_tf(left, sizeof(left), " \xc2\xb7 about %d min left", (int)(seconds / 60 + 0.5));
             }
-            snprintf(line, sizeof(line), "%s of %s \xc2\xb7 %s/s%s", done, total, speed, left);
+            pc5_tf(line, sizeof(line), "%s of %s \xc2\xb7 %s/s%s", done, total, speed, left);
         } else {
-            snprintf(line, sizeof(line), "%s of %s \xc2\xb7 measuring the speed", done, total);
+            pc5_tf(line, sizeof(line), "%s of %s \xc2\xb7 measuring the speed", done, total);
         }
         pc5_text(c, &ui->fonts, PC5_FACE_BODY, (int)x + 64, (int)y + 306, C_DIM, line, (int)w - 128, 0);
-        snprintf(line, sizeof(line), "%u of %u files", (unsigned)in->files_done, (unsigned)in->files_total);
+        pc5_tf(line, sizeof(line), "%u of %u files", (unsigned)in->files_done, (unsigned)in->files_total);
         pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 64, (int)y + 350, C_FAINT, line, (int)w - 128, 0);
     }
     if (in->phase < PC5_INSTALL_FINISH) {
-        Hint list[] = { { back_glyph(ui), "Stop" } };
+        Hint list[] = { { back_glyph(ui), T("Stop") } };
         hints(ui, c, (int)x + 64, (int)(y + h - 44), list, 1);
     }
 }
@@ -6248,7 +6315,7 @@ static void message_dialog(Pc5Ui *ui, Pc5Canvas *c)
                   ui->message_title, 0);
     pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)x + 140, (int)(y + body_y), (int)w - 204, body_lines, 42, C_DIM,
                   ui->message_body, 0);
-    Hint list[] = { { accept_glyph(ui), "OK" }, { G_TRIANGLE, "Report on GitHub" } };
+    Hint list[] = { { accept_glyph(ui), T("OK") }, { G_TRIANGLE, T("Report on GitHub") } };
     hints(ui, c, (int)x + 140, (int)(y + h - 48), list, ui->message_report ? 2 : 1);
 }
 
@@ -6283,27 +6350,27 @@ static int qr_draw(Pc5Canvas *c, const Pc5Qr *qr, int x, int y, int box)
 static void report_screen(Pc5Ui *ui, Pc5Canvas *c)
 {
     float w = 1500, h = 700, x = (W - w) / 2, y = (H - h) / 2;
-    char line[400], where[PC5_PATH * 2 + 80];
+    char line[800], where[PC5_PATH * 2 + 80];
     dim(c, 170);
     panel(c, x, y, w, h);
-    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 80, (int)y + 100, C_TEXT, "Report on GitHub", 0, 0);
+    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 80, (int)y + 100, C_TEXT, T("Report on GitHub"), 0, 0);
     int box = 560, qx = (int)(x + w) - box - 70, qy = (int)y + 70;
     qr_draw(c, &ui->report_qr, qx, qy, box);
     int tx = (int)x + 80, tw = qx - tx - 60;
-    const char *game = ui->report_game[0] ? ui->report_game : "The game";
+    const char *game = ui->report_game[0] ? ui->report_game : T("The game");
     if (ui->report_qr.size)
-        snprintf(line, sizeof(line), "1. Scan the code with your phone. GitHub's form for a new issue opens, filled in with %s, "
+        pc5_tf(line, sizeof(line), "1. Scan the code with your phone. GitHub's form for a new issue opens, filled in with %s, "
                  "PC5's version and what PC5 saw.", game);
     else
-        snprintf(line, sizeof(line), "1. On your phone or computer, open %s and choose New issue.", "github.com/bornaradusin/PC5/issues");
+        pc5_tf(line, sizeof(line), "1. On your phone or computer, open %s and choose New issue.", "github.com/bornaradusin/PC5/issues");
     int at = (int)y + 190;
     at += 42 * pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, tx, at, tw, 4, 42, C_DIM, line, 0) + 24;
-    snprintf(where, sizeof(where), "2. Copy %s off the console, from %s/logs, as you copy files to it.", pc5_report_file(&ui->report),
+    pc5_tf(where, sizeof(where), "2. Copy %s off the console, from %s/logs, as you copy files to it.", pc5_report_file(&ui->report),
              ui->root);
     at += 42 * pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, tx, at, tw, 4, 42, C_DIM, where, 0) + 24;
     pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, tx, at, tw, 3, 42, C_DIM,
-                  "3. Say what happened, attach the zip, and submit. You need a GitHub account.", 0);
-    Hint list[] = { { back_glyph(ui), "Back" } };
+                  T("3. Say what happened, attach the zip, and submit. You need a GitHub account."), 0);
+    Hint list[] = { { back_glyph(ui), T("Back") } };
     hints(ui, c, tx, (int)(y + h - 48), list, 1);
 }
 
@@ -6315,16 +6382,16 @@ static void web_qr_screen(Pc5Ui *ui, Pc5Canvas *c)
     char line[200];
     dim(c, 170);
     panel(c, x, y, w, h);
-    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 80, (int)y + 100, C_TEXT, "PC5's web page", 0, 0);
+    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 80, (int)y + 100, C_TEXT, T("PC5's web page"), 0, 0);
     int box = 560, qx = (int)(x + w) - box - 70, qy = (int)y + 70;
     qr_draw(c, &ui->web_qr, qx, qy, box);
     int tx = (int)x + 80, tw = qx - tx - 60, at = (int)y + 190;
-    snprintf(line, sizeof(line), "Scan the code with your phone, or open %s in a browser on a PC on the same network.", ui->web_url);
+    pc5_tf(line, sizeof(line), "Scan the code with your phone, or open %s in a browser on a PC on the same network.", ui->web_url);
     at += 42 * pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, tx, at, tw, 4, 42, C_DIM, line, 0) + 24;
     pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, tx, at, tw, 6, 42, C_DIM,
-                  "From there: send a game's folder to install, report a problem with a game (its log and settings go "
-                  "with it), edit launch options and download logs. It works while PC5 is open.", 0);
-    Hint list[] = { { accept_glyph(ui), "Done" } };
+                  T("From there: send a game's folder to install, report a problem with a game (its log and settings go "
+                  "with it), edit launch options and download logs. It works while PC5 is open."), 0);
+    Hint list[] = { { accept_glyph(ui), T("Done") } };
     hints(ui, c, (int)x + 80, (int)(y + h - 60), list, 1);
 }
 
@@ -6333,20 +6400,20 @@ static void compatibility_screen(Pc5Ui *ui, Pc5Canvas *c)
     float w = 1500, h = 700, x = (W - w) / 2, y = (H - h) / 2;
     dim(c, 170);
     panel(c, x, y, w, h);
-    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 80, (int)y + 100, C_TEXT, "Game compatibility list", 0, 0);
+    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 80, (int)y + 100, C_TEXT, T("Game compatibility list"), 0, 0);
     int box = 560, qx = (int)(x + w) - box - 70, qy = (int)y + 70;
     qr_draw(c, &ui->compatibility_qr, qx, qy, box);
     int tx = (int)x + 80, tw = qx - tx - 60, at = (int)y + 190;
     at += 42 * pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, tx, at, tw, 4, 42, C_DIM,
                              ui->compatibility_qr.size
-                                 ? "Scan the code with your phone: PC5's wiki opens on the list of games players have "
-                                   "tried, how each ran and the settings that helped."
-                                 : "On your phone or computer, open github.com/bornaradusin/PC5/wiki/Game-compatibility: "
-                                   "the games players have tried, how each ran and the settings that helped.", 0) + 24;
+                                 ? T("Scan the code with your phone: PC5's wiki opens on the list of games players have "
+                                   "tried, how each ran and the settings that helped.")
+                                 : T("On your phone or computer, open github.com/bornaradusin/PC5/wiki/Game-compatibility: "
+                                   "the games players have tried, how each ran and the settings that helped."), 0) + 24;
     pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, tx, at, tw, 4, 42, C_DIM,
-                  "Got a game running? Add a game, at the top of the list's page: the form takes a minute. You need a GitHub "
-                  "account.", 0);
-    Hint list[] = { { back_glyph(ui), "Back" } };
+                  T("Got a game running? Add a game, at the top of the list's page: the form takes a minute. You need a GitHub "
+                  "account."), 0);
+    Hint list[] = { { back_glyph(ui), T("Back") } };
     hints(ui, c, tx, (int)(y + h - 48), list, 1);
 }
 
@@ -6357,7 +6424,7 @@ static void upgrade_screen(Pc5Ui *ui, Pc5Canvas *c)
     int step = atomic_load(&u->step);
     uint64_t done = atomic_load(&u->done), total = atomic_load(&u->total);
     float w = 1180, h = 520, x = (W - w) / 2, y = (H - h) / 2;
-    char title[200], line[300], have[32], all[32], speed[32], left[48] = "";
+    char title[200], line[600], have[32], all[32], speed[32], left[48] = "";
     const char *what;
     int number;
 
@@ -6367,32 +6434,32 @@ static void upgrade_screen(Pc5Ui *ui, Pc5Canvas *c)
         pc5_circle(c, x + 92, y + 108, 22, 0xff3fb27fu);
         pc5_line(c, x + 81, y + 109, x + 89, y + 117, 4, 0xff0b0d10u);
         pc5_line(c, x + 89, y + 117, x + 104, y + 99, 4, 0xff0b0d10u);
-        snprintf(title, sizeof(title), "PC5 %s is installed", u->version);
+        pc5_tf(title, sizeof(title), "PC5 %s is installed", u->version);
         pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 140, (int)y + 122, C_TEXT, title, (int)w - 204, 0);
         pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)x + 140, (int)y + 200, (int)w - 204, 5, 42, C_DIM,
-                      "PC5 restarts now with the new version. Your games, saves and settings are as they were.", 0);
-        Hint list[] = { { accept_glyph(ui), "Restart PC5" } };
+                      T("PC5 restarts now with the new version. Your games, saves and settings are as they were."), 0);
+        Hint list[] = { { accept_glyph(ui), T("Restart PC5") } };
         hints(ui, c, (int)x + 140, (int)(y + h - 48), list, 1);
         return;
     }
     switch (step) {
-    case PC5_UPGRADE_DOWNLOADING: what = "Downloading it from GitHub"; number = 1; break;
-    case PC5_UPGRADE_UNPACKING: what = "Unpacking it and checking every file"; number = 2; break;
-    case PC5_UPGRADE_REPLACING: what = "Putting the new files in place"; number = 3; break;
-    case PC5_UPGRADE_TIDYING: what = "Deleting the old files"; number = 3; break;
-    default: what = "Asking GitHub and finding PC5's folder"; number = 0; break;
+    case PC5_UPGRADE_DOWNLOADING: what = T("Downloading it from GitHub"); number = 1; break;
+    case PC5_UPGRADE_UNPACKING: what = T("Unpacking it and checking every file"); number = 2; break;
+    case PC5_UPGRADE_REPLACING: what = T("Putting the new files in place"); number = 3; break;
+    case PC5_UPGRADE_TIDYING: what = T("Deleting the old files"); number = 3; break;
+    default: what = T("Asking GitHub and finding PC5's folder"); number = 0; break;
     }
     int stopping = atomic_load(&u->cancel) && step <= PC5_UPGRADE_UNPACKING;
-    if (stopping) { what = "Stopping"; number = 0; }
-    if (step >= PC5_UPGRADE_DOWNLOADING && u->version[0]) snprintf(title, sizeof(title), "Updating PC5 to %s", u->version);
-    else pc5_copy(title, sizeof(title), "Updating PC5");
+    if (stopping) { what = T("Stopping"); number = 0; }
+    if (step >= PC5_UPGRADE_DOWNLOADING && u->version[0]) pc5_tf(title, sizeof(title), "Updating PC5 to %s", u->version);
+    else pc5_copy(title, sizeof(title), T("Updating PC5"));
     pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 64, (int)y + 116, C_TEXT, title, (int)w - 128, 0);
-    if (number) snprintf(line, sizeof(line), "Step %d of 3 \xc2\xb7 %s", number, what);
+    if (number) pc5_tf(line, sizeof(line), "Step %d of 3 \xc2\xb7 %s", number, what);
     else pc5_copy(line, sizeof(line), what);
     pc5_text(c, &ui->fonts, PC5_FACE_LABEL, (int)x + 64, (int)y + 186, C_TEXT, line, (int)w - 128, 0);
     if (step == PC5_UPGRADE_REPLACING && total) {
         progress_bar(c, x + 64, y + 236, w - 128, (double)done / (double)total, pc5_mix(C_ACCENT, C_TEXT, 60));
-        snprintf(line, sizeof(line), "%llu of %llu files", (unsigned long long)done, (unsigned long long)total);
+        pc5_tf(line, sizeof(line), "%llu of %llu files", (unsigned long long)done, (unsigned long long)total);
         pc5_text(c, &ui->fonts, PC5_FACE_BODY, (int)x + 64, (int)y + 306, C_DIM, line, (int)w - 128, 0);
     } else if ((step == PC5_UPGRADE_DOWNLOADING || step == PC5_UPGRADE_UNPACKING) && total && !stopping) {
         progress_bar(c, x + 64, y + 236, w - 128, (double)done / (double)total, pc5_mix(C_ACCENT, C_TEXT, 60));
@@ -6402,27 +6469,27 @@ static void upgrade_screen(Pc5Ui *ui, Pc5Canvas *c)
             pc5_size_text((uint64_t)ui->speed, speed, sizeof(speed));
             if (total > done) {
                 double seconds = (double)(total - done) / ui->speed;
-                if (seconds < 60) snprintf(left, sizeof(left), " \xc2\xb7 under a minute left");
-                else snprintf(left, sizeof(left), " \xc2\xb7 about %d min left", (int)(seconds / 60 + 0.5));
+                if (seconds < 60) pc5_tf(left, sizeof(left), " \xc2\xb7 under a minute left");
+                else pc5_tf(left, sizeof(left), " \xc2\xb7 about %d min left", (int)(seconds / 60 + 0.5));
             }
-            snprintf(line, sizeof(line), "%s of %s \xc2\xb7 %s/s%s", have, all, speed, left);
+            pc5_tf(line, sizeof(line), "%s of %s \xc2\xb7 %s/s%s", have, all, speed, left);
         } else {
-            snprintf(line, sizeof(line), "%s of %s \xc2\xb7 measuring the speed", have, all);
+            pc5_tf(line, sizeof(line), "%s of %s \xc2\xb7 measuring the speed", have, all);
         }
         pc5_text(c, &ui->fonts, PC5_FACE_BODY, (int)x + 64, (int)y + 306, C_DIM, line, (int)w - 128, 0);
     } else {
         spinner(c, x + w - 100, y + 176, 22, ui->now, C_TEXT);
     }
     if (step >= PC5_UPGRADE_DOWNLOADING && u->folder[0]) {
-        snprintf(line, sizeof(line), "Into %.280s", u->folder);
+        pc5_tf(line, sizeof(line), "Into %.280s", u->folder);
         pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 64, (int)y + 350, C_FAINT, line, (int)w - 128, 0);
     }
     if (step <= PC5_UPGRADE_UNPACKING && !stopping) {
-        Hint list[] = { { back_glyph(ui), "Stop" } };
+        Hint list[] = { { back_glyph(ui), T("Stop") } };
         hints(ui, c, (int)x + 64, (int)(y + h - 44), list, 1);
     } else if (step >= PC5_UPGRADE_REPLACING) {
         pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 64, (int)(y + h - 44), C_DIM,
-                 "Don't turn the console off now. This takes a moment.", (int)w - 128, 0);
+                 T("Don't turn the console off now. This takes a moment."), (int)w - 128, 0);
     }
 }
 
@@ -6436,7 +6503,7 @@ static void start_screen(Pc5Ui *ui, Pc5Canvas *c, const char *line, int can_skip
     spinner(c, 960, 600, 22, ui->now, C_DIM);
     if (line) pc5_text(c, &ui->fonts, PC5_FACE_BODY, 960, 690, C_DIM, line, 1400, 1);
     if (can_skip) {
-        Hint list[] = { { back_glyph(ui), "Skip" } };
+        Hint list[] = { { back_glyph(ui), T("Skip") } };
         hints(ui, c, MARGIN, 1012, list, 1);
     }
 }
@@ -6450,7 +6517,7 @@ static void picture_screen(Pc5Ui *ui, Pc5Canvas *c)
     int cover = ui->pick_kind == PICK_COVER, icon = ui->pick_kind == PICK_ICON, entry = pick_entry(ui, ui->pick_at);
     float w = 1600, h = 880, x = (W - w) / 2, y = (H - h) / 2;
     float pw = cover ? 420 : icon ? 540 : 960, ph = cover ? 630 : 540, px = x + 72, py = y + 90;
-    char line[300];
+    char line[600];
 
     dim(c, 160);
     panel(c, x, y, w, h);
@@ -6469,43 +6536,44 @@ static void picture_screen(Pc5Ui *ui, Pc5Canvas *c)
         pc5_round_rect(c, px, py, pw, ph, 14, 0xa0000000u);
         spinner(c, px + pw / 2, py + ph / 2, 34, ui->now, C_TEXT);
     }
-    snprintf(line, sizeof(line), "%d of %d", ui->pick_at + 1, ui->pick_count);
+    /* TRANSLATORS: which picture is shown: 3 of 12. */
+    pc5_tf(line, sizeof(line), "%d of %d", ui->pick_at + 1, ui->pick_count);
     pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)(px + pw / 2), (int)(py + ph + 46), C_DIM, line, (int)pw, 1);
 
     float tx = px + pw + 64, tw = x + w - 72 - tx, ty = y + 150;
     ty += 64 * (float)pc5_text_wrap(c, &ui->fonts, PC5_FACE_TITLE, (int)tx, (int)ty, (int)tw, 2, 64, C_TEXT, game->title, 0);
-    pc5_text(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)ty, C_DIM, cover ? "Its cover" : icon ? "Its tile picture" : "Its background", (int)tw, 0);
+    pc5_text(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)ty, C_DIM, cover ? T("Its cover") : icon ? T("Its tile picture") : T("Its background"), (int)tw, 0);
     ty += 90;
     const char *what = "", *detail = "";
     if (ui->pick_fetching) what = "";
-    else if (entry < 0) what = cover ? "The cover it has now" : icon ? "The tile picture it has now" : "The background it has now";
+    else if (entry < 0) what = cover ? T("The cover it has now") : icon ? T("The tile picture it has now") : T("The background it has now");
     else if (entry < ui->pick->count) {
-        what = cover ? "A cover found online" : icon ? "A square picture found online" : "A background found online";
+        what = cover ? T("A cover found online") : icon ? T("A square picture found online") : T("A background found online");
         detail = ui->pick->choices[entry].title;
-    } else what = cover ? "Made from the game's icon and name"
-                  : icon ? "Made from its cover" : "None: a backdrop made from its cover";
+    } else what = cover ? T("Made from the game's icon and name")
+                  : icon ? T("Made from its cover") : T("None: a backdrop made from its cover");
     ty += 50 * (float)pc5_text_wrap(c, &ui->fonts, PC5_FACE_LABEL, (int)tx, (int)ty, (int)tw, 2, 50, C_TEXT, what, 0);
     if (detail[0]) ty += 42 * (float)pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)ty, (int)tw, 2, 42, C_DIM, detail, 0);
     ty += 40;
     if (!ui->pick->count) {
-        char none[200];
+        char none[400];
         if (ui->pick_query[0])
-            snprintf(none, sizeof(none), "Nothing found for \xe2\x80\x9c%s\xe2\x80\x9d.", ui->pick_query);
+            pc5_tf(none, sizeof(none), "Nothing found for \xe2\x80\x9c%s\xe2\x80\x9d.", ui->pick_query);
         else if (icon && !ui->griddb_key[0])
-            snprintf(none, sizeof(none), "Square pictures come from SteamGridDB: put your key in api_keys.txt (Covers on the wiki).");
+            pc5_tf(none, sizeof(none), "Square pictures come from SteamGridDB: put your key in api_keys.txt (Covers on the wiki).");
         else
-            snprintf(none, sizeof(none), "Nothing found for its name.");
+            pc5_tf(none, sizeof(none), "Nothing found for its name.");
         ty += 40 * (float)pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)ty, (int)tw, 2, 40, C_WARN, none, 0);
     } else if (ui->pick_query[0]) {
-        snprintf(line, sizeof(line), "Found for \xe2\x80\x9c%s\xe2\x80\x9d", ui->pick_query);
+        pc5_tf(line, sizeof(line), "Found for \xe2\x80\x9c%s\xe2\x80\x9d", ui->pick_query);
         ty += 40 * (float)pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)ty, (int)tw, 2, 40, C_FAINT, line, 0);
     }
     Hint list[4];
     int n = 0;
-    list[n++] = (Hint){ accept_glyph(ui), "Use this" };
-    if (ui->pick_count > 1) list[n++] = (Hint){ G_L1R1, cover ? "Other covers" : icon ? "Other pictures" : "Other backgrounds" };
-    if (ui->platform.keyboard_open) list[n++] = (Hint){ G_TRIANGLE, "Search by name" };
-    list[n++] = (Hint){ back_glyph(ui), "Back" };
+    list[n++] = (Hint){ accept_glyph(ui), T("Use this") };
+    if (ui->pick_count > 1) list[n++] = (Hint){ G_L1R1, cover ? T("Other covers") : icon ? T("Other pictures") : T("Other backgrounds") };
+    if (ui->platform.keyboard_open) list[n++] = (Hint){ G_TRIANGLE, T("Search by name") };
+    list[n++] = (Hint){ back_glyph(ui), T("Back") };
     hints(ui, c, (int)px, (int)(y + h - 48), list, n);
 }
 
@@ -6518,7 +6586,7 @@ static void files_row(Pc5Ui *ui, Pc5Canvas *c, int i, float x, float y, float w,
     if (!ui->files_path[0]) {
         const FilesPlace *place = &ui->files_place[i];
         char where[PC5_PATH + 32];
-        snprintf(where, sizeof(where), "%.900s%s", place->path, place->read_only ? " \xc2\xb7 read-only" : "");
+        snprintf(where, sizeof(where), "%.900s%s", place->path, place->read_only ? T(" \xc2\xb7 read-only") : "");
         pc5_text(c, &ui->fonts, PC5_FACE_LABEL, (int)x, (int)y + 40, C_TEXT, place->name, (int)w, 0);
         pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x, (int)y + 74, C_DIM, where, (int)w, 0);
         return;
@@ -6534,7 +6602,7 @@ static void files_row(Pc5Ui *ui, Pc5Canvas *c, int i, float x, float y, float w,
     }
     pc5_size_text(item->size, size, sizeof(size));
     pc5_text(c, &ui->fonts, PC5_FACE_LABEL, (int)x + 106, (int)y + 46, C_TEXT, item->name, (int)w - 106 - 200, 0);
-    pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)(x + w), (int)y + 46, C_DIM, item->dir ? "Folder" : size, 0, 2);
+    pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)(x + w), (int)y + 46, C_DIM, item->dir ? T("Folder") : size, 0, 2);
 }
 
 /* The folder (or the places), as a list. */
@@ -6542,13 +6610,13 @@ static void files_list_screen(Pc5Ui *ui, Pc5Canvas *c)
 {
     char title[PC5_PATH + 200], empty[PC5_ERROR] = "";
     int keep = ui->menu, ticks = files_ticks(ui);
-    const char *name = "Game files";
+    const char *name = T("Game files");
     if (ui->files_game) {
         int index = pc5_library_find(&ui->library, ui->launch_id);
         if (index >= 0) name = ui->library.games[index].title;
     }
     if (!ui->files_path[0]) {
-        pc5_copy(title, sizeof(title), "File manager");
+        pc5_copy(title, sizeof(title), T("File manager"));
     } else if (ui->files_game) {
         size_t n = strlen(ui->files_top);
         if (!strncmp(ui->files_path, ui->files_top, n) && ui->files_path[n] == '/')
@@ -6558,18 +6626,18 @@ static void files_list_screen(Pc5Ui *ui, Pc5Canvas *c)
     } else {
         snprintf(title, sizeof(title), "%s", ui->files_path);
     }
-    if (ui->files_path[0] && !files_writable(ui, ui->files_path)) pc5_format(title + strlen(title), sizeof(title) - strlen(title), " \xc2\xb7 read-only");
-    if (ticks) pc5_format(title + strlen(title), sizeof(title) - strlen(title), " \xc2\xb7 %d ticked", ticks);
+    if (ui->files_path[0] && !files_writable(ui, ui->files_path)) pc5_format(title + strlen(title), sizeof(title) - strlen(title), "%s", T(" \xc2\xb7 read-only"));
+    if (ticks) pc5_tf(title + strlen(title), sizeof(title) - strlen(title), " \xc2\xb7 %d ticked", ticks);
     if (ui->files.error) snprintf(empty, sizeof(empty), "%s.", strerror(ui->files.error));
-    else if (files_writable(ui, ui->files_path)) pc5_copy(empty, sizeof(empty), "\xe2\x96\xb3 Paste or New folder puts something in it.");
+    else if (files_writable(ui, ui->files_path)) pc5_copy(empty, sizeof(empty), T("\xe2\x96\xb3 Paste or New folder puts something in it."));
 
     int folder = ui->files_path[0] && ui->files_at < ui->files.count && ui->files.items[ui->files_at].dir;
-    Hint places[] = { { accept_glyph(ui), "Open" }, { back_glyph(ui), "Back" } };
+    Hint places[] = { { accept_glyph(ui), T("Open") }, { back_glyph(ui), T("Back") } };
     /* On a file ✕ shows its actions too, as △ does: said once. */
-    Hint list[] = { { accept_glyph(ui), "Open" }, { G_SQUARE, "Tick" }, { G_TRIANGLE, "Actions" }, { back_glyph(ui), "Back" } };
+    Hint list[] = { { accept_glyph(ui), T("Open") }, { G_SQUARE, T("Tick") }, { G_TRIANGLE, T("Actions") }, { back_glyph(ui), T("Back") } };
     ui->menu = ui->files_at;
     ui->list_top = ui->files_list_top;
-    list_panel(ui, c, title, files_count(ui), files_row, ui->files.error ? "PC5 can't open this folder" : "This folder is empty",
+    list_panel(ui, c, title, files_count(ui), files_row, ui->files.error ? T("PC5 can't open this folder") : T("This folder is empty"),
                empty, ui->files_path[0] ? list + !folder : places, ui->files_path[0] ? 4 - !folder : 2, ui->files_path[0] ? 80 : 104);
     ui->files_list_top = ui->list_top;
     ui->menu = keep;
@@ -6580,22 +6648,23 @@ static void files_action_text(const Pc5Ui *ui, FilesAction action, const char **
 {
     value[0] = about[0] = 0;
     switch (action) {
-    case FA_COPY: *label = "Copy"; pc5_copy(about, size, "Then Paste puts a copy in another folder"); break;
-    case FA_CUT: *label = "Cut"; pc5_copy(about, size, "Then Paste moves it to another folder"); break;
+    case FA_COPY: *label = T("Copy"); pc5_copy(about, size, T("Then Paste puts a copy in another folder")); break;
+    case FA_CUT: *label = T("Cut"); pc5_copy(about, size, T("Then Paste moves it to another folder")); break;
     case FA_PASTE: {
         const char *slash = strrchr(ui->clip_from, '/');
-        *label = "Paste";
-        snprintf(about, size, "%s %d item%s from %.120s", ui->clip_cut ? "Moves" : "Copies", ui->clip.count,
-                 ui->clip.count == 1 ? "" : "s", slash && slash[1] ? slash + 1 : ui->clip_from);
+        *label = T("Paste");
+        pc5_tf(about, size, ui->clip_cut ? (ui->clip.count == 1 ? "Moves %d item from %.120s" : "Moves %d items from %.120s")
+                                         : (ui->clip.count == 1 ? "Copies %d item from %.120s" : "Copies %d items from %.120s"),
+               ui->clip.count, slash && slash[1] ? slash + 1 : ui->clip_from);
         snprintf(value, value_size, "%d", ui->clip.count);
         break;
     }
-    case FA_RENAME: *label = "Rename"; pc5_copy(about, size, "Type its new name"); break;
-    case FA_NEW_FOLDER: *label = "New folder"; pc5_copy(about, size, "An empty folder in this one"); break;
-    case FA_DELETE: *label = "Delete"; pc5_copy(about, size, "Deleted for good: there is no undo"); break;
+    case FA_RENAME: *label = T("Rename"); pc5_copy(about, size, T("Type its new name")); break;
+    case FA_NEW_FOLDER: *label = T("New folder"); pc5_copy(about, size, T("An empty folder in this one")); break;
+    case FA_DELETE: *label = T("Delete"); pc5_copy(about, size, T("Deleted for good: there is no undo")); break;
     case FA_TICK_ALL:
-        *label = files_ticks(ui) == ui->files.count ? "Untick all" : "Tick all";
-        pc5_copy(about, size, "Every item in this folder");
+        *label = files_ticks(ui) == ui->files.count ? T("Untick all") : T("Tick all");
+        pc5_copy(about, size, T("Every item in this folder"));
         break;
     }
 }
@@ -6604,15 +6673,15 @@ static void files_menu_screen(Pc5Ui *ui, Pc5Canvas *c)
 {
     FilesAction rows[FILES_ACTIONS];
     int count = files_actions(ui, rows), ticks = files_ticks(ui);
-    char title[PC5_FILES_NAME + 32], about[200], value[32];
+    char title[PC5_FILES_NAME + 64], about[400], value[32];
     const char *label = "";
     float extra;
-    if (ticks) snprintf(title, sizeof(title), "%d items", ticks);
+    if (ticks) pc5_tf(title, sizeof(title), "%d items", ticks);
     else if (ui->files_at < ui->files.count) pc5_copy(title, sizeof(title), ui->files.items[ui->files_at].name);
-    else pc5_copy(title, sizeof(title), "This folder");
+    else pc5_copy(title, sizeof(title), T("This folder"));
     float x = drawer(ui, c, title);
     pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 64, 182, C_DIM,
-             files_writable(ui, ui->files_path) ? ui->files_path : "Read-only: PC5 changes nothing here", 760 - 128, 0);
+             files_writable(ui, ui->files_path) ? ui->files_path : T("Read-only: PC5 changes nothing here"), 760 - 128, 0);
     if (ui->menu < count) files_action_text(ui, rows[ui->menu], &label, about, sizeof(about), value, sizeof(value));
     else about[0] = 0;
     float pitch = rows_pitch(ui, 226, count, about, &extra);
@@ -6621,7 +6690,7 @@ static void files_menu_screen(Pc5Ui *ui, Pc5Canvas *c)
         drawer_row(ui, c, x, 226 + pitch * i + (i > ui->menu ? extra : 0), pitch + (i == ui->menu ? extra : 0), i == ui->menu,
                    label, about, value);
     }
-    Hint list[] = { { accept_glyph(ui), "Choose" }, { back_glyph(ui), "Back" } };
+    Hint list[] = { { accept_glyph(ui), T("Choose") }, { back_glyph(ui), T("Back") } };
     hints(ui, c, (int)x + 64, 1012, list, 2);
 }
 
@@ -6634,58 +6703,63 @@ static void files_working_screen(Pc5Ui *ui, Pc5Canvas *c)
     int items = job->total_items ? (int)job->total_items : 1;
     dim(c, 150);
     panel(c, x, y, w, h);
-    snprintf(title, sizeof(title), "%s", job->stop ? "Stopping"
-                                    : job->op == PC5_FILES_DELETE ? "Deleting"
-                                    : job->op == PC5_FILES_MOVE ? "Moving" : "Copying");
+    snprintf(title, sizeof(title), "%s", job->stop ? T("Stopping")
+                                    : job->op == PC5_FILES_DELETE ? T("Deleting")
+                                    : job->op == PC5_FILES_MOVE ? T("Moving") : T("Copying"));
     pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 64, (int)y + 116, C_TEXT, title, (int)w - 128, 0);
-    pc5_text(c, &ui->fonts, PC5_FACE_LABEL, (int)x + 64, (int)y + 186, C_TEXT, job->current[0] ? job->current : "Getting ready",
+    pc5_text(c, &ui->fonts, PC5_FACE_LABEL, (int)x + 64, (int)y + 186, C_TEXT, job->current[0] ? job->current : T("Getting ready"),
              (int)w - 128, 0);
     double fraction = job->total_bytes ? (double)job->done_bytes / (double)job->total_bytes : (double)job->done_items / items;
     progress_bar(c, x + 64, y + 236, w - 128, fraction, pc5_mix(C_ACCENT, C_TEXT, 60));
     if (job->total_bytes) {
         pc5_size_text(job->done_bytes, have, sizeof(have));
         pc5_size_text(job->total_bytes, all, sizeof(all));
-        snprintf(line, sizeof(line), "%s of %s", have, all);
+        pc5_tf(line, sizeof(line), "%s of %s", have, all);
     } else {
-        snprintf(line, sizeof(line), "%u of %u", (unsigned)job->done_items, (unsigned)job->total_items);
+        pc5_tf(line, sizeof(line), "%u of %u", (unsigned)job->done_items, (unsigned)job->total_items);
     }
     pc5_text(c, &ui->fonts, PC5_FACE_BODY, (int)x + 64, (int)y + 306, C_DIM, line, (int)w - 128, 0);
     if (!job->stop) {
-        Hint list[] = { { back_glyph(ui), "Stop" } };
+        Hint list[] = { { back_glyph(ui), T("Stop") } };
         hints(ui, c, (int)x + 64, (int)(y + h - 44), list, 1);
     }
 }
 
 static void files_draw(Pc5Ui *ui, Pc5Canvas *c)
 {
-    char title[PC5_FILES_NAME + 64], body[400], size[32];
+    char title[PC5_FILES_NAME + 128], body[800], size[32], files[64], folders[64];
     files_list_screen(ui, c);
     switch (ui->screen) {
     case S_FILES_MENU: files_menu_screen(ui, c); break;
     case S_FILES_CONFLICT: {
         const char *one = ui->clip.count ? strrchr(ui->clip.list[0], '/') : NULL;
-        if (ui->clip.count == 1) snprintf(title, sizeof(title), "This folder has %.200s already", one ? one + 1 : "it");
-        else snprintf(title, sizeof(title), "This folder has %d of the %d items already", ui->files_conflicts, ui->clip.count);
+        if (ui->clip.count == 1) pc5_tf(title, sizeof(title), "This folder has %.200s already", one ? one + 1 : T("it"));
+        else pc5_tf(title, sizeof(title), "This folder has %d of the %d items already", ui->files_conflicts, ui->clip.count);
         confirm3_dialog(ui, c, title,
-                        "Skip leaves those as they are. Keep both gives the new ones a name like \xe2\x80\x9cname (2)\xe2\x80\x9d. "
-                        "Replace overwrites files and puts folders' contents together.",
-                        "Skip", "Keep both", "Replace", NULL);
+                        T("Skip leaves those as they are. Keep both gives the new ones a name like \xe2\x80\x9cname (2)\xe2\x80\x9d. "
+                          "Replace overwrites files and puts folders' contents together."),
+                        T("Skip"), T("Keep both"), T("Replace"), NULL);
         break;
     }
     case S_FILES_DELETE: {
         int ticks = files_ticks(ui);
-        if (ticks > 1) snprintf(title, sizeof(title), "Delete %d items?", ticks);
+        if (ticks > 1) pc5_tf(title, sizeof(title), "Delete %d items?", ticks);
         else if (ticks == 1 || ui->files_at < ui->files.count) {
             int at = ui->files_at;
             for (int i = 0; ticks && i < ui->files.count; i++)
                 if (ui->files_ticked[i]) at = i;
-            snprintf(title, sizeof(title), "Delete %.200s?", at < ui->files.count ? ui->files.items[at].name : "it");
-        } else pc5_copy(title, sizeof(title), "Delete?");
+            pc5_tf(title, sizeof(title), "Delete %.200s?", at < ui->files.count ? ui->files.items[at].name : T("it"));
+        } else pc5_copy(title, sizeof(title), T("Delete?"));
         pc5_size_text(ui->files_size.bytes, size, sizeof(size));
-        snprintf(body, sizeof(body), "%s%u file%s and %u folder%s, %s. They're deleted for good: there is no backup and no undo.",
-                 ui->files_size.partial ? "At least " : "", (unsigned)ui->files_size.files, ui->files_size.files == 1 ? "" : "s",
-                 (unsigned)ui->files_size.folders, ui->files_size.folders == 1 ? "" : "s", size);
-        confirm_dialog(ui, c, title, body, "Cancel", "Delete", 1, NULL);
+        pc5_tf(files, sizeof(files), ui->files_size.files == 1 ? "%u file" : "%u files", (unsigned)ui->files_size.files);
+        pc5_tf(folders, sizeof(folders), ui->files_size.folders == 1 ? "%u folder" : "%u folders",
+               (unsigned)ui->files_size.folders);
+        /* TRANSLATORS: the first %s is a count of files ("3 files"), the second of folders, the third a size ("2.1 GB"). */
+        pc5_tf(body, sizeof(body),
+               ui->files_size.partial ? "At least %s and %s, %s. They're deleted for good: there is no backup and no undo."
+                                      : "%s and %s, %s. They're deleted for good: there is no backup and no undo.",
+               files, folders, size);
+        confirm_dialog(ui, c, title, body, T("Cancel"), T("Delete"), 1, NULL);
         break;
     }
     case S_FILES_WORKING: files_working_screen(ui, c); break;
@@ -6749,14 +6823,14 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
 
     switch (ui->screen) {
     case S_START:
-        start_screen(ui, c, ui->remove.top ? "Finishing an install or uninstall that was cut short" : NULL, 0);
+        start_screen(ui, c, ui->remove.top ? T("Finishing an install or uninstall that was cut short") : NULL, 0);
         break;
     case S_COVERS:
-        snprintf(line, sizeof(line), "Getting covers \xc2\xb7 %d of %d", ui->cover_at + 1, ui->cover_count);
+        pc5_tf(line, sizeof(line), "Getting covers \xc2\xb7 %d of %d", ui->cover_at + 1, ui->cover_count);
         start_screen(ui, c, line, 1);
         break;
     case S_UPDATE:
-        start_screen(ui, c, "Checking for a newer PC5", 0);
+        start_screen(ui, c, T("Checking for a newer PC5"), 0);
         break;
     default:
         library_screen(ui, c);
@@ -6765,14 +6839,14 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
     switch (ui->screen) {
     case S_SETTINGS:
     case S_SETTINGS_TYPING: settings_screen(ui, c); break;
-    case S_CHECKING: settings_screen(ui, c); busy_dialog(ui, c, "Checking for a newer PC5", "Asking GitHub", 0); break;
+    case S_CHECKING: settings_screen(ui, c); busy_dialog(ui, c, T("Checking for a newer PC5"), T("Asking GitHub"), 0); break;
     case S_UPGRADE_ASK: {
         char title[120], body[400], how[200];
         update_how(ui, how, sizeof(how));
-        snprintf(title, sizeof(title), "PC5 %s is available", ui->update.last.version);
-        snprintf(body, sizeof(body), "%s, installs it and restarts. Your games, saves and settings stay. "
+        pc5_tf(title, sizeof(title), "PC5 %s is available", ui->update.last.version);
+        pc5_tf(body, sizeof(body), "%s, installs it and restarts. Your games, saves and settings stay. "
                  "Later: Settings \xe2\x80\xba System.", how);
-        confirm_dialog(ui, c, title, body, "Update now", "Later", 0, NULL);
+        confirm_dialog(ui, c, title, body, T("Update now"), T("Later"), 0, NULL);
         break;
     }
     case S_UPGRADING: upgrade_screen(ui, c); break;
@@ -6782,17 +6856,17 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
     case S_GRAPHICS_API: game_menu_screen(ui, c, ui->menu); graphics_dialog(ui, c); break;
     case S_GAME_READING: {
         int index = pc5_library_find(&ui->library, ui->launch_id);
-        snprintf(line, sizeof(line), "Reading %s", index >= 0 ? ui->library.games[index].title : "the game");
-        busy_dialog(ui, c, line, "Finding its programs", 0);
+        pc5_tf(line, sizeof(line), "Reading %s", index >= 0 ? ui->library.games[index].title : T("the game"));
+        busy_dialog(ui, c, line, T("Finding its programs"), 0);
         break;
     }
     case S_QUEUE_READ: {
         const QueueGame *q = ui->queue && ui->queue_at < ui->queue_count ? &ui->queue[ui->queue_at] : NULL;
-        snprintf(line, sizeof(line), "Getting ready \xc2\xb7 %d of %d", ui->queue_at + 1 > ui->queue_count ? ui->queue_count : ui->queue_at + 1,
+        pc5_tf(line, sizeof(line), "Getting ready \xc2\xb7 %d of %d", ui->queue_at + 1 > ui->queue_count ? ui->queue_count : ui->queue_at + 1,
                  ui->queue_count);
         char detail[200];
         snprintf(detail, sizeof(detail), "%s: %s", q ? q->source.name : "",
-                 ui->queue_phase == 0 ? "reading its files" : "looking for its cover");
+                 ui->queue_phase == 0 ? T("reading its files") : T("looking for its cover"));
         busy_dialog(ui, c, line, detail, 1);
         break;
     }
@@ -6801,29 +6875,30 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
         uint64_t bytes = 0;
         for (int i = 0; i < ui->queue_count; i++) bytes += ui->queue[i].folder.bytes;
         pc5_size_text(bytes, size, sizeof(size));
-        snprintf(title, sizeof(title), "Install %d %s \xc2\xb7 %s", ui->queue_count, ui->queue_count == 1 ? "game" : "games", size);
-        Hint list[] = { { G_OPTIONS, "Install all" }, { accept_glyph(ui), "Review" }, { back_glyph(ui), "Back" } };
+        pc5_tf(title, sizeof(title), ui->queue_count == 1 ? "Install %d game \xc2\xb7 %s" : "Install %d games \xc2\xb7 %s",
+               ui->queue_count, size);
+        Hint list[] = { { G_OPTIONS, T("Install all") }, { accept_glyph(ui), T("Review") }, { back_glyph(ui), T("Back") } };
         list_panel(ui, c, title, ui->queue_count, queue_row, "", "", list, 3, 116);
         break;
     }
     case S_ABOUT: about_screen(ui, c); break;
     case S_COMPATIBILITY: compatibility_screen(ui, c); break;
     case S_WEB_QR: web_qr_screen(ui, c); break;
-    case S_SCAN: busy_dialog(ui, c, "Looking at the USB drives", NULL, 0); break;
+    case S_SCAN: busy_dialog(ui, c, T("Looking at the USB drives"), NULL, 0); break;
     case S_SOURCES: sources_screen(ui, c); break;
     case S_READING:
-        snprintf(line, sizeof(line), "Reading %s", ui->sources[ui->menu].name);
-        busy_dialog(ui, c, line, "Counting its files and finding its program", 0);
+        pc5_tf(line, sizeof(line), "Reading %s", ui->sources[ui->menu].name);
+        busy_dialog(ui, c, line, T("Counting its files and finding its program"), 0);
         break;
     case S_GAME_UPDATE_ASK: {
         int index = pc5_library_find(&ui->library, ui->launch_id);
-        const char *name = index >= 0 ? ui->library.games[index].title : "the game";
+        const char *name = index >= 0 ? ui->library.games[index].title : T("the game");
         char title[300], body[500], size[32];
         pc5_size_text(ui->folder.bytes, size, sizeof(size));
-        snprintf(title, sizeof(title), "Update %s?", name);
-        snprintf(body, sizeof(body), "PC5 copies %s (%s) from the USB drive over the game's folder: the files it has replace "
+        pc5_tf(title, sizeof(title), "Update %s?", name);
+        pc5_tf(body, sizeof(body), "PC5 copies %s (%s) from the USB drive over the game's folder: the files it has replace "
                  "the game's, the others stay. Its saves, settings and options stay too.", ui->folder.name, size);
-        confirm_dialog(ui, c, title, body, "Cancel", "Update", 0,
+        confirm_dialog(ui, c, title, body, T("Cancel"), T("Update"), 0,
                        index >= 0 && ui->covers[index].state ? &ui->covers[index].picture : NULL);
         break;
     }
@@ -6833,73 +6908,74 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
         const char *drive = strrchr(ui->where_usb, '/');
         if (!pc5_free_bytes(ui->root, &room)) pc5_size_text(room, console_free, sizeof(console_free));
         if (!pc5_free_bytes(ui->where_usb, &room)) pc5_size_text(room, usb_free, sizeof(usb_free));
-        if (ui->where_for) snprintf(title, sizeof(title), "Where should the %d games go?", ticked_count(ui));
-        else snprintf(title, sizeof(title), "Where should %s go?", ui->folder.name);
-        snprintf(body, sizeof(body),
+        if (ui->where_for) pc5_tf(title, sizeof(title), "Where should the %d games go?", ticked_count(ui));
+        else pc5_tf(title, sizeof(title), "Where should %s go?", ui->folder.name);
+        pc5_tf(body, sizeof(body),
                  "The console has %s free. The USB drive (%.40s) has %s free: a game there plays from its PC5 folder, so "
                  "keep the drive plugged into a fast port. Its saves stay on the console either way.",
                  console_free, drive ? drive + 1 : ui->where_usb, usb_free);
         if (ui->where_for) sources_screen(ui, c);
         else review_screen(ui, c);
-        confirm_dialog(ui, c, title, body, "Console", "USB drive", 0, NULL);
+        confirm_dialog(ui, c, title, body, T("Console"), T("USB drive"), 0, NULL);
         break;
     }
     case S_SAVES_ASK: {
         char title[300];
-        snprintf(title, sizeof(title), "Put back the saves of %s?", ui->folder.name);
+        pc5_tf(title, sizeof(title), "Put back the saves of %s?", ui->folder.name);
         review_screen(ui, c);
-        confirm_dialog(ui, c, title, "They were kept when it was uninstalled: its saves, settings and options come back "
-                       "with it. Start fresh: they stay kept, for later.", "Start fresh", "Put them back", 0, NULL);
+        confirm_dialog(ui, c, title, T("They were kept when it was uninstalled: its saves, settings and options come back "
+                       "with it. Start fresh: they stay kept, for later."), T("Start fresh"), T("Put them back"), 0, NULL);
         break;
     }
     case S_SEARCH:
-        busy_dialog(ui, c, "Looking for the cover", "On Steam, GOG and others", 1);
+        busy_dialog(ui, c, T("Looking for the cover"), T("On Steam, GOG and others"), 1);
         break;
     case S_PICTURE_SEARCH: {
-        const char *where = "on Steam, GOG and others";
-        if (ui->pick_query[0]) snprintf(line, sizeof(line), "\xe2\x80\x9c%s\xe2\x80\x9d, %s", ui->pick_query, where);
-        else snprintf(line, sizeof(line), "%c%s", where[0] - 32, where + 1);
-        busy_dialog(ui, c, ui->pick_kind == PICK_COVER ? "Looking for covers"
-                           : ui->pick_kind == PICK_ICON ? "Looking for tile pictures" : "Looking for backgrounds", line, 1);
+        if (ui->pick_query[0])
+            /* TRANSLATORS: the name typed, in quotation marks (use your language's), then where it is looked for. */
+            pc5_tf(line, sizeof(line), "\xe2\x80\x9c%s\xe2\x80\x9d, %s", ui->pick_query, T("on Steam, GOG and others"));
+        else pc5_copy(line, sizeof(line), T("On Steam, GOG and others"));
+        busy_dialog(ui, c, ui->pick_kind == PICK_COVER ? T("Looking for covers")
+                           : ui->pick_kind == PICK_ICON ? T("Looking for tile pictures") : T("Looking for backgrounds"), line, 1);
         break;
     }
     case S_PICTURE:
     case S_PICTURE_TYPING: picture_screen(ui, c); break;
     case S_REVIEW: review_screen(ui, c); break;
     case S_PROGRAMS: {
-        Hint list[] = { { accept_glyph(ui), "Choose" }, { back_glyph(ui), "Back" } };
+        Hint list[] = { { accept_glyph(ui), T("Choose") }, { back_glyph(ui), T("Back") } };
         if (ui->program_for) game_menu_screen(ui, c, game_row_find(&ui->controls, ui_game_kind(ui), GR_PROGRAM, NULL));
-        list_panel(ui, c, "Which program is the game?", ui->folder.exe_count, program_row, "", "", list, 2, 104);
+        list_panel(ui, c, T("Which program is the game?"), ui->folder.exe_count, program_row, "", "", list, 2, 104);
         break;
     }
     case S_INSTALL: install_screen(ui, c); break;
     case S_STOP:
         install_screen(ui, c);
         if (ui->install.update)
-            confirm_dialog(ui, c, "Stop updating?", "The copy made so far is deleted and the game stays as it was. The USB "
-                           "drive isn't changed.", "Keep updating", "Stop", 1, NULL);
+            confirm_dialog(ui, c, T("Stop updating?"), T("The copy made so far is deleted and the game stays as it was. The USB "
+                           "drive isn't changed."), T("Keep updating"), T("Stop"), 1, NULL);
         else if (ui->queue_installing)
-            confirm_dialog(ui, c, "Stop installing?",
-                           "What this game copied so far is deleted; games already installed stay. The USB drive isn't "
-                           "changed. Press the back button to keep installing.",
-                           "Stop this game", "Stop all", 1, NULL);
+            confirm_dialog(ui, c, T("Stop installing?"),
+                           T("What this game copied so far is deleted; games already installed stay. The USB drive isn't "
+                           "changed. Press the back button to keep installing."),
+                           T("Stop this game"), T("Stop all"), 1, NULL);
         else
-            confirm_dialog(ui, c, "Stop installing?", "Everything copied so far is deleted. The USB drive isn't changed.",
-                           "Keep installing", "Stop", 1, NULL);
+            confirm_dialog(ui, c, T("Stop installing?"), T("Everything copied so far is deleted. The USB drive isn't changed."),
+                           T("Keep installing"), T("Stop"), 1, NULL);
         break;
     case S_UNINSTALL_LIST: {
-        Hint list[] = { { accept_glyph(ui), ui->menu < ui->library.count ? "Uninstall" : "Delete" }, { back_glyph(ui), "Back" } };
-        list_panel(ui, c, "Uninstall game", ui->library.count + ui->saves_count, game_row, "There are no games to uninstall",
+        Hint list[] = { { accept_glyph(ui), ui->menu < ui->library.count ? T("Uninstall") : T("Delete") }, { back_glyph(ui), T("Back") } };
+        list_panel(ui, c, T("Uninstall game"), ui->library.count + ui->saves_count, game_row, T("There are no games to uninstall"),
                    "", list, 2, 112);
         break;
     }
     case S_SAVES_CONFIRM: {
-        Hint list[] = { { accept_glyph(ui), "Delete" }, { back_glyph(ui), "Back" } };
+        Hint list[] = { { accept_glyph(ui), T("Delete") }, { back_glyph(ui), T("Back") } };
         int at = ui->menu - ui->library.count;
-        list_panel(ui, c, "Uninstall game", ui->library.count + ui->saves_count, game_row, "", "", list, 2, 112);
-        snprintf(line, sizeof(line), "Delete the saves of %s?", at >= 0 && at < ui->saves_count ? ui->saves[at].title : "the game");
-        confirm_dialog(ui, c, line, "Its saves and settings, kept when it was uninstalled, are deleted. There is no backup "
-                       "and no undo.", "Cancel", "Delete", 1, NULL);
+        list_panel(ui, c, T("Uninstall game"), ui->library.count + ui->saves_count, game_row, "", "", list, 2, 112);
+        pc5_tf(line, sizeof(line), "Delete the saves of %s?", at >= 0 && at < ui->saves_count ? ui->saves[at].title : T("the game"));
+        confirm_dialog(ui, c, line, T("Its saves and settings, kept when it was uninstalled, are deleted. There is no backup "
+                       "and no undo."), T("Cancel"), T("Delete"), 1, NULL);
         break;
     }
     case S_UNINSTALL_CONFIRM: {
@@ -6907,23 +6983,23 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
         const Pc5Picture *thumb = ui->covers[ui->menu].state ? &ui->covers[ui->menu].picture : NULL;
         if (ui->uninstall_back == S_GAME_MENU)
             game_menu_screen(ui, c, game_row_find(&ui->controls, ui_game_kind(ui), GR_UNINSTALL, NULL));
-        snprintf(line, sizeof(line), "Uninstall %s?", game->title);
+        pc5_tf(line, sizeof(line), "Uninstall %s?", game->title);
         if (pc5_remove_can_keep(game, &ui->library))
             confirm3_dialog(ui, c, line,
-                            "Keep saves: the game goes, its saves and settings stay, and installing it again puts them back. "
-                            "Delete all: the game, its saves and settings go, with no backup and no undo.",
-                            "Cancel", "Keep saves", "Delete all", thumb);
+                            T("Keep saves: the game goes, its saves and settings stay, and installing it again puts them back. "
+                            "Delete all: the game, its saves and settings go, with no backup and no undo."),
+                            T("Cancel"), T("Keep saves"), T("Delete all"), thumb);
         else
             confirm_dialog(ui, c, line,
-                           "This deletes the game and all its saves and settings. There is no backup and no undo.",
-                           "Cancel", "Uninstall", 1, thumb);
+                           T("This deletes the game and all its saves and settings. There is no backup and no undo."),
+                           T("Cancel"), T("Uninstall"), 1, thumb);
         break;
     }
     case S_REMOVING:
-        snprintf(line, sizeof(line), ui->removing_kind == 2 ? "Deleting the saves of %s" : "Uninstalling %s", ui->removing_title);
+        pc5_tf(line, sizeof(line), ui->removing_kind == 2 ? "Deleting the saves of %s" : "Uninstalling %s", ui->removing_title);
         {
             char count[64];
-            snprintf(count, sizeof(count), "%u files and folders deleted", (unsigned)ui->remove.removed);
+            pc5_tf(count, sizeof(count), "%u files and folders deleted", (unsigned)ui->remove.removed);
             busy_dialog(ui, c, line, count, 0);
         }
         break;
@@ -6939,40 +7015,48 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
         break;
     case S_INSTALL_ASK: {
         char body[PC5_PATH + 300];
-        snprintf(body, sizeof(body),
-                 "%d game%s waiting in PC5's INSTALL folder%s. Install %s now? A game installed from there is moved "
-                 "into PC5's library, out of the INSTALL folder.", ui->install_waiting,
-                 ui->install_waiting == 1 ? " is" : "s are", ui->usb_seen ? "s (its own, and PC5/INSTALL on the USB drive)" : "",
-                 ui->install_waiting == 1 ? "it" : "them");
-        confirm_dialog(ui, c, "Games in PC5's INSTALL folder", body, "Later", "Install", 0, NULL);
+        int one = ui->install_waiting == 1;
+        pc5_tf(body, sizeof(body),
+               ui->usb_seen ? (one ? "%d game is waiting in PC5's INSTALL folders (its own, and PC5/INSTALL on the USB drive). "
+                                     "Install it now? A game installed from there is moved into PC5's library, out of the "
+                                     "INSTALL folder."
+                                   : "%d games are waiting in PC5's INSTALL folders (its own, and PC5/INSTALL on the USB drive). "
+                                     "Install them now? A game installed from there is moved into PC5's library, out of the "
+                                     "INSTALL folder.")
+                            : (one ? "%d game is waiting in PC5's INSTALL folder. Install it now? A game installed from there "
+                                     "is moved into PC5's library, out of the INSTALL folder."
+                                   : "%d games are waiting in PC5's INSTALL folder. Install them now? A game installed from "
+                                     "there is moved into PC5's library, out of the INSTALL folder."),
+               ui->install_waiting);
+        confirm_dialog(ui, c, T("Games in PC5's INSTALL folder"), body, T("Later"), T("Install"), 0, NULL);
         break;
     }
     case S_TILE_ART:
         game_menu_screen(ui, c, ui->menu);
-        busy_dialog(ui, c, "Updating the home screen tile", "Its picture and background", 0);
+        busy_dialog(ui, c, T("Updating the home screen tile"), T("Its picture and background"), 0);
         break;
-    case S_REPORT_CHECK: message_dialog(ui, c); busy_dialog(ui, c, "Checking for a newer PC5", "A newer one may have fixed it", 0); break;
+    case S_REPORT_CHECK: message_dialog(ui, c); busy_dialog(ui, c, T("Checking for a newer PC5"), T("A newer one may have fixed it"), 0); break;
     case S_REPORT_UPDATE: {
         char title[120], body[500], how[200];
-        snprintf(title, sizeof(title), "Update to PC5 %s first?", ui->update.last.version);
+        pc5_tf(title, sizeof(title), "Update to PC5 %s first?", ui->update.last.version);
         if (offer_update(ui)) update_how(ui, how, sizeof(how));
-        else snprintf(how, sizeof(how), "You have %s", PC5_VERSION);
-        snprintf(body, sizeof(body), "This may already be fixed in it. Update, try the game again, and report it if it "
+        else pc5_tf(how, sizeof(how), "You have %s", PC5_VERSION);
+        pc5_tf(body, sizeof(body), "This may already be fixed in it. Update, try the game again, and report it if it "
                  "still happens. %s.", how);
         message_dialog(ui, c);
-        confirm_dialog(ui, c, title, body, "Update now", "Report anyway", 0, NULL);
+        confirm_dialog(ui, c, title, body, T("Update now"), T("Report anyway"), 0, NULL);
         break;
     }
     case S_LAUNCH: {
         int index = pc5_library_find(&ui->library, ui->launch_id);
-        snprintf(line, sizeof(line), "Starting %s", index >= 0 ? ui->library.games[index].title : "the game");
+        pc5_tf(line, sizeof(line), "Starting %s", index >= 0 ? ui->library.games[index].title : T("the game"));
         if (ui->redist_state == 1) {
             char count[PC5_NAME + 64];
-            snprintf(count, sizeof(count), "Installing %.80s for it, once", ui->redist_name);
+            pc5_tf(count, sizeof(count), "Installing %.80s for it, once", ui->redist_name);
             busy_dialog(ui, c, line, count, 0);
         } else if (ui->runtime_state == 1) {
             char count[96];
-            snprintf(count, sizeof(count), "Setting up .NET for your games, once: %u of %u", (unsigned)ui->runtime.done,
+            pc5_tf(count, sizeof(count), "Setting up .NET for your games, once: %u of %u", (unsigned)ui->runtime.done,
                      (unsigned)ui->runtime.total);
             busy_dialog(ui, c, line, count, 0);
         } else {

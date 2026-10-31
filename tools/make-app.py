@@ -179,7 +179,9 @@ def main() -> int:
                    "win/wine/share/wine/fonts/LiberationMono-BoldItalic.ttf",
                    "win/wine/share/wine/fonts/DroidSansFallbackFull.ttf",
                    "LICENSES/liberation-fonts/LICENSE", "LICENSES/droid-sans-fallback/NOTICE",
-                   "pc5/steam/steam_api.dll", "pc5/steam/steam_api64.dll", "LICENSES/gbe_fork/LICENSE"):
+                   "pc5/steam/steam_api.dll", "pc5/steam/steam_api64.dll", "LICENSES/gbe_fork/LICENSE",
+                   "pc5/lang/de.po", "pc5/lang/ja.po", "pc5/fonts-ja.bin", "pc5/fonts-ko.bin", "pc5/fonts-zh-Hans.bin",
+                   "pc5/fonts-zh-Hant.bin", "LICENSES/noto-sans-kr/LICENSE"):
         if not (app / needed).is_file():
             problems.append(f"no {needed}")
     if (app / "dev.conf").exists():
@@ -265,6 +267,11 @@ Built from <https://github.com/bornaradusin/PC5> at commit {repo_commit}:
   `LICENSES/droid-sans-fallback/NOTICE`), unchanged. Games find them as Arial, Times New
   Roman, Courier New and Windows' Chinese, Japanese and Korean fonts; `pc5/prefix-fonts.reg`
   gives them those names, which PC5 adds to the prefix of a game installed before.
+- `pc5/lang`: PC5's own text in other languages, a gettext `.po` file each (the repository's
+  `lang/`), which players may edit; `pc5/fonts-*.bin` hold the Chinese, Japanese and Korean
+  letters that text uses, drawn from Droid Sans Fallback and, for Korean, Noto Sans KR 2.004
+  (<https://github.com/notofonts/noto-cjk>, SIL Open Font License 1.1,
+  `LICENSES/noto-sans-kr/LICENSE`).
 - `pc5/steam`: gbe_fork's Steamworks emulator (<https://github.com/Detanup01/gbe_fork>, LGPL
   3.0, `LICENSES/gbe_fork/LICENSE`), its release build's `steam_api.dll` and
   `steam_api64.dll`, unchanged. PC5 puts one in place of Valve's library in a game that has

@@ -43,42 +43,64 @@ li { margin: 3px 0; overflow-wrap: anywhere; }
 </style>
 </head>
 <body>
-<header><h1>PC5</h1><p id="status">Asking the console…</p>
-<p class="row links"><a href="https://github.com/bornaradusin/PC5/wiki/Game-compatibility" target="_blank" rel="noopener">Game compatibility list</a>
-<a href="https://github.com/bornaradusin/PC5/wiki" target="_blank" rel="noopener">Help (wiki)</a>
-<a href="https://github.com/bornaradusin/PC5/issues/new?template=2-pc5.yml" target="_blank" rel="noopener">Report a problem with PC5</a></p></header>
+<header><h1>PC5</h1><p id="status" data-i18n>Asking the console…</p>
+<p class="row links"><a href="https://github.com/bornaradusin/PC5/wiki/Game-compatibility" target="_blank" rel="noopener" data-i18n>Game compatibility list</a>
+<a href="https://github.com/bornaradusin/PC5/wiki" target="_blank" rel="noopener" data-i18n>Help (wiki)</a>
+<a href="https://github.com/bornaradusin/PC5/issues/new?template=2-pc5.yml" target="_blank" rel="noopener" data-i18n>Report a problem with PC5</a></p></header>
 <main>
 <section>
-  <h2>Send a game</h2>
-  <p class="dim">Choose a game's folder: it goes to PC5's INSTALL folder, then PC5 asks to install it.</p>
+  <h2 data-i18n>Send a game</h2>
+  <p class="dim" data-i18n>Choose a game's folder: it goes to PC5's INSTALL folder, then PC5 asks to install it.</p>
   <div class="row">
-    <label class="button main">Choose a folder<input id="folder" type="file" webkitdirectory multiple hidden></label>
+    <label class="button main"><span data-i18n>Choose a folder</span><input id="folder" type="file" webkitdirectory multiple hidden></label>
   </div>
-  <p class="dim">A phone that can't choose a folder: type the game's folder name, then choose its files.</p>
+  <p class="dim" data-i18n>A phone that can't choose a folder: type the game's folder name, then choose its files.</p>
   <div class="row">
-    <input id="name" type="text" placeholder="The game's folder name">
-    <label class="button">Choose files<input id="files" type="file" multiple hidden></label>
+    <input id="name" type="text" placeholder="The game's folder name" data-i18n-placeholder="The game's folder name">
+    <label class="button"><span data-i18n>Choose files</span><input id="files" type="file" multiple hidden></label>
   </div>
   <p id="sending" class="dim"></p>
   <progress id="progress" value="0" max="1" hidden></progress>
 </section>
 <section>
-  <div class="row"><h2 class="grow">Games</h2><button id="refresh">Refresh</button></div>
-  <input id="filter" type="text" placeholder="Find a game" hidden>
-  <div id="games" class="dim">Loading…</div>
+  <div class="row"><h2 class="grow" data-i18n>Games</h2><button id="refresh" data-i18n>Refresh</button></div>
+  <input id="filter" type="text" placeholder="Find a game" data-i18n-placeholder="Find a game" hidden>
+  <div id="games" class="dim" data-i18n>Loading…</div>
 </section>
 <section>
-  <h2>Logs</h2>
-  <p class="dim">Attach one to an issue on GitHub when a game has a problem: a game's <b>Report a problem</b> above
+  <h2 data-i18n>Logs</h2>
+  <p class="dim" data-i18n>Attach one to an issue on GitHub when a game has a problem: a game's <b>Report a problem</b> above
   downloads its newest log and opens GitHub's form with the game, PC5 and its settings filled in.</p>
-  <ul id="logs"><li class="dim">Loading…</li></ul>
+  <ul id="logs"><li class="dim" data-i18n>Loading…</li></ul>
 </section>
 </main>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
+/* The page's text in PC5's language (/lang.json: the English text to each translation, from the
+ * console's lang/<code>.po, msgctxt "web"); English where there is none. tf fills in %s and %d,
+ * or %1$s, %2$s in a translation that puts them in another order. */
+let strings = {};
+function t(text) { return strings[text] || text; }
+function tf(text, ...values) {
+  let next = 0;
+  return t(text).replace(/%(?:(\d+)\$)?([sd%])/g, (all, at, kind) => kind === "%" ? "%" : String(values[at ? at - 1 : next++]));
+}
+function escaped(text) {
+  return text.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+/* The page's own text: each data-i18n element's (only <b> and <code> kept from a translation),
+ * and the data-i18n-placeholder hints. */
+function translate() {
+  for (const e of document.querySelectorAll("[data-i18n]")) {
+    if (!e.dataset.english) e.dataset.english = e.innerHTML.replace(/\s+/g, " ").trim();
+    const text = t(e.dataset.english);
+    if (text !== e.dataset.english) e.innerHTML = escaped(text).replace(/&lt;(\/?)(b|code)&gt;/g, "<$1$2>");
+  }
+  for (const e of document.querySelectorAll("[data-i18n-placeholder]")) e.placeholder = t(e.dataset.i18nPlaceholder);
+}
 function size(n) {
-  const units = ["bytes", "KB", "MB", "GB", "TB"];
+  const units = [t("bytes"), "KB", "MB", "GB", "TB"];
   let i = 0;
   while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
   return (i ? n.toFixed(1) : n) + " " + units[i];
@@ -99,38 +121,38 @@ function path(parts) { return parts.map(encodeURIComponent).join("/"); }
 async function status() {
   try {
     const s = await json("api/status");
-    let line = "PC5 " + s.version + " · " + size(s.free) + " free on the console";
-    if (s.install) line += " · INSTALL folder: " + size(s.install_free) + " free";
+    let line = tf("PC5 %s · %s free on the console", s.version, size(s.free));
+    if (s.install) line += tf(" · INSTALL folder: %s free", size(s.install_free));
     $("status").textContent = line;
-  } catch (e) { $("status").textContent = "The console didn't answer: " + e.message; }
+  } catch (e) { $("status").textContent = tf("The console didn't answer: %s", e.message); }
 }
 
 /* Which game it is: the Steam app ID PC5 found in the game's folder (or was given), to change by hand
  * when its cover or background is another game's. */
 function identity(game) {
-  const where = game.identity_source === "you" ? "given by you"
-              : game.identity_source ? "found in " + game.identity_source : "none found";
-  const box = el("details", {}, el("summary", { text: "Which game it is (Steam app ID: " + (game.steam_appid || "none") + ")" }));
-  const input = el("input", { type: "text", inputmode: "numeric", placeholder: "Steam app ID, e.g. 1091500" });
+  const where = game.identity_source === "you" ? t("given by you")
+              : game.identity_source ? tf("found in %s", game.identity_source) : t("none found");
+  const box = el("details", {}, el("summary", { text: tf("Which game it is (Steam app ID: %s)", game.steam_appid || t("none")) }));
+  const input = el("input", { type: "text", inputmode: "numeric", placeholder: t("Steam app ID, e.g. 1091500") });
   input.value = game.steam_appid ? String(game.steam_appid) : "";
   const said = el("span", { class: "dim" });
-  const save = el("button", { text: "Save" });
+  const save = el("button", { text: t("Save") });
   save.onclick = async () => {
     save.disabled = true;
-    said.textContent = "Saving…";
+    said.textContent = t("Saving…");
     try {
       const r = await fetch("api/games/" + encodeURIComponent(game.id) + "/steam_appid", { method: "PUT", body: input.value.trim() });
       if (!r.ok) throw new Error(await r.text());
-      said.textContent = input.value.trim() ? "Saved: its cover, background and details are fetched again when PC5 opens."
-                                            : "Cleared: PC5 reads the game's folder again.";
+      said.textContent = input.value.trim() ? t("Saved: its cover, background and details are fetched again when PC5 opens.")
+                                            : t("Cleared: PC5 reads the game's folder again.");
       said.className = "good";
-    } catch (e) { said.textContent = "Not saved: " + e.message; said.className = "bad"; }
+    } catch (e) { said.textContent = tf("Not saved: %s", e.message); said.className = "bad"; }
     save.disabled = false;
   };
-  const help = "PC5 picks the game's cover, background and details by this number (" + where +
-               (game.gog_id ? "; GOG product " + game.gog_id + (game.store_name ? ", " + game.store_name : "") : "") +
-               "). If they are another game's, type the number from the game's Steam store link " +
-               "(store.steampowered.com/app/<number>). Empty: PC5 reads the folder again.";
+  const gog = game.gog_id ? tf("; GOG product %s", game.gog_id + (game.store_name ? ", " + game.store_name : "")) : "";
+  const help = tf("PC5 picks the game's cover, background and details by this number (%s%s). If they are another game's, " +
+                  "type the number from the game's Steam store link (store.steampowered.com/app/<number>). Empty: PC5 reads " +
+                  "the folder again.", where, gog);
   box.append(el("p", { class: "dim", text: help }), el("div", { class: "row" }, input, save, said));
   return box;
 }
@@ -140,16 +162,16 @@ function editor(game, kind, label, help) {
   const area = el("textarea", { spellcheck: "false" });
   area.value = game[kind];
   const said = el("span", { class: "dim" });
-  const save = el("button", { text: "Save" });
+  const save = el("button", { text: t("Save") });
   save.onclick = async () => {
     save.disabled = true;
-    said.textContent = "Saving…";
+    said.textContent = t("Saving…");
     try {
       const r = await fetch("api/games/" + encodeURIComponent(game.id) + "/" + kind, { method: "PUT", body: area.value });
       if (!r.ok) throw new Error(await r.text());
-      said.textContent = "Saved: used at the game's next start.";
+      said.textContent = t("Saved: used at the game's next start.");
       said.className = "good";
-    } catch (e) { said.textContent = "Not saved: " + e.message; said.className = "bad"; }
+    } catch (e) { said.textContent = tf("Not saved: %s", e.message); said.className = "bad"; }
     save.disabled = false;
   };
   box.append(el("p", { class: "dim", text: help }), area, el("div", { class: "row" }, save, said));
@@ -162,39 +184,39 @@ async function games() {
     const list = await json("api/games");
     box.textContent = "";
     box.className = "";
-    if (!list.length) box.append(el("p", { class: "dim", text: "No games yet." }));
+    if (!list.length) box.append(el("p", { class: "dim", text: t("No games yet.") }));
     for (const g of list) {
       const title = el("h3", { text: g.title });
-      if (g.usb) title.append(el("span", { class: "tag", text: "USB drive" }));
-      if (!g.playable) title.append(el("span", { class: "tag bad", text: "can't start" }));
+      if (g.usb) title.append(el("span", { class: "tag", text: t("USB drive") }));
+      if (!g.playable) title.append(el("span", { class: "tag bad", text: t("can't start") }));
       const item = el("div", { class: "game" }, title,
                       el("div", { class: "dim", text: g.detail + (g.folder ? " · " + g.folder : "") }));
       item.dataset.name = (g.title + " " + g.folder).toLowerCase();
       if (!g.playable && g.problem) item.append(el("div", { class: "bad", text: g.problem }));
-      if (g.settings) item.append(el("div", { class: "dim", text: "Settings: " + g.settings }));
+      if (g.settings) item.append(el("div", { class: "dim", text: tf("Settings: %s", g.settings) }));
       const row = el("div", { class: "row" });
       const logUrl = "api/games/" + encodeURIComponent(g.id) + "/log";
-      if (g.log) row.append(el("a", { class: "button", href: logUrl, text: "Newest log" }));
+      if (g.log) row.append(el("a", { class: "button", href: logUrl, text: t("Newest log") }));
       if (g.report) {
-        const report = el("a", { class: "button main", href: g.report, target: "_blank", rel: "noopener", text: "Report a problem" });
-        report.title = "Downloads the newest log and opens GitHub's form, filled in: attach the log there.";
+        const report = el("a", { class: "button main", href: g.report, target: "_blank", rel: "noopener", text: t("Report a problem") });
+        report.title = t("Downloads the newest log and opens GitHub's form, filled in: attach the log there.");
         report.onclick = () => { const a = el("a", { href: logUrl, download: "" }); document.body.append(a); a.click(); a.remove(); };
         row.append(report);
       }
       if (row.childNodes.length) item.append(row);
       if (g.editable) {
-        item.append(editor(g, "launch", "Launch options (launch.txt)",
-                           "The first line that isn't empty or a comment (# or ;) is added to the program's command line."));
+        item.append(editor(g, "launch", t("Launch options (launch.txt)"),
+                           t("The first line that isn't empty or a comment (# or ;) is added to the program's command line.")));
       }
       item.append(identity(g));
-      item.append(editor(g, "env", "Environment variables (env.txt)", "One NAME=value a line, set before the game starts."));
-      item.append(editor(g, "debug", "Extra logging (winedebug.txt)",
-                         "Only when an issue asks for it, for example err+all,+seh. Empty it afterwards: it slows the game down."));
+      item.append(editor(g, "env", t("Environment variables (env.txt)"), t("One NAME=value a line, set before the game starts.")));
+      item.append(editor(g, "debug", t("Extra logging (winedebug.txt)"),
+                         t("Only when an issue asks for it, for example err+all,+seh. Empty it afterwards: it slows the game down.")));
       box.append(item);
     }
     $("filter").hidden = list.length < 6;
     filter();
-  } catch (e) { box.textContent = "The games didn't load: " + e.message; box.className = "bad"; }
+  } catch (e) { box.textContent = tf("The games didn't load: %s", e.message); box.className = "bad"; }
 }
 
 function filter() {
@@ -207,14 +229,14 @@ async function logs() {
   try {
     const list = await json("api/logs");
     box.textContent = "";
-    if (!list.length) box.append(el("li", { class: "dim", text: "No logs kept." }));
+    if (!list.length) box.append(el("li", { class: "dim", text: t("No logs kept.") }));
     for (const l of list) {
       const item = el("li", {}, el("a", { href: "logs/" + encodeURIComponent(l.name), text: l.name }),
                       " ", el("span", { class: "dim", text: size(l.size) + (l.time ? " · " + new Date(l.time * 1000).toLocaleString() : "") }));
-      if (l.name.startsWith("issue-")) item.append(el("span", { class: "tag bad", text: "had a problem" }));
+      if (l.name.startsWith("issue-")) item.append(el("span", { class: "tag bad", text: t("had a problem") }));
       box.append(item);
     }
-  } catch (e) { box.textContent = "The logs didn't load: " + e.message; }
+  } catch (e) { box.textContent = tf("The logs didn't load: %s", e.message); }
 }
 
 function put(url, file, progress) {
@@ -223,7 +245,7 @@ function put(url, file, progress) {
     x.open("PUT", url);
     x.upload.onprogress = e => progress(e.loaded);
     x.onload = () => x.status < 300 ? resolve() : reject(new Error(x.responseText || x.status));
-    x.onerror = () => reject(new Error("the connection was lost"));
+    x.onerror = () => reject(new Error(t("the connection was lost")));
     x.send(file);
   });
 }
@@ -240,18 +262,18 @@ async function send(files, named) {
   for (let i = 0; i < list.length; i++) {
     const f = list[i];
     const relative = named ? named + "/" + f.name : (f.webkitRelativePath || f.name);
-    said.textContent = "Sending " + (i + 1) + " of " + list.length + ": " + relative;
+    said.textContent = tf("Sending %d of %d: %s", i + 1, list.length, relative);
     try {
       await put("upload/" + path(relative.split("/")), f, n => { bar.value = (done + n) / total; });
     } catch (e) {
-      said.textContent = "Stopped at " + relative + ": " + e.message;
+      said.textContent = tf("Stopped at %s: %s", relative, e.message);
       said.className = "bad";
       return;
     }
     done += f.size;
     bar.value = done / total;
   }
-  said.textContent = "Sent " + list.length + " files (" + size(done) + "). PC5 asks to install the game in a moment.";
+  said.textContent = tf("Sent %d files (%s). PC5 asks to install the game in a moment.", list.length, size(done));
   said.className = "good";
   status();
 }
@@ -260,16 +282,18 @@ $("folder").onchange = e => { send(e.target.files, ""); e.target.value = ""; };
 $("files").onchange = e => {
   const named = $("name").value.trim();
   if (!named || /[\\\/]|^\.\.?$/.test(named)) {
-    $("sending").textContent = "Type the game's folder name first (no / or \\).";
+    $("sending").textContent = t("Type the game's folder name first (no / or \\).");
     $("sending").className = "bad";
   } else send(e.target.files, named);
   e.target.value = "";
 };
 $("filter").oninput = filter;
 $("refresh").onclick = () => { status(); games(); logs(); };
-status();
-games();
-logs();
+/* The language first, so what the console sends is shown in it too. */
+fetch("lang.json", { cache: "no-store" }).then(r => r.ok ? r.json() : {}).then(d => {
+  strings = d.strings || {};
+  if (d.lang) document.documentElement.lang = d.lang;
+}).catch(() => {}).finally(() => { translate(); status(); games(); logs(); });
 </script>
 </body>
 </html>

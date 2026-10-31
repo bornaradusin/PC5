@@ -2,6 +2,7 @@
 /* PC5: its settings file (pc5_settings.h). */
 #include "pc5_settings.h"
 #include "pc5_cover.h"
+#include "pc5_i18n.h"
 #include "pc5_sound.h"
 
 #include <stdio.h>
@@ -9,13 +10,13 @@
 #include <sys/stat.h>
 
 static const char *const corner_keys[] = { "top-left", "top-right", "bottom-left", "bottom-right" };
-static const char *const corner_names[] = { "Top left", "Top right", "Bottom left", "Bottom right" };
+static const char *const corner_names[] = { N_("Top left"), N_("Top right"), N_("Bottom left"), N_("Bottom right") };
 static const char *const light_keys[] = { "game", "screen", "console" };
-static const char *const light_names[] = { "Game's colour", "Follows the screen", "Console's colour" };
+static const char *const light_names[] = { N_("Game's colour"), N_("Follows the screen"), N_("Console's colour") };
 static const char *const overlay_size_keys[] = { "normal", "large", "extra-large" };
-static const char *const overlay_size_names[] = { "Normal", "Large", "Extra large" };
+static const char *const overlay_size_names[] = { N_("Normal"), N_("Large"), N_("Extra large") };
 static const char *const trigger_keys[] = { "off", "rumble", "resistance", "both" };
-static const char *const trigger_names[] = { "Off", "Rumble", "Resistance", "Rumble + resistance" };
+static const char *const trigger_names[] = { N_("Off"), N_("Rumble"), N_("Resistance"), N_("Rumble + resistance") };
 
 void pc5_settings_default(Pc5Settings *settings)
 {
@@ -114,6 +115,15 @@ int pc5_settings_load(const char *root, Pc5Settings *settings)
             if (sound[0] && !strchr(sound, '/')) pc5_copy(settings->startup_sound, sizeof(settings->startup_sound), sound);
             continue;
         }
+        /* The language: a code with capitals ("pt-BR"), or "system". */
+        if (!strncmp(line, "language", 8) && (line[8] == ' ' || line[8] == '=' || line[8] == '\t')) {
+            char code[16];
+            if (sscanf(line, "language = %15[A-Za-z0-9-]", code) != 1) continue;
+            int at = pc5_language_find(code);
+            settings->language[0] = 0;
+            if (at >= 0) pc5_copy(settings->language, sizeof(settings->language), pc5_language(at)->code);
+            continue;
+        }
         /* The username and password: the rest of the line, as typed. */
         if (!strncmp(line, "remote_user", 11) || !strncmp(line, "remote_password", 15)) {
             const char *v = strchr(line, '=');
@@ -178,7 +188,7 @@ int pc5_settings_save(const char *root, const Pc5Settings *settings)
                       "fps = %s\nframe_time = %s\ncpu_usage = %s\ngpu_usage = %s\ncpu_temperature = %s\nsoc_temperature = %s\n"
                       "memory = %s\nfps_corner = %s\noverlay_size = %s\nvibration = %d\nlight_bar = %s\ntriggers = %s\n"
                       "trigger_rumble = %d\ntrigger_resistance = %d\ncheck_updates = %s\nkeep_logs = %s\nstartup_sound = %s\n"
-                      "startup_volume = %d\nftp_server = %s\nweb_page = %s\nremote_user = %s\nremote_password = %s\n",
+                      "startup_volume = %d\nftp_server = %s\nweb_page = %s\nremote_user = %s\nremote_password = %s\nlanguage = %s\n",
                       settings->fps ? "on" : "off", settings->frame_time ? "on" : "off",
                       settings->cpu_usage ? "on" : "off", settings->gpu_usage ? "on" : "off",
                       settings->cpu_temperature ? "on" : "off",
@@ -189,7 +199,7 @@ int pc5_settings_save(const char *root, const Pc5Settings *settings)
                       settings->trigger_rumble, settings->trigger_resistance, settings->check_updates ? "on" : "off",
                       settings->keep_logs ? "on" : "off", settings->startup_sound, settings->startup_volume,
                       settings->ftp_server ? "on" : "off", settings->web_page ? "on" : "off", settings->remote_user,
-                      settings->remote_password);
+                      settings->remote_password, settings->language[0] ? settings->language : "system");
     for (int i = 0; i < PC5_PICTURE_SOURCES && length > 0 && (size_t)length < sizeof(text); i++)
         length += snprintf(text + length, sizeof(text) - (size_t)length, "pictures_%s = %s\n", pc5_picture_source_key(i),
                            settings->pictures_off & (1u << i) ? "off" : "on");
