@@ -30,7 +30,7 @@ No game is part of PC5, and PC5 downloads none: you install the games you own.
    `PPSA11018` folder to the console the way you add any homebrew app.
 2. Put each game's installed folder (the one with its `.exe`) at the top of an **exFAT** USB
    drive, or in a `Games` folder there.
-3. In PC5 press **Options** › **Game maintenance** › **Install games from USB**, choose the game,
+3. In PC5 open the **Install** tab (R1 twice) › **Install games from USB**, choose the game,
    then press **✕** to play. Hold the **touchpad** and **Options** for two seconds to leave a game.
 
 Each game has its own menu (**△**) for its controller, graphics, cover, home screen tile,

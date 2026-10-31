@@ -34,7 +34,7 @@ Good to know:
 
 ## Installing one game
 
-1. In the library, press **Options** to open Settings, and choose **Game maintenance › Install games from USB**.
+1. Open the **Install** tab (L1 / R1), or press **Options** and choose **Game maintenance**, then choose **Install games from USB**.
 2. PC5 lists the game folders it found on every USB drive plugged in. Choose one and press **✕**.
 3. PC5 reads the folder, finds its program and looks for its cover. The review screen opens.
 4. Check the review screen, then press **✕** to install. With a USB drive plugged in, PC5 asks where the game goes: **Console** (chosen first) or **USB drive**. See [Installing a game on a USB drive](#installing-a-game-on-a-usb-drive).

@@ -7,7 +7,7 @@ PC5 is a homebrew app: you copy it to the console once. From 1.7.0 on, PC5 updat
 3. Copy the `PPSA11018` folder to the console the way you add any homebrew app.
 4. Start **PC5** from the home screen.
 
-The first time, the library is empty. Press **Options** and choose **Game maintenance › Install games from USB** to add your first game (see [Installing games](Installing-games)).
+The first time, the library is empty. Open the **Install** tab (R1 twice) and choose **Install games from USB** to add your first game (see [Installing games](Installing-games)).
 
 ![PC5 with no games yet](images/library-empty.png)
 *PC5 the first time it opens: the library is empty.*

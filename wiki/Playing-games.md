@@ -1,21 +1,41 @@
-Your installed games are in PC5's library, a row of covers sorted by name, standing on a floor that mirrors them. From there you start a game, open its menu to set it up, and come back to PC5 when you leave it. This page covers the library, starting and leaving a game, the game menu and frame generation.
+Your installed games are on PC5's **Home** tab, a row of covers under the chosen game's background, and on the **Library** tab, all of them in a grid. From there you start a game, open its menu to set it up, and come back to PC5 when you leave it. This page covers Home and Library, starting and leaving a game, the game menu and frame generation.
 
-## The library
+![PC5 opening](images/boot.png)
+*PC5 opening.*
 
-![The PC5 library](images/library.png)
-*The library. The chosen game stands in the middle, lit in its cover's colours; under it, its name and, in the pill, 32-bit or 64-bit, what it draws with, and its size. Behind it, its background, or a backdrop made from its cover (see [Backgrounds](Covers#backgrounds)).*
+## Home
 
-| Button | In the library |
+![PC5's Home tab](images/library-background.png)
+*Home. Behind it, the chosen game's background (see [Backgrounds](Covers#backgrounds)); over it, its genres, its logo or name, a line about it, **Play Game**, **•••** for its menu, and its settings: what it draws with, 32-bit or 64-bit, its resolution and its controller. The chosen cover is lit in blue.*
+
+A game without a background of its own shows PC5's picture instead, and a game without a cover shows PC5's cover with its name on it.
+
+![Home with a game without a background](images/library.png)
+
+| Button | On Home |
 | --- | --- |
 | Left / right, or the left stick | Move between games |
-| L1 / R1 | Jump to the first game of the previous or next letter |
+| L1 / R1 | The previous or next tab: Home, Library, Install, Settings |
 | ✕ | Play the chosen game |
 | △ | The chosen game's menu |
+| □ | Mark the game as a favourite, or unmark it (a star on its cover) |
+| R3 | Focus mode: only the game's picture, until R3 again |
 | Options | Settings |
 
 If the console is set to confirm with **○**, PC5 follows it: **○** plays and chooses, and **✕** goes back.
 
 When PC5 opens, the game you played last is chosen. The library holds up to 128 games. The clock at the top right is the console's.
+
+## Library
+
+![PC5's Library tab](images/library-tab.png)
+*Library: every game in a grid, with filters along the top.*
+
+The filters are **All**, **Recently played** (newest first), **Favourites**, **USB drive** (games installed on a USB drive) and **Needs attention** (games that can't start as they are, with the reason on Home). **L2** / **R2** change the filter; ✕, △ and □ work as on Home.
+
+## Install and Settings
+
+**Install** has installing and uninstalling games and the game compatibility list (the same as **Settings › Game maintenance**; see [Installing games](Installing-games)). **Settings** is PC5's settings (see [Settings](Settings)).
 
 ### Using a USB keyboard in PC5
 
@@ -30,6 +50,8 @@ A USB keyboard works in PC5's own screens too:
 | F2 or Delete | □ |
 | F3 | △ |
 | Page Up / Page Down | L1 / R1 |
+| Home / End | L2 / R2 |
+| F4 | R3 |
 
 ## Starting a game
 
