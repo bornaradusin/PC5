@@ -2172,7 +2172,19 @@ static int install_begin(Pc5Install *install, const char *root, const char *temp
         if (free_name(home, folder->name, leaf, sizeof(leaf)) || pc5_join(install->usb_dest, sizeof(install->usb_dest), home, leaf) ||
             pc5_format(info->usb, sizeof(info->usb), PC5_USB_HOME "/%s", leaf))
             return fail(install, N_("PC5 can't name the game's folder on the USB drive."));
-        install->usb_move = in_take_dir(folder->path) && same_drive(folder->path, home);
+        /* A folder anywhere else on that drive is moved too, at once, as from PC5/INSTALL: a copy
+         * on the same drive took as long as from the console and needed the room twice. Not the
+         * drive's PC5 folder itself or a folder holding it. */
+        {
+            size_t fl = strlen(folder->path), hl = strlen(home);
+            int nested = (fl <= hl && !strncmp(folder->path, home, fl) && (home[fl] == '/' || !home[fl])) ||
+                         (hl < fl && !strncmp(folder->path, home, hl) && folder->path[hl] == '/' &&
+                          !in_take_dir(folder->path));
+            char from_root[PC5_PATH];
+            install->usb_move = !nested && same_drive(folder->path, home) &&
+                                !pc5_usb_install_root(folder->path, from_root, sizeof(from_root)) &&
+                                !strcmp(from_root, usb_root);
+        }
         if (same_drive(folder->path, home)) {
             /* A slow port (USB 2.0) can't keep a game fed: refused, with where to plug in instead. */
             double speed = pc5_usb_read_speed(folder->path);

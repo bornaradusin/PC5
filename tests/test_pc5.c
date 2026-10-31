@@ -1983,10 +1983,17 @@ static void test_usb_play(void)
     CHECK(!pc5_usb_install_dir(1, file, sizeof(file)) && !strcmp(strrchr(file, '/') - 3, "PC5/INSTALL"),
           "a drive's INSTALL folder: %s", file);
     CHECK(pc5_install_needs_usb(&folder) < pc5_install_needs(&folder) - folder.bytes + 1, "it needs room for its Windows only");
+    /* From a folder of the player's own on the same drive (here a copy in games/): moved into the
+     * drive's PC5 folder at once, not copied. */
+    path(file, sizeof(file), "mkdir -p '%s/games' && cp -r '%s/NeonDrift' '%s/games/'", usb, usb, usb);
+    run(file);
+    path(dir, sizeof(dir), "%s/games/NeonDrift", usb);
+    CHECK(!pc5_folder_inspect(dir, "NeonDrift", &folder), "the game's folder in games/ on the drive");
     CHECK(!pc5_install_begin_on_usb(&install, root, template_prefix, &folder, 0, &cover, 0xff336699u, "icon", usb),
           "installing it on the drive begins: %s", install.error);
     phase = install_run(&install, &copied);
-    CHECK(phase == PC5_INSTALL_DONE && copied, "done, copied to the drive: %d %s", (int)phase, install.error);
+    CHECK(phase == PC5_INSTALL_DONE && !copied, "done, moved on the drive: %d %s", (int)phase, install.error);
+    CHECK(!pc5_exists(dir), "out of games/: moved, not copied");
     pc5_copy(id, sizeof(id), install.id);
     pc5_install_end(&install);
 
@@ -1995,7 +2002,7 @@ static void test_usb_play(void)
     path(file, sizeof(file), "%s/data/level1.pak", game_usb);
     CHECK(file_is(file, "level one data\n"), "the game in the drive's PC5 folder");
     path(file, sizeof(file), "%s/NeonDrift/NeonDrift.exe", usb);
-    CHECK(pc5_is_file(file), "and the folder it came from as it was");
+    CHECK(pc5_is_file(file), "and the drive's other copy as it was");
     path(file, sizeof(file), "%s/%s/drive_c/Games/NeonDrift", prefixes, id);
     CHECK(!pc5_exists(file), "no copy of the game on the console");
     path(file, sizeof(file), "%s/%s/drive_c/Games/.pw-symlinks", prefixes, id);
@@ -2097,17 +2104,19 @@ static void test_usb_play(void)
     path(file, sizeof(file), "%s/%s/drive_c/Games/NeonDrift/data/level1.pak", prefixes, id);
     CHECK(file_is(file, "level one data\n"), "on the console");
 
-    /* Cancelled while it copies to the drive: nothing left there. */
+    /* Cancelled while it copies to another drive (on the same drive it would be moved at once):
+     * nothing left there. */
     path(dir, sizeof(dir), "%s/NeonDrift", usb);
     pc5_folder_inspect(dir, "NeonDrift", &folder);
-    CHECK(!pc5_install_begin_on_usb(&install, root, template_prefix, &folder, 0, &cover, 0, "icon", usb), "begins: %s",
+    CHECK(!pc5_install_begin_on_usb(&install, root, template_prefix, &folder, 0, &cover, 0, "icon", second), "begins: %s",
           install.error);
     while ((phase = pc5_install_step(&install, 1)) < PC5_INSTALL_COPY) {}
     pc5_install_cancel(&install);
     while ((phase = pc5_install_step(&install, 5)) < PC5_INSTALL_DONE) {}
     CHECK(phase == PC5_INSTALL_CANCELLED, "cancelled: %d", (int)phase);
     pc5_install_end(&install);
-    CHECK(!pc5_exists(game_usb), "no part-made copy on the drive");
+    path(file, sizeof(file), "%s/PC5/NeonDrift", second);
+    CHECK(!pc5_exists(file) && pc5_is_dir(dir), "no part-made copy on the other drive, the game where it was");
 
     /* Left over on a drive (unplugged mid-delete): deleted when PC5 next opens. */
     path(file, sizeof(file), "%s/PC5/.removing-Old/data/a.pak", usb);

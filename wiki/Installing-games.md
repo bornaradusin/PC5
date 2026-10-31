@@ -112,7 +112,7 @@ PC5 needs the game's size plus about 1.5 GB of free space before it starts copyi
 With a USB drive plugged in, PC5 asks where each game goes when you install it (one game, or the ticked ones together):
 
 - **Console**: copied to the console, as always. The drive isn't needed to play.
-- **USB drive**: copied into the drive's `PC5` folder (`PC5/<game>`), checked, and played from there. Only the game's Windows (its saves, settings and shader cache) is on the console.
+- **USB drive**: put in the drive's `PC5` folder (`PC5/<game>`) and played from there. A game that's already anywhere on that drive is moved there at once, without copying (from 2.0.8; before, only from the drive's `PC5/INSTALL` folder); from anywhere else it's copied and checked. Only the game's Windows (its saves, settings and shader cache) is on the console.
 
 ![Where the game goes: the console or the USB drive](images/install-where.png)
 
