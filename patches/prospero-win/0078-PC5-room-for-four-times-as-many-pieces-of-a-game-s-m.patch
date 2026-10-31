@@ -1,0 +1,205 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 16:00:00 +0000
+Subject: [PATCH 78/78] PC5: room for four times as many pieces of a game's memory,
+ and the log says when the table runs out
+
+An Unreal Engine 5 game commits its memory 64 KiB at a time, and each
+piece takes an entry in the table behind the console's direct memory.
+Gears of War E-Day filled all 32768 entries at about 4.5 GiB while
+loading a level, and its next commit was refused: "failed to allocate
+memory" with most of the console's memory still free. The table holds
+131072 now, enough for all 12 GiB at that rate.
+
+The memory line in the log adds the most entries held, the table's size
+and how many calls a full table refused.
+---
+ native/wine64_main.c          | 10 ++++++----
+ tests/test_pw_wine_dmem.c     | 10 ++++++++--
+ tests/test_pw_wine_dmem_ps5.c | 12 +++++++-----
+ wine/ps5/pw_wine_dmem.c       |  9 ++++++++-
+ wine/ps5/pw_wine_dmem.h       |  2 ++
+ wine/ps5/pw_wine_dmem_ps5.c   | 19 +++++++++++++------
+ 6 files changed, 44 insertions(+), 18 deletions(-)
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 8e65049..47dcb36 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -2133,20 +2133,22 @@ int main(int argc, char **argv)
+                 }
+             }
+             if (tick % 300 == 0) {
+-                uint64_t m[8] = { 0 };
++                uint64_t m[11] = { 0 };
+                 size_t flexible = 0;
+ 
+-                if (start.memory_stats) start.memory_stats(m, 8);
++                if (start.memory_stats) start.memory_stats(m, 11);
+                 (void)sceKernelAvailableFlexibleMemorySize(&flexible);
+                 /* dmem_low: the part below 4 GiB, where an i386 guest's own
+                  * memory lives (2 GiB, or 4 GiB when large-address-aware). */
+                 PS5LOG_LOG("PW_WINE64 memory flexible_free=%zuK dmem=%lluK dmem_peak=%lluK runs=%llu "
+-                           "dmem_failures=%llu heap=%lluK heap_peak=%lluK dmem_low=%lluK dmem_low_peak=%lluK",
++                           "dmem_failures=%llu heap=%lluK heap_peak=%lluK dmem_low=%lluK dmem_low_peak=%lluK "
++                           "runs_peak=%llu runs_max=%llu runs_full=%llu",
+                            flexible >> 10, (unsigned long long)(m[0] >> 10),
+                            (unsigned long long)(m[1] >> 10), (unsigned long long)m[2],
+                            (unsigned long long)m[3], (unsigned long long)(m[4] >> 10),
+                            (unsigned long long)(m[5] >> 10), (unsigned long long)(m[6] >> 10),
+-                           (unsigned long long)(m[7] >> 10));
++                           (unsigned long long)(m[7] >> 10), (unsigned long long)m[8],
++                           (unsigned long long)m[9], (unsigned long long)m[10]);
+             }
+         }
+     }
+diff --git a/tests/test_pw_wine_dmem.c b/tests/test_pw_wine_dmem.c
+index 430eb12..f326797 100644
+--- a/tests/test_pw_wine_dmem.c
++++ b/tests/test_pw_wine_dmem.c
+@@ -270,8 +270,14 @@ static void test_merge_and_failures(void)
+     for (unsigned i = 0; i < SMALL_TABLE; i++)
+         assert(pw_wine_dmem_protect(&dmem, at(16 + 2 * i), PAGE, 3) == 0);
+     assert(dmem.run_count == SMALL_TABLE);
+-    assert(pw_wine_dmem_protect(&dmem, at(17), PAGE, 3) == -1);
+-    assert(pw_wine_dmem_replace(&dmem, at(17), PAGE, 3) == -1);
++    pw_wine_dmem_stats(&dmem, &stats);
++    {
++        const uint64_t full = stats.table_full;
++        assert(pw_wine_dmem_protect(&dmem, at(17), PAGE, 3) == -1);
++        assert(pw_wine_dmem_replace(&dmem, at(17), PAGE, 3) == -1);
++        pw_wine_dmem_stats(&dmem, &stats);
++        assert(stats.table_full == full + 2);
++    }
+     assert(pw_wine_dmem_protect(&dmem, at(16), PAGE, 1) == 0);   /* no new entry needed */
+     assert(pw_wine_dmem_replace(&dmem, at(16), 256 * PAGE, 0) == 0);
+     dmem.run_capacity = RUNS;
+diff --git a/tests/test_pw_wine_dmem_ps5.c b/tests/test_pw_wine_dmem_ps5.c
+index 63794de..fc5f6be 100644
+--- a/tests/test_pw_wine_dmem_ps5.c
++++ b/tests/test_pw_wine_dmem_ps5.c
+@@ -119,8 +119,9 @@ static void test_refused(void)
+         assert(used() == 0);
+         assert(!__wine_ps5_mprotect(base, PAGE, PROT_READ) && !__wine_ps5_munmap(base, PAGE));
+         {
+-            uint64_t counters[8] = { 1, 1, 1, 1, 1, 1, 1, 1 };
+-            assert(__wine_ps5_memory_stats(counters, 8) == 8 && !counters[0] && !counters[2] && !counters[6]);
++            uint64_t counters[11] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
++            assert(__wine_ps5_memory_stats(counters, 11) == 11 && !counters[0] && !counters[2] && !counters[6] &&
++                   counters[9] == 131072 && !counters[10]);
+         }
+         _exit(0);
+     }
+@@ -160,12 +161,13 @@ int main(void)
+         /* The title's counters: backed now, peak (the self-check's page was
+          * the first), runs, refusals; then the heap's; then the part below
+          * 4 GiB, all of it for a region below 4 GiB. */
+-        uint64_t counters[8] = { 0 };
++        uint64_t counters[11] = { 0 };
+         const uint64_t low = (uintptr_t)base < ((uintptr_t)1 << 32) ? 2 * PAGE : 0;
+-        assert(__wine_ps5_memory_stats(counters, 8) == 8);
++        assert(__wine_ps5_memory_stats(counters, 11) == 11);
+         assert(counters[0] == 2 * PAGE && counters[1] == 2 * PAGE && counters[2] == 1 && counters[3] == 0);
+         assert(counters[6] == low && counters[7] == low);
+-        assert(__wine_ps5_memory_stats(counters, 1) == 8);
++        assert(counters[8] >= 1 && counters[9] == 131072 && counters[10] == 0);
++        assert(__wine_ps5_memory_stats(counters, 1) == 11);
+     }
+     memset(base, 0x33, 2 * PAGE);
+     /* Read-execute, then back: the bytes stay. */
+diff --git a/wine/ps5/pw_wine_dmem.c b/wine/ps5/pw_wine_dmem.c
+index c431421..762ee08 100644
+--- a/wine/ps5/pw_wine_dmem.c
++++ b/wine/ps5/pw_wine_dmem.c
+@@ -269,6 +269,9 @@ int pw_wine_dmem_replace(PwWineDmem *d, uintptr_t address, size_t bytes, unsigne
+ 
+     protection &= 7;
+     lock(d);
++    if (valid(d, address, bytes) &&
++        d->run_count + replace_needs(d, address, bytes, protection) > d->run_capacity)
++        d->stats.table_full++;
+     if (!valid(d, address, bytes) ||
+         d->run_count + replace_needs(d, address, bytes, protection) > d->run_capacity ||
+         d->ops.unmap(d->ops.context, address, bytes)) {
+@@ -290,6 +293,7 @@ int pw_wine_dmem_adopt(PwWineDmem *d, uintptr_t address, size_t bytes)
+     lock(d);
+     if (!valid(d, address, bytes) ||
+         d->run_count + replace_needs(d, address, bytes, 1) > d->run_capacity) {
++        if (valid(d, address, bytes)) d->stats.table_full++;
+         d->stats.failures++;
+         unlock(d);
+         return -1;
+@@ -320,7 +324,10 @@ int pw_wine_dmem_protect(PwWineDmem *d, uintptr_t address, size_t bytes, unsigne
+         } else {
+             uintptr_t to = i < d->run_count && d->runs[i].address < high ? d->runs[i].address : high;
+             if (protection) {
+-                if (d->run_count + 1 > d->run_capacity) goto failed;
++                if (d->run_count + 1 > d->run_capacity) {
++                    d->stats.table_full++;
++                    goto failed;
++                }
+                 if (back(d, at, to - at, protection)) goto counted;
+                 i = first_after(d, to);
+             }
+diff --git a/wine/ps5/pw_wine_dmem.h b/wine/ps5/pw_wine_dmem.h
+index a894c45..a64bdca 100644
+--- a/wine/ps5/pw_wine_dmem.h
++++ b/wine/ps5/pw_wine_dmem.h
+@@ -63,6 +63,8 @@ typedef struct PwWineDmemStats {
+     /* Of those, below 4 GiB: the part an i386 guest's address space holds. */
+     uint64_t low_backed_bytes, peak_low_backed_bytes;
+     uint64_t allocations, releases, maps, protects, failures;
++    /* Of the failures, the ones refused because the run table was full. */
++    uint64_t table_full;
+     uint32_t runs, peak_runs;
+ } PwWineDmemStats;
+ 
+diff --git a/wine/ps5/pw_wine_dmem_ps5.c b/wine/ps5/pw_wine_dmem_ps5.c
+index da2f3de..ffb92b8 100644
+--- a/wine/ps5/pw_wine_dmem_ps5.c
++++ b/wine/ps5/pw_wine_dmem_ps5.c
+@@ -33,7 +33,10 @@ enum {
+     MEMORY_TYPE = 0x0c,       /* as ps5-xash3d's heap */
+     CPU_READ_WRITE = 0x03,
+     CPU_GPU_READ_WRITE = 0xf2,  /* what ps5-xash3d's heap maps with */
+-    RUNS = 32768,
++    /* An Unreal Engine 5 game commits its memory 64 KiB at a time, a run
++     * each: 32768 ran out at about 4.5 GiB (PC5#150), and the
++     * console's 12 GiB at that rate takes about 90000. 24 bytes each. */
++    RUNS = 131072,
+ };
+ 
+ /* WINE_PS5_WAIT_WATCHDOG: a direct-memory call slower than 50 ms is
+@@ -255,13 +258,14 @@ int __wine_ps5_mprotect(void *address, size_t bytes, int protection)
+ 
+ /* For the title's log, as __wine_virtual_stats: direct memory backed now and
+  * at most, its runs and refused calls, the heap's mapped and peak mapped
+- * bytes, then the direct memory backed below 4 GiB now and at most. Returns
+- * how many counters there are. */
++ * bytes, then the direct memory backed below 4 GiB now and at most, then
++ * the most runs held, the table's size and the refusals for a full table.
++ * Returns how many counters there are. */
+ unsigned int __wine_ps5_memory_stats(uint64_t *out, unsigned int count)
+ {
+     PwWineDmemStats dmem_stats = { 0 };
+     PwWineHeapStats heap_stats;
+-    uint64_t values[8];
++    uint64_t values[11];
+ 
+     if (state > 0) pw_wine_dmem_stats(&dmem, &dmem_stats);
+     pw_wine_heap_stats(&heap_stats);
+@@ -273,6 +277,9 @@ unsigned int __wine_ps5_memory_stats(uint64_t *out, unsigned int count)
+     values[5] = heap_stats.peak_mapped_bytes;
+     values[6] = dmem_stats.low_backed_bytes;
+     values[7] = dmem_stats.peak_low_backed_bytes;
+-    for (unsigned int i = 0; i < count && i < 8; i++) out[i] = values[i];
+-    return 8;
++    values[8] = dmem_stats.peak_runs;
++    values[9] = RUNS;
++    values[10] = dmem_stats.table_full;
++    for (unsigned int i = 0; i < count && i < 11; i++) out[i] = values[i];
++    return 11;
+ }
+-- 
+2.43.0
+
