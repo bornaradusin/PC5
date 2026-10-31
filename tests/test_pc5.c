@@ -34,6 +34,7 @@ void pc5_web_host_init(void);   /* the same */
 #include "pc5_dds.h"
 #include "pc5_update.h"
 #include "pc5_upgrade.h"
+#include "pc5_identity.h"
 #include "pc5_zip.h"
 
 #include "pw_game_profile.h"
@@ -205,6 +206,17 @@ static void test_names(void)
     CHECK(n > 0 && !strcmp(q[0], "Neon Drift: Complete Edition"), "product first: %s", q[0]);
     CHECK(n > 1 && !strcmp(q[1], "Neon Drift Complete Edition"), "folder cleaned: %s", n > 1 ? q[1] : "");
     CHECK(n > 2 && !strcmp(q[2], "Neon Drift"), "program split: %s", n > 2 ? q[2] : "");
+    /* A scene or repack release's name: its group, version and tags out, edition words kept. */
+    Pc5CoverHint scene = { .folder = "Dynasty.Warriors.Origins.v1.0.1.1-P2P" };
+    n = pc5_cover_queries(&scene, q);
+    CHECK(n == 1 && !strcmp(q[0], "Dynasty Warriors Origins"), "a release's group out: %s", n ? q[0] : "");
+    Pc5CoverHint repack = { .folder = "Elden Ring - Deluxe Edition [FitGirl Repack] MULTi12 Build.12345 incl DLC" };
+    n = pc5_cover_queries(&repack, q);
+    CHECK(n == 1 && !strcmp(q[0], "Elden Ring Deluxe Edition"), "a repack's tags out, the edition kept: %s", n ? q[0] : "");
+    Pc5CoverHint codex = { .folder = "Some_Game-CODEX", .name = "Some Game: The Real Name" };
+    n = pc5_cover_queries(&codex, q);
+    CHECK(n == 2 && !strcmp(q[0], "Some Game: The Real Name") && !strcmp(q[1], "Some Game"),
+          "the store's name first, then the folder's: %s / %s", n ? q[0] : "", n > 1 ? q[1] : "");
     Pc5CoverHint unity = { .folder = "HalfLife2", .product = "Unity", .program = "hl2" };
     n = pc5_cover_queries(&unity, q);
     CHECK(n >= 1 && !strcmp(q[0], "Half Life 2"), "an engine's name is skipped: %s", q[0]);
@@ -3748,14 +3760,14 @@ static void test_background_screen(const char *fonts)
         memory.checked = 1792700000;   /* no update check now */
         pc5_update_save(root, &memory);
     }
-    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0 };
+    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0 };
     Pc5Ui *ui = pc5_ui_create(&config, &platform);
     until_screen(ui, "library", &canvas);
     for (int i = 0; i < 12; i++) press(ui, PC5_KEY_LEFT, &canvas);   /* the first game */
     frames(ui, 0, 0, 60, &canvas);
     pc5_ui_draw(ui, &canvas);
     save_shot(&canvas, "library-background");
-    uint32_t p = canvas.px[500 * 1920 + 100];
+    uint32_t p = canvas.px[300 * 1920 + 1500];   /* right of the game's name, above the covers */
     int r = (int)(p >> 16 & 255), g = (int)(p >> 8 & 255);
     CHECK(r > 50 && r > g + 30, "the background behind the library: %08x", p);
     pc5_ui_destroy(ui);
@@ -5876,7 +5888,7 @@ static void test_tile_start(const char *fonts)
     CHECK(library.count > 0, "games to start");
     if (!library.count) return;
     {
-        Pc5UiConfig config = { root, template_prefix, fonts, roots, tiles, tile_template, library.games[0].id, NULL, NULL, NULL, 0, 0 };
+        Pc5UiConfig config = { root, template_prefix, fonts, roots, tiles, tile_template, library.games[0].id, NULL, NULL, NULL, 0, 0, 0 };
         Pc5Ui *ui = pc5_ui_create(&config, &platform);
         for (int i = 0; i < 2000 && !console.plays; i++) frames(ui, 0, 0, 1, &canvas);
         CHECK(console.plays == 1 && !strcmp(console.played, library.games[0].id), "the tile's game started: %d %s",
@@ -5884,7 +5896,7 @@ static void test_tile_start(const char *fonts)
         pc5_ui_destroy(ui);
     }
     {
-        Pc5UiConfig config = { root, template_prefix, fonts, roots, tiles, tile_template, "not-installed", NULL, NULL, NULL, 0, 0 };
+        Pc5UiConfig config = { root, template_prefix, fonts, roots, tiles, tile_template, "not-installed", NULL, NULL, NULL, 0, 0, 0 };
         Pc5Ui *ui = pc5_ui_create(&config, &platform);
         until_screen(ui, "message", &canvas);
         CHECK(!strcmp(pc5_ui_screen(ui), "message") && console.plays == 1, "a game no longer there: %s",
@@ -5913,7 +5925,7 @@ static void test_tile_start(const char *fonts)
         later[0].tv_sec += 60;
         later[1] = later[0];
         utimes(file, later);
-        Pc5UiConfig config = { root, template_prefix, fonts, roots, tiles, tile_template, NULL, NULL, NULL, NULL, 0, 0 };
+        Pc5UiConfig config = { root, template_prefix, fonts, roots, tiles, tile_template, NULL, NULL, NULL, NULL, 0, 0, 0 };
         Pc5Ui *ui = pc5_ui_create(&config, &platform);
         until_screen(ui, "library", &canvas);
         CHECK(!pc5_exists(leftover[0]) && !pc5_exists(leftover[1]) && !pc5_exists(leftover[2]),
@@ -6060,7 +6072,7 @@ static void test_screens(const char *fonts)
     char tiles[PC5_PATH], tile_template[PC5_PATH], tile[PC5_HOME_ID];
     path(tiles, sizeof(tiles), "%s/screens-homebrew", work);
     make_tile_template(tile_template, sizeof(tile_template));
-    Pc5UiConfig config = { root, template_prefix, fonts, roots, tiles, tile_template, NULL, NULL, NULL, NULL, 0, 0 };
+    Pc5UiConfig config = { root, template_prefix, fonts, roots, tiles, tile_template, NULL, NULL, NULL, NULL, 0, 0, 0 };
     Pc5Canvas canvas = { pc5_alloc(1920u * 1080u * 4u), 1920, 1080, 1920, 0, 0 };
     Pc5Ui *ui = pc5_ui_create(&config, &platform);
     Pc5Library library;
@@ -6710,7 +6722,7 @@ static void test_report(const char *fonts)
         Pc5UpdateMemory memory;
         memset(&memory, 0, sizeof(memory));
         pc5_update_save(root, &memory);
-        Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0 };
+        Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0 };
         Pc5Ui *ui = pc5_ui_create(&config, &platform);
         until_screen(ui, "message", &canvas);
         CHECK(!strcmp(pc5_ui_screen(ui), "message"), "the crash told: %s", pc5_ui_screen(ui));
@@ -6735,7 +6747,7 @@ static void test_report(const char *fonts)
         write_text(file, "3\n");
         path(file, sizeof(file), "%s/session-0.log", logs);
         write_text(file, text);
-        Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0 };
+        Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0 };
         console.notifications = 0;
         Pc5Ui *ui = pc5_ui_create(&config, &platform);
         until_screen(ui, "message", &canvas);
@@ -6826,7 +6838,7 @@ static void test_upgrade_screens(const char *fonts)
         set.check_updates = 1;
         pc5_settings_save(root, &set);
     }
-    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, drives, NULL, NULL, 0, 0 };
+    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, drives, NULL, NULL, 0, 0, 0 };
     Pc5Ui *ui = pc5_ui_create(&config, &platform);
     /* GitHub is asked on a thread of its own: the library first, then the offer over it. */
     until_screen(ui, "library", &canvas);
@@ -7205,7 +7217,7 @@ static void test_files_screens(const char *fonts)
     path(file, sizeof(file), "%s/readme.txt", usb0); write_text(file, "hello");
     pc5_mkdirs(ext0);
     const char *drives[] = { usb0, ext0, NULL };
-    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, drives, NULL, NULL, 0, 0 };
+    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, drives, NULL, NULL, 0, 0, 0 };
     Pc5Canvas canvas = { pc5_alloc(1920u * 1080u * 4u), 1920, 1080, 1920, 0, 0 };
     {
         /* asked a minute ago: no update question as it opens */
@@ -7473,7 +7485,7 @@ static void test_install_folder_screens(const char *fonts)
     path(file, sizeof(file), "mkdir -p '%s' && cp -r '%s/Starfall' '%s/'", install_dir, usb, install_dir);
     run(file);
     const char *drives[] = { drive, NULL };
-    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, drives, NULL, NULL, 0, 1 };
+    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, drives, NULL, NULL, 0, 1, 0 };
     pc5_library_load(root, &library);
     int before = library.count;
     Pc5Ui *ui = pc5_ui_create(&config, &platform);
@@ -7827,6 +7839,78 @@ static void test_msi(void)
           "no PhysX: nothing");
 }
 
+/* Which game a folder is: the files a store, an installer or a Steam stand-in leave in it. */
+static void test_identity(void)
+{
+    char dir[PC5_PATH], file[PC5_PATH], idroot[PC5_PATH], pc5dir[PC5_PATH];
+    Pc5Identity id;
+
+    path(dir, sizeof(dir), "%s/identity/empty", work);
+    pc5_mkdirs(dir);
+    CHECK(pc5_identity_scan(dir, &id) == -1 && !id.steam_appid && !id.gog_id, "nothing in an empty folder");
+    /* An emulator's ini, two folders down; Spacewar's 480 and a fake id are never the game's. */
+    path(dir, sizeof(dir), "%s/identity/ini", work);
+    path(file, sizeof(file), "%s/bin/x64/steam_emu.ini", dir);
+    write_text(file, "[Settings]\r\n; AppId=1\r\nAppId = 1245620\r\n");
+    path(file, sizeof(file), "%s/OnlineFix.ini", dir);
+    write_text(file, "[Main]\nFakeAppId=480\nRealAppId=480\n");
+    CHECK(!pc5_identity_scan(dir, &id) && id.steam_appid == 1245620 && !strcmp(id.source, "steam_emu.ini"),
+          "an emulator's ini: %u from %s", (unsigned)id.steam_appid, id.source);
+    /* steam_appid.txt goes before an ini, wherever it is (a stand-in's steam_settings too). */
+    path(file, sizeof(file), "%s/steam_settings/steam_appid.txt", dir);
+    write_text(file, "\xef\xbb\xbf" "1091500\n");
+    CHECK(!pc5_identity_scan(dir, &id) && id.steam_appid == 1091500 && !strcmp(id.source, "steam_appid.txt"),
+          "steam_appid.txt first: %u from %s", (unsigned)id.steam_appid, id.source);
+    /* Steam's own manifest, and an ini's other key names. */
+    path(dir, sizeof(dir), "%s/identity/acf", work);
+    path(file, sizeof(file), "%s/appmanifest_271590.acf", dir);
+    write_text(file, "\"AppState\"\n{\n\t\"AppID\"\t\t\"271590\"\n\t\"name\"\t\"Grand Theft Auto V\"\n}\n");
+    CHECK(!pc5_identity_scan(dir, &id) && id.steam_appid == 271590, "an appmanifest: %u", (unsigned)id.steam_appid);
+    path(file, sizeof(file), "%s/CODEX.ini", dir);
+    write_text(file, "[Settings]\napp_id=271591\n");
+    CHECK(!pc5_identity_scan(dir, &id) && id.steam_appid == 271591 && !strcmp(id.source, "CODEX.ini"),
+          "an ini before a manifest: %u from %s", (unsigned)id.steam_appid, id.source);
+    /* GOG's note: the game's, not its DLC's. */
+    path(dir, sizeof(dir), "%s/identity/gog", work);
+    path(file, sizeof(file), "%s/goggame-1207659038.info", dir);
+    write_text(file, "{\"gameId\": \"1207659038\", \"rootGameId\": \"1207658924\", \"name\": \"Some DLC\"}");
+    path(file, sizeof(file), "%s/goggame-1207658924.info", dir);
+    write_text(file, "{\"gameId\": \"1207658924\", \"rootGameId\": \"1207658924\", \"name\": \"Dragon Age: Origins - Ultimate Edition\"}");
+    CHECK(!pc5_identity_scan(dir, &id) && id.gog_id == 1207658924ull && !strcmp(id.name, "Dragon Age: Origins - Ultimate Edition") &&
+              !id.steam_appid && !strcmp(id.source, "goggame.info"),
+          "GOG's note, the game's: %llu %s", (unsigned long long)id.gog_id, id.name);
+    /* Kept with the game; one given by hand, its fetched pictures and details gone. */
+    path(idroot, sizeof(idroot), "%s/identity/root", work);
+    path(pc5dir, sizeof(pc5dir), "%s/prefixes/somegame/pc5", idroot);
+    pc5_mkdirs(pc5dir);
+    Pc5Identity back;
+    CHECK(pc5_identity_read(idroot, "somegame", &back) == -1, "none kept yet");
+    CHECK(!pc5_identity_write(idroot, "somegame", &id), "kept");
+    CHECK(!pc5_identity_read(idroot, "somegame", &back) && back.gog_id == 1207658924ull && !strcmp(back.name, id.name) &&
+              !strcmp(back.source, "goggame.info"),
+          "read back: %llu %s %s", (unsigned long long)back.gog_id, back.name, back.source);
+    const char *fetched[] = { "details.txt", "logo.png", "background.bin", "background.txt", "background-none.txt", "cover.bin" };
+    for (size_t i = 0; i < sizeof(fetched) / sizeof(fetched[0]); i++) {
+        path(file, sizeof(file), "%s/%s", pc5dir, fetched[i]);
+        write_text(file, "x");
+    }
+    path(file, sizeof(file), "%s/controls.txt", pc5dir);
+    write_text(file, "mode = xbox\n");
+    CHECK(!pc5_identity_set_steam(idroot, "somegame", 47810) && !pc5_identity_read(idroot, "somegame", &back) &&
+              back.steam_appid == 47810 && !strcmp(back.source, "you") && back.gog_id == 1207658924ull,
+          "given by hand: %u %s", (unsigned)back.steam_appid, back.source);
+    int gone = 0;
+    for (size_t i = 0; i < sizeof(fetched) / sizeof(fetched[0]); i++) {
+        path(file, sizeof(file), "%s/%s", pc5dir, fetched[i]);
+        gone += !pc5_exists(file);
+    }
+    path(file, sizeof(file), "%s/controls.txt", pc5dir);
+    CHECK(gone == 6 && pc5_exists(file), "what was fetched for it goes, its settings stay: %d", gone);
+    CHECK(!pc5_identity_set_steam(idroot, "somegame", 0) && pc5_identity_read(idroot, "somegame", &back) == -1,
+          "cleared: the folder is read again");
+    CHECK(pc5_identity_set_steam(idroot, "default", 1) == -1, "not for the default prefix");
+}
+
 static void test_steam(void)
 {
     char base[PC5_PATH], app[PC5_PATH], game[PC5_PATH], from[PC5_PATH], dll[PC5_PATH], file[PC5_PATH], error[PC5_ERROR];
@@ -7952,7 +8036,7 @@ static void test_launch_extras(const char *fonts)
     Pc5Platform platform = { &console, { &net, fake_get, NULL, fake_get_authorized }, fake_clock, fake_play, fake_log, fake_notify, fake_time, 0, NULL,
                              fake_sound, fake_keyboard_open_text, fake_keyboard_state_text, fake_keyboard_close_text };
     const char *roots[] = { usb, NULL };
-    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0 };
+    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0 };
     Pc5Canvas canvas = { pc5_alloc(1920u * 1080u * 4u), 1920, 1080, 1920, 0, 0 };
     char game[PC5_PATH], file[PC5_PATH], from[PC5_PATH], dll[PC5_PATH], program[PC5_PATH], saved[PC5_PATH];
     Pc5Library library;
@@ -8081,6 +8165,7 @@ int main(int argc, char **argv)
     test_prefix_dxvk();
     test_dotnet();
     test_msi();
+    test_identity();
     test_steam();
     test_keyboard();
     test_named_libraries();

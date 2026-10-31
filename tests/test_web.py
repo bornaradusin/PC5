@@ -141,6 +141,18 @@ def main():
         status, body, _ = request(server.base, "api/games/%s/debug" % game["id"], "PUT", b"\n")
         assert status == 200 and not os.path.exists(debug), status
         checks += 3
+        # Which game it is: a Steam app ID by hand, kept with source "you"; empty reads the folder again.
+        status, body, _ = request(server.base, "api/games/%s/steam_appid" % game["id"], "PUT", b"1091500\n")
+        identity = os.path.join(root, "prefixes", game["id"], "pc5", "identity.txt")
+        assert status == 200 and "steam_appid=1091500\n" in open(identity).read() and "source=you" in open(identity).read(), status
+        status, body, _ = request(server.base, "api/games")
+        listed = [g for g in json.loads(body) if g["id"] == game["id"]][0]
+        assert listed["steam_appid"] == 1091500 and listed["identity_source"] == "you", listed
+        assert request(server.base, "api/games/%s/steam_appid" % game["id"], "PUT", b"12ab")[0] == 400
+        assert request(server.base, "api/games/%s/steam_appid" % game["id"], "GET")[0] == 405
+        status, body, _ = request(server.base, "api/games/%s/steam_appid" % game["id"], "PUT", b"")
+        assert status == 200 and not os.path.exists(identity), status
+        checks += 3
         assert request(server.base, "api/games/nobody/launch", "PUT", b"-x")[0] == 404
         assert request(server.base, "api/games/..%2F..%2Fetc/launch")[0] == 404
         checks += 4

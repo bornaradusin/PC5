@@ -7,6 +7,7 @@
 #include "pc5_logs.h"
 #include "pc5_controls.h"
 #include "pc5_report.h"
+#include "pc5_identity.h"
 #include "pc5_web_page.h"
 
 #include <dirent.h>
@@ -475,6 +476,16 @@ static void game_report(const Pc5Game *g, const char *settings, char *out, size_
     if (pc5_report_url_settings(&issue, g->title, settings, out, size)) out[0] = 0;
 }
 
+/* Which game it is (pc5_identity.h): what is kept, else the folder read and what it says kept. */
+static void game_identity(const Pc5Game *g, Pc5Identity *id)
+{
+    char folder[PC5_PATH];
+    if (!pc5_identity_read(web.root, g->prefix, id)) return;
+    memset(id, 0, sizeof(*id));
+    if (!pc5_game_folder(web.root, g->id, folder, sizeof(folder)) && !pc5_identity_scan(folder, id))
+        pc5_identity_write(web.root, g->prefix, id);
+}
+
 /* A text file's contents into buf as a JSON string ("" when there is none). */
 static void json_file(Pc5Buf *buf, const char *path, size_t max)
 {
@@ -530,6 +541,15 @@ static void api_games(Conn *c)
             json_string(&buf, report);
         }
         pc5_buf_printf(&buf, ",\"usb\":%s,\"bits\":%d", g->usb ? "true" : "false", g->bits);
+        {
+            Pc5Identity identity;
+            game_identity(g, &identity);
+            pc5_buf_printf(&buf, ",\"steam_appid\":%u,\"gog_id\":%llu,\"identity_source\":", (unsigned)identity.steam_appid,
+                           (unsigned long long)identity.gog_id);
+            json_string(&buf, identity.source);
+            pc5_buf_puts(&buf, ",\"store_name\":");
+            json_string(&buf, identity.name);
+        }
         pc5_buf_puts(&buf, "}");
     }
     pc5_buf_puts(&buf, "]");
@@ -537,7 +557,8 @@ static void api_games(Conn *c)
     respond_buf(c, &buf);
 }
 
-/* /api/games/<id>/<what>: log (GET), launch, env or debug (GET, PUT). */
+/* /api/games/<id>/<what>: log (GET), launch, env or debug (GET, PUT), steam_appid (PUT: the
+ * game's Steam app id by hand, digits, or nothing to read the folder again). */
 static void api_game(Conn *c, const char *rest)
 {
     char id[PC5_ID], path[PC5_PATH];
@@ -567,6 +588,35 @@ static void api_game(Conn *c, const char *rest)
         if (strcmp(c->method, "GET")) respond_text(c, 405, "GET only");
         else if (pc5_logs_newest(web.root, id, path, sizeof(path))) respond_text(c, 404, "No log kept for this game");
         else send_file(c, path, strrchr(path, '/') + 1);
+        return;
+    }
+    if (!strcmp(what, "steam_appid")) {
+        Pc5Buf body = { 0 };
+        if (strcmp(c->method, "PUT")) {
+            respond_text(c, 405, "PUT only");
+            return;
+        }
+        if (read_small_body(c, 64, &body)) {
+            pc5_buf_free(&body);
+            return;
+        }
+        char digits[24];
+        size_t n = 0, bad = 0;
+        for (size_t i = 0; i < body.len; i++) {
+            char ch = (char)body.data[i];
+            if (ch >= '0' && ch <= '9' && n + 1 < sizeof(digits)) digits[n++] = ch;
+            else if (ch != ' ' && ch != '\n' && ch != '\r' && ch != '\t') bad = 1;
+        }
+        digits[n] = 0;
+        pc5_buf_free(&body);
+        unsigned long appid = n ? strtoul(digits, NULL, 10) : 0;
+        if (bad || (n && (!appid || appid > 99999999ul))) {
+            respond_text(c, 400, "A Steam app ID is a number (the one in the game's store.steampowered.com/app/ link)");
+            return;
+        }
+        int failed = !game.prefix[0] || pc5_identity_set_steam(web.root, game.prefix, (uint32_t)appid);
+        say("PC5 web steam_appid for %s: %lu%s", id, appid, failed ? " failed" : "");
+        respond_text(c, failed ? 500 : 200, failed ? "The console couldn't keep it" : "Saved");
         return;
     }
     int launch = !strcmp(what, "launch"), debug = !strcmp(what, "debug");

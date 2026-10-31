@@ -5,7 +5,7 @@ Every game in PC5 has a cover. PC5 looks for it online on public sources, with n
 PC5 looks in this order:
 
 1. **Your own picture**, if you gave one (see [Using your own cover](#using-your-own-cover)).
-2. **Steam's store.** If the game's folder has a `steam_appid.txt` at its top, PC5 uses that number to find the game's Steam cover directly.
+2. **Steam's store.** If PC5 knows the game's Steam app ID (see [Which game it is](#which-game-it-is)), it uses that number to find the game's Steam cover directly.
 3. **SteamGridDB**, only if you added your key (see [SteamGridDB](#steamgriddb)): covers its members made, also offered when Steam has a cover, to choose by hand.
 4. **GOG's catalogue.**
 5. **PCGamingWiki**: the cover on the game's page.
@@ -14,9 +14,18 @@ PC5 looks in this order:
 
 Until PC5 1.9.2, PC5 also took the lead picture of the game's Wikipedia article. It doesn't any more: those were often not the game's cover.
 
-To search, PC5 uses the program's product name, the folder's name (without release tags and version numbers) and the program's name. It only offers results whose name is close to the game's. Each source can be turned off in **Settings › System › Picture sources** (see [Picture sources](Settings#picture-sources)); PC5 doesn't say which source a picture came from.
+To search, PC5 uses GOG's name for the game (when its folder has GOG's note), the program's product name, the folder's name (without release tags, version numbers and the names of scene and repack groups, such as `-P2P`, `-CODEX` or `[FitGirl Repack]`) and the program's name. It only offers results whose name is close to the game's. Each source can be turned off in **Settings › System › Picture sources** (see [Picture sources](Settings#picture-sources)); PC5 doesn't say which source a picture came from.
 
 A source that doesn't answer is skipped. A game installed without internet gets your own picture or its card, and keeps it: to give it another cover later, use [Appearance › Cover](#changing-a-cover-or-background) or [your own picture](#for-a-game-already-installed).
+
+## Which game it is
+
+As scrapers for emulators mark each game by its database ID, PC5 marks each game by its store's ID, found in the files its store, installer or a Steam stand-in left in its folder (from 2.0.5):
+
+- **Steam app ID**: a `steam_appid.txt` anywhere in the folder (also in `steam_settings`), then the `.ini` of a Steam stand-in (`steam_emu.ini`, `CODEX.ini`, `cream_api.ini`, `OnlineFix.ini`, `ColdClientLoader.ini` and others), then Steam's own `appmanifest_<id>.acf` or `installscript.vdf`.
+- **GOG product ID and name**: GOG's `goggame-<id>.info`.
+
+With an ID, the cover, background and details are the game's own, not a guess from its folder's name. PC5 keeps what it found with the game. If a game's pictures are another game's, give its Steam app ID by hand on the [web page](Web-page): the number in the game's `store.steampowered.com/app/<number>` link. PC5 then fetches its cover, background and details again. Saving the box empty makes PC5 read the folder again.
 
 ## SteamGridDB
 

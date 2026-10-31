@@ -157,6 +157,8 @@ static void until(Pc5Ui *ui, const char *screen)
     for (int i = 0; i < 50000 && strcmp(pc5_ui_screen(ui), screen); i++) step(ui, 0, 1);
 }
 
+static int boot_shot;   /* the next open_ui shows PC5 opening and saves it */
+
 static Pc5Ui *open_ui(const char *root, int network)
 {
     static const char *roots[2];
@@ -179,8 +181,13 @@ static Pc5Ui *open_ui(const char *root, int network)
     pc5_write_file(file, "eboot", 5);
     platform = (Pc5Platform){ NULL, { NULL, network ? sample_net : offline, NULL, NULL }, fake_clock, fake_play, NULL, NULL, NULL, 0, NULL,
                               NULL, keyboard_open, keyboard_state, keyboard_close };
-    config = (Pc5UiConfig){ root, template_prefix, fonts, roots, tiles, tile_template, NULL, NULL, NULL, NULL, 0, 0 };
+    config = (Pc5UiConfig){ root, template_prefix, fonts, roots, tiles, tile_template, NULL, NULL, NULL, NULL, 0, 0, boot_shot };
     Pc5Ui *ui = pc5_ui_create(&config, &platform);
+    if (boot_shot) {
+        step(ui, 0, 56);   /* about 0.9 s in */
+        save("00-boot");
+        boot_shot = 0;
+    }
     until(ui, "library");
     settle(ui);
     return ui;
@@ -220,7 +227,7 @@ static void crash_shots(const char *root)
     fmt(usb, sizeof(usb), "%s/usb0", work);
     roots[0] = usb;
     fmt(template_prefix, sizeof(template_prefix), "%s/app0/pc5/prefix", work);
-    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0 };
+    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0 };
     Pc5Ui *ui = pc5_ui_create(&config, &platform);
     until(ui, "message");
     settle(ui);
@@ -250,6 +257,7 @@ int main(int argc, char **argv)
     fmt(root, sizeof(root), "%s/data/prospero-win", work);
 
     make_library(root, 0, 1);
+    boot_shot = 1;
     ui = open_ui(root, 0);
     save("01-library-empty");
     pc5_ui_destroy(ui);
@@ -289,6 +297,12 @@ int main(int argc, char **argv)
             !pc5_background_compose(&picture, &background) &&
             !pc5_background_path(root, library.games[0].prefix, file, sizeof(file)))
             pc5_cover_save(file, &background, 0);
+        /* and its details from Steam's store, as the worker keeps them */
+        if (library.count) {
+            fmt(file, sizeof(file), "%s/prefixes/%s/pc5/details.txt", root, library.games[0].prefix);
+            put(file, "appid=1\ngenres=Action / Adventure / Open World\ndescription=Race through a neon city at night, "
+                      "chase down rivals and own the streets.\n");
+        }
         pc5_buf_free(&data);
         pc5_image_free(&picture);
         pc5_image_free(&background);
@@ -296,6 +310,10 @@ int main(int argc, char **argv)
     ui = open_ui(root, 0);
     settle(ui);
     save("04b-library-background");
+    step(ui, PC5_KEY_R3, 1);
+    settle(ui);
+    save("04c-focus-mode");
+    step(ui, PC5_KEY_R3, 1);
     pc5_ui_destroy(ui);
 
     make_library(root, 40, 1);
@@ -303,6 +321,18 @@ int main(int argc, char **argv)
     for (int i = 0; i < 20; i++) { step(ui, PC5_KEY_RIGHT, 1); step(ui, 0, 3); }
     settle(ui);
     save("06-library-40-games");
+    /* The tabs: Library, Install and Settings, then back to Home. */
+    step(ui, PC5_KEY_R1, 1);
+    settle(ui);
+    save("06b-library-tab");
+    step(ui, PC5_KEY_R1, 1);
+    settle(ui);
+    save("06c-install-tab");
+    step(ui, PC5_KEY_R1, 1);
+    settle(ui);
+    save("06d-settings-tab");
+    for (int i = 0; i < 3; i++) step(ui, PC5_KEY_L1, 1);
+    settle(ui);
     step(ui, PC5_KEY_TRIANGLE, 1);
     settle(ui);
     save("15-game-menu");

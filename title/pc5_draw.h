@@ -16,7 +16,7 @@ typedef struct Pc5Canvas {
 
 /* ---- text ------------------------------------------------------------------------ */
 typedef enum Pc5Face { PC5_FACE_SMALL, PC5_FACE_BODY, PC5_FACE_LABEL, PC5_FACE_HEAD, PC5_FACE_TITLE,
-                       PC5_FACE_CARD, PC5_FACE_BUTTON, PC5_FACES } Pc5Face;
+                       PC5_FACE_CARD, PC5_FACE_BUTTON, PC5_FACE_HERO, PC5_FACES } Pc5Face;
 
 typedef struct Pc5Glyph {
     uint32_t codepoint;

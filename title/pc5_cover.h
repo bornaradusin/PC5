@@ -44,7 +44,8 @@ typedef struct Pc5CoverHint {
     char folder[PC5_NAME];      /* the folder's name, as on the USB drive */
     char product[PC5_NAME];     /* the program's ProductName, or "" */
     char program[PC5_NAME];     /* the .exe's name without .exe */
-    uint32_t steam_appid;       /* from a steam_appid.txt in the folder, or 0 */
+    uint32_t steam_appid;       /* the game's Steam app id (pc5_identity.h), or 0 */
+    char name[PC5_NAME];        /* the store's own name for it (GOG's goggame info), or "" */
     /* The player's own picture for it (a JPEG or PNG file), offered first;
      * with picture_only nothing is asked online. "" for none. */
     char picture[PC5_PATH];

@@ -596,6 +596,9 @@ EOF_SOURCES
     # The startup sounds to choose from, on the controller's speaker when PC5 is opened (pc5_sound.h).
     mkdir -p "$app/pc5/sounds"
     cp "$here"/art/sounds/*.wav "$app/pc5/sounds/"
+    # PC5's own pictures: its logo, the controller, the backdrop and the cover a game without one gets (pc5_ui.c).
+    mkdir -p "$app/pc5/ui"
+    cp "$here"/art/ui/* "$app/pc5/ui/"
     # Mozilla's roots as Debian ships them, for the covers' HTTPS (the console's own come first).
     for root in /usr/share/ca-certificates/mozilla/*.crt; do cat "$root"; echo; done > "$app/pc5/ca-certificates.crt"
     python3 "$here/tools/make-prefix.py" --pw "$PW" --wine "$PW/.deps/wine-host/install/usr/bin/wine" \

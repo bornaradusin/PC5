@@ -44,11 +44,26 @@ typedef struct Pc5Backgrounds {
     atomic_int busy;              /* the worker is at work */
     atomic_int stop;              /* asked to stop: it does between requests */
     atomic_int pause;             /* asked to wait (the screens use the network): it does between requests */
-    atomic_uint generation;       /* one more each time a background is saved */
+    atomic_uint generation;       /* one more each time a background (or a game's details) is saved */
+    /* Also each game's details from Steam's store, once: its genres, a line about it and its
+     * logo (pc5_details_*), for the library's top. */
+    int details;
     pthread_t thread;
     int started;                  /* a thread to join */
 } Pc5Backgrounds;
 
+/* A game's details, kept as prefixes/<prefix>/pc5/details.txt (appid=, genres=, description=
+ * lines) and its logo as pc5/logo.png (Steam's library logo, its transparency kept). */
+typedef struct Pc5Details {
+    char genres[160];             /* "Action / Adventure", or "" */
+    char description[400];        /* a line or two about it, or "" */
+    int has_logo;
+} Pc5Details;
+/* What is kept for the game: 0, or -1 when nothing is yet. */
+int pc5_details_read(const char *root, const char *prefix, Pc5Details *details);
+int pc5_details_logo_path(const char *root, const char *prefix, char *out, size_t size);
+/* Steam's store answer (appdetails) into details: 0, or -1 when it isn't one for the game. */
+int pc5_details_parse(const char *json, size_t length, uint32_t appid, Pc5Details *details);
 /* Where a game's background is kept. */
 int pc5_background_path(const char *root, const char *prefix, char *out, size_t size);
 /* The player's own background for the game, newest first as described above. 0, or -1. */

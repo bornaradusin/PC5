@@ -44,7 +44,8 @@ typedef struct Pc5Platform {
 enum {
     PC5_KEY_UP = 1u << 0, PC5_KEY_DOWN = 1u << 1, PC5_KEY_LEFT = 1u << 2, PC5_KEY_RIGHT = 1u << 3,
     PC5_KEY_ACCEPT = 1u << 4, PC5_KEY_BACK = 1u << 5, PC5_KEY_OPTIONS = 1u << 6, PC5_KEY_L1 = 1u << 7,
-    PC5_KEY_R1 = 1u << 8, PC5_KEY_SQUARE = 1u << 9, PC5_KEY_TRIANGLE = 1u << 10,
+    PC5_KEY_R1 = 1u << 8, PC5_KEY_SQUARE = 1u << 9, PC5_KEY_TRIANGLE = 1u << 10, PC5_KEY_L2 = 1u << 11,
+    PC5_KEY_R2 = 1u << 12, PC5_KEY_R3 = 1u << 13,
 };
 
 typedef struct Pc5Input {
@@ -77,6 +78,8 @@ typedef struct Pc5UiConfig {
     /* 1: the player has just opened PC5 (not its screens coming back after a game, nor a
      * home screen tile's game): it asks GitHub for a newer PC5 now, whenever it last did. */
     int opened;
+    /* 1: PC5's logo comes up as it opens (about two seconds, over whatever shows). */
+    int boot;
 } Pc5UiConfig;
 
 typedef struct Pc5Ui Pc5Ui;

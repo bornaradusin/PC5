@@ -2,6 +2,7 @@
 /* PC5: game folders on USB drives (pc5_source.h). */
 #include "pc5_source.h"
 #include "pc5_cover.h"
+#include "pc5_identity.h"
 
 #include <dirent.h>
 #include <math.h>
@@ -445,6 +446,16 @@ int pc5_folder_inspect(const char *path, const char *name, Pc5Folder *folder)
         if (pc5_pe_unreal_d3d12(file, folder->exes[i].pe.imports)) folder->exes[i].pe.imports |= PC5_IMPORT_D3D12;
         /* A Godot game's program imports Direct3D, but the game draws with OpenGL (or Vulkan). */
         folder->exes[i].godot = pc5_pe_godot(file);
+    }
+    /* Which game it is, from what its store or a Steam stand-in left in it (pc5_identity.h). */
+    {
+        Pc5Identity id;
+        if (!pc5_identity_scan(path, &id)) {
+            if (id.steam_appid) folder->steam_appid = id.steam_appid;
+            folder->gog_id = id.gog_id;
+            pc5_copy(folder->store_name, sizeof(folder->store_name), id.name);
+            pc5_copy(folder->identity_source, sizeof(folder->identity_source), id.source);
+        }
     }
     if (!folder->exe_count && !folder->problem[0])
         snprintf(folder->problem, sizeof(folder->problem), "There is no Windows program in this folder.");

@@ -105,6 +105,36 @@ async function status() {
   } catch (e) { $("status").textContent = "The console didn't answer: " + e.message; }
 }
 
+/* Which game it is: the Steam app ID PC5 found in the game's folder (or was given), to change by hand
+ * when its cover or background is another game's. */
+function identity(game) {
+  const where = game.identity_source === "you" ? "given by you"
+              : game.identity_source ? "found in " + game.identity_source : "none found";
+  const box = el("details", {}, el("summary", { text: "Which game it is (Steam app ID: " + (game.steam_appid || "none") + ")" }));
+  const input = el("input", { type: "text", inputmode: "numeric", placeholder: "Steam app ID, e.g. 1091500" });
+  input.value = game.steam_appid ? String(game.steam_appid) : "";
+  const said = el("span", { class: "dim" });
+  const save = el("button", { text: "Save" });
+  save.onclick = async () => {
+    save.disabled = true;
+    said.textContent = "Saving…";
+    try {
+      const r = await fetch("api/games/" + encodeURIComponent(game.id) + "/steam_appid", { method: "PUT", body: input.value.trim() });
+      if (!r.ok) throw new Error(await r.text());
+      said.textContent = input.value.trim() ? "Saved: its cover, background and details are fetched again when PC5 opens."
+                                            : "Cleared: PC5 reads the game's folder again.";
+      said.className = "good";
+    } catch (e) { said.textContent = "Not saved: " + e.message; said.className = "bad"; }
+    save.disabled = false;
+  };
+  const help = "PC5 picks the game's cover, background and details by this number (" + where +
+               (game.gog_id ? "; GOG product " + game.gog_id + (game.store_name ? ", " + game.store_name : "") : "") +
+               "). If they are another game's, type the number from the game's Steam store link " +
+               "(store.steampowered.com/app/<number>). Empty: PC5 reads the folder again.";
+  box.append(el("p", { class: "dim", text: help }), el("div", { class: "row" }, input, save, said));
+  return box;
+}
+
 function editor(game, kind, label, help) {
   const box = el("details", {}, el("summary", { text: label }));
   const area = el("textarea", { spellcheck: "false" });
@@ -156,6 +186,7 @@ async function games() {
         item.append(editor(g, "launch", "Launch options (launch.txt)",
                            "The first line that isn't empty or a comment (# or ;) is added to the program's command line."));
       }
+      item.append(identity(g));
       item.append(editor(g, "env", "Environment variables (env.txt)", "One NAME=value a line, set before the game starts."));
       item.append(editor(g, "debug", "Extra logging (winedebug.txt)",
                          "Only when an issue asks for it, for example err+all,+seh. Empty it afterwards: it slows the game down."));

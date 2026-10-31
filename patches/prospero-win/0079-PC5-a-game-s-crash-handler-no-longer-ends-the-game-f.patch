@@ -1,0 +1,412 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 17:00:00 +0000
+Subject: [PATCH 79/79] PC5: a game's crash handler no longer ends the game, folders
+ opened by name a second way work, and the shader compiler's listings assemble
+ (Wine patches 0995, 0996, 0997)
+
+0995: a game that starts its crash handler (handler.exe, or a program
+given a crash database or upload address) at launch was taken for a
+launcher handing over to another program, and closed. Such a program is
+a helper now: it doesn't start, and the game goes on.
+
+0996: a folder opened relative to another one by its name, as patch 0943
+does when the folder's descriptor can't be used, was refused by Wine's
+server ("the path is invalid"), so .NET games on a USB drive lost
+whole folders of their data. The server takes it now.
+
+0997: the listing the shader compiler's stand-in writes gives def values
+as plain numbers, which D3DXAssembleShader reads (it refused the
+exponents), and a vs_1_x shader that can't be compiled for vs_1_x is
+compiled for vs_2_0.
+---
+ PUBLICATION_ALLOWLIST.txt                     |   3 +
+ docs/WINE_PS5_BUILD.md                        |   3 +
+ ...s5-a-crash-handler-is-not-handed-off.patch |  78 ++++++++++
+ ...x-name-that-comes-with-a-root-folder.patch | 107 +++++++++++++
+ ...out-an-exponent-and-vs-1-x-as-vs-2-0.patch | 146 ++++++++++++++++++
+ 5 files changed, 337 insertions(+)
+ create mode 100644 wine/patches/0995-ntdll-ps5-a-crash-handler-is-not-handed-off.patch
+ create mode 100644 wine/patches/0996-server-ps5-open-an-absolute-unix-name-that-comes-with-a-root-folder.patch
+ create mode 100644 wine/patches/0997-kernelbase-ps5-def-values-without-an-exponent-and-vs-1-x-as-vs-2-0.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index 08165a4..d2a7a78 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -616,6 +616,9 @@ wine/patches/0990-kernelbase-ps5-the-shader-compiler-s-listing-in-microsoft-s-sy
+ wine/patches/0991-ntdll-leave-room-after-a-large-heap-block.patch
+ wine/patches/0993-server-ps5-park-read-only-file-descriptors.patch
+ wine/patches/0994-server-ps5-a-parked-file-or-folder-opened-again-under-another-number-is-taken.patch
++wine/patches/0995-ntdll-ps5-a-crash-handler-is-not-handed-off.patch
++wine/patches/0996-server-ps5-open-an-absolute-unix-name-that-comes-with-a-root-folder.patch
++wine/patches/0997-kernelbase-ps5-def-values-without-an-exponent-and-vs-1-x-as-vs-2-0.patch
+ 
+ 
+ 
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 2d429ea..a3d26f8 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -169,6 +169,9 @@ before evaluating a candidate built from that cache.
+ | 0991 | `ntdll`: a large heap block gets a page more than it needs before its 64 KiB rounding, so a game that writes just past the end of one (one element more than it allocated) writes into its own memory instead of faulting when the block ended exactly at its memory's end |
+ | 0993 | `server` (Leo Lobato's prospero-win): on PS5, read-only regular files past a budget of 48 cached and about 48 live descriptors are parked (closed, the least recently used first) and opened again by name when needed, with their position, as 0871 does for directories: a title can open only about 250 files however high `RLIMIT_NOFILE` is, and games that keep hundreds of archives open failed with "Too many open files". `WINE_PS5_PARK_FILES`, `WINE_PS5_CACHED_FILES` |
+ | 0994 | `server`: on PS5, a parked folder (0871) or read-only file (0993) opened again by its name whose device or inode number changed (a file system that numbers files anew at each open) is taken instead of failing with `STATUS_FILE_DELETED`; that and every failure to open one again is logged (`wine-ps5: parked …`, eight times at most each) |
++| 0995 | `ntdll`: a program whose name has `handler` in it, or whose command line has `--database=`, `crashpad` or `--url=` in it (in any case), is a helper for the PS5 title's hand-off (`PW_HANDOFF`), as a crash reporter is: it isn't handed off, its start fails, and the game that started it carries on. Mina the Hollower starts its crash handler, `handler.exe --database=…\Crashpad … --url=https://submit.backtrace.io/…`, at boot; it was handed off, so the game ended |
++| 0996 | `server`: on PS5, a `create_file`, rename or hard link with a root folder and an absolute unix name (what 0943 gives when it looks a name up by the folder's own name) is taken instead of failing with `STATUS_OBJECT_PATH_SYNTAX_BAD`: the unix name is opened as it is and the NT name is still made from the folder's. Heroes of Might and Magic: Olden Era got "path invalid" (`ERROR_BAD_PATHNAME`) for `StreamingAssets\maps\Story_maps` right after 0943's log line |
++| 0997 | `kernelbase`: on PS5, the listing 0988 writes for `fxc.exe` gives a `def` line's values as plain decimals (`1.0`, `-0.5`, `0.333333343`; vkd3d-shader writes `1.00000000e+00`, and `D3DXAssembleShader` takes no exponent), and a `vs_1_x` shader that fails to compile (vkd3d-shader's `E7002` for `sincos`) is compiled for `vs_2_0` instead, as Far Cry only assembles the listing again on a device that takes `vs_3_0` |
+ 
+ ## Allocator
+ 
+diff --git a/wine/patches/0995-ntdll-ps5-a-crash-handler-is-not-handed-off.patch b/wine/patches/0995-ntdll-ps5-a-crash-handler-is-not-handed-off.patch
+new file mode 100644
+index 0000000..4f184a1
+--- /dev/null
++++ b/wine/patches/0995-ntdll-ps5-a-crash-handler-is-not-handed-off.patch
+@@ -0,0 +1,78 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sat, 31 Oct 2026 17:00:00 +0000
++Subject: [PATCH] ntdll: PS5: a crash handler is not handed off as the game,
++ told by its name or its command line.
++
++A game that starts its crash handler at boot was handed off when the
++handler's name was none of the helpers' (patches 0923 and 0931): the
++game ended and the title started the handler in its place. Mina the
++Hollower starts "handler.exe --database=...\Crashpad ...
++--url=https://submit.backtrace.io/...", and "handler" matched nothing.
++A program whose name has "handler" in it, or whose command line has
++"--database=", "crashpad" or "--url=" in it (in any case), is now a
++helper: its start fails as other helpers' do, and the game goes on.
++The name is also taken after the last forward slash, so a folder in a
++path written with them is not read as part of the name.
++---
++diff --git a/dlls/ntdll/unix/process.c b/dlls/ntdll/unix/process.c
++index 3eee653..860fe81 100644
++--- a/dlls/ntdll/unix/process.c
+++++ b/dlls/ntdll/unix/process.c
++@@ -693,10 +693,10 @@ static void ps5_utf8( const UNICODE_STRING *str, char *out, DWORD size )
++ /* A game's launcher starts the game itself, a second process, which a PS5 title can't
++  * have. With PW_HANDOFF (a file) and PW_HANDOFF_DIR (the game's folder as a Windows path,
++  * ending in a backslash) in the environment, a Windows program in that folder, other than
++- * the one running and not a helper by its name (a crash reporter, an installer, an
++- * updater, a settings tool), is written to the file instead: its path, its command line
++- * and its working folder, a line each, in UTF-8. This process then ends, and the title
++- * starts that program in its place (PC5). Returns only when that doesn't apply. */
+++ * the one running and not a helper by its name or its command line (a crash reporter, an
+++ * installer, an updater, a settings tool), is written to the file instead: its path, its
+++ * command line and its working folder, a line each, in UTF-8. This process then ends, and
+++ * the title starts that program in its place (PC5). Returns only when that doesn't apply. */
++ static void ps5_hand_off( const RTL_USER_PROCESS_PARAMETERS *params, const struct pe_image_info *pe_info )
++ {
++     static const char * const helpers[] =
++@@ -706,7 +706,13 @@ static void ps5_hand_off( const RTL_USER_PROCESS_PARAMETERS *params, const struc
++         /* A game that starts its settings tool and waits for it (Far Cry, FarCryConfigurator.exe
++          * /Caller=FarCry) goes on to the game when that start fails. */
++         "config", "setting",
+++        /* A crash handler a game starts at boot under a name of its own (Mina the Hollower's
+++         * handler.exe, Crashpad's crashpad_handler.exe) */
+++        "handler",
++     };
+++    /* the same crash handler told by its command line, whatever its name: Crashpad's
+++     * database and the address its reports are sent to */
+++    static const char * const helper_args[] = { "--database=", "crashpad", "--url=" };
++     const char *file = getenv( "PW_HANDOFF" ), *dir = getenv( "PW_HANDOFF_DIR" ), *name;
++     char image[1024], current[1024], command[4096], cwd[1024], lower[256], text[6200];
++     size_t i;
++@@ -719,6 +725,7 @@ static void ps5_hand_off( const RTL_USER_PROCESS_PARAMETERS *params, const struc
++     if (!image[0] || !strcasecmp( image, current ) || strncasecmp( image, dir, strlen( dir ))) return;
++     name = strrchr( image, '\\' );
++     name = name ? name + 1 : image;
+++    if (strrchr( name, '/' )) name = strrchr( name, '/' ) + 1;
++     for (i = 0; name[i] && i < sizeof(lower) - 1; i++) lower[i] = (name[i] >= 'A' && name[i] <= 'Z') ? name[i] + 32 : name[i];
++     lower[i] = 0;
++     for (i = 0; i < ARRAY_SIZE(helpers); i++)
++@@ -728,6 +735,16 @@ static void ps5_hand_off( const RTL_USER_PROCESS_PARAMETERS *params, const struc
++         return;
++     }
++     ps5_utf8( &params->CommandLine, command, sizeof(command) );
+++    for (i = 0; i < ARRAY_SIZE(helper_args); i++)
+++    {
+++        size_t arg_len = strlen( helper_args[i] );
+++        const char *p;
+++
+++        for (p = command; *p; p++) if (!strncasecmp( p, helper_args[i], arg_len )) break;
+++        if (!*p) continue;
+++        fprintf( stderr, "wine-ps5: %s is a helper (\"%s\" in its command line): not handed off\n", image, helper_args[i] );
+++        return;
+++    }
++     ps5_utf8( &params->CurrentDirectory.DosPath, cwd, sizeof(cwd) );
++     if ((fd = open( file, O_WRONLY | O_CREAT | O_TRUNC, 0644 )) == -1)
++     {
++-- 
++2.43.0
++
+diff --git a/wine/patches/0996-server-ps5-open-an-absolute-unix-name-that-comes-with-a-root-folder.patch b/wine/patches/0996-server-ps5-open-an-absolute-unix-name-that-comes-with-a-root-folder.patch
+new file mode 100644
+index 0000000..57fa52d
+--- /dev/null
++++ b/wine/patches/0996-server-ps5-open-an-absolute-unix-name-that-comes-with-a-root-folder.patch
+@@ -0,0 +1,107 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sat, 31 Oct 2026 17:00:00 +0000
++Subject: [PATCH] server: PS5: open an absolute unix name that comes with a
++ root folder.
++
++When ntdll can't use a root folder's descriptor, patch 0943 looks the
++name up from the folder's own name and gets an absolute unix name, but
++the open still names the folder (RootDirectory). The server refused
++every create_file with both a folder and an absolute unix name
++(STATUS_OBJECT_PATH_SYNTAX_BAD), so the lookup succeeded and the open
++failed: Heroes of Might and Magic: Olden Era, which .NET lists folder by
++folder, got "path invalid" (ERROR_BAD_PATHNAME) for
++StreamingAssets\maps\Story_maps right after 0943's log line.
++
++On PS5 the server now takes such a request: the absolute unix name is
++opened as it is, without the folder, and the NT name is still taken as
++relative to the folder, as before. A rename or a hard link
++(set_fd_name_info) is treated the same way. This is done in the server
++rather than in ntdll because the server builds the file's NT name from
++the folder and the relative name; dropping the folder in ntdll would
++leave the file with only its last part as its NT name, or need ntdll to
++build the full one. A request that was valid before is handled as
++before.
++---
++diff --git a/server/fd.c b/server/fd.c
++index 9ee6965..8aed7b1 100644
++--- a/server/fd.c
+++++ b/server/fd.c
++@@ -2569,6 +2569,7 @@ struct fd *open_fd( struct fd *root, const char *name, struct unicode_str nt_nam
++     struct stat st;
++     struct closed_fd *closed_fd;
++     struct fd *fd;
+++    struct fd *unix_root = root;  /* the folder the unix name is relative to */
++     int root_fd = -1;
++     int rw_mode;
++     char *path;
++@@ -2589,9 +2590,13 @@ struct fd *open_fd( struct fd *root, const char *name, struct unicode_str nt_nam
++         return NULL;
++     }
++ 
++-    if (root)
+++#ifdef __PROSPERO__
+++    /* an absolute unix name with a folder (create_file): the folder only for the NT name */
+++    if (root && name[0] == '/') unix_root = NULL;
+++#endif
+++    if (unix_root)
++     {
++-        if ((root_fd = get_unix_fd( root )) == -1) goto error;
+++        if ((root_fd = get_unix_fd( unix_root )) == -1) goto error;
++         if (fchdir( root_fd ) == -1)
++         {
++             file_set_error();
++@@ -2665,7 +2670,7 @@ struct fd *open_fd( struct fd *root, const char *name, struct unicode_str nt_nam
++             goto error;
++         }
++ 
++-        if ((path = dup_fd_name( root, name )))
+++        if ((path = dup_fd_name( unix_root, name )))
++         {
++             fd->unix_name = realpath_dup( path );
++             free( path );
++@@ -3490,7 +3495,12 @@ static void set_fd_name( struct fd *fd, struct fd *root, const char *nameptr, da
++         return;
++     }
++ 
+++#ifdef __PROSPERO__
+++    /* an absolute unix name with a folder, as create_file takes one */
+++    if (!len || (!root && nameptr[0] != '/'))
+++#else
++     if (!len || ((nameptr[0] == '/') ^ !root))
+++#endif
++     {
++         set_error( STATUS_OBJECT_PATH_SYNTAX_BAD );
++         return;
++@@ -3501,7 +3511,7 @@ static void set_fd_name( struct fd *fd, struct fd *root, const char *nameptr, da
++         name[len++] = '?';
++     name[len] = 0;
++ 
++-    if (root)
+++    if (root && name[0] != '/')
++     {
++         char *combined_name = dup_fd_name( root, name );
++         if (!combined_name)
++diff --git a/server/file.c b/server/file.c
++index 20680ef..c2157ff 100644
++--- a/server/file.c
+++++ b/server/file.c
++@@ -202,7 +202,15 @@ static struct object *create_file( struct fd *root, const char *nameptr, data_si
++     char *name;
++     mode_t mode;
++ 
+++#ifdef __PROSPERO__
+++    /* A name relative to a folder whose descriptor ntdll can't use is looked up by the
+++     * folder's own name (Wine patch 0943) and comes as an absolute unix name with the
+++     * folder still given: the unix name is opened as it is, and the NT name is still
+++     * taken as relative to the folder (open_fd). */
+++    if (!len || (!root && nameptr[0] != '/') || (nt_name.len && ((nt_name.str[0] == '\\') ^ !root)))
+++#else
++     if (!len || ((nameptr[0] == '/') ^ !root) || (nt_name.len && ((nt_name.str[0] == '\\') ^ !root)))
+++#endif
++     {
++         set_error( STATUS_OBJECT_PATH_SYNTAX_BAD );
++         return NULL;
++-- 
++2.43.0
++
+diff --git a/wine/patches/0997-kernelbase-ps5-def-values-without-an-exponent-and-vs-1-x-as-vs-2-0.patch b/wine/patches/0997-kernelbase-ps5-def-values-without-an-exponent-and-vs-1-x-as-vs-2-0.patch
+new file mode 100644
+index 0000000..4e088f2
+--- /dev/null
++++ b/wine/patches/0997-kernelbase-ps5-def-values-without-an-exponent-and-vs-1-x-as-vs-2-0.patch
+@@ -0,0 +1,146 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sat, 31 Oct 2026 17:00:00 +0000
++Subject: [PATCH] kernelbase: PS5: the shader compiler's def values without
++ an exponent, and vs_1_x shaders it can't compile as vs_2_0.
++
++Far Cry assembles the listing of each shader it builds with fxc.exe
++(done in its process by patches 0988 and 0990) again with d3dx9's
++D3DXAssembleShader. Two kinds of shader still failed:
++
++A def line's values were written as vkd3d-shader writes floats,
++1.00000000e+00, and d3dx9's assembler takes no exponent ("syntax error :
++unexpected token 'e'"). Each value is now written as a plain decimal:
++the same digits with the point moved, so it is the same number and
++reads back as the same float, with the zeros at the end of its fraction
++left out but one (1.0, -0.5, 0.333333343). This works on vkd3d's text
++rather than on the float, as Wine's ntdll, which kernelbase's printf
++and string functions come from, has no float formatting or parsing.
++defi and defb lines are as before.
++
++Some vs_1_1 shaders fail to compile ("E7002: Instruction "sincos"
++(0x108) is not supported for the current target"). The game only
++assembles the listing's text again, on a device that takes vs_3_0, so a
++vs_1_x shader that fails to compile is now compiled for vs_2_0, and its
++listing (and code) is that one; the first compile's errors are logged
++as a warning.
++---
++diff --git a/dlls/kernelbase/tool.c b/dlls/kernelbase/tool.c
++index bda49b2..cda8876 100644
++--- a/dlls/kernelbase/tool.c
+++++ b/dlls/kernelbase/tool.c
++@@ -307,6 +307,7 @@ static void list_constants( struct text *text, const BYTE *ctab, DWORD size )
++  *   dcl_weight, dcl_blend, dcl_specularN                        -> dcl_blendweight,
++  *                                                                  dcl_blendindices, dcl_colorN+1
++  *   def c0 = 1, 2, 3, 4 (defi, defb too)                       -> def c0, 1, 2, 3, 4
+++ *   def c0 = 5.00000000e-01, ... (vkd3d's floats)              -> def c0, 0.5, ...
++  *   a.x, c[a.xyzw + 3] (the address register)                  -> a0.x, c[a0.x + 3]
++  *   oFog.x, oPts.x (scalar registers, never masked)            -> oFog, oPts
++  *   |r0.x|, -|r0.x|                                            -> r0_abs.x, -r0_abs.x
++@@ -392,6 +393,73 @@ static unsigned int asm_used( const struct asm_state *state, const char *opcode,
++ 
++ /* Rewrites a line of vkd3d's listing in Microsoft's syntax into out: its length, or -1 when the
++  * line is left out. */
+++/* A float as vkd3d writes it ("%.8e": -1.25000000e+01, 0.00000000e+00) as d3dx9's assembler
+++ * reads one, without an exponent (-12.5, 0.0): the same digits with the point moved, so it is
+++ * the same number and reads back as the same float, the zeros at the end of its fraction left
+++ * out but one. Returns its length, or -1 for anything else (inf, nan). */
+++static int asm_decimal( const char *in, size_t length, char *out, size_t size )
+++{
+++    char digits[16];
+++    size_t count = 0, i = 0, n = 0, point;
+++    int exponent = 0, sign = 1, exponent_digits = 0;
+++
+++    if (i < length && in[i] == '-') out[n++] = in[i++];
+++    if (i >= length || in[i] < '0' || in[i] > '9') return -1;
+++    digits[count++] = in[i++];
+++    if (i < length && in[i] == '.')
+++        for (i++; i < length && in[i] >= '0' && in[i] <= '9'; i++)
+++        {
+++            if (count == sizeof(digits)) return -1;
+++            digits[count++] = in[i];
+++        }
+++    if (i >= length || (in[i] != 'e' && in[i] != 'E')) return -1;
+++    if (++i < length && (in[i] == '+' || in[i] == '-')) sign = in[i++] == '-' ? -1 : 1;
+++    for (; i < length && in[i] >= '0' && in[i] <= '9' && exponent < 1000; i++, exponent_digits++)
+++        exponent = exponent * 10 + in[i] - '0';
+++    if (i != length || !exponent_digits || exponent > 64) return -1;
+++    exponent *= sign;
+++    if (size < 2 * 64 + sizeof(digits) + 4) return -1;
+++
+++    /* the digits before the point: the first exponent + 1 of them, or a 0 */
+++    if (exponent < 0)
+++        out[n++] = '0';
+++    else
+++        for (point = 0; point <= (size_t)exponent; point++) out[n++] = point < count ? digits[point] : '0';
+++    out[n++] = '.';
+++    /* and after it, with the zeros an exponent below 0 adds */
+++    for (i = 0; exponent < 0 && i < (size_t)-exponent - 1; i++) out[n++] = '0';
+++    for (i = exponent < 0 ? 0 : exponent + 1; i < count; i++) out[n++] = digits[i];
+++    while (out[n - 1] == '0' && out[n - 2] != '.') n--;
+++    if (out[n - 1] == '.') out[n++] = '0';
+++    out[n] = 0;
+++    return n;
+++}
+++
+++/* def c0, a, b, c, d with each float as asm_decimal writes it */
+++static int asm_def( const char *line, const char *values, char *out, size_t size )
+++{
+++    size_t n;
+++
+++    if ((n = _snprintf( out, size, "%s", line )) >= size) return -2;
+++    while (*values)
+++    {
+++        size_t value = strcspn( values, "," );
+++        char number[2 * 64 + 32];
+++        int done = asm_decimal( values, value, number, sizeof(number) );
+++
+++        if (done < 0) done = _snprintf( number, sizeof(number), "%.*s", (int)value, values );
+++        if (done < 0 || n + done + 3 >= size) return -2;
+++        memcpy( out + n, ", ", 2 );
+++        memcpy( out + n + 2, number, done );
+++        n += done + 2;
+++        values += value;
+++        if (*values == ',') values++;
+++        values += strspn( values, " " );
+++    }
+++    out[n] = 0;
+++    return n;
+++}
+++
++ static int asm_line( struct asm_state *state, const char *in, size_t length, char *out, size_t size )
++ {
++     char line[512], abs_line[512], *at;
++@@ -440,6 +508,8 @@ static int asm_line( struct asm_state *state, const char *in, size_t length, cha
++         if ((at = strstr( line, " = " )))
++         {
++             *at = 0;
+++            /* d3dx9's assembler takes no exponent ("unexpected token 'e'") */
+++            if (line[3] == ' ') return asm_def( line, at + 3, out, size );
++             return _snprintf( out, size, "%s, %s", line, at + 3 );
++         }
++         return _snprintf( out, size, "%s", line );
++@@ -643,6 +713,20 @@ static DWORD run_fxc( const WCHAR *cmd_line, const WCHAR *cur_dir )
++ 
++     hr = compile( source, source_size, source_name, defines, D3D_COMPILE_STANDARD_FILE_INCLUDE,
++                   entry ? entry : "main", profile, flags, 0, &code, &errors );
+++    /* vkd3d-shader compiles some vertex shaders for vs_2_0 and later only (Far Cry's: "E7002:
+++     * Instruction "sincos" (0x108) is not supported for the current target" for vs_1_1). The
+++     * game assembles the listing again on a device that takes vs_3_0, so such a shader is
+++     * compiled for vs_2_0 instead, and its listing is that. */
+++    if (FAILED(hr) && !_strnicmp( profile, "vs_1_", 5 ))
+++    {
+++        WARN( "fxc: %s for %s failed, %#lx, compiled for vs_2_0 instead: %s\n", debugstr_w(input), profile, hr,
+++              errors ? debugstr_a( ID3D10Blob_GetBufferPointer( errors ) ) : "" );
+++        if (errors) ID3D10Blob_Release( errors );
+++        if (code) ID3D10Blob_Release( code );
+++        errors = code = NULL;
+++        hr = compile( source, source_size, source_name, defines, D3D_COMPILE_STANDARD_FILE_INCLUDE,
+++                      entry ? entry : "main", "vs_2_0", flags, 0, &code, &errors );
+++    }
++     if (FAILED(hr))
++     {
++         ERR( "fxc: %s for %s failed, %#lx: %s\n", debugstr_w(input), profile, hr,
++-- 
++2.43.0
++
+-- 
+2.43.0
+

@@ -168,13 +168,34 @@ int pc5_cover_similarity(const char *a, const char *b)
     return (int)(100.0 * (one < two ? one * 0.7 + two * 0.3 : two * 0.7 + one * 0.3) + 0.5);
 }
 
-/* A folder's name made a search: release tags, versions and brackets out,
- * dots and underscores to spaces, words split where the case changes. */
+/* Words a release's name carries that aren't the game's: stores, platforms, scene and repack
+ * groups, and release tags. Edition words (Deluxe, GOTY, Definitive) stay. */
+static int release_word(const char *word)
+{
+    static const char *const words[] = {
+        "gog", "steam", "repack", "x64", "x86", "win64", "win32", "multi", "pc", "p2p", "codex", "rune", "flt",
+        "skidrow", "plaza", "cpy", "empress", "tenoke", "razor1911", "reloaded", "prophet", "hoodlum", "dodi",
+        "fitgirl", "elamigos", "kaos", "rld", "dinobytes", "darksiders", "goldberg", "portable", "build", "update",
+        "incl", "dlc", "dlcs", "crack", "cracked", "emu", "rip", "proper", "readnfo", "internal", NULL,
+    };
+    char lower[64];
+    size_t k = 0;
+    for (; word[k] && k + 1 < sizeof(lower); k++) lower[k] = (char)pc5_lower((unsigned char)word[k]);
+    lower[k] = 0;
+    for (int i = 0; words[i]; i++)
+        if (!strcmp(lower, words[i])) return 1;
+    /* MULTi2 to MULTi20: how many languages */
+    if (!strncmp(lower, "multi", 5) && lower[5] >= '0' && lower[5] <= '9') return 1;
+    return 0;
+}
+
+/* A folder's name made a search: release tags, versions and brackets out, scene and repack
+ * groups' names out, dots and underscores to spaces, words split where the case changes. */
 static void clean_name(const char *name, char *out, size_t size)
 {
-    char raw[PC5_NAME * 2], text[PC5_NAME * 2];
-    size_t n = 0, r = 0;
-    int depth = 0;
+    char raw[PC5_NAME * 2], kept[PC5_NAME * 2], text[PC5_NAME * 2];
+    size_t n = 0, r = 0, k = 0;
+    int depth = 0, after_build = 0;
 
     /* Versions first ("v1.2.0", "1.0.3", "v2"), while their dots still tie them together. */
     for (const char *p = name; *p && r + 1 < sizeof(raw);) {
@@ -190,12 +211,28 @@ static void clean_name(const char *name, char *out, size_t size)
         raw[r++] = *p++;
     }
     raw[r] = 0;
-    for (const char *p = raw; *p && n + 2 < sizeof(text); p++) {
+    /* Brackets out, then the words between the separators, release words left out. */
+    for (const char *p = raw; *p;) {
+        char word[PC5_NAME];
+        size_t w = 0;
+        if (*p == '[' || *p == '(' || *p == '{') { depth++; p++; continue; }
+        if (*p == ']' || *p == ')' || *p == '}') { if (depth) depth--; p++; continue; }
+        if (depth || strchr(" ._-+", *p)) { p++; continue; }
+        while (*p && !strchr(" ._-+[({])}", *p) && w + 1 < sizeof(word)) word[w++] = *p++;
+        while (*p && !strchr(" ._-+[({])}", *p)) p++;
+        word[w] = 0;
+        /* a build's or update's number goes with it ("Build.12345", "Update 7") */
+        int number = w && strspn(word, "0123456789") == w;
+        if (number && after_build) { after_build = 0; continue; }
+        after_build = !pc5_casecmp(word, "build") || !pc5_casecmp(word, "update");
+        if (!w || release_word(word) || k + w + 2 >= sizeof(kept)) continue;
+        if (k) kept[k++] = ' ';
+        memcpy(kept + k, word, w);
+        k += w;
+    }
+    kept[k] = 0;
+    for (const char *p = kept; *p && n + 2 < sizeof(text); p++) {
         char c = *p;
-        if (c == '[' || c == '(' || c == '{') { depth++; continue; }
-        if (c == ']' || c == ')' || c == '}') { if (depth) depth--; continue; }
-        if (depth) continue;
-        if (c == '.' || c == '_' || c == '-' || c == '+') c = ' ';
         /* "HalfLife2" -> "Half Life 2", but "GTAIV" stays one word */
         if (n && c != ' ' && text[n - 1] != ' ' &&
             ((c >= 'A' && c <= 'Z' && text[n - 1] >= 'a' && text[n - 1] <= 'z') ||
@@ -205,27 +242,11 @@ static void clean_name(const char *name, char *out, size_t size)
         text[n++] = c;
     }
     text[n] = 0;
-    /* Release words out, the rest kept in order. */
-    out[0] = 0;
-    n = 0;
-    for (char *word = text, *next; word && *word; word = next) {
-        char lower[64];
-        size_t length, k;
-        while (*word == ' ') word++;
-        if (!*word) break;
-        next = strchr(word, ' ');
-        length = next ? (size_t)(next - word) : strlen(word);
-        if (next) *next++ = 0;
-        for (k = 0; k < length && k + 1 < sizeof(lower); k++) lower[k] = (char)pc5_lower((unsigned char)word[k]);
-        lower[k] = 0;
-        if (!strcmp(lower, "gog") || !strcmp(lower, "steam") || !strcmp(lower, "repack") || !strcmp(lower, "x64") ||
-            !strcmp(lower, "win64") || !strcmp(lower, "multi") || !strcmp(lower, "pc"))
-            continue;
-        if (n + length + 2 >= size) break;
-        if (n) out[n++] = ' ';
-        memcpy(out + n, word, length);
-        n += length;
-        out[n] = 0;
+    pc5_copy(out, size, text);
+    /* cut at a word's end when it doesn't fit */
+    if (strlen(text) >= size) {
+        char *space = strrchr(out, ' ');
+        if (space) *space = 0;
     }
 }
 
@@ -248,17 +269,19 @@ static int generic_product(const char *product)
 
 int pc5_cover_queries(const Pc5CoverHint *hint, char queries[3][PC5_NAME])
 {
-    char candidates[3][PC5_NAME];
+    char candidates[4][PC5_NAME];
     int count = 0, n = 0;
 
-    candidates[0][0] = candidates[1][0] = candidates[2][0] = 0;
+    candidates[0][0] = candidates[1][0] = candidates[2][0] = candidates[3][0] = 0;
+    /* the store's own name for it (GOG's note in the folder) first: it is the game's */
+    if (hint->name[0]) pc5_copy(candidates[n++], PC5_NAME, hint->name);
     if (hint->product[0] && !generic_product(hint->product))
         pc5_copy(candidates[n++], PC5_NAME, hint->product);
     clean_name(hint->folder, candidates[n], PC5_NAME);
     if (candidates[n][0]) n++;
     clean_name(hint->program, candidates[n], PC5_NAME);
     if (candidates[n][0] && !generic_product(candidates[n])) n++;
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n && count < 3; i++) {
         int seen = 0;
         for (int k = 0; k < count; k++) seen |= !pc5_casecmp(queries[k], candidates[i]);
         if (!seen) memcpy(queries[count++], candidates[i], PC5_NAME);

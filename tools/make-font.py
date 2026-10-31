@@ -30,6 +30,7 @@ FACES = [
     ("title", "InterDisplay-Bold.ttf", 54),
     ("card", "InterDisplay-Bold.ttf", 46),
     ("button", "Inter-SemiBold.ttf", 17),
+    ("hero", "InterDisplay-Bold.ttf", 92),
 ]
 CODEPOINTS = sorted(set(range(0x20, 0x7F)) | set(range(0xA0, 0x180)) |
                     {0x2013, 0x2014, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2026, 0x2122, 0x2190, 0x2192, 0x203A,

@@ -37,7 +37,10 @@ typedef struct Pc5Folder {
     Pc5Exe exes[PC5_EXES];    /* best first */
     int exe_count;
     uint32_t imports;         /* every program and library in the game's folders */
-    uint32_t steam_appid;     /* a steam_appid.txt at the top, or 0 */
+    uint32_t steam_appid;     /* the game's Steam app id (pc5_identity.h), or 0 */
+    uint64_t gog_id;          /* its GOG product id (goggame-<id>.info), or 0 */
+    char store_name[PC5_NAME];      /* GOG's name for it, or "" */
+    char identity_source[64];       /* the file they came from, or "" */
     char picture[PC5_PATH];   /* the player's cover: cover.jpg, .jpeg or .png at the top, or "" */
     char problem[PC5_ERROR];  /* why it can't be installed, or "" */
 } Pc5Folder;

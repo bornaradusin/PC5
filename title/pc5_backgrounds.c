@@ -2,6 +2,8 @@
 /* PC5: the games' backgrounds (pc5_backgrounds.h). */
 #include "pc5_backgrounds.h"
 #include "pc5_image.h"
+#include "pc5_json.h"
+#include "pc5_identity.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -189,9 +191,175 @@ static void one(Pc5Backgrounds *b, const Pc5BackgroundGame *game)
     pc5_free(search);
 }
 
+/* ---- a game's details from Steam's store --------------------------------------------------- */
+
+#define STEAM_STORE "https://store.steampowered.com/api/appdetails?appids=%u&l=english&filters=basic,genres"
+#define STEAM_LOGO "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/%u/logo.png"
+
+int pc5_details_logo_path(const char *root, const char *prefix, char *out, size_t size)
+{
+    return note_path(root, prefix, "logo.png", out, size);
+}
+
+/* text with its HTML taken out: tags dropped, the usual entities as their characters, runs of
+ * white space as one space. */
+static void plain_text(char *text)
+{
+    static const struct { const char *name; const char *as; } entities[] = {
+        { "&quot;", "\"" }, { "&amp;", "&" }, { "&#39;", "'" }, { "&apos;", "'" }, { "&lt;", "<" }, { "&gt;", ">" },
+        { "&nbsp;", " " }, { "&reg;", "\xc2\xae" }, { "&trade;", "\xe2\x84\xa2" }, { "&copy;", "\xc2\xa9" },
+    };
+    char *out = text;
+    int space = 0;
+    for (const char *p = text; *p;) {
+        if (*p == '<') {
+            const char *end = strchr(p, '>');
+            if (end) { p = end + 1; space = out != text; continue; }
+        }
+        if (*p == '&') {
+            size_t i = 0;
+            for (; i < sizeof(entities) / sizeof(entities[0]); i++)
+                if (!strncmp(p, entities[i].name, strlen(entities[i].name))) break;
+            if (i < sizeof(entities) / sizeof(entities[0])) {
+                if (space) *out++ = ' ';
+                space = 0;
+                for (const char *a = entities[i].as; *a; a++) *out++ = *a;
+                p += strlen(entities[i].name);
+                continue;
+            }
+        }
+        if (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') { space = out != text; p++; continue; }
+        if (space) *out++ = ' ';
+        space = 0;
+        *out++ = *p++;
+    }
+    *out = 0;
+}
+
+int pc5_details_parse(const char *json, size_t length, uint32_t appid, Pc5Details *details)
+{
+    Pc5Json j;
+    char key[16], ok[8];
+    memset(details, 0, sizeof(*details));
+    if (pc5_json_parse(&j, json, length, 20000)) return -1;
+    snprintf(key, sizeof(key), "%u", (unsigned)appid);
+    uint32_t app = pc5_json_get(&j, 0, key), data = app ? pc5_json_get(&j, app, "data") : 0;
+    int status = -1;
+    if (app && !pc5_json_text(&j, pc5_json_get(&j, app, "success"), ok, sizeof(ok)) && !strcmp(ok, "true") && data) {
+        pc5_json_text(&j, pc5_json_get(&j, data, "short_description"), details->description, sizeof(details->description));
+        plain_text(details->description);
+        uint32_t genres = pc5_json_get(&j, data, "genres");
+        for (uint32_t i = 0, g; genres && i < 4 && (g = pc5_json_item(&j, genres, i)); i++) {
+            char name[48];
+            if (pc5_json_text(&j, pc5_json_get(&j, g, "description"), name, sizeof(name)) || !name[0]) continue;
+            size_t at = strlen(details->genres);
+            snprintf(details->genres + at, sizeof(details->genres) - at, "%s%s", at ? " / " : "", name);
+        }
+        status = 0;
+    }
+    pc5_json_free(&j);
+    return status;
+}
+
+int pc5_details_read(const char *root, const char *prefix, Pc5Details *details)
+{
+    char path[PC5_PATH];
+    Pc5Buf text = { 0 };
+    memset(details, 0, sizeof(*details));
+    if (note_path(root, prefix, "details.txt", path, sizeof(path)) || pc5_read_file(path, &text, 8192) ||
+        pc5_buf_terminate(&text)) {
+        pc5_buf_free(&text);
+        return -1;
+    }
+    for (char *line = (char *)text.data, *next; line && *line; line = next) {
+        next = strchr(line, '\n');
+        if (next) *next++ = 0;
+        if (!strncmp(line, "genres=", 7)) pc5_copy(details->genres, sizeof(details->genres), line + 7);
+        else if (!strncmp(line, "description=", 12)) pc5_copy(details->description, sizeof(details->description), line + 12);
+    }
+    pc5_buf_free(&text);
+    details->has_logo = !pc5_details_logo_path(root, prefix, path, sizeof(path)) && pc5_is_file(path);
+    return 0;
+}
+
+/* The game's Steam app id: what its background came with, its steam_appid.txt, or Steam's own
+ * search for it; 0 when Steam doesn't know it (or is turned off). */
+static uint32_t steam_appid(Pc5Backgrounds *b, const Pc5BackgroundGame *game)
+{
+    char path[PC5_PATH];
+    Pc5Buf text = { 0 };
+    uint32_t appid = 0;
+    Pc5Identity kept;
+    if (!pc5_identity_read(b->root, game->prefix, &kept) && kept.steam_appid) return kept.steam_appid;
+    if (!note_path(b->root, game->prefix, "background.txt", path, sizeof(path)) && !pc5_read_file(path, &text, 4096) &&
+        !pc5_buf_terminate(&text)) {
+        const char *line = strchr((const char *)text.data, '\n');
+        if (line) appid = (uint32_t)strtoul(line + 1, NULL, 10);
+    }
+    pc5_buf_free(&text);
+    if (!appid) appid = game->hint.steam_appid;
+    if (appid || (game->hint.off & PC5_PICTURES_STEAM)) return appid;
+    Pc5CoverSearch *search = pc5_alloc(sizeof(*search));
+    if (!search) return 0;
+    Pc5CoverHint hint = game->hint;
+    hint.picture[0] = 0;
+    hint.picture_only = 0;
+    hint.steamgriddb_key[0] = 0;
+    hint.off = ((1u << PC5_PICTURE_SOURCES) - 1) & ~(uint32_t)PC5_PICTURES_STEAM;
+    pc5_cover_search_start(search, &hint);
+    while (!wait_turn(b) && pc5_cover_search_step(search, &b->http)) {
+    }
+    if (search->count && search->choices[0].steam_appid) appid = search->choices[0].steam_appid;
+    pc5_free(search);
+    return appid;
+}
+
+/* The game's details, once: its genres and a line about it from Steam's store, and its logo.
+ * Kept even when Steam has none (an empty details.txt), so it is asked only once; not kept
+ * when the store didn't answer (asked again at the next start). */
+static void details(Pc5Backgrounds *b, const Pc5BackgroundGame *game)
+{
+    char path[PC5_PATH], url[256], text[700];
+    Pc5Details d;
+    if (note_path(b->root, game->prefix, "details.txt", path, sizeof(path)) || pc5_exists(path)) return;
+    if (pc5_format(path, sizeof(path), "%s/prefixes/%s/system.reg", b->root, game->prefix) || !pc5_is_file(path)) return;
+    if (wait_turn(b)) return;
+    uint32_t appid = steam_appid(b, game);
+    memset(&d, 0, sizeof(d));
+    if (appid && !wait_turn(b)) {
+        Pc5Buf answer = { 0 };
+        int status = 0;
+        snprintf(url, sizeof(url), STEAM_STORE, (unsigned)appid);
+        if (b->http.get(b->http.context, url, &answer, 1u << 20, &status) || status != 200 ||
+            pc5_details_parse((const char *)answer.data, answer.len, appid, &d)) {
+            pc5_buf_free(&answer);
+            note(b, "PC5 details game=%s appid=%u: the store didn't answer (%d)", game->id, (unsigned)appid, status);
+            return;
+        }
+        pc5_buf_free(&answer);
+        if (!wait_turn(b)) {
+            Pc5Buf logo = { 0 };
+            Pc5Image check = { 0 };
+            snprintf(url, sizeof(url), STEAM_LOGO, (unsigned)appid);
+            if (!b->http.get(b->http.context, url, &logo, 8u << 20, &status) && status == 200 &&
+                !pc5_image_decode(logo.data, logo.len, &check) && !pc5_details_logo_path(b->root, game->prefix, path, sizeof(path)))
+                d.has_logo = !pc5_write_file(path, logo.data, logo.len);
+            pc5_image_free(&check);
+            pc5_buf_free(&logo);
+        }
+    }
+    snprintf(text, sizeof(text), "appid=%u\ngenres=%s\ndescription=%s\n", (unsigned)appid, d.genres, d.description);
+    if (!write_note(b, game, "details.txt", text)) {
+        note(b, "PC5 details game=%s appid=%u genres=%d description=%d logo=%d", game->id, (unsigned)appid, d.genres[0] != 0,
+             d.description[0] != 0, d.has_logo);
+        atomic_fetch_add(&b->generation, 1);
+    }
+}
+
 void pc5_backgrounds_run(Pc5Backgrounds *b)
 {
     for (int i = 0; i < b->count && !atomic_load(&b->stop); i++) one(b, &b->games[i]);
+    for (int i = 0; b->details && i < b->count && !atomic_load(&b->stop); i++) details(b, &b->games[i]);
     atomic_store(&b->busy, 0);
 }
 

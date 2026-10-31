@@ -47,7 +47,7 @@ void pc5_game_ps5_ops(Pc5GameOps *ops, void (*log)(const char *line));
 /* sceSystemServiceParamGetInt's ids, as the PS4 and PS5 SDKs number them. */
 enum { PARAM_LANG = 1, PARAM_TIME_FORMAT = 3, PARAM_TIME_ZONE = 4, PARAM_SUMMERTIME = 5, PARAM_ENTER_BUTTON = 1000 };
 
-enum { PAD_OPTIONS = 0x8u, PAD_UP = 0x10u, PAD_RIGHT = 0x20u, PAD_DOWN = 0x40u, PAD_LEFT = 0x80u, PAD_L1 = 0x400u,
+enum { PAD_R3 = 0x4u, PAD_L2 = 0x100u, PAD_R2 = 0x200u, PAD_OPTIONS = 0x8u, PAD_UP = 0x10u, PAD_RIGHT = 0x20u, PAD_DOWN = 0x40u, PAD_LEFT = 0x80u, PAD_L1 = 0x400u,
        PAD_R1 = 0x800u, PAD_TRIANGLE = 0x1000u, PAD_CIRCLE = 0x2000u, PAD_CROSS = 0x4000u, PAD_SQUARE = 0x8000u };
 
 static const Pc5Console *console;
@@ -396,6 +396,9 @@ static uint32_t key_of(uint16_t vk)
     case 0x22: return PC5_KEY_R1;                             /* Page Down */
     case 0x71: case 0x2e: return PC5_KEY_SQUARE;              /* F2, Delete */
     case 0x72: return PC5_KEY_TRIANGLE;                       /* F3 */
+    case 0x24: return PC5_KEY_L2;                             /* Home */
+    case 0x23: return PC5_KEY_R2;                             /* End */
+    case 0x73: return PC5_KEY_R3;                             /* F4 */
     default: return 0;
     }
 }
@@ -476,6 +479,7 @@ void pc5_console_run(const Pc5Console *config)
     {
         Pc5UiConfig ui_config = { config->root, template_prefix, fonts, usb_roots, PC5_HOME_ROOT, tile_template,
                                   config->start, pc5_upgrade_drives, "/user", finished, 1,
+                                  !config->cycle && !(config->start && config->start[0]),
                                   !config->cycle && !(config->start && config->start[0]) };
         ui = pc5_ui_create(&ui_config, &platform);
     }
@@ -501,6 +505,9 @@ void pc5_console_run(const Pc5Console *config)
             if (buttons & PAD_OPTIONS) held |= PC5_KEY_OPTIONS;
             if (buttons & PAD_L1) held |= PC5_KEY_L1;
             if (buttons & PAD_R1) held |= PC5_KEY_R1;
+            if (buttons & PAD_L2) held |= PC5_KEY_L2;
+            if (buttons & PAD_R2) held |= PC5_KEY_R2;
+            if (buttons & PAD_R3) held |= PC5_KEY_R3;
             if (buttons & PAD_SQUARE) held |= PC5_KEY_SQUARE;
             if (buttons & PAD_TRIANGLE) held |= PC5_KEY_TRIANGLE;
             /* The left stick moves too, past a third of its travel. */
