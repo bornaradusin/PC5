@@ -1,0 +1,87 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 23:00:00 +0000
+Subject: [PATCH 83/83] PC5: a game's error monitor is no longer handed off as the
+ game (Wine patch 0995)
+
+World of Tanks starts WargamingErrorMonitor.exe, its crash reporter, as it
+boots, and PC5 ended the game and started the monitor in its place. A
+program whose name has "errormonitor" in it is a helper now, as other
+crash reporters are, and the game goes on.
+---
+ docs/WINE_PS5_BUILD.md                           |  2 +-
+ ...l-ps5-a-crash-handler-is-not-handed-off.patch | 16 ++++++++++------
+ 2 files changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 29de124..730b157 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -169,7 +169,7 @@ before evaluating a candidate built from that cache.
+ | 0991 | `ntdll`: a large heap block gets a page more than it needs before its 64 KiB rounding, so a game that writes just past the end of one (one element more than it allocated) writes into its own memory instead of faulting when the block ended exactly at its memory's end |
+ | 0993 | `server` (Leo Lobato's prospero-win): on PS5, read-only regular files past a budget of 48 cached and about 48 live descriptors are parked (closed, the least recently used first) and opened again by name when needed, with their position, as 0871 does for directories: a title can open only about 250 files however high `RLIMIT_NOFILE` is, and games that keep hundreds of archives open failed with "Too many open files". `WINE_PS5_PARK_FILES`, `WINE_PS5_CACHED_FILES` |
+ | 0994 | `server`: on PS5, a parked folder (0871) or read-only file (0993) opened again by its name whose device or inode number changed (a file system that numbers files anew at each open) is taken instead of failing with `STATUS_FILE_DELETED`; that and every failure to open one again is logged (`wine-ps5: parked …`, eight times at most each) |
+-| 0995 | `ntdll`: a program whose name has `handler` in it, or whose command line has `--database=`, `crashpad` or `--url=` in it (in any case), is a helper for the PS5 title's hand-off (`PW_HANDOFF`), as a crash reporter is: it isn't handed off, its start fails, and the game that started it carries on. Mina the Hollower starts its crash handler, `handler.exe --database=…\Crashpad … --url=https://submit.backtrace.io/…`, at boot; it was handed off, so the game ended |
++| 0995 | `ntdll`: a program whose name has `handler` or `errormonitor` (World of Tanks' `WargamingErrorMonitor.exe`) in it, or whose command line has `--database=`, `crashpad` or `--url=` in it (in any case), is a helper for the PS5 title's hand-off (`PW_HANDOFF`), as a crash reporter is: it isn't handed off, its start fails, and the game that started it carries on. Mina the Hollower starts its crash handler, `handler.exe --database=…\Crashpad … --url=https://submit.backtrace.io/…`, at boot; it was handed off, so the game ended |
+ | 0996 | `server`: on PS5, a `create_file`, rename or hard link with a root folder and an absolute unix name (what 0943 gives when it looks a name up by the folder's own name) is taken instead of failing with `STATUS_OBJECT_PATH_SYNTAX_BAD`: the unix name is opened as it is and the NT name is still made from the folder's. Heroes of Might and Magic: Olden Era got "path invalid" (`ERROR_BAD_PATHNAME`) for `StreamingAssets\maps\Story_maps` right after 0943's log line |
+ | 0997 | `kernelbase`: on PS5, the listing 0988 writes for `fxc.exe` gives a `def` line's values as plain decimals (`1.0`, `-0.5`, `0.333333343`; vkd3d-shader writes `1.00000000e+00`, and `D3DXAssembleShader` takes no exponent), and a `vs_1_x` shader that fails to compile (vkd3d-shader's `E7002` for `sincos`) is compiled for `vs_2_0` instead, as Far Cry only assembles the listing again on a device that takes `vs_3_0` |
+ | 0998 | `ntdll`: on PS5, a non-alertable `NtWaitForSingleObject` on an event or semaphore whose one try on the shared word (0885, 0887) fails spins up to `WINE_PS5_SYNC_SPIN_US` microseconds (100 by default, 0 off, 1000 at most; never longer than a relative timeout, none for a poll or an absolute time) re-trying the word before it blocks in the server, and stops at once when the server holds the word. While it spins the word stays the client's, so `SetEvent`/`ReleaseSemaphore` need no server call either. Blur sets six events about 2000 times a frame, each waking a worker that waits again, and each of those waits and sets cost several microseconds through the server (5 to 10 ms a frame). The log says `wine-ps5: waits spin up to N us before blocking` at the first such wait, and every 65536 spins how many took the object (`wine-ps5: wait spins: …`); `tests/test_wine_sync_spin.py` runs the spin on the actual word header |
+diff --git a/wine/patches/0995-ntdll-ps5-a-crash-handler-is-not-handed-off.patch b/wine/patches/0995-ntdll-ps5-a-crash-handler-is-not-handed-off.patch
+index 4f184a1..6d3bb67 100644
+--- a/wine/patches/0995-ntdll-ps5-a-crash-handler-is-not-handed-off.patch
++++ b/wine/patches/0995-ntdll-ps5-a-crash-handler-is-not-handed-off.patch
+@@ -12,11 +12,13 @@ Hollower starts "handler.exe --database=...\Crashpad ...
+ A program whose name has "handler" in it, or whose command line has
+ "--database=", "crashpad" or "--url=" in it (in any case), is now a
+ helper: its start fails as other helpers' do, and the game goes on.
+-The name is also taken after the last forward slash, so a folder in a
+-path written with them is not read as part of the name.
++So is one whose name has "errormonitor" in it: World of Tanks starts
++WargamingErrorMonitor.exe, its crash reporter, as it boots. The name
++is also taken after the last forward slash, so a folder in a path
++written with them is not read as part of the name.
+ ---
+ diff --git a/dlls/ntdll/unix/process.c b/dlls/ntdll/unix/process.c
+-index 3eee653..860fe81 100644
++index 3eee653..b9d2f36 100644
+ --- a/dlls/ntdll/unix/process.c
+ +++ b/dlls/ntdll/unix/process.c
+ @@ -693,10 +693,10 @@ static void ps5_utf8( const UNICODE_STRING *str, char *out, DWORD size )
+@@ -34,13 +36,15 @@ index 3eee653..860fe81 100644
+  static void ps5_hand_off( const RTL_USER_PROCESS_PARAMETERS *params, const struct pe_image_info *pe_info )
+  {
+      static const char * const helpers[] =
+-@@ -706,7 +706,13 @@ static void ps5_hand_off( const RTL_USER_PROCESS_PARAMETERS *params, const struc
++@@ -706,7 +706,15 @@ static void ps5_hand_off( const RTL_USER_PROCESS_PARAMETERS *params, const struc
+          /* A game that starts its settings tool and waits for it (Far Cry, FarCryConfigurator.exe
+           * /Caller=FarCry) goes on to the game when that start fails. */
+          "config", "setting",
+ +        /* A crash handler a game starts at boot under a name of its own (Mina the Hollower's
+ +         * handler.exe, Crashpad's crashpad_handler.exe) */
+ +        "handler",
+++        /* World of Tanks' WargamingErrorMonitor.exe, its crash reporter */
+++        "errormonitor",
+      };
+ +    /* the same crash handler told by its command line, whatever its name: Crashpad's
+ +     * database and the address its reports are sent to */
+@@ -48,7 +52,7 @@ index 3eee653..860fe81 100644
+      const char *file = getenv( "PW_HANDOFF" ), *dir = getenv( "PW_HANDOFF_DIR" ), *name;
+      char image[1024], current[1024], command[4096], cwd[1024], lower[256], text[6200];
+      size_t i;
+-@@ -719,6 +725,7 @@ static void ps5_hand_off( const RTL_USER_PROCESS_PARAMETERS *params, const struc
++@@ -719,6 +727,7 @@ static void ps5_hand_off( const RTL_USER_PROCESS_PARAMETERS *params, const struc
+      if (!image[0] || !strcasecmp( image, current ) || strncasecmp( image, dir, strlen( dir ))) return;
+      name = strrchr( image, '\\' );
+      name = name ? name + 1 : image;
+@@ -56,7 +60,7 @@ index 3eee653..860fe81 100644
+      for (i = 0; name[i] && i < sizeof(lower) - 1; i++) lower[i] = (name[i] >= 'A' && name[i] <= 'Z') ? name[i] + 32 : name[i];
+      lower[i] = 0;
+      for (i = 0; i < ARRAY_SIZE(helpers); i++)
+-@@ -728,6 +735,16 @@ static void ps5_hand_off( const RTL_USER_PROCESS_PARAMETERS *params, const struc
++@@ -728,6 +737,16 @@ static void ps5_hand_off( const RTL_USER_PROCESS_PARAMETERS *params, const struc
+          return;
+      }
+      ps5_utf8( &params->CommandLine, command, sizeof(command) );
+-- 
+2.43.0
+
