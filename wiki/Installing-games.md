@@ -118,7 +118,8 @@ With a USB drive plugged in, PC5 asks where each game goes when you install it (
 
 Good to know:
 
-- PC5 offers the drive the game is on, or else the one with the most free space. It is for USB drives (exFAT), not a drive the PS5 formatted as extended storage.
+- PC5 offers the drive the game is on, or else the one with the most free space.
+- From 2.0.9, extended storage works the same way: an M.2 drive, or a USB drive the PS5 formatted as extended storage. PC5 then offers **Console** or **Extended storage**, and the game plays from the drive's `PC5` folder. Its `PC5/INSTALL` folder is looked in for games to install (the drive's own top isn't listed: the console's folders are there).
 - It needs a fast USB port. When the game is on that drive already, PC5 times a short read first: a drive in a USB 2.0 port (the front USB-A port on the original PS5) is too slow to play from, and PC5 says so. Plug it into a port on the back, or the front USB-C port. Installing to the console still works from any port.
 - Keep the drive plugged in to play. It can be in any USB port. With it unplugged, PC5 asks you to plug it in instead of starting the game.
 - Loading is as fast as the drive is: a USB hard drive is slower than the console.

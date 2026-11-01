@@ -59,6 +59,9 @@ static const char *const tab_names[TABS] = { N_("Home"), N_("Library"), N_("Inst
 enum { LIST_ALL, LIST_RECENT, LIST_FAVOURITES, LIST_USB, LIST_ATTENTION, LISTS };
 static const char *const list_names[LISTS] = { N_("All"), N_("Recently played"), N_("Favourites"), N_("USB drive"), N_("Needs attention") };
 
+/* The USB drives and extended storage drives at most (Pc5UiConfig.usb_roots). */
+#define PC5_DRIVES 12
+
 typedef enum Screen {
     S_START, S_COVERS, S_LIBRARY, S_SETTINGS, S_ABOUT, S_SCAN, S_SOURCES, S_READING, S_SEARCH, S_REVIEW,
     S_PROGRAMS, S_INSTALL, S_STOP, S_UNINSTALL_LIST, S_UNINSTALL_CONFIRM, S_REMOVING, S_MESSAGE, S_LAUNCH,
@@ -436,7 +439,7 @@ struct Pc5Ui {
     char install_dir[PC5_PATH];
     /* The USB drives' PC5/INSTALL folders (pc5_usb_install_dir), "" where there is no drive;
      * how many drives were there when last looked (usb_seen, -1 never), and when (usb_looked). */
-    char usb_install[8][PC5_PATH];
+    char usb_install[PC5_DRIVES][PC5_PATH];
     int usb_seen;
     uint64_t usb_looked;
     /* S_INSTALL_WHERE: for the review's game (0) or the queue (1); the USB drive offered
@@ -1824,7 +1827,7 @@ static void begin_update(Pc5Ui *ui)
 static int usb_install_refresh(Pc5Ui *ui)
 {
     int drives = 0;
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < PC5_DRIVES; i++) {
         char drop[PC5_PATH];
         ui->usb_install[i][0] = 0;
         if (!ui->usb_roots || pc5_usb_install_dir(i, drop, sizeof(drop))) continue;
@@ -1839,12 +1842,12 @@ static int usb_install_refresh(Pc5Ui *ui)
     return drives;
 }
 
-/* PC5's INSTALL folders, its own and the USB drives', into roots (NULL-ended, room for 10). */
+/* PC5's INSTALL folders, its own and the USB drives', into roots (NULL-ended, room for PC5_DRIVES + 2). */
 static int install_folders(const Pc5Ui *ui, const char **roots)
 {
     int n = 0;
     if (ui->install_dir[0]) roots[n++] = ui->install_dir;
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < PC5_DRIVES; i++)
         if (ui->usb_install[i][0]) roots[n++] = ui->usb_install[i];
     roots[n] = NULL;
     return n;
@@ -1853,7 +1856,7 @@ static int install_folders(const Pc5Ui *ui, const char **roots)
 /* The games waiting in the INSTALL folders. */
 static int install_waiting_count(const Pc5Ui *ui)
 {
-    const char *only[10];
+    const char *only[PC5_DRIVES + 2];
     if (!install_folders(ui, only)) return 0;
     Pc5Source *found = pc5_alloc(sizeof(*found) * PC5_SOURCES);
     int games = found ? pc5_source_scan(only, found, PC5_SOURCES) : 0;
@@ -2502,7 +2505,7 @@ static void usb_plugged_check(Pc5Ui *ui)
     int drives = 0;
     if (!ui->usb_roots || ui->now - ui->usb_looked < 3000) return;
     ui->usb_looked = ui->now;
-    for (int i = 0; ui->usb_roots[i] && i < 8; i++) drives += pc5_is_dir(ui->usb_roots[i]);
+    for (int i = 0; ui->usb_roots[i] && i < PC5_DRIVES; i++) drives += pc5_is_dir(ui->usb_roots[i]);
     if (drives == ui->usb_seen) return;
     int more = drives > ui->usb_seen;
     usb_install_refresh(ui);
@@ -4015,10 +4018,12 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         {
             /* The USB drives, then PC5's INSTALL folder (a source's drive is its place here). */
             int n = 0;
+            /* the USB drives' tops; extended storage only through its PC5/INSTALL folder, below:
+             * the console's own folders are at its top */
             for (int i = 0; !ui->install_only && ui->usb_roots && ui->usb_roots[i] && n < 8; i++)
-                ui->scan_roots[n++] = ui->usb_roots[i];
+                if (strncmp(ui->usb_roots[i], "/mnt/ext", 8)) ui->scan_roots[n++] = ui->usb_roots[i];
             if (!ui->update_for) {
-                const char *folders[10];
+                const char *folders[PC5_DRIVES + 2];
                 usb_install_refresh(ui);
                 for (int i = 0, count = install_folders(ui, folders); i < count && n < 15; i++) ui->scan_roots[n++] = folders[i];
             }
@@ -7056,13 +7061,21 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
         if (!pc5_free_bytes(ui->where_usb, &room)) pc5_size_text(room, usb_free, sizeof(usb_free));
         if (ui->where_for) pc5_tf(title, sizeof(title), "Where should the %d games go?", ticked_count(ui));
         else pc5_tf(title, sizeof(title), "Where should %s go?", ui->folder.name);
-        pc5_tf(body, sizeof(body),
-                 "The console has %s free. The USB drive (%.40s) has %s free: a game there plays from its PC5 folder, so "
-                 "keep the drive plugged into a fast port. Its saves stay on the console either way.",
-                 console_free, drive ? drive + 1 : ui->where_usb, usb_free);
+        /* extended storage (/mnt/ext0, the M.2 drive) is named as such */
+        int extended = !strncmp(ui->where_usb, "/mnt/ext", 8);
+        if (extended)
+            pc5_tf(body, sizeof(body),
+                     "The console has %s free. Extended storage (%.40s) has %s free: a game there plays from its PC5 "
+                     "folder. Its saves stay on the console either way.",
+                     console_free, drive ? drive + 1 : ui->where_usb, usb_free);
+        else
+            pc5_tf(body, sizeof(body),
+                     "The console has %s free. The USB drive (%.40s) has %s free: a game there plays from its PC5 folder, so "
+                     "keep the drive plugged into a fast port. Its saves stay on the console either way.",
+                     console_free, drive ? drive + 1 : ui->where_usb, usb_free);
         if (ui->where_for) sources_screen(ui, c);
         else review_screen(ui, c);
-        confirm_dialog(ui, c, title, body, T("Console"), T("USB drive"), 0, NULL);
+        confirm_dialog(ui, c, title, body, T("Console"), extended ? T("Extended storage") : T("USB drive"), 0, NULL);
         break;
     }
     case S_SAVES_ASK: {

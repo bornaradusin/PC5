@@ -408,8 +408,10 @@ void pc5_console_run(const Pc5Console *config)
 {
     static const PwPadKeyMap open_map[] = { { PAD_CROSS, 0x20, 0, 0, "cross" } };
     static PwHidPs5 hid;
+    /* The USB drives, then extended storage (the M.2 drive, and a USB drive the console formatted
+     * as extended storage): a game can be installed on any of them, in its PC5 folder. */
     const char *usb_roots[] = { "/mnt/usb0", "/mnt/usb1", "/mnt/usb2", "/mnt/usb3", "/mnt/usb4", "/mnt/usb5",
-                                "/mnt/usb6", "/mnt/usb7", NULL };
+                                "/mnt/usb6", "/mnt/usb7", "/mnt/ext0", "/mnt/ext1", NULL };
     char template_prefix[PC5_PATH], tile_template[PC5_PATH], fonts[PC5_PATH], line[256], finished[32] = "";
     const size_t frame_bytes = (size_t)1920 * 1080 * 4;
     uint32_t *frame;
