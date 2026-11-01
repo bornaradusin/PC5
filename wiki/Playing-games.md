@@ -146,7 +146,7 @@ Steam doesn't run on the console. A game that asks Steam's library (`steam_api.d
 
 - Valve's library is kept beside it, as `steam_api64.dll.pc5-valve`. **Off** puts it back at the next start.
 - The emulator's settings are in a `steam_settings` folder beside it: the game's app ID when the game has a `steam_appid.txt`, the player's name "Player", offline, and no DLC the game doesn't have. Change them there if a game needs something else; PC5 doesn't write over them.
-- A library that isn't Valve's (another emulator a copy came with) is left as it is.
+- A game that has a Steam emulator or fix of its own is left exactly as it is, its settings and saves with it: a Steam library anywhere in its folder that isn't Valve's, or another emulator's files (`steam_emu.ini`, `OnlineFix.ini`, `ColdClientLoader.ini`, `SmartSteamEmu.ini`, `steam_api64_o.dll` and the like). PC5 puts none beside it.
 
 A game whose program is wrapped in Steam's DRM (SteamStub) needs Steam itself, which the emulator can't stand in for: PC5 says so when you start it, instead of starting it. A copy of the game without it, such as one from GOG, can run.
 
