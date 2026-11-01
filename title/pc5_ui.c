@@ -3019,7 +3019,7 @@ static void report_open(Pc5Ui *ui)
         snprintf(settings, sizeof(settings),
                  "%d-bit, draws with %s; Graphics API %s; Controller %s; Frame generation %s; Memory %s; CPU sharing %s%s",
                  game->bits, pc5_api_name((Pc5Api)game->api), pc5_graphics_name(k.graphics, game->api),
-                 pc5_pad_mode_name(k.mode), k.frame_generation == 2 ? "MihawkGen" : k.frame_generation ? "on" : "off", k.memory_4gb ? "4 GB" : "Auto",
+                 pc5_pad_mode_name(k.mode), k.frame_generation == 2 ? "40 -> 120 (MihawkGen)" : k.frame_generation ? "on" : "off", k.memory_4gb ? "4 GB" : "Auto",
                  k.cpu_sharing ? "on" : "off", k.steam_off ? "; Steam emulator off" : "");
     }
     ui->report_qr.size = 0;
@@ -4383,8 +4383,10 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 if (choices[i] == ui->controls.graphics) ui->api_choice = i;
             go(ui, S_GRAPHICS_API);
         } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_FRAMEGEN) {
-            int step = (k & PC5_KEY_LEFT) ? -1 : 1;   /* Off, PC5's, MihawkGen */
-            ui->controls.frame_generation = (ui->controls.frame_generation + 3 + step) % 3;
+            /* Off, 60 -> 120, 40 -> 120 with 120 Hz output; Off, 30 -> 60 without (40 -> 120 shows as that) */
+            int step = (k & PC5_KEY_LEFT) ? -1 : 1, count = ui->settings.high_refresh ? 3 : 2;
+            int now = ui->controls.frame_generation >= count ? count - 1 : ui->controls.frame_generation;
+            ui->controls.frame_generation = (now + count + step) % count;
             controls_changed(ui);
             ui->dirty = 1;
         } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_RESOLUTION) {
@@ -5808,16 +5810,18 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
     }
     case GR_FRAMEGEN:
         *label = T("Frame generation");
-        if (ui->controls.frame_generation == 2) {
-            *text = ui->settings.high_refresh ? T("MihawkGen: held at 40 fps, two frames made between each; at 60 Hz, 30 \xe2\x86\x92 60")
-                                              : T("MihawkGen: held at 30 fps, shown at 60; with 120 Hz output on, 40 \xe2\x86\x92 120");
-            *value = ui->settings.high_refresh ? T("MihawkGen 40 \xe2\x86\x92 120") : T("MihawkGen 30 \xe2\x86\x92 60");
+        /* 40 -> 120 (MihawkGen) only with 120 Hz output: at 60 Hz it would be 30 -> 60 as well,
+         * so a game set to it shows and starts with 30 -> 60 until 120 Hz output is on again. */
+        if (ui->controls.frame_generation == 2 && ui->settings.high_refresh) {
+            *text = T("Held at 40 fps, two frames made between each two: for a game that can't hold 60");
+            *value = T("40 \xe2\x86\x92 120 fps");
         } else if (ui->controls.frame_generation) {
-            *text = ui->settings.high_refresh ? T("Held at 60 fps and shown at 120: smoother on a 120 Hz TV; at 60 Hz, 30 \xe2\x86\x92 60")
+            *text = ui->settings.high_refresh ? T("Held at 60 fps, a frame made between each two: smoother on a 120 Hz TV")
                                               : T("Held at 30 fps and shown at 60: smoother where it runs below 60");
             *value = ui->settings.high_refresh ? T("60 \xe2\x86\x92 120 fps") : T("30 \xe2\x86\x92 60 fps");
         } else {
-            *text = T("Off. Left and right: PC5's (doubles the frame rate) or MihawkGen (triples it at 120 Hz)");
+            *text = ui->settings.high_refresh ? T("Off. Left and right: 60 \xe2\x86\x92 120 or 40 \xe2\x86\x92 120 fps")
+                                              : T("Off. Left and right: 30 \xe2\x86\x92 60 fps (with 120 Hz output on, 60 \xe2\x86\x92 120 or 40 \xe2\x86\x92 120)");
             *value = T("Off");
         }
         break;

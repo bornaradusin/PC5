@@ -273,7 +273,7 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                                    "mode = %s\nleft_stick = %s\nright_stick = %s\npointer_speed = %d\n"
                                    "# The button that slows the pointer while held, and by how much (%%)\n"
                                    "slow_button = %s\nslow_percent = %d\n"
-                                   "# Triangle on the game, then Frame generation: off, on (PC5's) or mihawkgen\nframe_generation = %s\n"
+                                   "# Triangle on the game, then Frame generation: off, on (60 -> 120, or 30 -> 60 at 60 Hz) or mihawkgen (40 -> 120)\nframe_generation = %s\n"
                                    "# Triangle on a 32-bit game, then Memory: auto (as Windows) or 4gb\nmemory = %s\n"
                                    "# Triangle on the game, then Video memory: auto, 5gb or 6gb (a 64-bit Direct3D 10 to 12 game), or full\n"
                                    "video_memory = %s\n"

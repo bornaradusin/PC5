@@ -535,7 +535,7 @@ controller's speaker.
 | 298 | A Direct3D 9 game with `DXVK_TEXTURE_DUMP=dump` in env.txt, then `DXVK_TEXTURE_PACK=pack` with an edited PNG named as a dumped texture | .tga files appear in `dump`; the edited picture shows in the game | `D3D9: Texture pack pack: N images` (DXVK's own log, when DXVK_LOG_LEVEL=info) |
 | 299 | Settings › In games › 120 Hz output on, a 120 Hz TV with the PS5's own 120 Hz output on, a game that runs well (Half-Life 2) with the overlay's FPS | more than 60 fps; Windows' display settings in the game offer 120 Hz | `PW_WINE64 120hz wanted=1 output=supported`, `wsi/videoout: presenting at 119.88 Hz` |
 | 300 | The same with a TV at 60 Hz only, then with 120 Hz output off | 60 fps, as before | `output=not-supported` or `wanted=0`; no `119.88` line |
-| 301 | 120 Hz on, Frame generation PC5's on a game that holds 60 | smooth, the overlay near 60 from the game | `pw_framegen: display at 119.88 Hz: 59.89 fps shown at 119.78` |
-| 302 | 120 Hz on, Frame generation MihawkGen on a game that holds 40 | smooth, about 40 from the game | `pw_mihawkgen: factor 3`, `pw_mihawkgen: 40 frames/s from the program, 120 pictures/s presented` |
-| 303 | 120 Hz off, Frame generation MihawkGen | 30 → 60 | `pw_mihawkgen: the display is at 59.94 Hz: factor 3 becomes 2` |
+| 301 | 120 Hz on, Frame generation 60 → 120 fps on a game that holds 60 | smooth, the overlay near 60 from the game | `pw_framegen: display at 119.88 Hz: 59.89 fps shown at 119.78` |
+| 302 | 120 Hz on, Frame generation 40 → 120 fps on a game that holds 40 | smooth, about 40 from the game | `pw_mihawkgen: factor 3`, `pw_mihawkgen: 40 frames/s from the program, 120 pictures/s presented` |
+| 303 | A game set to 40 → 120 fps, then 120 Hz output off | the menu shows 30 → 60 fps (left and right: Off, 30 → 60); the game at 30 → 60 | `PC5 game … frame_generation=2 … high_refresh=0`, `pw_framegen: on`, no `pw_mihawkgen:` lines |
 | 304 | Leave a game at 120 Hz to PC5 and from a home screen tile, then start another with 120 Hz off | PC5's screens look as always; the next game at 60 Hz | no stuck "Closing" screen |

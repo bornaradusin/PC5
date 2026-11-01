@@ -655,11 +655,13 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         if (dxvk_config[0]) setenv("DXVK_CONFIG", dxvk_config, 1);
         else unsetenv("DXVK_CONFIG");
     }
-    /* One generator at most: PC5's own (PW_PC5_FRAMEGEN=1) or MihawkGen at three pictures a frame
-     * (PW_FRAMEGEN=3; libvulkan.prx makes it two at 59.94 Hz). */
-    if (game->frame_generation == 1) setenv("PW_PC5_FRAMEGEN", "1", 1);
+    /* One generator at most: PC5's own (PW_PC5_FRAMEGEN=1; 60 -> 120, or 30 -> 60 at 60 Hz) or
+     * MihawkGen at three pictures a frame (PW_FRAMEGEN=3; 40 -> 120). That one only with 120 Hz
+     * output: without, it would be 30 -> 60 as PC5's own is, and the menu shows it as that. */
+    const int generator = game->frame_generation == 2 && !game->settings.high_refresh ? 1 : game->frame_generation;
+    if (generator == 1) setenv("PW_PC5_FRAMEGEN", "1", 1);
     else unsetenv("PW_PC5_FRAMEGEN");
-    if (game->frame_generation == 2) setenv("PW_FRAMEGEN", "3", 1);
+    if (generator == 2) setenv("PW_FRAMEGEN", "3", 1);
     else unsetenv("PW_FRAMEGEN");
     /* 120 Hz output: RADV opens the display at 119.88 Hz where the TV takes it (patches/radv 0004),
      * the title tells Wine (WINE_PS5_REFRESH); "0" keeps it at 60 Hz. */
