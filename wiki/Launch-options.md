@@ -48,7 +48,7 @@ From PC5 2.1.1, a few games get launch options from PC5 when they have no `launc
 | --- | --- |
 | Grand Theft Auto IV: The Complete Edition (`GTAIV.exe`) | `-availablevidmem 1536 -nomemrestrict -norestrictions -refreshrate 60 -fullscreen`, and `-width` and `-height` of the game's **Resolution** |
 
-GTA IV starts from `GTAIV.exe`, not `PlayGTAIV.exe`, which only opens the Rockstar Games Launcher. Without these options the game limits its settings to the video memory it finds. PC5 also gives it a DXVK option that makes it play more smoothly (`d3d9.weakRenderTargetFlushHint`). Mods such as the Ultimate ASI Loader (`dinput8.dll` beside `GTAIV.exe`) load as they do on a PC.
+GTA IV starts from `GTAIV.exe`, not `PlayGTAIV.exe`, which only opens the Rockstar Games Launcher. Current Steam and Rockstar copies of the Complete Edition still check for that launcher as they start and stop with a message that it's needed, so they don't run in PC5, like every game that needs a store's launcher; these options are for a copy that starts without it. Without them the game limits its settings to the video memory it finds. PC5 also gives it a DXVK option that makes it play more smoothly (`d3d9.weakRenderTargetFlushHint`). Mods such as the Ultimate ASI Loader (`dinput8.dll` beside `GTAIV.exe`) load as they do on a PC.
 
 ## Changing or removing options
 
