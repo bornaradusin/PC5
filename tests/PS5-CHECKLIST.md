@@ -559,3 +559,5 @@ controller's speaker.
 | 317 | The Last of Us Part II | its log no longer says `Driver Supported: NO` | `amd_ags_x64.dll` loaded as builtin |
 | 318 | Blade & Sword (The Legend of Enveloped Demons, DirectDraw), past its opening movie | the game's picture, as on 2.0.8, and it plays on | `wsi/videoout: a smaller window's 634x448 swapchain leaves the display with a 640x480 one`, no `takes the display from a 640x480` |
 | 319 | Chronicles of the Wolf: R1 menu; Aggelos 2: Start, then the item menu and back | the menu shows, not black, and the game comes back after it | `wsi/videoout: a newer window's … swapchain takes the display from a … one`, both sizes the same |
+| 320 | Ruined King: A League of Legends Story (Unity), a cutscene | the cutscene's picture, not black with sound | `D3D11: A video device shares a Direct3D 11 device's Vulkan device`, `LocalShare: … textures shared within the process`, no `Failed to create shared resource` |
+| 321 | After 320: row 48's game (Samurai Warriors 4 DX's movies, Direct3D 9 to 11) | its movies still play | `D3D9: Sharing the Direct3D 11 device's Vulkan device` |

@@ -1,0 +1,251 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 00:20:00 +0000
+Subject: [PATCH] d3d11: A video device's shared textures, within the process
+ without external memory
+
+Unity decodes its movies through Media Foundation on a Direct3D 11 device
+of their own ("D3D11 device created for Microsoft Media Foundation video
+decoding") and hands each picture to its main device through a shared
+texture. Without VK_KHR_external_memory_win32 (Wine on the PS5) the
+texture couldn't be exported, GetSharedHandle failed, and the cutscenes
+stayed black with their sound playing (Ruined King: A League of Legends
+Story).
+
+As for a D3D9Ex device (patch 0001), where external memory is missing:
+
+- A device made with D3D11_CREATE_DEVICE_VIDEO_SUPPORT while another
+  D3D11 device lives runs on that device's DxvkDevice, which enables the
+  same features (d3d11.shareVideoDevice = False turns this off).
+- A new shared texture there is listed within the process instead of
+  exported, kept in one layout, and GetSharedHandle and
+  CreateSharedHandle give the list's handle, which OpenSharedResource on
+  the other device already takes.
+---
+ src/d3d11/d3d11_main.cpp     | 23 ++++++++++++++++--
+ src/d3d11/d3d11_resource.cpp |  8 +++++--
+ src/d3d11/d3d11_texture.cpp  | 45 ++++++++++++++++++++++++++++--------
+ src/d3d11/d3d11_texture.h    | 16 +++++++++++++
+ 4 files changed, 78 insertions(+), 14 deletions(-)
+
+diff --git a/src/d3d11/d3d11_main.cpp b/src/d3d11/d3d11_main.cpp
+index 8ae32c00..02c15d04 100644
+--- a/src/d3d11/d3d11_main.cpp
++++ b/src/d3d11/d3d11_main.cpp
+@@ -4,6 +4,8 @@
+ 
+ #include "../dxvk/dxvk_instance.h"
+ 
++#include "../util/util_local_share.h"
++
+ #include "d3d11_device.h"
+ #include "d3d11_enums.h"
+ #include "d3d11_interop.h"
+@@ -89,8 +91,25 @@ extern "C" {
+     try {
+       Logger::info(str::format("D3D11InternalCreateDevice: Using feature level ", devFeatureLevel));
+ 
+-      DxvkDeviceFeatures deviceFeatures = D3D11Device::GetDeviceFeatures(dxvkAdapter);
+-      Rc<DxvkDevice> dxvkDevice = dxvkAdapter->createDevice(dxvkInstance, deviceFeatures);
++      // Without VK_KHR_external_memory_win32, a video device (D3D11_CREATE_DEVICE_VIDEO_SUPPORT)
++      // made while another D3D11 device lives runs on that device's DxvkDevice, so the
++      // textures it shares are shared within the process (util_local_share.h): Unity decodes
++      // its movies on a device of their own and hands each picture to its main device
++      // through a shared texture. D3D11 devices on an adapter all enable the same features.
++      Rc<DxvkDevice> dxvkDevice;
++
++      if ((Flags & D3D11_CREATE_DEVICE_VIDEO_SUPPORT) && !dxvkAdapter->features().khrExternalMemoryWin32
++       && dxvkInstance->config().getOption<bool>("d3d11.shareVideoDevice", true)) {
++        dxvkDevice = local_share::findDevice(dxvkAdapter->devicePropertiesExt().vk11.deviceUUID);
++
++        if (dxvkDevice != nullptr)
++          Logger::info("D3D11: A video device shares a Direct3D 11 device's Vulkan device, for textures shared within the process");
++      }
++
++      if (dxvkDevice == nullptr) {
++        DxvkDeviceFeatures deviceFeatures = D3D11Device::GetDeviceFeatures(dxvkAdapter);
++        dxvkDevice = dxvkAdapter->createDevice(dxvkInstance, deviceFeatures);
++      }
+ 
+       Com<D3D11DXGIDevice> device = new D3D11DXGIDevice(
+         pAdapter, nullptr, nullptr,
+diff --git a/src/d3d11/d3d11_resource.cpp b/src/d3d11/d3d11_resource.cpp
+index 1648091f..27836bd5 100644
+--- a/src/d3d11/d3d11_resource.cpp
++++ b/src/d3d11/d3d11_resource.cpp
+@@ -220,7 +220,9 @@ namespace dxvk {
+       return S_OK;
+     }
+ 
+-    HANDLE kmtHandle = texture->GetImage()->sharedHandle();
++    HANDLE kmtHandle = texture->LocalSharedHandle()
++      ? texture->LocalSharedHandle()
++      : texture->GetImage()->sharedHandle();
+ 
+     if (kmtHandle == INVALID_HANDLE_VALUE)
+       return E_INVALIDARG;
+@@ -284,7 +286,9 @@ namespace dxvk {
+     if (lpName)
+       Logger::warn("Naming shared resources not supported");
+ 
+-    HANDLE handle = texture->GetImage()->sharedHandle();
++    HANDLE handle = texture->LocalSharedHandle()
++      ? texture->LocalSharedHandle()
++      : texture->GetImage()->sharedHandle();
+ 
+     if (handle == INVALID_HANDLE_VALUE)
+       return E_INVALIDARG;
+diff --git a/src/d3d11/d3d11_texture.cpp b/src/d3d11/d3d11_texture.cpp
+index 26a0b42c..18ed16c5 100644
+--- a/src/d3d11/d3d11_texture.cpp
++++ b/src/d3d11/d3d11_texture.cpp
+@@ -3,6 +3,7 @@
+ #include "d3d11_gdi.h"
+ #include "d3d11_texture.h"
+ 
++#include "../util/util_local_share.h"
+ #include "../util/util_shared_res.h"
+ #include "../util/util_win32_compat.h"
+ 
+@@ -46,6 +47,8 @@ namespace dxvk {
+     imageInfo.initialLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
+     imageInfo.shared          = vkImage != VK_NULL_HANDLE;
+ 
++    bool localShare = false;
++
+     // Normalise hSharedhandle to INVALID_HANDLE_VALUE to allow passing in nullptr
+     if (hSharedHandle == nullptr)
+       hSharedHandle = INVALID_HANDLE_VALUE;
+@@ -70,6 +73,15 @@ namespace dxvk {
+       // Shared within the process: the image is already there, and no memory is exported.
+       if (SharedImage != nullptr)
+         imageInfo.sharing = DxvkSharedHandleInfo();
++
++      // Without VK_KHR_external_memory_win32 a new shared texture is shared within the
++      // process instead, for the devices on this one's DxvkDevice (a video device's,
++      // d3d11_main.cpp): kept in one layout, no memory exported.
++      if (imageInfo.sharing.mode == DxvkSharedHandleMode::Export
++       && !m_device->GetDXVKDevice()->features().khrExternalMemoryWin32) {
++        imageInfo.sharing = DxvkSharedHandleInfo();
++        localShare = true;
++      }
+     }
+ 
+     if (!pDevice->GetOptions()->disableMsaa)
+@@ -223,7 +235,7 @@ namespace dxvk {
+     // We must keep LINEAR images in GENERAL layout, but we
+     // can choose a better layout for the image based on how
+     // it is going to be used by the game.
+-    if (imageInfo.tiling == VK_IMAGE_TILING_OPTIMAL && !isMultiPlane && imageInfo.sharing.mode == DxvkSharedHandleMode::None)
++    if (imageInfo.tiling == VK_IMAGE_TILING_OPTIMAL && !isMultiPlane && imageInfo.sharing.mode == DxvkSharedHandleMode::None && !localShare)
+       imageInfo.layout = OptimizeLayout(imageInfo.usage);
+ 
+     // Check if we can actually create the image
+@@ -281,11 +293,18 @@ namespace dxvk {
+ 
+     if (imageInfo.sharing.mode == DxvkSharedHandleMode::Export)
+       ExportImageInfo();
++
++    if (localShare) {
++      m_localShared = local_share::add(m_device->GetDXVKDevice().ptr(), m_image, GetSharedMetadata());
++
++      if (!m_localShared)
++        Logger::warn("D3D11: Failed to share a texture within the process");
++    }
+   }
+   
+   
+   D3D11CommonTexture::~D3D11CommonTexture() {
+-    
++    local_share::remove(m_localShared);
+   }
+   
+   
+@@ -760,6 +779,18 @@ namespace dxvk {
+     else
+       hSharedHandle = openKmtHandle( m_image->sharedHandle() );
+ 
++    DxvkSharedTextureMetadata metadata = GetSharedMetadata();
++
++    if (hSharedHandle == INVALID_HANDLE_VALUE || !setSharedMetadata(hSharedHandle, &metadata, sizeof(metadata))) {
++      Logger::warn("D3D11: Failed to write shared resource info for a texture");
++    }
++
++    if (hSharedHandle != INVALID_HANDLE_VALUE)
++      CloseHandle(hSharedHandle);
++  }
++  
++  
++  DxvkSharedTextureMetadata D3D11CommonTexture::GetSharedMetadata() const {
+     DxvkSharedTextureMetadata metadata;
+ 
+     metadata.Width          = m_desc.Width;
+@@ -773,16 +804,10 @@ namespace dxvk {
+     metadata.CPUAccessFlags = m_desc.CPUAccessFlags;
+     metadata.MiscFlags      = m_desc.MiscFlags;
+     metadata.TextureLayout  = m_desc.TextureLayout;
++    return metadata;
++  }
+ 
+-    if (hSharedHandle == INVALID_HANDLE_VALUE || !setSharedMetadata(hSharedHandle, &metadata, sizeof(metadata))) {
+-      Logger::warn("D3D11: Failed to write shared resource info for a texture");
+-    }
+ 
+-    if (hSharedHandle != INVALID_HANDLE_VALUE)
+-      CloseHandle(hSharedHandle);
+-  }
+-  
+-  
+   BOOL D3D11CommonTexture::IsR32UavCompatibleFormat(
+           DXGI_FORMAT           Format) {
+     return Format == DXGI_FORMAT_R8G8B8A8_TYPELESS
+diff --git a/src/d3d11/d3d11_texture.h b/src/d3d11/d3d11_texture.h
+index fac46c58..752b0441 100644
+--- a/src/d3d11/d3d11_texture.h
++++ b/src/d3d11/d3d11_texture.h
+@@ -1,5 +1,6 @@
+ #pragma once
+ 
++#include "../util/util_shared_res.h"
+ #include "../util/util_small_vector.h"
+ 
+ #include "../dxvk/dxvk_cs.h"
+@@ -526,6 +527,17 @@ namespace dxvk {
+       return m_11on12;
+     }
+ 
++    /**
++     * \brief Handle of a texture shared within the process
++     *
++     * Without VK_KHR_external_memory_win32, a shared texture is listed
++     * for the devices of the process instead (util_local_share.h).
++     * \returns Its handle, or null when it isn't listed
++     */
++    HANDLE LocalSharedHandle() const {
++      return m_localShared;
++    }
++
+     /**
+      * \brief Sets debug name for texture
+      *
+@@ -589,6 +601,8 @@ namespace dxvk {
+ 
+     void*                         m_mapPtr = nullptr;
+ 
++    HANDLE                        m_localShared = nullptr;
++
+     void CreateMappedBuffer(
+             UINT                  Subresource);
+     
+@@ -613,6 +627,8 @@ namespace dxvk {
+ 
+     void ExportImageInfo();
+ 
++    DxvkSharedTextureMetadata GetSharedMetadata() const;
++
+     static BOOL IsR32UavCompatibleFormat(
+             DXGI_FORMAT           Format);
+ 
+-- 
+2.43.0
+
