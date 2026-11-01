@@ -1,0 +1,183 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 1 Nov 2026 09:00:00 +0000
+Subject: [PATCH] wsi/videoout: A newer window's picture takes the display
+
+A swapchain that had presented kept the display until it was destroyed,
+and any other window's was refused with VK_ERROR_NATIVE_WINDOW_IN_USE_KHR.
+A Clickteam Fusion game (Chronicles of the Wolf, Aggelos 2) opens its menu
+or its level as a window of its own over the game's, which on a PC is drawn
+on top: here every swapchain of that window was refused, frame after frame,
+and the screen stayed black with the music playing.
+
+A window's picture (a swapchain of 320x200 or more, not a helper window's
+10x10 or 113x2) now takes the display from the owner when its window is
+newer than the owner's, told by the order the surfaces were first seen in,
+or when the owner hasn't presented for half a second (its window hidden but
+not destroyed). The owner is retired, as one that never presented was: its
+presents are out of date, and its window's new swapchains are refused while
+the newer one has the display. Once that is destroyed, the older window's
+next swapchain takes the display back. The log says each takeover.
+---
+ src/vulkan/wsi/wsi_common_videoout.c | 89 +++++++++++++++++++++++++---
+ 1 file changed, 81 insertions(+), 8 deletions(-)
+
+diff --git a/src/vulkan/wsi/wsi_common_videoout.c b/src/vulkan/wsi/wsi_common_videoout.c
+index 552bf2d..d4312d1 100644
+--- a/src/vulkan/wsi/wsi_common_videoout.c
++++ b/src/vulkan/wsi/wsi_common_videoout.c
+@@ -41,7 +41,15 @@
+  * OpenGL does, must not keep the screen from the window made after it. The
+  * one it takes the display from is retired, as an oldSwapchain is. A
+  * swapchain that has presented keeps the display until it is destroyed or
+- * replaced through oldSwapchain.
++ * replaced through oldSwapchain, with two exceptions for a window's picture
++ * (a swapchain of 320x200 or more, not a helper's 10x10 or 113x2): one on a
++ * window newer than the owner's takes the display, as that window is drawn
++ * over the older one on a PC (a Clickteam Fusion game's menu or level opens
++ * a window of its own, and the screen stayed black), and one takes it from
++ * an owner that hasn't presented for half a second (a window hidden but not
++ * destroyed). The owner it was taken from is retired; while the newer one
++ * has the display, the older window's new swapchains are refused, and once
++ * it is destroyed the older window's next one takes the display back.
+  */
+ 
+ #include <assert.h>
+@@ -312,9 +320,49 @@ struct wsi_videoout_swapchain {
+    bool presented;
+    /* Presents queued and not yet flipped. */
+    uint32_t in_flight;
++   /* Its window's age (videoout_surface_age_locked), its size, and when it
++    * last queued a present. */
++   uint64_t surface_age;
++   VkExtent2D extent;
++   uint64_t present_ns;
+    struct wsi_image images[];
+ };
+ 
++/* The windows' surfaces seen, each with an age: a later one is a newer window.
++ * A surface not here (the oldest is forgotten first) is a new window. */
++#define VIDEOOUT_SURFACES 32
++static struct {
++   const void *surface;
++   uint64_t age;
++} videoout_surfaces[VIDEOOUT_SURFACES];
++static uint64_t videoout_surface_next;
++
++/* videoout_output.lock held */
++static uint64_t
++videoout_surface_age_locked(const void *surface)
++{
++   uint32_t oldest = 0;
++   for (uint32_t i = 0; i < VIDEOOUT_SURFACES; i++) {
++      if (videoout_surfaces[i].surface == surface && videoout_surfaces[i].age)
++         return videoout_surfaces[i].age;
++      if (videoout_surfaces[i].age < videoout_surfaces[oldest].age)
++         oldest = i;
++   }
++   videoout_surfaces[oldest].surface = surface;
++   videoout_surfaces[oldest].age = ++videoout_surface_next;
++   return videoout_surfaces[oldest].age;
++}
++
++/* A window's picture, not a helper window's (wined3d's 10x10 probe, a 113x2 strip). */
++static bool
++videoout_window_sized(VkExtent2D extent)
++{
++   return extent.width >= 320 && extent.height >= 200;
++}
++
++/* How long an owner may go without presenting before a window's picture takes the display. */
++#define VIDEOOUT_STALE_NS UINT64_C(500000000)
++
+ struct wsi_videoout {
+    struct wsi_interface base;
+ };
+@@ -1408,6 +1456,7 @@ videoout_swapchain_queue_present(struct wsi_swapchain *wsi_chain, uint32_t image
+    out->buffer[buffer].pending = true;
+    chain->in_flight++;
+    chain->presented = true;
++   chain->present_ns = os_time_get_nano();
+    cnd_broadcast(&out->changed);
+    mtx_unlock(&out->lock);
+    return VK_SUCCESS;
+@@ -1446,13 +1495,29 @@ videoout_swapchain_destroy(struct wsi_swapchain *wsi_chain, const VkAllocationCa
+    return VK_SUCCESS;
+ }
+ 
+-/* Whether a new swapchain replacing old may take the display: nothing has it,
+- * old has it, or what has it never presented. */
++/* Whether a new swapchain replacing old, on a window of age, extent in size,
++ * may take the display: nothing has it, old has it, what has it never
++ * presented, or the new one is a window's picture and the owner's window is
++ * older or the owner stopped presenting (*why then names it for the log). */
+ static bool
+-videoout_display_free_locked(const struct wsi_videoout_swapchain *old)
++videoout_display_free_locked(const struct wsi_videoout_swapchain *old, uint64_t age, VkExtent2D extent,
++                             const char **why)
+ {
+    const struct wsi_videoout_swapchain *current = videoout_output.current;
+-   return !current || current == old || !current->presented;
++   *why = NULL;
++   if (!current || current == old || !current->presented)
++      return true;
++   if (!videoout_window_sized(extent))
++      return false;
++   if (age > current->surface_age) {
++      *why = "a newer window's";
++      return true;
++   }
++   if (os_time_get_nano() - current->present_ns >= VIDEOOUT_STALE_NS) {
++      *why = "a window's";
++      return true;
++   }
++   return false;
+ }
+ 
+ static VkResult
+@@ -1482,11 +1547,13 @@ videoout_surface_create_swapchain(VkIcdSurfaceBase *icd_surface, VkDevice device
+    const bool scaled = !wsi_videoout_extent_equal(target, extent);
+ 
+    uint32_t set = 0;
++   const char *why;
+    mtx_lock(&out->lock);
+    struct wsi_videoout_swapchain *old =
+       (struct wsi_videoout_swapchain *)wsi_swapchain_from_handle(pCreateInfo->oldSwapchain);
++   const uint64_t age = videoout_surface_age_locked(icd_surface);
+    VkResult result = videoout_register_locked(target, &set);
+-   if (result == VK_SUCCESS && !videoout_display_free_locked(old))
++   if (result == VK_SUCCESS && !videoout_display_free_locked(old, age, extent, &why))
+       result = VK_ERROR_NATIVE_WINDOW_IN_USE_KHR;
+    mtx_unlock(&out->lock);
+    if (result != VK_SUCCESS)
+@@ -1518,6 +1585,8 @@ videoout_surface_create_swapchain(VkIcdSurfaceBase *icd_surface, VkDevice device
+    chain->base.image_count = num_images;
+    chain->set = set;
+    chain->first = set * VIDEOOUT_BUFFERS;
++   chain->surface_age = age;
++   chain->extent = extent;
+    chain->scaled = scaled;
+    chain->target = target;
+    /* PC5's Aspect ratio: PW_PC5_STRETCH=1 in the environment stretches a picture of
+@@ -1549,7 +1618,7 @@ videoout_surface_create_swapchain(VkIcdSurfaceBase *icd_surface, VkDevice device
+    /* What had the display is retired: its acquires and presents are out of
+     * date. It may have presented since the check above. */
+    mtx_lock(&out->lock);
+-   if (!videoout_display_free_locked(old)) {
++   if (!videoout_display_free_locked(old, age, extent, &why)) {
+       mtx_unlock(&out->lock);
+       for (uint32_t i = 0; i < num_images; i++)
+          wsi_destroy_image(&chain->base, &chain->images[i]);
+@@ -1558,7 +1627,11 @@ videoout_surface_create_swapchain(VkIcdSurfaceBase *icd_surface, VkDevice device
+       return VK_ERROR_NATIVE_WINDOW_IN_USE_KHR;
+    }
+    if (out->current) {
+-      if (out->current != old)
++      if (why)
++         fprintf(stderr, "wsi/videoout: %s %ux%u swapchain takes the display from a %ux%u one%s\n", why, extent.width,
++                 extent.height, out->current->extent.width, out->current->extent.height,
++                 age > out->current->surface_age ? "" : " that stopped presenting");
++      else if (out->current != old)
+          fprintf(stderr, "wsi/videoout: a swapchain that never presented gives the display to a new one\n");
+       out->current->retired = true;
+    }
