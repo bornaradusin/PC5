@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 static const char *out_dir, *work, *covers, *programs, *fonts;
 static char titles[64][PC5_NAME];
@@ -163,14 +164,16 @@ static int boot_shot;   /* the next open_ui shows PC5 opening and saves it */
 
 static Pc5Ui *open_ui(const char *root, int network)
 {
-    static const char *roots[2];
-    static char usb[PC5_PATH], template_prefix[PC5_PATH], tiles[PC5_PATH], tile_template[PC5_PATH];
+    static const char *roots[3];
+    static char usb[PC5_PATH], usb2[PC5_PATH], template_prefix[PC5_PATH], tiles[PC5_PATH], tile_template[PC5_PATH];
     static Pc5Platform platform;
     char file[PC5_PATH];
     Pc5UiConfig config;
 
     fmt(usb, sizeof(usb), "%s/usb0", work);
+    fmt(usb2, sizeof(usb2), "%s/usb1", work);   /* a second drive, where a test makes it */
     roots[0] = usb;
+    roots[1] = usb2;
     fmt(template_prefix, sizeof(template_prefix), "%s/app0/pc5/prefix", work);
     /* The home screen tiles' folder, and the tile's program as the app has it */
     fmt(tiles, sizeof(tiles), "%s/data/homebrew", work);
@@ -528,6 +531,22 @@ int main(int argc, char **argv)
     until(ui, "install-where");
     settle(ui);
     save("09a-install-where");
+    /* A second USB drive: right goes to the games' own drive, then to the other one. */
+    {
+        char second[PC5_PATH];
+        fmt(second, sizeof(second), "%s/usb1", work);
+        pc5_mkdirs(second);
+        step(ui, PC5_KEY_BACK, 1);
+        step(ui, PC5_KEY_OPTIONS, 1);
+        until(ui, "install-where");
+        step(ui, PC5_KEY_RIGHT, 1);
+        step(ui, PC5_KEY_RIGHT, 1);
+        settle(ui);
+        save("09a2-install-where-second-drive");
+        step(ui, PC5_KEY_LEFT, 1);
+        step(ui, PC5_KEY_LEFT, 1);         /* back to the console */
+        rmdir(second);
+    }
     step(ui, PC5_KEY_ACCEPT, 1);           /* the console */
     until(ui, "queue");
     settle(ui);

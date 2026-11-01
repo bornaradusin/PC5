@@ -445,9 +445,12 @@ struct Pc5Ui {
     int usb_seen;
     uint64_t usb_looked;
     /* S_INSTALL_WHERE: for the review's game (0) or the queue (1); the USB drive offered
-     * (where_usb, a USB root) and the one chosen (install_usb, "" for the console). */
+     * (where_usb, a USB root) and the one chosen (install_usb, "" for the console). Left and
+     * right go through the console and every drive a game can be installed on (where_drive:
+     * indexes in usb_roots, the one offered first, where_count of them). */
     int where_for;
     char where_usb[PC5_PATH], install_usb[PC5_PATH];
+    int where_drive[PC5_DRIVES], where_count;
     char pc5_folder[PC5_PATH];     /* PC5's own folder on the console's drives, "" when not found */
     int install_waiting, install_looked, install_scanned;
     /* The INSTALL folder's FTP server: why it didn't start, and the uploads already asked about. */
@@ -1747,6 +1750,49 @@ static int usb_target(const Pc5Ui *ui, const char *source, char *out, size_t siz
             pc5_copy(out, size, ui->usb_roots[i]);
         }
     return out[0] != 0;
+}
+
+/* Every drive a game could be installed on, for S_INSTALL_WHERE's left and right: the one
+ * usb_target offered (ui->where_usb) first, then the others in usb_roots' order. */
+static void where_drives(Pc5Ui *ui)
+{
+    uint64_t room;
+    ui->where_count = 0;
+    if (!ui->usb_roots) return;
+    for (int pass = 0; pass < 2; pass++)
+        for (int i = 0; ui->usb_roots[i] && ui->where_count < PC5_DRIVES; i++) {
+            int offered = !strcmp(ui->usb_roots[i], ui->where_usb);
+            if (offered != !pass) continue;
+            if (pc5_is_dir(ui->usb_roots[i]) && !access(ui->usb_roots[i], W_OK) && !pc5_free_bytes(ui->usb_roots[i], &room))
+                ui->where_drive[ui->where_count++] = i;
+        }
+}
+
+/* S_INSTALL_WHERE: one step left (-1) or right (1) through the console and the drives. */
+static void where_step(Pc5Ui *ui, int step)
+{
+    int at = 0, places = ui->where_count + 1;
+    if (ui->button)
+        for (int i = 0; i < ui->where_count; i++)
+            if (!strcmp(ui->usb_roots[ui->where_drive[i]], ui->where_usb)) at = i + 1;
+    if (places < 2) return;
+    at = (at + step + places) % places;
+    ui->button = at > 0;
+    if (at) pc5_copy(ui->where_usb, sizeof(ui->where_usb), ui->usb_roots[ui->where_drive[at - 1]]);
+}
+
+/* A drive's name as PC5 shows it: USB drive 1, Extended storage 1, the console's storage. */
+static void drive_name(const char *root, char *out, size_t size)
+{
+    const char *slash = strrchr(root, '/'), *name = slash && slash[1] ? slash + 1 : root;
+    if (!strncmp(name, "usb", 3) && name[3] >= '0' && name[3] <= '9')
+        pc5_tf(out, size, "USB drive %d", atoi(name + 3) + 1);
+    else if (!strncmp(name, "ext", 3) && name[3] >= '0' && name[3] <= '9')
+        pc5_tf(out, size, "Extended storage %d", atoi(name + 3) + 1);
+    else if (!strcmp(root, "/data"))
+        pc5_copy(out, size, T("Console storage"));
+    else
+        pc5_copy(out, size, name);
 }
 
 /* The review's game installed: copied to the console, or to the USB drive chosen (install_usb). */
@@ -3181,15 +3227,7 @@ static void files_places(Pc5Ui *ui)
     for (const char *const *d = files_drives(ui); *d && n < FILES_PLACES - 3; d++) {
         if (!pc5_is_dir(*d)) continue;
         FilesPlace *place = &ui->files_place[n++];
-        const char *slash = strrchr(*d, '/'), *name = slash && slash[1] ? slash + 1 : *d;
-        if (!strncmp(name, "usb", 3) && name[3] >= '0' && name[3] <= '9')
-            pc5_tf(place->name, sizeof(place->name), "USB drive %d", atoi(name + 3) + 1);
-        else if (!strncmp(name, "ext", 3) && name[3] >= '0' && name[3] <= '9')
-            pc5_tf(place->name, sizeof(place->name), "Extended storage %d", atoi(name + 3) + 1);
-        else if (!strcmp(*d, "/data"))
-            pc5_copy(place->name, sizeof(place->name), T("Console storage"));
-        else
-            pc5_copy(place->name, sizeof(place->name), name);
+        drive_name(*d, place->name, sizeof(place->name));
         pc5_copy(place->path, sizeof(place->path), *d);
         place->read_only = 0;
     }
@@ -4070,6 +4108,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             if (usb_target(ui, NULL, ui->where_usb, sizeof(ui->where_usb))) {
                 ui->where_for = 1;
                 ui->button = 0;   /* the console first */
+                where_drives(ui);
                 go(ui, S_INSTALL_WHERE);
             } else {
                 ui->install_usb[0] = 0;
@@ -4180,9 +4219,10 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             if (ui->folder.problem[0]) {
                 message(ui, 0, T("This folder can't be installed"), ui->folder.problem, S_REVIEW);
             } else if (usb_target(ui, ui->folder.path, ui->where_usb, sizeof(ui->where_usb))) {
-                /* A USB drive is plugged in: the console or that drive. */
+                /* A USB drive is plugged in: the console or that drive (left and right: another). */
                 ui->where_for = 0;
                 ui->button = 0;   /* the console first */
+                where_drives(ui);
                 go(ui, S_INSTALL_WHERE);
             } else {
                 ui->install_usb[0] = 0;
@@ -4192,7 +4232,11 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         break;
     }
     case S_INSTALL_WHERE:
-        if (k & (PC5_KEY_LEFT | PC5_KEY_RIGHT)) { ui->button = !ui->button; ui->dirty = 1; }
+        if (k & (PC5_KEY_LEFT | PC5_KEY_RIGHT)) {
+            if (ui->where_count > 1) where_step(ui, (k & PC5_KEY_RIGHT) ? 1 : -1);
+            else ui->button = !ui->button;
+            ui->dirty = 1;
+        }
         if (k & back) {
             go(ui, ui->where_for ? S_SOURCES : S_REVIEW);
         } else if ((k & accept) && ui->now - ui->entered > 300) {
@@ -7091,9 +7135,18 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
                      "The console has %s free. The USB drive (%.40s) has %s free: a game there plays from its PC5 folder, so "
                      "keep the drive plugged into a fast port. Its saves stay on the console either way.",
                      console_free, drive ? drive + 1 : ui->where_usb, usb_free);
+        /* With more than one drive, the second button names the drive left and right go through. */
+        char drive_label[64];
+        if (ui->where_count > 1) {
+            char more[200];
+            size_t n = strlen(body);
+            drive_name(ui->where_usb, drive_label, sizeof(drive_label));
+            pc5_tf(more, sizeof(more), "Left and right choose among the %d drives a game can go on.", ui->where_count);
+            snprintf(body + n, sizeof(body) - n, " %s", more);
+        } else pc5_copy(drive_label, sizeof(drive_label), extended ? T("Extended storage") : T("USB drive"));
         if (ui->where_for) sources_screen(ui, c);
         else review_screen(ui, c);
-        confirm_dialog(ui, c, title, body, T("Console"), extended ? T("Extended storage") : T("USB drive"), 0, NULL);
+        confirm_dialog(ui, c, title, body, T("Console"), drive_label, 0, NULL);
         break;
     }
     case S_SAVES_ASK: {
