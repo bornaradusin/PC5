@@ -40,6 +40,16 @@ For example, this file starts the game with `-nointro`, and keeps another option
 
 A game that starts from a `.bat` file gets the options in the batch file first, then the ones in `launch.txt` (placed beside the `.bat` file). See [Games that start from a .bat file](Installing-games#games-that-start-from-a-bat-file).
 
+## Games PC5 sets up for you
+
+From PC5 2.1.1, a few games get launch options from PC5 when they have no `launch.txt`: the ones their own launcher would give them, as they were tested on the console. A `launch.txt` replaces them.
+
+| Game | Options PC5 gives it |
+| --- | --- |
+| Grand Theft Auto IV: The Complete Edition (`GTAIV.exe`) | `-availablevidmem 1536 -nomemrestrict -norestrictions -refreshrate 60 -fullscreen`, and `-width` and `-height` of the game's **Resolution** |
+
+GTA IV starts from `GTAIV.exe`, not `PlayGTAIV.exe`, which only opens the Rockstar Games Launcher. Without these options the game limits its settings to the video memory it finds. PC5 also gives it a DXVK option that makes it play more smoothly (`d3d9.weakRenderTargetFlushHint`). Mods such as the Ultimate ASI Loader (`dinput8.dll` beside `GTAIV.exe`) load as they do on a PC.
+
 ## Changing or removing options
 
 - To change them, edit the line and start the game again.
@@ -75,5 +85,14 @@ MY_GAME_NO_MONITOR=1
 - The game's log says which were set: `PC5 env.txt set=1 MY_GAME_NO_MONITOR`.
 
 To stop using them, delete `env.txt`, or put `#` in front of a line.
+
+## Texture packs (Direct3D 9 games)
+
+From PC5 2.1.1, a Direct3D 9 game can show your own, sharper pictures in place of its textures, without changing the game. Two lines in `env.txt` do it:
+
+- `DXVK_TEXTURE_DUMP=dump` saves each texture the game loads, once, as a `.tga` file named after its contents, in a `dump` folder beside the game's `.exe`. Play the parts you want to change, then take the line out: it makes the game slower and fills the folder fast. `DXVK_CONFIG=d3d9.textureDumpMaxSize = 512` with it saves only textures up to 512 pixels wide and high.
+- `DXVK_TEXTURE_PACK=pack` shows `pack/<name>.png` (beside the game's `.exe`) in place of the texture of the same name: give an upscaled or edited copy of a dumped texture the dumped one's name, as a PNG, of any size.
+
+Only 2D textures in the usual colour formats are swapped. Setting `DXVK_CONFIG` in `env.txt` replaces PC5's own DXVK settings for the game (its video memory, and GTA IV's option), so add those to the same line, separated by `;`, if you still want them.
 
 See also [Files and folders](Files-and-folders) for where everything else is.

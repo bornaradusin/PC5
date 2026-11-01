@@ -2542,6 +2542,29 @@ static void test_controls(void)
 /* ---- settings, updates, logs, covers ---------------------------------------------------------- */
 
 /* api_keys.txt: made when there is none, read as NAME=value lines, never a key PC5 can't send. */
+/* Games PC5 knows by their program's name: GTA IV's options and DXVK settings. */
+static void test_known_games(void)
+{
+    char text[256];
+
+    pc5_known_arguments("GTAIV/GTAIV.exe", "1920x1080", text, sizeof(text));
+    CHECK(!strcmp(text, "-availablevidmem 1536 -nomemrestrict -norestrictions -refreshrate 60 -fullscreen "
+                        "-width 1920 -height 1080"),
+          "GTA IV's options at 1080p: %s", text);
+    pc5_known_arguments("gtaiv.EXE", "2560x1440", text, sizeof(text));
+    CHECK(strstr(text, "-width 2560 -height 1440") != NULL, "by name in any case, at the desktop's size: %s", text);
+    pc5_known_arguments("GTAIV/PlayGTAIV.exe", "1920x1080", text, sizeof(text));
+    CHECK(!text[0], "its launcher stub isn't the game: %s", text);
+    pc5_known_arguments("Other/Game.exe", "1920x1080", text, sizeof(text));
+    CHECK(!text[0], "a game PC5 doesn't know: no options");
+    pc5_known_arguments("GTAIV.exe", "1920x1080", text, 16);
+    CHECK(!text[0], "options that don't fit: none rather than cut short");
+    CHECK(pc5_known_dxvk("Games/GTAIV/GTAIV.exe") && !strcmp(pc5_known_dxvk("Games/GTAIV/GTAIV.exe"),
+                                                                 "d3d9.weakRenderTargetFlushHint = True"),
+          "GTA IV's DXVK option");
+    CHECK(!pc5_known_dxvk("Game.exe") && !pc5_known_dxvk(NULL), "no DXVK options for another game");
+}
+
 static void test_api_keys(void)
 {
     char dir[PC5_PATH], file[PC5_PATH], key[96];
@@ -8587,6 +8610,7 @@ int main(int argc, char **argv)
     test_sources_skip_apps();
     test_play_speed();
     test_controls();
+    test_known_games();
     test_settings();
     test_api_keys();
     test_update();

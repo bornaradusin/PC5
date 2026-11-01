@@ -389,6 +389,53 @@ int pc5_profile_text_at(const char *id, const Pc5Info *info, const char *argumen
         controls->stretch ? "stretch" : "fit", input, wine_d3d);
 }
 
+/* Games PC5 knows, by their program's name. */
+static const struct {
+    const char *program;     /* the file name, any case */
+    const char *arguments;   /* launch options, before the desktop's size when size is set */
+    int size;                /* adds -width and -height, the desktop's */
+    const char *dxvk;        /* DXVK options, or NULL */
+} known_games[] = {
+    /* Grand Theft Auto IV: The Complete Edition, as prospero-win-profiles' gtaiv profile plays
+     * it on the console (1.2.0.59: about 55 fps in the city at 1080p). PlayGTAIV.exe only hands
+     * over to the Rockstar Games Launcher, so GTAIV.exe is the program (pc5_source.c's
+     * starter_of picks it). Without these options the game caps its settings to the video
+     * memory it detects; with them it takes 1536 MB, unlocks every setting and starts full
+     * screen at the desktop's size and 60 Hz. DXVK takes a change of render target 0 as a
+     * weak hint to submit the queued work sooner, which played better. */
+    { "GTAIV.exe", "-availablevidmem 1536 -nomemrestrict -norestrictions -refreshrate 60 -fullscreen", 1,
+      "d3d9.weakRenderTargetFlushHint = True" },
+};
+
+static int known_game(const char *program)
+{
+    const char *slash = program ? strrchr(program, '/') : NULL, *name = slash ? slash + 1 : program;
+    if (!name) return -1;
+    for (size_t i = 0; i < sizeof(known_games) / sizeof(known_games[0]); i++)
+        if (!pc5_casecmp(name, known_games[i].program)) return (int)i;
+    return -1;
+}
+
+void pc5_known_arguments(const char *program, const char *desktop, char *out, size_t size)
+{
+    int i = known_game(program), width = 0, height = 0;
+
+    if (!size) return;
+    out[0] = 0;
+    if (i < 0) return;
+    if (known_games[i].size && desktop && sscanf(desktop, "%dx%d", &width, &height) == 2 && width > 0 && height > 0) {
+        if ((size_t)snprintf(out, size, "%s -width %d -height %d", known_games[i].arguments, width, height) >= size)
+            out[0] = 0;
+    } else if ((size_t)snprintf(out, size, "%s", known_games[i].arguments) >= size)
+        out[0] = 0;
+}
+
+const char *pc5_known_dxvk(const char *program)
+{
+    int i = known_game(program);
+    return i < 0 ? NULL : known_games[i].dxvk;
+}
+
 /* The folder the game's program is in, on the console. */
 static void program_folder(const char *root, const char *id, const Pc5Info *info, char *out, size_t size)
 {
@@ -708,6 +755,13 @@ int pc5_profile_refresh(const char *root, const char *id, char *error, size_t si
         }
     }
     pc5_controls_load(root, id, &controls);
+    /* A game PC5 knows, without launch.txt: the options its own launcher would give it. */
+    if (!options[0]) {
+        char known[256];
+        pc5_known_arguments(program.exe, desktop_size(&program, &controls), known, sizeof(known));
+        size_t n = strlen(arguments);
+        if (known[0] && pc5_format(arguments + n, sizeof(arguments) - n, "%s%s", n ? " " : "", known)) arguments[n] = 0;
+    }
     program_folder(root, id, &program, folder, sizeof(folder));
     pc5_own_dlls(folder, own, sizeof(own));
     snprintf(file, sizeof(file), "%s.profile", id);

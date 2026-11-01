@@ -9,11 +9,12 @@ console reads.
 
 1. prospero-win's tools/pw_install.py makes the prefix from profile/template-prefix.yml
    with the host Wine (the console's revision and patches, built for the PC), as the user
-   "prospero", with DXVK 2.6.2-prospero2 for 64- and 32-bit programs.
+   "prospero", with DXVK 2.6.2-prospero2 for 64- and 32-bit programs (what pw_install.py at
+   prospero-win v0.2.0 pins).
 2. VKD3D-Proton's d3d12.dll and d3d12core.dll go beside DXVK (x64 in system32, x86 in
    syswow64): Direct3D 12 on Vulkan. Profiles load them with d3d12,d3d12core=n. DXVK's own
-   DLLs are then replaced by the ones tools/build.sh built (DXVK_DIR/x64 and x32): the same
-   release with PC5's patches/dxvk.
+   DLLs are then replaced by the ones tools/build.sh built (DXVK_DIR/x64 and x32):
+   2.6.2-prospero3 with PC5's patches/dxvk.
 3. It is written to APP_DIR/pc5/prefix the way prospero-win's tools/pw_prefix.py pushes a
    prefix to the console (its own functions are used for that): links become
    .pw-symlinks tables (a title can't make links), the registry names the console's WoW64

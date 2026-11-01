@@ -243,7 +243,8 @@ Built from <https://github.com/bornaradusin/PC5> at commit {repo_commit}:
   the boilerplate, FreeType, FFmpeg, ps5-framegen (Frame generation, in libvulkan.prx) and
   the Lapy helper, built for {TITLE}.
 - `pc5/prefix`: an empty Wine prefix made by prospero-win's `pw_install.py`, with DXVK
-  2.6.2-prospero2 (<https://github.com/mpereiraesaa/dxvk>, zlib licence) built with that
+  2.6.2-prospero3 (<https://github.com/mpereiraesaa/dxvk>, zlib licence; its texture packs
+  read PNG with stb_image, public domain or MIT) built with that
   repository's `patches/dxvk` (textures shared within the game's process, including a
   shared render target a game samples; `pc5/dxvk.txt` names the build) and VKD3D-Proton
   3.0.1 (<https://github.com/HansKristian-Work/vkd3d-proton>, LGPL 2.1 or later) built from

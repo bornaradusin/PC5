@@ -638,12 +638,23 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
      * textures to that ran the console out of memory. Auto tells it 4 GB (DXVK's dxgi, with
      * patches/dxvk 0005 for the budget), 5 GB or 6 GB 5120 or 6144 MB; Full the whole heap.
      * A game's env.txt, applied after, can set DXVK_CONFIG itself. */
-    if (!video_memory_full) {
-        char dxvk_config[64];
-        snprintf(dxvk_config, sizeof(dxvk_config), "dxgi.maxDeviceMemory = %d",
-                 video_memory_gb ? video_memory_gb * 1024 : 4096);
-        setenv("DXVK_CONFIG", dxvk_config, 1);
-    } else unsetenv("DXVK_CONFIG");
+    {
+        /* With the DXVK options of a game PC5 knows (pc5_known_dxvk: GTA IV's). */
+        char dxvk_config[256] = "", program[PC5_PATH];
+        const char *known = prefix && prefix[0] && !pc5_game_program(root, prefix, program, sizeof(program))
+                                ? pc5_known_dxvk(program)
+                                : NULL;
+        if (!video_memory_full)
+            snprintf(dxvk_config, sizeof(dxvk_config), "dxgi.maxDeviceMemory = %d",
+                     video_memory_gb ? video_memory_gb * 1024 : 4096);
+        if (known) {
+            size_t n = strlen(dxvk_config);
+            snprintf(dxvk_config + n, sizeof(dxvk_config) - n, "%s%s", n ? "; " : "", known);
+            say(game, "PC5 DXVK options for this game: %s", known);
+        }
+        if (dxvk_config[0]) setenv("DXVK_CONFIG", dxvk_config, 1);
+        else unsetenv("DXVK_CONFIG");
+    }
     if (game->frame_generation) setenv("PW_PC5_FRAMEGEN", "1", 1);
     else unsetenv("PW_PC5_FRAMEGEN");
     if (stretch) setenv("PW_PC5_STRETCH", "1", 1);

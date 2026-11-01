@@ -247,7 +247,7 @@ PC5 handles every game the same way. It reads the game's program to see whether 
 
 | The game uses | It runs through |
 | --- | --- |
-| Direct3D 8, 9, 10, 11 | DXVK 2.6.2-prospero2, with PC5's patch |
+| Direct3D 8, 9, 10, 11 | DXVK 2.6.2-prospero3, with PC5's patches |
 | Direct3D 12 | VKD3D-Proton 3.0.1 |
 | Vulkan | RADV directly |
 | OpenGL | Mesa Zink |

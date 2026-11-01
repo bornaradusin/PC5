@@ -95,6 +95,12 @@ int pc5_handoff_take(const char *root, const char *id, char *error, size_t size)
 /* The program a PC5 game starts, on the console: its program, or the one its batch file
  * (.bat or .cmd) starts. 0, or -1 when there is none. */
 int pc5_game_program(const char *root, const char *id, char *out, size_t size);
+/* Games PC5 knows by their program's name (a path, or a name alone), set up as tested on the
+ * console: the launch options their own launcher would give them, for the given desktop
+ * ("1920x1080"), into out ("" for a game PC5 doesn't know; launch.txt replaces them), and the
+ * DXVK options they play better with (NULL for none), added to DXVK_CONFIG. */
+void pc5_known_arguments(const char *program, const char *desktop, char *out, size_t size);
+const char *pc5_known_dxvk(const char *program);
 /* The folder PC5 copied a game into (prefixes/<id>/drive_c/Games/<folder>). */
 int pc5_game_folder(const char *root, const char *id, char *out, size_t size);
 /* Makes a PC5 game start another of its programs (folder: its copy, read with

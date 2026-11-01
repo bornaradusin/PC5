@@ -26,7 +26,7 @@
 #             Windows template; the 32-bit CPUs' Windows halves (wowprospero.dll, wow64native.dll)
 #   wineps5   Wine's PS5 side (PRX modules), with FFmpeg and FreeType; the native WoW64 CPU's
 #             PS5 module (uses radv and tools)
-#   dxvk      DXVK 2.6.2-prospero2 with patches/dxvk, 64- and 32-bit, for the Windows template
+#   dxvk      DXVK 2.6.2-prospero3 with patches/dxvk, 64- and 32-bit, for the Windows template
 #   vkd3d     VKD3D-Proton 3.0.1 with patches/vkd3d-proton, 64- and 32-bit, for the Windows template
 #   zink      Mesa's WGL/Zink, OpenGL for the games that draw with it
 #   package   prospero-win's tools/package_release.sh, with Zink (uses title and the pieces above)
@@ -95,11 +95,13 @@ NOTO_KR_BOLD_SHA256=5a6ceb287ed2fc6cfc6213144ebea68cbd94b20fc9eb873d8486493bf02d
 NOTO_KR_LICENSE_SHA256=6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2
 MBEDTLS_URL=https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-$MBEDTLS_VERSION/mbedtls-$MBEDTLS_VERSION.tar.bz2
 MBEDTLS_SHA256=a7e8bcbec0e6f761b4af24f25677626b35f762f68eef79c08677a363212d11f6
-# DXVK: the release prospero-win's pw_install.py pins (2.6.2-prospero2), built here with
-# patches/dxvk; app/pc5/dxvk.txt names the result, and PC5 gives installed games its DLLs.
+# DXVK: the release prospero-win's pw_install.py pins (2.6.2-prospero3, since prospero-win
+# df9802f: prospero2 with Direct3D 9 texture packs, d3d9.texturePack and d3d9.textureDump, and
+# the HUD's "menu" item), built here with patches/dxvk; app/pc5/dxvk.txt names the result, and
+# PC5 gives installed games its DLLs.
 DXVK_URL=https://github.com/mpereiraesaa/dxvk.git
-DXVK_COMMIT=a6f6dcc1eaa67946482ebdded0d1d5dc13293133      # tag v2.6.2-prospero2
-DXVK_NAME=2.6.2-prospero2-pc5.4
+DXVK_COMMIT=4228f2e06b410df7ea3f552f07c2fd7c9d368df6      # tag v2.6.2-prospero3
+DXVK_NAME=2.6.2-prospero3-pc5.1
 # gbe_fork, a Steamworks emulator (LGPL 3.0), its release build unchanged: PC5 puts its
 # steam_api.dll or steam_api64.dll in place of Valve's in a game that has it
 # (title/pc5_steam.c). The DLLs are pinned by SHA-256 too; its source, at the release's
@@ -738,7 +740,7 @@ step_bundle() {
     printf '%-28s %s\n' "mbedtls-$MBEDTLS_VERSION.tar.bz2" "$MBEDTLS_URL" >> "$stage/PARTS.txt"
     mkdir -p "$stage/dxvk"
     tar -C "$B/dxvk-source" --exclude=.git -cf - . | tar -x -C "$stage/dxvk"
-    printf '%-28s %s at %s (tag v2.6.2-prospero2), with its submodules and PC5'"'"'s patches/dxvk applied\n' \
+    printf '%-28s %s at %s (tag v2.6.2-prospero3), with its submodules and PC5'"'"'s patches/dxvk applied\n' \
         "dxvk/" "$DXVK_URL" "$DXVK_COMMIT" >> "$stage/PARTS.txt"
     printf 'PC5/README.md says how to build the app from these with PC5/tools/build.sh.\n' >> "$stage/PARTS.txt"
     rm -f "$out" "$out.part"
