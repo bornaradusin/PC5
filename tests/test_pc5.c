@@ -6684,6 +6684,8 @@ static void test_screens(const char *fonts)
     press(ui, PC5_KEY_SQUARE, &canvas);
     CHECK(!file_holds_text(offered_file, first_program), "not any more");
     press(ui, PC5_KEY_SQUARE, &canvas);
+    frames(ui, 0, 0, 10, &canvas);
+    save_shot(&canvas, "change-program-offered");
     press(ui, PC5_KEY_DOWN, &canvas);
     press(ui, PC5_KEY_ACCEPT, &canvas);
     CHECK(!strcmp(pc5_ui_screen(ui), "message"), "changed: %s", pc5_ui_screen(ui));
