@@ -17,7 +17,9 @@ places.
   a setting or with something still wrong, which the issue says). An issue labelled "needs store app" (its copy of the game needs Steam, the Xbox app or another
   store's client running, which PC5 can't do) shows as such, not as a game that doesn't run:
   another copy may. Labelled while open, it gets one comment saying so and is closed as not
-  planned. An issue closed as a duplicate
+  planned. An issue labelled "anti-cheat" (the game runs anti-cheat, which needs Windows' own
+  kernel and can't run on the PS5, whatever the copy) shows as such, and is closed the same way
+  when labelled while open. An issue closed as a duplicate
   isn't listed. The game is the issue's "Game" field (.github/ISSUE_TEMPLATE/1-game.yml, which
   PC5's Report on GitHub opens filled in), or the "**Game:**" line older PC5s wrote. For an
   issue written by hand, before the form, games-by-issue.txt beside this script names it, or
@@ -78,8 +80,12 @@ PLAYABLE = "playable with issues"   # an issue closed with this label: it runs, 
 NEEDS_STORE = "🏪 Copy needs its store's app"   # an issue labelled STORE: the copy, not the game
 STORE = "needs store app"   # "needs steam" before 2.0.3: the label was renamed, so its issues kept it
 STORE_ABOUT = "This copy needs its store's app (Steam, Xbox app, EA app...) running: another copy may run"
+ANTI_CHEAT = "🛡️ Anti-cheat: can't run"   # an issue labelled CHEAT_LABEL: the game itself, any copy
+CHEAT_LABEL = "anti-cheat"
+CHEAT_ABOUT = "The game runs anti-cheat (Easy Anti-Cheat, BattlEye or its own), which needs Windows' kernel: it can't run on the PS5"
+CHEATED = "<!-- pc5-compatibility: anti-cheat -->"   # its comment when it closes such an issue
 STORED = "<!-- pc5-compatibility: needs steam -->"   # its comment when it closes such an issue (unchanged: it marks the old ones too)
-SHOWN = ["Works perfectly", "Playable with issues", FIX_READY, LOOKED_AT, NEEDS_TESTING, NEEDS_STORE, UNRESOLVED]
+SHOWN = ["Works perfectly", "Playable with issues", FIX_READY, LOOKED_AT, NEEDS_TESTING, NEEDS_STORE, ANTI_CHEAT, UNRESOLVED]
 MARK = "<!-- pc5-compatibility: needs an issue -->"   # the Action's comment, so it is made once
 UNKNOWN = {}   # an issue that couldn't be looked up: the report waits for the next run
 LISTED = "<!-- pc5-compatibility: listed -->"   # the Action's comment once a report is in the list
@@ -88,7 +94,7 @@ TURNED_AWAY = "<!-- pc5-compatibility: issue open -->"   # its comment on a repo
 OWNER_LINE = re.compile(r"^\s*(?:\*\*)?List (notes|settings|version):(?:\*\*)?\s*(.+?)\s*$", re.I | re.M)
 NUMERALS = {"ii": "2", "iii": "3", "iv": "4", "v": "5", "vi": "6", "vii": "7", "viii": "8", "ix": "9"}
 ISSUE_STATE = {"🔍 Being looked at": "open", FIX_READY: "fix out, needs testing", "🧪 Needs testing": "needs testing", "❌ Unresolved: doesn't run": "doesn't run",
-               NEEDS_STORE: "this copy needs its store's app"}
+               NEEDS_STORE: "this copy needs its store's app", ANTI_CHEAT: "anti-cheat: can't run"}
 
 
 def game_key(name: str) -> str:
@@ -306,7 +312,9 @@ def main() -> int:
               "once a PC5 that should fix it is out), then as working "
               "perfectly once the issue is closed as completed, or as unresolved (it doesn't run) once it is closed "
               "as not planned. A copy of a game that needs its store's app running (Steam, the Xbox app or another), which PC5 can't "
-              "do, shows as such: another copy of it may run. An issue whose reporter doesn't answer for two days is closed, and the game shows as "
+              "do, shows as such: another copy of it may run. A game that runs anti-cheat (Easy Anti-Cheat, BattlEye or its "
+              "own) shows as **anti-cheat: can't run**: anti-cheat needs Windows' own kernel, which the PS5 doesn't have, "
+              "so no copy of it runs. An issue whose reporter doesn't answer for two days is closed, and the game shows as "
               "needing testing: it didn't run for them, but another copy or version of it may. Tested it? Reply on "
               "the issue, or open a new one with your log. While a game's issue is open, the issue is its row and "
               "reports of it wait; once the issue is closed, its state is the game's row until someone reports the game "
@@ -415,7 +423,9 @@ def issue_reports(owner: str, name: str, named: dict) -> list:
             fields = answers(body)
             if node["stateReason"] == "DUPLICATE":
                 continue
-            if STORE in issue["labels"]:
+            if CHEAT_LABEL in issue["labels"]:
+                shown = ANTI_CHEAT
+            elif STORE in issue["labels"]:
                 shown = NEEDS_STORE
             elif node["state"] == "OPEN":
                 shown = FIX_READY if FIX_LABEL in issue["labels"] else LOOKED_AT
@@ -449,6 +459,8 @@ def issue_reports(owner: str, name: str, named: dict) -> list:
                     "notes": ("No reply: another copy or version may run. " + saw).strip() if shown == NEEDS_TESTING
                              else "This copy needs its store's app running (Steam, the Xbox app or another), which PC5 "
                                   "can't do: another copy of the game may run." if shown == NEEDS_STORE
+                             else "It runs anti-cheat, which needs Windows' own kernel and can't run on the PS5, "
+                                  "whichever copy." if shown == ANTI_CHEAT
                              else "It runs: the issue says what to set, or what is still wrong."
                              if shown == "Playable with issues"
                              else saw if shown != FIXED else "",
@@ -468,6 +480,8 @@ def issue_reports(owner: str, name: str, named: dict) -> list:
                         rows[key]["pc5"] = out[-1]
             if shown == NEEDS_STORE and node["state"] == "OPEN":
                 close_store_copy(node, owner, name)
+            if shown == ANTI_CHEAT and node["state"] == "OPEN":
+                close_anti_cheat(node, owner, name)
         if not page["pageInfo"]["hasNextPage"]:
             return list(rows.values())
         after = page["pageInfo"]["endCursor"]
@@ -494,11 +508,30 @@ def close_store_copy(node: dict, owner: str, name: str) -> None:
         print(f"compatibility list: #{node['number']} needs its store's app: closed")
 
 
+def close_anti_cheat(node: dict, owner: str, name: str) -> None:
+    """An open issue labelled CHEAT_LABEL: one comment saying why, and closed as not planned."""
+    if not any(CHEATED in (c["body"] or "") for c in node["comments"]["nodes"]):
+        body = "\n".join([
+            CHEATED,
+            "This game runs anti-cheat (Easy Anti-Cheat, BattlEye or its own), which works as a driver inside Windows' own "
+            "kernel. There's no Windows kernel on the PS5, so the game can't run in PC5, whichever copy it is. So I'm "
+            f"closing this. The [game compatibility list](https://github.com/{owner}/{name}/wiki/Game-compatibility) shows "
+            "the game as **anti-cheat: can't run**.",
+        ])
+        if graphql("""mutation($id: ID!, $body: String!) { addComment(input: {subjectId: $id, body: $body}) { clientMutationId } }""",
+                   fatal=False, id=node["id"], body=body) is None:
+            return
+    if graphql("""mutation($id: ID!) { closeIssue(input: {issueId: $id, stateReason: NOT_PLANNED}) { issue { id } } }""",
+               fatal=False, id=node["id"]) is not None:
+        print(f"compatibility list: #{node['number']} runs anti-cheat: closed")
+
+
 def store_label(owner: str, name: str) -> None:
-    """The STORE and FIX_LABEL labels, made the first time, so they are there to choose."""
+    """The STORE, CHEAT_LABEL and FIX_LABEL labels, made the first time, so they are there to choose."""
     url = f"https://api.github.com/repos/{owner}/{name}/labels"
     headers = {"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}", "Accept": "application/vnd.github+json"}
-    for label_name, color, about in ((STORE, "fbca04", STORE_ABOUT), (FIX_LABEL, "0e8a16", FIX_ABOUT)):
+    for label_name, color, about in ((STORE, "fbca04", STORE_ABOUT), (CHEAT_LABEL, "5319e7", CHEAT_ABOUT),
+                                     (FIX_LABEL, "0e8a16", FIX_ABOUT)):
         try:
             urllib.request.urlopen(urllib.request.Request(f"{url}/{urllib.parse.quote(label_name)}", headers=headers),
                                    timeout=60)
