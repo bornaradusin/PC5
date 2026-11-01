@@ -169,6 +169,13 @@ int pc5_prefix_fonts(const char *root, const char *prefix, const char *app);
  * template's for the default prefix). 1 when it added some, 0 when it had them all, -1 on a
  * failure (tried again next time). */
 int pc5_prefix_versions(const char *root, const char *prefix);
+/* Installer keys for the games that refuse to start without them ("The game is not properly
+ * installed": Pro Evolution Soccer 6), known by a file beside program (the game's program, on
+ * the console): HKLM\Software\<key> and its Wow6432Node twin, with the program's folder as
+ * the install folder and the languages the game has, appended to system.reg once. Never a CD
+ * key. 1 when it added some, 0 when it had them or the game needs none, -1 on a failure
+ * (tried again next time). */
+int pc5_prefix_installs(const char *root, const char *prefix, const char *program);
 
 /* The runtime's copy on the console: the app can't be listed, and every game's prefix
  * would otherwise hold its own 230 MB. Made once, from pc5/mono.list, by the first .NET

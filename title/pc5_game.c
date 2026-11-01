@@ -362,6 +362,88 @@ int pc5_prefix_versions(const char *root, const char *prefix)
     return added;
 }
 
+/* 1 when the folder dir has a file of that name, in any case. */
+static int folder_has(const char *dir, const char *name)
+{
+    DIR *d = opendir(dir);
+    struct dirent *e;
+    int found = 0;
+
+    if (!d) return 0;
+    while (!found && (e = readdir(d))) found = !strcasecmp(e->d_name, name);
+    closedir(d);
+    return found;
+}
+
+/* Games whose program refuses to start without the keys its installer wrote ("The game is not
+ * properly installed"), known by a file in the program's folder (so its settings program
+ * gets them too). PC5 copies a game's folder and runs no installer, so it writes them itself:
+ * the folder as the installer would have, and the languages whose files the game has.
+ * The CD key the installer asked for is not among them: that is the player's. */
+static const struct {
+    const char *marker;      /* a file in the game's folder, any case */
+    const char *key;         /* under HKLM\Software (and Wow6432Node), with the registry's doubled backslashes */
+    const char *languages;   /* "lang_<c>" for each <c> whose dat/<c>_text.afs is there; the first when none is */
+} installer_keys[] = {
+    { "PES6.exe", "KONAMIPES6\\\\PES6", "efgisp" },   /* Pro Evolution Soccer 6 and its settings.exe */
+};
+
+int pc5_prefix_installs(const char *root, const char *prefix, const char *program)
+{
+    char system[PC5_PATH], drive[PC5_PATH], dir[PC5_PATH], value[PC5_PATH * 2], needle[160], text[PC5_PATH * 2 + 1024];
+    int added = 0;
+
+    if (!prefix || !prefix[0] || !strcmp(prefix, "default") || !program || !program[0]) return 0;
+    if (pc5_format(system, sizeof(system), "%s/prefixes/%s/system.reg", root, prefix) ||
+        pc5_format(drive, sizeof(drive), "%s/prefixes/%s/drive_c/", root, prefix))
+        return -1;
+    if (!pc5_is_file(system)) return 0;   /* no Windows yet: Wine makes it, and the next start adds them */
+    /* The program's folder as Windows sees it, on C: (a game on a USB drive is left as it is). */
+    const char *slash = strrchr(program, '/');
+    size_t length = strlen(drive);
+    if (!slash || strncmp(program, drive, length) || (size_t)(slash - program) >= sizeof(dir)) return 0;
+    memcpy(dir, program, (size_t)(slash - program));
+    dir[slash - program] = 0;
+    size_t at = (size_t)snprintf(value, sizeof(value), "C:\\\\");
+    for (const char *p = dir + length; *p && at + 3 < sizeof(value); p++) {
+        if (*p == '/') { value[at++] = '\\'; value[at++] = '\\'; }
+        else value[at++] = *p;
+    }
+    if (at + 3 >= sizeof(value)) return -1;
+    value[at++] = '\\';
+    value[at++] = '\\';
+    value[at] = 0;
+    for (size_t i = 0; i < sizeof(installer_keys) / sizeof(installer_keys[0]); i++) {
+        if (!folder_has(dir, installer_keys[i].marker)) continue;
+        if (pc5_format(needle, sizeof(needle), "[Software\\\\Wow6432Node\\\\%s]", installer_keys[i].key)) return -1;
+        int held = file_holds(system, needle);
+        if (held < 0) return -1;
+        if (held) continue;
+        char languages[160] = "", data[PC5_PATH], afs[16];
+        int any = 0;
+        size_t used = 0;
+        for (const char *c = installer_keys[i].languages; *c; c++) {
+            snprintf(afs, sizeof(afs), "%c_text.afs", *c);
+            int has = !pc5_format(data, sizeof(data), "%s/dat", dir) && folder_has(data, afs);
+            any |= has;
+            used += (size_t)snprintf(languages + used, sizeof(languages) - used, "\"lang_%c\"=dword:0000000%d\n", *c, has);
+        }
+        if (!any) languages[strlen("\"lang_x\"=dword:0000000")] = '1';   /* the first language */
+        used = 0;
+        for (int wow = 0; wow < 2; wow++) {
+            const char *node = wow ? "Wow6432Node\\\\" : "";
+            int n = snprintf(text + used, sizeof(text) - used,
+                             "\n[Software\\\\%s%s]\n\"installdir\"=\"%s\"\n%s\n[Software\\\\%s%s\\\\1.0]\n", node,
+                             installer_keys[i].key, value, languages, node, installer_keys[i].key);
+            if (n < 0 || (size_t)n >= sizeof(text) - used) return -1;
+            used += (size_t)n;
+        }
+        if (append_text(system, text)) return -1;
+        added = 1;
+    }
+    return added;
+}
+
 /* ---- the runtime's copy ------------------------------------------------------------------- */
 
 static uint64_t now_ms(void)
@@ -601,6 +683,11 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         if (fonts) say(game, "PC5 prefix fonts %s", fonts > 0 ? "named" : "naming failed");
         int versions = pc5_prefix_versions(root, prefix);
         if (versions) say(game, "PC5 prefix Windows versions %s", versions > 0 ? "added" : "failed");
+        char started[PC5_PATH];
+        if (!pc5_game_program(root, prefix, started, sizeof(started))) {
+            int installs = pc5_prefix_installs(root, prefix, started);
+            if (installs) say(game, "PC5 prefix installer keys %s", installs > 0 ? "added" : "failed");
+        }
     }
     /* Frame generation and the aspect ratio, which libvulkan.prx reads from the
      * environment (the picture of a game drawn on the CPU follows its profile's
