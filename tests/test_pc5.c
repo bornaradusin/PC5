@@ -4607,6 +4607,40 @@ static void test_dotnet(void)
     }
     CHECK(pc5_prefix_versions(root, "missing") == 0, "no Windows yet: nothing done, done at its next start");
 
+    /* Installer keys: Pro Evolution Soccer 6 (or its settings.exe) gets its folder and the
+     * languages it has, once, and never a CD key; another game nothing. */
+    {
+        char program[PC5_PATH];
+        path(file, sizeof(file), "%s/prefixes/game/drive_c/Games/Other/game.exe", root);
+        write_text(file, "MZ");
+        CHECK(pc5_prefix_installs(root, "game", file) == 0, "a game that needs no keys: nothing done");
+        path(file, sizeof(file), "%s/prefixes/game/drive_c/Games/Pro Evolution Soccer 6/pes6.EXE", root);
+        write_text(file, "MZ");
+        path(file, sizeof(file), "%s/prefixes/game/drive_c/Games/Pro Evolution Soccer 6/dat/e_text.afs", root);
+        write_text(file, "afs");
+        path(file, sizeof(file), "%s/prefixes/game/drive_c/Games/Pro Evolution Soccer 6/dat/g_text.afs", root);
+        write_text(file, "afs");
+        path(program, sizeof(program), "%s/prefixes/game/drive_c/Games/Pro Evolution Soccer 6/settings.exe", root);
+        write_text(program, "MZ");
+        CHECK(pc5_prefix_installs(root, "game", program) == 1, "its settings program gets the keys");
+        CHECK(pc5_prefix_installs(root, "game", program) == 0, "only once");
+        path(file, sizeof(file), "%s/prefixes/game/system.reg", root);
+        int times = 0;
+        if (!pc5_read_file(file, &text, 16384) && !pc5_buf_terminate(&text))
+            for (const char *at = (char *)text.data; (at = strstr(at, "KONAMIPES6\\\\PES6]")); at++) times++;
+        CHECK(times == 2 &&
+                  strstr((char *)text.data, "\n[Software\\\\Wow6432Node\\\\KONAMIPES6\\\\PES6]\n"
+                                            "\"installdir\"=\"C:\\\\Games\\\\Pro Evolution Soccer 6\\\\\"\n"
+                                            "\"lang_e\"=dword:00000001\n\"lang_f\"=dword:00000000\n"
+                                            "\"lang_g\"=dword:00000001\n") &&
+                  strstr((char *)text.data, "\n[Software\\\\KONAMIPES6\\\\PES6\\\\1.0]\n") &&
+                  strstr((char *)text.data, "NDP") && !strstr((char *)text.data, "\"code\""),
+              "the folder and its languages, both views, once, after what it had, no key: %d", times);
+        pc5_buf_free(&text);
+        CHECK(pc5_prefix_installs(root, "default", program) == 0, "the default prefix is left alone");
+        CHECK(pc5_prefix_installs(root, "missing", program) == 0, "no Windows yet: nothing done");
+    }
+
     /* The runtime: copied once, for a .NET program only. */
     path(file, sizeof(file), "%s/pc5/mono.list", app);
     write_text(file, "mono-2.0/\nmono-2.0/bin/\nmono-2.0/bin/libmono-2.0-x86_64.dll\nmono-2.0/lib/mono/4.5/mscorlib.dll\n");
