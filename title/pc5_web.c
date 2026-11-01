@@ -458,7 +458,7 @@ static void game_settings(const Pc5Game *g, char *out, size_t size)
     pc5_controls_load(web.root, g->prefix, &k);
     snprintf(out, size, "%d-bit, draws with %s; Graphics API %s; Controller %s; Frame generation %s; Memory %s; CPU sharing %s%s",
              g->bits, pc5_api_name((Pc5Api)g->api), pc5_graphics_name(k.graphics, g->api), pc5_pad_mode_name(k.mode),
-             k.frame_generation ? "on" : "off", k.memory_4gb ? "4 GB" : "Auto", k.cpu_sharing ? "on" : "off",
+             k.frame_generation == 2 ? "MihawkGen" : k.frame_generation ? "on" : "off", k.memory_4gb ? "4 GB" : "Auto", k.cpu_sharing ? "on" : "off",
              k.steam_off ? "; Steam emulator off" : "");
 }
 

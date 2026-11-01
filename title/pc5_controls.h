@@ -66,7 +66,11 @@ typedef struct Pc5Controls {
      * stays as the game shows it, as before 2.0.8. */
     int pointer_hide;
     uint8_t key[PC5_CONTROLS];    /* an index into pc5_keys */
-    int frame_generation;         /* 1: the game held at 30 fps, shown at 60 (libvulkan.prx's frame generation) */
+    /* Frame generation (libvulkan.prx): 0 off; 1 PC5's own (FSR 3), the game held at half the
+     * display's rate and shown at the whole, 30 -> 60 or, with 120 Hz output, 60 -> 120;
+     * 2 MihawkGen, three pictures a frame, 40 -> 120 with 120 Hz output (30 -> 60 without).
+     * "frame_generation = off|on|mihawkgen". */
+    int frame_generation;
     /* A 32-bit game's address space. 0, Auto (the default from 1.9.8): as on Windows, 4 GB for a
      * program made for it (its large-address flag), 2 GB for one that isn't, which may take an
      * address above 2 GB for a negative number or size what it asks for by the room it sees.

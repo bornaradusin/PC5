@@ -1,0 +1,316 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 1 Nov 2026 17:00:00 +0000
+Subject: [PATCH] PC5: 120 Hz output, and frame generation at the display's
+ rate (Wine patches 0946, 0947)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+With PC5's 120 Hz output on (PW_PC5_HIGH_REFRESH=1) and a TV that takes
+VideoOut's high-frame-rate mode, RADV opens the display at 119.88 Hz
+(PC5's patches/radv 0004; the app's param.json declares it) and the title
+tells Wine so (WINE_PS5_REFRESH=120), whose display mode then says 120 Hz
+(Wine patch 0946, Mihawk OS 0924) and keeps offering it in the virtual
+desktop (0947, Mihawk OS 1188), both by Mihawk, unchanged. The log says
+"PW_WINE64 120hz wanted=… output=supported|not-supported|unknown"; off,
+or a TV without it, everything stays at 60 Hz.
+
+PC5's frame generation holds a game at half the display's rate, now read
+from RADV at the first present (wsi_videoout_refresh_millihertz): 30 -> 60
+at 59.94 Hz, 60 -> 120 at 119.88 Hz.
+---
+ PUBLICATION_ALLOWLIST.txt                     |  2 +
+ docs/WINE_PS5_BUILD.md                        |  2 +
+ native/pw_videoout_ps5.c                      | 10 ++++
+ native/pw_videoout_ps5.h                      |  3 +
+ native/wine64_main.c                          | 11 ++++
+ ...he-refresh-rate-asked-of-the-display.patch | 37 ++++++++++++
+ ...al-desktop-offers-the-display-s-rate.patch | 59 +++++++++++++++++++
+ wine/ps5/pw_framegen.cpp                      | 24 +++++++-
+ wine/ps5/pw_framegen.h                        |  7 ++-
+ 9 files changed, 149 insertions(+), 6 deletions(-)
+ create mode 100644 wine/patches/0946-win32u-ps5-report-the-refresh-rate-asked-of-the-display.patch
+ create mode 100644 wine/patches/0947-win32u-a-virtual-desktop-offers-the-display-s-rate.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index 7781a0e..6cc2849 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -605,6 +605,8 @@ wine/patches/0943-ntdll-ps5-look-a-name-up-in-a-root-directory-by-its-name.patch
+ wine/patches/0871-server-ps5-park-directory-descriptors.patch
+ wine/patches/0944-ntdll-ps5-emulate-the-instructions-umip-refuses.patch
+ wine/patches/0945-ntdll-ps5-read-ahead-for-small-reads.patch
++wine/patches/0946-win32u-ps5-report-the-refresh-rate-asked-of-the-display.patch
++wine/patches/0947-win32u-a-virtual-desktop-offers-the-display-s-rate.patch
+ wine/patches/0953-wow64-ps5-a-32-bit-allocation-stays-below-the-process-limit.patch
+ wine/patches/0954-server-ps5-resolve-an-opened-file-s-directory-once.patch
+ wine/patches/0955-ntdll-ps5-keep-the-directories-a-process-resolved.patch
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index aaa0363..72ab87a 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -150,6 +150,8 @@ before evaluating a candidate built from that cache.
+ | 0943 | `ntdll`: a name opened relative to a directory handle (`RootDirectory`) whose descriptor from the in-process server this module can't use (`fstatat`/`openat` failing with `EBADF`, `STATUS_INVALID_HANDLE`) is looked up from the directory's own name, the server's or its NT name's, as patch 0936 enters such a directory; logged the first time. .NET's `FileSystemEnumerator` opens each subfolder that way, and a game's folder with subfolders couldn't be listed (Heroes of Might and Magic: Olden Era, `StreamingAssets\maps\Story_maps`, still after 0936 and 0938) |
+ | 0944 | `ntdll`: a general protection fault with error code 0 from SGDT, SIDT, SLDT, SMSW or STR, which the console refuses in programs (CR4.UMIP), is emulated in 64-bit and 32-bit code: Linux's values for SGDT, SIDT and SMSW, Windows' for SLDT (0) and STR (0x40), written to the instruction's register or memory operand; logged the first time. A game's anti-tamper or CPU check that ran one ended on an access violation reading `0xffffffffffffffff`. The finding is PS5_MihawkOS's (its 2102) |
+ | 0945 | `ntdll`: on PS5, a synchronous read of 64 KiB or less from a regular file is served from a 512 KiB piece read at once (four a process, by device and inode, checked with `fstat`; this process's writes and size changes forget them). The console's kernel reads exactly what is asked, so 4 KiB reads came at 88 MB/s. From PS5_MihawkOS (its 2082) |
++| 0946 | `win32u` (Mihawk OS 0924): the PS5 driver's display mode reports the rate in `WINE_PS5_REFRESH` (120 when the title opens the display at 119.88 Hz, PC5's 120 Hz output) instead of always 60, so a game paces itself and shows its rate from it |
++| 0947 | `win32u` (Mihawk OS 1188): in a virtual desktop, the virtual source starts at the display's own rate and keeps the modes it generated, so 120 Hz modes stay offered after a game's 60 Hz mode change |
+ | 0953 | `wow64`: a 32-bit caller's allocation with its own address requirements (an alignment) and no highest address is kept below the 32-bit process's limit, as on Windows; it landed above 4 GiB and the game faulted on the address's low half. From PS5_MihawkOS |
+ | 0954 | `server`: on PS5, an opened file's directory is resolved with `realpath` once and kept (64 entries, checked by device and inode), so an open costs two system calls instead of one a path component. From PS5_MihawkOS (its 2080) |
+ | 0955 | `ntdll`: on PS5, the directories a process resolved are kept by their upper-cased Windows path (1024 slots) and a lookup starts from the longest one, checked with one `fstatat`; a directory's case sensitivity is not asked (the console's disk is). From PS5_MihawkOS (its 2081) |
+diff --git a/native/pw_videoout_ps5.c b/native/pw_videoout_ps5.c
+index 0a1c0be..e283306 100644
+--- a/native/pw_videoout_ps5.c
++++ b/native/pw_videoout_ps5.c
+@@ -46,6 +46,10 @@ extern void sceVideoOutSetBufferAttribute2(void *,uint64_t,uint32_t,uint32_t,uin
+                                             uint64_t,uint32_t,uint64_t);
+ extern int sceVideoOutRegisterBuffers2(int32_t,int32_t,int32_t,void *,int32_t,void *,int32_t,void *);
+ extern int sceVideoOutWaitVblank(int32_t);
++extern int sceVideoOutIsOutputSupported(int32_t,uint32_t,const void *,const void *,const void *);
++/* VideoOut's high-frame-rate output mode, as RADV asks for it (PS5_Mesa
++ * wsi_common_videoout.c, PS5_VIDEO_OUT_MODE_HIGH_FRAME_RATE). */
++#define PW_VIDEOOUT_PS5_MODE_HIGH_FRAME_RATE 15u
+ extern int sceSystemServiceHideSplashScreen(void);
+ 
+ /* Column and row parts of the tiled index, filled once at open, and the
+@@ -84,6 +88,12 @@ vm_failed:
+ state_failed:
+     (void)pw_videoout_ps5_close(video);return PW_ERR_STATE;
+ }
++int pw_videoout_ps5_high_rate(const PwVideoOutPs5 *video)
++{
++    if(!video||!video->opened||video->handle<0)return -1;
++    int supported=sceVideoOutIsOutputSupported(video->handle,PW_VIDEOOUT_PS5_MODE_HIGH_FRAME_RATE,NULL,NULL,NULL);
++    return supported>0?1:supported==0?0:supported;
++}
+ int pw_videoout_ps5_close(PwVideoOutPs5 *video)
+ {
+     if(!video)return PW_ERR_PRECONDITION;
+diff --git a/native/pw_videoout_ps5.h b/native/pw_videoout_ps5.h
+index ad14057..09ed0cd 100644
+--- a/native/pw_videoout_ps5.h
++++ b/native/pw_videoout_ps5.h
+@@ -12,6 +12,9 @@ typedef struct PwVideoOutPs5 {
+ } PwVideoOutPs5;
+ int pw_videoout_ps5_open(PwVideoOutPs5 *);
+ int pw_videoout_ps5_close(PwVideoOutPs5 *);
++/* 1 when the output (the TV, as the console's 120 Hz setting allows) takes
++ * VideoOut's high-frame-rate mode, 119.88 Hz; 0 when not, <0 on failure. */
++int pw_videoout_ps5_high_rate(const PwVideoOutPs5 *);
+ int pw_videoout_ps5_present(PwVideoOutPs5 *,const PwPresentView *);
+ /* frame scaled to the whole screen by mode (PW_PRESENT_SCALE_*), the rest
+  * background (B,G,R), drawn straight into the tiled scanout: one pass over
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 3008c03..fe37082 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -1781,6 +1781,17 @@ int main(int argc, char **argv)
+         }
+ #ifdef PW_PC5
+         pc5_game_start(game, launch.executable);
++        /* 120 Hz output (PC5's Settings: PW_PC5_HIGH_REFRESH=1): where the TV takes it, RADV opens
++         * the display at 119.88 Hz (patches/radv 0004) and Wine offers games 120 Hz modes (Wine
++         * patches 0946 and 0947, WINE_PS5_REFRESH). Off, or a TV without it: 60 Hz, as before. */
++        {
++            const char *wanted = getenv("PW_PC5_HIGH_REFRESH");
++            int high = wanted && !strcmp(wanted, "1") && video_status == PW_OK ? pw_videoout_ps5_high_rate(&video) : 0;
++            if (high == 1) setenv("WINE_PS5_REFRESH", "120", 1);
++            else unsetenv("WINE_PS5_REFRESH");
++            PS5LOG_LOG("PW_WINE64 120hz wanted=%d output=%s", wanted && !strcmp(wanted, "1"),
++                       high == 1 ? "supported" : high == 0 ? "not-supported" : "unknown");
++        }
+ #endif
+         {
+             uint8_t *storage = mmap(NULL, 2u * PW_WINE64_MAX_FRAME, PROT_READ | PROT_WRITE,
+diff --git a/wine/patches/0946-win32u-ps5-report-the-refresh-rate-asked-of-the-display.patch b/wine/patches/0946-win32u-ps5-report-the-refresh-rate-asked-of-the-display.patch
+new file mode 100644
+index 0000000..020eef6
+--- /dev/null
++++ b/wine/patches/0946-win32u-ps5-report-the-refresh-rate-asked-of-the-display.patch
+@@ -0,0 +1,37 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: Mihawk <163614687+mihawk-99@users.noreply.github.com>
++Date: Sun, 4 Oct 2026 23:30:00 -0400
++Subject: [PATCH] win32u: on PS5, report the refresh rate the title asked of the display
++
++The PS5 driver's one display mode said 60 Hz whatever the output did. A game that opts in to 119.88 Hz
++output (PS5_Proton's PROTON_120HZ, which points RADV at the title's high-frame-rate declaration) ran
++at 119.88 Hz on the console (2026-10-04, record removed from the tree; in git history: the shell reports 2560x1440 at 119.8801 Hz, frames paced
++at 8.5 ms) while a Java game's debug screen still said "@60Hz", read from this mode. The title now
++passes the rate it asked for in WINE_PS5_REFRESH; without it the mode stays at 60 Hz.
++---
++  dlls/win32u/ps5drv.c | 5 ++++-
++  1 file changed, 4 insertions(+), 1 deletion(-)
++
++diff --git a/dlls/win32u/ps5drv.c b/dlls/win32u/ps5drv.c
++index 6c8da1b..9c4870d 100644
++--- a/dlls/win32u/ps5drv.c
+++++ b/dlls/win32u/ps5drv.c
++@@ -203,6 +203,9 @@ static UINT ps5_UpdateDisplayDevices( const struct gdi_device_manager *manager,
++     struct pci_id pci_id = {0};
++     struct gdi_monitor monitor = {0};
++     DEVMODEW mode = {.dmSize = sizeof(mode)};
+++    /* WINE_PS5_REFRESH: the rate the title asked of the display (120 for a game that opts in
+++     * to 119.88 Hz output); a game reads it to pace itself and to show it */
+++    const char *refresh = getenv( "WINE_PS5_REFRESH" );
++ 
++     mode.dmFields = DM_DISPLAYORIENTATION | DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT |
++                     DM_DISPLAYFLAGS | DM_DISPLAYFREQUENCY | DM_POSITION;
++@@ -210,7 +213,7 @@ static UINT ps5_UpdateDisplayDevices( const struct gdi_device_manager *manager,
++     mode.dmBitsPerPel = 32;
++     mode.dmPelsWidth = screen_width;
++     mode.dmPelsHeight = screen_height;
++-    mode.dmDisplayFrequency = 60;
+++    mode.dmDisplayFrequency = refresh && atoi( refresh ) > 0 ? atoi( refresh ) : 60;
++ 
++     SetRect( &monitor.rc_monitor, 0, 0, screen_width, screen_height );
++     monitor.rc_work = monitor.rc_monitor;
+diff --git a/wine/patches/0947-win32u-a-virtual-desktop-offers-the-display-s-rate.patch b/wine/patches/0947-win32u-a-virtual-desktop-offers-the-display-s-rate.patch
+new file mode 100644
+index 0000000..7a8efad
+--- /dev/null
++++ b/wine/patches/0947-win32u-a-virtual-desktop-offers-the-display-s-rate.patch
+@@ -0,0 +1,59 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: Mihawk <163614687+mihawk-99@users.noreply.github.com>
++Date: Fri, 17 Oct 2026 20:30:00 -0400
++Subject: [PATCH] win32u: a virtual desktop offers the display's rate
++
++With PROTON_120HZ=1 every process in the Mihawk OS session published the PS5 driver's 1920x1080@120, yet programs
++there were offered only 60 Hz (PS5_Proton's modes-p2-2026-10-17-03: all six publishes at 120, the probe reading 36
++modes at 60; the same probe outside a virtual desktop read 60 and 120). In a virtual desktop win32u reports the driver's
++source as detached and adds its own: add_virtual_source made that source's starting mode the display's with the rate
++forced to 60, and Proton's emulate_modeset then collapsed the virtual modes it had generated (at 60 and the display's
++rate) to that one mode and rebuilt them from its 60. The virtual source now starts at the display's own rate, and keeps
++the modes add_virtual_source generated, so a game's later 60 Hz mode change no longer drops the 120 Hz modes for the
++rest of the session. Outside a virtual desktop nothing changes.
++---
++ dlls/win32u/sysparams.c | 12 +++++++++---
++ 1 file changed, 9 insertions(+), 3 deletions(-)
++
++--- a/dlls/win32u/sysparams.c
+++++ b/dlls/win32u/sysparams.c
++@@ -1098,6 +1098,7 @@
++     /* for the virtual desktop settings */
++     BOOL is_primary;
++     DEVMODEW primary;
+++    BOOL adding_virtual;   /* add_virtual_source's modes, already the virtual desktop's own */
++ };
++ 
++ static void link_device( const char *instance, const char *class )
++@@ -2326,7 +2327,10 @@
++     assert( !list_empty( &sources ) );
++     source = LIST_ENTRY( list_tail( &sources ), struct source, entry );
++ 
++-    if (emulate_modeset)
+++    /* A virtual desktop's source keeps the modes add_virtual_source generated: rebuilding them from its current mode
+++     * would take that mode's rate (the display's 119.88 Hz lost to the 60 a game set). */
+++    if (ctx->adding_virtual) {}
+++    else if (emulate_modeset)
++     {
++         modes = current;
++         modes_count = 1;
++@@ -2988,7 +2992,8 @@
++     if (!read_source_mode( source->key, ENUM_CURRENT_SETTINGS, &current ))
++     {
++         current = ctx->primary;
++-        current.dmDisplayFrequency = 60;
+++        /* the display's own rate (the PS5's 119.88 Hz under PROTON_120HZ), as get_virtual_modes offers it */
+++        if (current.dmDisplayFrequency <= 1) current.dmDisplayFrequency = 60;
++         current.dmPelsWidth = initial.dmPelsWidth;
++         current.dmPelsHeight = initial.dmPelsHeight;
++     }
++@@ -3001,7 +3006,9 @@
++ 
++     /* Expose the virtual source display modes as physical modes, to avoid DPI scaling */
++     if (!(modes = get_virtual_modes( &initial, &maximum, NULL, 0, &modes_count ))) return STATUS_NO_MEMORY;
+++    ctx->adding_virtual = TRUE;
++     add_modes( &current, modes_count, modes, ctx );
+++    ctx->adding_virtual = FALSE;
++     free( modes );
++ 
++     return STATUS_SUCCESS;
+diff --git a/wine/ps5/pw_framegen.cpp b/wine/ps5/pw_framegen.cpp
+index 6767e2f..646d788 100644
+--- a/wine/ps5/pw_framegen.cpp
++++ b/wine/ps5/pw_framegen.cpp
+@@ -29,14 +29,18 @@
+ 
+ extern "C" PFN_vkVoidFunction VKAPI_CALL vk_icdGetInstanceProcAddr(VkInstance instance, const char *name);
+ extern "C" PFN_vkVoidFunction VKAPI_CALL vk_common_GetDeviceProcAddr(VkDevice device, const char *name);
++/* The display's rate in millihertz (PC5's patches/radv 0004). */
++extern "C" uint32_t wsi_videoout_refresh_millihertz(void);
+ 
+ struct pw_framegen_vk pw_framegen_vk;
+ 
+ namespace
+ {
+-constexpr double k_display_hz = 59.94;
++/* The display's rate, from RADV once a swapchain presents (PC5's
++ * patches/radv 0004): 119.88 Hz with 120 Hz output on and kept, else 59.94. */
++double display_hz = 0;
+ /* Half the display's rate, less 0.05 fps: the queue stays empty. */
+-constexpr double k_period = 1.0 / (k_display_hz / 2.0 - 0.05);
++double k_period = 1.0 / (59.94 / 2.0 - 0.05);
+ constexpr unsigned k_slots = 3;
+ constexpr unsigned k_settle = 8;
+ constexpr double k_log_every = 10.0;
+@@ -108,6 +112,19 @@ void sleep_until(double when)
+     nanosleep(&ts, nullptr);
+ }
+ 
++/* At a swapchain's first present (VideoOut is open by then): the hold for the
++ * display's rate, 30 -> 60 at 59.94 Hz, 60 -> 120 at 119.88 Hz. */
++void settle_rate()
++{
++    if (display_hz > 0)
++        return;
++    const uint32_t millihertz = wsi_videoout_refresh_millihertz();
++    display_hz = millihertz ? millihertz / 1000.0 : 59.94;
++    k_period = 1.0 / (display_hz / 2.0 - 0.05);
++    fprintf(stderr, "pw_framegen: display at %.2f Hz: %.2f fps shown at %.2f\n", display_hz, 1.0 / k_period,
++            2.0 / k_period);
++}
++
+ bool is_wanted()
+ {
+     if (wanted < 0)
+@@ -115,7 +132,7 @@ bool is_wanted()
+         const char *value = getenv("PW_PC5_FRAMEGEN");
+         wanted = value && !strcmp(value, "1");
+         if (wanted)
+-            fprintf(stderr, "pw_framegen: on, %.2f fps shown at %.2f\n", 1.0 / k_period, 2.0 / k_period);
++            fprintf(stderr, "pw_framegen: on, half the display's rate shown at the whole\n");
+     }
+     return wanted > 0;
+ }
+@@ -559,6 +576,7 @@ VKAPI_ATTR VkResult VKAPI_CALL wrap_QueuePresentKHR(VkQueue queue, const VkPrese
+         return next.QueuePresentKHR(queue, info);
+     }
+ 
++    settle_rate();
+     /* The hold: a frame at most every k_period. */
+     sleep_until(sc->next_due);
+     now = now_seconds();
+diff --git a/wine/ps5/pw_framegen.h b/wine/ps5/pw_framegen.h
+index d5ef5a6..eb8026a 100644
+--- a/wine/ps5/pw_framegen.h
++++ b/wine/ps5/pw_framegen.h
+@@ -2,9 +2,10 @@
+ /* Frame generation in libvulkan.prx (pw_framegen.cpp): with PW_PC5_FRAMEGEN=1
+  * in the environment (PC5 sets it for a game whose Frame generation is on),
+  * a game's swapchain is held at half the display's rate (30 fps on the
+- * console's 59.94 Hz) and each of its frames is shown after the frame
+- * between it and the one before, made by ps5-framegen's interpolator (AMD
+- * FSR3's optical flow): 30 fps is shown at 60. A game slower than that is
++ * console's 59.94 Hz, 60 at 119.88 Hz with 120 Hz output on) and each of its
++ * frames is shown after the frame between it and the one before, made by
++ * ps5-framegen's interpolator (AMD FSR3's optical flow): 30 fps is shown at
++ * 60, or 60 at 120. A game slower than that is
+  * shown as it is, without frames in between, until it keeps up again.
+  *
+  * The resolver wraps the entry points it needs (the device's, its queues',
+-- 
+2.43.0
+

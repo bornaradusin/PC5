@@ -655,8 +655,15 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         if (dxvk_config[0]) setenv("DXVK_CONFIG", dxvk_config, 1);
         else unsetenv("DXVK_CONFIG");
     }
-    if (game->frame_generation) setenv("PW_PC5_FRAMEGEN", "1", 1);
+    /* One generator at most: PC5's own (PW_PC5_FRAMEGEN=1) or MihawkGen at three pictures a frame
+     * (PW_FRAMEGEN=3; libvulkan.prx makes it two at 59.94 Hz). */
+    if (game->frame_generation == 1) setenv("PW_PC5_FRAMEGEN", "1", 1);
     else unsetenv("PW_PC5_FRAMEGEN");
+    if (game->frame_generation == 2) setenv("PW_FRAMEGEN", "3", 1);
+    else unsetenv("PW_FRAMEGEN");
+    /* 120 Hz output: RADV opens the display at 119.88 Hz where the TV takes it (patches/radv 0004),
+     * the title tells Wine (WINE_PS5_REFRESH); "0" keeps it at 60 Hz. */
+    setenv("PW_PC5_HIGH_REFRESH", game->settings.high_refresh ? "1" : "0", 1);
     if (stretch) setenv("PW_PC5_STRETCH", "1", 1);
     else unsetenv("PW_PC5_STRETCH");
     /* A launcher that starts the game: Wine hands that program to PC5 (Wine patch 0923,
@@ -700,12 +707,12 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
     if (path[0]) setenv("WINEPATH", path, 1);
     else unsetenv("WINEPATH");
     say(game, "PC5 game fps=%d overlay=%#x corner=%d vibration=%d light=%d triggers=%d trigger_rumble=%d "
-        "trigger_resistance=%d tint=%06x frame_generation=%d memory_32bit=%s aspect_ratio=%s cpu_sharing=%d",
+        "trigger_resistance=%d tint=%06x frame_generation=%d memory_32bit=%s aspect_ratio=%s cpu_sharing=%d high_refresh=%d",
         game->settings.fps,
         pc5_game_overlay_lines(&game->settings), (int)game->settings.fps_corner, game->settings.vibration,
         (int)game->settings.light_bar, (int)game->settings.triggers, game->settings.trigger_rumble,
         game->settings.trigger_resistance, (unsigned)game->cover_tint, game->frame_generation, memory_4gb ? "4gb" : "auto",
-        stretch ? "stretch" : "keep", cpu_sharing);
+        stretch ? "stretch" : "keep", cpu_sharing, game->settings.high_refresh);
 }
 
 const uint32_t *pc5_game_loading(Pc5GameSession *game, uint64_t now_ms)

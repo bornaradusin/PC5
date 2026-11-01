@@ -72,6 +72,9 @@ typedef struct Pc5Settings {
     /* A USB keyboard (Settings › System › Keyboard layout): 0 Auto, the layout of PC5's language
      * (pc5_keyboard_layout); 1 always the US one, as before 2.1.0. "keyboard = auto|us". */
     int keyboard_us;
+    /* 120 Hz output (Settings › In games): 1 asks for 119.88 Hz where the TV takes it (the console's
+     * own 120 Hz setting on), for every game; 0 (the default) 60 Hz. "high_refresh = on|off". */
+    int high_refresh;
 } Pc5Settings;
 
 void pc5_settings_default(Pc5Settings *settings);
