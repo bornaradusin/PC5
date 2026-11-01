@@ -24,7 +24,7 @@ with `PC5 `.
 
 | # | Do | Expect | Expect in the log |
 | --- | --- | --- | --- |
-| 10 | Start GTA IV | green falling code with "Grand Theft Auto IV", then the game | `PC5 game fps=… tint=…`, `PW_WINE64 profile … dll_overrides=d3d8,d3d9,d3d10core,d3d11,dxgi=n;d3d12,d3d12core=b`, no `Unhandled page fault` |
+| 10 | Start GTA IV | the loading screen: the glowing PC, "LAUNCHING GAME" and a bar filling (no game name), then the game | `PC5 game fps=… tint=…`, `PW_WINE64 profile … dll_overrides=d3d8,d3d9,d3d10core,d3d11,dxgi=n;d3d12,d3d12core=b`, no `Unhandled page fault` |
 | 11 | With Show FPS on | the counter in the chosen corner, once the game shows its picture | `PW_WINE64 pc5 vulkan hud=1 stats=1 tick=1 color=1` |
 | 11b | Overlay: every line on, then start a game | FPS, MS, CPU %, CPU °C, SOC °C and RAM used/total in the chosen corner, updated every second; a line the console can't read is left out | `PC5 overlay lines=0x3f cpus=16 cpu_temp=… rc=0 soc_temp=… rc=0 memory=…M/…M rc=0` |
 | 12 | Light bar: Game's colour, then Follows the screen | the cover's colour; then the screen's, changing with it | `PC5 light bar … rc=0` |
@@ -539,3 +539,14 @@ controller's speaker.
 | 302 | 120 Hz on, Frame generation 40 → 120 fps on a game that holds 40 | smooth, about 40 from the game | `pw_mihawkgen: factor 3`, `pw_mihawkgen: 40 frames/s from the program, 120 pictures/s presented` |
 | 303 | A game set to 40 → 120 fps, then 120 Hz output off | the menu shows 30 → 60 fps (left and right: Off, 30 → 60); the game at 30 → 60 | `PC5 game … frame_generation=2 … high_refresh=0`, `pw_framegen: on`, no `pw_mihawkgen:` lines |
 | 304 | Leave a game at 120 Hz to PC5 and from a home screen tile, then start another with 120 Hz off | PC5's screens look as always; the next game at 60 Hz | no stuck "Closing" screen |
+
+## 2.1.2: file editing and Home
+
+| # | Do | Expect | Log |
+|---|---|---|---|
+| 305 | File manager › a game's folder › ✕ on an .ini | it opens as lines; ✕ on a line opens the keyboard with the line in it | `PC5 files edit … lines=… encoding=…` |
+| 306 | Change a line, △ › Add a line below, Back › Save | the file has both; the game reads them at its next start | `PC5 files edit saved …` |
+| 307 | ✕ on a file in a read-only place (Whole console) | View: lines shown, ✕ and △ do nothing | `read_only=1` |
+| 308 | ✕ on an .exe | its actions, as before (it isn't text) | `PC5 files can't edit …` |
+| 309 | Web page › a game › Files › Windows › user.reg, with no game running | the registry as text; Save keeps it UTF-8/UTF-16 as it was | `PC5 web edited windows/user.reg …` |
+| 310 | Home with 5 games: right to the last one | the last three covers stay in view and the choice moves along them | |

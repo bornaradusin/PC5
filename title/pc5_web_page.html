@@ -40,6 +40,12 @@ progress { width: 100%; height: 10px; }
 .good { color: var(--good); }
 ul { margin: 0; padding-left: 18px; }
 li { margin: 3px 0; overflow-wrap: anywhere; }
+.files { list-style: none; padding: 0; margin: 6px 0; max-height: 360px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; }
+.files li { margin: 0; padding: 5px 10px; border-top: 1px solid var(--line); display: flex; gap: 10px; }
+.files li:first-child { border-top: 0; }
+.files a { cursor: pointer; }
+.crumbs a { cursor: pointer; }
+textarea.big { min-height: 55vh; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
 </style>
 </head>
 <body>
@@ -178,6 +184,107 @@ function editor(game, kind, label, help) {
   return box;
 }
 
+/* A game's files: its folder, or its Windows (the prefix: the registry's .reg files, and drive_c
+ * with saves and settings); a text file opens in a box to change, saved as the file was (its
+ * encoding and line ends). */
+function files(game) {
+  const box = el("details", {}, el("summary", { text: t("Files: change a game's text files") }));
+  const roots = el("div", { class: "row" }), crumbs = el("div", { class: "crumbs" }), list = el("ul", { class: "files" });
+  const said = el("p", { class: "dim" }), edit = el("div");
+  let root = "game", parts = [], loaded = false, max = 8 * 1024 * 1024;
+  const url = extra => "api/games/" + encodeURIComponent(game.id) + "/files/" + root + (extra.length ? "/" + path(extra) : "");
+  const names = { game: t("Game folder"), windows: t("Windows (registry, saves, settings)") };
+  function rootButton(which) {
+    const b = el("button", { text: names[which] });
+    b.onclick = () => { root = which; parts = []; show(); };
+    return b;
+  }
+  roots.append(rootButton("game"));
+  if (game.windows) roots.append(rootButton("windows"));
+  async function show() {
+    edit.textContent = "";
+    list.hidden = false;
+    crumbs.textContent = "";
+    const top = el("a", { text: names[root] });
+    top.onclick = () => { parts = []; show(); };
+    crumbs.append(top);
+    parts.forEach((p, i) => {
+      const a = el("a", { text: p });
+      a.onclick = () => { parts = parts.slice(0, i + 1); show(); };
+      crumbs.append(" › ", a);
+    });
+    said.textContent = t("Loading…");
+    said.className = "dim";
+    list.textContent = "";
+    try {
+      const r = await fetch(url(parts), { cache: "no-store" });
+      if (!r.ok) throw new Error(await r.text());
+      const d = await r.json();
+      max = d.max || max;
+      said.textContent = d.entries.length ? "" : t("This folder is empty");
+      if (parts.length) {
+        const up = el("a", { text: ".." });
+        up.onclick = () => { parts = parts.slice(0, -1); show(); };
+        list.append(el("li", {}, up));
+      }
+      for (const e of d.entries) {
+        const name = el("a", { text: e.dir ? e.name + "/" : e.name });
+        const item = el("li", {}, name);
+        if (e.dir) name.onclick = () => { parts = parts.concat(e.name); show(); };
+        else if (e.size <= max) name.onclick = () => open(e.name);
+        else { name.removeAttribute("href"); name.className = "dim"; name.title = t("Larger than 8 MB: too large to change here"); }
+        if (!e.dir) item.append(el("span", { class: "dim grow", text: size(e.size) }));
+        list.append(item);
+      }
+    } catch (e) { said.textContent = tf("Not shown: %s", e.message); said.className = "bad"; }
+  }
+  async function open(name) {
+    said.textContent = t("Loading…");
+    said.className = "dim";
+    try {
+      const r = await fetch(url(parts.concat(name)), { cache: "no-store" });
+      if (!r.ok) throw new Error(await r.text());
+      const d = await r.json();
+      said.textContent = "";
+      list.hidden = true;
+      crumbs.append(" › ", el("b", { text: name }));
+      const area = el("textarea", { class: "big", spellcheck: "false", wrap: "off" });
+      area.value = d.text;
+      const encodings = { "UTF-8": "UTF-8", "UTF-16": "UTF-16", "UTF-8 with its mark": t("UTF-8 with its mark"),
+                          "Western (one byte a letter)": t("Western (one byte a letter)") };
+      const info = el("p", { class: "dim", text: tf("%s · %s line ends · %d lines · %s. Saved as it was: the same encoding and line ends. A game reads it at its next start.",
+                                                   encodings[d.encoding] || d.encoding, d.line_ends, d.lines, size(d.size)) });
+      const done = el("span", { class: "dim" }), save = el("button", { class: "main", text: t("Save") }), close = el("button", { text: t("Close") });
+      save.onclick = async () => {
+        save.disabled = true;
+        done.textContent = t("Saving…");
+        done.className = "dim";
+        try {
+          const w = await fetch(url(parts.concat(name)), { method: "PUT", body: area.value });
+          if (!w.ok) throw new Error(await w.text());
+          done.textContent = t("Saved.");
+          done.className = "good";
+          area.dataset.saved = area.value;
+        } catch (e) { done.textContent = tf("Not saved: %s", e.message); done.className = "bad"; }
+        save.disabled = false;
+      };
+      area.dataset.saved = area.value;
+      close.onclick = () => {
+        if (area.value !== area.dataset.saved && !confirm(t("Close without saving the changes?"))) return;
+        show();
+      };
+      edit.append(info);
+      if (/\.reg$/i.test(name))
+        edit.append(el("p", { class: "bad", text: t("Wine writes its .reg files while a game plays: change them only when no game is running.") }));
+      edit.append(area, el("div", { class: "row" }, save, close, done));
+    } catch (e) { said.textContent = tf("Not opened: %s", e.message); said.className = "bad"; }
+  }
+  box.addEventListener("toggle", () => { if (box.open && !loaded) { loaded = true; show(); } });
+  box.append(el("p", { class: "dim", text: t("Text files only (.ini, .cfg, .txt, .json, .reg and the like), up to 8 MB. The console's File manager changes them too, a line at a time.") }),
+             roots, crumbs, list, said, edit);
+  return box;
+}
+
 async function games() {
   const box = $("games");
   try {
@@ -209,6 +316,7 @@ async function games() {
                            t("The first line that isn't empty or a comment (# or ;) is added to the program's command line.")));
       }
       item.append(identity(g));
+      item.append(files(g));
       item.append(editor(g, "env", t("Environment variables (env.txt)"), t("One NAME=value a line, set before the game starts.")));
       item.append(editor(g, "debug", t("Extra logging (winedebug.txt)"),
                          t("Only when an issue asks for it, for example err+all,+seh. Empty it afterwards: it slows the game down.")));

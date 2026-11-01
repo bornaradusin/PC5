@@ -9,6 +9,8 @@
 #include "pc5_controls.h"
 #include "pc5_report.h"
 #include "pc5_identity.h"
+#include "pc5_files.h"
+#include "pc5_textdoc.h"
 #include "pc5_web_page.h"
 
 #include <dirent.h>
@@ -163,6 +165,7 @@ static const char *reason(int code)
     case 405: return "Method Not Allowed";
     case 411: return "Length Required";
     case 413: return "Payload Too Large";
+    case 415: return "Unsupported Media Type";
     case 500: return "Internal Server Error";
     case 503: return "Service Unavailable";
     default: return "Error";
@@ -547,6 +550,13 @@ static void api_games(Conn *c)
         }
         pc5_buf_printf(&buf, ",\"usb\":%s,\"bits\":%d", g->usb ? "true" : "false", g->bits);
         {
+            /* its Windows (the prefix: registry, drive_c with saves and settings), for Files */
+            char windows[PC5_PATH];
+            int has = g->prefix[0] && !pc5_format(windows, sizeof(windows), "%s/prefixes/%s/system.reg", web.root, g->prefix) &&
+                      pc5_is_file(windows);
+            pc5_buf_printf(&buf, ",\"windows\":%s", has ? "true" : "false");
+        }
+        {
             Pc5Identity identity;
             game_identity(g, &identity);
             pc5_buf_printf(&buf, ",\"steam_appid\":%u,\"gog_id\":%llu,\"identity_source\":", (unsigned)identity.steam_appid,
@@ -562,8 +572,151 @@ static void api_games(Conn *c)
     respond_buf(c, &buf);
 }
 
+/* relative inside top with no link on the way (dosdevices/z: leads to the whole console). 0, or
+ * -1. */
+static int no_links(const char *top, const char *relative)
+{
+    char part[PC5_PATH];
+    struct stat st;
+    if (pc5_format(part, sizeof(part), "%s/%s", top, relative)) return -1;
+    for (size_t i = strlen(top) + 1;; i++) {
+        char at = part[i];
+        if (at == '/' || !at) {
+            part[i] = 0;
+            if (lstat(part, &st) || S_ISLNK(st.st_mode)) return -1;
+            part[i] = at;
+            if (!at) return 0;
+        }
+    }
+}
+
+static void respond_why(Conn *c, int code, const char *why)
+{
+    char text[PC5_ERROR * 3];
+    respond_text(c, code, pc5_tr_text(why, text, sizeof(text)));
+}
+
+/* /api/games/<id>/files/<where>[/<path>]: where is game (its folder) or windows (its prefix).
+ * A folder (GET): its items, links left out. A text file (GET): its text as UTF-8 with \n, with
+ * how the file has it; (PUT) the text in its place, written in the file's own encoding and line
+ * ends (pc5_textdoc.h). Only files that are there already are written. */
+static void game_files(Conn *c, const Pc5Game *game, const char *rest)
+{
+    char top[PC5_PATH], path[PC5_PATH], why[PC5_ERROR];
+    const char *slash = strchr(rest, '/'), *relative = slash ? slash + 1 : "";
+    size_t n = slash ? (size_t)(slash - rest) : strlen(rest);
+    struct stat st;
+
+    if (n == 4 && !strncmp(rest, "game", 4)) {
+        if (pc5_game_folder(web.root, game->id, top, sizeof(top)) || !pc5_is_dir(top)) {
+            respond_text(c, 404, game->usb ? "The game's folder is on a USB drive that isn't plugged in"
+                                           : "The game's folder isn't there");
+            return;
+        }
+    } else if (n == 7 && !strncmp(rest, "windows", 7) && game->prefix[0]) {
+        if (pc5_format(top, sizeof(top), "%s/prefixes/%s", web.root, game->prefix) || !pc5_is_dir(top)) {
+            respond_text(c, 404, "The game has no Windows of its own yet: it gets one at its first start");
+            return;
+        }
+    } else {
+        respond_text(c, 404, "Not here");
+        return;
+    }
+    if (relative[0] && (pc5_web_upload_path_ok(relative) || no_links(top, relative))) {
+        respond_text(c, 400, "Not a path in the game's folder");
+        return;
+    }
+    if (relative[0] ? pc5_format(path, sizeof(path), "%s/%s", top, relative) : (pc5_copy(path, sizeof(path), top), 0)) {
+        respond_text(c, 400, "The path is too long");
+        return;
+    }
+    if (stat(path, &st)) {
+        respond_text(c, 404, "It isn't there any more");
+        return;
+    }
+    if (S_ISDIR(st.st_mode)) {
+        Pc5FileList list;
+        Pc5Buf buf = { 0 };
+        if (strcmp(c->method, "GET")) {
+            respond_text(c, 405, "GET only");
+            return;
+        }
+        if (pc5_files_list(path, &list)) {
+            respond_text(c, 500, strerror(list.error));
+            return;
+        }
+        pc5_buf_printf(&buf, "{\"max\":%u,\"entries\":[", (unsigned)PC5_TEXTDOC_MAX);
+        for (int i = 0, shown = 0; i < list.count; i++) {
+            char item[PC5_PATH];
+            struct stat link;
+            if (pc5_format(item, sizeof(item), "%s/%s", path, list.items[i].name) || lstat(item, &link) || S_ISLNK(link.st_mode))
+                continue;
+            pc5_buf_puts(&buf, shown++ ? ",{\"name\":" : "{\"name\":");
+            json_string(&buf, list.items[i].name);
+            pc5_buf_printf(&buf, ",\"dir\":%s,\"size\":%llu}", list.items[i].dir ? "true" : "false",
+                           (unsigned long long)list.items[i].size);
+        }
+        pc5_buf_puts(&buf, "]}");
+        pc5_files_list_free(&list);
+        respond_buf(c, &buf);
+        return;
+    }
+    if (!S_ISREG(st.st_mode)) {
+        respond_text(c, 415, "It isn't a file");
+        return;
+    }
+    Pc5TextDoc doc;
+    if (pc5_textdoc_read(&doc, path, why, sizeof(why))) {
+        respond_why(c, 415, why);
+        return;
+    }
+    if (!strcmp(c->method, "GET")) {
+        Pc5Buf text = { 0 }, buf = { 0 };
+        if (pc5_textdoc_join(&doc, &text)) {
+            pc5_textdoc_free(&doc);
+            respond_text(c, 500, "Out of memory");
+            return;
+        }
+        pc5_buf_puts(&buf, "{\"text\":");
+        json_string(&buf, (const char *)text.data);
+        pc5_buf_puts(&buf, ",\"encoding\":");
+        json_string(&buf, doc.encoding == PC5_TEXT_UTF16LE ? "UTF-16" : doc.encoding == PC5_TEXT_LATIN1 ? "Western (one byte a letter)"
+                          : doc.bom ? "UTF-8 with its mark" : "UTF-8");
+        pc5_buf_printf(&buf, ",\"line_ends\":\"%s\",\"lines\":%d,\"size\":%llu}", doc.crlf ? "CRLF" : "LF", doc.count,
+                       (unsigned long long)st.st_size);
+        pc5_buf_free(&text);
+        pc5_textdoc_free(&doc);
+        respond_buf(c, &buf);
+        return;
+    }
+    if (strcmp(c->method, "PUT")) {
+        pc5_textdoc_free(&doc);
+        respond_text(c, 405, "GET or PUT");
+        return;
+    }
+    Pc5Buf body = { 0 };
+    if (read_small_body(c, (size_t)PC5_TEXTDOC_MAX * 2, &body)) {
+        pc5_buf_free(&body);
+        pc5_textdoc_free(&doc);
+        return;
+    }
+    int code = 200;
+    if (pc5_textdoc_replace(&doc, (const char *)body.data, body.len)) {
+        code = 400;
+        pc5_copy(why, sizeof(why), N_("It isn't UTF-8 text"));
+    } else if (pc5_textdoc_write(&doc, path, why, sizeof(why))) {
+        code = 500;
+    }
+    say("PC5 web edited %s/%s for %s bytes=%zu lines=%d%s%s", n == 4 ? "game" : "windows", relative, game->id, body.len, doc.count,
+        code == 200 ? "" : " failed: ", code == 200 ? "" : why);
+    pc5_buf_free(&body);
+    pc5_textdoc_free(&doc);
+    if (code == 200) respond_text(c, 200, "Saved");
+    else respond_why(c, code, why);
+}
+
 /* /api/games/<id>/<what>: log (GET), launch, env or debug (GET, PUT), steam_appid (PUT: the
- * game's Steam app id by hand, digits, or nothing to read the folder again). */
+ * game's Steam app id by hand, digits, or nothing to read the folder again), files (above). */
 static void api_game(Conn *c, const char *rest)
 {
     char id[PC5_ID], path[PC5_PATH];
@@ -622,6 +775,10 @@ static void api_game(Conn *c, const char *rest)
         int failed = !game.prefix[0] || pc5_identity_set_steam(web.root, game.prefix, (uint32_t)appid);
         say("PC5 web steam_appid for %s: %lu%s", id, appid, failed ? " failed" : "");
         respond_text(c, failed ? 500 : 200, failed ? "The console couldn't keep it" : "Saved");
+        return;
+    }
+    if (!strcmp(what, "files") || !strncmp(what, "files/", 6)) {
+        game_files(c, &game, what[5] ? what + 6 : "");
         return;
     }
     int launch = !strcmp(what, "launch"), debug = !strcmp(what, "debug");

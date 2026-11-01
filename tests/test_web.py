@@ -148,6 +148,46 @@ def main():
         status, body, _ = request(server.base, "api/games/%s/debug" % game["id"], "PUT", b"\n")
         assert status == 200 and not os.path.exists(debug), status
         checks += 3
+        # Files: the game's folder and its Windows; a text file read as UTF-8 and written back as it was.
+        files = "api/games/%s/files/" % urllib.parse.quote(game["id"])
+        top = [p for p in glob.glob(os.path.join(root, "prefixes", game["id"], "**", game["folder"]), recursive=True)
+               if os.path.isdir(p)][0]
+        with open(os.path.join(top, "settings.ini"), "wb") as f:
+            f.write(b"\xff\xfe" + "[Video]\r\nWidth=1280\r\n".encode("utf-16-le"))
+        with open(os.path.join(top, "old.cfg"), "wb") as f:
+            f.write(b"name=caf\xe9\n")
+        with open(os.path.join(top, "data.bin"), "wb") as f:
+            f.write(b"MZ\x90\x00\x03\x00\x00\x00")
+        os.symlink("/", os.path.join(top, "z"))
+        status, body, _ = request(server.base, files + "game")
+        listing = json.loads(body)
+        names = [e["name"] for e in listing["entries"]]
+        assert status == 200 and listing["max"] == 8 * 1024 * 1024 and "settings.ini" in names and "z" not in names, body
+        status, body, _ = request(server.base, files + "game/settings.ini")
+        doc = json.loads(body)
+        assert status == 200 and doc["text"] == "[Video]\nWidth=1280\n" and doc["encoding"] == "UTF-16" and doc["line_ends"] == "CRLF", doc
+        status, body, _ = request(server.base, files + "game/settings.ini", "PUT", b"[Video]\nWidth=1920\nHeight=1080\n")
+        assert status == 200 and open(os.path.join(top, "settings.ini"), "rb").read() == \
+            b"\xff\xfe" + "[Video]\r\nWidth=1920\r\nHeight=1080\r\n".encode("utf-16-le"), (status, body)
+        checks += 3
+        status, body, _ = request(server.base, files + "game/old.cfg")
+        assert status == 200 and json.loads(body)["text"] == "name=caf\u00e9\n", body
+        status, body, _ = request(server.base, files + "game/old.cfg", "PUT", "name=\u20ac\n".encode())
+        assert status == 400 and open(os.path.join(top, "old.cfg"), "rb").read() == b"name=caf\xe9\n", (status, body)
+        status, body, _ = request(server.base, files + "game/old.cfg", "PUT", "name=th\u00e9\n".encode())
+        assert status == 200 and open(os.path.join(top, "old.cfg"), "rb").read() == b"name=th\xe9\n", (status, body)
+        checks += 3
+        assert request(server.base, files + "game/data.bin")[0] == 415
+        assert request(server.base, files + "game/z/etc")[0] == 400
+        os.remove(os.path.join(top, "z"))   # nothing after this follows it to the whole machine
+        assert request(server.base, files + "game/new.txt", "PUT", b"x")[0] == 404
+        assert request(server.base, files + "game", "PUT", b"x")[0] == 405
+        assert request(server.base, files + "elsewhere")[0] == 404
+        assert raw(server.port, ("GET /%sgame/../../pc5/env.txt HTTP/1.1\r\nHost: x\r\n\r\n" % files).encode()) in (400, 404)
+        listed = [g for g in json.loads(request(server.base, "api/games")[1]) if g["id"] == game["id"]][0]
+        if listed["windows"]:
+            assert request(server.base, files + "windows")[0] == 200
+        checks += 4
         # Which game it is: a Steam app ID by hand, kept with source "you"; empty reads the folder again.
         status, body, _ = request(server.base, "api/games/%s/steam_appid" % game["id"], "PUT", b"1091500\n")
         identity = os.path.join(root, "prefixes", game["id"], "pc5", "identity.txt")

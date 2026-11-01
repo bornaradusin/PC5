@@ -19,6 +19,7 @@
 #include "pc5_settings.h"
 #include "pc5_sound.h"
 #include "pc5_steam.h"
+#include "pc5_textdoc.h"
 #include "pc5_source.h"
 #include "pc5_update.h"
 #include "pc5_upgrade.h"
@@ -69,7 +70,7 @@ typedef enum Screen {
     S_UPGRADE_ASK, S_UPGRADING, S_GAME_UPDATE_ASK, S_SAVES_ASK, S_SAVES_CONFIRM, S_PICTURE_SEARCH, S_PICTURE,
     S_PICTURE_TYPING, S_COMPATIBILITY, S_WEB_QR, S_GRAPHICS_API, S_REPORT_CHECK, S_REPORT_UPDATE, S_FILES, S_FILES_MENU,
     S_FILES_TYPING, S_FILES_CONFLICT, S_FILES_DELETE, S_FILES_WORKING, S_TILE_ART, S_INSTALL_ASK, S_SETTINGS_TYPING, S_INSTALL_WHERE,
-    S_PLAY_WHICH
+    S_PLAY_WHICH, S_FILES_EDIT, S_FILES_EDIT_MENU, S_FILES_EDIT_TYPING, S_FILES_EDIT_LEAVE
 } Screen;
 
 static const char *const screen_names[] = { "start", "covers", "library", "settings", "about", "scan", "sources",
@@ -81,7 +82,8 @@ static const char *const screen_names[] = { "start", "covers", "library", "setti
                                             "compatibility", "web-qr", "graphics-api", "report-check", "report-update", "files",
                                             "files-menu", "files-typing", "files-conflict", "files-delete",
                                             "files-working", "tile-art", "install-ask", "settings-typing", "install-where",
-                                            "play-which" };
+                                            "play-which", "files-edit", "files-edit-menu", "files-edit-typing",
+                                            "files-edit-leave" };
 
 /* One game of several being installed in a row. */
 typedef enum QueueState { Q_WAITING, Q_INSTALLED, Q_FAILED, Q_STOPPED, Q_SKIPPED } QueueState;
@@ -537,6 +539,12 @@ struct Pc5Ui {
     int files_typing;              /* S_FILES_TYPING: 0 Rename, 1 New folder */
     int files_conflicts;           /* S_FILES_CONFLICT: the names Paste finds there */
     Pc5FilesSize files_size;       /* S_FILES_DELETE: what it deletes */
+    /* A text file opened from the file manager, changed a line at a time (pc5_textdoc.h). */
+    Pc5TextDoc edit;
+    char edit_path[PC5_PATH];
+    int edit_read_only;            /* in a read-only place: shown, never changed */
+    int edit_at, edit_top;         /* the line chosen, and the first one shown */
+    int edit_typing;               /* S_FILES_EDIT_TYPING: 0 the line chosen, 1 a new one below it, 2 above it */
 
     uint8_t *falloff;              /* the glow's shape, 0-255 per pixel */
     uint32_t *backdrop;            /* the background without the glow */
@@ -726,6 +734,14 @@ static int covers_near(Pc5Ui *ui)
     return loaded;
 }
 
+/* Where Home's row of covers is scrolled to: the chosen game first, except towards the end, where
+ * it stops with the last three in view (all of them, with fewer) and the choice moves along them. */
+static float row_scroll(const Pc5Ui *ui)
+{
+    int last_start = ui->library.count > 3 ? ui->library.count - 3 : 0;
+    return (float)(ui->selected < last_start ? ui->selected : last_start);
+}
+
 /* ---- the library ------------------------------------------------------------------------ */
 
 static void library_reload(Pc5Ui *ui, const char *select_id)
@@ -743,7 +759,7 @@ static void library_reload(Pc5Ui *ui, const char *select_id)
         int found = pc5_library_find(&ui->library, keep);
         if (found >= 0) ui->selected = found;
     }
-    ui->scroll = (float)ui->selected;
+    ui->scroll = row_scroll(ui);
     for (int i = 0; i < ui->library.count; i++) {
         char path[PC5_PATH];
         ui->favourite[i] = ui->library.games[i].prefix[0] &&
@@ -965,6 +981,7 @@ void pc5_ui_destroy(Pc5Ui *ui)
     if (ui->files_busy) pc5_files_end(&ui->files_job);
     pc5_files_list_free(&ui->files);
     pc5_free(ui->files_ticked);
+    pc5_textdoc_free(&ui->edit);
     pc5_free(ui->clip.paths);
     pc5_free(ui->clip.list);
     pc5_fonts_free(&ui->fonts);
@@ -3346,8 +3363,10 @@ static void files_up(Pc5Ui *ui)
 }
 
 static void files_menu_open(Pc5Ui *ui);
+static int files_edit_open(Pc5Ui *ui, int quiet);
 
-/* ✕: a place or a folder opens; a file shows what can be done with it. */
+/* ✕: a place or a folder opens; a text file opens to be changed (Edit); another file shows what
+ * can be done with it. */
 static void files_enter(Pc5Ui *ui)
 {
     char next[PC5_PATH];
@@ -3362,7 +3381,7 @@ static void files_enter(Pc5Ui *ui)
     if (ui->files_at >= ui->files.count) return;
     const Pc5FileItem *item = &ui->files.items[ui->files_at];
     if (!item->dir) {
-        files_menu_open(ui);
+        if (files_edit_open(ui, 1)) files_menu_open(ui);   /* not text: what can be done with it */
         return;
     }
     if (files_join(next, sizeof(next), ui->files_path, item->name)) {
@@ -3375,8 +3394,8 @@ static void files_enter(Pc5Ui *ui)
 }
 
 /* What △ offers, as the folder and the items chosen allow. */
-typedef enum FilesAction { FA_COPY, FA_CUT, FA_PASTE, FA_RENAME, FA_NEW_FOLDER, FA_DELETE, FA_TICK_ALL } FilesAction;
-enum { FILES_ACTIONS = 7 };
+typedef enum FilesAction { FA_COPY, FA_CUT, FA_PASTE, FA_RENAME, FA_NEW_FOLDER, FA_DELETE, FA_TICK_ALL, FA_EDIT } FilesAction;
+enum { FILES_ACTIONS = 8 };
 
 static int files_actions(const Pc5Ui *ui, FilesAction rows[FILES_ACTIONS])
 {
@@ -3396,6 +3415,10 @@ static int files_actions(const Pc5Ui *ui, FilesAction rows[FILES_ACTIONS])
     if (write) rows[n++] = FA_NEW_FOLDER;
     if (targets && write && !locked) rows[n++] = FA_DELETE;
     if (ui->files.count) rows[n++] = FA_TICK_ALL;
+    /* one file, not ticked: Edit (View where nothing changes), as ✕ opens a text file */
+    if (!files_ticks(ui) && ui->files_at < ui->files.count && !ui->files.items[ui->files_at].dir &&
+        ui->files.items[ui->files_at].size <= PC5_TEXTDOC_MAX)
+        rows[n++] = FA_EDIT;
     return n;
 }
 
@@ -3573,6 +3596,192 @@ static void files_act(Pc5Ui *ui, FilesAction action)
         go(ui, S_FILES);
         break;
     }
+    case FA_EDIT:
+        files_edit_open(ui, 0);   /* not text: it says why */
+        break;
+    }
+}
+
+/* ---- Edit: a text file a line at a time --------------------------------------------------- */
+
+/* A line longer than this isn't changed with the console's keyboard (which holds 1024
+ * characters): the web page or FTP changes it. */
+enum { EDIT_LINE = 1000 };
+
+/* The file chosen, read to be changed (or only shown, in a read-only place). quiet: one that
+ * isn't text says nothing (✕ shows its actions instead). 0, or -1. */
+static int files_edit_open(Pc5Ui *ui, int quiet)
+{
+    char path[PC5_PATH], why[PC5_ERROR];
+    if (ui->files_at >= ui->files.count) return -1;
+    const Pc5FileItem *item = &ui->files.items[ui->files_at];
+    if (item->dir || files_join(path, sizeof(path), ui->files_path, item->name)) return -1;
+    if (quiet && item->size > PC5_TEXTDOC_MAX) return -1;
+    pc5_textdoc_free(&ui->edit);
+    if (pc5_textdoc_read(&ui->edit, path, why, sizeof(why))) {
+        say(ui, "PC5 files can't edit %s: %s", path, why);
+        if (!quiet) message(ui, 0, T("PC5 can't open it as text"), why, S_FILES);
+        return -1;
+    }
+    pc5_copy(ui->edit_path, sizeof(ui->edit_path), path);
+    ui->edit_read_only = !files_writable(ui, ui->files_path);
+    ui->edit_at = ui->edit_top = 0;
+    say(ui, "PC5 files edit %s lines=%d encoding=%d bom=%d crlf=%d read_only=%d", path, ui->edit.count,
+        (int)ui->edit.encoding, ui->edit.bom, ui->edit.crlf, ui->edit_read_only);
+    go(ui, S_FILES_EDIT);
+    return 0;
+}
+
+static void files_edit_close(Pc5Ui *ui)
+{
+    const char *slash = strrchr(ui->edit_path, '/');
+    char name[PC5_FILES_NAME];
+    pc5_copy(name, sizeof(name), slash ? slash + 1 : ui->edit_path);
+    say(ui, "PC5 files edit closed %s changed=%d", ui->edit_path, ui->edit.changed);
+    pc5_textdoc_free(&ui->edit);
+    ui->edit_path[0] = 0;
+    files_load(ui, name);   /* its size as it is now */
+    go(ui, S_FILES);
+}
+
+/* Written back as it was found (encoding, line ends). 0, or -1 having said why. */
+static int files_edit_save(Pc5Ui *ui)
+{
+    char why[PC5_ERROR];
+    if (pc5_textdoc_write(&ui->edit, ui->edit_path, why, sizeof(why))) {
+        say(ui, "PC5 problem files edit save %s: %s", ui->edit_path, why);
+        message(ui, 0, T("PC5 couldn't save it"), why, S_FILES_EDIT);
+        return -1;
+    }
+    say(ui, "PC5 files edit saved %s lines=%d", ui->edit_path, ui->edit.count);
+    ui->edit.changed = 0;
+    ui->files_changed = 1;
+    return 0;
+}
+
+/* The keyboard for the line chosen (typing 0), or for a new line below (1) or above it (2). */
+static void files_edit_type(Pc5Ui *ui, int typing)
+{
+    char start[EDIT_LINE + 8] = "", title[64];
+    size_t len = 0;
+    if (typing == 0) {
+        pc5_textdoc_line(&ui->edit, ui->edit_at, &len);
+        if (len > EDIT_LINE) {
+            message(ui, 0, T("This line is too long to change here"),
+                    T("The console's keyboard holds about 1000 characters. Change it from PC5's web page, or a computer over FTP."),
+                    S_FILES_EDIT);
+            return;
+        }
+        pc5_textdoc_copy_line(&ui->edit, ui->edit_at, start, sizeof(start));
+        pc5_tf(title, sizeof(title), "Line %d", ui->edit_at + 1);
+    } else {
+        pc5_copy(title, sizeof(title), T("New line"));
+    }
+    ui->edit_typing = typing;
+    int rc = ui->platform.keyboard_open ? ui->platform.keyboard_open(ui->platform.context, title, start) : -1;
+    say(ui, "PC5 keyboard open rc=%d", rc);
+    if (rc >= 0) go(ui, S_FILES_EDIT_TYPING);
+    else message(ui, 0, T("The keyboard didn't open"), T("The console's on-screen keyboard can't be used just now."), S_FILES_EDIT);
+}
+
+/* What △ offers on a line. */
+typedef enum EditAction { EA_ADD_BELOW, EA_ADD_ABOVE, EA_DELETE, EA_SAVE } EditAction;
+enum { EDIT_ACTIONS = 4 };
+
+static int files_edit_actions(const Pc5Ui *ui, EditAction rows[EDIT_ACTIONS])
+{
+    int n = 0;
+    if (ui->edit_read_only) return 0;
+    rows[n++] = EA_ADD_BELOW;
+    if (ui->edit.count) rows[n++] = EA_ADD_ABOVE;
+    if (ui->edit.count) rows[n++] = EA_DELETE;
+    if (ui->edit.changed) rows[n++] = EA_SAVE;
+    return n;
+}
+
+static void files_edit_act(Pc5Ui *ui, EditAction action)
+{
+    switch (action) {
+    case EA_ADD_BELOW: files_edit_type(ui, 1); break;
+    case EA_ADD_ABOVE: files_edit_type(ui, 2); break;
+    case EA_DELETE:
+        if (pc5_textdoc_delete(&ui->edit, ui->edit_at)) say(ui, "PC5 problem files edit delete line %d", ui->edit_at + 1);
+        if (ui->edit_at >= ui->edit.count) ui->edit_at = ui->edit.count ? ui->edit.count - 1 : 0;
+        go(ui, S_FILES_EDIT);
+        break;
+    case EA_SAVE:
+        if (!files_edit_save(ui)) go(ui, S_FILES_EDIT);
+        break;
+    }
+}
+
+static void files_edit_update(Pc5Ui *ui, uint32_t k)
+{
+    const uint32_t accept = PC5_KEY_ACCEPT, back = PC5_KEY_BACK;
+    switch (ui->screen) {
+    case S_FILES_EDIT: {
+        int count = ui->edit.count, before = ui->edit_at;
+        list_move(&ui->edit_at, count, k);
+        if ((k & PC5_KEY_L1) && count) ui->edit_at = ui->edit_at > 10 ? ui->edit_at - 10 : 0;
+        if ((k & PC5_KEY_R1) && count) ui->edit_at = ui->edit_at + 10 < count ? ui->edit_at + 10 : count - 1;
+        if (ui->edit_at != before) ui->dirty = 1;
+        if (k & back) {
+            if (ui->edit.changed) {
+                ui->button = 0;   /* Keep changing first */
+                go(ui, S_FILES_EDIT_LEAVE);
+            } else {
+                files_edit_close(ui);
+            }
+        } else if ((k & accept) && !ui->edit_read_only) {
+            files_edit_type(ui, count ? 0 : 1);   /* an empty file: its first line */
+        } else if ((k & PC5_KEY_TRIANGLE) && !ui->edit_read_only) {
+            ui->menu = 0;
+            go(ui, S_FILES_EDIT_MENU);
+        }
+        break;
+    }
+    case S_FILES_EDIT_MENU: {
+        EditAction rows[EDIT_ACTIONS];
+        int count = files_edit_actions(ui, rows);
+        if (!count) { go(ui, S_FILES_EDIT); break; }
+        if (ui->menu >= count) ui->menu = count - 1;
+        if (list_move(&ui->menu, count, k)) ui->dirty = 1;
+        if (k & (back | PC5_KEY_TRIANGLE)) go(ui, S_FILES_EDIT);
+        else if (k & accept) files_edit_act(ui, rows[ui->menu]);
+        break;
+    }
+    case S_FILES_EDIT_TYPING: {
+        int state = ui->platform.keyboard_state ? ui->platform.keyboard_state(ui->platform.context) : -1;
+        if (state == 1) break;   /* still up */
+        char typed[4 * 1024 + 64] = "";
+        int rc = ui->platform.keyboard_close ? ui->platform.keyboard_close(ui->platform.context, typed, sizeof(typed)) : -1, failed = 0;
+        say(ui, "PC5 keyboard closed rc=%d typed=%zu", rc, strlen(typed));
+        if (rc == 1) {
+            if (ui->edit_typing == 0) {
+                failed = pc5_textdoc_set(&ui->edit, ui->edit_at, typed);
+            } else {
+                int at = !ui->edit.count ? 0 : ui->edit_typing == 1 ? ui->edit_at + 1 : ui->edit_at;
+                failed = pc5_textdoc_insert(&ui->edit, at, typed);
+                if (!failed) ui->edit_at = at;
+            }
+            if (failed) say(ui, "PC5 problem files edit: the line typed wasn't taken");
+        }
+        go(ui, S_FILES_EDIT);   /* cancelled: as it was */
+        break;
+    }
+    case S_FILES_EDIT_LEAVE:
+        /* Cancel (back to the file), Save, Don't save */
+        if ((k & PC5_KEY_LEFT) && ui->button > 0) { ui->button--; ui->dirty = 1; }
+        if ((k & PC5_KEY_RIGHT) && ui->button < 2) { ui->button++; ui->dirty = 1; }
+        if (k & back) go(ui, S_FILES_EDIT);
+        else if ((k & accept) && ui->now - ui->entered > 300) {
+            if (ui->button == 0) go(ui, S_FILES_EDIT);
+            else if (ui->button == 1) { if (!files_edit_save(ui)) files_edit_close(ui); }
+            else files_edit_close(ui);
+        }
+        break;
+    default:
+        break;
     }
 }
 
@@ -4785,6 +4994,12 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
     case S_FILES_WORKING:
         files_update(ui, k);
         break;
+    case S_FILES_EDIT:
+    case S_FILES_EDIT_MENU:
+    case S_FILES_EDIT_TYPING:
+    case S_FILES_EDIT_LEAVE:
+        files_edit_update(ui, k);
+        break;
     case S_INSTALL_ASK:
         /* Later, Install */
         if (k & (PC5_KEY_LEFT | PC5_KEY_RIGHT)) { ui->button = !ui->button; ui->dirty = 1; }
@@ -4987,7 +5202,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             }
     }
     if (ui->library.count) {
-        float target = (float)ui->selected, gap = target - ui->scroll;
+        float target = row_scroll(ui), gap = target - ui->scroll;
         if (fabsf(gap) > 0.001f) {
             ui->scroll += gap * (1 - expf(-dt * 13));
             if (fabsf(target - ui->scroll) < 0.002f) ui->scroll = target;
@@ -5514,14 +5729,15 @@ static void hero(Pc5Ui *ui, Pc5Canvas *c)
     if (game->usb) pill(ui, c, x, y, 42, T("USB drive"), -1);
 }
 
-/* The covers along the bottom of Home, the chosen one first, and dots for where it is. */
+/* The covers along the bottom of Home, the chosen one first (towards the end, the last three stay
+ * in view and the chosen one moves along them), and dots for where it is. */
 static void cover_row(Pc5Ui *ui, Pc5Canvas *c)
 {
     float step = COVER_W + COVER_GAP, extra = CHOSEN_W - COVER_W;
     int first = (int)floorf(ui->scroll) - 1, last = (int)ceilf(ui->scroll) + 10;
     for (int i = first; i <= last; i++) {
         if (i < 0 || i >= ui->library.count || i == ui->selected) continue;
-        float d = (float)i - ui->scroll, x = MARGIN + d * step + (d > 0 ? extra : 0);
+        float d = (float)i - ui->scroll, x = MARGIN + d * step + (i > ui->selected ? extra : 0);
         if (x > W || x + COVER_W < 0) continue;
         cover_at(ui, c, i, x, ROW_TOP, COVER_W, COVER_H, 0);
     }
@@ -6904,6 +7120,15 @@ static void files_action_text(const Pc5Ui *ui, FilesAction action, const char **
         *label = files_ticks(ui) == ui->files.count ? T("Untick all") : T("Tick all");
         pc5_copy(about, size, T("Every item in this folder"));
         break;
+    case FA_EDIT:
+        if (files_writable(ui, ui->files_path)) {
+            *label = T("Edit");
+            pc5_copy(about, size, T("A text file (.ini, .cfg, .txt and the like), changed a line at a time"));
+        } else {
+            *label = T("View");
+            pc5_copy(about, size, T("A text file, shown: nothing here can be changed"));
+        }
+        break;
     }
 }
 
@@ -6918,15 +7143,92 @@ static void files_menu_screen(Pc5Ui *ui, Pc5Canvas *c)
     else if (ui->files_at < ui->files.count) pc5_copy(title, sizeof(title), ui->files.items[ui->files_at].name);
     else pc5_copy(title, sizeof(title), T("This folder"));
     float x = drawer(ui, c, title);
-    pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 64, 182, C_DIM,
+    /* where, in small letters under the drawer's title */
+    pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 64, 210, C_DIM,
              files_writable(ui, ui->files_path) ? ui->files_path : T("Read-only: PC5 changes nothing here"), 760 - 128, 0);
     if (ui->menu < count) files_action_text(ui, rows[ui->menu], &label, about, sizeof(about), value, sizeof(value));
     else about[0] = 0;
-    float pitch = rows_pitch(ui, 226, count, about, &extra);
+    float pitch = rows_pitch(ui, 240, count, about, &extra);
     for (int i = 0; i < count; i++) {
         files_action_text(ui, rows[i], &label, about, sizeof(about), value, sizeof(value));
-        drawer_row(ui, c, x, 226 + pitch * i + (i > ui->menu ? extra : 0), pitch + (i == ui->menu ? extra : 0), i == ui->menu,
+        drawer_row(ui, c, x, 240 + pitch * i + (i > ui->menu ? extra : 0), pitch + (i == ui->menu ? extra : 0), i == ui->menu,
                    label, about, value);
+    }
+    Hint list[] = { { accept_glyph(ui), T("Choose") }, { back_glyph(ui), T("Back") } };
+    hints(ui, c, (int)x + 64, 1012, list, 2);
+}
+
+/* A line of the file being changed: its number, then as much of it as fits. */
+static void edit_row(Pc5Ui *ui, Pc5Canvas *c, int i, float x, float y, float w, int chosen)
+{
+    char number[16], text[600];
+    size_t len, n = 0;
+    const char *line = pc5_textdoc_line(&ui->edit, i, &len);
+    (void)chosen;
+    for (size_t at = 0; at < len && n + 1 < sizeof(text); at++) {
+        unsigned char b = (unsigned char)line[at];
+        if (b >= 0x80 && n + 4 >= sizeof(text)) break;   /* not half a character */
+        text[n++] = b < 0x20 ? ' ' : (char)b;            /* a tab as a space */
+    }
+    while (n && n < len && ((unsigned char)text[n] & 0xc0) == 0x80) n--;
+    text[n] = 0;
+    snprintf(number, sizeof(number), "%d", i + 1);
+    pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 72, (int)y + 34, C_FAINT, number, 0, 2);
+    pc5_text(c, &ui->fonts, PC5_FACE_BODY, (int)x + 96, (int)y + 34, C_TEXT, text, (int)w - 96, 0);
+}
+
+static void files_edit_screen(Pc5Ui *ui, Pc5Canvas *c)
+{
+    char title[PC5_FILES_NAME + 120];
+    const char *slash = strrchr(ui->edit_path, '/');
+    int keep = ui->menu;
+    pc5_copy(title, sizeof(title) - 40, slash ? slash + 1 : ui->edit_path);
+    if (ui->edit_read_only) pc5_format(title + strlen(title), sizeof(title) - strlen(title), "%s", T(" \xc2\xb7 read-only"));
+    else if (ui->edit.changed) pc5_format(title + strlen(title), sizeof(title) - strlen(title), "%s", T(" \xc2\xb7 not saved"));
+    Hint shown[] = { { G_L1R1, T("Page") }, { back_glyph(ui), T("Back") } };
+    Hint list[] = { { accept_glyph(ui), ui->edit.count ? T("Change") : T("Add a line") }, { G_TRIANGLE, T("Actions") },
+                    { G_L1R1, T("Page") }, { back_glyph(ui), T("Back") } };
+    ui->menu = ui->edit_at;
+    ui->list_top = ui->edit_top;
+    list_panel(ui, c, title, ui->edit.count, edit_row, T("This file is empty"),
+               ui->edit_read_only ? T("There's nothing in it.") : T("\xe2\x9c\x95 puts a first line in it."),
+               ui->edit_read_only ? shown : list, ui->edit_read_only ? 2 : 4, 56);
+    ui->edit_top = ui->list_top;
+    ui->menu = keep;
+}
+
+static void edit_action_text(const Pc5Ui *ui, EditAction action, const char **label, const char **about)
+{
+    switch (action) {
+    case EA_ADD_BELOW: *label = T("Add a line below"); *about = T("Typed with the keyboard, under the line chosen"); break;
+    case EA_ADD_ABOVE: *label = T("Add a line above"); *about = T("Typed with the keyboard, over the line chosen"); break;
+    case EA_DELETE: *label = T("Delete line"); *about = T("The line chosen goes; nothing is saved until Save"); break;
+    case EA_SAVE:
+        *label = T("Save");
+        *about = ui->edit.encoding == PC5_TEXT_UTF16LE ? T("Written back as it was: UTF-16, with its line ends")
+                 : ui->edit.encoding == PC5_TEXT_LATIN1 ? T("Written back as it was: one byte a letter, with its line ends")
+                                                         : T("Written back as it was: UTF-8, with its line ends");
+        break;
+    }
+}
+
+static void files_edit_menu_screen(Pc5Ui *ui, Pc5Canvas *c)
+{
+    EditAction rows[EDIT_ACTIONS];
+    int count = files_edit_actions(ui, rows);
+    char title[64];
+    const char *label = "", *about = "";
+    float extra;
+    if (ui->edit.count) pc5_tf(title, sizeof(title), "Line %d", ui->edit_at + 1);
+    else pc5_copy(title, sizeof(title), T("This file"));
+    float x = drawer(ui, c, title);
+    pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 64, 210, C_DIM, ui->edit_path, 760 - 128, 0);
+    if (ui->menu < count) edit_action_text(ui, rows[ui->menu], &label, &about);
+    float pitch = rows_pitch(ui, 240, count, about, &extra);
+    for (int i = 0; i < count; i++) {
+        edit_action_text(ui, rows[i], &label, &about);
+        drawer_row(ui, c, x, 240 + pitch * i + (i > ui->menu ? extra : 0), pitch + (i == ui->menu ? extra : 0), i == ui->menu,
+                   label, about, "");
     }
     Hint list[] = { { accept_glyph(ui), T("Choose") }, { back_glyph(ui), T("Back") } };
     hints(ui, c, (int)x + 64, 1012, list, 2);
@@ -6966,6 +7268,18 @@ static void files_working_screen(Pc5Ui *ui, Pc5Canvas *c)
 static void files_draw(Pc5Ui *ui, Pc5Canvas *c)
 {
     char title[PC5_FILES_NAME + 128], body[800], size[32], files[64], folders[64];
+    if (ui->screen == S_FILES_EDIT || ui->screen == S_FILES_EDIT_MENU || ui->screen == S_FILES_EDIT_TYPING ||
+        ui->screen == S_FILES_EDIT_LEAVE) {
+        const char *slash = strrchr(ui->edit_path, '/');
+        files_edit_screen(ui, c);
+        if (ui->screen == S_FILES_EDIT_MENU) files_edit_menu_screen(ui, c);
+        if (ui->screen == S_FILES_EDIT_LEAVE) {
+            pc5_tf(title, sizeof(title), "Save the changes to %.200s?", slash ? slash + 1 : ui->edit_path);
+            confirm3_dialog(ui, c, title, T("Don't save leaves the file as it was before."), T("Cancel"), T("Save"),
+                            T("Don't save"), NULL);
+        }
+        return;
+    }
     files_list_screen(ui, c);
     switch (ui->screen) {
     case S_FILES_MENU: files_menu_screen(ui, c); break;
@@ -7279,6 +7593,10 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
     case S_FILES_CONFLICT:
     case S_FILES_DELETE:
     case S_FILES_WORKING:
+    case S_FILES_EDIT:
+    case S_FILES_EDIT_MENU:
+    case S_FILES_EDIT_TYPING:
+    case S_FILES_EDIT_LEAVE:
         files_draw(ui, c);
         break;
     case S_INSTALL_ASK: {

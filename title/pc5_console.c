@@ -290,12 +290,13 @@ static void sound_try(void *context, const char *name, int volume)
     sound_play(name, volume);
 }
 
-/* The console's on-screen keyboard over the screens (pc5_game_ps5.c), for a name to search for:
- * its text and title in UTF-16, kept while it is up. */
+/* The console's on-screen keyboard over the screens (pc5_game_ps5.c), for a name to search for
+ * or a line of a text file (the file manager's Edit, up to about 1000 characters): its text and
+ * title in UTF-16, kept while it is up. */
 int pc5_screens_keyboard_open(uint16_t *buffer, uint32_t capacity, const uint16_t *title);
 int pc5_screens_keyboard_state(void);
 int pc5_screens_keyboard_close(void);
-static uint16_t keyboard_text[PC5_NAME], keyboard_title[96];
+static uint16_t keyboard_text[1024], keyboard_title[96];
 
 static int keyboard_open(void *context, const char *title, const char *text)
 {

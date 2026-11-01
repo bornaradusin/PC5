@@ -10,6 +10,7 @@
 #include "pc5_backgrounds.h"
 #include "pc5_cover.h"
 #include "pc5_files.h"
+#include "pc5_textdoc.h"
 #include "pc5_ftp.h"
 void pc5_ftp_host_init(void);   /* tests/pc5_ftp_host.c */
 void pc5_web_host_init(void);   /* the same */
@@ -5791,22 +5792,30 @@ static void test_game(const char *fonts_path)
         CHECK(!pad_seen.cursors, "off");
         game.settings.fps = 1;
     }
-    /* The loading screen: a frame every 50 ms, green code and the name. */
+    /* The loading screen: a frame every 33 ms, the picture, "LAUNCHING GAME" and the bar filling; no name. */
     const uint32_t *frame = NULL;
-    for (uint64_t t = 0; t < 2000; t += 50) {
+    for (uint64_t t = 0; t < 2000; t += 33) {
         const uint32_t *next = pc5_game_loading(&game, 20000 + t);
         if (next) frame = next;
     }
     CHECK(frame != NULL && !game.matrix_failed, "loading frames");
     if (frame) {
-        int green = 0, bright_text = 0;
+        int blue = 0, words = 0, name = 0;
         for (int i = 0; i < PC5_MATRIX_WIDTH * PC5_MATRIX_HEIGHT; i++) {
-            uint32_t p = frame[i], r = (p >> 16) & 255, g = (p >> 8) & 255, b = p & 255;
-            green += g > 60 && g > r * 2 && g > b;
+            uint32_t p = frame[i], r = (p >> 16) & 255, b = p & 255;
+            blue += b > 120 && b > r * 2;
         }
-        for (int y = 330; y < 380; y++)
-            for (int x = 400; x < 880; x++) bright_text += (frame[y * PC5_MATRIX_WIDTH + x] & 0xff) > 200;
-        CHECK(green > 5000 && bright_text > 200, "green rain %d, the name %d", green, bright_text);
+        for (int y = 588; y < 612; y++)
+            for (int x = 440; x < 840; x++) words += (frame[y * PC5_MATRIX_WIDTH + x] >> 8 & 0xff) > 170;
+        for (int y = 330; y < 380; y++)   /* where the matrix put the game's name: the picture's computer now */
+            for (int x = 400; x < 880; x++) {
+                uint32_t p = frame[y * PC5_MATRIX_WIDTH + x];
+                name += (p >> 16 & 255) > 200 && (p >> 8 & 255) > 200 && (p & 255) > 200;
+            }
+        uint32_t bar = frame[633 * PC5_MATRIX_WIDTH + 520], track = frame[633 * PC5_MATRIX_WIDTH + 760];
+        CHECK(blue > 20000 && words > 100 && name < 50, "the picture %d, the words %d, no name %d", blue, words, name);
+        CHECK((bar & 0xff) > 180 && (track & 0xff) < 140, "the bar filled at its start (%06x), not at its end (%06x)",
+              (unsigned)(bar & 0xffffff), (unsigned)(track & 0xffffff));
     }
     pc5_game_loading_done(&game);
     CHECK(pc5_game_loading(&game, 40000) == NULL, "none after the first picture");
@@ -7412,6 +7421,68 @@ static void test_files(void)
     }
 }
 
+/* A text file for Edit (pc5_textdoc.c): its lines, and written back as it was found. */
+static int textdoc_is(const Pc5TextDoc *doc, const void *want, size_t size)
+{
+    Pc5Buf out = { 0 };
+    char why[PC5_ERROR];
+    int same = !pc5_textdoc_encode(doc, &out, why, sizeof(why)) && out.len == size && (!size || !memcmp(out.data, want, size));
+    pc5_buf_free(&out);
+    return same;
+}
+
+static void test_textdoc(void)
+{
+    Pc5TextDoc d;
+    char why[PC5_ERROR], line[64];
+    CHECK(!pc5_textdoc_parse(&d, (const uint8_t *)"a=1\r\nb=2\r\n", 10, why, sizeof(why)) && d.count == 2 && d.crlf &&
+          d.final_newline && d.encoding == PC5_TEXT_UTF8 && !d.bom, "an .ini with \\r\\n: two lines");
+    CHECK(!pc5_textdoc_copy_line(&d, 1, line, sizeof(line)) && !strcmp(line, "b=2"), "its second line: %s", line);
+    CHECK(!pc5_textdoc_set(&d, 0, "a=5") && !pc5_textdoc_insert(&d, 2, "c=3") && textdoc_is(&d, "a=5\r\nb=2\r\nc=3\r\n", 15) &&
+          d.changed, "changed and added: written with its \\r\\n");
+    CHECK(!pc5_textdoc_delete(&d, 1) && !pc5_textdoc_insert(&d, 0, "[s]") && textdoc_is(&d, "[s]\r\na=5\r\nc=3\r\n", 15),
+          "a line deleted, one put first");
+    CHECK(!pc5_textdoc_delete(&d, 2) && !pc5_textdoc_delete(&d, 1) && !pc5_textdoc_delete(&d, 0) && !d.count &&
+          textdoc_is(&d, "", 0), "every line deleted: an empty file");
+    CHECK(!pc5_textdoc_insert(&d, 0, "x") && !pc5_textdoc_set(&d, 0, "y\nz") && d.count == 2 && textdoc_is(&d, "y\r\nz\r\n", 6),
+          "a line typed with a line end in it is two");
+    pc5_textdoc_free(&d);
+    CHECK(!pc5_textdoc_parse(&d, (const uint8_t *)"one\ntwo", 7, why, sizeof(why)) && d.count == 2 && !d.crlf && !d.final_newline &&
+          textdoc_is(&d, "one\ntwo", 7), "\\n and no line end after the last: kept so");
+    Pc5Buf joined = { 0 };
+    CHECK(!pc5_textdoc_replace(&d, "a\r\nb\r\n", 6) && d.final_newline && textdoc_is(&d, "a\nb\n", 4) &&
+          !pc5_textdoc_join(&d, &joined) && !strcmp((const char *)joined.data, "a\nb\n"), "all of it from a browser's box");
+    pc5_buf_free(&joined);
+    pc5_textdoc_free(&d);
+    CHECK(!pc5_textdoc_parse(&d, (const uint8_t *)"\xef\xbb\xbfh\xc3\xa9", 6, why, sizeof(why)) && d.bom &&
+          textdoc_is(&d, "\xef\xbb\xbfh\xc3\xa9", 6), "UTF-8's mark kept");
+    pc5_textdoc_free(&d);
+    static const uint8_t u16[] = { 0xff, 0xfe, 'A', 0, '=', 0, 0xe9, 0, '\r', 0, '\n', 0, 0x3d, 0xd8, 0x00, 0xde };
+    CHECK(!pc5_textdoc_parse(&d, u16, sizeof(u16), why, sizeof(why)) && d.encoding == PC5_TEXT_UTF16LE && d.count == 2 &&
+          !pc5_textdoc_copy_line(&d, 0, line, sizeof(line)) && !strcmp(line, "A=\xc3\xa9") && textdoc_is(&d, u16, sizeof(u16)),
+          "UTF-16 with its mark, a character past U+FFFF: as it was");
+    pc5_textdoc_free(&d);
+    static const uint8_t bare[] = { '[', 0, 'x', 0, ']', 0, '\n', 0, 'a', 0, '=', 0, '1', 0, '\n', 0 };
+    CHECK(!pc5_textdoc_parse(&d, bare, sizeof(bare), why, sizeof(why)) && d.encoding == PC5_TEXT_UTF16LE && !d.bom &&
+          d.count == 2 && textdoc_is(&d, bare, sizeof(bare)), "UTF-16 without its mark");
+    pc5_textdoc_free(&d);
+    CHECK(!pc5_textdoc_parse(&d, (const uint8_t *)"caf\xe9\n", 5, why, sizeof(why)) && d.encoding == PC5_TEXT_LATIN1 &&
+          !pc5_textdoc_copy_line(&d, 0, line, sizeof(line)) && !strcmp(line, "caf\xc3\xa9") && textdoc_is(&d, "caf\xe9\n", 5),
+          "not UTF-8: a byte a letter, written back so");
+    Pc5Buf out = { 0 };
+    CHECK(!pc5_textdoc_set(&d, 0, "\xe2\x82\xac") && pc5_textdoc_encode(&d, &out, why, sizeof(why)) && strstr(why, "\xe2\x82\xac"),
+          "a letter it can't hold: said which");
+    pc5_buf_free(&out);
+    pc5_textdoc_free(&d);
+    CHECK(pc5_textdoc_parse(&d, (const uint8_t *)"MZ\x90\0\3\0\0\0", 8, why, sizeof(why)) &&
+          pc5_textdoc_parse(&d, (const uint8_t *)"\xfe\xff\0a", 4, why, sizeof(why)), "a program and UTF-16 big-endian: not opened");
+    CHECK(!pc5_textdoc_parse(&d, (const uint8_t *)"a\n", 2, why, sizeof(why)) && pc5_textdoc_set(&d, 0, "\xff") &&
+          pc5_textdoc_replace(&d, "a\0b", 3), "text that isn't UTF-8 isn't taken");
+    CHECK(!pc5_textdoc_set(&d, 0, "0123456789\xc3\xa9") && pc5_textdoc_copy_line(&d, 0, line, 12) && !strcmp(line, "0123456789"),
+          "a line cut to fit, never inside a letter");
+    pc5_textdoc_free(&d);
+}
+
 /* The file manager's screens: Settings › File manager's places, a folder, ticking, Copy and
  * Paste (with a name taken: Keep both), Rename, New folder, Delete, Cut and Paste, a read-only
  * place, Stop; and a game's own folder from its menu. */
@@ -7519,6 +7590,37 @@ static void test_files_screens(const char *fonts)
     path(file, sizeof(file), "%s/readme.txt", ext0);
     CHECK(!pc5_exists(file) && !strcmp(pc5_ui_screen(ui), "files"), "the old name is gone: %s", pc5_ui_screen(ui));
 
+    /* Edit notes.txt ("hello", chosen after Rename): ✕ opens it, ✕ changes its line, △ Add a
+     * line below; Back asks, Save writes it as it was (no line end after the last) */
+    press(ui, PC5_KEY_ACCEPT, &canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "files-edit"), "a text file opens to be changed: %s", pc5_ui_screen(ui));
+    pc5_ui_draw(ui, &canvas);
+    save_shot(&canvas, "files-edit");
+    console.typed = "hello there";
+    press(ui, PC5_KEY_ACCEPT, &canvas);
+    frames(ui, 0, 0, 3, &canvas);
+    CHECK(!strcmp(console.keyboard_title, "Line 1") && !strcmp(console.keyboard_start, "hello") &&
+          !strcmp(pc5_ui_screen(ui), "files-edit"), "its line in the keyboard: %s %s", console.keyboard_title, console.keyboard_start);
+    press(ui, PC5_KEY_TRIANGLE, &canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "files-edit-menu"), "Triangle: Add a line, Delete line, Save: %s", pc5_ui_screen(ui));
+    pc5_ui_draw(ui, &canvas);
+    save_shot(&canvas, "files-edit-menu");
+    console.typed = "second";
+    press(ui, PC5_KEY_ACCEPT, &canvas);      /* Add a line below */
+    frames(ui, 0, 0, 3, &canvas);
+    CHECK(!strcmp(console.keyboard_title, "New line"), "a new line typed: %s", console.keyboard_title);
+    path(file, sizeof(file), "%s/notes.txt", ext0);
+    CHECK(read_is(file, "hello"), "nothing written before Save");
+    press(ui, PC5_KEY_BACK, &canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "files-edit-leave"), "Back with changes asks: %s", pc5_ui_screen(ui));
+    pc5_ui_draw(ui, &canvas);
+    save_shot(&canvas, "files-edit-leave");
+    press(ui, PC5_KEY_RIGHT, &canvas);       /* Save */
+    files_wait(ui, &canvas);
+    press(ui, PC5_KEY_ACCEPT, &canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "files") && read_is(file, "hello there\nsecond"), "saved: %s", pc5_ui_screen(ui));
+    console.typed = NULL;
+
     /* New folder, then a name exFAT refuses */
     press(ui, PC5_KEY_TRIANGLE, &canvas);
     for (int i = 0; i < 4; i++) press(ui, PC5_KEY_DOWN, &canvas);   /* ... Rename, New folder */
@@ -7574,7 +7676,7 @@ static void test_files_screens(const char *fonts)
     press(ui, PC5_KEY_ACCEPT, &canvas);
     until_not(ui, "files-working", &canvas);
     path(file, sizeof(file), "%s/notes.txt", usb0);
-    CHECK(read_is(file, "hello"), "moved here");
+    CHECK(read_is(file, "hello there\nsecond"), "moved here");
     path(file, sizeof(file), "%s/notes.txt", ext0);
     CHECK(!pc5_exists(file), "and gone from there");
 
@@ -8680,6 +8782,7 @@ int main(int argc, char **argv)
     test_report(fonts);
     test_upgrade_screens(fonts);
     test_background_screen(fonts);
+    test_textdoc();
     test_files_screens(fonts);
     test_install_folder_screens(fonts);
     test_language(fonts);
