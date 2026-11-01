@@ -25,21 +25,19 @@ places.
   issue written by hand, before the form, games-by-issue.txt beside this script names it, or
   a report names it.
 
-A game both a report and an issue name (game_key: the same name but for case, punctuation, a
-leading "The" and Roman numerals; editions stay apart) is listed by what was said last. While
-any of its issues is open, the issue's row ("being looked at") is the game's only row: a report
-posted then is turned away (one comment, and closed), and one posted before waits. Once its
-issues are closed, the newest one's state is the game's row, unless a report was posted after
-it closed: then the reports posted since are its rows, with the issue named beside them (a fixed
-one not at all). An open issue whose game an earlier report lists as running gets one comment
-with what that report says (its settings may help).
+A game has one row (game_key: the same name but for case, punctuation, a leading "The" and
+Roman numerals; editions stay apart): the best of everything said about it, reports and issues
+alike, in SHOWN's order (works perfectly first), the newest of equals. A game that runs for
+someone can run, given the right copy or version, so a report that it works stands over an
+issue that it doesn't, and the row names the game's other reports and issues beside it. An open
+issue whose game an earlier report lists as running gets one comment with what that report says
+(its settings may help).
 
 The repository owner can add to an issue's row: a comment of theirs on the issue with a line
 "List notes: ..." gives its Notes, "List settings: ..." its Settings that helped, "List version:
 ..." its PC5 version (the one that fixed it, say), the newest such line winning. That works on a
 closed issue too. Without one, an issue closed as fixed or playable shows the newest PC5 published
-when it was closed. A game reported more than once has one row, its newest report's, naming the
-earlier ones.
+when it was closed.
 
 A report that a game doesn't run, made before issues were the way (the form no longer offers
 it), names its game's issue: without one it gets one comment saying so and is closed. The
@@ -90,10 +88,9 @@ MARK = "<!-- pc5-compatibility: needs an issue -->"   # the Action's comment, so
 UNKNOWN = {}   # an issue that couldn't be looked up: the report waits for the next run
 LISTED = "<!-- pc5-compatibility: listed -->"   # the Action's comment once a report is in the list
 LISTED_ALREADY = "<!-- pc5-compatibility: listed already -->"   # its comment on an issue whose game a report lists
-TURNED_AWAY = "<!-- pc5-compatibility: issue open -->"   # its comment on a report posted while the game's issue is open
 OWNER_LINE = re.compile(r"^\s*(?:\*\*)?List (notes|settings|version):(?:\*\*)?\s*(.+?)\s*$", re.I | re.M)
 NUMERALS = {"ii": "2", "iii": "3", "iv": "4", "v": "5", "vi": "6", "vii": "7", "viii": "8", "ix": "9"}
-ISSUE_STATE = {"🔍 Being looked at": "open", FIX_READY: "fix out, needs testing", "🧪 Needs testing": "needs testing", "❌ Unresolved: doesn't run": "doesn't run",
+ISSUE_STATE = {FIXED: "fixed", "Playable with issues": "playable with issues", "🔍 Being looked at": "open", FIX_READY: "fix out, needs testing", "🧪 Needs testing": "needs testing", "❌ Unresolved: doesn't run": "doesn't run",
                NEEDS_STORE: "this copy needs its store's app", ANTI_CHEAT: "anti-cheat: can't run"}
 
 
@@ -217,8 +214,6 @@ def main() -> int:
                 continue
             shown, issue = result, None
             told = any(LISTED in (c["body"] or "") for c in discussion["comments"]["nodes"])
-            if any(TURNED_AWAY in (c["body"] or "") for c in discussion["comments"]["nodes"]):
-                continue   # posted while the game's issue was open: the issue says how it runs
             reports.append({
                 "id": discussion["id"], "told": told, "locked": discussion["locked"],
                 "game": game, "result": result, "shown": shown, "issue": issue, "pc5": pc5_version(fields.get("PC5 version", "")),
@@ -238,51 +233,29 @@ def main() -> int:
     # name it beside them (a fixed one not at all). An open issue that earlier reports list as
     # running is told once what they say.
     store_label(owner, name)
+    issues = issue_reports(owner, name, named)
     listed = {}
     for r in reports:
         listed.setdefault(game_key(r["game"]), []).append(r)
-    told_issues, turned_away, hidden = 0, 0, set()
-    for row in issue_reports(owner, name, named):
+    told_issues = 0
+    for row in issues:
         same = listed.get(game_key(row["game"]), [])
-        if row["open"]:
-            for r in same:
-                hidden.add(id(r))
-                if r["created"] >= row["created"]:
-                    turned_away += turn_away(r, row, owner, name)
-            if same and not row["told_listed"]:
-                told_issues += tell_issue(row, [r for r in same if r["created"] < row["created"]], owner, name)
-            reports.append(row)
-            continue
-        since = [r for r in same if r["created"] > row["closed_at"]]
-        for r in same:
-            if r not in since:
-                hidden.add(id(r))
-        if not since:
-            reports.append(row)
-            continue
-        if row["shown"] == FIXED:
-            continue
-        best = sorted(sorted(since, key=lambda r: r["date"], reverse=True), key=lambda r: SHOWN.index(r["shown"]))[0]
-        best.setdefault("issues", []).append(row)
-    reports = [r for r in reports if id(r) not in hidden]
-    # A game players reported more than once has one row, its newest report's, which names the
-    # earlier ones: the newest says how it runs now.
-    newest = {}
-    for r in reports:
-        if "votes" not in r:
-            continue
-        key = game_key(r["game"])
-        if key not in newest or r["created"] > newest[key]["created"]:
-            newest[key] = r
-    for r in reports:
-        if "votes" in r and newest[game_key(r["game"])] is not r:
-            newest[game_key(r["game"])].setdefault("earlier", []).append(r)
-            newest[game_key(r["game"])].setdefault("issues", []).extend(r.get("issues", []))
-    reports = [r for r in reports if "votes" not in r or newest[game_key(r["game"])] is r]
+        if row["open"] and same and not row["told_listed"]:
+            told_issues += tell_issue(row, [r for r in same if r["created"] < row["created"]], owner, name)
+    # One row a game: the best said of it, reports and issues alike (the newest of equals), with
+    # the others named beside it. A game that runs for someone can run, given the right copy.
+    games = {}
+    for r in reports + issues:
+        games.setdefault(game_key(r["game"]), []).append(r)
+    reports = []
+    for group in games.values():
+        group = sorted(sorted(group, key=lambda r: r["created"], reverse=True), key=lambda r: SHOWN.index(r["shown"]))
+        best = group[0]
+        for other in group[1:]:
+            best.setdefault("earlier" if "votes" in other else "issues", []).append(other)
+        reports.append(best)
     if told_issues:
         print(f"::notice::compatibility list: told {told_issues} issue{'s' * (told_issues != 1)} what reports say")
-    if turned_away:
-        print(f"::notice::compatibility list: turned away {turned_away} report{'s' * (turned_away != 1)} of a game with an open issue")
 
     reports.sort(key=lambda r: (game_key(r["game"]), SHOWN.index(r["shown"]), r["date"]))
     counts = {shown: sum(1 for r in reports if r["shown"] == shown) for shown in SHOWN}
@@ -301,7 +274,8 @@ def main() -> int:
                      f"{cell(r['controller'], 20)} | {cell(r['settings'], 1500)} | {cell(r['notes'], 1500)} | "
                      f"[#{r['number']}]({r['url']}) by "
                      f"{cell(r['author'], 40)}, {r['date']}"
-                     + "".join(f"; earlier [#{e['number']}]({e['url']})" for e in sorted(r.get("earlier", []), key=lambda e: e["date"]))
+                     + "".join(f"; also [#{e['number']}]({e['url']}) {label(e['shown'])}"
+                               for e in sorted(r.get("earlier", []), key=lambda e: e["date"]))
                      + "".join(f"; issue [#{i['number']}]({i['url']}) {ISSUE_STATE.get(i['shown'], '')}"
                                for i in r.get("issues", [])) + " |")
     if not reports:
@@ -316,10 +290,9 @@ def main() -> int:
               "own) shows as **anti-cheat: can't run**: anti-cheat needs Windows' own kernel, which the PS5 doesn't have, "
               "so no copy of it runs. An issue whose reporter doesn't answer for two days is closed, and the game shows as "
               "needing testing: it didn't run for them, but another copy or version of it may. Tested it? Reply on "
-              "the issue, or open a new one with your log. While a game's issue is open, the issue is its row and "
-              "reports of it wait; once the issue is closed, its state is the game's row until someone reports the game "
-              "again. A game reported more than once has one row, its newest report's, with the earlier reports "
-              "named beside it."]
+              "the issue, or open a new one with your log. A game has one row: the best result anyone has had with it "
+              "(a game that runs for one player can run, given the right copy or version), with its other reports and "
+              "issues named beside it."]
 
     page = "\n".join([
         "Which games run in PC5: the games players report running, from the [Game compatibility]"
@@ -404,9 +377,9 @@ def published_releases(owner: str, name: str) -> list:
 
 
 def issue_reports(owner: str, name: str, named: dict) -> list:
-    """The rows of the games with an issue, by its state: one a game, its newest issue's (an open
-    one's while there is one). A fixed one shows the PC5 that was out when it was closed."""
-    rows, after, by_number = {}, None, games_by_issue()
+    """A row for each issue and game it is about, by the issue's state (main() keeps a game's best
+    row). A fixed one shows the PC5 that was out when it was closed."""
+    rows, after, by_number = [], None, games_by_issue()
     releases = published_releases(owner, name)
     while True:
         page = graphql("""query($owner: String!, $name: String!, $after: String) {
@@ -449,10 +422,7 @@ def issue_reports(owner: str, name: str, named: dict) -> list:
                 for kind, text in OWNER_LINE.findall(comment["body"] or ""):
                     extra[kind.casefold()] = text
             for game in issue_games(issue, fields, named, by_number):
-                key = game_key(game)
-                if key in rows and rows[key]["open"] and node["state"] != "OPEN":
-                    continue   # an open issue of the game stays its row: it is still being looked at
-                rows[key] = {   # issues come oldest first: a newer one takes the game's row
+                row = {
                     "told": True, "locked": True, "game": game, "shown": shown,
                     "pc5": pc5.group(1).rstrip(".") if pc5 else "", "edition": "", "controller": "",
                     "settings": extra.get("settings", ""),
@@ -470,20 +440,21 @@ def issue_reports(owner: str, name: str, named: dict) -> list:
                     "id": node["id"], "open": node["state"] == "OPEN",
                     "told_listed": any(LISTED_ALREADY in (c["body"] or "") for c in node["comments"]["nodes"]),
                 }
+                rows.append(row)
                 if extra.get("notes"):
-                    rows[key]["notes"] = extra["notes"]
+                    row["notes"] = extra["notes"]
                 if extra.get("version"):
-                    rows[key]["pc5"] = extra["version"].lstrip("vV")
+                    row["pc5"] = extra["version"].lstrip("vV")
                 elif shown in (FIXED, "Playable with issues") and node["closedAt"]:
                     out = [version for published, version in releases if published <= node["closedAt"]]
                     if out:
-                        rows[key]["pc5"] = out[-1]
+                        row["pc5"] = out[-1]
             if shown == NEEDS_STORE and node["state"] == "OPEN":
                 close_store_copy(node, owner, name)
             if shown == ANTI_CHEAT and node["state"] == "OPEN":
                 close_anti_cheat(node, owner, name)
         if not page["pageInfo"]["hasNextPage"]:
-            return list(rows.values())
+            return rows
         after = page["pageInfo"]["endCursor"]
 
 
@@ -598,31 +569,6 @@ def tell_issue(issue: dict, reports: list, owner: str, name: str) -> int:
         return 0
     print(f"compatibility list: issue #{issue['number']} told what {len(shown)} report(s) say")
     return 1
-
-
-def turn_away(report: dict, issue: dict, owner: str, name: str) -> int:
-    """One comment on a report posted while its game's issue is open, and closed: the issue
-    says how the game runs until it is closed. 1 when the comment was made."""
-    made = 0
-    if not report["locked"] and report["author"].casefold() != owner.casefold():
-        body = "\n".join([
-            TURNED_AWAY,
-            f"Thanks for the report! **{report['game']}** has an open issue, [#{issue['number']}]({issue['url']}), so "
-            "the [game compatibility list](https://github.com/{owner}/{name}/wiki/Game-compatibility) shows it as "
-            "**being looked at** until that issue is closed, and this report isn't listed.".replace("{owner}", owner).replace("{name}", name),
-            "",
-            f"Please add what you found to [#{issue['number']}]({issue['url']}), with your settings: it helps close it. "
-            "Once it's closed, a new report of the game is listed again.",
-        ])
-        if graphql("""mutation($id: ID!, $body: String!) { addDiscussionComment(input: {discussionId: $id, body: $body}) {
-                comment { id } } }""", fatal=False, id=report["id"], body=body) is None:
-            return 0
-        made = 1
-        print(f"compatibility list: #{report['number']} turned away, issue #{issue['number']} is open")
-    if not report["closed"]:
-        graphql("""mutation($id: ID!) { closeDiscussion(input: {discussionId: $id, reason: OUTDATED}) { discussion { id } } }""",
-                fatal=False, id=report["id"])
-    return made
 
 
 def tell_listed(report: dict, owner: str, name: str) -> int:
