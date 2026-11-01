@@ -357,6 +357,7 @@ int main(int argc, char **argv)
     step(ui, PC5_KEY_BACK, 1);
     step(ui, PC5_KEY_UP, 1);
     step(ui, PC5_KEY_RIGHT, 1);            /* back to the Xbox controller */
+    step(ui, PC5_KEY_DOWN, 1);             /* Mouse pointer */
     step(ui, PC5_KEY_DOWN, 1);
     step(ui, PC5_KEY_ACCEPT, 1);           /* Graphics */
     settle(ui);
