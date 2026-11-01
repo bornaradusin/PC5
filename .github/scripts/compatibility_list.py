@@ -97,11 +97,12 @@ ISSUE_STATE = {FIXED: "fixed", "Playable with issues": "playable with issues", "
 def game_key(name: str) -> str:
     """What two names of one game have the same: "Baldur's Gate 2" and "baldurs gate II", "The
     Binding of Isaac: Rebirth" and "Binding of Isaac Rebirth". Case, punctuation, a leading
-    "The" and Roman numerals (II to IX as words) aside; an edition named stays (the Enhanced
-    Edition isn't the original)."""
+    "The", Roman numerals (II to IX as words) and a version number after the name ("v1.06")
+    aside; an edition named stays (the Enhanced Edition isn't the original)."""
     text = name.casefold().replace("&", " and ")
     for apostrophe in ("'", "\u2019"):
         text = text.replace(apostrophe, "")
+    text = re.sub(r"\s+v?\d+(?:\.\d+)+[a-z]?\s*$", "", text)   # a version after the name: "Mina the Hollower v1.06"
     words = [w for w in re.split(r"[\W_]+", text) if w]
     if len(words) > 1 and words[0] == "the":
         words = words[1:]
