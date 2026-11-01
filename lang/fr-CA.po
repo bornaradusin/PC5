@@ -47,7 +47,7 @@ msgstr "Flèche gauche"
 msgid "Right arrow"
 msgstr "Flèche droite"
 
-#: title/pc5_controls.c:30 title/pc5_controls.c:57 title/pc5_ui.c:6013
+#: title/pc5_controls.c:30 title/pc5_controls.c:57 title/pc5_ui.c:6229
 msgid "Nothing"
 msgstr "Rien"
 
@@ -144,13 +144,13 @@ msgid "Keys"
 msgstr "Touches"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_controls.c:57 title/pc5_ui.c:5777
+#: title/pc5_controls.c:57 title/pc5_ui.c:5993
 msgid "Mouse pointer"
 msgstr "Pointeur de la souris"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_controls.c:86 title/pc5_ui.c:2314 title/pc5_ui.c:5842
-#: title/pc5_ui.c:5857 title/pc5_ui.c:5897
+#: title/pc5_controls.c:86 title/pc5_ui.c:2331 title/pc5_ui.c:6058
+#: title/pc5_ui.c:6073 title/pc5_ui.c:6113
 msgid "Auto"
 msgstr "Auto"
 
@@ -278,20 +278,20 @@ msgstr "PC5 ne peut pas déplacer %s : %s."
 msgid "PC5 ran out of memory deleting %s."
 msgstr "PC5 manque de mémoire pour supprimer %s."
 
-#: title/pc5_ftp.c:626 title/pc5_web.c:884
+#: title/pc5_ftp.c:626 title/pc5_web.c:1041
 msgid "There's no network here."
 msgstr "Il n'y a pas de réseau ici."
 
-#: title/pc5_ftp.c:628 title/pc5_ui.c:2528
+#: title/pc5_ftp.c:628 title/pc5_ui.c:2545
 msgid "PC5's INSTALL folder isn't there."
 msgstr "Le dossier INSTALL de PC5 n'existe pas."
 
-#: title/pc5_ftp.c:633 title/pc5_web.c:889
+#: title/pc5_ftp.c:633 title/pc5_web.c:1046
 #, c-format
 msgid "Port %u is taken, or there's no network."
 msgstr "Le port %u est occupé, ou il n'y a pas de réseau."
 
-#: title/pc5_ftp.c:647 title/pc5_web.c:903
+#: title/pc5_ftp.c:647 title/pc5_web.c:1060
 msgid "PC5 can't start it."
 msgstr "PC5 ne peut pas le démarrer."
 
@@ -743,6 +743,11 @@ msgstr ""
 "La copie de %s ne correspond pas au disque USB. Le disque ou son câble est "
 "peut-être défaillant; rien n'a été conservé."
 
+#. over the loading screen's bar while a game starts, shown in capitals where the language has them.
+#: title/pc5_matrix.c:54
+msgid "Launching game"
+msgstr "Lancement du jeu"
+
 #: title/pc5_settings.c:13
 msgid "Top left"
 msgstr "En haut à gauche"
@@ -784,13 +789,13 @@ msgid "Extra large"
 msgstr "Très grande"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_settings.c:19 title/pc5_ui.c:289 title/pc5_ui.c:2308
-#: title/pc5_ui.c:2320 title/pc5_ui.c:2333 title/pc5_ui.c:2346
-#: title/pc5_ui.c:2378 title/pc5_ui.c:2383 title/pc5_ui.c:2388
-#: title/pc5_ui.c:2393 title/pc5_ui.c:2398 title/pc5_ui.c:2403
-#: title/pc5_ui.c:2408 title/pc5_ui.c:2457 title/pc5_ui.c:2470
-#: title/pc5_ui.c:2509 title/pc5_ui.c:5825 title/pc5_ui.c:5862
-#: title/pc5_ui.c:5883 title/pc5_ui.c:5897
+#: title/pc5_settings.c:19 title/pc5_ui.c:291 title/pc5_ui.c:2325
+#: title/pc5_ui.c:2337 title/pc5_ui.c:2350 title/pc5_ui.c:2363
+#: title/pc5_ui.c:2395 title/pc5_ui.c:2400 title/pc5_ui.c:2405
+#: title/pc5_ui.c:2410 title/pc5_ui.c:2415 title/pc5_ui.c:2420
+#: title/pc5_ui.c:2425 title/pc5_ui.c:2474 title/pc5_ui.c:2487
+#: title/pc5_ui.c:2526 title/pc5_ui.c:6041 title/pc5_ui.c:6078
+#: title/pc5_ui.c:6099 title/pc5_ui.c:6113
 msgid "Off"
 msgstr "Désactivé"
 
@@ -833,6 +838,43 @@ msgid "This folder only has installers and tools, not a game."
 msgstr ""
 "Ce dossier ne contient que des programmes d'installation et des outils, "
 "pas un jeu."
+
+#: title/pc5_textdoc.c:142 title/pc5_textdoc.c:246
+msgid "It's larger than 8 MB: PC5 changes text files up to that size."
+msgstr ""
+"Il fait plus de 8 Mo : PC5 modifie les fichiers texte jusqu'à cette taille."
+
+#: title/pc5_textdoc.c:155
+msgid "It's UTF-16 big-endian text, which PC5 doesn't change."
+msgstr "C'est du texte UTF-16 gros-boutiste, que PC5 ne modifie pas."
+
+#: title/pc5_textdoc.c:163 title/pc5_textdoc.c:177 title/pc5_textdoc.c:195
+msgid ""
+"It isn't text: PC5 changes only text files (.ini, .cfg, .txt and the like)."
+msgstr ""
+"Ce n'est pas du texte : PC5 ne modifie que les fichiers texte (.ini, .cfg, "
+".txt et autres)."
+
+#: title/pc5_textdoc.c:182 title/pc5_textdoc.c:200 title/pc5_textdoc.c:209
+msgid "There isn't memory enough to open it."
+msgstr "Il n'y a pas assez de mémoire pour l'ouvrir."
+
+#: title/pc5_textdoc.c:230
+msgid "It has more lines than PC5 can show."
+msgstr "Il a plus de lignes que PC5 ne peut en afficher."
+
+#: title/pc5_textdoc.c:374
+#, c-format
+msgid ""
+"This file is in an older encoding with room for Western letters only, and "
+"“%s” isn't one of them."
+msgstr ""
+"Ce fichier utilise un ancien encodage qui ne contient que des lettres "
+"occidentales, et « %s » n'en fait pas partie."
+
+#: title/pc5_textdoc.c:406 title/pc5_textdoc.c:408
+msgid "There isn't memory enough to save it."
+msgstr "Il n'y a pas assez de mémoire pour l'enregistrer."
 
 #: title/pc5_tile.c:55
 msgid "The tile's folder path is too long."
@@ -951,7 +993,7 @@ msgstr "PC5 ne peut pas remplacer la vignette : %s."
 msgid "PC5 can't put the tile in place: %s."
 msgstr "PC5 ne peut pas mettre la vignette en place : %s."
 
-#: title/pc5_tile.c:636 title/pc5_ui.c:3787
+#: title/pc5_tile.c:636 title/pc5_ui.c:3996
 msgid ""
 "It isn't in PC5 any more. Take the tile off the home screen, or install "
 "the game again."
@@ -964,113 +1006,113 @@ msgid "PC5 lost its place readying the game."
 msgstr "PC5 s'est perdu en préparant le jeu."
 
 #. One of the tabs along the top of the screen: one short word.
-#: title/pc5_ui.c:57
+#: title/pc5_ui.c:58
 msgid "Home"
 msgstr "Accueil"
 
 #. One of the tabs along the top of the screen: one short word.
-#: title/pc5_ui.c:57
+#: title/pc5_ui.c:58
 msgid "Library"
 msgstr "Bibliothèque"
 
 #. One of the tabs along the top of the screen: one short word.
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:57 title/pc5_ui.c:6361 title/pc5_ui.c:7299
+#: title/pc5_ui.c:58 title/pc5_ui.c:6577 title/pc5_ui.c:7617
 msgid "Install"
 msgstr "Installer"
 
 #. One of the tabs along the top of the screen: one short word.
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:57 title/pc5_ui.c:119 title/pc5_ui.c:5641 title/pc5_ui.c:5657
+#: title/pc5_ui.c:58 title/pc5_ui.c:121 title/pc5_ui.c:5857 title/pc5_ui.c:5873
 msgid "Settings"
 msgstr "Paramètres"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:60
+#: title/pc5_ui.c:61
 msgid "All"
 msgstr "Tous"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:60
+#: title/pc5_ui.c:61
 msgid "Recently played"
 msgstr "Récents"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:60
+#: title/pc5_ui.c:61
 msgid "Favourites"
 msgstr "Favoris"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:60 title/pc5_ui.c:5514 title/pc5_ui.c:7170
+#: title/pc5_ui.c:61 title/pc5_ui.c:5729 title/pc5_ui.c:7484
 msgid "USB drive"
 msgstr "Disque USB"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:60
+#: title/pc5_ui.c:61
 msgid "Needs attention"
 msgstr "À vérifier"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:119 title/pc5_ui.c:2281
+#: title/pc5_ui.c:121 title/pc5_ui.c:2298
 msgid "In games"
 msgstr "En jeu"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:119 title/pc5_ui.c:2291
+#: title/pc5_ui.c:121 title/pc5_ui.c:2308
 msgid "System"
 msgstr "Système"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:119 title/pc5_ui.c:2286
+#: title/pc5_ui.c:121 title/pc5_ui.c:2303
 msgid "Overlay"
 msgstr "Superposition"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:119 title/pc5_ui.c:2299
+#: title/pc5_ui.c:121 title/pc5_ui.c:2316
 msgid "Picture sources"
 msgstr "Sources d'images"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:120 title/pc5_ui.c:2276
+#: title/pc5_ui.c:122 title/pc5_ui.c:2293
 msgid "Game maintenance"
 msgstr "Gestion des jeux"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:120 title/pc5_ui.c:2350
+#: title/pc5_ui.c:122 title/pc5_ui.c:2367
 msgid "Network"
 msgstr "Réseau"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:193 title/pc5_ui.c:5782
+#: title/pc5_ui.c:195 title/pc5_ui.c:5998
 msgid "Graphics"
 msgstr "Graphismes"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:193 title/pc5_ui.c:5787
+#: title/pc5_ui.c:195 title/pc5_ui.c:6003
 msgid "Appearance"
 msgstr "Apparence"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:193 title/pc5_ui.c:5792
+#: title/pc5_ui.c:195 title/pc5_ui.c:6008
 msgid "Manage"
 msgstr "Gérer"
 
 #. a percentage (Vibration 50%); put a space before % where your language does.
-#: title/pc5_ui.c:291 title/pc5_ui.c:5984
+#: title/pc5_ui.c:293 title/pc5_ui.c:6200
 #, c-format
 msgid "%d%%"
 msgstr "%d %%"
 
-#: title/pc5_ui.c:877
+#: title/pc5_ui.c:893
 #, c-format
 msgid ""
 "You have %s, the version before: PC5 downloads only what changed (%s)"
@@ -1078,7 +1120,7 @@ msgstr ""
 "Vous avez la %s, la version précédente : PC5 ne télécharge que ce qui a "
 "changé (%s)"
 
-#: title/pc5_ui.c:882
+#: title/pc5_ui.c:898
 #, c-format
 msgid ""
 "You have %s, more than one version behind: PC5 downloads the whole app (%s)"
@@ -1086,16 +1128,16 @@ msgstr ""
 "Vous avez la %s, plus d'une version en retard : PC5 télécharge toute "
 "l'application (%s)"
 
-#: title/pc5_ui.c:885
+#: title/pc5_ui.c:901
 #, c-format
 msgid "You have %s: PC5 downloads the whole app (%s)"
 msgstr "Vous avez la %s : PC5 télécharge toute l'application (%s)"
 
-#: title/pc5_ui.c:1531 title/pc5_ui.c:4444
+#: title/pc5_ui.c:1548 title/pc5_ui.c:4653
 msgid "PC5 didn't install this game"
 msgstr "PC5 n'a pas installé ce jeu"
 
-#: title/pc5_ui.c:1532
+#: title/pc5_ui.c:1549
 msgid ""
 "Its cover can only be changed as in Covers on the wiki: a picture of your "
 "own."
@@ -1103,11 +1145,11 @@ msgstr ""
 "Sa pochette ne peut être changée que comme expliqué dans Covers sur le "
 "wiki : avec votre propre image."
 
-#: title/pc5_ui.c:1533
+#: title/pc5_ui.c:1550
 msgid "Only a game PC5 installed has a tile picture."
 msgstr "Seul un jeu installé par PC5 a une image de vignette."
 
-#: title/pc5_ui.c:1534
+#: title/pc5_ui.c:1551
 msgid ""
 "Its background can only be changed as in Covers on the wiki: a picture of "
 "your own."
@@ -1115,89 +1157,89 @@ msgstr ""
 "Son arrière-plan ne peut être changé que comme expliqué dans Covers sur le "
 "wiki : avec votre propre image."
 
-#: title/pc5_ui.c:1540
+#: title/pc5_ui.c:1557
 msgid "PC5 ran out of memory"
 msgstr "PC5 manque de mémoire"
 
-#: title/pc5_ui.c:1540
+#: title/pc5_ui.c:1557
 msgid "Close PC5 and open it again."
 msgstr "Fermez PC5 et rouvrez-le."
 
-#: title/pc5_ui.c:1714
+#: title/pc5_ui.c:1731
 msgid "The cover wasn't changed"
 msgstr "La pochette n'a pas été changée"
 
-#: title/pc5_ui.c:1715
+#: title/pc5_ui.c:1732
 msgid "The tile picture wasn't changed"
 msgstr "L'image de la vignette n'a pas été changée"
 
-#: title/pc5_ui.c:1715
+#: title/pc5_ui.c:1732
 msgid "The background wasn't changed"
 msgstr "L'arrière-plan n'a pas été changé"
 
-#: title/pc5_ui.c:1717
+#: title/pc5_ui.c:1734
 msgid "PC5 can't write to the game's folder in /data/prospero-win/prefixes."
 msgstr ""
 "PC5 ne peut pas écrire dans le dossier du jeu, dans "
 "/data/prospero-win/prefixes."
 
-#: title/pc5_ui.c:1718
+#: title/pc5_ui.c:1735
 msgid "PC5 couldn't make the card from the game's icon and name."
 msgstr "PC5 n'a pas pu créer la carte à partir de l'icône et du nom du jeu."
 
-#: title/pc5_ui.c:1791 title/pc5_ui.c:6202
+#: title/pc5_ui.c:1808 title/pc5_ui.c:6418
 #, c-format
 msgid "USB drive %d"
 msgstr "Disque USB %d"
 
-#: title/pc5_ui.c:1793
+#: title/pc5_ui.c:1810
 #, c-format
 msgid "Extended storage %d"
 msgstr "Stockage étendu %d"
 
-#: title/pc5_ui.c:1795
+#: title/pc5_ui.c:1812
 msgid "Console storage"
 msgstr "Stockage de la console"
 
-#: title/pc5_ui.c:1813
+#: title/pc5_ui.c:1830
 #, c-format
 msgid "%s can't be installed"
 msgstr "%s ne peut pas être installé"
 
-#: title/pc5_ui.c:1861
+#: title/pc5_ui.c:1878
 #, c-format
 msgid "%s can't be updated"
 msgstr "%s ne peut pas être mis à jour"
 
-#: title/pc5_ui.c:1861 title/pc5_ui.c:2939 title/pc5_ui.c:4314
-#: title/pc5_ui.c:4867 title/pc5_ui.c:4958 title/pc5_ui.c:6598
+#: title/pc5_ui.c:1878 title/pc5_ui.c:2956 title/pc5_ui.c:4523
+#: title/pc5_ui.c:5082 title/pc5_ui.c:5173 title/pc5_ui.c:6814
 msgid "The game"
 msgstr "Le jeu"
 
-#: title/pc5_ui.c:1926
+#: title/pc5_ui.c:1943
 #, c-format
 msgid "Its Windows needs %s and the console has %s free."
 msgstr "Son Windows a besoin de %s et la console a %s de libre."
 
-#: title/pc5_ui.c:1926
+#: title/pc5_ui.c:1943
 #, c-format
 msgid "The game needs %s and the console has %s free."
 msgstr "Le jeu a besoin de %s et la console a %s de libre."
 
-#: title/pc5_ui.c:1928 title/pc5_ui.c:4285
+#: title/pc5_ui.c:1945 title/pc5_ui.c:4494
 msgid "Not enough space"
 msgstr "Pas assez d'espace"
 
-#: title/pc5_ui.c:1948
+#: title/pc5_ui.c:1965
 msgid "It has no program to start."
 msgstr "Il n'a aucun programme à lancer."
 
-#: title/pc5_ui.c:2023
+#: title/pc5_ui.c:2040
 #, c-format
 msgid "%s is partly updated"
 msgstr "%s est partiellement mis à jour"
 
-#: title/pc5_ui.c:2024
+#: title/pc5_ui.c:2041
 #, c-format
 msgid ""
 "%u of its files couldn't be put in place. %s Update it again; its saves, "
@@ -1206,20 +1248,20 @@ msgstr ""
 "%u de ses fichiers n'ont pas pu être mis en place. %s Mettez-le de nouveau "
 "à jour; ses sauvegardes, paramètres et options sont restés tels quels."
 
-#: title/pc5_ui.c:2028
+#: title/pc5_ui.c:2045
 #, c-format
 msgid "%s is updated"
 msgstr "%s est à jour"
 
-#: title/pc5_ui.c:2029
+#: title/pc5_ui.c:2046
 msgid "Its saves, settings and options are as they were."
 msgstr "Ses sauvegardes, paramètres et options sont restés tels quels."
 
-#: title/pc5_ui.c:2032
+#: title/pc5_ui.c:2049
 msgid "Update stopped"
 msgstr "Mise à jour arrêtée"
 
-#: title/pc5_ui.c:2033
+#: title/pc5_ui.c:2050
 msgid ""
 "The copy made so far was deleted: the game is as it was. The USB drive "
 "wasn't changed."
@@ -1227,216 +1269,218 @@ msgstr ""
 "La copie faite jusqu'ici a été supprimée : le jeu est resté tel quel. Le "
 "disque USB n'a pas été modifié."
 
-#: title/pc5_ui.c:2036
+#: title/pc5_ui.c:2053
 #, c-format
 msgid "%s wasn't updated"
 msgstr "%s n'a pas été mis à jour"
 
-#: title/pc5_ui.c:2037
+#: title/pc5_ui.c:2054
 #, c-format
 msgid "%s PC5 finishes the update the next time it starts."
 msgstr "%s PC5 terminera la mise à jour à son prochain démarrage."
 
-#: title/pc5_ui.c:2037
+#: title/pc5_ui.c:2054
 #, c-format
 msgid "%s The game is as it was."
 msgstr "%s Le jeu est resté tel quel."
 
-#: title/pc5_ui.c:2053
+#: title/pc5_ui.c:2070
 #, c-format
 msgid "%s is installed"
 msgstr "%s est installé"
 
-#: title/pc5_ui.c:2058
+#: title/pc5_ui.c:2075
 msgid "It's in your library, with the saves and settings it had before."
 msgstr ""
 "Il est dans votre bibliothèque, avec les sauvegardes et paramètres qu'il "
 "avait avant."
 
-#: title/pc5_ui.c:2059
+#: title/pc5_ui.c:2076
 msgid "It's in your library. Press the button to play it from there."
 msgstr ""
 "Il est dans votre bibliothèque. Appuyez sur la touche pour y jouer depuis "
 "là."
 
-#: title/pc5_ui.c:2063
+#: title/pc5_ui.c:2080
 msgid "Install stopped"
 msgstr "Installation arrêtée"
 
-#: title/pc5_ui.c:2063
+#: title/pc5_ui.c:2080
 #, c-format
 msgid "%s wasn't installed"
 msgstr "%s n'a pas été installé"
 
-#: title/pc5_ui.c:2064
+#: title/pc5_ui.c:2081
 msgid "Everything copied so far was deleted. The USB drive wasn't changed."
 msgstr ""
 "Tout ce qui avait été copié a été supprimé. Le disque USB n'a pas été "
 "modifié."
 
-#: title/pc5_ui.c:2066
+#: title/pc5_ui.c:2083
 #, c-format
 msgid "%s Nothing was kept."
 msgstr "%s Rien n'a été conservé."
 
-#: title/pc5_ui.c:2067
+#: title/pc5_ui.c:2084
 #, c-format
 msgid "%s PC5 tries again the next time it starts."
 msgstr "%s PC5 réessaiera à son prochain démarrage."
 
-#: title/pc5_ui.c:2121
+#: title/pc5_ui.c:2138
 msgid "PC5 can't read this folder."
 msgstr "PC5 ne peut pas lire ce dossier."
 
-#: title/pc5_ui.c:2205
+#: title/pc5_ui.c:2222
 msgid "stopped, nothing kept."
 msgstr "arrêté, rien n'a été conservé."
 
-#: title/pc5_ui.c:2205
+#: title/pc5_ui.c:2222
 msgid "not installed."
 msgstr "non installé."
 
-#: title/pc5_ui.c:2211
+#: title/pc5_ui.c:2228
 msgid "1 game is installed"
 msgstr "1 jeu est installé"
 
-#: title/pc5_ui.c:2211
+#: title/pc5_ui.c:2228
 #, c-format
 msgid "%d games are installed"
 msgstr "%d jeux sont installés"
 
-#: title/pc5_ui.c:2213
+#: title/pc5_ui.c:2230
 #, c-format
 msgid "%d of %d games are installed"
 msgstr "%d jeux sur %d sont installés"
 
-#: title/pc5_ui.c:2215
+#: title/pc5_ui.c:2232
 msgid "No game was installed"
 msgstr "Aucun jeu n'a été installé"
 
-#: title/pc5_ui.c:2216
+#: title/pc5_ui.c:2233
 msgid "They're in your library. The USB drive wasn't changed."
 msgstr "Ils sont dans votre bibliothèque. Le disque USB n'a pas été modifié."
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2264 title/pc5_ui.c:6391
+#: title/pc5_ui.c:2281 title/pc5_ui.c:6607
 msgid "Install games from USB"
 msgstr "Installer des jeux par USB"
 
-#: title/pc5_ui.c:2265
+#: title/pc5_ui.c:2282
 msgid "Copies one game, or several in a row, to the console"
 msgstr "Copie un jeu, ou plusieurs à la suite, sur la console"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2268 title/pc5_ui.c:7236 title/pc5_ui.c:7243
+#: title/pc5_ui.c:2285 title/pc5_ui.c:7550 title/pc5_ui.c:7557
 msgid "Uninstall game"
 msgstr "Désinstaller un jeu"
 
-#: title/pc5_ui.c:2269
+#: title/pc5_ui.c:2286
 msgid "Deletes a game (its saves can be kept), or saves kept from before"
 msgstr ""
 "Supprime un jeu (ses sauvegardes peuvent être conservées), ou des "
 "sauvegardes conservées"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2272 title/pc5_ui.c:6641
+#: title/pc5_ui.c:2289 title/pc5_ui.c:6857
 msgid "Game compatibility list"
 msgstr "Liste de compatibilité"
 
-#: title/pc5_ui.c:2273
+#: title/pc5_ui.c:2290
 msgid "Games players have tried, on your phone with a QR code"
 msgstr ""
 "Les jeux essayés par les joueurs, sur votre téléphone avec un code QR"
 
-#: title/pc5_ui.c:2277
+#: title/pc5_ui.c:2294
 msgid "Installing, uninstalling and the compatibility list"
 msgstr "Installation, désinstallation et liste de compatibilité"
 
-#: title/pc5_ui.c:2282
+#: title/pc5_ui.c:2299
 msgid "Vibration, light bar, triggers and 120 Hz output"
-msgstr ""
+msgstr "Vibration, barre lumineuse, gâchettes et sortie 120 Hz"
 
-#: title/pc5_ui.c:2287
+#: title/pc5_ui.c:2304
 msgid "FPS, frame time, CPU and GPU use, temperatures and memory"
 msgstr "FPS, temps d'image, utilisation CPU et GPU, températures et mémoire"
 
-#: title/pc5_ui.c:2293
+#: title/pc5_ui.c:2310
 msgid "Startup sound, logs, picture sources, updates and language"
 msgstr "Son de démarrage, journaux, sources d'images, mises à jour et langue"
 
-#: title/pc5_ui.c:2300
+#: title/pc5_ui.c:2317
 msgid "Where covers and backgrounds are looked for"
 msgstr "Où chercher les pochettes et les arrière-plans"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2301
+#: title/pc5_ui.c:2318
 #, c-format
 msgid "%d of %d ›"
 msgstr "%d sur %d ›"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2305
+#: title/pc5_ui.c:2322
 msgid "120 Hz output"
-msgstr ""
+msgstr "Sortie 120 Hz"
 
-#: title/pc5_ui.c:2306
+#: title/pc5_ui.c:2323
 msgid ""
 "Games show up to 120 fps on a TV that takes it; turn on the PS5's own 120 "
 "Hz output too"
 msgstr ""
+"Les jeux s'affichent jusqu'à 120 fps sur une télé compatible; activez "
+"aussi la sortie 120 Hz de la PS5 elle-même"
 
-#: title/pc5_ui.c:2307
+#: title/pc5_ui.c:2324
 msgid "Off: games show up to 60 fps"
-msgstr ""
+msgstr "Désactivé : les jeux s'affichent jusqu'à 60 fps"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2308 title/pc5_ui.c:2320 title/pc5_ui.c:2333
-#: title/pc5_ui.c:2346 title/pc5_ui.c:2378 title/pc5_ui.c:2383
-#: title/pc5_ui.c:2388 title/pc5_ui.c:2393 title/pc5_ui.c:2398
-#: title/pc5_ui.c:2403 title/pc5_ui.c:2408 title/pc5_ui.c:2457
-#: title/pc5_ui.c:2509 title/pc5_ui.c:5862 title/pc5_ui.c:5883
+#: title/pc5_ui.c:2325 title/pc5_ui.c:2337 title/pc5_ui.c:2350
+#: title/pc5_ui.c:2363 title/pc5_ui.c:2395 title/pc5_ui.c:2400
+#: title/pc5_ui.c:2405 title/pc5_ui.c:2410 title/pc5_ui.c:2415
+#: title/pc5_ui.c:2420 title/pc5_ui.c:2425 title/pc5_ui.c:2474
+#: title/pc5_ui.c:2526 title/pc5_ui.c:6078 title/pc5_ui.c:6099
 msgid "On"
 msgstr "Activé"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2311
+#: title/pc5_ui.c:2328
 msgid "Keyboard layout"
 msgstr "Disposition du clavier"
 
-#: title/pc5_ui.c:2312
+#: title/pc5_ui.c:2329
 msgid "A USB keyboard types as a US one in games"
 msgstr "Un clavier USB tape comme un clavier américain dans les jeux"
 
-#: title/pc5_ui.c:2313
+#: title/pc5_ui.c:2330
 msgid "A USB keyboard types as your language's in games"
 msgstr "Un clavier USB tape comme celui de votre langue dans les jeux"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2314
+#: title/pc5_ui.c:2331
 msgid "US"
 msgstr "É.-U."
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2317
+#: title/pc5_ui.c:2334
 msgid "Keep all logs"
 msgstr "Garder tous les journaux"
 
-#: title/pc5_ui.c:2318
+#: title/pc5_ui.c:2335
 msgid "Every session's log is kept for 7 days"
 msgstr "Le journal de chaque session est gardé 7 jours"
 
-#: title/pc5_ui.c:2319
+#: title/pc5_ui.c:2336
 msgid "Problem sessions and each game's newest; turn on when testing a game"
 msgstr ""
 "Sessions à problème et la plus récente de chaque jeu; activez-le pour "
 "tester un jeu"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2325
+#: title/pc5_ui.c:2342
 msgid "FTP server"
 msgstr "Serveur FTP"
 
-#: title/pc5_ui.c:2327
+#: title/pc5_ui.c:2344
 #, c-format
 msgid ""
 "ftp://%s from a PC (FileZilla): the INSTALL folder, while PC5 is open"
@@ -1444,23 +1488,23 @@ msgstr ""
 "ftp://%s depuis un PC (FileZilla) : le dossier INSTALL, tant que PC5 est "
 "ouvert"
 
-#: title/pc5_ui.c:2330 title/pc5_ui.c:2343
+#: title/pc5_ui.c:2347 title/pc5_ui.c:2360
 #, c-format
 msgid "Not started: %.150s"
 msgstr "Non démarré : %.150s"
 
-#: title/pc5_ui.c:2332
+#: title/pc5_ui.c:2349
 msgid "Send games from a PC to PC5's INSTALL folder, then install them here"
 msgstr ""
 "Envoyez des jeux d'un PC vers le dossier INSTALL de PC5, puis "
 "installez-les ici"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2339
+#: title/pc5_ui.c:2356
 msgid "Web page"
 msgstr "Page web"
 
-#: title/pc5_ui.c:2341
+#: title/pc5_ui.c:2358
 #, c-format
 msgid ""
 "http://%s in a browser on a phone or a PC; Triangle: a QR code for it"
@@ -1468,12 +1512,12 @@ msgstr ""
 "http://%s dans un navigateur sur téléphone ou PC; Triangle : un code QR "
 "pour y accéder"
 
-#: title/pc5_ui.c:2345
+#: title/pc5_ui.c:2362
 msgid "PC5 from a browser: send games, launch options, logs"
 msgstr ""
 "PC5 depuis un navigateur : envoi de jeux, options de lancement, journaux"
 
-#: title/pc5_ui.c:2351
+#: title/pc5_ui.c:2368
 msgid ""
 "From a PC or a phone: the FTP server, the web page, a username and password"
 msgstr ""
@@ -1481,236 +1525,236 @@ msgstr ""
 "mot de passe"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2355
+#: title/pc5_ui.c:2372
 msgid "Username"
 msgstr "Nom d'utilisateur"
 
-#: title/pc5_ui.c:2356
+#: title/pc5_ui.c:2373
 msgid "The username the FTP server and the web page ask for"
 msgstr "Le nom d'utilisateur demandé par le serveur FTP et la page web"
 
-#: title/pc5_ui.c:2357
+#: title/pc5_ui.c:2374
 msgid "None set: any username will do"
 msgstr "Aucun : n'importe quel nom d'utilisateur convient"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2358
+#: title/pc5_ui.c:2375
 msgid "Any"
 msgstr "Libre"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2361
+#: title/pc5_ui.c:2378
 msgid "Password"
 msgstr "Mot de passe"
 
-#: title/pc5_ui.c:2362
+#: title/pc5_ui.c:2379
 msgid "The password the FTP server and the web page ask for"
 msgstr "Le mot de passe demandé par le serveur FTP et la page web"
 
-#: title/pc5_ui.c:2363
+#: title/pc5_ui.c:2380
 msgid "Optional: none set, no password is asked for"
 msgstr "Facultatif : aucun n'est défini, aucun mot de passe n'est demandé"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2364 title/pc5_ui.c:5980
+#: title/pc5_ui.c:2381 title/pc5_ui.c:6196
 msgid "None"
 msgstr "Aucun"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2367 title/pc5_ui.c:6857
+#: title/pc5_ui.c:2384 title/pc5_ui.c:7073
 msgid "File manager"
 msgstr "Gestionnaire de fichiers"
 
-#: title/pc5_ui.c:2368
+#: title/pc5_ui.c:2385
 msgid "Copy, move, rename and delete files on the console and its drives"
 msgstr ""
 "Copier, déplacer, renommer et supprimer des fichiers sur la console et ses "
 "disques"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2372
+#: title/pc5_ui.c:2389
 msgid "About PC5"
 msgstr "À propos de PC5"
 
-#: title/pc5_ui.c:2373
+#: title/pc5_ui.c:2390
 msgid "Version, free space and credits"
 msgstr "Version, espace libre et crédits"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2376
+#: title/pc5_ui.c:2393
 msgid "Show FPS"
 msgstr "Afficher les FPS"
 
-#: title/pc5_ui.c:2377
+#: title/pc5_ui.c:2394
 msgid "Frames shown each second"
 msgstr "Images affichées par seconde"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2381
+#: title/pc5_ui.c:2398
 msgid "Frame time"
 msgstr "Temps d'image"
 
-#: title/pc5_ui.c:2382
+#: title/pc5_ui.c:2399
 msgid "How long a frame takes, on average, in milliseconds"
 msgstr "Durée moyenne d'une image, en millisecondes"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2386
+#: title/pc5_ui.c:2403
 msgid "CPU usage"
 msgstr "Utilisation du CPU"
 
-#: title/pc5_ui.c:2387
+#: title/pc5_ui.c:2404
 msgid "How busy the console's CPU is, with everything it runs"
 msgstr "L'activité du CPU de la console, avec tout ce qu'il exécute"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2391
+#: title/pc5_ui.c:2408
 msgid "GPU usage"
 msgstr "Utilisation du GPU"
 
-#: title/pc5_ui.c:2392
+#: title/pc5_ui.c:2409
 msgid "How busy the console's GPU is"
 msgstr "L'activité du GPU de la console"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2396
+#: title/pc5_ui.c:2413
 msgid "CPU temperature"
 msgstr "Température du CPU"
 
-#: title/pc5_ui.c:2397
+#: title/pc5_ui.c:2414
 msgid "In degrees Celsius"
 msgstr "En degrés Celsius"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2401
+#: title/pc5_ui.c:2418
 msgid "SoC temperature"
 msgstr "Température du SoC"
 
-#: title/pc5_ui.c:2402
+#: title/pc5_ui.c:2419
 msgid "The console chip's, in degrees Celsius"
 msgstr "Celle de la puce de la console, en degrés Celsius"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2406 title/pc5_ui.c:5839
+#: title/pc5_ui.c:2423 title/pc5_ui.c:6055
 msgid "Memory"
 msgstr "Mémoire"
 
-#: title/pc5_ui.c:2407
+#: title/pc5_ui.c:2424
 msgid "What the game uses, of what it has, in GB"
 msgstr "Ce que le jeu utilise, sur ce dont il dispose, en Go"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2411
+#: title/pc5_ui.c:2428
 msgid "Corner"
 msgstr "Coin"
 
-#: title/pc5_ui.c:2412
+#: title/pc5_ui.c:2429
 msgid "Where the overlay sits on the screen"
 msgstr "L'endroit de l'écran où se place la superposition"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2416 title/pc5_ui.c:6333
+#: title/pc5_ui.c:2433 title/pc5_ui.c:6549
 msgid "Size"
 msgstr "Taille"
 
-#: title/pc5_ui.c:2418
+#: title/pc5_ui.c:2435
 msgid "Every line at once, twice the size, by the console"
 msgstr "Toutes les lignes à la fois, en taille double, par la console"
 
-#: title/pc5_ui.c:2419
+#: title/pc5_ui.c:2436
 msgid "Twice the size, two lines at a time, taking turns"
 msgstr "En taille double, deux lignes à la fois, à tour de rôle"
 
-#: title/pc5_ui.c:2420
+#: title/pc5_ui.c:2437
 msgid "Every line at once, in small text"
 msgstr "Toutes les lignes à la fois, en petit texte"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2424
+#: title/pc5_ui.c:2441
 msgid "Vibration"
 msgstr "Vibrations"
 
-#: title/pc5_ui.c:2425
+#: title/pc5_ui.c:2442
 msgid "How strongly the controller rumbles with the game"
 msgstr "L'intensité des vibrations de la manette avec le jeu"
 
-#: title/pc5_ui.c:2426
+#: title/pc5_ui.c:2443
 msgid "The game's rumble on the controller"
 msgstr "Les vibrations du jeu sur la manette"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2430
+#: title/pc5_ui.c:2447
 msgid "Light bar"
 msgstr "Barre lumineuse"
 
-#: title/pc5_ui.c:2431
+#: title/pc5_ui.c:2448
 msgid "The colour of what is on screen"
 msgstr "La couleur de ce qui est à l'écran"
 
-#: title/pc5_ui.c:2432
+#: title/pc5_ui.c:2449
 msgid "The main colour of the game's cover"
 msgstr "La couleur principale de la pochette du jeu"
 
-#: title/pc5_ui.c:2433
+#: title/pc5_ui.c:2450
 msgid "PC5 leaves the console's colour"
 msgstr "PC5 laisse la couleur de la console"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2437
+#: title/pc5_ui.c:2454
 msgid "Adaptive triggers"
 msgstr "Gâchettes adaptatives"
 
-#: title/pc5_ui.c:2438
+#: title/pc5_ui.c:2455
 msgid "L2 and R2 vibrate with the game's rumble"
 msgstr "L2 et R2 vibrent avec les vibrations du jeu"
 
-#: title/pc5_ui.c:2439
+#: title/pc5_ui.c:2456
 msgid "L2 and R2 push back as you press them"
 msgstr "L2 et R2 résistent quand vous les pressez"
 
-#: title/pc5_ui.c:2440
+#: title/pc5_ui.c:2457
 msgid "L2 and R2 push back, and buzz with the rumble"
 msgstr "L2 et R2 résistent et vibrent avec le jeu"
 
-#: title/pc5_ui.c:2441
+#: title/pc5_ui.c:2458
 msgid "Rumble, resistance or both on L2 and R2"
 msgstr "Vibration, résistance ou les deux sur L2 et R2"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2445
+#: title/pc5_ui.c:2462
 msgid "Trigger rumble"
 msgstr "Vibration des gâchettes"
 
-#: title/pc5_ui.c:2446
+#: title/pc5_ui.c:2463
 msgid "How strongly L2 and R2 vibrate"
 msgstr "L'intensité des vibrations de L2 et R2"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2450
+#: title/pc5_ui.c:2467
 msgid "Trigger resistance"
 msgstr "Résistance des gâchettes"
 
-#: title/pc5_ui.c:2451
+#: title/pc5_ui.c:2468
 msgid "How firmly L2 and R2 push back"
 msgstr "La fermeté de la résistance de L2 et R2"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2455
+#: title/pc5_ui.c:2472
 msgid "Check when PC5 opens"
 msgstr "Vérifier à l'ouverture de PC5"
 
-#: title/pc5_ui.c:2456
+#: title/pc5_ui.c:2473
 msgid "Asks GitHub for a newer PC5 each time you open PC5, and offers it"
 msgstr ""
 "Demande à GitHub s'il y a un PC5 plus récent à chaque ouverture de PC5, et "
 "le propose"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2460
+#: title/pc5_ui.c:2477
 msgid "Check now"
 msgstr "Vérifier maintenant"
 
-#: title/pc5_ui.c:2462
+#: title/pc5_ui.c:2479
 #, c-format
 msgid ""
 "PC5 %s is out: copy it over this one from github.com/bornaradusin/PC5"
@@ -1719,112 +1763,112 @@ msgstr ""
 "github.com/bornaradusin/PC5"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2468
+#: title/pc5_ui.c:2485
 msgid "Startup sound"
 msgstr "Son de démarrage"
 
-#: title/pc5_ui.c:2469
+#: title/pc5_ui.c:2486
 msgid "On the controller's speaker when PC5 opens"
 msgstr "Sur le haut-parleur de la manette à l'ouverture de PC5"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2473
+#: title/pc5_ui.c:2490
 msgid "Startup sound volume"
 msgstr "Volume du son de démarrage"
 
-#: title/pc5_ui.c:2474
+#: title/pc5_ui.c:2491
 msgid "How loud the startup sound plays"
 msgstr "Le volume du son de démarrage"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2480
+#: title/pc5_ui.c:2497
 msgid "Language"
 msgstr "Langue"
 
-#: title/pc5_ui.c:2482
+#: title/pc5_ui.c:2499
 msgid "PC5's screens and web page; System default follows the console"
 msgstr "Écrans et page web de PC5; Par défaut suit la console"
 
-#: title/pc5_ui.c:2485
+#: title/pc5_ui.c:2502
 #, c-format
 msgid "As the console: %s"
 msgstr "Comme la console : %s"
 
 #. the Language setting's value when PC5 follows the console's language.
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2487
+#: title/pc5_ui.c:2504
 msgid "System default"
 msgstr "Par défaut"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:2492 title/pc5_ui.c:7086 title/pc5_ui.c:7315
+#: title/pc5_ui.c:2509 title/pc5_ui.c:7400 title/pc5_ui.c:7633
 msgid "Update now"
 msgstr "Mettre à jour"
 
-#: title/pc5_ui.c:2496
+#: title/pc5_ui.c:2513
 #, c-format
 msgid "%.160s, installs it and restarts PC5"
 msgstr "%.160s, l'installe et redémarre PC5"
 
-#: title/pc5_ui.c:2502
+#: title/pc5_ui.c:2519
 msgid "Its store's covers and backgrounds"
 msgstr "Les pochettes et arrière-plans de sa boutique"
 
-#: title/pc5_ui.c:2502
+#: title/pc5_ui.c:2519
 msgid "Covers and backgrounds its members made, with your key"
 msgstr "Pochettes et arrière-plans créés par ses membres, avec votre clé"
 
-#: title/pc5_ui.c:2503
+#: title/pc5_ui.c:2520
 msgid "Its catalogue's covers and backgrounds"
 msgstr "Les pochettes et arrière-plans de son catalogue"
 
-#: title/pc5_ui.c:2503
+#: title/pc5_ui.c:2520
 msgid "The cover on the game's page, and its Steam background"
 msgstr "La pochette de la page du jeu, et son arrière-plan Steam"
 
-#: title/pc5_ui.c:2504
+#: title/pc5_ui.c:2521
 msgid "Steam's pictures for a game Steam's search misses"
 msgstr ""
 "Les images de Steam pour un jeu que la recherche de Steam ne trouve pas"
 
-#: title/pc5_ui.c:2512
+#: title/pc5_ui.c:2529
 #, c-format
 msgid "Needs your key, in %s"
 msgstr "Nécessite votre clé, dans %s"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2513
+#: title/pc5_ui.c:2530
 msgid "No key"
 msgstr "Pas de clé"
 
-#: title/pc5_ui.c:2515
+#: title/pc5_ui.c:2532
 #, c-format
 msgid "It refused the key in %s: check it there"
 msgstr "Il a refusé la clé dans %s : vérifiez-la"
 
-#: title/pc5_ui.c:2760
+#: title/pc5_ui.c:2777
 msgid "Home screen tiles aren't available"
 msgstr "Les vignettes de l'écran d'accueil ne sont pas disponibles"
 
-#: title/pc5_ui.c:2760
+#: title/pc5_ui.c:2777
 msgid "This copy of PC5 has no tile program."
 msgstr "Cette copie de PC5 n'a pas de programme de vignette."
 
-#: title/pc5_ui.c:2767
+#: title/pc5_ui.c:2784
 #, c-format
 msgid "PC5 can't delete its folder, %s/%s."
 msgstr "PC5 ne peut pas supprimer son dossier, %s/%s."
 
-#: title/pc5_ui.c:2768
+#: title/pc5_ui.c:2785
 msgid "The tile wasn't taken away"
 msgstr "La vignette n'a pas été retirée"
 
-#: title/pc5_ui.c:2772
+#: title/pc5_ui.c:2789
 msgid "Taken off the home screen"
 msgstr "Retirée de l'écran d'accueil"
 
-#: title/pc5_ui.c:2773
+#: title/pc5_ui.c:2790
 msgid ""
 "The tile's folder is deleted. If the tile is still on the home screen, "
 "delete it there."
@@ -1832,11 +1876,11 @@ msgstr ""
 "Le dossier de la vignette est supprimé. Si la vignette est encore sur "
 "l'écran d'accueil, supprimez-la depuis celui-ci."
 
-#: title/pc5_ui.c:2790 title/pc5_ui.c:2806
+#: title/pc5_ui.c:2807 title/pc5_ui.c:2823
 msgid "The tile wasn't made"
 msgstr "La vignette n'a pas été créée"
 
-#: title/pc5_ui.c:2793
+#: title/pc5_ui.c:2810
 #, c-format
 msgid ""
 "Its tile, %s, appears on the home screen once you close PC5 and "
@@ -1850,11 +1894,11 @@ msgstr ""
 "l'écran d'accueil. Elle s'exécute depuis le dossier de PC5, %s : laissez "
 "PC5 à cet endroit."
 
-#: title/pc5_ui.c:2798 title/pc5_ui.c:2813
+#: title/pc5_ui.c:2815 title/pc5_ui.c:2830
 msgid "Added to the home screen"
 msgstr "Ajoutée à l'écran d'accueil"
 
-#: title/pc5_ui.c:2810
+#: title/pc5_ui.c:2827
 #, c-format
 msgid ""
 "Its tile, %s, appears on the home screen once ShadowMountPlus finds it in "
@@ -1865,29 +1909,29 @@ msgstr ""
 "trouve dans %s. Elle lance le jeu directement, et quitter le jeu ramène à "
 "l'écran d'accueil."
 
-#: title/pc5_ui.c:2912
+#: title/pc5_ui.c:2929
 #, c-format
 msgid "PC5 %s is available on GitHub (you have %s)."
 msgstr "PC5 %s est disponible sur GitHub (vous avez la %s)."
 
-#: title/pc5_ui.c:2946
+#: title/pc5_ui.c:2963
 #, c-format
 msgid "%s stopped with an error"
 msgstr "%s s'est arrêté sur une erreur"
 
-#: title/pc5_ui.c:2947
+#: title/pc5_ui.c:2964
 #, c-format
 msgid "Wine reported a crash. Its log is kept as %.120s in %.120s."
 msgstr ""
 "Wine a signalé un plantage. Son journal est conservé sous le nom %.120s "
 "dans %.120s."
 
-#: title/pc5_ui.c:2950
+#: title/pc5_ui.c:2967
 #, c-format
 msgid "%s closed before showing anything"
 msgstr "%s s'est fermé sans rien afficher"
 
-#: title/pc5_ui.c:2951
+#: title/pc5_ui.c:2968
 #, c-format
 msgid ""
 "If PC5 started the wrong program, choose Change program in the game's menu "
@@ -1897,12 +1941,12 @@ msgstr ""
 "le menu du jeu (Triangle). Son journal est conservé sous le nom %.120s "
 "dans %.120s."
 
-#: title/pc5_ui.c:2955
+#: title/pc5_ui.c:2972
 #, c-format
 msgid "%s had to be closed"
 msgstr "%s a dû être fermé"
 
-#: title/pc5_ui.c:2956
+#: title/pc5_ui.c:2973
 #, c-format
 msgid ""
 "It didn't close when asked, so PC5 ended it. Its log is kept as %.120s in "
@@ -1911,26 +1955,26 @@ msgstr ""
 "Il ne s'est pas fermé quand on le lui a demandé, PC5 l'a donc arrêté. Son "
 "journal est conservé sous le nom %.120s dans %.120s."
 
-#: title/pc5_ui.c:2960
+#: title/pc5_ui.c:2977
 #, c-format
 msgid "%s ended unexpectedly"
 msgstr "%s s'est arrêté de façon inattendue"
 
-#: title/pc5_ui.c:2961
+#: title/pc5_ui.c:2978
 msgid "PC5 ended unexpectedly last time"
 msgstr "PC5 s'est arrêté de façon inattendue la dernière fois"
 
-#: title/pc5_ui.c:2962
+#: title/pc5_ui.c:2979
 #, c-format
 msgid "Its log is kept as %.120s in %.120s."
 msgstr "Son journal est conservé sous le nom %.120s dans %.120s."
 
-#: title/pc5_ui.c:2984
+#: title/pc5_ui.c:3001
 #, c-format
 msgid "No log of %s yet"
 msgstr "Pas encore de journal pour %s"
 
-#: title/pc5_ui.c:2985
+#: title/pc5_ui.c:3002
 msgid ""
 "Play it once until the problem happens, then come back here: its log goes "
 "with the report."
@@ -1938,12 +1982,12 @@ msgstr ""
 "Jouez-y une fois jusqu'à ce que le problème survienne, puis revenez ici : "
 "son journal accompagnera le signalement."
 
-#: title/pc5_ui.c:2999
+#: title/pc5_ui.c:3016
 #, c-format
 msgid "Report a problem with %s"
 msgstr "Signaler un problème avec %s"
 
-#: title/pc5_ui.c:3000
+#: title/pc5_ui.c:3017
 #, c-format
 msgid ""
 "Its newest log, %.120s, is in %.120s/logs. Press Triangle for a QR code "
@@ -1954,79 +1998,79 @@ msgstr ""
 "sur Triangle pour un code QR qui ouvre le formulaire de GitHub avec le "
 "jeu, PC5 et les paramètres du jeu déjà remplis; joignez-y ce zip."
 
-#: title/pc5_ui.c:3245
+#: title/pc5_ui.c:3262
 msgid "PC5's INSTALL folder"
 msgstr "Dossier INSTALL de PC5"
 
-#: title/pc5_ui.c:3251
+#: title/pc5_ui.c:3268
 msgid "PC5's app"
 msgstr "Application PC5"
 
-#: title/pc5_ui.c:3256
+#: title/pc5_ui.c:3273
 msgid "Whole console"
 msgstr "Toute la console"
 
-#: title/pc5_ui.c:3289
+#: title/pc5_ui.c:3306
 msgid "Plug in the game's USB drive"
 msgstr "Branchez le disque USB du jeu"
 
-#: title/pc5_ui.c:3289
+#: title/pc5_ui.c:3306
 msgid "Its files are on the USB drive it plays from."
 msgstr "Ses fichiers sont sur le disque USB depuis lequel il se lance."
 
-#: title/pc5_ui.c:3291
+#: title/pc5_ui.c:3308
 msgid "PC5 can't find the game's folder"
 msgstr "PC5 ne trouve pas le dossier du jeu"
 
-#: title/pc5_ui.c:3291 title/pc5_ui.c:4620
+#: title/pc5_ui.c:3308 title/pc5_ui.c:4829
 msgid "Its files may be missing: uninstall it and install it again."
 msgstr ""
 "Il manque peut-être des fichiers : désinstallez-le puis réinstallez-le."
 
-#: title/pc5_ui.c:3369 title/pc5_ui.c:6878
+#: title/pc5_ui.c:3388 title/pc5_ui.c:7094
 msgid "PC5 can't open this folder"
 msgstr "PC5 ne peut pas ouvrir ce dossier"
 
-#: title/pc5_ui.c:3369
+#: title/pc5_ui.c:3388
 msgid "Its path is too long."
 msgstr "Son chemin est trop long."
 
-#: title/pc5_ui.c:3421
+#: title/pc5_ui.c:3444
 msgid "Nothing was deleted"
 msgstr "Rien n'a été supprimé"
 
-#: title/pc5_ui.c:3421
+#: title/pc5_ui.c:3444
 msgid "Nothing was moved"
 msgstr "Rien n'a été déplacé"
 
-#: title/pc5_ui.c:3421
+#: title/pc5_ui.c:3444
 msgid "Nothing was copied"
 msgstr "Rien n'a été copié"
 
-#: title/pc5_ui.c:3467
+#: title/pc5_ui.c:3490
 msgid "Nothing was pasted"
 msgstr "Rien n'a été collé"
 
-#: title/pc5_ui.c:3467
+#: title/pc5_ui.c:3490
 msgid "Those items are here already, and were left as they were."
 msgstr "Ces éléments sont déjà ici et ont été laissés tels quels."
 
-#: title/pc5_ui.c:3470
+#: title/pc5_ui.c:3493
 msgid "Stopped"
 msgstr "Arrêté"
 
-#: title/pc5_ui.c:3471
+#: title/pc5_ui.c:3494
 msgid "What was deleted so far is gone; the rest is still here."
 msgstr "Ce qui a été supprimé jusqu'ici a disparu; le reste est toujours là."
 
-#: title/pc5_ui.c:3472
+#: title/pc5_ui.c:3495
 msgid ""
 "What was moved so far is here. Nothing was deleted from where it came from."
 msgstr ""
 "Ce qui a été déplacé jusqu'ici est là. Rien n'a été supprimé de "
 "l'emplacement d'origine."
 
-#: title/pc5_ui.c:3473
+#: title/pc5_ui.c:3496
 msgid ""
 "What was copied so far is here; the file being copied when it stopped was "
 "deleted."
@@ -2034,78 +2078,109 @@ msgstr ""
 "Ce qui a été copié jusqu'ici est là; le fichier en cours de copie au "
 "moment de l'arrêt a été supprimé."
 
-#: title/pc5_ui.c:3476
+#: title/pc5_ui.c:3499
 msgid "Not everything was deleted"
 msgstr "Tout n'a pas été supprimé"
 
-#: title/pc5_ui.c:3476
+#: title/pc5_ui.c:3499
 msgid "Not everything was moved"
 msgstr "Tout n'a pas été déplacé"
 
-#: title/pc5_ui.c:3476
+#: title/pc5_ui.c:3499
 msgid "Not everything was copied"
 msgstr "Tout n'a pas été copié"
 
-#: title/pc5_ui.c:3488 title/pc5_ui.c:3492
+#: title/pc5_ui.c:3511 title/pc5_ui.c:3515
 msgid "That name can't be used"
 msgstr "Ce nom ne peut pas être utilisé"
 
-#: title/pc5_ui.c:3492
+#: title/pc5_ui.c:3515
 msgid "The path would be too long."
 msgstr "Le chemin serait trop long."
 
-#: title/pc5_ui.c:3501 title/pc5_ui.c:3514
+#: title/pc5_ui.c:3524 title/pc5_ui.c:3537
 #, c-format
 msgid "This folder has %.200s already."
 msgstr "Ce dossier contient déjà %.200s."
 
-#: title/pc5_ui.c:3502 title/pc5_ui.c:3515
+#: title/pc5_ui.c:3525 title/pc5_ui.c:3538
 msgid "That name is taken"
 msgstr "Ce nom est déjà pris"
 
-#: title/pc5_ui.c:3506 title/pc5_ui.c:3519
+#: title/pc5_ui.c:3529 title/pc5_ui.c:3542
 #, c-format
 msgid "%s."
 msgstr "%s."
 
-#: title/pc5_ui.c:3508
+#: title/pc5_ui.c:3531
 msgid "PC5 can't rename it"
 msgstr "PC5 ne peut pas le renommer"
 
-#: title/pc5_ui.c:3521
+#: title/pc5_ui.c:3544
 msgid "PC5 can't make the folder"
 msgstr "PC5 ne peut pas créer le dossier"
 
 #. The title of the console's on-screen keyboard.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:3555 title/pc5_ui.c:6900
+#: title/pc5_ui.c:3578 title/pc5_ui.c:7116
 msgid "Rename"
 msgstr "Renommer"
 
 #. The title of the console's on-screen keyboard.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:3555 title/pc5_ui.c:3557 title/pc5_ui.c:6901
+#: title/pc5_ui.c:3578 title/pc5_ui.c:3580 title/pc5_ui.c:7117
 msgid "New folder"
 msgstr "Nouveau dossier"
 
-#: title/pc5_ui.c:3560 title/pc5_ui.c:4005 title/pc5_ui.c:4494
+#: title/pc5_ui.c:3583 title/pc5_ui.c:3684 title/pc5_ui.c:4214
+#: title/pc5_ui.c:4703
 msgid "The keyboard didn't open"
 msgstr "Le clavier ne s'est pas ouvert"
 
-#: title/pc5_ui.c:3560 title/pc5_ui.c:4005 title/pc5_ui.c:4494
+#: title/pc5_ui.c:3583 title/pc5_ui.c:3684 title/pc5_ui.c:4214
+#: title/pc5_ui.c:4703
 msgid "The console's on-screen keyboard can't be used just now."
 msgstr ""
 "Le clavier à l'écran de la console n'est pas disponible pour le moment."
 
-#: title/pc5_ui.c:3786
+#: title/pc5_ui.c:3623
+msgid "PC5 can't open it as text"
+msgstr "PC5 ne peut pas l'ouvrir comme texte"
+
+#: title/pc5_ui.c:3653
+msgid "PC5 couldn't save it"
+msgstr "PC5 n'a pas pu l'enregistrer"
+
+#: title/pc5_ui.c:3670
+msgid "This line is too long to change here"
+msgstr "Cette ligne est trop longue pour être modifiée ici"
+
+#: title/pc5_ui.c:3671
+msgid ""
+"The console's keyboard holds about 1000 characters. Change it from PC5's "
+"web page, or a computer over FTP."
+msgstr ""
+"Le clavier de la console contient environ 1000 caractères. Modifiez-la "
+"depuis la page web de PC5, ou depuis un ordinateur par FTP."
+
+#: title/pc5_ui.c:3676 title/pc5_ui.c:7222
+#, c-format
+msgid "Line %d"
+msgstr "Ligne %d"
+
+#: title/pc5_ui.c:3678
+msgid "New line"
+msgstr "Nouvelle ligne"
+
+#: title/pc5_ui.c:3995
 msgid "This tile's game can't start"
 msgstr "Le jeu de cette vignette ne peut pas démarrer"
 
-#: title/pc5_ui.c:3832
+#: title/pc5_ui.c:4041
 msgid "PC5 couldn't restart"
 msgstr "PC5 n'a pas pu redémarrer"
 
-#: title/pc5_ui.c:3833
+#: title/pc5_ui.c:4042
 msgid ""
 "The new version is installed. Close PC5 from the PS button and open it "
 "again."
@@ -2113,29 +2188,29 @@ msgstr ""
 "La nouvelle version est installée. Fermez PC5 depuis la touche PS et "
 "rouvrez-le."
 
-#: title/pc5_ui.c:3843
+#: title/pc5_ui.c:4052
 msgid "The update was stopped"
 msgstr "La mise à jour a été arrêtée"
 
-#: title/pc5_ui.c:3843
+#: title/pc5_ui.c:4052
 msgid "PC5 is as it was, and what was downloaded is deleted."
 msgstr "PC5 est resté tel quel, et ce qui a été téléchargé est supprimé."
 
-#: title/pc5_ui.c:3846
+#: title/pc5_ui.c:4055
 msgid "PC5's update isn't finished"
 msgstr "La mise à jour de PC5 n'est pas terminée"
 
-#: title/pc5_ui.c:3846
+#: title/pc5_ui.c:4055
 msgid "PC5 wasn't updated"
 msgstr "PC5 n'a pas été mis à jour"
 
-#: title/pc5_ui.c:3936 title/pc5_ui.c:4850 title/pc5_ui.c:4867
-#: title/pc5_ui.c:4937
+#: title/pc5_ui.c:4145 title/pc5_ui.c:5065 title/pc5_ui.c:5082
+#: title/pc5_ui.c:5152
 #, c-format
 msgid "%s can't start"
 msgstr "%s ne peut pas démarrer"
 
-#: title/pc5_ui.c:3937
+#: title/pc5_ui.c:4146
 #, c-format
 msgid ""
 "%s You can uninstall it from its menu (Triangle) and install it again."
@@ -2143,45 +2218,45 @@ msgstr ""
 "%s Vous pouvez le désinstaller depuis son menu (Triangle) puis le "
 "réinstaller."
 
-#: title/pc5_ui.c:3938 title/pc5_ui.c:4436
+#: title/pc5_ui.c:4147 title/pc5_ui.c:4645
 msgid "Something it needs is missing."
 msgstr "Il manque quelque chose dont il a besoin."
 
 #. The title of the console's on-screen keyboard.
-#: title/pc5_ui.c:4000
+#: title/pc5_ui.c:4209
 msgid "Username (empty: any)"
 msgstr "Nom d'utilisateur (vide : n'importe lequel)"
 
 #. The title of the console's on-screen keyboard.
-#: title/pc5_ui.c:4000
+#: title/pc5_ui.c:4209
 msgid "Password (empty: none)"
 msgstr "Mot de passe (vide : aucun)"
 
-#: title/pc5_ui.c:4125 title/pc5_ui.c:4256
+#: title/pc5_ui.c:4334 title/pc5_ui.c:4465
 msgid "Out of memory"
 msgstr "Mémoire insuffisante"
 
-#: title/pc5_ui.c:4125 title/pc5_ui.c:4256
+#: title/pc5_ui.c:4334 title/pc5_ui.c:4465
 msgid "PC5 couldn't make room to read the folders."
 msgstr "PC5 n'a pas pu libérer assez de mémoire pour lire les dossiers."
 
-#: title/pc5_ui.c:4137
+#: title/pc5_ui.c:4346
 msgid "PC5 can't read that folder"
 msgstr "PC5 ne peut pas lire ce dossier"
 
-#: title/pc5_ui.c:4137
+#: title/pc5_ui.c:4346
 msgid "Check that the USB drive is still plugged in."
 msgstr "Vérifiez que le disque USB est toujours branché."
 
-#: title/pc5_ui.c:4188
+#: title/pc5_ui.c:4397
 msgid "Nothing to install"
 msgstr "Rien à installer"
 
-#: title/pc5_ui.c:4188
+#: title/pc5_ui.c:4397
 msgid "None of these folders has a game PC5 can install."
 msgstr "Aucun de ces dossiers ne contient de jeu que PC5 peut installer."
 
-#: title/pc5_ui.c:4193
+#: title/pc5_ui.c:4402
 #, c-format
 msgid ""
 "Together they need %s and the console has %s free. Go back and untick some."
@@ -2189,67 +2264,67 @@ msgstr ""
 "Ensemble, ils ont besoin de %s et la console a %s de libre. Revenez en "
 "arrière et décochez-en quelques-uns."
 
-#: title/pc5_ui.c:4195
+#: title/pc5_ui.c:4404
 msgid "Not enough space for all of them"
 msgstr "Pas assez d'espace pour tous"
 
-#: title/pc5_ui.c:4229
+#: title/pc5_ui.c:4438
 msgid "This folder can't be installed"
 msgstr "Ce dossier ne peut pas être installé"
 
-#: title/pc5_ui.c:4284
+#: title/pc5_ui.c:4493
 #, c-format
 msgid "The update needs %s and the console has %s free."
 msgstr "La mise à jour a besoin de %s et la console a %s de libre."
 
-#: title/pc5_ui.c:4317
+#: title/pc5_ui.c:4526
 #, c-format
 msgid "%s's program wasn't changed"
 msgstr "Le programme de %s n'a pas été changé"
 
-#: title/pc5_ui.c:4321
+#: title/pc5_ui.c:4530
 #, c-format
 msgid "%s starts %s now"
 msgstr "%s lance maintenant %s"
 
-#: title/pc5_ui.c:4322
+#: title/pc5_ui.c:4531
 #, c-format
 msgid "It runs as %d-bit %s."
 msgstr "Il tourne en %d bits, avec %s."
 
-#: title/pc5_ui.c:4341 title/pc5_ui.c:4436
+#: title/pc5_ui.c:4550 title/pc5_ui.c:4645
 msgid "This game can't start"
 msgstr "Ce jeu ne peut pas démarrer"
 
-#: title/pc5_ui.c:4445
+#: title/pc5_ui.c:4654
 msgid "Its program is set in its prospero-win profile."
 msgstr "Son programme est défini dans son profil prospero-win."
 
-#: title/pc5_ui.c:4488
+#: title/pc5_ui.c:4697
 msgid "Search for covers by name"
 msgstr "Chercher des pochettes par nom"
 
-#: title/pc5_ui.c:4489
+#: title/pc5_ui.c:4698
 msgid "Search for tile pictures by name"
 msgstr "Chercher des images de vignette par nom"
 
-#: title/pc5_ui.c:4490
+#: title/pc5_ui.c:4699
 msgid "Search for backgrounds by name"
 msgstr "Chercher des arrière-plans par nom"
 
-#: title/pc5_ui.c:4548
+#: title/pc5_ui.c:4757
 msgid "Your mapping wasn't saved"
 msgstr "Votre configuration n'a pas été enregistrée"
 
-#: title/pc5_ui.c:4548
+#: title/pc5_ui.c:4757
 msgid "PC5 couldn't write it to the console's storage."
 msgstr "PC5 n'a pas pu l'écrire dans le stockage de la console."
 
-#: title/pc5_ui.c:4551
+#: title/pc5_ui.c:4760
 msgid "Saved as your mapping"
 msgstr "Enregistrée comme votre configuration"
 
-#: title/pc5_ui.c:4552
+#: title/pc5_ui.c:4761
 msgid ""
 "Games set up from now on start with it, and Use my mapping puts it on any "
 "game."
@@ -2257,31 +2332,31 @@ msgstr ""
 "Les jeux configurés à partir de maintenant démarrent avec elle, et "
 "Utiliser ma configuration l'applique à n'importe quel jeu."
 
-#: title/pc5_ui.c:4620
+#: title/pc5_ui.c:4829
 msgid "PC5 can't read the game's folder"
 msgstr "PC5 ne peut pas lire le dossier du jeu"
 
-#: title/pc5_ui.c:4625
+#: title/pc5_ui.c:4834
 msgid "This game has one program"
 msgstr "Ce jeu n'a qu'un programme"
 
-#: title/pc5_ui.c:4625
+#: title/pc5_ui.c:4834
 msgid "There is no other program in its folder to start."
 msgstr "Son dossier ne contient aucun autre programme à lancer."
 
-#: title/pc5_ui.c:4719
+#: title/pc5_ui.c:4928
 #, c-format
 msgid "%s wasn't uninstalled"
 msgstr "%s n'a pas été désinstallé"
 
-#: title/pc5_ui.c:4720
+#: title/pc5_ui.c:4929
 #, c-format
 msgid "%s Nothing was changed."
 msgstr "%s Rien n'a été modifié."
 
 #. added after the sentence before it, hence the space at its start.
 #. Keep the space at the start or end: the text is joined to another.
-#: title/pc5_ui.c:4743
+#: title/pc5_ui.c:4952
 msgid ""
 " Its home screen tile's folder was deleted: if the tile is still on the "
 "home screen, delete it there."
@@ -2289,43 +2364,43 @@ msgstr ""
 " Le dossier de sa vignette sur l'écran d'accueil a été supprimé : si la "
 "vignette est encore sur l'écran d'accueil, supprimez-la depuis celui-ci."
 
-#: title/pc5_ui.c:4746
+#: title/pc5_ui.c:4955
 #, c-format
 msgid "The saves of %s weren't fully deleted"
 msgstr "Les sauvegardes de %s n'ont pas été entièrement supprimées"
 
-#: title/pc5_ui.c:4746
+#: title/pc5_ui.c:4955
 #, c-format
 msgid "The saves of %s are deleted"
 msgstr "Les sauvegardes de %s sont supprimées"
 
-#: title/pc5_ui.c:4748
+#: title/pc5_ui.c:4957
 #, c-format
 msgid "%s PC5 finishes deleting them the next time it starts."
 msgstr "%s PC5 terminera de les supprimer à son prochain démarrage."
 
-#: title/pc5_ui.c:4749
+#: title/pc5_ui.c:4958
 msgid "Its saves and settings, kept when it was uninstalled, are gone."
 msgstr ""
 "Ses sauvegardes et paramètres, conservés lors de sa désinstallation, ont "
 "été supprimés."
 
-#: title/pc5_ui.c:4751
+#: title/pc5_ui.c:4960
 #, c-format
 msgid "%s wasn't fully uninstalled"
 msgstr "%s n'a pas été entièrement désinstallé"
 
-#: title/pc5_ui.c:4751
+#: title/pc5_ui.c:4960
 #, c-format
 msgid "%s is uninstalled"
 msgstr "%s est désinstallé"
 
-#: title/pc5_ui.c:4752
+#: title/pc5_ui.c:4961
 #, c-format
 msgid "%s PC5 finishes it the next time it starts."
 msgstr "%s PC5 terminera à son prochain démarrage."
 
-#: title/pc5_ui.c:4754
+#: title/pc5_ui.c:4963
 #, c-format
 msgid ""
 "Its saves and settings are kept: installing it again puts them back. "
@@ -2334,17 +2409,17 @@ msgstr ""
 "Ses sauvegardes et paramètres sont conservés : le réinstaller les remet en "
 "place. Paramètres › Gestion des jeux › Désinstaller un jeu les supprime.%s"
 
-#: title/pc5_ui.c:4756
+#: title/pc5_ui.c:4965
 #, c-format
 msgid "The game, its saves and its settings were deleted.%s"
 msgstr "Le jeu, ses sauvegardes et ses paramètres ont été supprimés.%s"
 
-#: title/pc5_ui.c:4919
+#: title/pc5_ui.c:5134
 #, c-format
 msgid "%s needs Steam"
 msgstr "%s a besoin de Steam"
 
-#: title/pc5_ui.c:4922
+#: title/pc5_ui.c:5137
 msgid ""
 "Its program is wrapped in Steam's DRM (SteamStub), which starts only with "
 "Steam running, and Steam doesn't run on the console. A copy of the game "
@@ -2354,81 +2429,82 @@ msgstr ""
 "que si Steam est lancé, et Steam ne fonctionne pas sur la console. Une "
 "copie du jeu sans ce DRM peut démarrer."
 
-#: title/pc5_ui.c:4958
+#: title/pc5_ui.c:5173
 #, c-format
 msgid "%s didn't start"
 msgstr "%s n'a pas démarré"
 
-#: title/pc5_ui.c:4960
+#: title/pc5_ui.c:5175
 msgid "The console refused to start it. Try again, or restart PC5."
 msgstr "La console a refusé de le lancer. Réessayez, ou redémarrez PC5."
 
-#: title/pc5_ui.c:5485 title/pc5_ui.c:5495
+#: title/pc5_ui.c:5700 title/pc5_ui.c:5710
 msgid "Play Game"
 msgstr "Jouer"
 
 #. a chip under the game's name: 64-bit or 32-bit. Keep it short.
-#: title/pc5_ui.c:5506
+#: title/pc5_ui.c:5721
 #, c-format
 msgid "%d-bit"
 msgstr "%d bits"
 
-#: title/pc5_ui.c:5510
+#: title/pc5_ui.c:5725
 msgid "Frame gen"
 msgstr "Gén. d'images"
 
-#: title/pc5_ui.c:5511
+#: title/pc5_ui.c:5726
 #, c-format
 msgid "Controller: %s"
 msgstr "Manette : %s"
 
-#: title/pc5_ui.c:5599
+#: title/pc5_ui.c:5815
 msgid "No games yet."
 msgstr "Aucun jeu pour l'instant."
 
-#: title/pc5_ui.c:5599
+#: title/pc5_ui.c:5815
 msgid "Nothing played yet: games show here once you play them."
 msgstr ""
 "Aucun jeu lancé pour l'instant : les jeux apparaissent ici une fois que "
 "vous y avez joué."
 
-#: title/pc5_ui.c:5600
+#: title/pc5_ui.c:5816
 msgid "No favourites yet: press Square on a game to add it."
 msgstr ""
 "Aucun favori pour l'instant : appuyez sur Carré sur un jeu pour l'ajouter."
 
-#: title/pc5_ui.c:5601
+#: title/pc5_ui.c:5817
 msgid "No game is played from a USB drive."
 msgstr "Aucun jeu ne se lance depuis un disque USB."
 
-#: title/pc5_ui.c:5601
+#: title/pc5_ui.c:5817
 msgid "Every game can start."
 msgstr "Tous les jeux peuvent démarrer."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5625 title/pc5_ui.c:5672 title/pc5_ui.c:5748
-#: title/pc5_ui.c:5946 title/pc5_ui.c:6013 title/pc5_ui.c:6042
-#: title/pc5_ui.c:6095 title/pc5_ui.c:6142 title/pc5_ui.c:6364
-#: title/pc5_ui.c:6373 title/pc5_ui.c:6390 title/pc5_ui.c:6611
-#: title/pc5_ui.c:6654 title/pc5_ui.c:6814 title/pc5_ui.c:6873
-#: title/pc5_ui.c:6875 title/pc5_ui.c:6931 title/pc5_ui.c:7117
-#: title/pc5_ui.c:7200 title/pc5_ui.c:7211 title/pc5_ui.c:7235
-#: title/pc5_ui.c:7241
+#: title/pc5_ui.c:5841 title/pc5_ui.c:5888 title/pc5_ui.c:5964
+#: title/pc5_ui.c:6162 title/pc5_ui.c:6229 title/pc5_ui.c:6258
+#: title/pc5_ui.c:6311 title/pc5_ui.c:6358 title/pc5_ui.c:6580
+#: title/pc5_ui.c:6589 title/pc5_ui.c:6606 title/pc5_ui.c:6827
+#: title/pc5_ui.c:6870 title/pc5_ui.c:7030 title/pc5_ui.c:7089
+#: title/pc5_ui.c:7091 title/pc5_ui.c:7157 title/pc5_ui.c:7188
+#: title/pc5_ui.c:7190 title/pc5_ui.c:7233 title/pc5_ui.c:7431
+#: title/pc5_ui.c:7514 title/pc5_ui.c:7525 title/pc5_ui.c:7549
+#: title/pc5_ui.c:7555
 msgid "Back"
 msgstr "Retour"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5625 title/pc5_ui.c:5649 title/pc5_ui.c:5657
-#: title/pc5_ui.c:5762 title/pc5_ui.c:7211
+#: title/pc5_ui.c:5841 title/pc5_ui.c:5865 title/pc5_ui.c:5873
+#: title/pc5_ui.c:5978 title/pc5_ui.c:7525
 msgid "Play"
 msgstr "Jouer"
 
-#: title/pc5_ui.c:5635
+#: title/pc5_ui.c:5851
 msgid "No games yet"
 msgstr "Aucun jeu pour l'instant"
 
-#: title/pc5_ui.c:5637
+#: title/pc5_ui.c:5853
 msgid ""
 "Put a game's folder in PC5/INSTALL on a USB drive, then open Install › "
 "Install games from USB."
@@ -2436,7 +2512,7 @@ msgstr ""
 "Placez le dossier d'un jeu dans PC5/INSTALL sur un disque USB, puis ouvrez "
 "Installer › Installer des jeux par USB."
 
-#: title/pc5_ui.c:5640
+#: title/pc5_ui.c:5856
 msgid ""
 "Or send it from a phone or PC: Settings › Network › Web page or FTP server."
 msgstr ""
@@ -2444,124 +2520,125 @@ msgstr ""
 "web ou Serveur FTP."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5641
+#: title/pc5_ui.c:5857
 msgid "Tabs"
 msgstr "Onglets"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5649
+#: title/pc5_ui.c:5865
 msgid "Filter"
 msgstr "Filtrer"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5649 title/pc5_ui.c:5657
+#: title/pc5_ui.c:5865 title/pc5_ui.c:5873
 msgid "Game options"
 msgstr "Options du jeu"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5649 title/pc5_ui.c:5657
+#: title/pc5_ui.c:5865 title/pc5_ui.c:5873
 msgid "Favourite"
 msgstr "Favori"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5655
+#: title/pc5_ui.c:5871
 msgid "Focus mode"
 msgstr "Mode focus"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5748 title/pc5_ui.c:5946 title/pc5_ui.c:6012
+#: title/pc5_ui.c:5964 title/pc5_ui.c:6162 title/pc5_ui.c:6228
+#: title/pc5_ui.c:7189
 msgid "Change"
 msgstr "Changer"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5748 title/pc5_ui.c:5946 title/pc5_ui.c:6042
-#: title/pc5_ui.c:6095 title/pc5_ui.c:6373 title/pc5_ui.c:6931
-#: title/pc5_ui.c:7200
+#: title/pc5_ui.c:5964 title/pc5_ui.c:6162 title/pc5_ui.c:6258
+#: title/pc5_ui.c:6311 title/pc5_ui.c:6589 title/pc5_ui.c:7157
+#: title/pc5_ui.c:7233 title/pc5_ui.c:7514
 msgid "Choose"
 msgstr "Choisir"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5748
+#: title/pc5_ui.c:5964
 msgid "QR code"
 msgstr "Code QR"
 
-#: title/pc5_ui.c:5763
+#: title/pc5_ui.c:5979
 msgid "To leave it, hold the touchpad and OPTIONS for 2 s"
 msgstr "Pour en sortir, maintenez le pavé tactile et OPTIONS pendant 2 s"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5767
+#: title/pc5_ui.c:5983
 msgid "Controller"
 msgstr "Manette"
 
-#: title/pc5_ui.c:5768
+#: title/pc5_ui.c:5984
 msgid "The game sees a DualSense, as one plugged into a PC"
 msgstr "Le jeu voit une manette DualSense, comme branchée sur un PC"
 
-#: title/pc5_ui.c:5768
+#: title/pc5_ui.c:5984
 msgid "The buttons press keys, the sticks move the mouse"
 msgstr "Les touches tapent sur le clavier, les joysticks déplacent la souris"
 
-#: title/pc5_ui.c:5768
+#: title/pc5_ui.c:5984
 msgid "Games with controller support see an Xbox controller"
 msgstr "Les jeux compatibles manette voient une manette Xbox"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5772 title/pc5_ui.c:5953
+#: title/pc5_ui.c:5988 title/pc5_ui.c:6169
 msgid "Button mapping"
 msgstr "Attribution des touches"
 
-#: title/pc5_ui.c:5773
+#: title/pc5_ui.c:5989
 msgid "The key or mouse button each one sends"
 msgstr "La touche ou le bouton de souris que chacune envoie"
 
-#: title/pc5_ui.c:5778
+#: title/pc5_ui.c:5994
 msgid "Hides when not moved or clicked for 5 s"
 msgstr "Se cache sans mouvement ni clic pendant 5 s"
 
-#: title/pc5_ui.c:5778
+#: title/pc5_ui.c:5994
 msgid "Stays as the game shows it"
 msgstr "Reste comme le jeu l'affiche"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:5779
+#: title/pc5_ui.c:5995
 msgid "Hides when unused"
 msgstr "Masqué si inactif"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:5779
+#: title/pc5_ui.c:5995
 msgid "Shown"
 msgstr "Affiché"
 
-#: title/pc5_ui.c:5783
+#: title/pc5_ui.c:5999
 msgid "Frames, resolution, aspect ratio, memory and CPU"
 msgstr "Images, résolution, format d'image, mémoire et CPU"
 
-#: title/pc5_ui.c:5783
+#: title/pc5_ui.c:5999
 msgid "Frame generation, resolution, aspect ratio and CPU"
 msgstr "Génération d'images, résolution, format d'image et CPU"
 
-#: title/pc5_ui.c:5783
+#: title/pc5_ui.c:5999
 msgid "Frame generation, aspect ratio, memory and CPU"
 msgstr "Génération d'images, format d'image, mémoire et CPU"
 
-#: title/pc5_ui.c:5783
+#: title/pc5_ui.c:5999
 msgid "Frame generation, aspect ratio and CPU"
 msgstr "Génération d'images, format d'image et CPU"
 
-#: title/pc5_ui.c:5788
+#: title/pc5_ui.c:6004
 msgid "Its cover, its background and a home screen tile"
 msgstr "Sa pochette, son arrière-plan et une vignette sur l'écran d'accueil"
 
-#: title/pc5_ui.c:5793
+#: title/pc5_ui.c:6009
 msgid "Its program, updating it and uninstalling it"
 msgstr "Son programme, sa mise à jour et sa désinstallation"
 
-#: title/pc5_ui.c:5793
+#: title/pc5_ui.c:6009
 msgid "Its program and uninstalling it"
 msgstr "Son programme et sa désinstallation"
 
-#: title/pc5_ui.c:5800 title/pc5_ui.c:5802
+#: title/pc5_ui.c:6016 title/pc5_ui.c:6018
 msgid ""
 "Best for most games; change it only if the picture is wrong or it won't "
 "start"
@@ -2569,151 +2646,157 @@ msgstr ""
 "Idéal pour la plupart des jeux; changez-le seulement si l'image est "
 "incorrecte ou si le jeu ne démarre pas"
 
-#: title/pc5_ui.c:5801
+#: title/pc5_ui.c:6017
 msgid "Wine's own Direct3D draws it; change it only if the picture is wrong"
 msgstr ""
 "Le Direct3D propre à Wine l'affiche; changez-le seulement si l'image est "
 "incorrecte"
 
-#: title/pc5_ui.c:5803
+#: title/pc5_ui.c:6019
 msgid "Wine's own Direct3D 12; if it doesn't help, set it back to Auto"
 msgstr "Le Direct3D 12 propre à Wine; si ça n'aide pas, remettez Auto"
 
-#: title/pc5_ui.c:5804
+#: title/pc5_ui.c:6020
 msgid ""
 "Wine's own Direct3D on Vulkan; if it doesn't help, set it back to Auto"
 msgstr ""
 "Le Direct3D propre à Wine sur Vulkan; si ça n'aide pas, remettez Auto"
 
-#: title/pc5_ui.c:5805
+#: title/pc5_ui.c:6021
 msgid ""
 "Wine's own Direct3D on OpenGL; if it doesn't help, set it back to Auto"
 msgstr ""
 "Le Direct3D propre à Wine sur OpenGL; si ça n'aide pas, remettez Auto"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5806 title/pc5_ui.c:6077
+#: title/pc5_ui.c:6022 title/pc5_ui.c:6293
 msgid "Graphics API"
 msgstr "API graphique"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5812
+#: title/pc5_ui.c:6028
 msgid "Frame generation"
 msgstr "Génération d'images"
 
-#: title/pc5_ui.c:5816
+#: title/pc5_ui.c:6032
 msgid ""
 "Held at 40 fps, two frames made between each two: for a game that can't "
 "hold 60"
 msgstr ""
+"Maintenu à 40 fps, deux images créées entre chaque paire : pour un jeu qui "
+"ne tient pas 60"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:5817
+#: title/pc5_ui.c:6033
 msgid "40 → 120 fps"
-msgstr ""
+msgstr "40 → 120 fps"
 
-#: title/pc5_ui.c:5819
+#: title/pc5_ui.c:6035
 msgid ""
 "Held at 60 fps, a frame made between each two: smoother on a 120 Hz TV"
 msgstr ""
+"Maintenu à 60 fps, une image créée entre chaque paire : plus fluide sur "
+"une télé 120 Hz"
 
-#: title/pc5_ui.c:5820
+#: title/pc5_ui.c:6036
 msgid "Held at 30 fps and shown at 60: smoother where it runs below 60"
 msgstr ""
 "Bloqué à 30 fps et affiché à 60 : plus fluide là où il tourne sous les 60"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:5821
+#: title/pc5_ui.c:6037
 msgid "60 → 120 fps"
-msgstr ""
+msgstr "60 → 120 fps"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:5821
+#: title/pc5_ui.c:6037
 msgid "30 → 60 fps"
 msgstr "30 → 60 fps"
 
-#: title/pc5_ui.c:5823
+#: title/pc5_ui.c:6039
 msgid "Off. Left and right: 60 → 120 or 40 → 120 fps"
-msgstr ""
+msgstr "Désactivé. Gauche et droite : 60 → 120 ou 40 → 120 fps"
 
-#: title/pc5_ui.c:5824
+#: title/pc5_ui.c:6040
 msgid ""
 "Off. Left and right: 30 → 60 fps (with 120 Hz output on, 60 → 120 or 40 → "
 "120)"
 msgstr ""
+"Désactivé. Gauche et droite : 30 → 60 fps (avec la sortie 120 Hz activée, "
+"60 → 120 ou 40 → 120)"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5829
+#: title/pc5_ui.c:6045
 msgid "Resolution"
 msgstr "Résolution"
 
-#: title/pc5_ui.c:5830
+#: title/pc5_ui.c:6046
 msgid "Drawn at 4K, as the console shows it; four times the work of 1080p"
 msgstr ""
 "Rendu en 4K, comme l'affiche la console; quatre fois le travail de la 1080p"
 
-#: title/pc5_ui.c:5830
+#: title/pc5_ui.c:6046
 msgid "Drawn at 1440p and shown at 4K; sharper than 1080p, slower"
 msgstr "Rendu en 1440p et affiché en 4K; plus net que la 1080p, plus lent"
 
-#: title/pc5_ui.c:5830
+#: title/pc5_ui.c:6046
 msgid "Drawn at 1080p and shown at 4K by the console"
 msgstr "Rendu en 1080p et affiché en 4K par la console"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:5831
+#: title/pc5_ui.c:6047
 msgid "4K"
 msgstr "4K"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5834
+#: title/pc5_ui.c:6050
 msgid "Aspect ratio"
 msgstr "Format d'image"
 
-#: title/pc5_ui.c:5835
+#: title/pc5_ui.c:6051
 msgid "Stretched to fill the screen: a 4:3 picture gets wider"
 msgstr "Étiré pour remplir l'écran : une image en 4:3 s'élargit"
 
-#: title/pc5_ui.c:5835
+#: title/pc5_ui.c:6051
 msgid "The picture's own shape, with bars beside a 4:3 one"
 msgstr "La forme d'origine de l'image, avec des bandes sur les côtés en 4:3"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:5836
+#: title/pc5_ui.c:6052
 msgid "Stretch"
 msgstr "Étirer"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:5836
+#: title/pc5_ui.c:6052
 msgid "Keep"
 msgstr "Conserver"
 
-#: title/pc5_ui.c:5840
+#: title/pc5_ui.c:6056
 msgid ""
 "4 GB even for a game not made for it: room for mods; Auto if it misbehaves"
 msgstr ""
 "4 Go même pour un jeu qui n'est pas prévu pour : de la place pour les "
 "mods; Auto en cas de souci"
 
-#: title/pc5_ui.c:5841
+#: title/pc5_ui.c:6057
 msgid "As Windows: 4 GB for a game made for it, otherwise 2 GB"
 msgstr "Comme Windows : 4 Go pour un jeu prévu pour, sinon 2 Go"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:5842
+#: title/pc5_ui.c:6058
 msgid "4 GB"
 msgstr "4 Go"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5845
+#: title/pc5_ui.c:6061
 msgid "Video memory"
 msgstr "Mémoire vidéo"
 
-#: title/pc5_ui.c:5847
+#: title/pc5_ui.c:6063
 msgid "All 8 GB: the game may take memory the rest of it needs"
 msgstr "Les 8 Go : le jeu peut prendre la mémoire dont le reste a besoin"
 
-#: title/pc5_ui.c:5848
+#: title/pc5_ui.c:6064
 msgid ""
 "More for the game's textures, less for the rest; Auto if it runs out of "
 "memory"
@@ -2721,7 +2804,7 @@ msgstr ""
 "Plus pour les textures du jeu, moins pour le reste ; Auto s'il manque de "
 "mémoire"
 
-#: title/pc5_ui.c:5849
+#: title/pc5_ui.c:6065
 msgid ""
 "4 GB, so the game leaves room for the rest: the console's memory is shared"
 msgstr ""
@@ -2729,71 +2812,71 @@ msgstr ""
 "console est partagée"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:5851
+#: title/pc5_ui.c:6067
 msgid "6 GB"
 msgstr "6 Go"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:5851
+#: title/pc5_ui.c:6067
 msgid "5 GB"
 msgstr "5 Go"
 
-#: title/pc5_ui.c:5855
+#: title/pc5_ui.c:6071
 msgid "All the console's; Auto if the game says there is too little"
 msgstr ""
 "Toute celle de la console; Auto si le jeu dit qu'il n'y en a pas assez"
 
-#: title/pc5_ui.c:5856
+#: title/pc5_ui.c:6072
 msgid "2 GB at most, a number older games' checks can read"
 msgstr ""
 "2 Go au maximum, une valeur que les vérifications des anciens jeux savent "
 "lire"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:5857
+#: title/pc5_ui.c:6073
 msgid "Full"
 msgstr "Totale"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5860
+#: title/pc5_ui.c:6076
 msgid "CPU sharing"
 msgstr "Partage du CPU"
 
-#: title/pc5_ui.c:5861
+#: title/pc5_ui.c:6077
 msgid "Its threads take turns, as on a PC: steadier for some games"
 msgstr ""
 "Ses threads se relaient, comme sur PC : plus stable pour certains jeux"
 
-#: title/pc5_ui.c:5861
+#: title/pc5_ui.c:6077
 msgid "Fastest for most games; turn on if it freezes or stutters"
 msgstr ""
 "Le plus rapide pour la plupart des jeux; activez-le si le jeu se fige ou "
 "saccade"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5865
+#: title/pc5_ui.c:6081
 msgid "Cover"
 msgstr "Pochette"
 
-#: title/pc5_ui.c:5866
+#: title/pc5_ui.c:6082
 msgid "Another of those found, or search by another name"
 msgstr "Une autre parmi celles trouvées, ou chercher sous un autre nom"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5870
+#: title/pc5_ui.c:6086
 msgid "Background"
 msgstr "Arrière-plan"
 
-#: title/pc5_ui.c:5871
+#: title/pc5_ui.c:6087
 msgid "Another of those found, search by another name, or none"
 msgstr "Un autre parmi ceux trouvés, chercher sous un autre nom, ou aucun"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5875
+#: title/pc5_ui.c:6091
 msgid "Tile picture"
 msgstr "Image de la vignette"
 
-#: title/pc5_ui.c:5876
+#: title/pc5_ui.c:6092
 msgid ""
 "Its home screen tile's picture: a square one found online, or one made "
 "from its cover"
@@ -2801,72 +2884,72 @@ msgstr ""
 "L'image de sa vignette sur l'écran d'accueil : une image carrée trouvée en "
 "ligne, ou créée à partir de sa pochette"
 
-#: title/pc5_ui.c:5880
+#: title/pc5_ui.c:6096
 #, c-format
 msgid "Its tile, %.40s, starts the game"
 msgstr "Sa vignette, %.40s, lance le jeu"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5881
+#: title/pc5_ui.c:6097
 msgid "Home screen tile"
 msgstr "Vignette sur l'écran d'accueil"
 
-#: title/pc5_ui.c:5882
+#: title/pc5_ui.c:6098
 msgid "A tile on the PS5's home screen that starts it"
 msgstr "Une vignette sur l'écran d'accueil de la PS5 qui le lance"
 
-#: title/pc5_ui.c:5887
+#: title/pc5_ui.c:6103
 #, c-format
 msgid "Now: %.150s"
 msgstr "Actuel : %.150s"
 
 #. A menu row's name (about 30 characters fit).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5888 title/pc5_ui.c:6363
+#: title/pc5_ui.c:6104 title/pc5_ui.c:6579
 msgid "Change program"
 msgstr "Changer de programme"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5894
+#: title/pc5_ui.c:6110
 msgid "Steam emulator"
 msgstr "Émulateur Steam"
 
-#: title/pc5_ui.c:5895
+#: title/pc5_ui.c:6111
 msgid "Steam's own library: the game won't find Steam on the console"
 msgstr ""
 "La bibliothèque propre à Steam : le jeu ne trouvera pas Steam sur la "
 "console"
 
-#: title/pc5_ui.c:5896
+#: title/pc5_ui.c:6112
 msgid "Stands in for Steam, which the game asks for; Off if it misbehaves"
 msgstr "Remplace Steam, que le jeu demande; Désactivé en cas de souci"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5900 title/pc5_ui.c:6851
+#: title/pc5_ui.c:6116 title/pc5_ui.c:7067
 msgid "Game files"
 msgstr "Fichiers du jeu"
 
-#: title/pc5_ui.c:5901
+#: title/pc5_ui.c:6117
 msgid "Its folder: copy, move, rename and delete its files"
 msgstr "Son dossier : copier, déplacer, renommer et supprimer ses fichiers"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:5905 title/pc5_ui.c:7138
+#: title/pc5_ui.c:6121 title/pc5_ui.c:7452
 msgid "Update"
 msgstr "Mettre à jour"
 
-#: title/pc5_ui.c:5906
+#: title/pc5_ui.c:6122
 msgid "A newer copy from USB; its saves and settings stay"
 msgstr ""
 "Une copie plus récente depuis l'USB; ses sauvegardes et paramètres restent"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5910
+#: title/pc5_ui.c:6126
 msgid "Report a problem"
 msgstr "Signaler un problème"
 
-#: title/pc5_ui.c:5911
+#: title/pc5_ui.c:6127
 msgid "A QR code for GitHub's form, filled in from the game's newest log"
 msgstr ""
 "Un code QR vers le formulaire de GitHub, rempli à partir du journal le "
@@ -2874,86 +2957,88 @@ msgstr ""
 
 #. A menu row's name (about 30 characters fit).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5915 title/pc5_ui.c:7235 title/pc5_ui.c:7263
+#: title/pc5_ui.c:6131 title/pc5_ui.c:7549 title/pc5_ui.c:7577
 msgid "Uninstall"
 msgstr "Désinstaller"
 
-#: title/pc5_ui.c:5916
+#: title/pc5_ui.c:6132
 msgid "Deletes the game, or keeps its saves for later"
 msgstr "Supprime le jeu, ou conserve ses sauvegardes pour plus tard"
 
-#: title/pc5_ui.c:5959
+#: title/pc5_ui.c:6175
 msgid "Touchpad + OPTIONS for 2 s still leaves the game"
 msgstr "Pavé tactile + OPTIONS pendant 2 s quitte toujours le jeu"
 
-#: title/pc5_ui.c:5967
+#: title/pc5_ui.c:6183
 msgid "Right stick"
 msgstr "Joystick droit"
 
-#: title/pc5_ui.c:5967
+#: title/pc5_ui.c:6183
 msgid "Left stick"
 msgstr "Joystick gauche"
 
-#: title/pc5_ui.c:5975
+#: title/pc5_ui.c:6191
 msgid "Pointer speed"
 msgstr "Vitesse du pointeur"
 
 #. which picture is shown: 3 of 12.
-#: title/pc5_ui.c:5976 title/pc5_ui.c:6174 title/pc5_ui.c:6778
+#: title/pc5_ui.c:6192 title/pc5_ui.c:6390 title/pc5_ui.c:6994
 #, c-format
 msgid "%d of %d"
 msgstr "%d sur %d"
 
-#: title/pc5_ui.c:5979
+#: title/pc5_ui.c:6195
 msgid "Slow pointer button"
 msgstr "Bouton de pointeur lent"
 
 #. Keep the space at the start or end: the text is joined to another.
-#: title/pc5_ui.c:5983
+#: title/pc5_ui.c:6199
 msgid "    Slower by"
 msgstr "    Ralenti de"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:5988
+#: title/pc5_ui.c:6204
 msgid "Slows the pointer"
 msgstr "Pointeur lent"
 
-#: title/pc5_ui.c:5992
+#: title/pc5_ui.c:6208
 msgid "Reset to default"
 msgstr "Rétablir la valeur par défaut"
 
-#: title/pc5_ui.c:5995
+#: title/pc5_ui.c:6211
 msgid "Save as my mapping"
 msgstr "Garder comme ma configuration"
 
-#: title/pc5_ui.c:5998
+#: title/pc5_ui.c:6214
 msgid "Use my mapping"
 msgstr "Utiliser ma configuration"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6010
+#: title/pc5_ui.c:6226
 msgid "Choose a key"
 msgstr "Choisir une touche"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6010
+#: title/pc5_ui.c:6226
 msgid "Reset"
 msgstr "Réinitialiser"
 
-#: title/pc5_ui.c:6011
+#. A menu row's name (about 30 characters fit).
+#. In a question window: the title, its text, or a button's label (keep buttons short).
+#: title/pc5_ui.c:6227 title/pc5_ui.c:7207 title/pc5_ui.c:7278
 msgid "Save"
 msgstr "Enregistrer"
 
-#: title/pc5_ui.c:6011
+#: title/pc5_ui.c:6227
 msgid "Use"
 msgstr "Utiliser"
 
-#: title/pc5_ui.c:6032
+#: title/pc5_ui.c:6248
 #, c-format
 msgid "What %s sends"
 msgstr "Ce qu'envoie %s"
 
-#: title/pc5_ui.c:6050
+#: title/pc5_ui.c:6266
 msgid ""
 "PC5's choice: VKD3D-Proton turns the game's Direct3D 12 into Vulkan. The "
 "fastest, and what most games want."
@@ -2961,14 +3046,14 @@ msgstr ""
 "Choix de PC5 : VKD3D-Proton convertit le Direct3D 12 du jeu en Vulkan. Le "
 "plus rapide, et ce que veulent la plupart des jeux."
 
-#: title/pc5_ui.c:6051
+#: title/pc5_ui.c:6267
 msgid ""
 "PC5's choice: Wine's own Direct3D draws the game's DirectDraw with OpenGL."
 msgstr ""
 "Choix de PC5 : le Direct3D propre à Wine affiche le DirectDraw du jeu avec "
 "OpenGL."
 
-#: title/pc5_ui.c:6052
+#: title/pc5_ui.c:6268
 msgid ""
 "PC5's choice: DXVK turns the game's Direct3D into Vulkan. The fastest, and "
 "what most games want."
@@ -2976,7 +3061,7 @@ msgstr ""
 "Choix de PC5 : DXVK convertit le Direct3D du jeu en Vulkan. Le plus "
 "rapide, et ce que veulent la plupart des jeux."
 
-#: title/pc5_ui.c:6054
+#: title/pc5_ui.c:6270
 msgid ""
 "Wine's own Direct3D 12 (VKD3D). Slower than Auto; try it if the game won't "
 "start or draws wrong."
@@ -2984,7 +3069,7 @@ msgstr ""
 "Le Direct3D 12 propre à Wine (VKD3D). Plus lent qu'Auto; essayez-le si le "
 "jeu ne démarre pas ou s'affiche mal."
 
-#: title/pc5_ui.c:6056
+#: title/pc5_ui.c:6272
 msgid ""
 "Wine's own Direct3D, drawing with Vulkan. Try it if the game draws wrong "
 "with Auto; often faster than WineD3D."
@@ -2992,7 +3077,7 @@ msgstr ""
 "Le Direct3D propre à Wine, avec un rendu Vulkan. Essayez-le si le jeu "
 "s'affiche mal avec Auto; souvent plus rapide que WineD3D."
 
-#: title/pc5_ui.c:6057
+#: title/pc5_ui.c:6273
 msgid ""
 "Wine's own Direct3D, drawing with OpenGL. The slowest; try it if the game "
 "won't start with the others."
@@ -3000,16 +3085,16 @@ msgstr ""
 "Le Direct3D propre à Wine, avec un rendu OpenGL. Le plus lent; essayez-le "
 "si le jeu ne démarre pas avec les autres."
 
-#: title/pc5_ui.c:6078
+#: title/pc5_ui.c:6294
 #, c-format
 msgid "The game uses %s"
 msgstr "Le jeu utilise %s"
 
-#: title/pc5_ui.c:6090
+#: title/pc5_ui.c:6306
 msgid "In use"
 msgstr "Utilisé"
 
-#: title/pc5_ui.c:6110
+#: title/pc5_ui.c:6326
 msgid ""
 "PC5 runs your PC games with prospero-win: Wine, DXVK for Direct3D 8 to 11, "
 "VKD3D-Proton for Direct3D 12, and Mesa (RADV for Vulkan, Zink for OpenGL)."
@@ -3018,7 +3103,7 @@ msgstr ""
 "VKD3D-Proton pour Direct3D 12, et Mesa (RADV pour Vulkan, Zink pour "
 "OpenGL)."
 
-#: title/pc5_ui.c:6112
+#: title/pc5_ui.c:6328
 msgid ""
 "Covers come from Steam, GOG, PCGamingWiki and Wikidata, and SteamGridDB "
 "with your key. No game is part of PC5."
@@ -3026,208 +3111,208 @@ msgstr ""
 "Les pochettes viennent de Steam, GOG, PCGamingWiki et Wikidata, et de "
 "SteamGridDB avec votre clé. Aucun jeu n'est inclus dans PC5."
 
-#: title/pc5_ui.c:6113
+#: title/pc5_ui.c:6329
 msgid "Free software under the GNU LGPL 2.1 or later."
 msgstr "Logiciel libre sous licence GNU LGPL 2.1 ou ultérieure."
 
 #. About PC5: the version (2.0.7 · PPSA11018).
-#: title/pc5_ui.c:6122
+#: title/pc5_ui.c:6338
 #, c-format
 msgid "version %s"
 msgstr "version %s"
 
-#: title/pc5_ui.c:6128
+#: title/pc5_ui.c:6344
 msgid "Like PC5?"
 msgstr "Vous aimez PC5?"
 
-#: title/pc5_ui.c:6131
+#: title/pc5_ui.c:6347
 msgid "Buy me a coffee"
 msgstr "Payez-moi un café"
 
-#: title/pc5_ui.c:6135
+#: title/pc5_ui.c:6351
 #, c-format
 msgid "Games are kept in %.150s"
 msgstr "Les jeux sont stockés dans %.150s"
 
-#: title/pc5_ui.c:6139
+#: title/pc5_ui.c:6355
 #, c-format
 msgid "%s free on the console"
 msgstr "%s de libre sur la console"
 
-#: title/pc5_ui.c:6199
+#: title/pc5_ui.c:6415
 msgid "INSTALL folder"
 msgstr "Dossier INSTALL"
 
-#: title/pc5_ui.c:6201
+#: title/pc5_ui.c:6417
 #, c-format
 msgid "INSTALL folder, %.20s"
 msgstr "Dossier INSTALL, %.20s"
 
-#: title/pc5_ui.c:6217
+#: title/pc5_ui.c:6433
 msgid "No program found: it will be skipped"
 msgstr "Aucun programme trouvé : il sera ignoré"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6221
+#: title/pc5_ui.c:6437
 #, c-format
 msgid "%s · %d-bit · %s · %s"
 msgstr "%s · %d bits · %s · %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6234
+#: title/pc5_ui.c:6450
 #, c-format
 msgid "%d-bit · %s · %s%s"
 msgstr "%d bits · %s · %s%s"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6235 title/pc5_ui.c:6253
+#: title/pc5_ui.c:6451 title/pc5_ui.c:6469
 msgid " · chosen"
 msgstr " · choisi"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6236
+#: title/pc5_ui.c:6452
 msgid " · offered at Play"
 msgstr " · proposé au lancement"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6252 title/pc5_ui.c:6330
+#: title/pc5_ui.c:6468 title/pc5_ui.c:6546
 #, c-format
 msgid "%d-bit · %s"
 msgstr "%d bits · %s"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6267
+#: title/pc5_ui.c:6483
 msgid "Jan"
 msgstr "janv."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6267
+#: title/pc5_ui.c:6483
 msgid "Feb"
 msgstr "févr."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6267
+#: title/pc5_ui.c:6483
 msgid "Mar"
 msgstr "mars"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6267
+#: title/pc5_ui.c:6483
 msgid "Apr"
 msgstr "avr."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6267
+#: title/pc5_ui.c:6483
 msgid "May"
 msgstr "mai"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6267
+#: title/pc5_ui.c:6483
 msgid "Jun"
 msgstr "juin"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6268
+#: title/pc5_ui.c:6484
 msgid "Jul"
 msgstr "juil."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6268
+#: title/pc5_ui.c:6484
 msgid "Aug"
 msgstr "août"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6268
+#: title/pc5_ui.c:6484
 msgid "Sep"
 msgstr "sept."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6268
+#: title/pc5_ui.c:6484
 msgid "Oct"
 msgstr "oct."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6268
+#: title/pc5_ui.c:6484
 msgid "Nov"
 msgstr "nov."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6268
+#: title/pc5_ui.c:6484
 msgid "Dec"
 msgstr "déc."
 
-#: title/pc5_ui.c:6270
+#: title/pc5_ui.c:6486
 #, c-format
 msgid "Saves of %s"
 msgstr "Sauvegardes de %s"
 
 #. the day, the month (Jan to Dec, translated on their own) and the year: put them in your order with %1$d, %2$s, %3$d.
-#: title/pc5_ui.c:6279
+#: title/pc5_ui.c:6495
 #, c-format
 msgid "Kept %d %s %d; installing it again puts them back"
 msgstr "Conservées le %d %s %d; réinstaller le jeu les remet en place"
 
-#: title/pc5_ui.c:6282
+#: title/pc5_ui.c:6498
 msgid "Kept when it was uninstalled; installing it again puts them back"
 msgstr ""
 "Conservées lors de la désinstallation; réinstaller le jeu les remet en "
 "place"
 
-#: title/pc5_ui.c:6318
+#: title/pc5_ui.c:6534
 #, c-format
 msgid "Cover %d of %d"
 msgstr "Pochette %d sur %d"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6319
+#: title/pc5_ui.c:6535
 #, c-format
 msgid "Made from the game's icon · %d of %d"
 msgstr "Créée à partir de l'icône du jeu · %d sur %d"
 
-#: title/pc5_ui.c:6327
+#: title/pc5_ui.c:6543
 msgid "Program"
 msgstr "Programme"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6328
+#: title/pc5_ui.c:6544
 msgid "none found"
 msgstr "aucun trouvé"
 
-#: title/pc5_ui.c:6329
+#: title/pc5_ui.c:6545
 msgid "Runs as"
 msgstr "Exécution"
 
-#: title/pc5_ui.c:6334
+#: title/pc5_ui.c:6550
 #, c-format
 msgid "%s in %u file"
 msgstr "%s en %u fichier"
 
-#: title/pc5_ui.c:6334
+#: title/pc5_ui.c:6550
 #, c-format
 msgid "%s in %u files"
 msgstr "%s en %u fichiers"
 
-#: title/pc5_ui.c:6335
+#: title/pc5_ui.c:6551
 msgid "Space"
 msgstr "Espace"
 
-#: title/pc5_ui.c:6339
+#: title/pc5_ui.c:6555
 #, c-format
 msgid "%s free after installing"
 msgstr "%s de libre après l'installation"
 
-#: title/pc5_ui.c:6339
+#: title/pc5_ui.c:6555
 #, c-format
 msgid "not enough: %s free"
 msgstr "insuffisant : %s de libre"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6341
+#: title/pc5_ui.c:6557
 msgid "unknown"
 msgstr "inconnu"
 
-#: title/pc5_ui.c:6353
+#: title/pc5_ui.c:6569
 msgid ""
 "A .NET program: it runs with Wine Mono, which PC5 sets up the first time a "
 ".NET game starts."
@@ -3235,7 +3320,7 @@ msgstr ""
 "Un programme .NET : il s'exécute avec Wine Mono, que PC5 installe la "
 "première fois qu'un jeu .NET démarre."
 
-#: title/pc5_ui.c:6357
+#: title/pc5_ui.c:6573
 msgid ""
 "The game is copied once and checked, to the console or, with a USB drive "
 "plugged in, to its PC5 folder. Whether a game runs is only known by trying "
@@ -3246,35 +3331,35 @@ msgstr ""
 "qu'en l'essayant."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6361 title/pc5_ui.c:6632
+#: title/pc5_ui.c:6577 title/pc5_ui.c:6848
 msgid "Done"
 msgstr "Terminé"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6362 title/pc5_ui.c:6812
+#: title/pc5_ui.c:6578 title/pc5_ui.c:7028
 msgid "Other covers"
 msgstr "Autres pochettes"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6373 title/pc5_ui.c:6389
+#: title/pc5_ui.c:6589 title/pc5_ui.c:6605
 msgid "Look again"
 msgstr "Actualiser"
 
-#: title/pc5_ui.c:6374
+#: title/pc5_ui.c:6590
 #, c-format
 msgid "Update %s from USB"
 msgstr "Mettre à jour %s depuis l'USB"
 
-#: title/pc5_ui.c:6374 title/pc5_ui.c:7096 title/pc5_ui.c:7132
-#: title/pc5_ui.c:7244 title/pc5_ui.c:7320
+#: title/pc5_ui.c:6590 title/pc5_ui.c:7410 title/pc5_ui.c:7446
+#: title/pc5_ui.c:7558 title/pc5_ui.c:7638
 msgid "the game"
 msgstr "le jeu"
 
-#: title/pc5_ui.c:6375 title/pc5_ui.c:6392
+#: title/pc5_ui.c:6591 title/pc5_ui.c:6608
 msgid "No game folders found"
 msgstr "Aucun dossier de jeu trouvé"
 
-#: title/pc5_ui.c:6376
+#: title/pc5_ui.c:6592
 msgid ""
 "Put the newer copy's folder (the one with the game's .exe in it) at the "
 "top of a USB drive formatted as exFAT, plug the drive into the PS5, then "
@@ -3284,26 +3369,26 @@ msgstr ""
 "jeu) à la racine d'un disque USB formaté en exFAT, branchez le disque sur "
 "la PS5, puis actualisez."
 
-#: title/pc5_ui.c:6383
+#: title/pc5_ui.c:6599
 #, c-format
 msgid "Install ticked (%d)"
 msgstr "Installer la sélection (%d)"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6387
+#: title/pc5_ui.c:6603
 msgid "Install one"
 msgstr "Installer celui-ci"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6388 title/pc5_ui.c:6875
+#: title/pc5_ui.c:6604 title/pc5_ui.c:7091
 msgid "Tick"
 msgstr "Cocher"
 
-#: title/pc5_ui.c:6391
+#: title/pc5_ui.c:6607
 msgid "Install games from the INSTALL folder"
 msgstr "Installer des jeux depuis le dossier INSTALL"
 
-#: title/pc5_ui.c:6393
+#: title/pc5_ui.c:6609
 msgid ""
 "Put each game's folder (the one with its .exe in it) at the top of a USB "
 "drive formatted as exFAT, plug the drive into the PS5, then look again."
@@ -3312,110 +3397,110 @@ msgstr ""
 "d'un disque USB formaté en exFAT, branchez le disque sur la PS5, puis "
 "actualisez."
 
-#: title/pc5_ui.c:6407
+#: title/pc5_ui.c:6623
 msgid "Putting back its saves and settings"
 msgstr "Remise en place de ses sauvegardes et paramètres"
 
-#: title/pc5_ui.c:6407
+#: title/pc5_ui.c:6623
 msgid "Setting up the game's Windows"
 msgstr "Préparation du Windows du jeu"
 
-#: title/pc5_ui.c:6410
+#: title/pc5_ui.c:6626
 msgid "Copying the newer version"
 msgstr "Copie de la version plus récente"
 
-#: title/pc5_ui.c:6410
+#: title/pc5_ui.c:6626
 msgid "Copying the game"
 msgstr "Copie du jeu"
 
-#: title/pc5_ui.c:6411
+#: title/pc5_ui.c:6627
 msgid "Checking the copy against the USB drive"
 msgstr "Vérification de la copie par rapport au disque USB"
 
-#: title/pc5_ui.c:6412 title/pc5_ui.c:6686
+#: title/pc5_ui.c:6628 title/pc5_ui.c:6902
 msgid "Putting the new files in place"
 msgstr "Mise en place des nouveaux fichiers"
 
-#: title/pc5_ui.c:6412 title/pc5_ui.c:6414
+#: title/pc5_ui.c:6628 title/pc5_ui.c:6630
 msgid "Finishing"
 msgstr "Finalisation"
 
-#: title/pc5_ui.c:6415
+#: title/pc5_ui.c:6631
 msgid "Stopping: deleting what was copied"
 msgstr "Arrêt : suppression de ce qui a été copié"
 
-#: title/pc5_ui.c:6415
+#: title/pc5_ui.c:6631
 msgid "Deleting what was copied"
 msgstr "Suppression de ce qui a été copié"
 
-#: title/pc5_ui.c:6420
+#: title/pc5_ui.c:6636
 #, c-format
 msgid "Game %d of %d"
 msgstr "Jeu %d sur %d"
 
-#: title/pc5_ui.c:6423
+#: title/pc5_ui.c:6639
 #, c-format
 msgid "Updating %s"
 msgstr "Mise à jour de %s"
 
-#: title/pc5_ui.c:6423
+#: title/pc5_ui.c:6639
 #, c-format
 msgid "Installing %s"
 msgstr "Installation de %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6425 title/pc5_ui.c:6695
+#: title/pc5_ui.c:6641 title/pc5_ui.c:6911
 #, c-format
 msgid "Step %d of 3 · %s"
 msgstr "Étape %d sur 3 · %s"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6439 title/pc5_ui.c:6710
+#: title/pc5_ui.c:6655 title/pc5_ui.c:6926
 msgid " · under a minute left"
 msgstr " · moins d'une minute restante"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6440 title/pc5_ui.c:6711
+#: title/pc5_ui.c:6656 title/pc5_ui.c:6927
 #, c-format
 msgid " · about %d min left"
 msgstr " · environ %d min restantes"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6442 title/pc5_ui.c:6713
+#: title/pc5_ui.c:6658 title/pc5_ui.c:6929
 #, c-format
 msgid "%s of %s · %s/s%s"
 msgstr "%s sur %s · %s/s%s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6444 title/pc5_ui.c:6715
+#: title/pc5_ui.c:6660 title/pc5_ui.c:6931
 #, c-format
 msgid "%s of %s · measuring the speed"
 msgstr "%s sur %s · mesure de la vitesse"
 
-#: title/pc5_ui.c:6447
+#: title/pc5_ui.c:6663
 #, c-format
 msgid "%u of %u files"
 msgstr "%u fichiers sur %u"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6451 title/pc5_ui.c:6726 title/pc5_ui.c:6961
-#: title/pc5_ui.c:7224 title/pc5_ui.c:7232
+#: title/pc5_ui.c:6667 title/pc5_ui.c:6942 title/pc5_ui.c:7263
+#: title/pc5_ui.c:7538 title/pc5_ui.c:7546
 msgid "Stop"
 msgstr "Arrêter"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6556
+#: title/pc5_ui.c:6772
 msgid "OK"
 msgstr "OK"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6556 title/pc5_ui.c:6594
+#: title/pc5_ui.c:6772 title/pc5_ui.c:6810
 msgid "Report on GitHub"
 msgstr "Signaler sur GitHub"
 
-#: title/pc5_ui.c:6600
+#: title/pc5_ui.c:6816
 #, c-format
 msgid ""
 "1. Scan the code with your phone. GitHub's form for a new issue opens, "
@@ -3425,20 +3510,20 @@ msgstr ""
 "de GitHub s'ouvre, rempli avec %s, la version de PC5 et ce que PC5 a "
 "constaté."
 
-#: title/pc5_ui.c:6603
+#: title/pc5_ui.c:6819
 #, c-format
 msgid "1. On your phone or computer, open %s and choose New issue."
 msgstr ""
 "1. Sur votre téléphone ou ordinateur, ouvrez %s et choisissez New issue."
 
-#: title/pc5_ui.c:6606
+#: title/pc5_ui.c:6822
 #, c-format
 msgid "2. Copy %s off the console, from %s/logs, as you copy files to it."
 msgstr ""
 "2. Copiez %s depuis la console, à partir de %s/logs, comme vous copiez des "
 "fichiers dessus."
 
-#: title/pc5_ui.c:6610
+#: title/pc5_ui.c:6826
 msgid ""
 "3. Say what happened, attach the zip, and submit. You need a GitHub "
 "account."
@@ -3446,11 +3531,11 @@ msgstr ""
 "3. Décrivez ce qui s'est passé, joignez le zip et envoyez. Il vous faut un "
 "compte GitHub."
 
-#: title/pc5_ui.c:6623
+#: title/pc5_ui.c:6839
 msgid "PC5's web page"
 msgstr "Page web de PC5"
 
-#: title/pc5_ui.c:6627
+#: title/pc5_ui.c:6843
 #, c-format
 msgid ""
 "Scan the code with your phone, or open %s in a browser on a PC on the same "
@@ -3459,7 +3544,7 @@ msgstr ""
 "Scannez le code avec votre téléphone, ou ouvrez %s dans un navigateur sur "
 "un PC du même réseau."
 
-#: title/pc5_ui.c:6630
+#: title/pc5_ui.c:6846
 msgid ""
 "From there: send a game's folder to install, report a problem with a game "
 "(its log and settings go with it), edit launch options and download logs. "
@@ -3470,7 +3555,7 @@ msgstr ""
 "les options de lancement et télécharger les journaux. Elle fonctionne tant "
 "que PC5 est ouvert."
 
-#: title/pc5_ui.c:6647
+#: title/pc5_ui.c:6863
 msgid ""
 "Scan the code with your phone: PC5's wiki opens on the list of games "
 "players have tried, how each ran and the settings that helped."
@@ -3479,7 +3564,7 @@ msgstr ""
 "des jeux essayés par les joueurs, comment chacun a tourné et les "
 "paramètres qui ont aidé."
 
-#: title/pc5_ui.c:6649
+#: title/pc5_ui.c:6865
 msgid ""
 "On your phone or computer, open "
 "github.com/bornaradusin/PC5/wiki/Game-compatibility: the games players "
@@ -3489,7 +3574,7 @@ msgstr ""
 "github.com/bornaradusin/PC5/wiki/Game-compatibility : les jeux essayés par "
 "les joueurs, comment chacun a tourné et les paramètres qui ont aidé."
 
-#: title/pc5_ui.c:6652
+#: title/pc5_ui.c:6868
 msgid ""
 "Got a game running? Add a game, at the top of the list's page: the form "
 "takes a minute. You need a GitHub account."
@@ -3497,12 +3582,12 @@ msgstr ""
 "Un jeu fonctionne chez vous? Ajoutez-le en haut de la page de la liste : "
 "le formulaire prend une minute. Il vous faut un compte GitHub."
 
-#: title/pc5_ui.c:6675
+#: title/pc5_ui.c:6891
 #, c-format
 msgid "PC5 %s is installed"
 msgstr "PC5 %s est installé"
 
-#: title/pc5_ui.c:6678
+#: title/pc5_ui.c:6894
 msgid ""
 "PC5 restarts now with the new version. Your games, saves and settings are "
 "as they were."
@@ -3511,112 +3596,112 @@ msgstr ""
 "et paramètres sont restés tels quels."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6679
+#: title/pc5_ui.c:6895
 msgid "Restart PC5"
 msgstr "Redémarrer PC5"
 
-#: title/pc5_ui.c:6684
+#: title/pc5_ui.c:6900
 msgid "Downloading it from GitHub"
 msgstr "Téléchargement depuis GitHub"
 
-#: title/pc5_ui.c:6685
+#: title/pc5_ui.c:6901
 msgid "Unpacking it and checking every file"
 msgstr "Décompression et vérification de chaque fichier"
 
-#: title/pc5_ui.c:6687
+#: title/pc5_ui.c:6903
 msgid "Deleting the old files"
 msgstr "Suppression des anciens fichiers"
 
-#: title/pc5_ui.c:6688
+#: title/pc5_ui.c:6904
 msgid "Asking GitHub and finding PC5's folder"
 msgstr "Interrogation de GitHub et recherche du dossier de PC5"
 
-#: title/pc5_ui.c:6691 title/pc5_ui.c:6944
+#: title/pc5_ui.c:6907 title/pc5_ui.c:7246
 msgid "Stopping"
 msgstr "Arrêt en cours"
 
-#: title/pc5_ui.c:6692
+#: title/pc5_ui.c:6908
 #, c-format
 msgid "Updating PC5 to %s"
 msgstr "Mise à jour de PC5 vers la %s"
 
-#: title/pc5_ui.c:6693
+#: title/pc5_ui.c:6909
 msgid "Updating PC5"
 msgstr "Mise à jour de PC5"
 
-#: title/pc5_ui.c:6700
+#: title/pc5_ui.c:6916
 #, c-format
 msgid "%llu of %llu files"
 msgstr "%llu fichiers sur %llu"
 
-#: title/pc5_ui.c:6722
+#: title/pc5_ui.c:6938
 #, c-format
 msgid "Into %.280s"
 msgstr "Dans %.280s"
 
-#: title/pc5_ui.c:6730
+#: title/pc5_ui.c:6946
 msgid "Don't turn the console off now. This takes a moment."
 msgstr "N'éteignez pas la console maintenant. Cela prend un moment."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6744 title/pc5_ui.c:6979
+#: title/pc5_ui.c:6960 title/pc5_ui.c:7293
 msgid "Skip"
 msgstr "Ignorer"
 
-#: title/pc5_ui.c:6783
+#: title/pc5_ui.c:6999
 msgid "Its cover"
 msgstr "Sa pochette"
 
-#: title/pc5_ui.c:6783
+#: title/pc5_ui.c:6999
 msgid "Its tile picture"
 msgstr "Son image de vignette"
 
-#: title/pc5_ui.c:6783
+#: title/pc5_ui.c:6999
 msgid "Its background"
 msgstr "Son arrière-plan"
 
-#: title/pc5_ui.c:6787
+#: title/pc5_ui.c:7003
 msgid "The cover it has now"
 msgstr "La pochette actuelle"
 
-#: title/pc5_ui.c:6787
+#: title/pc5_ui.c:7003
 msgid "The tile picture it has now"
 msgstr "L'image de vignette actuelle"
 
-#: title/pc5_ui.c:6787
+#: title/pc5_ui.c:7003
 msgid "The background it has now"
 msgstr "L'arrière-plan actuel"
 
-#: title/pc5_ui.c:6789
+#: title/pc5_ui.c:7005
 msgid "A cover found online"
 msgstr "Une pochette trouvée en ligne"
 
-#: title/pc5_ui.c:6789
+#: title/pc5_ui.c:7005
 msgid "A square picture found online"
 msgstr "Une image carrée trouvée en ligne"
 
-#: title/pc5_ui.c:6789
+#: title/pc5_ui.c:7005
 msgid "A background found online"
 msgstr "Un arrière-plan trouvé en ligne"
 
-#: title/pc5_ui.c:6791
+#: title/pc5_ui.c:7007
 msgid "Made from the game's icon and name"
 msgstr "Créée à partir de l'icône et du nom du jeu"
 
-#: title/pc5_ui.c:6792
+#: title/pc5_ui.c:7008
 msgid "Made from its cover"
 msgstr "Créée à partir de sa pochette"
 
-#: title/pc5_ui.c:6792
+#: title/pc5_ui.c:7008
 msgid "None: a backdrop made from its cover"
 msgstr "Aucun : un fond créé à partir de sa pochette"
 
-#: title/pc5_ui.c:6799
+#: title/pc5_ui.c:7015
 #, c-format
 msgid "Nothing found for “%s”."
 msgstr "Rien trouvé pour « %s »."
 
-#: title/pc5_ui.c:6801
+#: title/pc5_ui.c:7017
 msgid ""
 "Square pictures come from SteamGridDB: put your key in api_keys.txt "
 "(Covers on the wiki)."
@@ -3624,206 +3709,321 @@ msgstr ""
 "Les images carrées viennent de SteamGridDB : mettez votre clé dans "
 "api_keys.txt (Covers sur le wiki)."
 
-#: title/pc5_ui.c:6803
+#: title/pc5_ui.c:7019
 msgid "Nothing found for its name."
 msgstr "Rien trouvé pour son nom."
 
-#: title/pc5_ui.c:6806
+#: title/pc5_ui.c:7022
 #, c-format
 msgid "Found for “%s”"
 msgstr "Trouvé pour « %s »"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6811
+#: title/pc5_ui.c:7027
 msgid "Use this"
 msgstr "Utiliser"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6812
+#: title/pc5_ui.c:7028
 msgid "Other pictures"
 msgstr "Autres images"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6812
+#: title/pc5_ui.c:7028
 msgid "Other backgrounds"
 msgstr "Autres arrière-plans"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6813
+#: title/pc5_ui.c:7029
 msgid "Search by name"
 msgstr "Chercher par nom"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6827 title/pc5_ui.c:6867
+#: title/pc5_ui.c:7043 title/pc5_ui.c:7083 title/pc5_ui.c:7186
 msgid " · read-only"
 msgstr " · lecture seule"
 
-#: title/pc5_ui.c:6843
+#: title/pc5_ui.c:7059
 msgid "Folder"
 msgstr "Dossier"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6868
+#: title/pc5_ui.c:7084
 #, c-format
 msgid " · %d ticked"
 msgstr " · %d coché(s)"
 
-#: title/pc5_ui.c:6870
+#: title/pc5_ui.c:7086
 msgid "△ Paste or New folder puts something in it."
 msgstr "△ Coller ou Nouveau dossier y ajoute quelque chose."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6873 title/pc5_ui.c:6875
+#: title/pc5_ui.c:7089 title/pc5_ui.c:7091
 msgid "Open"
 msgstr "Ouvrir"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6875
+#: title/pc5_ui.c:7091 title/pc5_ui.c:7189
 msgid "Actions"
 msgstr "Actions"
 
-#: title/pc5_ui.c:6878
+#: title/pc5_ui.c:7094
 msgid "This folder is empty"
 msgstr "Ce dossier est vide"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6889
+#: title/pc5_ui.c:7105
 msgid "Copy"
 msgstr "Copier"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6889
+#: title/pc5_ui.c:7105
 msgid "Then Paste puts a copy in another folder"
 msgstr "Puis Coller en met une copie dans un autre dossier"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6890
+#: title/pc5_ui.c:7106
 msgid "Cut"
 msgstr "Couper"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6890
+#: title/pc5_ui.c:7106
 msgid "Then Paste moves it to another folder"
 msgstr "Puis Coller le déplace dans un autre dossier"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6893
+#: title/pc5_ui.c:7109
 msgid "Paste"
 msgstr "Coller"
 
-#: title/pc5_ui.c:6894
+#: title/pc5_ui.c:7110
 #, c-format
 msgid "Moves %d item from %.120s"
 msgstr "Déplace %d élément depuis %.120s"
 
-#: title/pc5_ui.c:6894
+#: title/pc5_ui.c:7110
 #, c-format
 msgid "Moves %d items from %.120s"
 msgstr "Déplace %d éléments depuis %.120s"
 
-#: title/pc5_ui.c:6894
+#: title/pc5_ui.c:7110
 #, c-format
 msgid "Copies %d item from %.120s"
 msgstr "Copie %d élément depuis %.120s"
 
-#: title/pc5_ui.c:6894
+#: title/pc5_ui.c:7110
 #, c-format
 msgid "Copies %d items from %.120s"
 msgstr "Copie %d éléments depuis %.120s"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6900
+#: title/pc5_ui.c:7116
 msgid "Type its new name"
 msgstr "Saisir son nouveau nom"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6901
+#: title/pc5_ui.c:7117
 msgid "An empty folder in this one"
 msgstr "Un dossier vide dans celui-ci"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6902 title/pc5_ui.c:7000 title/pc5_ui.c:7235
-#: title/pc5_ui.c:7241 title/pc5_ui.c:7246
+#: title/pc5_ui.c:7118 title/pc5_ui.c:7314 title/pc5_ui.c:7549
+#: title/pc5_ui.c:7555 title/pc5_ui.c:7560
 msgid "Delete"
 msgstr "Supprimer"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6902
+#: title/pc5_ui.c:7118
 msgid "Deleted for good: there is no undo"
 msgstr "Supprimé définitivement : impossible d'annuler"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6904
+#: title/pc5_ui.c:7120
 msgid "Untick all"
 msgstr "Tout décocher"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6904
+#: title/pc5_ui.c:7120
 msgid "Tick all"
 msgstr "Tout cocher"
 
-#: title/pc5_ui.c:6905
+#: title/pc5_ui.c:7121
 msgid "Every item in this folder"
 msgstr "Tous les éléments de ce dossier"
 
-#: title/pc5_ui.c:6917
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:7125
+msgid "Edit"
+msgstr "Modifier"
+
+#: title/pc5_ui.c:7126
+msgid ""
+"A text file (.ini, .cfg, .txt and the like), changed a line at a time"
+msgstr ""
+"Un fichier texte (.ini, .cfg, .txt et autres), modifié une ligne à la fois"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:7128
+msgid "View"
+msgstr "Afficher"
+
+#: title/pc5_ui.c:7129
+msgid "A text file, shown: nothing here can be changed"
+msgstr "Un fichier texte, affiché : rien ne peut être modifié ici"
+
+#: title/pc5_ui.c:7142
 #, c-format
 msgid "%d items"
 msgstr "%d éléments"
 
-#: title/pc5_ui.c:6919
+#: title/pc5_ui.c:7144
 msgid "This folder"
 msgstr "Ce dossier"
 
-#: title/pc5_ui.c:6922
+#: title/pc5_ui.c:7148
 msgid "Read-only: PC5 changes nothing here"
 msgstr "Lecture seule : PC5 ne modifie rien ici"
 
-#: title/pc5_ui.c:6945
+#. Keep the space at the start or end: the text is joined to another.
+#. · separates parts of a line; keep it.
+#: title/pc5_ui.c:7187
+msgid " · not saved"
+msgstr " · non enregistré"
+
+#. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
+#: title/pc5_ui.c:7188 title/pc5_ui.c:7190
+msgid "Page"
+msgstr "Page"
+
+#. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
+#: title/pc5_ui.c:7189
+msgid "Add a line"
+msgstr "Ajouter une ligne"
+
+#: title/pc5_ui.c:7193
+msgid "This file is empty"
+msgstr "Ce fichier est vide"
+
+#: title/pc5_ui.c:7194
+msgid "There's nothing in it."
+msgstr "Il n'y a rien dedans."
+
+#: title/pc5_ui.c:7194
+msgid "✕ puts a first line in it."
+msgstr "✕ y ajoute une première ligne."
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:7203
+msgid "Add a line below"
+msgstr "Ajouter une ligne en dessous"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:7203
+msgid "Typed with the keyboard, under the line chosen"
+msgstr "Saisie au clavier, sous la ligne choisie"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:7204
+msgid "Add a line above"
+msgstr "Ajouter une ligne au-dessus"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:7204
+msgid "Typed with the keyboard, over the line chosen"
+msgstr "Saisie au clavier, au-dessus de la ligne choisie"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:7205
+msgid "Delete line"
+msgstr "Supprimer la ligne"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:7205
+msgid "The line chosen goes; nothing is saved until Save"
+msgstr "La ligne choisie disparaît ; rien n'est enregistré avant Enregistrer"
+
+#: title/pc5_ui.c:7208
+msgid "Written back as it was: UTF-16, with its line ends"
+msgstr "Réécrit tel qu'il était : UTF-16, avec ses fins de ligne"
+
+#: title/pc5_ui.c:7209
+msgid "Written back as it was: one byte a letter, with its line ends"
+msgstr ""
+"Réécrit tel qu'il était : un octet par lettre, avec ses fins de ligne"
+
+#: title/pc5_ui.c:7210
+msgid "Written back as it was: UTF-8, with its line ends"
+msgstr "Réécrit tel qu'il était : UTF-8, avec ses fins de ligne"
+
+#: title/pc5_ui.c:7223
+msgid "This file"
+msgstr "Ce fichier"
+
+#: title/pc5_ui.c:7247
 msgid "Deleting"
 msgstr "Suppression"
 
-#: title/pc5_ui.c:6946
+#: title/pc5_ui.c:7248
 msgid "Moving"
 msgstr "Déplacement"
 
-#: title/pc5_ui.c:6946
+#: title/pc5_ui.c:7248
 msgid "Copying"
 msgstr "Copie"
 
-#: title/pc5_ui.c:6948
+#: title/pc5_ui.c:7250
 msgid "Getting ready"
 msgstr "Préparation"
 
-#: title/pc5_ui.c:6955
+#: title/pc5_ui.c:7257
 #, c-format
 msgid "%s of %s"
 msgstr "%s sur %s"
 
-#: title/pc5_ui.c:6957
+#: title/pc5_ui.c:7259
 #, c-format
 msgid "%u of %u"
 msgstr "%u sur %u"
 
-#: title/pc5_ui.c:6974
+#: title/pc5_ui.c:7277
+#, c-format
+msgid "Save the changes to %.200s?"
+msgstr "Enregistrer les modifications de %.200s ?"
+
+#. In a question window: the title, its text, or a button's label (keep buttons short).
+#: title/pc5_ui.c:7278
+msgid "Don't save leaves the file as it was before."
+msgstr "Ne pas enregistrer laisse le fichier tel qu'il était."
+
+#. In a question window: the title, its text, or a button's label (keep buttons short).
+#: title/pc5_ui.c:7278 title/pc5_ui.c:7314 title/pc5_ui.c:7452
+#: title/pc5_ui.c:7560 title/pc5_ui.c:7573 title/pc5_ui.c:7577
+msgid "Cancel"
+msgstr "Annuler"
+
+#: title/pc5_ui.c:7279
+msgid "Don't save"
+msgstr "Ne pas enregistrer"
+
+#: title/pc5_ui.c:7288
 #, c-format
 msgid "This folder has %.200s already"
 msgstr "Ce dossier contient déjà %.200s"
 
-#: title/pc5_ui.c:6974 title/pc5_ui.c:6989
+#: title/pc5_ui.c:7288 title/pc5_ui.c:7303
 msgid "it"
 msgstr "cet élément"
 
-#: title/pc5_ui.c:6975
+#: title/pc5_ui.c:7289
 #, c-format
 msgid "This folder has %d of the %d items already"
 msgstr "Ce dossier contient déjà %d des %d éléments"
 
-#: title/pc5_ui.c:6977
+#: title/pc5_ui.c:7291
 msgid ""
 "Skip leaves those as they are. Keep both gives the new ones a name like "
 "“name (2)”. Replace overwrites files and puts folders' contents together."
@@ -3832,50 +4032,50 @@ msgstr ""
 "comme « nom (2) ». Remplacer écrase les fichiers et fusionne le contenu "
 "des dossiers."
 
-#: title/pc5_ui.c:6979
+#: title/pc5_ui.c:7293
 msgid "Keep both"
 msgstr "Garder les deux"
 
-#: title/pc5_ui.c:6979
+#: title/pc5_ui.c:7293
 msgid "Replace"
 msgstr "Remplacer"
 
-#: title/pc5_ui.c:6984
+#: title/pc5_ui.c:7298
 #, c-format
 msgid "Delete %d items?"
 msgstr "Supprimer %d éléments?"
 
-#: title/pc5_ui.c:6989
+#: title/pc5_ui.c:7303
 #, c-format
 msgid "Delete %.200s?"
 msgstr "Supprimer %.200s?"
 
-#: title/pc5_ui.c:6990
+#: title/pc5_ui.c:7304
 msgid "Delete?"
 msgstr "Supprimer?"
 
-#: title/pc5_ui.c:6992
+#: title/pc5_ui.c:7306
 #, c-format
 msgid "%u file"
 msgstr "%u fichier"
 
-#: title/pc5_ui.c:6992
+#: title/pc5_ui.c:7306
 #, c-format
 msgid "%u files"
 msgstr "%u fichiers"
 
-#: title/pc5_ui.c:6993
+#: title/pc5_ui.c:7307
 #, c-format
 msgid "%u folder"
 msgstr "%u dossier"
 
-#: title/pc5_ui.c:6993
+#: title/pc5_ui.c:7307
 #, c-format
 msgid "%u folders"
 msgstr "%u dossiers"
 
 #. the first %s is a count of files ("3 files"), the second of folders, the third a size ("2.1 GB").
-#: title/pc5_ui.c:6996
+#: title/pc5_ui.c:7310
 #, c-format
 msgid ""
 "At least %s and %s, %s. They're deleted for good: there is no backup and "
@@ -3885,7 +4085,7 @@ msgstr ""
 "de secours, impossible d'annuler."
 
 #. the first %s is a count of files ("3 files"), the second of folders, the third a size ("2.1 GB").
-#: title/pc5_ui.c:6996
+#: title/pc5_ui.c:7310
 #, c-format
 msgid ""
 "%s and %s, %s. They're deleted for good: there is no backup and no undo."
@@ -3893,36 +4093,30 @@ msgstr ""
 "%s et %s, %s. Ils seront supprimés définitivement : pas de copie de "
 "secours, impossible d'annuler."
 
-#. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7000 title/pc5_ui.c:7138 title/pc5_ui.c:7246
-#: title/pc5_ui.c:7259 title/pc5_ui.c:7263
-msgid "Cancel"
-msgstr "Annuler"
-
-#: title/pc5_ui.c:7063
+#: title/pc5_ui.c:7377
 msgid "Finishing an install or uninstall that was cut short"
 msgstr "Fin d'une installation ou désinstallation interrompue"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7066
+#: title/pc5_ui.c:7380
 #, c-format
 msgid "Getting covers · %d of %d"
 msgstr "Récupération des pochettes · %d sur %d"
 
-#: title/pc5_ui.c:7070 title/pc5_ui.c:7079 title/pc5_ui.c:7306
+#: title/pc5_ui.c:7384 title/pc5_ui.c:7393 title/pc5_ui.c:7624
 msgid "Checking for a newer PC5"
 msgstr "Recherche d'un PC5 plus récent"
 
-#: title/pc5_ui.c:7079
+#: title/pc5_ui.c:7393
 msgid "Asking GitHub"
 msgstr "Interrogation de GitHub"
 
-#: title/pc5_ui.c:7083
+#: title/pc5_ui.c:7397
 #, c-format
 msgid "PC5 %s is available"
 msgstr "PC5 %s est disponible"
 
-#: title/pc5_ui.c:7084
+#: title/pc5_ui.c:7398
 #, c-format
 msgid ""
 "%s, installs it and restarts. Your games, saves and settings stay. Later: "
@@ -3932,69 +4126,69 @@ msgstr ""
 "Plus tard : Paramètres › Système."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7086 title/pc5_ui.c:7299
+#: title/pc5_ui.c:7400 title/pc5_ui.c:7617
 msgid "Later"
 msgstr "Plus tard"
 
-#: title/pc5_ui.c:7096 title/pc5_ui.c:7127
+#: title/pc5_ui.c:7410 title/pc5_ui.c:7441
 #, c-format
 msgid "Reading %s"
 msgstr "Lecture en cours : %s"
 
-#: title/pc5_ui.c:7097
+#: title/pc5_ui.c:7411
 msgid "Finding its programs"
 msgstr "Recherche de ses programmes"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7102
+#: title/pc5_ui.c:7416
 #, c-format
 msgid "Getting ready · %d of %d"
 msgstr "Préparation · %d sur %d"
 
-#: title/pc5_ui.c:7106
+#: title/pc5_ui.c:7420
 msgid "reading its files"
 msgstr "lecture de ses fichiers"
 
-#: title/pc5_ui.c:7106
+#: title/pc5_ui.c:7420
 msgid "looking for its cover"
 msgstr "recherche de sa pochette"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7115
+#: title/pc5_ui.c:7429
 #, c-format
 msgid "Install %d game · %s"
 msgstr "Installer %d jeu · %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7115
+#: title/pc5_ui.c:7429
 #, c-format
 msgid "Install %d games · %s"
 msgstr "Installer %d jeux · %s"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7117
+#: title/pc5_ui.c:7431
 msgid "Install all"
 msgstr "Tout installer"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7117
+#: title/pc5_ui.c:7431
 msgid "Review"
 msgstr "Vérifier"
 
-#: title/pc5_ui.c:7124
+#: title/pc5_ui.c:7438
 msgid "Looking at the USB drives"
 msgstr "Examen des disques USB"
 
-#: title/pc5_ui.c:7128
+#: title/pc5_ui.c:7442
 msgid "Counting its files and finding its program"
 msgstr "Comptage de ses fichiers et recherche de son programme"
 
-#: title/pc5_ui.c:7135
+#: title/pc5_ui.c:7449
 #, c-format
 msgid "Update %s?"
 msgstr "Mettre à jour %s?"
 
-#: title/pc5_ui.c:7136
+#: title/pc5_ui.c:7450
 #, c-format
 msgid ""
 "PC5 copies %s (%s) from the USB drive over the game's folder: the files it "
@@ -4005,17 +4199,17 @@ msgstr ""
 "fichiers qu'il contient remplacent ceux du jeu, les autres restent. Ses "
 "sauvegardes, paramètres et options restent aussi."
 
-#: title/pc5_ui.c:7148
+#: title/pc5_ui.c:7462
 #, c-format
 msgid "Where should the %d games go?"
 msgstr "Où placer les %d jeux?"
 
-#: title/pc5_ui.c:7149
+#: title/pc5_ui.c:7463
 #, c-format
 msgid "Where should %s go?"
 msgstr "Où placer %s?"
 
-#: title/pc5_ui.c:7153
+#: title/pc5_ui.c:7467
 #, c-format
 msgid ""
 "The console has %s free. Extended storage (%.40s) has %s free: a game "
@@ -4025,7 +4219,7 @@ msgstr ""
 "jeu qui s'y trouve se lance depuis son dossier PC5. Ses sauvegardes "
 "restent sur la console dans tous les cas."
 
-#: title/pc5_ui.c:7158
+#: title/pc5_ui.c:7472
 #, c-format
 msgid ""
 "The console has %s free. The USB drive (%.40s) has %s free: a game there "
@@ -4037,27 +4231,28 @@ msgstr ""
 "branché sur un port rapide. Ses sauvegardes restent sur la console dans "
 "les deux cas."
 
-#: title/pc5_ui.c:7168
+#: title/pc5_ui.c:7482
 #, c-format
 msgid "Left and right choose among the %d drives a game can go on."
 msgstr ""
+"Gauche et droite choisissent parmi les %d disques où un jeu peut aller."
 
-#: title/pc5_ui.c:7170
+#: title/pc5_ui.c:7484
 msgid "Extended storage"
 msgstr "Stockage étendu"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7173
+#: title/pc5_ui.c:7487
 msgid "Console"
 msgstr "Console"
 
-#: title/pc5_ui.c:7178
+#: title/pc5_ui.c:7492
 #, c-format
 msgid "Put back the saves of %s?"
 msgstr "Remettre les sauvegardes de %s?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7180
+#: title/pc5_ui.c:7494
 msgid ""
 "They were kept when it was uninstalled: its saves, settings and options "
 "come back with it. Start fresh: they stay kept, for later."
@@ -4066,67 +4261,67 @@ msgstr ""
 "paramètres et options reviennent avec lui. Repartir de zéro : elles "
 "restent conservées pour plus tard."
 
-#: title/pc5_ui.c:7181
+#: title/pc5_ui.c:7495
 msgid "Start fresh"
 msgstr "Repartir de zéro"
 
-#: title/pc5_ui.c:7181
+#: title/pc5_ui.c:7495
 msgid "Put them back"
 msgstr "Les remettre"
 
-#: title/pc5_ui.c:7185
+#: title/pc5_ui.c:7499
 msgid "Looking for the cover"
 msgstr "Recherche de la pochette"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:7185 title/pc5_ui.c:7191
+#: title/pc5_ui.c:7499 title/pc5_ui.c:7505
 msgid "On Steam, GOG and others"
 msgstr "Sur Steam, GOG et autres"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:7190
+#: title/pc5_ui.c:7504
 #, c-format
 msgid "“%s”, %s"
 msgstr "« %s », %s"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:7190
+#: title/pc5_ui.c:7504
 msgid "on Steam, GOG and others"
 msgstr "sur Steam, GOG et autres"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:7192
+#: title/pc5_ui.c:7506
 msgid "Looking for covers"
 msgstr "Recherche de pochettes"
 
-#: title/pc5_ui.c:7193
+#: title/pc5_ui.c:7507
 msgid "Looking for tile pictures"
 msgstr "Recherche d'images de vignette"
 
-#: title/pc5_ui.c:7193
+#: title/pc5_ui.c:7507
 msgid "Looking for backgrounds"
 msgstr "Recherche d'arrière-plans"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7200
+#: title/pc5_ui.c:7514
 msgid "Offer at Play"
 msgstr "Proposer au lancement"
 
-#: title/pc5_ui.c:7203 title/pc5_ui.c:7206
+#: title/pc5_ui.c:7517 title/pc5_ui.c:7520
 msgid "Which program is the game?"
 msgstr "Quel programme est le jeu?"
 
-#: title/pc5_ui.c:7216
+#: title/pc5_ui.c:7530
 msgid "Which program?"
 msgstr "Quel programme?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7223
+#: title/pc5_ui.c:7537
 msgid "Stop updating?"
 msgstr "Arrêter la mise à jour?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7223
+#: title/pc5_ui.c:7537
 msgid ""
 "The copy made so far is deleted and the game stays as it was. The USB "
 "drive isn't changed."
@@ -4134,16 +4329,16 @@ msgstr ""
 "La copie faite jusqu'ici est supprimée et le jeu reste tel quel. Le disque "
 "USB n'est pas modifié."
 
-#: title/pc5_ui.c:7224
+#: title/pc5_ui.c:7538
 msgid "Keep updating"
 msgstr "Continuer la mise à jour"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7226 title/pc5_ui.c:7231
+#: title/pc5_ui.c:7540 title/pc5_ui.c:7545
 msgid "Stop installing?"
 msgstr "Arrêter l'installation?"
 
-#: title/pc5_ui.c:7227
+#: title/pc5_ui.c:7541
 msgid ""
 "What this game copied so far is deleted; games already installed stay. The "
 "USB drive isn't changed. Press the back button to keep installing."
@@ -4152,36 +4347,36 @@ msgstr ""
 "restent. Le disque USB n'est pas modifié. Appuyez sur la touche retour "
 "pour continuer l'installation."
 
-#: title/pc5_ui.c:7229
+#: title/pc5_ui.c:7543
 msgid "Stop this game"
 msgstr "Arrêter ce jeu"
 
-#: title/pc5_ui.c:7229
+#: title/pc5_ui.c:7543
 msgid "Stop all"
 msgstr "Tout arrêter"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7231
+#: title/pc5_ui.c:7545
 msgid "Everything copied so far is deleted. The USB drive isn't changed."
 msgstr ""
 "Tout ce qui a été copié jusqu'ici est supprimé. Le disque USB n'est pas "
 "modifié."
 
-#: title/pc5_ui.c:7232
+#: title/pc5_ui.c:7546
 msgid "Keep installing"
 msgstr "Continuer l'installation"
 
-#: title/pc5_ui.c:7236
+#: title/pc5_ui.c:7550
 msgid "There are no games to uninstall"
 msgstr "Il n'y a aucun jeu à désinstaller"
 
-#: title/pc5_ui.c:7244
+#: title/pc5_ui.c:7558
 #, c-format
 msgid "Delete the saves of %s?"
 msgstr "Supprimer les sauvegardes de %s?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7245
+#: title/pc5_ui.c:7559
 msgid ""
 "Its saves and settings, kept when it was uninstalled, are deleted. There "
 "is no backup and no undo."
@@ -4189,12 +4384,12 @@ msgstr ""
 "Ses sauvegardes et paramètres, conservés lors de sa désinstallation, "
 "seront supprimés. Pas de copie de secours, impossible d'annuler."
 
-#: title/pc5_ui.c:7254
+#: title/pc5_ui.c:7568
 #, c-format
 msgid "Uninstall %s?"
 msgstr "Désinstaller %s?"
 
-#: title/pc5_ui.c:7257
+#: title/pc5_ui.c:7571
 msgid ""
 "Keep saves: the game goes, its saves and settings stay, and installing it "
 "again puts them back. Delete all: the game, its saves and settings go, "
@@ -4205,15 +4400,15 @@ msgstr ""
 "le jeu, ses sauvegardes et paramètres sont supprimés, sans copie de "
 "secours ni possibilité d'annuler."
 
-#: title/pc5_ui.c:7259
+#: title/pc5_ui.c:7573
 msgid "Keep saves"
 msgstr "Garder les sauvegardes"
 
-#: title/pc5_ui.c:7259
+#: title/pc5_ui.c:7573
 msgid "Delete all"
 msgstr "Tout supprimer"
 
-#: title/pc5_ui.c:7262
+#: title/pc5_ui.c:7576
 msgid ""
 "This deletes the game and all its saves and settings. There is no backup "
 "and no undo."
@@ -4221,22 +4416,22 @@ msgstr ""
 "Cela supprime le jeu et toutes ses sauvegardes et paramètres. Pas de copie "
 "de secours, impossible d'annuler."
 
-#: title/pc5_ui.c:7267
+#: title/pc5_ui.c:7581
 #, c-format
 msgid "Deleting the saves of %s"
 msgstr "Suppression des sauvegardes de %s"
 
-#: title/pc5_ui.c:7267
+#: title/pc5_ui.c:7581
 #, c-format
 msgid "Uninstalling %s"
 msgstr "Désinstallation de %s"
 
-#: title/pc5_ui.c:7270
+#: title/pc5_ui.c:7584
 #, c-format
 msgid "%u files and folders deleted"
 msgstr "%u fichiers et dossiers supprimés"
 
-#: title/pc5_ui.c:7287
+#: title/pc5_ui.c:7605
 #, c-format
 msgid ""
 "%d game is waiting in PC5's INSTALL folders (its own, and PC5/INSTALL on "
@@ -4247,7 +4442,7 @@ msgstr ""
 "sur le disque USB). L'installer maintenant? Un jeu installé depuis là est "
 "déplacé dans la bibliothèque de PC5, hors du dossier INSTALL."
 
-#: title/pc5_ui.c:7287
+#: title/pc5_ui.c:7605
 #, c-format
 msgid ""
 "%d games are waiting in PC5's INSTALL folders (its own, and PC5/INSTALL on "
@@ -4258,7 +4453,7 @@ msgstr ""
 "PC5/INSTALL sur le disque USB). Les installer maintenant? Un jeu installé "
 "depuis là est déplacé dans la bibliothèque de PC5, hors du dossier INSTALL."
 
-#: title/pc5_ui.c:7287
+#: title/pc5_ui.c:7605
 #, c-format
 msgid ""
 "%d game is waiting in PC5's INSTALL folder. Install it now? A game "
@@ -4269,7 +4464,7 @@ msgstr ""
 "jeu installé depuis là est déplacé dans la bibliothèque de PC5, hors du "
 "dossier INSTALL."
 
-#: title/pc5_ui.c:7287
+#: title/pc5_ui.c:7605
 #, c-format
 msgid ""
 "%d games are waiting in PC5's INSTALL folder. Install them now? A game "
@@ -4281,33 +4476,33 @@ msgstr ""
 "PC5, hors du dossier INSTALL."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7299
+#: title/pc5_ui.c:7617
 msgid "Games in PC5's INSTALL folder"
 msgstr "Jeux dans le dossier INSTALL de PC5"
 
-#: title/pc5_ui.c:7304
+#: title/pc5_ui.c:7622
 msgid "Updating the home screen tile"
 msgstr "Mise à jour de la vignette de l'écran d'accueil"
 
-#: title/pc5_ui.c:7304
+#: title/pc5_ui.c:7622
 msgid "Its picture and background"
 msgstr "Son image et son arrière-plan"
 
-#: title/pc5_ui.c:7306
+#: title/pc5_ui.c:7624
 msgid "A newer one may have fixed it"
 msgstr "Une version plus récente l'a peut-être corrigé"
 
-#: title/pc5_ui.c:7309
+#: title/pc5_ui.c:7627
 #, c-format
 msgid "Update to PC5 %s first?"
 msgstr "Mettre d'abord à jour vers PC5 %s?"
 
-#: title/pc5_ui.c:7311
+#: title/pc5_ui.c:7629
 #, c-format
 msgid "You have %s"
 msgstr "Vous avez la %s"
 
-#: title/pc5_ui.c:7312
+#: title/pc5_ui.c:7630
 #, c-format
 msgid ""
 "This may already be fixed in it. Update, try the game again, and report it "
@@ -4317,21 +4512,21 @@ msgstr ""
 "le jeu, et signalez-le si le problème persiste. %s."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7315
+#: title/pc5_ui.c:7633
 msgid "Report anyway"
 msgstr "Signaler quand même"
 
-#: title/pc5_ui.c:7320
+#: title/pc5_ui.c:7638
 #, c-format
 msgid "Starting %s"
 msgstr "Démarrage de %s"
 
-#: title/pc5_ui.c:7323
+#: title/pc5_ui.c:7641
 #, c-format
 msgid "Installing %.80s for it, once"
 msgstr "Installation de %.80s pour lui, une seule fois"
 
-#: title/pc5_ui.c:7327
+#: title/pc5_ui.c:7645
 #, c-format
 msgid "Setting up .NET for your games, once: %u of %u"
 msgstr "Préparation de .NET pour vos jeux, une seule fois : %u sur %u"
@@ -4559,42 +4754,46 @@ msgstr ""
 msgid "PC5 can't start the update (%d)."
 msgstr "PC5 ne peut pas lancer la mise à jour (%d)."
 
-#: title/pc5_web.c:885
+#: title/pc5_web.c:706
+msgid "It isn't UTF-8 text"
+msgstr "Ce n'est pas du texte UTF-8"
+
+#: title/pc5_web.c:1042
 msgid "PC5 has no folder to show."
 msgstr "PC5 n'a aucun dossier à afficher."
 
 #. Web page text.
-#: title/pc5_web_page.html:46
+#: title/pc5_web_page.html:52
 msgctxt "web"
 msgid "Asking the console…"
 msgstr "Interrogation de la console…"
 
 #. Web page text.
-#: title/pc5_web_page.html:47
+#: title/pc5_web_page.html:53
 msgctxt "web"
 msgid "Game compatibility list"
 msgstr "Liste de compatibilité des jeux"
 
 #. Web page text.
-#: title/pc5_web_page.html:48
+#: title/pc5_web_page.html:54
 msgctxt "web"
 msgid "Help (wiki)"
 msgstr "Aide (wiki)"
 
 #. Web page text.
-#: title/pc5_web_page.html:49
+#: title/pc5_web_page.html:55
 msgctxt "web"
 msgid "Report a problem with PC5"
 msgstr "Signaler un problème avec PC5"
 
 #. Web page text.
-#: title/pc5_web_page.html:52
+#: title/pc5_web_page.html:58
 msgctxt "web"
 msgid "Send a game"
 msgstr "Envoyer un jeu"
 
 #. Web page text.
-#: title/pc5_web_page.html:53
+#: title/pc5_web_page.html:59
 msgctxt "web"
 msgid ""
 "Choose a game's folder: it goes to PC5's INSTALL folder, then PC5 asks to "
@@ -4604,13 +4803,13 @@ msgstr ""
 "PC5, puis PC5 propose de l'installer."
 
 #. Web page text.
-#: title/pc5_web_page.html:55
+#: title/pc5_web_page.html:61
 msgctxt "web"
 msgid "Choose a folder"
 msgstr "Choisir un dossier"
 
 #. Web page text.
-#: title/pc5_web_page.html:57
+#: title/pc5_web_page.html:63
 msgctxt "web"
 msgid ""
 "A phone that can't choose a folder: type the game's folder name, then "
@@ -4620,38 +4819,39 @@ msgstr ""
 "dossier du jeu, puis choisissez ses fichiers."
 
 #. Web page text.
-#: title/pc5_web_page.html:60
+#: title/pc5_web_page.html:66
 msgctxt "web"
 msgid "Choose files"
 msgstr "Choisir des fichiers"
 
 #. Web page text.
-#: title/pc5_web_page.html:66
+#: title/pc5_web_page.html:72
 msgctxt "web"
 msgid "Games"
 msgstr "Jeux"
 
 #. Web page text.
-#: title/pc5_web_page.html:66
+#: title/pc5_web_page.html:72
 msgctxt "web"
 msgid "Refresh"
 msgstr "Actualiser"
 
 #. Web page text.
-#: title/pc5_web_page.html:68 title/pc5_web_page.html:74
+#: title/pc5_web_page.html:74 title/pc5_web_page.html:80
+#: title/pc5_web_page.html:216 title/pc5_web_page.html:242
 msgctxt "web"
 msgid "Loading…"
 msgstr "Chargement…"
 
 #. Web page text.
-#: title/pc5_web_page.html:71
+#: title/pc5_web_page.html:77
 msgctxt "web"
 msgid "Logs"
 msgstr "Journaux"
 
 #. Web page text.
 #. Keep <b>...</b> and <code>...</code> around the same words.
-#: title/pc5_web_page.html:72
+#: title/pc5_web_page.html:78
 msgctxt "web"
 msgid ""
 "Attach one to an issue on GitHub when a game has a problem: a game's "
@@ -4665,27 +4865,27 @@ msgstr ""
 
 #. Web page text.
 #. A text box's hint, shown in it while it is empty.
-#: title/pc5_web_page.html:59
+#: title/pc5_web_page.html:65
 msgctxt "web"
 msgid "The game's folder name"
 msgstr "Nom du dossier du jeu"
 
 #. Web page text.
 #. A text box's hint, shown in it while it is empty.
-#: title/pc5_web_page.html:67
+#: title/pc5_web_page.html:73
 msgctxt "web"
 msgid "Find a game"
 msgstr "Trouver un jeu"
 
 #. Web page text.
-#: title/pc5_web_page.html:103
+#: title/pc5_web_page.html:109
 msgctxt "web"
 msgid "bytes"
 msgstr "octets"
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:124
+#: title/pc5_web_page.html:130
 #, c-format
 msgctxt "web"
 msgid "PC5 %s · %s free on the console"
@@ -4693,7 +4893,7 @@ msgstr "PC5 %s · %s de libre sur la console"
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:125
+#: title/pc5_web_page.html:131
 #, c-format
 msgctxt "web"
 msgid " · INSTALL folder: %s free"
@@ -4701,66 +4901,68 @@ msgstr " · dossier INSTALL : %s de libre"
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:127
+#: title/pc5_web_page.html:133
 #, c-format
 msgctxt "web"
 msgid "The console didn't answer: %s"
 msgstr "La console n'a pas répondu : %s"
 
 #. Web page text.
-#: title/pc5_web_page.html:133
+#: title/pc5_web_page.html:139
 msgctxt "web"
 msgid "given by you"
 msgstr "indiqué par vous"
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:134
+#: title/pc5_web_page.html:140
 #, c-format
 msgctxt "web"
 msgid "found in %s"
 msgstr "trouvé dans %s"
 
 #. Web page text.
-#: title/pc5_web_page.html:134
+#: title/pc5_web_page.html:140
 msgctxt "web"
 msgid "none found"
 msgstr "aucun trouvé"
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:135
+#: title/pc5_web_page.html:141
 #, c-format
 msgctxt "web"
 msgid "Which game it is (Steam app ID: %s)"
 msgstr "De quel jeu il s'agit (ID d'app Steam : %s)"
 
 #. Web page text.
-#: title/pc5_web_page.html:135
+#: title/pc5_web_page.html:141
 msgctxt "web"
 msgid "none"
 msgstr "aucun"
 
 #. Web page text.
-#: title/pc5_web_page.html:136
+#: title/pc5_web_page.html:142
 msgctxt "web"
 msgid "Steam app ID, e.g. 1091500"
 msgstr "ID d'app Steam, p. ex. 1091500"
 
 #. Web page text.
-#: title/pc5_web_page.html:139 title/pc5_web_page.html:165
+#: title/pc5_web_page.html:145 title/pc5_web_page.html:171
+#: title/pc5_web_page.html:257
 msgctxt "web"
 msgid "Save"
 msgstr "Enregistrer"
 
 #. Web page text.
-#: title/pc5_web_page.html:142 title/pc5_web_page.html:168
+#: title/pc5_web_page.html:148 title/pc5_web_page.html:174
+#: title/pc5_web_page.html:260
 msgctxt "web"
 msgid "Saving…"
 msgstr "Enregistrement…"
 
 #. Web page text.
-#: title/pc5_web_page.html:146
+#: title/pc5_web_page.html:152
 msgctxt "web"
 msgid ""
 "Saved: its cover, background and details are fetched again when PC5 opens."
@@ -4769,14 +4971,15 @@ msgstr ""
 "de nouveau à l'ouverture de PC5."
 
 #. Web page text.
-#: title/pc5_web_page.html:147
+#: title/pc5_web_page.html:153
 msgctxt "web"
 msgid "Cleared: PC5 reads the game's folder again."
 msgstr "Effacé : PC5 relit le dossier du jeu."
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:149 title/pc5_web_page.html:174
+#: title/pc5_web_page.html:155 title/pc5_web_page.html:180
+#: title/pc5_web_page.html:268
 #, c-format
 msgctxt "web"
 msgid "Not saved: %s"
@@ -4784,7 +4987,7 @@ msgstr "Non enregistré : %s"
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:152
+#: title/pc5_web_page.html:158
 #, c-format
 msgctxt "web"
 msgid "; GOG product %s"
@@ -4792,7 +4995,7 @@ msgstr "; produit GOG %s"
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:153
+#: title/pc5_web_page.html:159
 #, c-format
 msgctxt "web"
 msgid ""
@@ -4807,51 +5010,160 @@ msgstr ""
 "PC5 relit le dossier."
 
 #. Web page text.
-#: title/pc5_web_page.html:172
+#: title/pc5_web_page.html:178
 msgctxt "web"
 msgid "Saved: used at the game's next start."
 msgstr "Enregistré : utilisé au prochain démarrage du jeu."
 
 #. Web page text.
-#: title/pc5_web_page.html:187
+#: title/pc5_web_page.html:191
+msgctxt "web"
+msgid "Files: change a game's text files"
+msgstr "Fichiers : modifier les fichiers texte d'un jeu"
+
+#. Web page text.
+#: title/pc5_web_page.html:196
+msgctxt "web"
+msgid "Game folder"
+msgstr "Dossier du jeu"
+
+#. Web page text.
+#: title/pc5_web_page.html:196
+msgctxt "web"
+msgid "Windows (registry, saves, settings)"
+msgstr "Windows (registre, sauvegardes, réglages)"
+
+#. Web page text.
+#: title/pc5_web_page.html:224
+msgctxt "web"
+msgid "This folder is empty"
+msgstr "Ce dossier est vide"
+
+#. Web page text.
+#: title/pc5_web_page.html:235
+msgctxt "web"
+msgid "Larger than 8 MB: too large to change here"
+msgstr "Plus de 8 Mo : trop grand pour être modifié ici"
+
+#. Web page text.
+#. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
+#: title/pc5_web_page.html:239
+#, c-format
+msgctxt "web"
+msgid "Not shown: %s"
+msgstr "Non affiché : %s"
+
+#. Web page text.
+#: title/pc5_web_page.html:253
+msgctxt "web"
+msgid "UTF-8 with its mark"
+msgstr "UTF-8 avec BOM"
+
+#. Web page text.
+#: title/pc5_web_page.html:254
+msgctxt "web"
+msgid "Western (one byte a letter)"
+msgstr "Occidental (un octet par lettre)"
+
+#. Web page text.
+#. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
+#: title/pc5_web_page.html:255
+#, c-format
+msgctxt "web"
+msgid ""
+"%s · %s line ends · %d lines · %s. Saved as it was: the same encoding and "
+"line ends. A game reads it at its next start."
+msgstr ""
+"%s · fins de ligne %s · %d lignes · %s. Enregistré tel quel : même "
+"encodage et mêmes fins de ligne. Le jeu le lit à son prochain démarrage."
+
+#. Web page text.
+#: title/pc5_web_page.html:257
+msgctxt "web"
+msgid "Close"
+msgstr "Fermer"
+
+#. Web page text.
+#: title/pc5_web_page.html:265
+msgctxt "web"
+msgid "Saved."
+msgstr "Enregistré."
+
+#. Web page text.
+#: title/pc5_web_page.html:273
+msgctxt "web"
+msgid "Close without saving the changes?"
+msgstr "Fermer sans enregistrer les modifications ?"
+
+#. Web page text.
+#: title/pc5_web_page.html:278
+msgctxt "web"
+msgid ""
+"Wine writes its .reg files while a game plays: change them only when no "
+"game is running."
+msgstr ""
+"Wine écrit ses fichiers .reg pendant qu'un jeu tourne : modifiez-les "
+"seulement quand aucun jeu n'est lancé."
+
+#. Web page text.
+#. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
+#: title/pc5_web_page.html:280
+#, c-format
+msgctxt "web"
+msgid "Not opened: %s"
+msgstr "Non ouvert : %s"
+
+#. Web page text.
+#: title/pc5_web_page.html:283
+msgctxt "web"
+msgid ""
+"Text files only (.ini, .cfg, .txt, .json, .reg and the like), up to 8 MB. "
+"The console's File manager changes them too, a line at a time."
+msgstr ""
+"Fichiers texte seulement (.ini, .cfg, .txt, .json, .reg et autres), "
+"jusqu'à 8 Mo. Le Gestionnaire de fichiers de la console les modifie aussi, "
+"une ligne à la fois."
+
+#. Web page text.
+#: title/pc5_web_page.html:294
 msgctxt "web"
 msgid "No games yet."
 msgstr "Aucun jeu pour l'instant."
 
 #. Web page text.
-#: title/pc5_web_page.html:190
+#: title/pc5_web_page.html:297
 msgctxt "web"
 msgid "USB drive"
 msgstr "Disque USB"
 
 #. Web page text.
-#: title/pc5_web_page.html:191
+#: title/pc5_web_page.html:298
 msgctxt "web"
 msgid "can't start"
 msgstr "ne peut pas démarrer"
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:196
+#: title/pc5_web_page.html:303
 #, c-format
 msgctxt "web"
 msgid "Settings: %s"
 msgstr "Paramètres : %s"
 
 #. Web page text.
-#: title/pc5_web_page.html:199
+#: title/pc5_web_page.html:306
 msgctxt "web"
 msgid "Newest log"
 msgstr "Journal le plus récent"
 
 #. Web page text.
-#: title/pc5_web_page.html:201
+#: title/pc5_web_page.html:308
 msgctxt "web"
 msgid "Report a problem"
 msgstr "Signaler un problème"
 
 #. Web page text.
-#: title/pc5_web_page.html:202
+#: title/pc5_web_page.html:309
 msgctxt "web"
 msgid ""
 "Downloads the newest log and opens GitHub's form, filled in: attach the "
@@ -4861,13 +5173,13 @@ msgstr ""
 "déjà rempli : joignez-y le journal."
 
 #. Web page text.
-#: title/pc5_web_page.html:208
+#: title/pc5_web_page.html:315
 msgctxt "web"
 msgid "Launch options (launch.txt)"
 msgstr "Options de lancement (launch.txt)"
 
 #. Web page text.
-#: title/pc5_web_page.html:209
+#: title/pc5_web_page.html:316
 msgctxt "web"
 msgid ""
 "The first line that isn't empty or a comment (# or ;) is added to the "
@@ -4877,25 +5189,25 @@ msgstr ""
 "à la ligne de commande du programme."
 
 #. Web page text.
-#: title/pc5_web_page.html:212
+#: title/pc5_web_page.html:320
 msgctxt "web"
 msgid "Environment variables (env.txt)"
 msgstr "Variables d'environnement (env.txt)"
 
 #. Web page text.
-#: title/pc5_web_page.html:212
+#: title/pc5_web_page.html:320
 msgctxt "web"
 msgid "One NAME=value a line, set before the game starts."
 msgstr "Un NOM=valeur par ligne, défini avant le démarrage du jeu."
 
 #. Web page text.
-#: title/pc5_web_page.html:213
+#: title/pc5_web_page.html:321
 msgctxt "web"
 msgid "Extra logging (winedebug.txt)"
 msgstr "Journalisation détaillée (winedebug.txt)"
 
 #. Web page text.
-#: title/pc5_web_page.html:214
+#: title/pc5_web_page.html:322
 msgctxt "web"
 msgid ""
 "Only when an issue asks for it, for example err+all,+seh. Empty it "
@@ -4906,41 +5218,41 @@ msgstr ""
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:219
+#: title/pc5_web_page.html:327
 #, c-format
 msgctxt "web"
 msgid "The games didn't load: %s"
 msgstr "Les jeux ne se sont pas chargés : %s"
 
 #. Web page text.
-#: title/pc5_web_page.html:232
+#: title/pc5_web_page.html:340
 msgctxt "web"
 msgid "No logs kept."
 msgstr "Aucun journal conservé."
 
 #. Web page text.
-#: title/pc5_web_page.html:236
+#: title/pc5_web_page.html:344
 msgctxt "web"
 msgid "had a problem"
 msgstr "a eu un problème"
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:239
+#: title/pc5_web_page.html:347
 #, c-format
 msgctxt "web"
 msgid "The logs didn't load: %s"
 msgstr "Les journaux ne se sont pas chargés : %s"
 
 #. Web page text.
-#: title/pc5_web_page.html:248
+#: title/pc5_web_page.html:356
 msgctxt "web"
 msgid "the connection was lost"
 msgstr "la connexion a été perdue"
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:265
+#: title/pc5_web_page.html:373
 #, c-format
 msgctxt "web"
 msgid "Sending %d of %d: %s"
@@ -4948,7 +5260,7 @@ msgstr "Envoi de %d sur %d : %s"
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:269
+#: title/pc5_web_page.html:377
 #, c-format
 msgctxt "web"
 msgid "Stopped at %s: %s"
@@ -4956,7 +5268,7 @@ msgstr "Arrêté à %s : %s"
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:276
+#: title/pc5_web_page.html:384
 #, c-format
 msgctxt "web"
 msgid "Sent %d files (%s). PC5 asks to install the game in a moment."
@@ -4965,10 +5277,13 @@ msgstr ""
 "instant."
 
 #. Web page text.
-#: title/pc5_web_page.html:285
+#: title/pc5_web_page.html:393
 msgctxt "web"
 msgid "Type the game's folder name first (no / or \\)."
 msgstr "Saisissez d'abord le nom du dossier du jeu (sans / ni \\)."
+
+#~ msgid "Keep changing"
+#~ msgstr "Continuer à modifier"
 
 #~ msgid "Vibration, light bar and triggers"
 #~ msgstr "Vibrations, barre lumineuse et gâchettes"
