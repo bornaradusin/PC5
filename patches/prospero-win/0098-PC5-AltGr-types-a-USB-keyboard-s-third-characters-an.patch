@@ -1,0 +1,104 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 1 Nov 2026 23:00:00 +0000
+Subject: [PATCH] PC5: AltGr types a USB keyboard's third characters, and the
+ on-screen keyboard opens over a game
+
+On a French AZERTY keyboard AltGr+0 typed nothing instead of @, so a
+game's login could not be typed (World of Tanks, PC5's #221): the right
+Alt went to Wine as VK_MENU, the same key as the left one, and Wine's
+PS5 driver turns only VK_RMENU into Ctrl+Alt, as Windows sends AltGr
+(Wine patch 0992). The right Alt is VK_RMENU now, its own key, as the
+Windows keys are; Wine keeps VK_MENU held for it, so a game testing Alt
+sees it as before.
+
+The console's on-screen keyboard (a two-finger click on the touchpad)
+never opened over a game: libSceImeDialog, loaded the first time it is
+asked for, comes after the /data grant changed the title's credentials,
+and the system refuses it then (0x80020063 in the log). It is loaded
+with the keyboard and the mouse's libraries, before the grant.
+---
+ native/pw_hid_ps5.c |  5 ++++-
+ src/pw_hid.c        | 14 +++++++++-----
+ tests/test_pw_hid.c | 14 ++++++++++++++
+ 3 files changed, 27 insertions(+), 6 deletions(-)
+
+diff --git a/native/pw_hid_ps5.c b/native/pw_hid_ps5.c
+index c60e2ea..68a5972 100644
+--- a/native/pw_hid_ps5.c
++++ b/native/pw_hid_ps5.c
+@@ -185,8 +185,11 @@ int sceKernelDlsym(int32_t handle, const char *symbol, void **address);
+  * ESDKVERSION, measured): the system loads them as its modules
+  * (OpenOrbis's SCE_SYSMODULE_KEYBOARD and _MOUSE; ProsperoLight, a PS5
+  * title, does so on hardware). */
++/* libSceImeDialog too: the console's on-screen keyboard, which PC5 opens over a game (a
++ * two-finger click on the touchpad). Loaded later, once the /data grant has changed the
++ * title's credentials, the system refuses it (0x80020063), and the keyboard never opens. */
+ static const struct { const char *name; uint16_t id; } sysmodules[] = {
+-    { "libSceKeyboard", 0x0106 }, { "libSceMouse", 0x00a9 },
++    { "libSceKeyboard", 0x0106 }, { "libSceMouse", 0x00a9 }, { "libSceImeDialog", 0x0096 },
+ };
+ 
+ /* The system's handle for a module it loaded, by its id (measured on the
+diff --git a/src/pw_hid.c b/src/pw_hid.c
+index b81830b..8dc42e7 100644
+--- a/src/pw_hid.c
++++ b/src/pw_hid.c
+@@ -39,8 +39,11 @@ static const uint8_t usage_vk[0x66] = {
+ };
+ 
+ /* Modifier bits to virtual keys: Ctrl, Shift, Alt, Windows, left then
+- * right. The generic keys (VK_CONTROL...) are what games test. */
+-static const uint8_t modifier_vk[8] = { 0x11, 0x10, 0x12, 0x5b, 0x11, 0x10, 0x12, 0x5c };
++ * right. The generic keys (VK_CONTROL...) are what games test, but the right
++ * Alt is VK_RMENU: on a layout with AltGr (French, German...) it is AltGr,
++ * which Wine's PS5 driver sends as Ctrl+Alt, as Windows does, to type the
++ * third character of a key (@ on AZERTY's 0). Wine keeps VK_MENU held for it. */
++static const uint8_t modifier_vk[8] = { 0x11, 0x10, 0x12, 0x5b, 0x11, 0x10, 0xa5, 0x5c };
+ 
+ uint16_t pw_hid_usage_vk(uint8_t usage)
+ {
+@@ -54,11 +57,12 @@ static int holds(const PwHidKeyboard *k, uint8_t usage)
+     return 0;
+ }
+ 
+-/* Ctrl, Shift and Alt share one virtual key for both sides, so theirs is
+- * still held while the other side is; the Windows keys have one each. */
++/* Ctrl and Shift share one virtual key for both sides, so theirs is still
++ * held while the other side is; Alt (the right one is AltGr) and the Windows
++ * keys have one each. */
+ static int modifier_held(uint8_t modifiers, unsigned bit)
+ {
+-    if ((bit & 3u) == 3u) return modifiers >> bit & 1u;
++    if ((bit & 3u) >= 2u) return modifiers >> bit & 1u;
+     return (modifiers >> bit & 1u) || (modifiers >> ((bit + 4) & 7) & 1u);
+ }
+ 
+diff --git a/tests/test_pw_hid.c b/tests/test_pw_hid.c
+index b6a387a..79a3c8f 100644
+--- a/tests/test_pw_hid.c
++++ b/tests/test_pw_hid.c
+@@ -44,6 +44,20 @@ static void test_keyboard(void)
+     a = b; b.modifiers = 0;
+     n = pw_hid_keyboard_events(&a, &b, e, 32);
+     assert(n == 1 && !e[0].down && e[0].code == 0x11);
++    /* The right Alt is its own key, VK_RMENU (AltGr on a layout that has it):
++     * left Alt and right Alt press and release each their own. */
++    a = b; b.modifiers = 0x04;
++    n = pw_hid_keyboard_events(&a, &b, e, 32);
++    assert(n == 1 && e[0].down && e[0].code == 0x12);
++    a = b; b.modifiers = 0x44;
++    n = pw_hid_keyboard_events(&a, &b, e, 32);
++    assert(n == 1 && e[0].down && e[0].code == 0xa5);
++    a = b; b.modifiers = 0x40;
++    n = pw_hid_keyboard_events(&a, &b, e, 32);
++    assert(n == 1 && !e[0].down && e[0].code == 0x12);
++    a = b; b.modifiers = 0;
++    n = pw_hid_keyboard_events(&a, &b, e, 32);
++    assert(n == 1 && !e[0].down && e[0].code == 0xa5);
+     /* The Windows keys are separate keys. */
+     a = b; b.modifiers = 0x88;
+     n = pw_hid_keyboard_events(&a, &b, e, 32);
+-- 
+2.43.0
+

@@ -552,3 +552,6 @@ controller's speaker.
 | 310 | Home with 5 games: right to the last one | the last three covers stay in view and the choice moves along them | |
 | 311 | Pro Evolution Soccer 6 copied in (no installer run), and its settings.exe | no "The game is not properly installed": settings opens and the game starts | `PC5 prefix installer keys added` the first time only |
 | 312 | Pro Evolution Soccer 6 installed on a USB drive (or extended storage), started from there | the same: no "not properly installed" | `PC5 prefix installer keys added` |
+| 313 | A French (AZERTY) USB keyboard, console in French: AltGr+0 in a game's text field (World of Tanks' login) | types @ | `PC5 keyboard layout=fr` |
+| 314 | In a game, a two-finger click on the touchpad | the console's keyboard opens; what's typed goes to the game | `PW_WINE64 hid preload libSceImeDialog id=0x96 status=0`, no `PC5 keyboard refused` |
+| 315 | Marvel's Spider-Man Remastered on Graphics API Auto | it starts with Direct3D 12 (no "DirectX 12 support not detected") | `dll_overrides=d3d8,d3d9,d3d10core,d3d11,d3d12,d3d12core,dxgi=n` |

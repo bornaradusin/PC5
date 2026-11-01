@@ -488,6 +488,12 @@ int pc5_pe_unreal_d3d12(const char *path, uint32_t imports)
     if ((imports & PC5_IMPORT_D3D12) || !(imports & (PC5_IMPORT_D3D11 | PC5_IMPORT_DXGI | PC5_IMPORT_D3D10))) return 0;
     for (const char *p = path; *p && n + 1 < sizeof(lower); p++) lower[n++] = *p == '\\' ? '/' : (char)pc5_lower((unsigned char)*p);
     lower[n] = 0;
+    /* Games that draw only with Direct3D 12 and load it themselves, outside Unreal: given
+     * Wine's own d3d12 beside DXVK's dxgi, they find no Direct3D 12 and say so. */
+    static const char *const d3d12_only[] = { "spider-man.exe", "milesmorales.exe", "riftapart.exe" };
+    const char *name = strrchr(lower, '/') ? strrchr(lower, '/') + 1 : lower;
+    for (size_t i = 0; i < sizeof(d3d12_only) / sizeof(d3d12_only[0]); i++)
+        if (!strcmp(name, d3d12_only[i])) return 1;
     if (!strstr(lower, "/binaries/win64/") && strncmp(lower, "binaries/win64/", 15)) return 0;
     /* The Agility SDK first: some programs (a large or packed one) don't show d3d12.dll's
      * name where pc5_pe_named_libraries looks. */

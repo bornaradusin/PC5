@@ -57,8 +57,10 @@ Pc5Api pc5_api_from_imports(uint32_t imports);
  * Engine game's, in a Binaries\Win64 folder, whose imports don't name Direct3D 12 but that
  * draws with it: it ships the Direct3D 12 Agility SDK (D3D12\D3D12Core.dll beside it, or
  * the SDK's D3D12SDKVersion export), or its code names d3d12.dll. Unreal Engine 5 loads
- * d3d12.dll itself, while its imports name only Direct3D 11 or DXGI. imports: the
- * program's own. */
+ * d3d12.dll itself, while its imports name only Direct3D 11 or DXGI. Some other games do
+ * the same and draw only with Direct3D 12 (Nixxes' ports: Marvel's Spider-Man Remastered,
+ * Miles Morales, Ratchet & Clank: Rift Apart): those are known by their program's name.
+ * imports: the program's own. */
 int pc5_pe_unreal_d3d12(const char *path, uint32_t imports);
 /* 1 when the program at path is a Godot Engine game's: its data beside it (<name>.pck) or
  * the engine's name in it ("Godot Engine"). Its imports name Direct3D, but a Godot game

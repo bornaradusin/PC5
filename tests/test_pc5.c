@@ -682,6 +682,10 @@ static void test_pe(void)
         CHECK(pc5_pe_unreal_d3d12("Game\\Binaries\\Win64\\missing.exe", PC5_IMPORT_D3D11) == 0, "nor a missing one");
         write_text(ue, "MZ ... d3d11.dll only ...");
         CHECK(!pc5_pe_unreal_d3d12(ue, PC5_IMPORT_D3D11), "nor one that doesn't name it");
+        CHECK(pc5_pe_unreal_d3d12("Marvels SpiderMan Remastered/Spider-Man.exe", PC5_IMPORT_D3D11) &&
+                  pc5_pe_unreal_d3d12("C:\\Games\\Miles\\MilesMorales.EXE", PC5_IMPORT_DXGI) &&
+                  !pc5_pe_unreal_d3d12("Spider-Man.exe", PC5_IMPORT_D3D9) && !pc5_pe_unreal_d3d12("Other/Spider.exe", PC5_IMPORT_D3D11),
+              "Nixxes' Direct3D 12 ports by their program's name, outside Unreal too");
         /* One that doesn't name it where PC5 looks (Gears of War: E-Day's) but ships the
          * Direct3D 12 Agility SDK: its D3D12 folder beside it, any case. */
         char sdk[PC5_PATH];
@@ -1240,7 +1244,7 @@ static void test_install(void)
         CHECK(profile->app.architecture == PW_APP_ARCH_PE64 && profile->app.graphics == PW_APP_GRAPHICS_DXVK, "pe64 dxvk");
         CHECK(!strcmp(profile->app.prefix, "neondrift"), "own prefix");
         /* A Direct3D 11 game: DXVK as prospero-win's profiles have it, Wine's own d3d12. */
-        CHECK(!strcmp(profile->app.dll_overrides, "d3d8,d3d9,d3d10core,d3d11,dxgi=n;d3d12,d3d12core=b"), "overrides: %s",
+        CHECK(!strcmp(profile->app.dll_overrides, "d3d8,d3d9,d3d10core,d3d11,dxgi=n;d3d12,d3d12core,amd_ags_x64=b"), "overrides: %s",
               profile->app.dll_overrides);
         CHECK(!profile->display.show_fps, "no fps counter");
     }
@@ -1257,7 +1261,7 @@ static void test_install(void)
         static char text[4096];
         twelve.api = PC5_API_D3D12;
         CHECK(!pc5_profile_text_at("twelve", &twelve, "", NULL, NULL, NULL, text, sizeof(text)) &&
-              strstr(text, "dll_overrides = d3d8,d3d9,d3d10core,d3d11,d3d12,d3d12core,dxgi=n\n"), "d3d12 overrides");
+              strstr(text, "dll_overrides = d3d8,d3d9,d3d10core,d3d11,d3d12,d3d12core,dxgi=n;amd_ags_x64=b\n"), "d3d12 overrides");
     }
     /* Changed launch options take effect at the next start. */
     path(file, sizeof(file), "%s/neondrift/drive_c/Games/NeonDrift/launch.txt", prefixes);
@@ -1291,7 +1295,7 @@ static void test_install(void)
         pw_wine_library_load(pw, root);
         profile = pw_wine_library_find(pw, "neondrift");
         CHECK(profile && !strcmp(profile->app.dll_overrides,
-                                 "d3d8,d3d9,d3d10core,d3d11,dxgi=n;d3d12,d3d12core=b;d3dcompiler_47,msvcp140=n,b"),
+                                 "d3d8,d3d9,d3d10core,d3d11,dxgi=n;d3d12,d3d12core,amd_ags_x64=b;d3dcompiler_47,msvcp140=n,b"),
               "overrides with its own DLLs: %s", profile ? profile->app.dll_overrides : "");
         CHECK(profile && profile->display.width == 3840 && profile->display.height == 2160, "4K desktop");
         controls.resolution = 1;
@@ -1519,7 +1523,7 @@ static void test_install(void)
         pw_wine_library_load(pw, root);
         profile = pw_wine_library_find(pw, "orbital-nine");
         CHECK(profile && profile->app.graphics == PW_APP_GRAPHICS_DXVK &&
-              strstr(profile->app.dll_overrides, "d3d8,d3d9,d3d10core,d3d11,dxgi,d3d12,d3d12core=b") &&
+              strstr(profile->app.dll_overrides, "d3d8,d3d9,d3d10core,d3d11,dxgi,d3d12,d3d12core,amd_ags_x64=b") &&
               wine_d3d_vulkan(profile), "Wine's VKD3D: Wine's DLLs: %s", profile ? profile->app.dll_overrides : "-");
         k.graphics = PC5_GRAPHICS_WINE_VULKAN;
         pc5_controls_save(root, "orbital-nine", &k);
@@ -1541,7 +1545,7 @@ static void test_install(void)
         pw_wine_library_load(pw, root);
         profile = pw_wine_library_find(pw, "neondrift");
         CHECK(profile && profile->app.graphics == PW_APP_GRAPHICS_ZINK &&
-              strstr(profile->app.dll_overrides, "d3d8,d3d9,d3d10core,d3d11,dxgi,d3d12,d3d12core=b") &&
+              strstr(profile->app.dll_overrides, "d3d8,d3d9,d3d10core,d3d11,dxgi,d3d12,d3d12core,amd_ags_x64=b") &&
               !profile->debug_env_count, "WineD3D: Wine's DLLs, on OpenGL: %s", profile ? profile->app.dll_overrides : "-");
         k.graphics = PC5_GRAPHICS_WINE_VULKAN;
         pc5_controls_save(root, "neondrift", &k);
@@ -1550,7 +1554,7 @@ static void test_install(void)
         pw_wine_library_load(pw, root);
         profile = pw_wine_library_find(pw, "neondrift");
         CHECK(profile && profile->app.graphics == PW_APP_GRAPHICS_DXVK &&
-              strstr(profile->app.dll_overrides, "dxgi,d3d12,d3d12core=b") && profile->debug_env_count == 1 &&
+              strstr(profile->app.dll_overrides, "dxgi,d3d12,d3d12core,amd_ags_x64=b") && profile->debug_env_count == 1 &&
               !strcmp(profile->debug_env[0].name, "WINE_D3D_CONFIG") &&
               !strcmp(profile->debug_env[0].value, "renderer=vulkan") && !strcmp(profile->winedebug, "+d3d"),
               "WineD3D on Vulkan, with the game's channels: %s %s", profile ? profile->app.dll_overrides : "-",
