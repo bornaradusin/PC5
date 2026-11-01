@@ -18,6 +18,10 @@ Older games that read controllers with DirectInput see the Xbox controller as Wi
 
 A USB keyboard and mouse plugged into the PS5 work in every mode, alongside the controller. The mouse wheel works too (from 2.0.2).
 
+A USB keyboard types in the layout of PC5's language, which is the console's unless **Settings › System › Language** chooses another (from 2.1.0). On a French console, for example, an AZERTY keyboard types as it is marked, and **AltGr + à** types **@**. A Russian, Ukrainian or Greek keyboard switches to the US layout and back with **Alt + Shift**, as on Windows. **Settings › System › Keyboard layout › US** keeps it as a US keyboard for every game, as before 2.1.0. The keys the controller sends with **Keyboard & mouse** are the same in every layout.
+
+**Mouse pointer**, in the game's menu (press **△**), says whether the mouse pointer stays on screen as the game shows it (**Shown**, the default) or hides when you haven't moved it or clicked for 5 seconds (**Hides when unused**). That's for a game played with the controller that leaves the pointer sitting in a corner. When it hides, moving it (a stick, the touchpad or a mouse) or clicking shows it again at once. It is set for each game on its own.
+
 ## Keyboard & mouse
 
 With **Keyboard & mouse**, the game menu gets a **Button mapping** row.
@@ -59,8 +63,6 @@ Each stick can be:
 | Nothing | Does nothing. |
 
 While a stick is the pointer, **Pointer speed** sets how fast it moves, from 1 to 10 (4 by default).
-
-The mouse pointer hides when you haven't moved it or clicked for 5 seconds, so a game played with the buttons doesn't keep it on screen in a corner. Move it (a stick, the touchpad or a mouse) or click, and it shows again at once. To keep it on screen all the time, put `WINE_PS5_CURSOR_IDLE_MS=0` in the game's `env.txt` (see [Launch options](Launch-options)).
 
 **Slow pointer button** picks a button that slows the pointer while you hold it, for placing and aiming precisely (None by default). **Slower by** sets how much, from 10 % to 90 % (50 % by default). While a button is the slow button it does only that: its row says **Slows the pointer**.
 

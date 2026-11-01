@@ -71,6 +71,34 @@ const char *pc5_language_of_console(int ps5_language)
     return codes[ps5_language];
 }
 
+const char *pc5_keyboard_layout(const char *setting, int ps5_language)
+{
+    /* SCE_SYSTEM_PARAM_LANG_*, as pc5_language_of_console: each one's keyboard. */
+    static const char *const console_layouts[] = {
+        "us", "us", "fr", "es", "de", "it", "us", "pt", "ru", "us",
+        "us", "us", "fi", "se", "dk", "no", "pl", "br", "gb", "tr",
+        "latam", "us", "ca", "cz", "hu", "gr", "ro", "us", "us", "us",
+        "ua",
+    };
+    static const struct { const char *code, *layout; } layouts[] = {
+        { "fr", "fr" }, { "fr-CA", "ca" }, { "es", "es" }, { "es-419", "latam" }, { "de", "de" }, { "it", "it" },
+        { "pt-PT", "pt" }, { "pt-BR", "br" }, { "ru", "ru" }, { "uk", "ua" }, { "el", "gr" }, { "da", "dk" },
+        { "no", "no" }, { "sv", "se" }, { "fi", "fi" }, { "pl", "pl" }, { "cs", "cz" }, { "hu", "hu" },
+        { "ro", "ro" }, { "tr", "tr" },
+    };
+    int count = (int)(sizeof(console_layouts) / sizeof(console_layouts[0]));
+    const char *console = ps5_language >= 0 && ps5_language < count ? console_layouts[ps5_language] : "us";
+    const char *console_code = pc5_language_of_console(ps5_language);
+    if (!setting || !setting[0] || !pc5_casecmp(setting, "system")) return console;
+    /* PC5 in another language than the console: that language's keyboard, unless the console's
+     * is the same language (English (UK) with English, French (Canada) with French). */
+    if (console_code && (!pc5_casecmp(console_code, setting) || (strlen(setting) == 2 && !strncmp(console_code, setting, 2))))
+        return console;
+    for (size_t i = 0; i < sizeof(layouts) / sizeof(layouts[0]); i++)
+        if (!pc5_casecmp(setting, layouts[i].code)) return layouts[i].layout;
+    return "us";
+}
+
 const char *pc5_language_choose(const char *setting, const char *console)
 {
     int at = setting && setting[0] && pc5_casecmp(setting, "system") ? pc5_language_find(setting) : -1;

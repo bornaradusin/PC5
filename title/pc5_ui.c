@@ -109,7 +109,7 @@ typedef enum SettingRow {
     SR_FPS, SR_FRAME_TIME, SR_CPU_USAGE, SR_GPU_USAGE, SR_CPU_TEMPERATURE, SR_SOC_TEMPERATURE, SR_MEMORY, SR_FPS_CORNER,
     SR_OVERLAY_SIZE, SR_VIBRATION, SR_LIGHT, SR_TRIGGERS, SR_TRIGGER_RUMBLE, SR_TRIGGER_RESISTANCE,
     SR_STARTUP_SOUND, SR_STARTUP_VOLUME, SR_KEEP_LOGS, SR_PICTURES, SR_CHECK_ON_OPEN, SR_CHECK_NOW, SR_UPDATE_NOW,
-    SR_FILES, SR_FTP, SR_WEB, SR_NETWORK, SR_REMOTE_USER, SR_REMOTE_PASSWORD, SR_LANGUAGE,
+    SR_FILES, SR_FTP, SR_WEB, SR_NETWORK, SR_REMOTE_USER, SR_REMOTE_PASSWORD, SR_LANGUAGE, SR_KEYBOARD,
     SR_SOURCE   /* a picture source: SR_SOURCE + its index (pc5_cover.h) */
 } SettingRow;
 
@@ -156,6 +156,7 @@ static int page_rows(const Pc5Settings *set, int page, int offer_update, Setting
         rows[n++] = SR_CHECK_ON_OPEN;
         rows[n++] = SR_CHECK_NOW;
         if (offer_update) rows[n++] = SR_UPDATE_NOW;
+        rows[n++] = SR_KEYBOARD;
         rows[n++] = SR_LANGUAGE;
     } else if (page == PAGE_MAINTENANCE) {
         rows[n++] = SR_INSTALL;
@@ -181,7 +182,7 @@ static int page_rows(const Pc5Settings *set, int page, int offer_update, Setting
 /* A game's menu, on four pages: Play, Controller (and Button mapping while it plays the keyboard
  * and mouse) and the three groups on the first; each group's rows on a page of its own. */
 typedef enum GameRow {
-    GR_PLAY, GR_CONTROLLER, GR_BUTTONS, GR_GRAPHICS, GR_APPEARANCE, GR_MANAGE,
+    GR_PLAY, GR_CONTROLLER, GR_BUTTONS, GR_POINTER, GR_GRAPHICS, GR_APPEARANCE, GR_MANAGE,
     GR_GRAPHICS_API, GR_FRAMEGEN, GR_RESOLUTION, GR_ASPECT, GR_MEMORY, GR_VIDEO_MEMORY, GR_CPU_SHARING,
     GR_COVER, GR_BACKGROUND, GR_HOME, GR_ICON,
     GR_PROGRAM, GR_STEAM, GR_FILES, GR_UPDATE, GR_REPORT, GR_UNINSTALL
@@ -227,6 +228,7 @@ static int game_rows(const Pc5Controls *controls, int kind, int page, GameRow ro
         rows[n++] = GR_PLAY;
         rows[n++] = GR_CONTROLLER;
         if (controls->mode == PC5_PAD_KEYBOARD) rows[n++] = GR_BUTTONS;
+        rows[n++] = GR_POINTER;
         rows[n++] = GR_GRAPHICS;
         rows[n++] = GR_APPEARANCE;
         rows[n++] = GR_MANAGE;
@@ -2251,6 +2253,12 @@ static void setting_text(Pc5Ui *ui, SettingRow row, const char **label, char *ab
         pc5_tf(value, value_size, "%d of %d \xe2\x80\xba", on, PC5_PICTURE_SOURCES);
         break;
     }
+    case SR_KEYBOARD:
+        *label = T("Keyboard layout");
+        pc5_copy(about, about_size, set->keyboard_us ? T("A USB keyboard types as a US one in games")
+                                                     : T("A USB keyboard types as your language's in games"));
+        pc5_copy(value, value_size, set->keyboard_us ? T("US") : T("Auto"));
+        break;
     case SR_KEEP_LOGS:
         *label = T("Keep all logs");
         pc5_copy(about, about_size, set->keep_logs ? T("Every session's log is kept for 7 days")
@@ -2549,6 +2557,7 @@ static int setting_change(Pc5Ui *ui, SettingRow row, int step)
     Pc5Settings *set = &ui->settings;
     switch (row) {
     case SR_KEEP_LOGS: set->keep_logs = !set->keep_logs; break;
+    case SR_KEYBOARD: set->keyboard_us = !set->keyboard_us; break;
     case SR_FTP:
         set->ftp_server = !set->ftp_server;
         ftp_apply(ui);
@@ -4351,6 +4360,10 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             }
             controls_changed(ui);
             ui->dirty = 1;
+        } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_POINTER) {
+            ui->controls.pointer_hide = !ui->controls.pointer_hide;
+            controls_changed(ui);
+            ui->dirty = 1;
         } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_CPU_SHARING) {
             ui->controls.cpu_sharing = !ui->controls.cpu_sharing;
             controls_changed(ui);
@@ -5674,7 +5687,7 @@ static void settings_screen(Pc5Ui *ui, Pc5Canvas *c)
                    i == ui->menu, label, about, value);
     }
     SettingRow row = rows[ui->menu < count ? ui->menu : 0];
-    int changes = row == SR_KEEP_LOGS || row == SR_FTP || row == SR_WEB || (row >= SR_FPS && row <= SR_TRIGGER_RESISTANCE) || row == SR_CHECK_ON_OPEN ||
+    int changes = row == SR_KEEP_LOGS || row == SR_KEYBOARD || row == SR_FTP || row == SR_WEB || (row >= SR_FPS && row <= SR_TRIGGER_RESISTANCE) || row == SR_CHECK_ON_OPEN ||
                   row == SR_STARTUP_SOUND || row == SR_STARTUP_VOLUME || row >= SR_SOURCE;
     Hint list[] = { { accept_glyph(ui), changes ? T("Change") : T("Choose") }, { back_glyph(ui), T("Back") }, { G_TRIANGLE, T("QR code") } };
     Pc5WebStatus web = { 0 };
@@ -5703,6 +5716,11 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
         *label = T("Button mapping");
         *text = T("The key or mouse button each one sends");
         *value = more;
+        break;
+    case GR_POINTER:
+        *label = T("Mouse pointer");
+        *text = ui->controls.pointer_hide ? T("Hides when not moved or clicked for 5 s") : T("Stays as the game shows it");
+        *value = ui->controls.pointer_hide ? T("Hides when unused") : T("Shown");
         break;
     case GR_GRAPHICS:
         *label = T("Graphics");

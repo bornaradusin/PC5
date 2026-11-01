@@ -443,5 +443,6 @@ void pc5_game_ps5_ops(Pc5GameOps *ops, void (*log)(const char *line))
     *ops = (Pc5GameOps){ .light_bar = light_bar, .light_bar_reset = light_bar_reset, .triggers = triggers,
                          .cursor = cursor, .cursor_magnify = cursor_magnify, .log = log, .cpu_time_us = cpu_time_us, .cpu_count = cpu_count, .cpu_ticks = cpu_ticks, .thread_times = thread_times, .log_chunk = pw_diagnostics_set_chunk,
                          .temperature = temperature, .memory = memory, .keyboard_open = keyboard_open,
-                         .keyboard_state = keyboard_state, .keyboard_close = keyboard_close };
+                         .keyboard_state = keyboard_state, .keyboard_close = keyboard_close,
+                         .console_language = pc5_console_language };
 }

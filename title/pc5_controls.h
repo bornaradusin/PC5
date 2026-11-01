@@ -61,6 +61,10 @@ typedef struct Pc5Controls {
      * how much: PC5_SLOW_STEP..PC5_SLOW_MAX percent (prospero-win's mouse_slow, Wine patch 0942). */
     int slow_button;
     int slow_percent;
+    /* 1: the mouse pointer hides when it hasn't been moved or clicked for 5 seconds (Wine patch
+     * 0999, WINE_PS5_CURSOR_IDLE_MS), for a game that leaves it in a corner; 0 (the default): it
+     * stays as the game shows it, as before 2.0.8. */
+    int pointer_hide;
     uint8_t key[PC5_CONTROLS];    /* an index into pc5_keys */
     int frame_generation;         /* 1: the game held at 30 fps, shown at 60 (libvulkan.prx's frame generation) */
     /* A 32-bit game's address space. 0, Auto (the default from 1.9.8): as on Windows, 4 GB for a

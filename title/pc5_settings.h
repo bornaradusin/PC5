@@ -69,6 +69,9 @@ typedef struct Pc5Settings {
     /* PC5's language (Settings › System › Language): "" for the console's, else a code of
      * pc5_i18n.h's ("de", "pt-BR"); "language = system" in the file for the console's. */
     char language[16];
+    /* A USB keyboard (Settings › System › Keyboard layout): 0 Auto, the layout of PC5's language
+     * (pc5_keyboard_layout); 1 always the US one, as before 2.1.0. "keyboard = auto|us". */
+    int keyboard_us;
 } Pc5Settings;
 
 void pc5_settings_default(Pc5Settings *settings);

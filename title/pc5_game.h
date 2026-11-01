@@ -87,6 +87,8 @@ typedef struct Pc5GameOps {
     int (*keyboard_open)(uint16_t *buffer, uint32_t capacity);
     int (*keyboard_state)(void);
     int (*keyboard_close)(void);
+    /* The console's language (pc5_console_language), for a USB keyboard's layout; NULL: US. */
+    int (*console_language)(void);
 } Pc5GameOps;
 
 /* The on-screen keyboard's text, in UTF-16 units with the terminator. */

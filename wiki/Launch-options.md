@@ -70,7 +70,7 @@ MY_GAME_NO_MONITOR=1
 - Lines starting with `#` are comments. Up to 32 variables are used.
 - A name has letters, digits and `_` only. Names PC5, prospero-win and Wine set themselves are left out: those starting with `WINE`, `PW_`, `LD_`, `PS5` or `PC5`, and `PATH`, `HOME` and `TMPDIR`. Two kinds are let through:
   - `WINE_PS5_SYNC_SPIN_US`: how many microseconds a game's thread keeps checking for its next job before it sleeps (100 unless set). `WINE_PS5_SYNC_SPIN_US=0` turns it off, for a game that runs worse with it; a higher value, up to 1000, may help a game that wakes its threads very often.
-  - `WINE_PS5_CURSOR_IDLE_MS`: how many milliseconds the mouse pointer stays on screen after you last moved it or clicked (5000 unless set). `WINE_PS5_CURSOR_IDLE_MS=0` never hides it, for a game you play with the pointer where it has to stay in sight.
+  - `WINE_PS5_CURSOR_IDLE_MS`: how many milliseconds the mouse pointer stays on screen after you last moved it or clicked when it hides. PC5 sets it from the game's **Mouse pointer** option in its menu (0, never hides, unless that says **Hides when unused**: 5000); set here, it takes another time.
   - `PW_NATIVE_PROFILE=1`, `PW_VK_RADV_PROFILE=1`, `PW_NATIVE_SLOW_SYSCALL_US` and `PW_VK_RADV_EVENT_US`: a per-frame profile that records where each frame's time goes, for finding what slows a game down. It makes the log much bigger (PC5 keeps 16 MB parts of it while it's on) and the game a little slower, so delete the lines when you're done.
 - The game's log says which were set: `PC5 env.txt set=1 MY_GAME_NO_MONITOR`.
 

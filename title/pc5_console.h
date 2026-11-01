@@ -26,6 +26,8 @@ void pc5_console_run(const Pc5Console *console);
 
 /* The PS5's language as a locale name for Wine ("fr_FR.UTF-8"), or NULL. */
 const char *pc5_console_locale(void);
+/* The console's language, SCE_SYSTEM_PARAM_LANG_* (1 English (US), 18 English (UK), ...), -1 unread. */
+int pc5_console_language(void);
 
 /* The log's line about the console: its firmware, the room on /data and PC5's
  * version ("PC5 system firmware=12.40 ..."), so a report needn't ask

@@ -224,6 +224,9 @@ static void controls_parse(char *data, Pc5Controls *controls)
         } else if (!strcmp(name, "cpu_sharing")) {
             if (!strcmp(value, "on")) controls->cpu_sharing = 1;
             else if (!strcmp(value, "off")) controls->cpu_sharing = 0;
+        } else if (!strcmp(name, "mouse_pointer")) {
+            if (!strcmp(value, "hides")) controls->pointer_hide = 1;
+            else if (!strcmp(value, "shown")) controls->pointer_hide = 0;
         } else if (!strcmp(name, "steam_emulator")) {
             if (!strcmp(value, "off")) controls->steam_off = 1;
             else if (!strcmp(value, "auto")) controls->steam_off = 0;
@@ -278,7 +281,9 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                                    "# Triangle on the game, then CPU sharing\ncpu_sharing = %s\n"
                                    "# Triangle on the game, then Graphics API\ngraphics_api = %s\n"
                                    "# Triangle on the game, then Manage, then Steam emulator: auto or off\n"
-                                   "steam_emulator = %s\n",
+                                   "steam_emulator = %s\n"
+                                   "# Triangle on the game, then Controller: the mouse pointer shown, or hides when unused\n"
+                                   "mouse_pointer = %s\n",
                             mode_keys[controls->mode % PC5_PAD_MODES], stick_keys[controls->stick[0] % PC5_STICK_USES],
                             stick_keys[controls->stick[1] % PC5_STICK_USES], controls->speed,
                             controls->slow_button >= 0 && controls->slow_button < PC5_BUTTONS
@@ -291,7 +296,8 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                                                              : "auto",
                             controls->resolution == 2 ? "2160p" : controls->resolution == 1 ? "1440p" : "1080p",
                             controls->stretch ? "stretch" : "keep", controls->cpu_sharing ? "on" : "off",
-                            graphics_keys[controls->graphics % PC5_GRAPHICS_COUNT], controls->steam_off ? "off" : "auto");
+                            graphics_keys[controls->graphics % PC5_GRAPHICS_COUNT], controls->steam_off ? "off" : "auto",
+                            controls->pointer_hide ? "hides" : "shown");
     for (int i = 0; i < PC5_CONTROLS && !status; i++)
         status = pc5_buf_printf(&text, "%s = %s\n", control_keys[i], pc5_keys[controls->key[i] % pc5_key_count].name);
     if (!status) status = pc5_write_file(path, text.data, text.len);

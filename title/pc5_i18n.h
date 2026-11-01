@@ -68,6 +68,12 @@ int pc5_language_find(const char *code);
  * the PS4 and PS5 SDKs number them) as one of PC5's codes: "en" for English (US and UK) and for
  * the languages PC5 has no file for yet (Arabic, Thai), NULL for a number it doesn't know. */
 const char *pc5_language_of_console(int ps5_language);
+/* The layout a USB keyboard types in a game (Wine patch 0992's WINE_PS5_KEYBOARD: "us", "fr",
+ * "gb", ...): that of PC5's language (setting: Settings › System › Language, "" or "system" for
+ * the console's), with the console's own variant of it (English (UK), French (Canada), Spanish
+ * (Latin America)) when the console is in that language; "us" for a language whose keyboards
+ * are the US one (Japanese, Korean, Chinese, Dutch, Vietnamese, Indonesian). */
+const char *pc5_keyboard_layout(const char *setting, int ps5_language);
 /* The code the setting means: setting ("" or "system": the console's, else its code) and the
  * console's code (NULL: English). Always one of pc5_language's codes. */
 const char *pc5_language_choose(const char *setting, const char *console);

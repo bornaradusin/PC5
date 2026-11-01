@@ -54,6 +54,13 @@ enum { PAD_R3 = 0x4u, PAD_L2 = 0x100u, PAD_R2 = 0x200u, PAD_OPTIONS = 0x8u, PAD_
 static const Pc5Console *console;
 static int time_format = -1, time_zone, summer;
 
+int pc5_console_language(void)
+{
+    int language = -1;
+    if (sceSystemServiceParamGetInt(PARAM_LANG, &language)) language = -1;
+    return language;
+}
+
 const char *pc5_console_locale(void)
 {
     /* SCE_SYSTEM_PARAM_LANG_*: Wine takes the Windows language from LC_ALL. */

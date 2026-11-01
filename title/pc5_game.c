@@ -609,7 +609,7 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
      * whose large-address flag asks for it, as on Windows), and CPU sharing, which Wine's server
      * reads (patch 0882, WINE_PS5_SCHED=1; the profile says it too, but PC5 writes
      * only the profiles of the games it installed). */
-    int memory_4gb = 0, stretch = 0, cpu_sharing = 0, video_memory_full = 0, video_memory_gb = 0;
+    int memory_4gb = 0, stretch = 0, cpu_sharing = 0, video_memory_full = 0, video_memory_gb = 0, pointer_hide = 0;
     if (prefix && prefix[0]) {
         Pc5Controls controls;
         pc5_controls_load(root, prefix, &controls);
@@ -619,6 +619,19 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         cpu_sharing = controls.cpu_sharing;
         video_memory_full = controls.video_memory_full;
         video_memory_gb = controls.video_memory_gb == 5 || controls.video_memory_gb == 6 ? controls.video_memory_gb : 0;
+        pointer_hide = controls.pointer_hide;
+    }
+    /* The mouse pointer as the game shows it, unless its Controller page says it hides when
+     * unused (Wine patch 0999: 0 never hides). A game's env.txt, applied after, can say too. */
+    setenv("WINE_PS5_CURSOR_IDLE_MS", pointer_hide ? "5000" : "0", 1);
+    /* A USB keyboard types as the layout of PC5's language (Wine patch 0992), unless Settings ›
+     * System › Keyboard layout says US. The controller's keys are the same under any layout. */
+    {
+        const char *layout = game->settings.keyboard_us ? "us"
+                             : pc5_keyboard_layout(game->settings.language,
+                                                   game->ops.console_language ? game->ops.console_language() : -1);
+        setenv("WINE_PS5_KEYBOARD", layout, 1);
+        say(game, "PC5 keyboard layout=%s", layout);
     }
     /* Video memory: the console's 12 GB are shared between the game and its graphics, but
      * DXGI said 8 GB were the graphics' own, and a Direct3D 11 or 12 game that sized its

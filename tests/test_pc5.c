@@ -5478,6 +5478,9 @@ static void test_game(const char *fonts_path)
     CHECK(game.cover_tint == 0x203040u && game.settings.triggers == PC5_TRIGGERS_RUMBLE, "settings and colour: %06x",
           (unsigned)game.cover_tint);
     CHECK(!game.frame_generation && !getenv("PW_PC5_FRAMEGEN"), "no frame generation by default");
+    CHECK(getenv("WINE_PS5_CURSOR_IDLE_MS") && !strcmp(getenv("WINE_PS5_CURSOR_IDLE_MS"), "0") &&
+          getenv("WINE_PS5_KEYBOARD") && !strcmp(getenv("WINE_PS5_KEYBOARD"), "us"),
+          "the pointer never hides by default, and the keyboard is the US one with no console language");
     {
         Pc5Controls controls, again;
         pc5_controls_load(game_root, "liberty", &controls);
@@ -6594,6 +6597,12 @@ static void test_screens(const char *fonts)
     press(ui, PC5_KEY_TRIANGLE, &canvas);
     CHECK(!strcmp(pc5_ui_screen(ui), "game-menu"), "game menu: %s", pc5_ui_screen(ui));
     press(ui, PC5_KEY_DOWN, &canvas);       /* past Controller (the Xbox controller: no Button mapping) */
+    press(ui, PC5_KEY_DOWN, &canvas);       /* Mouse pointer: shown, unless the game's own says it hides */
+    CHECK(!controls_has("orbital-nine", "mouse_pointer = hides\n"), "the pointer shown by default");
+    press(ui, PC5_KEY_ACCEPT, &canvas);
+    CHECK(controls_has("orbital-nine", "mouse_pointer = hides\n"), "Mouse pointer: hides when unused");
+    press(ui, PC5_KEY_RIGHT, &canvas);
+    CHECK(controls_has("orbital-nine", "mouse_pointer = shown\n"), "and shown again");
     press(ui, PC5_KEY_DOWN, &canvas);       /* Graphics */
     press(ui, PC5_KEY_ACCEPT, &canvas);
     save_shot(&canvas, "game-menu-graphics");
@@ -6725,7 +6734,8 @@ static void test_screens(const char *fonts)
     press(ui, PC5_KEY_TRIANGLE, &canvas);
     press(ui, PC5_KEY_DOWN, &canvas);
     press(ui, PC5_KEY_DOWN, &canvas);
-    press(ui, PC5_KEY_DOWN, &canvas);       /* Play, Controller, Graphics, Appearance */
+    press(ui, PC5_KEY_DOWN, &canvas);
+    press(ui, PC5_KEY_DOWN, &canvas);       /* Play, Controller, Mouse pointer, Graphics, Appearance */
     press(ui, PC5_KEY_ACCEPT, &canvas);
     save_shot(&canvas, "game-menu-appearance");
     press(ui, PC5_KEY_DOWN, &canvas);
@@ -8368,6 +8378,17 @@ static void test_language(const char *fonts_path)
               !strcmp(pc5_language_choose("fr", "de"), "fr") && !strcmp(pc5_language_choose("xx", "de"), "de") &&
               !strcmp(pc5_language_choose("", NULL), "en") && !strcmp(pc5_language_choose(NULL, "ar"), "en"),
               "the setting over the console's");
+        /* A USB keyboard's layout: the console's (English (UK) gb, French fr, Ukrainian ua, Japanese
+           and unknown us); PC5's own language over it, with the console's variant of the same one. */
+        CHECK(!strcmp(pc5_keyboard_layout("", 18), "gb") && !strcmp(pc5_keyboard_layout("system", 2), "fr") &&
+              !strcmp(pc5_keyboard_layout(NULL, 30), "ua") && !strcmp(pc5_keyboard_layout("", 0), "us") &&
+              !strcmp(pc5_keyboard_layout("", 1), "us") && !strcmp(pc5_keyboard_layout("", -1), "us") &&
+              !strcmp(pc5_keyboard_layout("", 99), "us") && !strcmp(pc5_keyboard_layout("de", 1), "de") &&
+              !strcmp(pc5_keyboard_layout("en", 18), "gb") && !strcmp(pc5_keyboard_layout("en", 2), "us") &&
+              !strcmp(pc5_keyboard_layout("fr", 22), "ca") && !strcmp(pc5_keyboard_layout("es", 20), "latam") &&
+              !strcmp(pc5_keyboard_layout("pt-BR", 7), "br") && !strcmp(pc5_keyboard_layout("ja", 2), "us") &&
+              !strcmp(pc5_keyboard_layout("el", -1), "gr"),
+              "the keyboard's layout");
     }
 
     /* A language in use: its text, its fallback's, English for the rest, and formats in its order. */
@@ -8522,6 +8543,13 @@ static void test_language_screens(const char *fonts)
     CHECK(!strcmp(pc5_i18n_code(), "de") && file_holds_text(settings_file, "language = system\n"), "System default: German again");
     press(ui, PC5_KEY_LEFT, &canvas);        /* round to the last, 繁體中文 */
     CHECK(!strcmp(pc5_i18n_code(), "zh-Hant") && !strcmp(T("Settings"), "Settings"), "a language with no file yet: English text");
+    /* Keyboard layout, above Language: Auto, or the US one, kept. */
+    press(ui, PC5_KEY_UP, &canvas);
+    press(ui, PC5_KEY_ACCEPT, &canvas);
+    CHECK(file_holds_text(settings_file, "keyboard = us\n"), "Keyboard layout: US");
+    press(ui, PC5_KEY_RIGHT, &canvas);
+    CHECK(file_holds_text(settings_file, "keyboard = auto\n"), "and Auto again");
+    press(ui, PC5_KEY_DOWN, &canvas);        /* Language again */
     pc5_ui_draw(ui, &canvas);
     save_shot(&canvas, "settings-language-zh-hant");
     press(ui, PC5_KEY_RIGHT, &canvas);

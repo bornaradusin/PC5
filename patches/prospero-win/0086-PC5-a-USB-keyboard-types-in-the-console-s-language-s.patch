@@ -1,0 +1,1966 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 1 Nov 2026 10:00:00 +0000
+Subject: [PATCH 86/86] PC5: a USB keyboard types in the console's language's layout,
+ and the pointer hides only for a game that asks
+
+A keyboard plugged into the PS5 typed as a US one whatever it was: on a
+French AZERTY keyboard the key marked A typed q, and @ (AltGr+0) couldn't
+be typed at all, for a game's login (World of Tanks). Its keys now reach
+Wine by their place (input type 7, PW_WINE_INPUT_KEYBOARD_KEY), and Wine
+patch 0992 sends them as the keys of the layout WINE_PS5_KEYBOARD names,
+with its characters (tools/make_ps5_keyboards.py writes the 21 layouts
+from xkeyboard-config). Unset or "us", nothing changes, and the keys a
+controller's button mapping names keep their US places in every layout.
+
+Wine patch 0999 no longer hides the pointer unless WINE_PS5_CURSOR_IDLE_MS
+asks for it: PC5 sets it for a game whose Mouse pointer option says so.
+---
+ PUBLICATION_ALLOWLIST.txt                     |    2 +
+ docs/WINE_PS5_BUILD.md                        |    3 +-
+ native/wine64_main.c                          |    3 +-
+ tests/test_pw_wine_sink.c                     |    5 +-
+ tools/make_ps5_keyboards.py                   |  202 +++
+ .../0992-win32u-ps5-keyboard-layouts.patch    | 1498 +++++++++++++++++
+ ...32u-ps5-hide-the-pointer-when-unused.patch |   37 +-
+ wine/ps5/pw_wine_sink.c                       |    1 +
+ wine/ps5/pw_wine_sink.h                       |    7 +-
+ 9 files changed, 1736 insertions(+), 22 deletions(-)
+ create mode 100644 tools/make_ps5_keyboards.py
+ create mode 100644 wine/patches/0992-win32u-ps5-keyboard-layouts.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index e57d02b..1224c58 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -122,6 +122,7 @@ tools/audit_publication.py
+ tools/classify_x86.c
+ tools/build_native.sh
+ tools/fetch_lapy_helper.py
++tools/make_ps5_keyboards.py
+ tools/native_profile_split.py
+ tools/survey_x86_coverage.py
+ tools/make_icon.py
+@@ -614,6 +615,7 @@ wine/patches/0988-kernelbase-ps5-run-the-shader-compiler-a-game-starts-in-its-pr
+ wine/patches/0989-ntdll-ps5-keep-the-process-memory-counts-for-a-second.patch
+ wine/patches/0990-kernelbase-ps5-the-shader-compiler-s-listing-in-microsoft-s-syntax.patch
+ wine/patches/0991-ntdll-leave-room-after-a-large-heap-block.patch
++wine/patches/0992-win32u-ps5-keyboard-layouts.patch
+ wine/patches/0993-server-ps5-park-read-only-file-descriptors.patch
+ wine/patches/0994-server-ps5-a-parked-file-or-folder-opened-again-under-another-number-is-taken.patch
+ wine/patches/0995-ntdll-ps5-a-crash-handler-is-not-handed-off.patch
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index b41307a..ba1577c 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -167,13 +167,14 @@ before evaluating a candidate built from that cache.
+ | 0989 | `ntdll`: on PS5, the process memory counts of 0898 (a walk of every view's pages with `virtual_mutex` held) are kept for a second, so a game that asks many times a second (Unreal Engine 5's memory stats) no longer holds the mutex all the time and runs on one core |
+ | 0990 | `kernelbase`: on PS5, the listing 0988 writes for `fxc.exe` (`/Fc`) is in Microsoft's assembly syntax, not vkd3d-shader's: `vs_2_x`/`ps_2_x`, `dcl_blendweight`, `dcl_blendindices`, `dcl_colorN`, `def c0, …`, `a0.x`, unmasked `oFog`/`oPts`, `rN_abs`, no stray predicated `nop`, and pixel shaders before `ps_2_x` without swizzles that only differ in unread components, so a game that assembles it again with `D3DXAssembleShader` gets its shaders |
+ | 0991 | `ntdll`: a large heap block gets a page more than it needs before its 64 KiB rounding, so a game that writes just past the end of one (one element more than it allocated) writes into its own memory instead of faulting when the block ended exactly at its memory's end |
++| 0992 | `win32u`: on PS5, a USB keyboard's keys, which the console sends by their place as a US keyboard names them (input type 7, `PW_WINE_INPUT_KEYBOARD_KEY`), are sent as the keys of the layout `WINE_PS5_KEYBOARD` names (`gb`, `fr`, `ca`, `de`, `es`, `latam`, `it`, `pt`, `br`, `dk`, `no`, `se`, `fi`, `pl`, `cz`, `hu`, `ro`, `tr`, `ru`, `ua`, `gr`; PC5 sets it from the console's language) with that layout's characters, through a `KBDTABLES` (`pKbdLayerDescriptor`) built from `dlls/win32u/ps5kbd.h`, which `tools/make_ps5_keyboards.py` writes from xkeyboard-config. AltGr is Ctrl+Alt as on Windows, and Alt+Shift switches a Cyrillic or Greek layout with US. Unset or `us`, the keyboard is the US one as before, and the keys the controller's button mapping names (type 1) keep their US places under any layout. The log says `wine-ps5: keyboard layout NAME`. A French AZERTY keyboard typed as QWERTY, with no way to type @ (World of Tanks' login). |
+ | 0993 | `server` (Leo Lobato's prospero-win): on PS5, read-only regular files past a budget of 48 cached and about 48 live descriptors are parked (closed, the least recently used first) and opened again by name when needed, with their position, as 0871 does for directories: a title can open only about 250 files however high `RLIMIT_NOFILE` is, and games that keep hundreds of archives open failed with "Too many open files". `WINE_PS5_PARK_FILES`, `WINE_PS5_CACHED_FILES` |
+ | 0994 | `server`: on PS5, a parked folder (0871) or read-only file (0993) opened again by its name whose device or inode number changed (a file system that numbers files anew at each open) is taken instead of failing with `STATUS_FILE_DELETED`; that and every failure to open one again is logged (`wine-ps5: parked …`, eight times at most each) |
+ | 0995 | `ntdll`: a program whose name has `handler` or `errormonitor` (World of Tanks' `WargamingErrorMonitor.exe`) in it, or whose command line has `--database=`, `crashpad` or `--url=` in it (in any case), is a helper for the PS5 title's hand-off (`PW_HANDOFF`), as a crash reporter is: it isn't handed off, its start fails, and the game that started it carries on. Mina the Hollower starts its crash handler, `handler.exe --database=…\Crashpad … --url=https://submit.backtrace.io/…`, at boot; it was handed off, so the game ended |
+ | 0996 | `server`: on PS5, a `create_file`, rename or hard link with a root folder and an absolute unix name (what 0943 gives when it looks a name up by the folder's own name) is taken instead of failing with `STATUS_OBJECT_PATH_SYNTAX_BAD`: the unix name is opened as it is and the NT name is still made from the folder's. Heroes of Might and Magic: Olden Era got "path invalid" (`ERROR_BAD_PATHNAME`) for `StreamingAssets\maps\Story_maps` right after 0943's log line |
+ | 0997 | `kernelbase`: on PS5, the listing 0988 writes for `fxc.exe` gives a `def` line's values as plain decimals (`1.0`, `-0.5`, `0.333333343`; vkd3d-shader writes `1.00000000e+00`, and `D3DXAssembleShader` takes no exponent), and a `vs_1_x` shader that fails to compile (vkd3d-shader's `E7002` for `sincos`) is compiled for `vs_2_0` instead, as Far Cry only assembles the listing again on a device that takes `vs_3_0` |
+ | 0998 | `ntdll`: on PS5, a non-alertable `NtWaitForSingleObject` on an event or semaphore whose one try on the shared word (0885, 0887) fails spins up to `WINE_PS5_SYNC_SPIN_US` microseconds (100 by default, 0 off, 1000 at most; never longer than a relative timeout, none for a poll or an absolute time) re-trying the word before it blocks in the server, and stops at once when the server holds the word. While it spins the word stays the client's, so `SetEvent`/`ReleaseSemaphore` need no server call either. Blur sets six events about 2000 times a frame, each waking a worker that waits again, and each of those waits and sets cost several microseconds through the server (5 to 10 ms a frame). The log says `wine-ps5: waits spin up to N us before blocking` at the first such wait, and every 65536 spins how many took the object (`wine-ps5: wait spins: …`); `tests/test_wine_sync_spin.py` runs the spin on the actual word header |
+-| 0999 | `win32u`: on PS5, the user driver hides the pointer once the player hasn't moved it or clicked for `WINE_PS5_CURSOR_IDLE_MS` milliseconds (5000 by default, 0 never), both where it draws the cursor over the screen and where Vulkan frames get it from VideoOut's hardware cursor (0740); the next move, even against an edge, or click shows it again, as does the game moving it to another place itself (`SetCursorPos`; Grim Dawn moves its pointer by the controller). A game setting the same place or a new image doesn't count, and the cursor the application set is unchanged for `GetCursorInfo`. A game played with the controller that leaves the Windows cursor on showed it, still, in a corner (Valor Mortis). |
++| 0999 | `win32u`: on PS5, the user driver hides the pointer once the player hasn't moved it or clicked for `WINE_PS5_CURSOR_IDLE_MS` milliseconds (unset or 0 never; PC5 sets 5000 for a game whose Mouse pointer option says so), both where it draws the cursor over the screen and where Vulkan frames get it from VideoOut's hardware cursor (0740); the next move, even against an edge, or click shows it again, as does the game moving it to another place itself (`SetCursorPos`; Grim Dawn moves its pointer by the controller). A game setting the same place or a new image doesn't count, and the cursor the application set is unchanged for `GetCursorInfo`. A game played with the controller that leaves the Windows cursor on showed it, still, in a corner (Valor Mortis). |
+ 
+ ## Allocator
+ 
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 47dcb36..0569504 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -1837,7 +1837,8 @@ int main(int argc, char **argv)
+                 else refused++;
+             }
+             for (size_t i = 0; i < poll.count; i++) {
+-                input = (PwWineInput){ poll.events[i].kind == PW_HID_EVENT_KEY ? PW_WINE_INPUT_KEY :
++                /* a keyboard's key by its place: the driver gives it the console's layout */
++                input = (PwWineInput){ poll.events[i].kind == PW_HID_EVENT_KEY ? PW_WINE_INPUT_KEYBOARD_KEY :
+                                        PW_WINE_INPUT_MOUSE_BUTTON, poll.events[i].code, 0, 0,
+                                        poll.events[i].down };
+                 if (post_input(&input) == 0) posted++;
+diff --git a/tests/test_pw_wine_sink.c b/tests/test_pw_wine_sink.c
+index 0c71fd6..d08f7fc 100644
+--- a/tests/test_pw_wine_sink.c
++++ b/tests/test_pw_wine_sink.c
+@@ -342,6 +342,9 @@ int main(void)
+     e=(PwWineInput){PW_WINE_INPUT_MOUSE_BUTTON,1,0,0,0};assert(!pw_wine_post_input(&e));
+     assert(pw_wine_next_input(&out) && out.type==PW_WINE_INPUT_KEY && out.code==0x0d && out.down==1);
+     assert(pw_wine_next_input(&out) && out.type==PW_WINE_INPUT_MOUSE_BUTTON && out.code==1 && !out.down);
++    /* a keyboard's key by its place passes as one (Wine patch 0992 gives it the layout) */
++    e=(PwWineInput){PW_WINE_INPUT_KEYBOARD_KEY,'Q',0,0,1};assert(!pw_wine_post_input(&e));
++    assert(pw_wine_next_input(&out) && out.type==PW_WINE_INPUT_KEYBOARD_KEY && out.code=='Q' && out.down==1);
+     assert(!pw_wine_next_input(&out));
+     /* A dialog key is a key the driver sends only to a dialog box: validated as one. */
+     e=(PwWineInput){PW_WINE_INPUT_DIALOG_KEY,0x0d,0,0,1};assert(!pw_wine_post_input(&e));
+@@ -364,7 +367,7 @@ int main(void)
+     for(int i=0;i<PW_WINE_INPUT_QUEUE;i++)assert(pw_wine_next_input(&out) && out.x==1 && out.y==2);
+     assert(!pw_wine_next_input(&out));
+     pw_wine_sink_stats(&s);
+-    assert(s.inputs_posted==5+PW_WINE_INPUT_QUEUE && s.inputs_delivered==s.inputs_posted);
++    assert(s.inputs_posted==6+PW_WINE_INPUT_QUEUE && s.inputs_delivered==s.inputs_posted);
+     assert(s.inputs_dropped==sizeof(bad)/sizeof(bad[0])+2);
+ 
+     /* The wake pipe: readable after a post, empty once drained. */
+diff --git a/tools/make_ps5_keyboards.py b/tools/make_ps5_keyboards.py
+new file mode 100644
+index 0000000..4649d7d
+--- /dev/null
++++ b/tools/make_ps5_keyboards.py
+@@ -0,0 +1,202 @@
++#!/usr/bin/env python3
++# SPDX-License-Identifier: LGPL-2.1-or-later
++"""Writes dlls/win32u/ps5kbd.h: the keyboard layouts the PS5 user driver offers
++(Wine patch 0992), one for each language a PS5 can be set to, from xkeyboard-config
++as libxkbcommon reads it.
++
++    tools/make_ps5_keyboards.py WINE/dlls/win32u/input.c OUT.h
++
++For each layout and each key of a PC keyboard's main block, by its scan code: the
++character it types alone, with Shift, with AltGr and with Shift+AltGr, and the virtual
++key Windows gives it (a letter's own, a digit row key's digit, else the US key's at that
++place, or a free OEM key when that is taken). A dead key types its accent alone. The
++US layout's scan code tables come from Wine's own (input.c), for the keys that don't type."""
++import re
++import ctypes as C
++import sys
++
++LAYOUTS = [
++    # id, xkb layout, xkb variant, a script of its own (Alt+Shift switches to US for Latin)
++    ("gb", "gb", "", False), ("fr", "fr", "", False), ("ca", "ca", "", False),
++    ("de", "de", "", False), ("es", "es", "", False), ("latam", "latam", "", False),
++    ("it", "it", "", False), ("pt", "pt", "", False), ("br", "br", "", False),
++    ("dk", "dk", "", False), ("no", "no", "", False), ("se", "se", "", False),
++    ("fi", "fi", "", False), ("pl", "pl", "", False), ("cz", "cz", "", False),
++    ("hu", "hu", "", False), ("ro", "ro", "", False), ("tr", "tr", "", False),
++    ("ru", "ru", "", True), ("ua", "ua", "", True), ("gr", "gr", "", True),
++]
++
++# The keys that type, by scan code, and the US layout's virtual key for each.
++OEM = {"OEM_1": 0xBA, "OEM_PLUS": 0xBB, "OEM_COMMA": 0xBC, "OEM_MINUS": 0xBD, "OEM_PERIOD": 0xBE,
++       "OEM_2": 0xBF, "OEM_3": 0xC0, "OEM_4": 0xDB, "OEM_5": 0xDC, "OEM_6": 0xDD, "OEM_7": 0xDE,
++       "OEM_8": 0xDF, "OEM_102": 0xE2}
++US = {}
++for i, c in enumerate("1234567890"): US[0x02 + i] = ord(c)
++US.update({0x0C: OEM["OEM_MINUS"], 0x0D: OEM["OEM_PLUS"]})
++for i, c in enumerate("QWERTYUIOP"): US[0x10 + i] = ord(c)
++US.update({0x1A: OEM["OEM_4"], 0x1B: OEM["OEM_6"]})
++for i, c in enumerate("ASDFGHJKL"): US[0x1E + i] = ord(c)
++US.update({0x27: OEM["OEM_1"], 0x28: OEM["OEM_7"], 0x29: OEM["OEM_3"], 0x2B: OEM["OEM_5"]})
++for i, c in enumerate("ZXCVBNM"): US[0x2C + i] = ord(c)
++US.update({0x33: OEM["OEM_COMMA"], 0x34: OEM["OEM_PERIOD"], 0x35: OEM["OEM_2"], 0x56: OEM["OEM_102"]})
++SCANS = sorted(US)
++# the OEM key Windows' US layout gives a character, for a key that types it
++BY_CHAR = {",": "OEM_COMMA", ".": "OEM_PERIOD", "-": "OEM_MINUS", "=": "OEM_PLUS", "+": "OEM_PLUS",
++           ";": "OEM_1", "/": "OEM_2", "`": "OEM_3", "[": "OEM_4", "\\": "OEM_5", "]": "OEM_6", "'": "OEM_7"}
++DEAD = {"dead_grave": "`", "dead_acute": "´", "dead_circumflex": "^", "dead_tilde": "~",
++        "dead_macron": "¯", "dead_breve": "˘", "dead_abovedot": "˙", "dead_diaeresis": "¨",
++        "dead_abovering": "˚", "dead_doubleacute": "˝", "dead_caron": "ˇ", "dead_cedilla": "¸",
++        "dead_ogonek": "˛", "dead_belowdot": ".", "dead_greek": "", "dead_stroke": "/"}
++
++x = C.CDLL("libxkbcommon.so.0")
++
++
++class RMLVO(C.Structure):
++    _fields_ = [("rules", C.c_char_p), ("model", C.c_char_p), ("layout", C.c_char_p),
++                ("variant", C.c_char_p), ("options", C.c_char_p)]
++
++
++x.xkb_context_new.restype = C.c_void_p
++x.xkb_keymap_new_from_names.restype = C.c_void_p
++x.xkb_keymap_new_from_names.argtypes = [C.c_void_p, C.POINTER(RMLVO), C.c_int]
++x.xkb_state_new.restype = C.c_void_p
++x.xkb_state_new.argtypes = [C.c_void_p]
++x.xkb_state_unref.argtypes = [C.c_void_p]
++x.xkb_keymap_unref.argtypes = [C.c_void_p]
++x.xkb_keymap_mod_get_index.argtypes = [C.c_void_p, C.c_char_p]
++x.xkb_state_update_mask.argtypes = [C.c_void_p] + [C.c_uint32] * 6
++x.xkb_state_key_get_one_sym.argtypes = [C.c_void_p, C.c_uint32]
++x.xkb_state_key_get_one_sym.restype = C.c_uint32
++x.xkb_keysym_to_utf32.argtypes = [C.c_uint32]
++x.xkb_keysym_to_utf32.restype = C.c_uint32
++x.xkb_keysym_get_name.argtypes = [C.c_uint32, C.c_char_p, C.c_size_t]
++
++
++def read_layout(ctx, layout, variant):
++    names = RMLVO(b"evdev", b"pc105", layout.encode(), variant.encode(), None)
++    keymap = x.xkb_keymap_new_from_names(ctx, C.byref(names), 0)
++    if not keymap:
++        raise SystemExit(f"xkb has no layout {layout}({variant})")
++    state = x.xkb_state_new(keymap)
++    shift = 1 << x.xkb_keymap_mod_get_index(keymap, b"Shift")
++    level3 = 1 << x.xkb_keymap_mod_get_index(keymap, b"Mod5")
++    keys = {}
++    for scan in SCANS:
++        chars = []
++        for mods in (0, shift, level3, shift | level3):
++            x.xkb_state_update_mask(state, mods, 0, 0, 0, 0, 0)
++            sym = x.xkb_state_key_get_one_sym(state, scan + 8)
++            code = x.xkb_keysym_to_utf32(sym)
++            name = C.create_string_buffer(64)
++            x.xkb_keysym_get_name(sym, name, 64)
++            name = name.value.decode()
++            ch = chr(code) if code >= 0x20 and code != 0x7f else DEAD.get(name, "")
++            chars.append(ch if ch and ord(ch) <= 0xFFFF else "")
++        keys[scan] = chars
++    x.xkb_state_unref(state)
++    x.xkb_keymap_unref(keymap)
++    return keys
++
++
++def virtual_keys(keys):
++    vk, used = {}, set()
++    # 1: where the US layout has a letter: that letter's key if it types one, else the US one
++    for scan in SCANS:
++        if not (ord("A") <= US[scan] <= ord("Z")):
++            continue
++        ch = keys[scan][0]
++        if "a" <= ch <= "z":
++            vk[scan] = ord(ch.upper())
++        elif ch.isalpha():
++            vk[scan] = US[scan]       # another script's letter: Windows keeps the place's key
++        else:
++            continue
++        used.add(vk[scan])
++    # 2: a letter elsewhere (AZERTY's M) takes its own key if it is free
++    for scan in SCANS:
++        if scan in vk:
++            continue
++        ch = keys[scan][0]
++        if "a" <= ch <= "z" and ord(ch.upper()) not in used:
++            vk[scan] = ord(ch.upper())
++            used.add(vk[scan])
++    # 3: the digit row keeps its digits; anything else the US key there, or the OEM key
++    # Windows gives its character, or a free OEM key
++    for scan in SCANS:
++        if 0x02 <= scan <= 0x0B:
++            vk[scan] = US[scan]
++            used.add(vk[scan])
++    for scan in SCANS:
++        if scan in vk:
++            continue
++        want = [US[scan]] if not (ord("A") <= US[scan] <= ord("Z")) else []
++        ch = keys[scan][0]
++        if ch in BY_CHAR:
++            want.insert(0, OEM[BY_CHAR[ch]])
++        want += list(OEM.values())
++        vk[scan] = next(v for v in want if v not in used)
++        used.add(vk[scan])
++    return vk
++
++
++def c_char(ch):
++    if not ch:
++        return "WCH_NONE"
++    if ch == "\\":
++        return "'\\\\'"
++    if ch == "'":
++        return "'\\''"
++    if 0x20 <= ord(ch) < 0x7f:
++        return f"'{ch}'"
++    return f"0x{ord(ch):04x}"
++
++
++def main():
++    if len(sys.argv) != 3:
++        raise SystemExit(__doc__)
++    source = open(sys.argv[1], encoding="utf-8").read()
++    us = []
++    for name, kind in (("vsc_to_vk", "USHORT"), ("vsc_to_vk_e0", "VSC_VK"), ("vsc_to_vk_e1", "VSC_VK")):
++        m = re.search(r"static const %s %s\[\] =\n\{\n(.*?)\n\};" % (kind, name), source, re.S)
++        if not m:
++            raise SystemExit(f"no {name} in {sys.argv[1]}")
++        us.append(f"static const {kind} ps5kbd_us_{name}[] =\n{{\n{m.group(1)}\n}};\n")
++    ctx = x.xkb_context_new(0)
++    out = ["/* SPDX-License-Identifier: LGPL-2.1-or-later */",
++           "/* Generated by prospero-win's tools/make_ps5_keyboards.py from xkeyboard-config",
++           " * (MIT): the PS5 user driver's keyboard layouts (ps5drv.c). Each key: its scan code,",
++           " * virtual key, and what it types alone, with Shift, (Ctrl: nothing), AltGr and",
++           " * Shift+AltGr. */", "", "/* Wine's US layout's scan codes (win32u/input.c) */"] + us + [
++           "/* each scan code's virtual key on the US layout, for the keys that type */",
++           "static const BYTE ps5kbd_us_vk[0x60] =", "{",
++           "    " + ", ".join(f"[0x{s:02x}] = 0x{US[s]:02x}" for s in SCANS[:12]) + ",",
++           "    " + ", ".join(f"[0x{s:02x}] = 0x{US[s]:02x}" for s in SCANS[12:24]) + ",",
++           "    " + ", ".join(f"[0x{s:02x}] = 0x{US[s]:02x}" for s in SCANS[24:36]) + ",",
++           "    " + ", ".join(f"[0x{s:02x}] = 0x{US[s]:02x}" for s in SCANS[36:]) + ",",
++           "};", ""]
++    table = []
++    for ident, layout, variant, own_script in LAYOUTS:
++        keys = read_layout(ctx, layout, variant)
++        vk = virtual_keys(keys)
++        rows = []
++        for scan in SCANS:
++            normal, shifted, altgr, shift_altgr = keys[scan]
++            if not any(keys[scan]):
++                continue
++            caps = "CAPLOK" if normal.isalpha() and shifted == normal.upper() and normal != shifted else "0"
++            rows.append(f"    {{0x{scan:02x}, 0x{vk[scan]:02x}, {caps}, {{{c_char(normal)}, {c_char(shifted)}, WCH_NONE, "
++                        f"{c_char(altgr)}, {c_char(shift_altgr)}}}}},")
++        has_altgr = any(keys[s][2] not in ("", keys[s][0], keys[s][1]) for s in SCANS)
++        out.append(f"static const struct ps5kbd_key ps5kbd_{ident}[] =\n{{")
++        out += rows
++        out.append("    {0}\n};\n")
++        table.append(f"    {{\"{ident}\", ps5kbd_{ident}, {int(has_altgr)}, {int(own_script)}}},")
++    out.append("static const struct ps5kbd_layout ps5kbd_layouts[] =\n{")
++    out += table
++    out.append("};")
++    with open(sys.argv[2], "w", encoding="utf-8") as f:
++        f.write("\n".join(out) + "\n")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/wine/patches/0992-win32u-ps5-keyboard-layouts.patch b/wine/patches/0992-win32u-ps5-keyboard-layouts.patch
+new file mode 100644
+index 0000000..f33147a
+--- /dev/null
++++ b/wine/patches/0992-win32u-ps5-keyboard-layouts.patch
+@@ -0,0 +1,1498 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sun, 1 Nov 2026 10:00:00 +0000
++Subject: [PATCH] win32u: PS5: a USB keyboard types as the console's language's
++ layout.
++
++A keyboard plugged into the PS5 typed as a US one whatever it was: on a
++French AZERTY keyboard the key marked A typed q, and there was no way to
++type @ (AltGr+0) for an e-mail address at a game's login (World of Tanks).
++
++The console sends a keyboard's keys by their place, named as a US
++keyboard names them. The PS5 user driver now sends them, when the title
++names a layout in WINE_PS5_KEYBOARD (PC5: the console's language, or
++PC5's own), as that layout's keys at those places, with its characters:
++a KBDTABLES (pKbdLayerDescriptor) built from dlls/win32u/ps5kbd.h, which
++prospero-win's tools/make_ps5_keyboards.py writes from xkeyboard-config.
++AltGr is Ctrl+Alt, as on Windows; a dead key types its accent alone. A
++layout of another script (Russian, Ukrainian, Greek) switches with the US
++one by Alt+Shift, as on Windows, so a game's login can still be typed.
++
++Nothing else changes: with WINE_PS5_KEYBOARD unset or "us" the keyboard
++is the US one as before, and the keys the controller's button mapping
++names (input type 1) keep their US places under every layout, so a game
++that reads places sees the keys it saw before. Ctrl+letter and the
++number pad are win32u's, as for the US layout.
++---
++diff --git a/dlls/win32u/ps5drv.c b/dlls/win32u/ps5drv.c
++index 602b922..77552fd 100644
++--- a/dlls/win32u/ps5drv.c
+++++ b/dlls/win32u/ps5drv.c
++@@ -55,6 +55,7 @@
++ #include "dbt.h"
++ #include "wine/server.h"
++ #include "wine/debug.h"
+++#include "kbd.h"
++ #ifdef SONAME_LIBVULKAN
++ #include "wine/vulkan.h"
++ #include "wine/vulkan_driver.h"
++@@ -67,7 +68,8 @@ WINE_DEFAULT_DEBUG_CHANNEL(ps5drv);
++ /* the layout of PwWineInput in wine/ps5/pw_wine_sink.h */
++ struct ps5_input
++ {
++-    UINT type;              /* 1 key, 2 mouse move, 3 mouse button, 4 dialog key, 5 character, 6 wheel */
+++    UINT type;              /* 1 key, 2 mouse move, 3 mouse button, 4 dialog key, 5 character, 6 wheel,
+++                             * 7 a keyboard's key by its place */
++     UINT code;              /* virtual key, button 0 left 1 right 2 middle, or a UTF-16 unit */
++     INT  x, y;              /* mouse move: relative motion in desktop pixels; wheel: x notches */
++     UINT down;
++@@ -578,6 +580,177 @@ static BOOL is_extended_key( WORD vk )
++     return FALSE;
++ }
++ 
+++/***********************************************************************
+++ *           keyboard layout
+++ *
+++ * A keyboard's keys come by their place, as the US layout names them (the
+++ * console's HID codes), and are sent as the keys of the layout the title
+++ * names in WINE_PS5_KEYBOARD (PC5: the console's language, or PC5's own),
+++ * with the characters that layout types (ps5kbd.h, from xkeyboard-config):
+++ * on an AZERTY keyboard the key where a US keyboard has Q is A, and AltGr+0
+++ * types @. A layout of another script (Russian, Ukrainian, Greek) switches
+++ * to the US one and back with Alt+Shift, as on Windows. The controller's
+++ * keys (its button mapping names them) stay what they are named.
+++ */
+++struct ps5kbd_key
+++{
+++    BYTE scan;
+++    BYTE vk;
+++    BYTE attributes;
+++    WCHAR wch[5];        /* alone, Shift, Ctrl (none), AltGr, Shift+AltGr */
+++};
+++
+++struct ps5kbd_layout
+++{
+++    const char *name;
+++    const struct ps5kbd_key *keys;
+++    BOOL altgr;          /* AltGr types: right Alt is Ctrl+Alt, as on Windows */
+++    BOOL own_script;     /* Alt+Shift switches it with US */
+++};
+++
+++#include "ps5kbd.h"
+++
+++static const struct ps5kbd_layout *kbd_layout;
+++static BOOL kbd_us;                       /* switched to US with Alt+Shift */
+++static BYTE kbd_scan_of_us_vk[256];       /* the place of a US key that types */
+++static BYTE kbd_vk_at[0x60];              /* the layout's key at a place */
+++static USHORT kbd_vsc_to_vk[ARRAY_SIZE(ps5kbd_us_vsc_to_vk)];
+++static VK_TO_WCHARS5 kbd_chars[128];
+++static VK_TO_WCHAR_TABLE kbd_char_tables[2];
+++static const VK_TO_BIT kbd_vk_to_bit[] =
+++{
+++    {.Vk = VK_SHIFT, .ModBits = KBDSHIFT},
+++    {.Vk = VK_CONTROL, .ModBits = KBDCTRL},
+++    {.Vk = VK_MENU, .ModBits = KBDALT},
+++    {0},
+++};
+++/* alone, Shift, Ctrl, (Shift+Ctrl: none), Alt and Shift+Alt as alone and Shift (a menu's
+++ * Alt+letter), Ctrl+Alt (AltGr), Shift+Ctrl+Alt. Ctrl+letter and the number pad are win32u's. */
+++static const struct
+++{
+++    const VK_TO_BIT *pVkToBit;
+++    WORD wMaxModBits;
+++    BYTE ModNumber[8];
+++} kbd_modifiers = { kbd_vk_to_bit, 7, {0, 1, 2, 0x0f, 0, 1, 3, 4} };
+++static const VSC_LPWSTR kbd_no_names[] = {{0}};
+++static KBDTABLES kbd_tables;
+++
+++/* WINE_PS5_KEYBOARD: one of ps5kbd_layouts' names; anything else is the US layout. */
+++static void kbd_init(void)
+++{
+++    const char *name = getenv( "WINE_PS5_KEYBOARD" );
+++    const struct ps5kbd_key *key;
+++    UINT i, n = 0;
+++
+++    if (!name || !*name) return;
+++    for (i = 0; i < ARRAY_SIZE(ps5kbd_layouts); i++)
+++        if (!strcmp( ps5kbd_layouts[i].name, name )) kbd_layout = &ps5kbd_layouts[i];
+++    if (!kbd_layout)
+++    {
+++        if (strcmp( name, "us" )) ERR( "no keyboard layout %s: US\n", name );
+++        return;
+++    }
+++    for (i = 0; i < ARRAY_SIZE(ps5kbd_us_vk); i++)
+++        if (ps5kbd_us_vk[i]) kbd_scan_of_us_vk[ps5kbd_us_vk[i]] = i;
+++    memcpy( kbd_vsc_to_vk, ps5kbd_us_vsc_to_vk, sizeof(kbd_vsc_to_vk) );
+++    for (key = kbd_layout->keys; key->scan && n < ARRAY_SIZE(kbd_chars) - 16; key++)
+++    {
+++        kbd_vk_at[key->scan] = key->vk;
+++        kbd_vsc_to_vk[key->scan] = key->vk;
+++        kbd_chars[n].VirtualKey = key->vk;
+++        kbd_chars[n].Attributes = key->attributes;
+++        memcpy( kbd_chars[n].wch, key->wch, sizeof(key->wch) );
+++        n++;
+++    }
+++    /* the keys every layout types alike */
+++    {
+++        static const struct { BYTE vk; WCHAR ch; } same[] =
+++        {
+++            {VK_SPACE, ' '}, {VK_TAB, '\t'}, {VK_RETURN, '\r'}, {VK_BACK, '\b'}, {VK_ESCAPE, 0x1b},
+++            {VK_CANCEL, 0x03}, {VK_DECIMAL, '.'}, {VK_ADD, '+'}, {VK_SUBTRACT, '-'}, {VK_MULTIPLY, '*'},
+++            {VK_DIVIDE, '/'},
+++        };
+++        for (i = 0; i < ARRAY_SIZE(same); i++, n++)
+++        {
+++            kbd_chars[n].VirtualKey = same[i].vk;
+++            kbd_chars[n].wch[0] = kbd_chars[n].wch[1] = same[i].ch;
+++            kbd_chars[n].wch[2] = kbd_chars[n].wch[3] = kbd_chars[n].wch[4] = WCH_NONE;
+++        }
+++    }
+++    kbd_char_tables[0].pVkToWchars = (VK_TO_WCHARS1 *)kbd_chars;
+++    kbd_char_tables[0].nModifications = 5;
+++    kbd_char_tables[0].cbSize = sizeof(kbd_chars[0]);
+++    kbd_tables.pCharModifiers = (MODIFIERS *)&kbd_modifiers;
+++    kbd_tables.pVkToWcharTable = kbd_char_tables;
+++    kbd_tables.pKeyNames = (VSC_LPWSTR *)kbd_no_names;
+++    kbd_tables.pKeyNamesExt = (VSC_LPWSTR *)kbd_no_names;
+++    kbd_tables.pusVSCtoVK = kbd_vsc_to_vk;
+++    kbd_tables.bMaxVSCtoVK = ARRAY_SIZE(kbd_vsc_to_vk) - 1;
+++    kbd_tables.pVSCtoVK_E0 = (VSC_VK *)ps5kbd_us_vsc_to_vk_e0;
+++    kbd_tables.pVSCtoVK_E1 = (VSC_VK *)ps5kbd_us_vsc_to_vk_e1;
+++    kbd_tables.fLocaleFlags = MAKELONG( kbd_layout->altgr ? KLLF_ALTGR : 0, KBD_VERSION );
+++    MESSAGE( "wine-ps5: keyboard layout %s\n", kbd_layout->name );
+++}
+++
+++static const KBDTABLES *ps5_KbdLayerDescriptor( HKL layout )
+++{
+++    return kbd_layout && !kbd_us ? &kbd_tables : NULL;
+++}
+++
+++static void ps5_ReleaseKbdTables( const KBDTABLES *tables )
+++{
+++}
+++
+++/* A keyboard's key, by its US name: sent as the layout's key at that place. */
+++static void send_keyboard_key( HWND hwnd, WORD us_vk, BOOL down )
+++{
+++    static BOOL alt, shift;
+++    INPUT input = {.type = INPUT_KEYBOARD};
+++    BYTE scan = us_vk < 256 ? kbd_scan_of_us_vk[us_vk] : 0;
+++    BOOL altgr = kbd_layout && kbd_layout->altgr && !kbd_us && us_vk == VK_RMENU;
+++
+++    /* Alt+Shift: a layout of another script and US, in turn */
+++    if (us_vk == VK_MENU || us_vk == VK_LMENU) alt = down;
+++    if (us_vk == VK_SHIFT || us_vk == VK_LSHIFT || us_vk == VK_RSHIFT)
+++    {
+++        if (down && !shift && alt && kbd_layout && kbd_layout->own_script)
+++        {
+++            kbd_us = !kbd_us;
+++            TRACE( "keyboard layout %s\n", kbd_us ? "us" : kbd_layout->name );
+++        }
+++        shift = down;
+++    }
+++    else if ((us_vk == VK_MENU || us_vk == VK_LMENU) && down && shift && kbd_layout && kbd_layout->own_script)
+++        kbd_us = !kbd_us;
+++
+++    input.ki.wVk = us_vk;
+++    if (kbd_layout && !kbd_us && scan && kbd_vk_at[scan])
+++    {
+++        input.ki.wVk = kbd_vk_at[scan];
+++        input.ki.wScan = scan;
+++    }
+++    else input.ki.wScan = NtUserMapVirtualKeyEx( us_vk, MAPVK_VK_TO_VSC, NtUserGetKeyboardLayout( 0 ));
+++    input.ki.dwFlags = down ? 0 : KEYEVENTF_KEYUP;
+++    if (is_extended_key( us_vk )) input.ki.dwFlags |= KEYEVENTF_EXTENDEDKEY;
+++    if (altgr && down)
+++    {
+++        /* AltGr is Ctrl+Alt: the left Ctrl first */
+++        INPUT ctrl = {.type = INPUT_KEYBOARD};
+++        ctrl.ki.wVk = VK_LCONTROL;
+++        ctrl.ki.wScan = 0x1d;
+++        NtUserSendHardwareInput( hwnd, 0, &ctrl, 0 );
+++    }
+++    NtUserSendHardwareInput( hwnd, 0, &input, 0 );
+++    if (altgr && !down)
+++    {
+++        INPUT ctrl = {.type = INPUT_KEYBOARD};
+++        ctrl.ki.wVk = VK_LCONTROL;
+++        ctrl.ki.wScan = 0x1d;
+++        ctrl.ki.dwFlags = KEYEVENTF_KEYUP;
+++        NtUserSendHardwareInput( hwnd, 0, &ctrl, 0 );
+++    }
+++}
+++
++ /* A dialog box: the class of every window DialogBox and MessageBox make. */
++ static BOOL is_dialog( HWND hwnd )
++ {
++@@ -671,11 +844,20 @@ static BOOL ps5_ProcessEvents( DWORD mask )
++             /* fall through */
++         case 1:
++             input.ki.wVk = event.code;
++-            input.ki.wScan = NtUserMapVirtualKeyEx( event.code, MAPVK_VK_TO_VSC, NtUserGetKeyboardLayout( 0 ));
+++            /* A key the controller's button mapping names keeps its US place under any
+++             * keyboard layout, so a game that reads places sees what it saw before. */
+++            if (kbd_layout && event.code < 256 && kbd_scan_of_us_vk[event.code])
+++                input.ki.wScan = kbd_scan_of_us_vk[event.code];
+++            else
+++                input.ki.wScan = NtUserMapVirtualKeyEx( event.code, MAPVK_VK_TO_VSC, NtUserGetKeyboardLayout( 0 ));
++             input.ki.dwFlags = event.down ? 0 : KEYEVENTF_KEYUP;
++             if (is_extended_key( event.code )) input.ki.dwFlags |= KEYEVENTF_EXTENDEDKEY;
++             NtUserSendHardwareInput( hwnd, 0, &input, 0 );
++             break;
+++        case 7:
+++            /* a keyboard's key, by its place (send_keyboard_key) */
+++            if (event.code && event.code < 256) send_keyboard_key( hwnd, event.code, event.down != 0 );
+++            break;
++         case 5:
++             /* A character typed on the console's on-screen keyboard, sent as
++              * Windows sends one from an input method: a VK_PACKET key, down and
++@@ -1003,6 +1185,8 @@ static const struct user_driver_funcs ps5_user_driver =
++     .pWindowPosChanged = ps5_WindowPosChanged,
++     .pDestroyWindow = ps5_DestroyWindow,
++     .pProcessEvents = ps5_ProcessEvents,
+++    .pKbdLayerDescriptor = ps5_KbdLayerDescriptor,
+++    .pReleaseKbdTables = ps5_ReleaseKbdTables,
++     .pGetCursorPos = ps5_GetCursorPos,
++     .pSetCursor = ps5_SetCursor,
++     .pSetCursorPos = ps5_SetCursorPos,
++@@ -1042,6 +1226,7 @@ void ps5_install_user_driver(void)
++     next_input = dlsym( RTLD_DEFAULT, "pw_wine_next_input" );
++     input_fd = dlsym( RTLD_DEFAULT, "pw_wine_input_fd" );
++     pad_changes = dlsym( RTLD_DEFAULT, "pw_wine_pad_changes" );
+++    kbd_init();
++ #ifdef SONAME_LIBVULKAN
++     release_display = dlsym( RTLD_DEFAULT, "pw_wine_release_display" );
++ #endif
++diff --git a/dlls/win32u/ps5kbd.h b/dlls/win32u/ps5kbd.h
++new file mode 100644
++index 0000000..a6fe17c
++--- /dev/null
+++++ b/dlls/win32u/ps5kbd.h
++@@ -0,0 +1,1224 @@
+++/* SPDX-License-Identifier: LGPL-2.1-or-later */
+++/* Generated by prospero-win's tools/make_ps5_keyboards.py from xkeyboard-config
+++ * (MIT): the PS5 user driver's keyboard layouts (ps5drv.c). Each key: its scan code,
+++ * virtual key, and what it types alone, with Shift, (Ctrl: nothing), AltGr and
+++ * Shift+AltGr. */
+++
+++/* Wine's US layout's scan codes (win32u/input.c) */
+++static const USHORT ps5kbd_us_vsc_to_vk[] =
+++{
+++    T00, T01, T02, T03, T04, T05, T06, T07,
+++    T08, T09, T0A, T0B, T0C, T0D, T0E, T0F,
+++    T10, T11, T12, T13, T14, T15, T16, T17,
+++    T18, T19, T1A, T1B, T1C, T1D, T1E, T1F,
+++    T20, T21, T22, T23, T24, T25, T26, T27,
+++    T28, T29, T2A, T2B, T2C, T2D, T2E, T2F,
+++    T30, T31, T32, T33, T34, T35, T36 | KBDEXT, T37 | KBDMULTIVK,
+++    T38, T39, T3A, T3B, T3C, T3D, T3E, T3F,
+++    T40, T41, T42, T43, T44, T45 | KBDEXT | KBDMULTIVK, T46 | KBDMULTIVK, T47 | KBDNUMPAD | KBDSPECIAL,
+++    T48 | KBDNUMPAD | KBDSPECIAL, T49 | KBDNUMPAD | KBDSPECIAL, T4A, T4B | KBDNUMPAD | KBDSPECIAL,
+++    T4C | KBDNUMPAD | KBDSPECIAL, T4D | KBDNUMPAD | KBDSPECIAL, T4E, T4F | KBDNUMPAD | KBDSPECIAL,
+++    T50 | KBDNUMPAD | KBDSPECIAL, T51 | KBDNUMPAD | KBDSPECIAL, T52 | KBDNUMPAD | KBDSPECIAL,
+++    T53 | KBDNUMPAD | KBDSPECIAL, T54, T55, T56, T57,
+++    T58, T59, T5A, T5B, T5C, T5D, T5E, T5F,
+++    T60, T61, T62, T63, T64, T65, T66, T67,
+++    T68, T69, T6A, T6B, T6C, T6D, T6E, T6F,
+++    T70, T71, T72, T73, T74, T75, T76, T77,
+++    T78, T79, T7A, T7B, T7C, T7D, T7E
+++};
+++
+++static const VSC_VK ps5kbd_us_vsc_to_vk_e0[] =
+++{
+++    {0x10, X10 | KBDEXT},
+++    {0x19, X19 | KBDEXT},
+++    {0x1d, X1D | KBDEXT},
+++    {0x20, X20 | KBDEXT},
+++    {0x21, X21 | KBDEXT},
+++    {0x22, X22 | KBDEXT},
+++    {0x24, X24 | KBDEXT},
+++    {0x2e, X2E | KBDEXT},
+++    {0x30, X30 | KBDEXT},
+++    {0x32, X32 | KBDEXT},
+++    {0x35, X35 | KBDEXT},
+++    {0x37, X37 | KBDEXT},
+++    {0x38, X38 | KBDEXT},
+++    {0x47, X47 | KBDEXT},
+++    {0x48, X48 | KBDEXT},
+++    {0x49, X49 | KBDEXT},
+++    {0x4b, X4B | KBDEXT},
+++    {0x4d, X4D | KBDEXT},
+++    {0x4f, X4F | KBDEXT},
+++    {0x50, X50 | KBDEXT},
+++    {0x51, X51 | KBDEXT},
+++    {0x52, X52 | KBDEXT},
+++    {0x53, X53 | KBDEXT},
+++    {0x5b, X5B | KBDEXT},
+++    {0x5c, X5C | KBDEXT},
+++    {0x5d, X5D | KBDEXT},
+++    {0x5f, X5F | KBDEXT},
+++    {0x65, X65 | KBDEXT},
+++    {0x66, X66 | KBDEXT},
+++    {0x67, X67 | KBDEXT},
+++    {0x68, X68 | KBDEXT},
+++    {0x69, X69 | KBDEXT},
+++    {0x6a, X6A | KBDEXT},
+++    {0x6b, X6B | KBDEXT},
+++    {0x6c, X6C | KBDEXT},
+++    {0x6d, X6D | KBDEXT},
+++    {0x1c, X1C | KBDEXT},
+++    {0x46, X46 | KBDEXT},
+++    {0},
+++};
+++
+++static const VSC_VK ps5kbd_us_vsc_to_vk_e1[] =
+++{
+++    {0x1d, Y1D},
+++    {0},
+++};
+++
+++/* each scan code's virtual key on the US layout, for the keys that type */
+++static const BYTE ps5kbd_us_vk[0x60] =
+++{
+++    [0x02] = 0x31, [0x03] = 0x32, [0x04] = 0x33, [0x05] = 0x34, [0x06] = 0x35, [0x07] = 0x36, [0x08] = 0x37, [0x09] = 0x38, [0x0a] = 0x39, [0x0b] = 0x30, [0x0c] = 0xbd, [0x0d] = 0xbb,
+++    [0x10] = 0x51, [0x11] = 0x57, [0x12] = 0x45, [0x13] = 0x52, [0x14] = 0x54, [0x15] = 0x59, [0x16] = 0x55, [0x17] = 0x49, [0x18] = 0x4f, [0x19] = 0x50, [0x1a] = 0xdb, [0x1b] = 0xdd,
+++    [0x1e] = 0x41, [0x1f] = 0x53, [0x20] = 0x44, [0x21] = 0x46, [0x22] = 0x47, [0x23] = 0x48, [0x24] = 0x4a, [0x25] = 0x4b, [0x26] = 0x4c, [0x27] = 0xba, [0x28] = 0xde, [0x29] = 0xc0,
+++    [0x2b] = 0xdc, [0x2c] = 0x5a, [0x2d] = 0x58, [0x2e] = 0x43, [0x2f] = 0x56, [0x30] = 0x42, [0x31] = 0x4e, [0x32] = 0x4d, [0x33] = 0xbc, [0x34] = 0xbe, [0x35] = 0xbf, [0x56] = 0xe2,
+++};
+++
+++static const struct ps5kbd_key ps5kbd_gb[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, 0x00b9, 0x00a1}},
+++    {0x03, 0x32, 0, {'2', '"', WCH_NONE, 0x00b2, 0x215b}},
+++    {0x04, 0x33, 0, {'3', 0x00a3, WCH_NONE, 0x00b3, 0x00a3}},
+++    {0x05, 0x34, 0, {'4', '$', WCH_NONE, 0x20ac, 0x00bc}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x00bd, 0x215c}},
+++    {0x07, 0x36, 0, {'6', '^', WCH_NONE, 0x00be, 0x215d}},
+++    {0x08, 0x37, 0, {'7', '&', WCH_NONE, '{', 0x215e}},
+++    {0x09, 0x38, 0, {'8', '*', WCH_NONE, '[', 0x2122}},
+++    {0x0a, 0x39, 0, {'9', '(', WCH_NONE, ']', 0x00b1}},
+++    {0x0b, 0x30, 0, {'0', ')', WCH_NONE, '}', 0x00b0}},
+++    {0x0c, 0xbd, 0, {'-', '_', WCH_NONE, '\\', 0x00bf}},
+++    {0x0d, 0xbb, 0, {'=', '+', WCH_NONE, 0x00b8, 0x02db}},
+++    {0x10, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, '@', 0x03a9}},
+++    {0x11, 0x57, CAPLOK, {'w', 'W', WCH_NONE, 0x017f, 0x00a7}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 'e', 'E'}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 0x00b6, 0x00ae}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 0x0167, 0x0166}},
+++    {0x15, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, 0x2190, 0x00a5}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 0x2193, 0x2191}},
+++    {0x17, 0x49, CAPLOK, {'i', 'I', WCH_NONE, 0x2192, 0x0131}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 0x00f8, 0x00d8}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, 0x00fe, 0x00de}},
+++    {0x1a, 0xdb, 0, {'[', '{', WCH_NONE, 0x00a8, 0x02da}},
+++    {0x1b, 0xdd, 0, {']', '}', WCH_NONE, '~', 0x00af}},
+++    {0x1e, 0x41, CAPLOK, {'a', 'A', WCH_NONE, 0x00e6, 0x00c6}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 0x00df, 0x1e9e}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, 0x00f0, 0x00d0}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, 0x0111, 0x00aa}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, 0x014b, 0x014a}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, 0x0127, 0x0126}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, 0x0138, '&'}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, 0x0142, 0x0141}},
+++    {0x27, 0xba, 0, {';', ':', WCH_NONE, 0x00b4, 0x02dd}},
+++    {0x28, 0xde, 0, {'\'', '@', WCH_NONE, '^', 0x02c7}},
+++    {0x29, 0xc0, 0, {'`', 0x00ac, WCH_NONE, '|', '|'}},
+++    {0x2b, 0xdc, 0, {'#', '~', WCH_NONE, '`', 0x02d8}},
+++    {0x2c, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 0x00ab, '<'}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, 0x00bb, '>'}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, 0x00a2, 0x00a9}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, 0x201e, 0x201a}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, 0x201c, 0x2018}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, 0x201d, 0x2019}},
+++    {0x32, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, 0x00b5, 0x00ba}},
+++    {0x33, 0xbc, 0, {',', '<', WCH_NONE, 0x2022, 0x00d7}},
+++    {0x34, 0xbe, 0, {'.', '>', WCH_NONE, 0x00b7, 0x00f7}},
+++    {0x35, 0xbf, 0, {'/', '?', WCH_NONE, '.', 0x02d9}},
+++    {0x56, 0xe2, 0, {'\\', '|', WCH_NONE, '|', 0x00a6}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_fr[] =
+++{
+++    {0x02, 0x31, 0, {'&', '1', WCH_NONE, 0x00b9, 0x00a1}},
+++    {0x03, 0x32, 0, {0x00e9, '2', WCH_NONE, '~', 0x215b}},
+++    {0x04, 0x33, 0, {'"', '3', WCH_NONE, '#', 0x00a3}},
+++    {0x05, 0x34, 0, {'\'', '4', WCH_NONE, '{', '$'}},
+++    {0x06, 0x35, 0, {'(', '5', WCH_NONE, '[', 0x215c}},
+++    {0x07, 0x36, 0, {'-', '6', WCH_NONE, '|', 0x215d}},
+++    {0x08, 0x37, 0, {0x00e8, '7', WCH_NONE, '`', 0x215e}},
+++    {0x09, 0x38, 0, {'_', '8', WCH_NONE, '\\', 0x2122}},
+++    {0x0a, 0x39, 0, {0x00e7, '9', WCH_NONE, '^', 0x00b1}},
+++    {0x0b, 0x30, 0, {0x00e0, '0', WCH_NONE, '@', 0x00b0}},
+++    {0x0c, 0xbd, 0, {')', 0x00b0, WCH_NONE, ']', 0x00bf}},
+++    {0x0d, 0xbb, 0, {'=', '+', WCH_NONE, '}', 0x02db}},
+++    {0x10, 0x41, CAPLOK, {'a', 'A', WCH_NONE, 0x00e6, 0x00c6}},
+++    {0x11, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 0x00ab, '<'}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 0x20ac, 0x00a2}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 0x00b6, 0x00ae}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 0x0167, 0x0166}},
+++    {0x15, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, 0x2190, 0x00a5}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 0x2193, 0x2191}},
+++    {0x17, 0x49, CAPLOK, {'i', 'I', WCH_NONE, 0x2192, 0x0131}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 0x00f8, 0x00d8}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, 0x00fe, 0x00de}},
+++    {0x1a, 0xdb, 0, {'^', 0x00a8, WCH_NONE, 0x00a8, 0x02da}},
+++    {0x1b, 0xdd, 0, {'$', 0x00a3, WCH_NONE, 0x00a4, 0x00af}},
+++    {0x1e, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, '@', 0x03a9}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 0x00df, 0x1e9e}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, 0x00f0, 0x00d0}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, 0x0111, 0x00aa}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, 0x014b, 0x014a}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, 0x0127, 0x0126}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, 0x0138, '&'}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, 0x0142, 0x0141}},
+++    {0x27, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, 0x00b5, 0x00ba}},
+++    {0x28, 0xde, 0, {0x00f9, '%', WCH_NONE, '^', 0x02c7}},
+++    {0x29, 0xc0, 0, {0x00b2, '~', WCH_NONE, 0x00ac, 0x00ac}},
+++    {0x2b, 0xdc, 0, {'*', 0x00b5, WCH_NONE, '`', 0x02d8}},
+++    {0x2c, 0x57, CAPLOK, {'w', 'W', WCH_NONE, 0x0142, 0x0141}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, 0x00bb, '>'}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, 0x00a2, 0x00a9}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, 0x201e, 0x201a}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, 0x201c, 0x2018}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, 0x201d, 0x2019}},
+++    {0x32, 0xbc, 0, {',', '?', WCH_NONE, 0x00b4, 0x02dd}},
+++    {0x33, 0xba, 0, {';', '.', WCH_NONE, 0x2022, 0x00d7}},
+++    {0x34, 0xbe, 0, {':', '/', WCH_NONE, 0x00b7, 0x00f7}},
+++    {0x35, 0xbf, 0, {'!', 0x00a7, WCH_NONE, '.', 0x02d9}},
+++    {0x56, 0xe2, 0, {'<', '>', WCH_NONE, '|', 0x00a6}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_ca[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, 0x00b1, WCH_NONE}},
+++    {0x03, 0x32, 0, {'2', '"', WCH_NONE, '@', WCH_NONE}},
+++    {0x04, 0x33, 0, {'3', '/', WCH_NONE, 0x00a3, WCH_NONE}},
+++    {0x05, 0x34, 0, {'4', '$', WCH_NONE, 0x00a2, WCH_NONE}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x00a4, WCH_NONE}},
+++    {0x07, 0x36, 0, {'6', '?', WCH_NONE, 0x00ac, WCH_NONE}},
+++    {0x08, 0x37, 0, {'7', '&', WCH_NONE, 0x00a6, WCH_NONE}},
+++    {0x09, 0x38, 0, {'8', '*', WCH_NONE, 0x00b2, WCH_NONE}},
+++    {0x0a, 0x39, 0, {'9', '(', WCH_NONE, 0x00b3, WCH_NONE}},
+++    {0x0b, 0x30, 0, {'0', ')', WCH_NONE, 0x00bc, WCH_NONE}},
+++    {0x0c, 0xbd, 0, {'-', '_', WCH_NONE, 0x00bd, WCH_NONE}},
+++    {0x0d, 0xbb, 0, {'=', '+', WCH_NONE, 0x00be, WCH_NONE}},
+++    {0x10, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, 'q', 'Q'}},
+++    {0x11, 0x57, CAPLOK, {'w', 'W', WCH_NONE, 'w', 'W'}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 0x20ac, WCH_NONE}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 'r', 'R'}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 't', 'T'}},
+++    {0x15, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, 0x00a5, WCH_NONE}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 'u', 'U'}},
+++    {0x17, 0x49, CAPLOK, {'i', 'I', WCH_NONE, 'i', 'I'}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 0x00a7, WCH_NONE}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, 0x00b6, WCH_NONE}},
+++    {0x1a, 0xdb, 0, {'^', '^', WCH_NONE, '[', WCH_NONE}},
+++    {0x1b, 0xdd, 0, {0x00b8, 0x00a8, WCH_NONE, ']', WCH_NONE}},
+++    {0x1e, 0x41, CAPLOK, {'a', 'A', WCH_NONE, 'a', 'A'}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 's', 'S'}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, 'd', 'D'}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, 'f', 'F'}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, 'g', 'G'}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, 'h', 'H'}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, 'j', 'J'}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, 'k', 'K'}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, 'l', 'L'}},
+++    {0x27, 0xba, 0, {';', ':', WCH_NONE, '~', WCH_NONE}},
+++    {0x28, 0xc0, 0, {'`', '`', WCH_NONE, '{', WCH_NONE}},
+++    {0x29, 0xbc, 0, {'#', '|', WCH_NONE, '\\', WCH_NONE}},
+++    {0x2b, 0xdc, 0, {'<', '>', WCH_NONE, '}', WCH_NONE}},
+++    {0x2c, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 'z', 'Z'}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, 'x', 'X'}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, 'c', 'C'}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, 'v', 'V'}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, 'b', 'B'}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, 'n', 'N'}},
+++    {0x32, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, 0x00b5, WCH_NONE}},
+++    {0x33, 0xbe, 0, {',', '\'', WCH_NONE, 0x00af, WCH_NONE}},
+++    {0x34, 0xbf, 0, {'.', '.', WCH_NONE, 0x00ad, WCH_NONE}},
+++    {0x35, 0xde, CAPLOK, {0x00e9, 0x00c9, WCH_NONE, 0x00b4, WCH_NONE}},
+++    {0x56, 0xe2, 0, {0x00ab, 0x00bb, WCH_NONE, 0x00b0, 0x00a6}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_de[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, 0x00b9, 0x00a1}},
+++    {0x03, 0x32, 0, {'2', '"', WCH_NONE, 0x00b2, 0x215b}},
+++    {0x04, 0x33, 0, {'3', 0x00a7, WCH_NONE, 0x00b3, 0x00a3}},
+++    {0x05, 0x34, 0, {'4', '$', WCH_NONE, 0x00bc, 0x00a4}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x00bd, 0x215c}},
+++    {0x07, 0x36, 0, {'6', '&', WCH_NONE, 0x00ac, 0x215d}},
+++    {0x08, 0x37, 0, {'7', '/', WCH_NONE, '{', 0x215e}},
+++    {0x09, 0x38, 0, {'8', '(', WCH_NONE, '[', 0x2122}},
+++    {0x0a, 0x39, 0, {'9', ')', WCH_NONE, ']', 0x00b1}},
+++    {0x0b, 0x30, 0, {'0', '=', WCH_NONE, '}', 0x00b0}},
+++    {0x0c, 0xbd, 0, {0x00df, '?', WCH_NONE, '\\', 0x00bf}},
+++    {0x0d, 0xbb, 0, {0x00b4, '`', WCH_NONE, 0x00b8, 0x02db}},
+++    {0x10, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, '@', 0x03a9}},
+++    {0x11, 0x57, CAPLOK, {'w', 'W', WCH_NONE, 0x017f, 0x00a7}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 0x20ac, 0x20ac}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 0x00b6, 0x00ae}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 0x0167, 0x0166}},
+++    {0x15, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 0x2190, 0x00a5}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 0x2193, 0x2191}},
+++    {0x17, 0x49, CAPLOK, {'i', 'I', WCH_NONE, 0x2192, 0x0131}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 0x00f8, 0x00d8}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, 0x00fe, 0x00de}},
+++    {0x1a, 0xdb, CAPLOK, {0x00fc, 0x00dc, WCH_NONE, 0x00a8, 0x02da}},
+++    {0x1b, 0xdd, 0, {'+', '*', WCH_NONE, '~', 0x00af}},
+++    {0x1e, 0x41, CAPLOK, {'a', 'A', WCH_NONE, 0x00e6, 0x00c6}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 0x017f, 0x1e9e}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, 0x00f0, 0x00d0}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, 0x0111, 0x00aa}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, 0x014b, 0x014a}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, 0x0127, 0x0126}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, '.', 0x02d9}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, 0x0138, '&'}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, 0x0142, 0x0141}},
+++    {0x27, 0xba, CAPLOK, {0x00f6, 0x00d6, WCH_NONE, 0x02dd, '.'}},
+++    {0x28, 0xde, CAPLOK, {0x00e4, 0x00c4, WCH_NONE, '^', 0x02c7}},
+++    {0x29, 0xc0, 0, {'^', 0x00b0, WCH_NONE, 0x2032, 0x2033}},
+++    {0x2b, 0xdc, 0, {'#', '\'', WCH_NONE, 0x2019, 0x02d8}},
+++    {0x2c, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, 0x00bb, 0x203a}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, 0x00ab, 0x2039}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, 0x00a2, 0x00a9}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, 0x201e, 0x201a}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, 0x201c, 0x2018}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, 0x201d, 0x2019}},
+++    {0x32, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, 0x00b5, 0x00ba}},
+++    {0x33, 0xbc, 0, {',', ';', WCH_NONE, 0x00b7, 0x00d7}},
+++    {0x34, 0xbe, 0, {'.', ':', WCH_NONE, 0x2026, 0x00f7}},
+++    {0x35, 0xbf, 0, {'-', '_', WCH_NONE, 0x2013, 0x2014}},
+++    {0x56, 0xe2, 0, {'<', '>', WCH_NONE, '|', WCH_NONE}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_es[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, '|', 0x00a1}},
+++    {0x03, 0x32, 0, {'2', '"', WCH_NONE, '@', 0x215b}},
+++    {0x04, 0x33, 0, {'3', 0x00b7, WCH_NONE, '#', 0x00a3}},
+++    {0x05, 0x34, 0, {'4', '$', WCH_NONE, '~', '$'}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x00bd, 0x215c}},
+++    {0x07, 0x36, 0, {'6', '&', WCH_NONE, 0x00ac, 0x215d}},
+++    {0x08, 0x37, 0, {'7', '/', WCH_NONE, '{', 0x215e}},
+++    {0x09, 0x38, 0, {'8', '(', WCH_NONE, '[', 0x2122}},
+++    {0x0a, 0x39, 0, {'9', ')', WCH_NONE, ']', 0x00b1}},
+++    {0x0b, 0x30, 0, {'0', '=', WCH_NONE, '}', 0x00b0}},
+++    {0x0c, 0xde, 0, {'\'', '?', WCH_NONE, '\\', 0x00bf}},
+++    {0x0d, 0xbb, 0, {0x00a1, 0x00bf, WCH_NONE, 0x00b8, 0x02db}},
+++    {0x10, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, '@', 0x03a9}},
+++    {0x11, 0x57, CAPLOK, {'w', 'W', WCH_NONE, 0x017f, 0x00a7}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 0x20ac, 0x00a2}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 0x00b6, 0x00ae}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 0x0167, 0x0166}},
+++    {0x15, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, 0x2190, 0x00a5}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 0x2193, 0x2191}},
+++    {0x17, 0x49, CAPLOK, {'i', 'I', WCH_NONE, 0x2192, 0x0131}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 0x00f8, 0x00d8}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, 0x00fe, 0x00de}},
+++    {0x1a, 0xc0, 0, {'`', '^', WCH_NONE, '[', 0x02da}},
+++    {0x1b, 0xdd, 0, {'+', '*', WCH_NONE, ']', 0x00af}},
+++    {0x1e, 0x41, CAPLOK, {'a', 'A', WCH_NONE, 0x00e6, 0x00c6}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 0x00df, 0x1e9e}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, 0x00f0, 0x00d0}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, 0x0111, 0x00aa}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, 0x014b, 0x014a}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, 0x0127, 0x0126}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, 0x0138, '&'}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, 0x0142, 0x0141}},
+++    {0x27, 0xba, CAPLOK, {0x00f1, 0x00d1, WCH_NONE, '~', 0x02dd}},
+++    {0x28, 0xbc, 0, {0x00b4, 0x00a8, WCH_NONE, '{', 0x02c7}},
+++    {0x29, 0xbd, 0, {0x00ba, 0x00aa, WCH_NONE, '\\', '\\'}},
+++    {0x2b, 0xdc, CAPLOK, {0x00e7, 0x00c7, WCH_NONE, '}', 0x02d8}},
+++    {0x2c, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 0x00ab, '<'}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, 0x00bb, '>'}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, 0x00a2, 0x00a9}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, 0x201e, 0x201a}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, 0x201c, 0x2018}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, 0x201d, 0x2019}},
+++    {0x32, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, 0x00b5, 0x00ba}},
+++    {0x33, 0xbe, 0, {',', ';', WCH_NONE, 0x2022, 0x00d7}},
+++    {0x34, 0xbf, 0, {'.', ':', WCH_NONE, 0x00b7, 0x00f7}},
+++    {0x35, 0xdb, 0, {'-', '_', WCH_NONE, '.', 0x02d9}},
+++    {0x56, 0xe2, 0, {'<', '>', WCH_NONE, '|', 0x00a6}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_latam[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, '|', 0x00a1}},
+++    {0x03, 0x32, 0, {'2', '"', WCH_NONE, '@', 0x215b}},
+++    {0x04, 0x33, 0, {'3', '#', WCH_NONE, 0x00b7, 0x00a3}},
+++    {0x05, 0x34, 0, {'4', '$', WCH_NONE, '~', '$'}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x00bd, 0x215c}},
+++    {0x07, 0x36, 0, {'6', '&', WCH_NONE, 0x00ac, 0x215d}},
+++    {0x08, 0x37, 0, {'7', '/', WCH_NONE, '{', 0x215e}},
+++    {0x09, 0x38, 0, {'8', '(', WCH_NONE, '[', 0x2122}},
+++    {0x0a, 0x39, 0, {'9', ')', WCH_NONE, ']', 0x00b1}},
+++    {0x0b, 0x30, 0, {'0', '=', WCH_NONE, '}', 0x00b0}},
+++    {0x0c, 0xde, 0, {'\'', '?', WCH_NONE, '\\', 0x00bf}},
+++    {0x0d, 0xbb, 0, {0x00bf, 0x00a1, WCH_NONE, 0x00b8, 0x02db}},
+++    {0x10, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, '@', 0x03a9}},
+++    {0x11, 0x57, CAPLOK, {'w', 'W', WCH_NONE, 0x017f, 0x00a7}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 0x20ac, 0x00a2}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 0x00b6, 0x00ae}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 0x0167, 0x0166}},
+++    {0x15, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, 0x2190, 0x00a5}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 0x2193, 0x2191}},
+++    {0x17, 0x49, CAPLOK, {'i', 'I', WCH_NONE, 0x2192, 0x0131}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 0x00f8, 0x00d8}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, 0x00fe, 0x00de}},
+++    {0x1a, 0xdb, 0, {0x00b4, 0x00a8, WCH_NONE, 0x00a8, 0x02da}},
+++    {0x1b, 0xdd, 0, {'+', '*', WCH_NONE, '~', 0x00af}},
+++    {0x1e, 0x41, CAPLOK, {'a', 'A', WCH_NONE, 0x00e6, 0x00c6}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 0x00df, 0x1e9e}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, 0x00f0, 0x00d0}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, 0x0111, 0x00aa}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, 0x014b, 0x014a}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, 0x0127, 0x0126}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, 0x0138, '&'}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, 0x0142, 0x0141}},
+++    {0x27, 0xba, CAPLOK, {0x00f1, 0x00d1, WCH_NONE, '~', 0x02dd}},
+++    {0x28, 0xbc, 0, {'{', '[', WCH_NONE, '^', '{'}},
+++    {0x29, 0xc0, 0, {'|', 0x00b0, WCH_NONE, 0x00ac, 0x00ac}},
+++    {0x2b, 0xdc, 0, {'}', ']', WCH_NONE, '`', '}'}},
+++    {0x2c, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 0x00ab, '<'}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, 0x00bb, '>'}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, 0x00a2, 0x00a9}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, 0x201e, 0x201a}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, 0x201c, 0x2018}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, 0x201d, 0x2019}},
+++    {0x32, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, 0x00b5, 0x00ba}},
+++    {0x33, 0xbd, 0, {',', ';', WCH_NONE, 0x2022, 0x00d7}},
+++    {0x34, 0xbe, 0, {'.', ':', WCH_NONE, 0x00b7, 0x00f7}},
+++    {0x35, 0xbf, 0, {'-', '_', WCH_NONE, '.', 0x02d9}},
+++    {0x56, 0xe2, 0, {'<', '>', WCH_NONE, '\\', '|'}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_it[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, 0x00b9, 0x00a1}},
+++    {0x03, 0x32, 0, {'2', '"', WCH_NONE, 0x00b2, 0x02dd}},
+++    {0x04, 0x33, 0, {'3', 0x00a3, WCH_NONE, 0x00b3, '~'}},
+++    {0x05, 0x34, 0, {'4', '$', WCH_NONE, 0x00bc, 0x215b}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x00bd, 0x215c}},
+++    {0x07, 0x36, 0, {'6', '&', WCH_NONE, 0x00ac, 0x215d}},
+++    {0x08, 0x37, 0, {'7', '/', WCH_NONE, '{', 0x215e}},
+++    {0x09, 0x38, 0, {'8', '(', WCH_NONE, '[', 0x2122}},
+++    {0x0a, 0x39, 0, {'9', ')', WCH_NONE, ']', 0x00b1}},
+++    {0x0b, 0x30, 0, {'0', '=', WCH_NONE, '}', 0x02db}},
+++    {0x0c, 0xde, 0, {'\'', '?', WCH_NONE, '`', 0x00bf}},
+++    {0x0d, 0xbb, 0, {0x00ec, '^', WCH_NONE, '~', '^'}},
+++    {0x10, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, '@', 0x03a9}},
+++    {0x11, 0x57, CAPLOK, {'w', 'W', WCH_NONE, 0x017f, 0x00a7}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 0x20ac, 0x00a2}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 0x00b6, 0x00ae}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 0x0167, 0x0166}},
+++    {0x15, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, 0x2190, 0x00a5}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 0x2193, 0x2191}},
+++    {0x17, 0x49, CAPLOK, {'i', 'I', WCH_NONE, 0x2192, 0x0131}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 0x00f8, 0x00d8}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, 0x00fe, 0x00de}},
+++    {0x1a, 0xdb, 0, {0x00e8, 0x00e9, WCH_NONE, '[', '{'}},
+++    {0x1b, 0xdd, 0, {'+', '*', WCH_NONE, ']', '}'}},
+++    {0x1e, 0x41, CAPLOK, {'a', 'A', WCH_NONE, 0x00e6, 0x00c6}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 0x00df, 0x1e9e}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, 0x00f0, 0x00d0}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, 0x0111, 0x00aa}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, 0x014b, 0x014a}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, 0x0127, 0x0126}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, 0x0138, '&'}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, 0x0142, 0x0141}},
+++    {0x27, 0xba, 0, {0x00f2, 0x00e7, WCH_NONE, '@', 0x00b8}},
+++    {0x28, 0xbc, 0, {0x00e0, 0x00b0, WCH_NONE, '#', 0x02da}},
+++    {0x29, 0xdc, 0, {'\\', '|', WCH_NONE, 0x00ac, 0x00a6}},
+++    {0x2b, 0xbd, 0, {0x00f9, 0x00a7, WCH_NONE, '`', 0x02d8}},
+++    {0x2c, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 0x00ab, '<'}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, 0x00bb, '>'}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, 0x00a2, 0x00a9}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, 0x201c, 0x2018}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, 0x201d, 0x2019}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, 0x00f1, 0x00d1}},
+++    {0x32, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, 0x00b5, 0x00ba}},
+++    {0x33, 0xbe, 0, {',', ';', WCH_NONE, 0x00b4, 0x00d7}},
+++    {0x34, 0xbf, 0, {'.', ':', WCH_NONE, 0x00b7, 0x00a8}},
+++    {0x35, 0xc0, 0, {'-', '_', WCH_NONE, 0x00af, 0x00f7}},
+++    {0x56, 0xe2, 0, {'<', '>', WCH_NONE, 0x00ab, 0x00bb}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_pt[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, 0x00b9, 0x00a1}},
+++    {0x03, 0x32, 0, {'2', '"', WCH_NONE, '@', 0x215b}},
+++    {0x04, 0x33, 0, {'3', '#', WCH_NONE, 0x00a3, 0x00a3}},
+++    {0x05, 0x34, 0, {'4', '$', WCH_NONE, 0x00a7, '$'}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x00bd, 0x215c}},
+++    {0x07, 0x36, 0, {'6', '&', WCH_NONE, 0x00ac, 0x215d}},
+++    {0x08, 0x37, 0, {'7', '/', WCH_NONE, '{', 0x215e}},
+++    {0x09, 0x38, 0, {'8', '(', WCH_NONE, '[', 0x2122}},
+++    {0x0a, 0x39, 0, {'9', ')', WCH_NONE, ']', 0x00b1}},
+++    {0x0b, 0x30, 0, {'0', '=', WCH_NONE, '}', 0x00b0}},
+++    {0x0c, 0xde, 0, {'\'', '?', WCH_NONE, '\\', 0x00bf}},
+++    {0x0d, 0xbb, 0, {0x00ab, 0x00bb, WCH_NONE, 0x00b8, 0x02db}},
+++    {0x10, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, '@', 0x03a9}},
+++    {0x11, 0x57, CAPLOK, {'w', 'W', WCH_NONE, 0x017f, 0x00a7}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 0x20ac, 0x00a2}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 0x00b6, 0x00ae}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 0x0167, 0x0166}},
+++    {0x15, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, 0x2190, 0x00a5}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 0x2193, 0x2191}},
+++    {0x17, 0x49, CAPLOK, {'i', 'I', WCH_NONE, 0x2192, 0x0131}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 0x00f8, 0x00d8}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, 0x00fe, 0x00de}},
+++    {0x1a, 0xdb, 0, {'+', '*', WCH_NONE, 0x00a8, 0x02da}},
+++    {0x1b, 0xdd, 0, {0x00b4, '`', WCH_NONE, '~', 0x00af}},
+++    {0x1e, 0x41, CAPLOK, {'a', 'A', WCH_NONE, 0x00e6, 0x00c6}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 0x00df, 0x1e9e}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, 0x00f0, 0x00d0}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, 0x0111, 0x00aa}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, 0x014b, 0x014a}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, 0x0127, 0x0126}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, 0x0138, '&'}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, 0x0142, 0x0141}},
+++    {0x27, 0xba, CAPLOK, {0x00e7, 0x00c7, WCH_NONE, 0x00b4, 0x02dd}},
+++    {0x28, 0xbc, 0, {0x00ba, 0x00aa, WCH_NONE, '^', 0x02c7}},
+++    {0x29, 0xdc, 0, {'\\', '|', WCH_NONE, 0x00ac, 0x00ac}},
+++    {0x2b, 0xbd, 0, {'~', '^', WCH_NONE, '`', 0x02d8}},
+++    {0x2c, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 0x00ab, '<'}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, 0x00bb, '>'}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, 0x00a2, 0x00a9}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, 0x201e, 0x201a}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, 0x201c, 0x2018}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, 0x201d, 0x2019}},
+++    {0x32, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, 0x00b5, 0x00ba}},
+++    {0x33, 0xbe, 0, {',', ';', WCH_NONE, 0x2022, 0x00d7}},
+++    {0x34, 0xbf, 0, {'.', ':', WCH_NONE, 0x00b7, 0x00f7}},
+++    {0x35, 0xc0, 0, {'-', '_', WCH_NONE, '.', 0x02d9}},
+++    {0x56, 0xe2, 0, {'<', '>', WCH_NONE, '\\', '\\'}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_br[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, 0x00b9, 0x00a1}},
+++    {0x03, 0x32, 0, {'2', '@', WCH_NONE, 0x00b2, 0x00bd}},
+++    {0x04, 0x33, 0, {'3', '#', WCH_NONE, 0x00b3, 0x00be}},
+++    {0x05, 0x34, 0, {'4', '$', WCH_NONE, 0x00a3, 0x00bc}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x00a2, 0x215c}},
+++    {0x07, 0x36, 0, {'6', 0x00a8, WCH_NONE, 0x00ac, 0x00a8}},
+++    {0x08, 0x37, 0, {'7', '&', WCH_NONE, '{', 0x215e}},
+++    {0x09, 0x38, 0, {'8', '*', WCH_NONE, '[', 0x2122}},
+++    {0x0a, 0x39, 0, {'9', '(', WCH_NONE, ']', 0x00b1}},
+++    {0x0b, 0x30, 0, {'0', ')', WCH_NONE, '}', 0x00b0}},
+++    {0x0c, 0xbd, 0, {'-', '_', WCH_NONE, '\\', 0x00bf}},
+++    {0x0d, 0xbb, 0, {'=', '+', WCH_NONE, 0x00a7, 0x02db}},
+++    {0x10, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, '/', '/'}},
+++    {0x11, 0x57, CAPLOK, {'w', 'W', WCH_NONE, '?', '?'}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 0x00b0, 0x00b0}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 0x00ae, 0x00ae}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 0x0167, 0x0166}},
+++    {0x15, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, 0x2190, 0x00a5}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 0x2193, 0x2191}},
+++    {0x17, 0x49, CAPLOK, {'i', 'I', WCH_NONE, 0x2192, 0x0131}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 0x00f8, 0x00d8}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, 0x00fe, 0x00de}},
+++    {0x1a, 0xdb, 0, {0x00b4, '`', WCH_NONE, 0x00b4, '`'}},
+++    {0x1b, 0xdd, 0, {'[', '{', WCH_NONE, 0x00aa, 0x00af}},
+++    {0x1e, 0x41, CAPLOK, {'a', 'A', WCH_NONE, 0x00e6, 0x00c6}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 0x00df, 0x1e9e}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, 0x00f0, 0x00d0}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, 0x0111, 0x00aa}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, 0x014b, 0x014a}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, 0x0127, 0x0126}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, 0x0138, '&'}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, 0x0142, 0x0141}},
+++    {0x27, 0xba, CAPLOK, {0x00e7, 0x00c7, WCH_NONE, 0x00b4, 0x02dd}},
+++    {0x28, 0xde, 0, {'~', '^', WCH_NONE, '~', '^'}},
+++    {0x29, 0xc0, 0, {'\'', '"', WCH_NONE, 0x00ac, 0x00ac}},
+++    {0x2b, 0xdc, 0, {']', '}', WCH_NONE, 0x00ba, 0x00ba}},
+++    {0x2c, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 0x00ab, '<'}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, 0x00bb, '>'}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, 0x00a9, 0x00a9}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, 0x201e, 0x201a}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, 0x201c, 0x2018}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, 0x201d, 0x2019}},
+++    {0x32, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, 0x00b5, 0x00b5}},
+++    {0x33, 0xbc, 0, {',', '<', WCH_NONE, 0x2022, 0x00d7}},
+++    {0x34, 0xbe, 0, {'.', '>', WCH_NONE, 0x00b7, 0x00f7}},
+++    {0x35, 0xbf, 0, {';', ':', WCH_NONE, '.', 0x02d9}},
+++    {0x56, 0xe2, 0, {'\\', '|', WCH_NONE, 0x02c7, 0x02d8}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_dk[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, 0x00a1, 0x00b9}},
+++    {0x03, 0x32, 0, {'2', '"', WCH_NONE, '@', 0x00b2}},
+++    {0x04, 0x33, 0, {'3', '#', WCH_NONE, 0x00a3, 0x00b3}},
+++    {0x05, 0x34, 0, {'4', 0x00a4, WCH_NONE, '$', 0x00bc}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x00bd, 0x00a2}},
+++    {0x07, 0x36, 0, {'6', '&', WCH_NONE, 0x00a5, 0x215d}},
+++    {0x08, 0x37, 0, {'7', '/', WCH_NONE, '{', 0x00f7}},
+++    {0x09, 0x38, 0, {'8', '(', WCH_NONE, '[', 0x00ab}},
+++    {0x0a, 0x39, 0, {'9', ')', WCH_NONE, ']', 0x00bb}},
+++    {0x0b, 0x30, 0, {'0', '=', WCH_NONE, '}', 0x00b0}},
+++    {0x0c, 0xbb, 0, {'+', '?', WCH_NONE, 0x00b1, 0x00bf}},
+++    {0x0d, 0xba, 0, {0x00b4, '`', WCH_NONE, '|', 0x00a6}},
+++    {0x10, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, '@', 0x03a9}},
+++    {0x11, 0x57, CAPLOK, {'w', 'W', WCH_NONE, 0x017f, 0x00a7}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 0x20ac, 0x00a2}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 0x00ae, 0x00ae}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 0x00fe, 0x00de}},
+++    {0x15, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, 0x2190, 0x00a5}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 0x2193, 0x2191}},
+++    {0x17, 0x49, CAPLOK, {'i', 'I', WCH_NONE, 0x2192, 0x0131}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 0x0153, 0x0152}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, 0x00fe, 0x00de}},
+++    {0x1a, 0xdb, CAPLOK, {0x00e5, 0x00c5, WCH_NONE, 0x00a8, 0x02da}},
+++    {0x1b, 0xdd, 0, {0x00a8, '^', WCH_NONE, '~', 0x02c7}},
+++    {0x1e, 0x41, CAPLOK, {'a', 'A', WCH_NONE, 0x00aa, 0x00ba}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 0x00df, 0x1e9e}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, 0x00f0, 0x00d0}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, 0x0111, 0x00aa}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, 0x014b, 0x014a}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, 0x0127, 0x0126}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, 0x0138, '&'}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, 0x0142, 0x0141}},
+++    {0x27, 0xbc, CAPLOK, {0x00e6, 0x00c6, WCH_NONE, 0x00b4, 0x02dd}},
+++    {0x28, 0xde, CAPLOK, {0x00f8, 0x00d8, WCH_NONE, '^', 0x02c7}},
+++    {0x29, 0xc0, 0, {0x00bd, 0x00a7, WCH_NONE, 0x00be, 0x00b6}},
+++    {0x2b, 0xdc, 0, {'\'', '*', WCH_NONE, 0x02dd, 0x00d7}},
+++    {0x2c, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 0x00ab, '<'}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, 0x00bb, '>'}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, 0x00a9, 0x00a9}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, 0x201e, 0x201a}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, 0x201c, 0x2018}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, 0x201d, 0x2019}},
+++    {0x32, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, 0x00b5, 0x00ba}},
+++    {0x33, 0xbd, 0, {',', ';', WCH_NONE, 0x00b8, 0x02db}},
+++    {0x34, 0xbe, 0, {'.', ':', WCH_NONE, 0x00b7, 0x02d9}},
+++    {0x35, 0xbf, 0, {'-', '_', WCH_NONE, '.', 0x02d9}},
+++    {0x56, 0xe2, 0, {'<', '>', WCH_NONE, '\\', 0x00ac}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_no[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, 0x00a1, 0x00b9}},
+++    {0x03, 0x32, 0, {'2', '"', WCH_NONE, '@', 0x00b2}},
+++    {0x04, 0x33, 0, {'3', '#', WCH_NONE, 0x00a3, 0x00b3}},
+++    {0x05, 0x34, 0, {'4', 0x00a4, WCH_NONE, '$', 0x00bc}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x00bd, 0x2030}},
+++    {0x07, 0x36, 0, {'6', '&', WCH_NONE, 0x00a5, 0x215d}},
+++    {0x08, 0x37, 0, {'7', '/', WCH_NONE, '{', 0x00f7}},
+++    {0x09, 0x38, 0, {'8', '(', WCH_NONE, '[', 0x00ab}},
+++    {0x0a, 0x39, 0, {'9', ')', WCH_NONE, ']', 0x00bb}},
+++    {0x0b, 0x30, 0, {'0', '=', WCH_NONE, '}', 0x00b0}},
+++    {0x0c, 0xbb, 0, {'+', '?', WCH_NONE, 0x00b1, 0x00bf}},
+++    {0x0d, 0xdc, 0, {'\\', '`', WCH_NONE, 0x00b4, 0x00ac}},
+++    {0x10, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, '@', 0x03a9}},
+++    {0x11, 0x57, CAPLOK, {'w', 'W', WCH_NONE, 0x017f, 0x00a7}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 0x20ac, 0x00a2}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 0x00ae, 0x2122}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 0x00fe, 0x00de}},
+++    {0x15, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, 0x2190, 0x00a5}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 0x2193, 0x2191}},
+++    {0x17, 0x49, CAPLOK, {'i', 'I', WCH_NONE, 0x2192, 0x0131}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 0x0153, 0x0152}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, 0x03c0, 0x03a0}},
+++    {0x1a, 0xdb, CAPLOK, {0x00e5, 0x00c5, WCH_NONE, 0x00a8, 0x02da}},
+++    {0x1b, 0xdd, 0, {0x00a8, '^', WCH_NONE, '~', 0x02c7}},
+++    {0x1e, 0x41, CAPLOK, {'a', 'A', WCH_NONE, 0x00aa, 0x00ba}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 0x00df, 0x1e9e}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, 0x00f0, 0x00d0}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, 0x0111, 0x00aa}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, 0x014b, 0x014a}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, 0x0127, 0x0126}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, 0x0138, '&'}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, 0x0142, 0x0141}},
+++    {0x27, 0xba, CAPLOK, {0x00f8, 0x00d8, WCH_NONE, 0x00b4, 0x02dd}},
+++    {0x28, 0xde, CAPLOK, {0x00e6, 0x00c6, WCH_NONE, '^', 0x02c7}},
+++    {0x29, 0xc0, 0, {'|', 0x00a7, WCH_NONE, 0x00a6, 0x00b6}},
+++    {0x2b, 0xbc, 0, {'\'', '*', WCH_NONE, 0x02dd, 0x00d7}},
+++    {0x2c, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 0x00ab, '<'}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, 0x00bb, '>'}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, 0x00a9, 0x00a9}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, 0x201e, 0x201a}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, 0x201c, 0x2018}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, 0x201d, 0x2019}},
+++    {0x32, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, 0x00b5, 0x00ba}},
+++    {0x33, 0xbd, 0, {',', ';', WCH_NONE, 0x00b8, 0x02db}},
+++    {0x34, 0xbe, 0, {'.', ':', WCH_NONE, 0x2026, 0x00b7}},
+++    {0x35, 0xbf, 0, {'-', '_', WCH_NONE, 0x2013, 0x2014}},
+++    {0x56, 0xe2, 0, {'<', '>', WCH_NONE, 0x00bd, 0x00be}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_se[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, 0x00a1, 0x00b9}},
+++    {0x03, 0x32, 0, {'2', '"', WCH_NONE, '@', 0x00b2}},
+++    {0x04, 0x33, 0, {'3', '#', WCH_NONE, 0x00a3, 0x00b3}},
+++    {0x05, 0x34, 0, {'4', 0x00a4, WCH_NONE, '$', 0x00bc}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x20ac, 0x2030}},
+++    {0x07, 0x36, 0, {'6', '&', WCH_NONE, 0x00a5, 0x221a}},
+++    {0x08, 0x37, 0, {'7', '/', WCH_NONE, '{', 0x00f7}},
+++    {0x09, 0x38, 0, {'8', '(', WCH_NONE, '[', 0x00ab}},
+++    {0x0a, 0x39, 0, {'9', ')', WCH_NONE, ']', 0x00bb}},
+++    {0x0b, 0x30, 0, {'0', '=', WCH_NONE, '}', 0x00b0}},
+++    {0x0c, 0xbb, 0, {'+', '?', WCH_NONE, '\\', 0x00bf}},
+++    {0x0d, 0xba, 0, {0x00b4, '`', WCH_NONE, 0x00b1, 0x00ac}},
+++    {0x10, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, 0x03c9, 0x03a9}},
+++    {0x11, 0x57, CAPLOK, {'w', 'W', WCH_NONE, 0x03c3, 0x03a3}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 0x20ac, 0x00a2}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 0x00ae, 0x2122}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 0x00fe, 0x00de}},
+++    {0x15, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, 0x2190, 0x00a5}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 0x2193, 0x2191}},
+++    {0x17, 0x49, CAPLOK, {'i', 'I', WCH_NONE, 0x2192, 0x0131}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 0x0153, 0x0152}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, 0x03c0, 0x03a0}},
+++    {0x1a, 0xdb, CAPLOK, {0x00e5, 0x00c5, WCH_NONE, 0x00a8, 0x02da}},
+++    {0x1b, 0xdd, 0, {0x00a8, '^', WCH_NONE, '~', 0x02c7}},
+++    {0x1e, 0x41, CAPLOK, {'a', 'A', WCH_NONE, 0x00aa, 0x00ba}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 0x00df, 0x1e9e}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, 0x00f0, 0x00d0}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, 0x0111, 0x00aa}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, 0x014b, 0x014a}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, 0x0127, 0x0126}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, 0x0138, 0x2020}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, 0x0142, 0x0141}},
+++    {0x27, 0xbc, CAPLOK, {0x00f6, 0x00d6, WCH_NONE, 0x00f8, 0x00d8}},
+++    {0x28, 0xde, CAPLOK, {0x00e4, 0x00c4, WCH_NONE, 0x00e6, 0x00c6}},
+++    {0x29, 0xc0, 0, {0x00a7, 0x00bd, WCH_NONE, 0x00b6, 0x00be}},
+++    {0x2b, 0xdc, 0, {'\'', '*', WCH_NONE, 0x00b4, 0x00d7}},
+++    {0x2c, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 0x00ab, '<'}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, 0x00bb, '>'}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, 0x00a9, WCH_NONE}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, 0x201e, 0x201a}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, 0x201c, 0x2018}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, 0x201d, 0x2019}},
+++    {0x32, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, 0x00b5, 0x00ba}},
+++    {0x33, 0xbd, 0, {',', ';', WCH_NONE, 0x00b8, 0x02db}},
+++    {0x34, 0xbe, 0, {'.', ':', WCH_NONE, 0x00b7, 0x2026}},
+++    {0x35, 0xbf, 0, {'-', '_', WCH_NONE, '.', 0x02d9}},
+++    {0x56, 0xe2, 0, {'<', '>', WCH_NONE, '|', 0x00a6}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_fi[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, WCH_NONE, 0x00a1}},
+++    {0x03, 0x32, 0, {'2', '"', WCH_NONE, '@', 0x201d}},
+++    {0x04, 0x33, 0, {'3', '#', WCH_NONE, 0x00a3, 0x00bb}},
+++    {0x05, 0x34, 0, {'4', 0x00a4, WCH_NONE, '$', 0x00ab}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x2030, 0x201c}},
+++    {0x07, 0x36, 0, {'6', '&', WCH_NONE, 0x201a, 0x201e}},
+++    {0x08, 0x37, 0, {'7', '/', WCH_NONE, '{', WCH_NONE}},
+++    {0x09, 0x38, 0, {'8', '(', WCH_NONE, '[', '<'}},
+++    {0x0a, 0x39, 0, {'9', ')', WCH_NONE, ']', '>'}},
+++    {0x0b, 0x30, 0, {'0', '=', WCH_NONE, '}', 0x00b0}},
+++    {0x0c, 0xbb, 0, {'+', '?', WCH_NONE, '\\', 0x00bf}},
+++    {0x0d, 0xba, 0, {0x00b4, '`', WCH_NONE, 0x00b8, 0x02db}},
+++    {0x10, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, 'q', 'Q'}},
+++    {0x11, 0x57, CAPLOK, {'w', 'W', WCH_NONE, 'w', 'W'}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 0x20ac, WCH_NONE}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 'r', 'R'}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 0x00fe, 0x00de}},
+++    {0x15, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, 'y', 'Y'}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 'u', 'U'}},
+++    {0x17, 0x49, CAPLOK, {'i', 'I', WCH_NONE, 0x0131, '|'}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 0x0153, 0x0152}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x1a, 0xdb, CAPLOK, {0x00e5, 0x00c5, WCH_NONE, 0x02dd, 0x02da}},
+++    {0x1b, 0xdd, 0, {0x00a8, '^', WCH_NONE, '~', 0x00af}},
+++    {0x1e, 0x41, CAPLOK, {'a', 'A', WCH_NONE, 0x0259, 0x018f}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 0x00df, 0x1e9e}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, 0x00f0, 0x00d0}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, 'f', 'F'}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, 'g', 'G'}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, 'h', 'H'}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, 'j', 'J'}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, 0x0138, WCH_NONE}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, '/', WCH_NONE}},
+++    {0x27, 0xbc, CAPLOK, {0x00f6, 0x00d6, WCH_NONE, 0x00f8, 0x00d8}},
+++    {0x28, 0xde, CAPLOK, {0x00e4, 0x00c4, WCH_NONE, 0x00e6, 0x00c6}},
+++    {0x29, 0xc0, 0, {0x00a7, 0x00bd, WCH_NONE, '/', WCH_NONE}},
+++    {0x2b, 0xdc, 0, {'\'', '*', WCH_NONE, 0x02c7, 0x02d8}},
+++    {0x2c, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 0x0292, 0x01b7}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, 0x00d7, 0x00b7}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, 'c', 'C'}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, 'v', 'V'}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, 'b', 'B'}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, 0x014b, 0x014a}},
+++    {0x32, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, 0x00b5, 0x2014}},
+++    {0x33, 0xbd, 0, {',', ';', WCH_NONE, 0x2019, 0x2018}},
+++    {0x34, 0xbe, 0, {'.', ':', WCH_NONE, '.', 0x02d9}},
+++    {0x35, 0xbf, 0, {'-', '_', WCH_NONE, 0x2013, WCH_NONE}},
+++    {0x56, 0xe2, 0, {'<', '>', WCH_NONE, '|', 0x00a6}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_pl[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, 0x2260, 0x00a1}},
+++    {0x03, 0x32, 0, {'2', '@', WCH_NONE, 0x00b2, 0x00bf}},
+++    {0x04, 0x33, 0, {'3', '#', WCH_NONE, 0x00b3, 0x00a3}},
+++    {0x05, 0x34, 0, {'4', '$', WCH_NONE, 0x00a2, 0x00bc}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x20ac, 0x2030}},
+++    {0x07, 0x36, 0, {'6', '^', WCH_NONE, 0x00bd, 0x2227}},
+++    {0x08, 0x37, 0, {'7', '&', WCH_NONE, 0x00a7, 0x2248}},
+++    {0x09, 0x38, 0, {'8', '*', WCH_NONE, 0x00b7, 0x00be}},
+++    {0x0a, 0x39, 0, {'9', '(', WCH_NONE, 0x00ab, 0x00b1}},
+++    {0x0b, 0x30, 0, {'0', ')', WCH_NONE, 0x00bb, 0x00b0}},
+++    {0x0c, 0xbd, 0, {'-', '_', WCH_NONE, 0x2013, 0x2014}},
+++    {0x0d, 0xbb, 0, {'=', '+', WCH_NONE, 0x00b8, 0x02db}},
+++    {0x10, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, 0x03c0, 0x03a9}},
+++    {0x11, 0x57, CAPLOK, {'w', 'W', WCH_NONE, 0x0153, 0x0152}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 0x0119, 0x0118}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 0x00a9, 0x00ae}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 0x00df, 0x2122}},
+++    {0x15, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, 0x2190, 0x00a5}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 0x2193, 0x2191}},
+++    {0x17, 0x49, CAPLOK, {'i', 'I', WCH_NONE, 0x2192, 0x2194}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 0x00f3, 0x00d3}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, 0x00fe, 0x00de}},
+++    {0x1a, 0xdb, 0, {'[', '{', WCH_NONE, 0x00a8, 0x02da}},
+++    {0x1b, 0xdd, 0, {']', '}', WCH_NONE, '~', 0x00af}},
+++    {0x1e, 0x41, CAPLOK, {'a', 'A', WCH_NONE, 0x0105, 0x0104}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 0x015b, 0x015a}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, 0x00f0, 0x00d0}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, 0x00e6, 0x00c6}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, 0x014b, 0x014a}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, 0x2019, 0x2022}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, 0x0259, 0x018f}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, 0x2026, '/'}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, 0x0142, 0x0141}},
+++    {0x27, 0xba, 0, {';', ':', WCH_NONE, 0x00b4, 0x02dd}},
+++    {0x28, 0xde, 0, {'\'', '"', WCH_NONE, '^', 0x02c7}},
+++    {0x29, 0xc0, 0, {'`', '~', WCH_NONE, 0x00ac, 0x2228}},
+++    {0x2b, 0xdc, 0, {'\\', '|', WCH_NONE, '`', 0x02d8}},
+++    {0x2c, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 0x017c, 0x017b}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, 0x017a, 0x0179}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, 0x0107, 0x0106}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, 0x201e, 0x2018}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, 0x201d, 0x201c}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, 0x0144, 0x0143}},
+++    {0x32, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, 0x00b5, 0x221e}},
+++    {0x33, 0xbc, 0, {',', '<', WCH_NONE, 0x2264, 0x00d7}},
+++    {0x34, 0xbe, 0, {'.', '>', WCH_NONE, 0x2265, 0x00f7}},
+++    {0x35, 0xbf, 0, {'/', '?', WCH_NONE, '.', 0x02d9}},
+++    {0x56, 0xe2, 0, {'<', '>', WCH_NONE, '|', 0x00a6}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_cz[] =
+++{
+++    {0x02, 0x31, 0, {'+', '1', WCH_NONE, '!', '~'}},
+++    {0x03, 0x32, 0, {0x011b, '2', WCH_NONE, '@', 0x02c7}},
+++    {0x04, 0x33, 0, {0x0161, '3', WCH_NONE, '#', '^'}},
+++    {0x05, 0x34, 0, {0x010d, '4', WCH_NONE, '$', 0x02d8}},
+++    {0x06, 0x35, 0, {0x0159, '5', WCH_NONE, '%', 0x02da}},
+++    {0x07, 0x36, 0, {0x017e, '6', WCH_NONE, '^', 0x02db}},
+++    {0x08, 0x37, 0, {0x00fd, '7', WCH_NONE, '&', '`'}},
+++    {0x09, 0x38, 0, {0x00e1, '8', WCH_NONE, '*', 0x02d9}},
+++    {0x0a, 0x39, 0, {0x00ed, '9', WCH_NONE, '{', 0x00b4}},
+++    {0x0b, 0x30, 0, {0x00e9, '0', WCH_NONE, '}', 0x02dd}},
+++    {0x0c, 0xbb, 0, {'=', '%', WCH_NONE, '\\', 0x00a8}},
+++    {0x0d, 0xba, 0, {0x00b4, 0x02c7, WCH_NONE, 0x00af, 0x00b8}},
+++    {0x10, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, '\\', 0x03a9}},
+++    {0x11, 0x57, CAPLOK, {'w', 'W', WCH_NONE, '|', 0x00a7}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 0x20ac, 'E'}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 0x00b6, 0x00ae}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 0x0167, 0x0166}},
+++    {0x15, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 0x2190, 0x00a5}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 0x2193, 0x2191}},
+++    {0x17, 0x49, CAPLOK, {'i', 'I', WCH_NONE, 0x2192, 0x0131}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 0x00f8, 0x00d8}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, 0x00fe, 0x00de}},
+++    {0x1a, 0xdb, 0, {0x00fa, '/', WCH_NONE, '[', 0x00f7}},
+++    {0x1b, 0xdd, 0, {')', '(', WCH_NONE, ']', 0x00d7}},
+++    {0x1e, 0x41, CAPLOK, {'a', 'A', WCH_NONE, '~', 0x00c6}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 0x0111, 0x1e9e}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, 0x0110, 0x00d0}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, '[', 0x00aa}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, ']', 0x014a}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, '`', 0x0126}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, '\'', WCH_NONE}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, 0x0142, '&'}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, 0x0141, 0x0141}},
+++    {0x27, 0xbc, 0, {0x016f, '"', WCH_NONE, '$', 0x02dd}},
+++    {0x28, 0xde, 0, {0x00a7, '!', WCH_NONE, '\'', 0x00df}},
+++    {0x29, 0xc0, 0, {';', 0x02da, WCH_NONE, '`', '~'}},
+++    {0x2b, 0xdc, 0, {0x00a8, '\'', WCH_NONE, '\\', '|'}},
+++    {0x2c, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, 0x00b0, '<'}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, '#', '>'}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, '&', 0x00a9}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, '@', 0x201a}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, '{', 0x2018}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, '}', 0x2019}},
+++    {0x32, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, '^', 0x00ba}},
+++    {0x33, 0xbd, 0, {',', '?', WCH_NONE, '<', 0x00d7}},
+++    {0x34, 0xbe, 0, {'.', ':', WCH_NONE, '>', 0x00f7}},
+++    {0x35, 0xbf, 0, {'-', '_', WCH_NONE, '*', 0x02d9}},
+++    {0x56, 0xe2, 0, {'\\', '|', WCH_NONE, '/', 0x00a6}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_hu[] =
+++{
+++    {0x02, 0x31, 0, {'1', '\'', WCH_NONE, '~', '~'}},
+++    {0x03, 0x32, 0, {'2', '"', WCH_NONE, 0x02c7, 0x02c7}},
+++    {0x04, 0x33, 0, {'3', '+', WCH_NONE, '^', '^'}},
+++    {0x05, 0x34, 0, {'4', '!', WCH_NONE, 0x02d8, 0x02d8}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x02da, 0x00b0}},
+++    {0x07, 0x36, 0, {'6', '/', WCH_NONE, 0x02db, 0x02db}},
+++    {0x08, 0x37, 0, {'7', '=', WCH_NONE, '`', '`'}},
+++    {0x09, 0x38, 0, {'8', '(', WCH_NONE, 0x02d9, 0x02d9}},
+++    {0x0a, 0x39, 0, {'9', ')', WCH_NONE, 0x00b4, 0x00b4}},
+++    {0x0b, 0x30, CAPLOK, {0x00f6, 0x00d6, WCH_NONE, 0x02dd, 0x02dd}},
+++    {0x0c, 0xbd, CAPLOK, {0x00fc, 0x00dc, WCH_NONE, 0x00a8, 0x00a8}},
+++    {0x0d, 0xbb, CAPLOK, {0x00f3, 0x00d3, WCH_NONE, 0x00b8, 0x00b8}},
+++    {0x10, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, '\\', 0x03a9}},
+++    {0x11, 0x57, CAPLOK, {'w', 'W', WCH_NONE, '|', 0x00a7}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 0x00c4, 'E'}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 0x00b6, 0x00ae}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 0x0167, 0x0166}},
+++    {0x15, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 0x2013, 0x00a5}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 0x20ac, 0x2191}},
+++    {0x17, 0x49, CAPLOK, {'i', 'I', WCH_NONE, 0x00cd, 0x00ed}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 0x201e, 0x00d8}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, 0x201d, 0x00de}},
+++    {0x1a, 0xdb, CAPLOK, {0x0151, 0x0150, WCH_NONE, 0x00f7, 0x02da}},
+++    {0x1b, 0xdd, CAPLOK, {0x00fa, 0x00da, WCH_NONE, 0x00d7, 0x00af}},
+++    {0x1e, 0x41, CAPLOK, {'a', 'A', WCH_NONE, 0x00e4, 0x00c4}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 0x0111, 0x1e9e}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, 0x0110, 0x00d0}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, '[', 0x00aa}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, ']', 0x014a}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, 0x0127, 0x0126}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, 0x00ed, 0x00cd}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, 0x0142, '&'}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, 0x0141, 0x0141}},
+++    {0x27, 0xba, CAPLOK, {0x00e9, 0x00c9, WCH_NONE, '$', 0x00a2}},
+++    {0x28, 0xde, CAPLOK, {0x00e1, 0x00c1, WCH_NONE, 0x00df, 0x1e9e}},
+++    {0x29, 0xc0, 0, {'0', 0x00a7, WCH_NONE, 0x00ac, 0x00ac}},
+++    {0x2b, 0xdc, CAPLOK, {0x0171, 0x0170, WCH_NONE, 0x00a4, 0x02d8}},
+++    {0x2c, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, '>', '<'}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, '#', '>'}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, '&', 0x00a9}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, '@', 0x201a}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, '{', 0x2018}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, '}', 0x2019}},
+++    {0x32, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, '<', 0x00ba}},
+++    {0x33, 0xbc, 0, {',', '?', WCH_NONE, ';', 0x00d7}},
+++    {0x34, 0xbe, 0, {'.', ':', WCH_NONE, '>', 0x00f7}},
+++    {0x35, 0xbf, 0, {'-', '_', WCH_NONE, '*', 0x02d9}},
+++    {0x56, 0xe2, CAPLOK, {0x00ed, 0x00cd, WCH_NONE, '<', '>'}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_ro[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, '~', WCH_NONE}},
+++    {0x03, 0x32, 0, {'2', '@', WCH_NONE, 0x02c7, WCH_NONE}},
+++    {0x04, 0x33, 0, {'3', '#', WCH_NONE, '^', WCH_NONE}},
+++    {0x05, 0x34, 0, {'4', '$', WCH_NONE, 0x02d8, WCH_NONE}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x02da, WCH_NONE}},
+++    {0x07, 0x36, 0, {'6', '^', WCH_NONE, 0x02db, WCH_NONE}},
+++    {0x08, 0x37, 0, {'7', '&', WCH_NONE, '`', WCH_NONE}},
+++    {0x09, 0x38, 0, {'8', '*', WCH_NONE, 0x02d9, WCH_NONE}},
+++    {0x0a, 0x39, 0, {'9', '(', WCH_NONE, 0x00b4, WCH_NONE}},
+++    {0x0b, 0x30, 0, {'0', ')', WCH_NONE, 0x02dd, WCH_NONE}},
+++    {0x0c, 0xbd, 0, {'-', '_', WCH_NONE, 0x00a8, 0x2013}},
+++    {0x0d, 0xbb, 0, {'=', '+', WCH_NONE, 0x00b8, 0x00b1}},
+++    {0x10, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, 0x00e2, 0x00c2}},
+++    {0x11, 0x57, CAPLOK, {'w', 'W', WCH_NONE, 0x00df, 0x1e9e}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 0x20ac, WCH_NONE}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 'r', 'R'}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 0x021b, 0x021a}},
+++    {0x15, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, 'y', 'Y'}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 'u', 'U'}},
+++    {0x17, 0x49, CAPLOK, {'i', 'I', WCH_NONE, 0x00ee, 0x00ce}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 'o', 'O'}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, 0x00a7, WCH_NONE}},
+++    {0x1a, 0xdb, 0, {'[', '{', WCH_NONE, 0x201e, WCH_NONE}},
+++    {0x1b, 0xdd, 0, {']', '}', WCH_NONE, 0x201d, WCH_NONE}},
+++    {0x1e, 0x41, CAPLOK, {'a', 'A', WCH_NONE, 0x0103, 0x0102}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 0x0219, 0x0218}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, 0x0111, 0x0110}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, 'f', 'F'}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, 'g', 'G'}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, 'h', 'H'}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, 'j', 'J'}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, 'k', 'K'}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, 0x0142, 0x0141}},
+++    {0x27, 0xba, 0, {';', ':', WCH_NONE, ';', ':'}},
+++    {0x28, 0xde, 0, {'\'', '"', WCH_NONE, '\'', '"'}},
+++    {0x29, 0xc0, 0, {'`', '~', WCH_NONE, '`', '~'}},
+++    {0x2b, 0xdc, 0, {'\\', '|', WCH_NONE, '\\', '|'}},
+++    {0x2c, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 'z', 'Z'}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, 'x', 'X'}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, 0x00a9, WCH_NONE}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, 'v', 'V'}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, 'b', 'B'}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, 'n', 'N'}},
+++    {0x32, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, 'm', 'M'}},
+++    {0x33, 0xbc, 0, {',', '<', WCH_NONE, 0x00ab, WCH_NONE}},
+++    {0x34, 0xbe, 0, {'.', '>', WCH_NONE, 0x00bb, WCH_NONE}},
+++    {0x35, 0xbf, 0, {'/', '?', WCH_NONE, '/', '?'}},
+++    {0x56, 0xe2, 0, {'\\', '|', WCH_NONE, '|', 0x00a6}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_tr[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, '>', 0x00a1}},
+++    {0x03, 0x32, 0, {'2', '\'', WCH_NONE, 0x00a3, 0x00b2}},
+++    {0x04, 0x33, 0, {'3', '^', WCH_NONE, '#', 0x00b3}},
+++    {0x05, 0x34, 0, {'4', '+', WCH_NONE, '$', 0x00bc}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x00bd, 0x215c}},
+++    {0x07, 0x36, 0, {'6', '&', WCH_NONE, 0x00be, WCH_NONE}},
+++    {0x08, 0x37, 0, {'7', '/', WCH_NONE, '{', WCH_NONE}},
+++    {0x09, 0x38, 0, {'8', '(', WCH_NONE, '[', WCH_NONE}},
+++    {0x0a, 0x39, 0, {'9', ')', WCH_NONE, ']', 0x00b1}},
+++    {0x0b, 0x30, 0, {'0', '=', WCH_NONE, '}', 0x00b0}},
+++    {0x0c, 0xbd, 0, {'*', '?', WCH_NONE, '\\', 0x00bf}},
+++    {0x0d, 0xbb, 0, {'-', '_', WCH_NONE, '|', WCH_NONE}},
+++    {0x10, 0x51, CAPLOK, {'q', 'Q', WCH_NONE, '@', 0x03a9}},
+++    {0x11, 0x57, CAPLOK, {'w', 'W', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x12, 0x45, CAPLOK, {'e', 'E', WCH_NONE, 0x20ac, WCH_NONE}},
+++    {0x13, 0x52, CAPLOK, {'r', 'R', WCH_NONE, 0x00b6, 0x00ae}},
+++    {0x14, 0x54, CAPLOK, {'t', 'T', WCH_NONE, 0x20ba, WCH_NONE}},
+++    {0x15, 0x59, CAPLOK, {'y', 'Y', WCH_NONE, 0x2190, 0x00a5}},
+++    {0x16, 0x55, CAPLOK, {'u', 'U', WCH_NONE, 0x00fb, 0x00db}},
+++    {0x17, 0x49, CAPLOK, {0x0131, 'I', WCH_NONE, 0x00ee, 0x00ce}},
+++    {0x18, 0x4f, CAPLOK, {'o', 'O', WCH_NONE, 0x00f4, 0x00d4}},
+++    {0x19, 0x50, CAPLOK, {'p', 'P', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x1a, 0xdb, CAPLOK, {0x011f, 0x011e, WCH_NONE, 0x00a8, 0x02da}},
+++    {0x1b, 0xdd, CAPLOK, {0x00fc, 0x00dc, WCH_NONE, '~', 0x00af}},
+++    {0x1e, 0x41, CAPLOK, {'a', 'A', WCH_NONE, 0x00e2, 0x00c2}},
+++    {0x1f, 0x53, CAPLOK, {'s', 'S', WCH_NONE, 0x00df, WCH_NONE}},
+++    {0x20, 0x44, CAPLOK, {'d', 'D', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x21, 0x46, CAPLOK, {'f', 'F', WCH_NONE, 0x00aa, WCH_NONE}},
+++    {0x22, 0x47, CAPLOK, {'g', 'G', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x23, 0x48, CAPLOK, {'h', 'H', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x24, 0x4a, CAPLOK, {'j', 'J', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x25, 0x4b, CAPLOK, {'k', 'K', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x26, 0x4c, CAPLOK, {'l', 'L', WCH_NONE, WCH_NONE, WCH_NONE}},
+++    {0x27, 0xba, CAPLOK, {0x015f, 0x015e, WCH_NONE, 0x00b4, 0x00b4}},
+++    {0x28, 0xde, 0, {'i', 0x0130, WCH_NONE, '\'', 0x02c7}},
+++    {0x29, 0xc0, 0, {'"', 0x00e9, WCH_NONE, '<', 0x00b0}},
+++    {0x2b, 0xbc, 0, {',', ';', WCH_NONE, '`', '`'}},
+++    {0x2c, 0x5a, CAPLOK, {'z', 'Z', WCH_NONE, 0x00ab, '<'}},
+++    {0x2d, 0x58, CAPLOK, {'x', 'X', WCH_NONE, 0x00bb, '>'}},
+++    {0x2e, 0x43, CAPLOK, {'c', 'C', WCH_NONE, 0x00a2, 0x00a9}},
+++    {0x2f, 0x56, CAPLOK, {'v', 'V', WCH_NONE, 0x201e, 0x201a}},
+++    {0x30, 0x42, CAPLOK, {'b', 'B', WCH_NONE, 0x201c, 0x2018}},
+++    {0x31, 0x4e, CAPLOK, {'n', 'N', WCH_NONE, 0x201d, 0x2019}},
+++    {0x32, 0x4d, CAPLOK, {'m', 'M', WCH_NONE, 0x00b5, 0x00ba}},
+++    {0x33, 0xbe, CAPLOK, {0x00f6, 0x00d6, WCH_NONE, 0x00d7, WCH_NONE}},
+++    {0x34, 0xbf, CAPLOK, {0x00e7, 0x00c7, WCH_NONE, 0x00b7, 0x00f7}},
+++    {0x35, 0xdc, 0, {'.', ':', WCH_NONE, 0x02d9, 0x02d9}},
+++    {0x56, 0xe2, 0, {'<', '>', WCH_NONE, '|', 0x00a6}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_ru[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, '1', '!'}},
+++    {0x03, 0x32, 0, {'2', '"', WCH_NONE, '2', '"'}},
+++    {0x04, 0x33, 0, {'3', 0x2116, WCH_NONE, '3', 0x2116}},
+++    {0x05, 0x34, 0, {'4', ';', WCH_NONE, '4', ';'}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, '5', '%'}},
+++    {0x07, 0x36, 0, {'6', ':', WCH_NONE, '6', ':'}},
+++    {0x08, 0x37, 0, {'7', '?', WCH_NONE, '7', '?'}},
+++    {0x09, 0x38, 0, {'8', '*', WCH_NONE, 0x20bd, WCH_NONE}},
+++    {0x0a, 0x39, 0, {'9', '(', WCH_NONE, '9', '('}},
+++    {0x0b, 0x30, 0, {'0', ')', WCH_NONE, '0', ')'}},
+++    {0x0c, 0xbd, 0, {'-', '_', WCH_NONE, '-', '_'}},
+++    {0x0d, 0xbb, 0, {'=', '+', WCH_NONE, '=', '+'}},
+++    {0x10, 0x51, CAPLOK, {0x0439, 0x0419, WCH_NONE, 0x0439, 0x0419}},
+++    {0x11, 0x57, CAPLOK, {0x0446, 0x0426, WCH_NONE, 0x0446, 0x0426}},
+++    {0x12, 0x45, CAPLOK, {0x0443, 0x0423, WCH_NONE, 0x0443, 0x0423}},
+++    {0x13, 0x52, CAPLOK, {0x043a, 0x041a, WCH_NONE, 0x043a, 0x041a}},
+++    {0x14, 0x54, CAPLOK, {0x0435, 0x0415, WCH_NONE, 0x0435, 0x0415}},
+++    {0x15, 0x59, CAPLOK, {0x043d, 0x041d, WCH_NONE, 0x043d, 0x041d}},
+++    {0x16, 0x55, CAPLOK, {0x0433, 0x0413, WCH_NONE, 0x0433, 0x0413}},
+++    {0x17, 0x49, CAPLOK, {0x0448, 0x0428, WCH_NONE, 0x0448, 0x0428}},
+++    {0x18, 0x4f, CAPLOK, {0x0449, 0x0429, WCH_NONE, 0x0449, 0x0429}},
+++    {0x19, 0x50, CAPLOK, {0x0437, 0x0417, WCH_NONE, 0x0437, 0x0417}},
+++    {0x1a, 0xdb, CAPLOK, {0x0445, 0x0425, WCH_NONE, 0x0445, 0x0425}},
+++    {0x1b, 0xdd, CAPLOK, {0x044a, 0x042a, WCH_NONE, 0x044a, 0x042a}},
+++    {0x1e, 0x41, CAPLOK, {0x0444, 0x0424, WCH_NONE, 0x0444, 0x0424}},
+++    {0x1f, 0x53, CAPLOK, {0x044b, 0x042b, WCH_NONE, 0x044b, 0x042b}},
+++    {0x20, 0x44, CAPLOK, {0x0432, 0x0412, WCH_NONE, 0x0432, 0x0412}},
+++    {0x21, 0x46, CAPLOK, {0x0430, 0x0410, WCH_NONE, 0x0430, 0x0410}},
+++    {0x22, 0x47, CAPLOK, {0x043f, 0x041f, WCH_NONE, 0x043f, 0x041f}},
+++    {0x23, 0x48, CAPLOK, {0x0440, 0x0420, WCH_NONE, 0x0440, 0x0420}},
+++    {0x24, 0x4a, CAPLOK, {0x043e, 0x041e, WCH_NONE, 0x043e, 0x041e}},
+++    {0x25, 0x4b, CAPLOK, {0x043b, 0x041b, WCH_NONE, 0x043b, 0x041b}},
+++    {0x26, 0x4c, CAPLOK, {0x0434, 0x0414, WCH_NONE, 0x0434, 0x0414}},
+++    {0x27, 0xba, CAPLOK, {0x0436, 0x0416, WCH_NONE, 0x0436, 0x0416}},
+++    {0x28, 0xde, CAPLOK, {0x044d, 0x042d, WCH_NONE, 0x044d, 0x042d}},
+++    {0x29, 0xc0, CAPLOK, {0x0451, 0x0401, WCH_NONE, 0x0451, 0x0401}},
+++    {0x2b, 0xdc, 0, {'\\', '/', WCH_NONE, '\\', '/'}},
+++    {0x2c, 0x5a, CAPLOK, {0x044f, 0x042f, WCH_NONE, 0x044f, 0x042f}},
+++    {0x2d, 0x58, CAPLOK, {0x0447, 0x0427, WCH_NONE, 0x0447, 0x0427}},
+++    {0x2e, 0x43, CAPLOK, {0x0441, 0x0421, WCH_NONE, 0x0441, 0x0421}},
+++    {0x2f, 0x56, CAPLOK, {0x043c, 0x041c, WCH_NONE, 0x043c, 0x041c}},
+++    {0x30, 0x42, CAPLOK, {0x0438, 0x0418, WCH_NONE, 0x0438, 0x0418}},
+++    {0x31, 0x4e, CAPLOK, {0x0442, 0x0422, WCH_NONE, 0x0442, 0x0422}},
+++    {0x32, 0x4d, CAPLOK, {0x044c, 0x042c, WCH_NONE, 0x044c, 0x042c}},
+++    {0x33, 0xbc, CAPLOK, {0x0431, 0x0411, WCH_NONE, 0x0431, 0x0411}},
+++    {0x34, 0xbe, CAPLOK, {0x044e, 0x042e, WCH_NONE, 0x044e, 0x042e}},
+++    {0x35, 0xbf, 0, {'.', ',', WCH_NONE, '.', ','}},
+++    {0x56, 0xe2, 0, {'/', '|', WCH_NONE, '|', 0x00a6}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_ua[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, 0x00b9, WCH_NONE}},
+++    {0x03, 0x32, 0, {'2', '"', WCH_NONE, 0x00b2, 0x2019}},
+++    {0x04, 0x33, 0, {'3', 0x2116, WCH_NONE, 0x00a7, 0x20b4}},
+++    {0x05, 0x34, 0, {'4', ';', WCH_NONE, '$', 0x20ac}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x00b0, WCH_NONE}},
+++    {0x07, 0x36, 0, {'6', ':', WCH_NONE, '<', WCH_NONE}},
+++    {0x08, 0x37, 0, {'7', '?', WCH_NONE, '>', WCH_NONE}},
+++    {0x09, 0x38, 0, {'8', '*', WCH_NONE, 0x2022, WCH_NONE}},
+++    {0x0a, 0x39, 0, {'9', '(', WCH_NONE, '[', '{'}},
+++    {0x0b, 0x30, 0, {'0', ')', WCH_NONE, ']', '}'}},
+++    {0x0c, 0xbd, 0, {'-', '_', WCH_NONE, 0x2014, 0x2013}},
+++    {0x0d, 0xbb, 0, {'=', '+', WCH_NONE, 0x2260, 0x00b1}},
+++    {0x10, 0x51, CAPLOK, {0x0439, 0x0419, WCH_NONE, 0x0458, 0x0408}},
+++    {0x11, 0x57, CAPLOK, {0x0446, 0x0426, WCH_NONE, 0x045f, 0x040f}},
+++    {0x12, 0x45, CAPLOK, {0x0443, 0x0423, WCH_NONE, 0x045e, 0x040e}},
+++    {0x13, 0x52, CAPLOK, {0x043a, 0x041a, WCH_NONE, 0x00ae, WCH_NONE}},
+++    {0x14, 0x54, CAPLOK, {0x0435, 0x0415, WCH_NONE, 0x0451, 0x0401}},
+++    {0x15, 0x59, CAPLOK, {0x043d, 0x041d, WCH_NONE, 0x045a, 0x040a}},
+++    {0x16, 0x55, CAPLOK, {0x0433, 0x0413, WCH_NONE, 0x0433, 0x0413}},
+++    {0x17, 0x49, CAPLOK, {0x0448, 0x0428, WCH_NONE, 0x0448, 0x0428}},
+++    {0x18, 0x4f, CAPLOK, {0x0449, 0x0429, WCH_NONE, 0x0449, 0x0429}},
+++    {0x19, 0x50, CAPLOK, {0x0437, 0x0417, WCH_NONE, 0x0437, 0x0417}},
+++    {0x1a, 0xdb, CAPLOK, {0x0445, 0x0425, WCH_NONE, 0x0445, 0x0425}},
+++    {0x1b, 0xdd, CAPLOK, {0x0457, 0x0407, WCH_NONE, 0x044a, 0x042a}},
+++    {0x1e, 0x41, CAPLOK, {0x0444, 0x0424, WCH_NONE, 0x0444, 0x0424}},
+++    {0x1f, 0x53, CAPLOK, {0x0456, 0x0406, WCH_NONE, 0x044b, 0x042b}},
+++    {0x20, 0x44, CAPLOK, {0x0432, 0x0412, WCH_NONE, 0x0432, 0x0412}},
+++    {0x21, 0x46, CAPLOK, {0x0430, 0x0410, WCH_NONE, 0x0430, 0x0410}},
+++    {0x22, 0x47, CAPLOK, {0x043f, 0x041f, WCH_NONE, 0x043f, 0x041f}},
+++    {0x23, 0x48, CAPLOK, {0x0440, 0x0420, WCH_NONE, 0x0440, 0x0420}},
+++    {0x24, 0x4a, CAPLOK, {0x043e, 0x041e, WCH_NONE, 0x043e, 0x041e}},
+++    {0x25, 0x4b, CAPLOK, {0x043b, 0x041b, WCH_NONE, 0x0459, 0x0409}},
+++    {0x26, 0x4c, CAPLOK, {0x0434, 0x0414, WCH_NONE, 0x0452, 0x0402}},
+++    {0x27, 0xba, CAPLOK, {0x0436, 0x0416, WCH_NONE, 0x0436, 0x0416}},
+++    {0x28, 0xde, CAPLOK, {0x0454, 0x0404, WCH_NONE, 0x044d, 0x042d}},
+++    {0x29, 0xc0, 0, {'\'', 0x02bc, WCH_NONE, 0x0301, '~'}},
+++    {0x2b, 0xdc, CAPLOK, {0x0491, 0x0490, WCH_NONE, '\\', '|'}},
+++    {0x2c, 0x5a, CAPLOK, {0x044f, 0x042f, WCH_NONE, 0x044f, 0x042f}},
+++    {0x2d, 0x58, CAPLOK, {0x0447, 0x0427, WCH_NONE, 0x045b, 0x040b}},
+++    {0x2e, 0x43, CAPLOK, {0x0441, 0x0421, WCH_NONE, 0x00a9, WCH_NONE}},
+++    {0x2f, 0x56, CAPLOK, {0x043c, 0x041c, WCH_NONE, 0x043c, 0x041c}},
+++    {0x30, 0x42, CAPLOK, {0x0438, 0x0418, WCH_NONE, 0x0438, 0x0418}},
+++    {0x31, 0x4e, CAPLOK, {0x0442, 0x0422, WCH_NONE, 0x2122, WCH_NONE}},
+++    {0x32, 0x4d, CAPLOK, {0x044c, 0x042c, WCH_NONE, 0x044c, 0x042c}},
+++    {0x33, 0xbc, CAPLOK, {0x0431, 0x0411, WCH_NONE, 0x00ab, 0x201e}},
+++    {0x34, 0xbe, CAPLOK, {0x044e, 0x042e, WCH_NONE, 0x00bb, 0x201c}},
+++    {0x35, 0xbf, 0, {'.', ',', WCH_NONE, '/', 0x2026}},
+++    {0x56, 0xe2, 0, {'/', '|', WCH_NONE, '|', 0x00a6}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_key ps5kbd_gr[] =
+++{
+++    {0x02, 0x31, 0, {'1', '!', WCH_NONE, 0x2022, 0x00b9}},
+++    {0x03, 0x32, 0, {'2', '@', WCH_NONE, 0x00bd, 0x00b2}},
+++    {0x04, 0x33, 0, {'3', '#', WCH_NONE, 0x00a3, 0x00b3}},
+++    {0x05, 0x34, 0, {'4', '$', WCH_NONE, 0x00bc, 0x00be}},
+++    {0x06, 0x35, 0, {'5', '%', WCH_NONE, 0x20ac, 0x2030}},
+++    {0x07, 0x36, 0, {'6', '^', WCH_NONE, 0x03f0, WCH_NONE}},
+++    {0x08, 0x37, 0, {'7', '&', WCH_NONE, 0x03d7, 0x03cf}},
+++    {0x09, 0x38, 0, {'8', '*', WCH_NONE, 0x20af, WCH_NONE}},
+++    {0x0a, 0x39, 0, {'9', '(', WCH_NONE, '9', '('}},
+++    {0x0b, 0x30, 0, {'0', ')', WCH_NONE, 0x00b0, WCH_NONE}},
+++    {0x0c, 0xbd, 0, {'-', '_', WCH_NONE, 0x00b1, WCH_NONE}},
+++    {0x0d, 0xbb, 0, {'=', '+', WCH_NONE, '=', '+'}},
+++    {0x10, 0xba, 0, {';', ':', WCH_NONE, 0x00b7, WCH_NONE}},
+++    {0x11, 0x57, CAPLOK, {0x03c2, 0x03a3, WCH_NONE, 0x03db, 0x03da}},
+++    {0x12, 0x45, CAPLOK, {0x03b5, 0x0395, WCH_NONE, 0x20ac, WCH_NONE}},
+++    {0x13, 0x52, CAPLOK, {0x03c1, 0x03a1, WCH_NONE, 0x00ae, 0x03f1}},
+++    {0x14, 0x54, CAPLOK, {0x03c4, 0x03a4, WCH_NONE, 0x03c4, 0x03a4}},
+++    {0x15, 0x59, CAPLOK, {0x03c5, 0x03a5, WCH_NONE, 0x03d2, 0x03d2}},
+++    {0x16, 0x55, CAPLOK, {0x03b8, 0x0398, WCH_NONE, 0x03d1, 0x03f4}},
+++    {0x17, 0x49, CAPLOK, {0x03b9, 0x0399, WCH_NONE, 0x037b, 0x03fd}},
+++    {0x18, 0x4f, CAPLOK, {0x03bf, 0x039f, WCH_NONE, 0x03d9, 0x03d8}},
+++    {0x19, 0x50, CAPLOK, {0x03c0, 0x03a0, WCH_NONE, 0x03e1, 0x03e0}},
+++    {0x1a, 0xdb, 0, {'[', '{', WCH_NONE, '~', 0x00af}},
+++    {0x1b, 0xdd, 0, {']', '}', WCH_NONE, WCH_NONE, 0x02d8}},
+++    {0x1e, 0x41, CAPLOK, {0x03b1, 0x0391, WCH_NONE, 0x03b1, 0x0391}},
+++    {0x1f, 0x53, CAPLOK, {0x03c3, 0x03a3, WCH_NONE, 0x00a7, WCH_NONE}},
+++    {0x20, 0x44, CAPLOK, {0x03b4, 0x0394, WCH_NONE, 0x2193, 0x2191}},
+++    {0x21, 0x46, CAPLOK, {0x03c6, 0x03a6, WCH_NONE, 0x03d5, 0x03a6}},
+++    {0x22, 0x47, CAPLOK, {0x03b3, 0x0393, WCH_NONE, 0x03dd, 0x03dc}},
+++    {0x23, 0x48, CAPLOK, {0x03b7, 0x0397, WCH_NONE, 0x03f3, 0x037f}},
+++    {0x24, 0x4a, CAPLOK, {0x03be, 0x039e, WCH_NONE, 0x037c, 0x03fe}},
+++    {0x25, 0x4b, CAPLOK, {0x03ba, 0x039a, WCH_NONE, 0x03df, 0x03de}},
+++    {0x26, 0x4c, CAPLOK, {0x03bb, 0x039b, WCH_NONE, 0x03f2, 0x03f9}},
+++    {0x27, 0xbc, 0, {0x00b4, 0x00a8, WCH_NONE, 0x00b4, WCH_NONE}},
+++    {0x28, 0xde, 0, {'\'', '"', WCH_NONE, '`', WCH_NONE}},
+++    {0x29, 0xc0, 0, {'`', '~', WCH_NONE, 0x2015, WCH_NONE}},
+++    {0x2b, 0xdc, 0, {'\\', '|', WCH_NONE, '\\', '|'}},
+++    {0x2c, 0x5a, CAPLOK, {0x03b6, 0x0396, WCH_NONE, 0x037d, 0x03ff}},
+++    {0x2d, 0x58, CAPLOK, {0x03c7, 0x03a7, WCH_NONE, 0x2192, 0x2190}},
+++    {0x2e, 0x43, CAPLOK, {0x03c8, 0x03a8, WCH_NONE, 0x00a9, WCH_NONE}},
+++    {0x2f, 0x56, CAPLOK, {0x03c9, 0x03a9, WCH_NONE, 0x03d6, WCH_NONE}},
+++    {0x30, 0x42, CAPLOK, {0x03b2, 0x0392, WCH_NONE, 0x03d0, WCH_NONE}},
+++    {0x31, 0x4e, CAPLOK, {0x03bd, 0x039d, WCH_NONE, 0x0374, 0x0375}},
+++    {0x32, 0x4d, CAPLOK, {0x03bc, 0x039c, WCH_NONE, 0x03fb, 0x03fa}},
+++    {0x33, 0xbe, 0, {',', '<', WCH_NONE, 0x00ab, 0x2026}},
+++    {0x34, 0xbf, 0, {'.', '>', WCH_NONE, 0x00bb, 0x00b7}},
+++    {0x35, 0xdf, 0, {'/', '?', WCH_NONE, '/', '?'}},
+++    {0x56, 0xe2, 0, {0x00ab, 0x00bb, WCH_NONE, '|', 0x00a6}},
+++    {0}
+++};
+++
+++static const struct ps5kbd_layout ps5kbd_layouts[] =
+++{
+++    {"gb", ps5kbd_gb, 1, 0},
+++    {"fr", ps5kbd_fr, 1, 0},
+++    {"ca", ps5kbd_ca, 1, 0},
+++    {"de", ps5kbd_de, 1, 0},
+++    {"es", ps5kbd_es, 1, 0},
+++    {"latam", ps5kbd_latam, 1, 0},
+++    {"it", ps5kbd_it, 1, 0},
+++    {"pt", ps5kbd_pt, 1, 0},
+++    {"br", ps5kbd_br, 1, 0},
+++    {"dk", ps5kbd_dk, 1, 0},
+++    {"no", ps5kbd_no, 1, 0},
+++    {"se", ps5kbd_se, 1, 0},
+++    {"fi", ps5kbd_fi, 1, 0},
+++    {"pl", ps5kbd_pl, 1, 0},
+++    {"cz", ps5kbd_cz, 1, 0},
+++    {"hu", ps5kbd_hu, 1, 0},
+++    {"ro", ps5kbd_ro, 1, 0},
+++    {"tr", ps5kbd_tr, 1, 0},
+++    {"ru", ps5kbd_ru, 1, 1},
+++    {"ua", ps5kbd_ua, 1, 1},
+++    {"gr", ps5kbd_gr, 1, 1},
+++};
++-- 
++2.43.0
++
+diff --git a/wine/patches/0999-win32u-ps5-hide-the-pointer-when-unused.patch b/wine/patches/0999-win32u-ps5-hide-the-pointer-when-unused.patch
+index 3b081ce..24c1477 100644
+--- a/wine/patches/0999-win32u-ps5-hide-the-pointer-when-unused.patch
++++ b/wine/patches/0999-win32u-ps5-hide-the-pointer-when-unused.patch
+@@ -9,10 +9,11 @@ Mortis, with its controller option chosen) showed the pointer, still, in
+ the top left corner the whole time: on Windows the player would move the
+ mouse out of the way, and here there may be no mouse at all.
+ 
+-The PS5 user driver now hides the pointer once the player hasn't moved it
+-or clicked for 5 seconds, as a console's pointer fades, both where it
+-draws the cursor over the screen itself and where Vulkan frames get it
+-from VideoOut's hardware cursor (patch 0740). The next move (the mouse,
++The PS5 user driver can now hide the pointer once the player hasn't moved
++it or clicked for a while (PC5's Mouse pointer option: 5 seconds), as a
++console's pointer fades, both where it draws the cursor over the screen
++itself and where Vulkan frames get it from VideoOut's hardware cursor
++(patch 0740). The next move (the mouse,
+ the touchpad or a stick working as a mouse, even against an edge) or
+ click shows it again at once, and so does the game moving it to another
+ place itself (SetCursorPos): Grim Dawn moves its pointer by the
+@@ -21,20 +22,22 @@ same place or a new image doesn't keep it on screen.
+ The cursor the application set, and where it is, are unchanged, so
+ GetCursorInfo and everything else still see it as shown.
+ 
+-WINE_PS5_CURSOR_IDLE_MS sets the time in milliseconds (0 never hides it).
++WINE_PS5_CURSOR_IDLE_MS sets the time in milliseconds. Unset or 0 never
++hides it: only a game that asks for it changes.
+ ---
+ diff --git a/dlls/win32u/ps5drv.c b/dlls/win32u/ps5drv.c
+-index 602b922..8dfeec9 100644
++index 77552fd..d062930 100644
+ --- a/dlls/win32u/ps5drv.c
+ +++ b/dlls/win32u/ps5drv.c
+-@@ -106,6 +106,41 @@ static UINT cursor_width, cursor_height;
++@@ -108,6 +108,42 @@ static UINT cursor_width, cursor_height;
+  static POINT cursor_hotspot;
+  /* The cursor image's visible (non-transparent) pixels, in image coordinates */
+  static RECT cursor_box;
+ +/* The pointer is hidden once the player hasn't moved it or clicked for
+-+ * WINE_PS5_CURSOR_IDLE_MS (5 seconds; 0 never hides it), as a console's
+-+ * pointer fades: a game played with the controller that leaves the Windows
+-+ * cursor on shows it otherwise, still, in a corner. It shows again at the
+++ * WINE_PS5_CURSOR_IDLE_MS, as a console's pointer fades: a game played with
+++ * the controller that leaves the Windows cursor on shows it otherwise, still,
+++ * in a corner. Unset or 0 never hides it, so only a game that asks for it
+++ * (PC5: its Mouse pointer option, 5 seconds) is changed. It shows again at the
+ + * next move or click, or when the game itself moves it (SetCursorPos to
+ + * another place). cursor_used is NtGetTickCount's at the last one, 0 until
+ + * the first frame that shows the cursor. */
+@@ -50,7 +53,7 @@ index 602b922..8dfeec9 100644
+ +    if (idle_ms < 0)
+ +    {
+ +        const char *env = getenv( "WINE_PS5_CURSOR_IDLE_MS" );
+-+        idle_ms = env && *env ? max( 0, min( atoi( env ), 3600000 )) : 5000;
+++        idle_ms = env && *env ? max( 0, min( atoi( env ), 3600000 )) : 0;
+ +        TRACE( "the pointer hides after %d ms without use\n", idle_ms );
+ +    }
+ +    if (!idle_ms) return TRUE;
+@@ -69,7 +72,7 @@ index 602b922..8dfeec9 100644
+  /* WINE_PS5_VIEW=window shows only the visible top-level windows' bounding
+   * box, which the title scales to the whole TV, instead of the desktop;
+   * view is what the last frame showed, in screen coordinates. */
+-@@ -183,7 +218,7 @@ static void present_screen(void)
++@@ -185,7 +221,7 @@ static void present_screen(void)
+      view = view_rect();
+      width = view.right - view.left;
+      height = view.bottom - view.top;
+@@ -78,7 +81,7 @@ index 602b922..8dfeec9 100644
+          !view.left && !view.top)
+      {
+          present_frame( screen, screen_width, screen_height, screen_width * 4 );
+-@@ -192,7 +227,7 @@ static void present_screen(void)
++@@ -194,7 +230,7 @@ static void present_screen(void)
+      if (!frame) return;
+      for (y = 0; y < height; y++)
+          memcpy( frame + y * width, screen + (view.top + y) * screen_width + view.left, width * 4 );
+@@ -87,7 +90,7 @@ index 602b922..8dfeec9 100644
+      present_frame( frame, width, height, width * 4 );
+  }
+  
+-@@ -553,6 +588,13 @@ static void move_cursor( HWND hwnd, INT dx, INT dy )
++@@ -555,6 +591,13 @@ static void move_cursor( HWND hwnd, INT dx, INT dy )
+      if (raw_dx || raw_dy) send_motion( hwnd, dx, dy, raw_dx, raw_dy );
+      if (!server_cursor_pos( &pos )) return;
+      pthread_mutex_lock( &screen_lock );
+@@ -101,7 +104,7 @@ index 602b922..8dfeec9 100644
+      if (cursor.x != pos.x || cursor.y != pos.y)
+      {
+          cursor = pos;
+-@@ -692,7 +734,18 @@ static BOOL ps5_ProcessEvents( DWORD mask )
++@@ -874,7 +917,18 @@ static BOOL ps5_ProcessEvents( DWORD mask )
+              move_cursor( hwnd, event.x, event.y );
+              break;
+          case 3:
+@@ -121,7 +124,7 @@ index 602b922..8dfeec9 100644
+              break;
+          case 6:
+              /* The wheel: x notches, away from the player positive, as a mouse's
+-@@ -873,7 +926,7 @@ void ps5drv_vulkan_cursor( void *vulkan_handle )
++@@ -1055,7 +1109,7 @@ void ps5drv_vulkan_cursor( void *vulkan_handle )
+      }
+      if (!show) return;
+      pthread_mutex_lock( &screen_lock );
+@@ -130,7 +133,7 @@ index 602b922..8dfeec9 100644
+            cursor.x - cursor_hotspot.x, cursor.y - cursor_hotspot.y, screen_width, screen_height );
+      pthread_mutex_unlock( &screen_lock );
+  }
+-@@ -888,6 +941,8 @@ static BOOL ps5_GetCursorPos( POINT *pos )
++@@ -1070,6 +1124,8 @@ static BOOL ps5_GetCursorPos( POINT *pos )
+  static BOOL ps5_SetCursorPos( INT x, INT y )
+  {
+      pthread_mutex_lock( &screen_lock );
+diff --git a/wine/ps5/pw_wine_sink.c b/wine/ps5/pw_wine_sink.c
+index 923b056..6371d0b 100644
+--- a/wine/ps5/pw_wine_sink.c
++++ b/wine/ps5/pw_wine_sink.c
+@@ -106,6 +106,7 @@ static int valid(const PwWineInput *e)
+ {
+     switch(e->type) {
+     case PW_WINE_INPUT_KEY:
++    case PW_WINE_INPUT_KEYBOARD_KEY:
+     case PW_WINE_INPUT_DIALOG_KEY:return e->code>0 && e->code<256 && e->down<=1;
+     case PW_WINE_INPUT_MOUSE_MOVE:return 1;
+     case PW_WINE_INPUT_MOUSE_BUTTON:return e->code<=2 && e->down<=1;
+diff --git a/wine/ps5/pw_wine_sink.h b/wine/ps5/pw_wine_sink.h
+index 3250eae..38e4bfa 100644
+--- a/wine/ps5/pw_wine_sink.h
++++ b/wine/ps5/pw_wine_sink.h
+@@ -31,9 +31,12 @@ typedef int (*PwWinePresentSink)(void *context,const void *bgra,uint32_t width,u
+  * CHAR: one UTF-16 unit of text typed on the console's on-screen keyboard,
+  * which the driver types as Windows types a character from an input method
+  * (Wine patch 0922); a character beyond the BMP is its two surrogates. */
+-/* MOUSE_WHEEL: x notches of the wheel, away from the player positive (Wine patch 0942). */
++/* MOUSE_WHEEL: x notches of the wheel, away from the player positive (Wine patch 0942).
++ * KEYBOARD_KEY: a keyboard's key by its place, the US layout's virtual key there, which the
++ * driver sends as the key of the layout the title names (Wine patch 0992, WINE_PS5_KEYBOARD);
++ * KEY is a key by its name (a controller button's mapping). */
+ enum { PW_WINE_INPUT_KEY=1,PW_WINE_INPUT_MOUSE_MOVE,PW_WINE_INPUT_MOUSE_BUTTON,PW_WINE_INPUT_DIALOG_KEY,
+-       PW_WINE_INPUT_CHAR,PW_WINE_INPUT_MOUSE_WHEEL,PW_WINE_INPUT_QUEUE=256 };
++       PW_WINE_INPUT_CHAR,PW_WINE_INPUT_MOUSE_WHEEL,PW_WINE_INPUT_KEYBOARD_KEY,PW_WINE_INPUT_QUEUE=256 };
+ typedef struct PwWineInput {
+     uint32_t type;
+     uint32_t code;      /* KEY, DIALOG_KEY: Windows virtual key; MOUSE_BUTTON: 0 left, 1 right, 2 middle;
+-- 
+2.43.0
+

@@ -93,6 +93,7 @@ Choose a game in the library and press **△**. Its menu has what you change mos
 | Play | Starts the game. |
 | Controller | What the game sees: **Xbox controller** (the default), **DualSense**, or **Keyboard & mouse**. Press **✕** or left / right to change it. See [Controllers](Controllers). |
 | Button mapping | Only with Keyboard & mouse: what each button and stick sends. See [Controllers](Controllers#button-mapping). |
+| Mouse pointer | **Shown** (the default): the pointer stays as the game shows it. **Hides when unused**: it hides when you haven't moved it or clicked for 5 seconds, for a game that leaves it in a corner. See [Controllers](Controllers). |
 | Graphics › | Graphics API, frame generation, resolution, aspect ratio, memory, video memory and CPU sharing. See [Graphics](#graphics). |
 | Appearance › | The game's cover, its background, its home screen tile and the tile's picture. See [Appearance](#appearance). |
 | Manage › | The program PC5 starts, its files, updating the game and uninstalling it. See [Manage](#manage). |
