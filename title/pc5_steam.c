@@ -252,6 +252,38 @@ static int write_settings(const char *dll, const char *valve, const char *game_d
     return status;
 }
 
+/* The files another Steam emulator or fix keeps beside the game's Steam library, in dir. */
+static int emulator_marker_in(const char *dir)
+{
+    static const char *const markers[] = { "steam_emu.ini", "OnlineFix.ini", "OnlineFix64.dll", "OnlineFix.dll",
+                                           "ColdClientLoader.ini", "SmartSteamEmu.ini", "SmartSteamEmu", "steam_api64_o.dll",
+                                           "steam_api_o.dll", "cream_api.ini", "ALI213.ini", "valve.ini", "CPY.ini" };
+    char path[PC5_PATH];
+    for (size_t i = 0; i < sizeof(markers) / sizeof(markers[0]); i++)
+        if (!pc5_join(path, sizeof(path), dir, markers[i]) && pc5_exists(path)) return 1;
+    return 0;
+}
+
+/* 1 when the game already has a Steam emulator or fix of its own: a Steam library that is
+ * neither Valve's nor PC5's, or another emulator's files beside one. Then it is left as it is,
+ * its settings and saves with it (Auto changes nothing for it). */
+static int own_emulator(const char *game_dir, char found[][PC5_PATH], int count)
+{
+    if (emulator_marker_in(game_dir)) return 1;
+    for (int i = 0; i < count; i++) {
+        char dll[PC5_PATH], valve[PC5_PATH], dir[PC5_PATH];
+        if (pc5_join(dll, sizeof(dll), game_dir, found[i]) || pc5_format(valve, sizeof(valve), "%s.pc5-valve", dll) ||
+            !pc5_is_file(dll))
+            continue;
+        if (!pc5_pe_signed_by(dll, "Valve") && !pc5_is_file(valve)) return 1;
+        pc5_copy(dir, sizeof(dir), dll);
+        char *slash = strrchr(dir, '/');
+        if (slash) *slash = 0;
+        if (emulator_marker_in(dir)) return 1;
+    }
+    return 0;
+}
+
 int pc5_steam_prepare(const char *root, const char *id, const char *game_dir, const char *program, const char *app,
                       int on, char *error, size_t size)
 {
@@ -261,6 +293,12 @@ int pc5_steam_prepare(const char *root, const char *id, const char *game_dir, co
     error[0] = 0;
     if (!found) return -1;
     count = pc5_steam_find(root, id, game_dir, program, found, PC5_STEAM_DLLS);
+    /* A game with an emulator of its own keeps it: PC5 puts none beside it (SuperLeiyan: Auto
+     * gave such a game another user and other settings, and its saves were lost to it). */
+    if (on && own_emulator(game_dir, found, count)) {
+        pc5_free(found);
+        return 0;
+    }
     for (int i = 0; i < count && !status; i++) {
         char dll[PC5_PATH], valve[PC5_PATH], emulator[PC5_PATH];
         const char *name = strrchr(found[i], '/');

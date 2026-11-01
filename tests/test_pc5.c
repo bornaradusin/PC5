@@ -8077,6 +8077,21 @@ static void test_steam(void)
     path(file, sizeof(file), "%s/prefixes/steamgame/pc5/steam.txt", root_steam);
     CHECK(file_holds_text(file, "Binaries/Win64/steam_api64.dll\n") && file_holds_text(file, "Tools/steam_api.dll\n"),
           "kept for the next time");
+    /* A copy with an emulator of its own: all of it left as it is, Valve's too. */
+    CHECK(pc5_steam_prepare(root_steam, "steamgame", game, program, app, 1, error, sizeof(error)) == 0,
+          "an emulator of its own: nothing changed: %s", error);
+    path(file, sizeof(file), "%s.pc5-valve", dll);
+    CHECK(!pc5_exists(file), "Valve's left in place");
+    path(file, sizeof(file), "%s/Tools/steam_api.dll", game);
+    unlink(file);
+    /* ... and so is one whose emulator's settings are beside Valve's library (Online-Fix, CODEX) */
+    path(file, sizeof(file), "%s/Binaries/Win64/steam_emu.ini", game);
+    write_text(file, "[Settings]\nAppId=480\n");
+    path(from, sizeof(from), "%s/prefixes/steamgame/pc5/steam.txt", root_steam);
+    unlink(from);
+    CHECK(pc5_steam_prepare(root_steam, "steamgame", game, program, app, 1, error, sizeof(error)) == 0,
+          "another emulator's settings: nothing changed: %s", error);
+    unlink(file);
     CHECK(pc5_steam_prepare(root_steam, "steamgame", game, program, app, 1, error, sizeof(error)) == 1,
           "Auto: Valve's replaced: %s", error);
     path(file, sizeof(file), "%s/pc5/steam/steam_api64.dll", app);
@@ -8094,8 +8109,6 @@ static void test_steam(void)
     CHECK(file_holds_text(file, "offline=1\ndisable_networking=1\n"), "offline");
     path(file, sizeof(file), "%s/Binaries/Win64/steam_settings/configs.app.ini", game);
     CHECK(file_holds_text(file, "unlock_all=0\n"), "no DLC it doesn't have");
-    path(file, sizeof(file), "%s/Tools/steam_api.dll.pc5-valve", game);
-    CHECK(!pc5_exists(file), "another emulator left alone");
     CHECK(pc5_steam_prepare(root_steam, "steamgame", game, program, app, 1, error, sizeof(error)) == 0, "again: nothing to do");
     /* An earlier PC5's emulator: the app's in its place. */
     write_text(dll, "an earlier gbe_fork");

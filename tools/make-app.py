@@ -175,7 +175,7 @@ def main() -> int:
                    "pc5/mono.list", "pc5/mono-version.txt", "pc5/prefix-dotnet.reg",
                    "pc5/mono/mono-2.0/bin/libmono-2.0-x86_64.dll", "pc5/mono/mono-2.0/bin/libmono-2.0-x86.dll",
                    "LICENSES/wine-mono/COPYING", "pc5/prefix-fonts.reg",
-                   "win/wine/share/wine/fonts/LiberationSans-Regular.ttf",
+                   "win/wine/share/wine/ca-certificates.crt", "win/wine/share/wine/fonts/LiberationSans-Regular.ttf",
                    "win/wine/share/wine/fonts/LiberationMono-BoldItalic.ttf",
                    "win/wine/share/wine/fonts/DroidSansFallbackFull.ttf",
                    "LICENSES/liberation-fonts/LICENSE", "LICENSES/droid-sans-fallback/NOTICE",
@@ -282,7 +282,9 @@ Built from <https://github.com/bornaradusin/PC5> at commit {repo_commit}:
 - `pc5/ca-certificates.crt`: Mozilla's root certificates as Debian's ca-certificates
   {ca_version} ships them (MPL 2.0), which PC5 trusts for the covers' HTTPS along with the
   console's own; they are fetched over TLS with Mbed TLS 3.6.7
-  (<https://github.com/Mbed-TLS/mbedtls>, Apache 2.0), built into the eboot.
+  (<https://github.com/Mbed-TLS/mbedtls>, Apache 2.0), built into the eboot. The same
+  bundle is in `win/wine/share/wine/ca-certificates.crt`, where Wine's crypt32 reads the
+  roots a game's own HTTPS trusts.
 - PC5 decodes covers with stb_image 2.30 and writes the home screen tiles' pictures with
   stb_image_write 1.16 (<https://github.com/nothings/stb>, public domain or MIT), built
   into the eboot.

@@ -3584,6 +3584,9 @@ static void files_update(Pc5Ui *ui, uint32_t k)
     }
 }
 
+/* How long PC5's logo shows as it opens, and how long the screen under it takes to fade in. */
+enum { BOOT_SHOW_MS = 1700, BOOT_FADE_MS = 500 };
+
 int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
 {
     uint32_t k;
@@ -3596,6 +3599,10 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
     ui->last_frame = now_ms;
     ui->now = now_ms;
     k = keys(ui, input);
+    /* While the logo shows as PC5 opens, the buttons do nothing: a ✕ pressed then would start
+     * the game under it before the library is even seen. */
+    if (ui->config.boot && !ui->boot_at) ui->boot_at = now_ms ? now_ms : 1;
+    if (ui->config.boot && now_ms - ui->boot_at < BOOT_SHOW_MS + BOOT_FADE_MS) k = 0;
 
     switch (ui->screen) {
     case S_START:
@@ -6813,8 +6820,7 @@ static void files_draw(Pc5Ui *ui, Pc5Canvas *c)
 }
 
 /* As PC5 opens: its logo comes up out of the dark with a light passing over it and a line of
- * light under it, then the screen under it fades in. */
-enum { BOOT_SHOW_MS = 1700, BOOT_FADE_MS = 500 };
+ * light under it, then the screen under it fades in (BOOT_SHOW_MS, above). */
 static void boot_overlay(Pc5Ui *ui, Pc5Canvas *c)
 {
     if (!ui->config.boot) return;

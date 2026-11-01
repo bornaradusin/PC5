@@ -618,6 +618,10 @@ EOF_SOURCES
     cp "$here"/art/ui/* "$app/pc5/ui/"
     # Mozilla's roots as Debian ships them, for the covers' HTTPS (the console's own come first).
     for root in /usr/share/ca-certificates/mozilla/*.crt; do cat "$root"; echo; done > "$app/pc5/ca-certificates.crt"
+    # The same roots for the games, where Wine's crypt32 reads them (prospero-win's Wine patch 0878):
+    # without them a game's own HTTPS (an Unreal game's login, its servers) trusts nothing.
+    mkdir -p "$app/win/wine/share/wine"
+    cp "$app/pc5/ca-certificates.crt" "$app/win/wine/share/wine/ca-certificates.crt"
     python3 "$here/tools/make-prefix.py" --pw "$PW" --wine "$PW/.deps/wine-host/install/usr/bin/wine" \
         --cpu-dll "$PW/.deps/wine-host/build/dlls/wowprospero/x86_64-windows/wowprospero.dll" \
         --vkd3d "$B/vkd3d/vkd3d-proton-$VKD3D_VERSION.tar.zst" --dxvk "$B/dxvk" \

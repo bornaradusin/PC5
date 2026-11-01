@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 1 Nov 2026 08:10:00 +0000
+Subject: [PATCH 85/85] PC5: the controller stays connected while the PS button's
+ menu is over a game
+
+The system takes the controller while its menu is open, and prospero-win
+told the game the controller was gone. A game that looks for controllers
+only as it starts (MUGEN) then never saw it again. Its buttons are still
+released while the menu is open, but it stays connected.
+---
+ src/pw_pad.c        | 6 +++++-
+ tests/test_pw_pad.c | 4 ++--
+ 2 files changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/src/pw_pad.c b/src/pw_pad.c
+index 182af24..5ad9ec0 100644
+--- a/src/pw_pad.c
++++ b/src/pw_pad.c
+@@ -31,7 +31,11 @@ int pw_pad_track(PwPad *pad,const PwPadSample *samples,size_t count)
+     pad->stats.batches++;if(count>pad->stats.max_batch)pad->stats.max_batch=(uint32_t)count;
+     for(size_t i=0;i<count;i++) {
+         const PwPadSample *sample=&samples[i];pad->stats.samples++;
+-        if(!sample->connected || sample->intercepted){advance(pad,0);pad->connected=0;continue;}
++        /* While the system has the controller (the PS button's menu over the game) its buttons
++         * are released, but it stays connected: a game told it went away doesn't look for it
++         * again (MUGEN), and the player came back to a game without its controller. */
++        if(sample->intercepted){advance(pad,0);continue;}
++        if(!sample->connected){advance(pad,0);pad->connected=0;continue;}
+         if(pad->generation_valid && sample->generation!=pad->generation)advance(pad,0);
+         pad->generation=sample->generation;pad->generation_valid=1;pad->connected=1;
+         advance(pad,sample->buttons);
+diff --git a/tests/test_pw_pad.c b/tests/test_pw_pad.c
+index c5ac8db..af4c100 100644
+--- a/tests/test_pw_pad.c
++++ b/tests/test_pw_pad.c
+@@ -27,11 +27,11 @@ int main(void)
+     /* Releasing Create keeps Cross held without a new press. */
+     PwPadSample held={.buttons=CROSS,.connected=1,.generation=1,.timestamp_us=3};
+     assert(pw_pad_track(&ui,&held,1)==PW_OK && ui.released_edges==CREATE && !ui.pressed_edges);
+-    /* Interception releases everything. */
++    /* Interception releases everything, and the controller stays connected. */
+     PwPadSample intercepted={.buttons=CROSS|INTERCEPTED,.connected=1,.intercepted=1,
+                              .generation=1,.timestamp_us=4};
+     assert(pw_pad_track(&ui,&intercepted,1)==PW_OK && !ui.previous_buttons &&
+-           ui.released_edges==CROSS && !ui.connected);
++           ui.released_edges==CROSS && ui.connected);
+     /* Disconnection and a new generation release everything. */
+     assert(pw_pad_track(&ui,press,1)==PW_OK && ui.previous_buttons==CROSS);
+     PwPadSample gone={.buttons=CROSS,.connected=0,.generation=1,.timestamp_us=5};
+-- 
+2.43.0
+

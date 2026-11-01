@@ -1,0 +1,132 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 1 Nov 2026 08:00:00 +0000
+Subject: [PATCH 84/84] PC5: a pointer the game moves itself stays on screen (Wine
+ patch 0999)
+
+Grim Dawn moves the Windows pointer by the controller, and PC5 2.0.8 hid
+it after 5 seconds because the player hadn't moved the mouse. The game
+moving the pointer to another place counts as use now.
+---
+ docs/WINE_PS5_BUILD.md                        |  2 +-
+ ...32u-ps5-hide-the-pointer-when-unused.patch | 34 +++++++++++++------
+ 2 files changed, 24 insertions(+), 12 deletions(-)
+
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 730b157..b41307a 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -173,7 +173,7 @@ before evaluating a candidate built from that cache.
+ | 0996 | `server`: on PS5, a `create_file`, rename or hard link with a root folder and an absolute unix name (what 0943 gives when it looks a name up by the folder's own name) is taken instead of failing with `STATUS_OBJECT_PATH_SYNTAX_BAD`: the unix name is opened as it is and the NT name is still made from the folder's. Heroes of Might and Magic: Olden Era got "path invalid" (`ERROR_BAD_PATHNAME`) for `StreamingAssets\maps\Story_maps` right after 0943's log line |
+ | 0997 | `kernelbase`: on PS5, the listing 0988 writes for `fxc.exe` gives a `def` line's values as plain decimals (`1.0`, `-0.5`, `0.333333343`; vkd3d-shader writes `1.00000000e+00`, and `D3DXAssembleShader` takes no exponent), and a `vs_1_x` shader that fails to compile (vkd3d-shader's `E7002` for `sincos`) is compiled for `vs_2_0` instead, as Far Cry only assembles the listing again on a device that takes `vs_3_0` |
+ | 0998 | `ntdll`: on PS5, a non-alertable `NtWaitForSingleObject` on an event or semaphore whose one try on the shared word (0885, 0887) fails spins up to `WINE_PS5_SYNC_SPIN_US` microseconds (100 by default, 0 off, 1000 at most; never longer than a relative timeout, none for a poll or an absolute time) re-trying the word before it blocks in the server, and stops at once when the server holds the word. While it spins the word stays the client's, so `SetEvent`/`ReleaseSemaphore` need no server call either. Blur sets six events about 2000 times a frame, each waking a worker that waits again, and each of those waits and sets cost several microseconds through the server (5 to 10 ms a frame). The log says `wine-ps5: waits spin up to N us before blocking` at the first such wait, and every 65536 spins how many took the object (`wine-ps5: wait spins: …`); `tests/test_wine_sync_spin.py` runs the spin on the actual word header |
+-| 0999 | `win32u`: on PS5, the user driver hides the pointer once the player hasn't moved it or clicked for `WINE_PS5_CURSOR_IDLE_MS` milliseconds (5000 by default, 0 never), both where it draws the cursor over the screen and where Vulkan frames get it from VideoOut's hardware cursor (0740); the next move, even against an edge, or click shows it again. A game setting the cursor's position or image doesn't count, and the cursor the application set is unchanged for `GetCursorInfo`. A game played with the controller that leaves the Windows cursor on showed it, still, in a corner (Valor Mortis). |
++| 0999 | `win32u`: on PS5, the user driver hides the pointer once the player hasn't moved it or clicked for `WINE_PS5_CURSOR_IDLE_MS` milliseconds (5000 by default, 0 never), both where it draws the cursor over the screen and where Vulkan frames get it from VideoOut's hardware cursor (0740); the next move, even against an edge, or click shows it again, as does the game moving it to another place itself (`SetCursorPos`; Grim Dawn moves its pointer by the controller). A game setting the same place or a new image doesn't count, and the cursor the application set is unchanged for `GetCursorInfo`. A game played with the controller that leaves the Windows cursor on showed it, still, in a corner (Valor Mortis). |
+ 
+ ## Allocator
+ 
+diff --git a/wine/patches/0999-win32u-ps5-hide-the-pointer-when-unused.patch b/wine/patches/0999-win32u-ps5-hide-the-pointer-when-unused.patch
+index 4881552..3b081ce 100644
+--- a/wine/patches/0999-win32u-ps5-hide-the-pointer-when-unused.patch
++++ b/wine/patches/0999-win32u-ps5-hide-the-pointer-when-unused.patch
+@@ -14,18 +14,20 @@ or clicked for 5 seconds, as a console's pointer fades, both where it
+ draws the cursor over the screen itself and where Vulkan frames get it
+ from VideoOut's hardware cursor (patch 0740). The next move (the mouse,
+ the touchpad or a stick working as a mouse, even against an edge) or
+-click shows it again at once. Only the player's own input counts: a game
+-that sets the cursor's position or image doesn't keep it on screen.
++click shows it again at once, and so does the game moving it to another
++place itself (SetCursorPos): Grim Dawn moves its pointer by the
++controller, and a pointer the game moves is in use. A game setting the
++same place or a new image doesn't keep it on screen.
+ The cursor the application set, and where it is, are unchanged, so
+ GetCursorInfo and everything else still see it as shown.
+ 
+ WINE_PS5_CURSOR_IDLE_MS sets the time in milliseconds (0 never hides it).
+ ---
+ diff --git a/dlls/win32u/ps5drv.c b/dlls/win32u/ps5drv.c
+-index 602b922..cc5a6c9 100644
++index 602b922..8dfeec9 100644
+ --- a/dlls/win32u/ps5drv.c
+ +++ b/dlls/win32u/ps5drv.c
+-@@ -106,6 +106,40 @@ static UINT cursor_width, cursor_height;
++@@ -106,6 +106,41 @@ static UINT cursor_width, cursor_height;
+  static POINT cursor_hotspot;
+  /* The cursor image's visible (non-transparent) pixels, in image coordinates */
+  static RECT cursor_box;
+@@ -33,8 +35,9 @@ index 602b922..cc5a6c9 100644
+ + * WINE_PS5_CURSOR_IDLE_MS (5 seconds; 0 never hides it), as a console's
+ + * pointer fades: a game played with the controller that leaves the Windows
+ + * cursor on shows it otherwise, still, in a corner. It shows again at the
+-+ * next move or click. cursor_used is NtGetTickCount's at the last one, 0
+-+ * until the first frame that shows the cursor. */
+++ * next move or click, or when the game itself moves it (SetCursorPos to
+++ * another place). cursor_used is NtGetTickCount's at the last one, 0 until
+++ * the first frame that shows the cursor. */
+ +static DWORD cursor_used;
+ +
+ +/* screen_lock held: whether the cursor is drawn now */
+@@ -66,7 +69,7 @@ index 602b922..cc5a6c9 100644
+  /* WINE_PS5_VIEW=window shows only the visible top-level windows' bounding
+   * box, which the title scales to the whole TV, instead of the desktop;
+   * view is what the last frame showed, in screen coordinates. */
+-@@ -183,7 +217,7 @@ static void present_screen(void)
++@@ -183,7 +218,7 @@ static void present_screen(void)
+      view = view_rect();
+      width = view.right - view.left;
+      height = view.bottom - view.top;
+@@ -75,7 +78,7 @@ index 602b922..cc5a6c9 100644
+          !view.left && !view.top)
+      {
+          present_frame( screen, screen_width, screen_height, screen_width * 4 );
+-@@ -192,7 +226,7 @@ static void present_screen(void)
++@@ -192,7 +227,7 @@ static void present_screen(void)
+      if (!frame) return;
+      for (y = 0; y < height; y++)
+          memcpy( frame + y * width, screen + (view.top + y) * screen_width + view.left, width * 4 );
+@@ -84,7 +87,7 @@ index 602b922..cc5a6c9 100644
+      present_frame( frame, width, height, width * 4 );
+  }
+  
+-@@ -553,6 +587,13 @@ static void move_cursor( HWND hwnd, INT dx, INT dy )
++@@ -553,6 +588,13 @@ static void move_cursor( HWND hwnd, INT dx, INT dy )
+      if (raw_dx || raw_dy) send_motion( hwnd, dx, dy, raw_dx, raw_dy );
+      if (!server_cursor_pos( &pos )) return;
+      pthread_mutex_lock( &screen_lock );
+@@ -98,7 +101,7 @@ index 602b922..cc5a6c9 100644
+      if (cursor.x != pos.x || cursor.y != pos.y)
+      {
+          cursor = pos;
+-@@ -692,7 +733,18 @@ static BOOL ps5_ProcessEvents( DWORD mask )
++@@ -692,7 +734,18 @@ static BOOL ps5_ProcessEvents( DWORD mask )
+              move_cursor( hwnd, event.x, event.y );
+              break;
+          case 3:
+@@ -118,7 +121,7 @@ index 602b922..cc5a6c9 100644
+              break;
+          case 6:
+              /* The wheel: x notches, away from the player positive, as a mouse's
+-@@ -873,7 +925,7 @@ void ps5drv_vulkan_cursor( void *vulkan_handle )
++@@ -873,7 +926,7 @@ void ps5drv_vulkan_cursor( void *vulkan_handle )
+      }
+      if (!show) return;
+      pthread_mutex_lock( &screen_lock );
+@@ -127,6 +130,15 @@ index 602b922..cc5a6c9 100644
+            cursor.x - cursor_hotspot.x, cursor.y - cursor_hotspot.y, screen_width, screen_height );
+      pthread_mutex_unlock( &screen_lock );
+  }
++@@ -888,6 +941,8 @@ static BOOL ps5_GetCursorPos( POINT *pos )
++ static BOOL ps5_SetCursorPos( INT x, INT y )
++ {
++     pthread_mutex_lock( &screen_lock );
+++    /* a game that moves its pointer itself, by the controller (Grim Dawn), is using it too */
+++    if (cursor.x != x || cursor.y != y) cursor_use();
++     cursor.x = x;
++     cursor.y = y;
++     if (cursor_image) present_screen();
+ -- 
+ 2.43.0
+ 
+-- 
+2.43.0
+
