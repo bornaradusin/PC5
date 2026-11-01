@@ -6671,6 +6671,19 @@ static void test_screens(const char *fonts)
     CHECK(!strcmp(pc5_ui_screen(ui), "programs"), "its programs: %s", pc5_ui_screen(ui));
     frames(ui, 0, 0, 30, &canvas);
     save_shot(&canvas, "change-program");
+    char first_program[PC5_PATH] = "";
+    {
+        Pc5Info info;
+        if (!pc5_info_read(root, "orbital-nine", &info)) pc5_copy(first_program, sizeof(first_program), info.exe);
+    }
+    /* Square: the program it has now offered at Play too, then again: not any more, and again: offered */
+    char offered_file[PC5_PATH];
+    path(offered_file, sizeof(offered_file), "%s/prefixes/orbital-nine/pc5/programs.txt", root);
+    press(ui, PC5_KEY_SQUARE, &canvas);
+    CHECK(file_holds_text(offered_file, first_program), "offered at Play: %s", first_program);
+    press(ui, PC5_KEY_SQUARE, &canvas);
+    CHECK(!file_holds_text(offered_file, first_program), "not any more");
+    press(ui, PC5_KEY_SQUARE, &canvas);
     press(ui, PC5_KEY_DOWN, &canvas);
     press(ui, PC5_KEY_ACCEPT, &canvas);
     CHECK(!strcmp(pc5_ui_screen(ui), "message"), "changed: %s", pc5_ui_screen(ui));
@@ -6685,6 +6698,25 @@ static void test_screens(const char *fonts)
         pc5_free(pw);
     }
     press(ui, PC5_KEY_ACCEPT, &canvas);
+    /* Play with another program offered: which one, first; Back is the library again, and the
+     * other one chosen becomes the game's program. */
+    CHECK(!strcmp(pc5_ui_screen(ui), "library"), "the library: %s", pc5_ui_screen(ui));
+    press(ui, PC5_KEY_ACCEPT, &canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "play-which"), "which program: %s", pc5_ui_screen(ui));
+    save_shot(&canvas, "play-which");
+    press(ui, PC5_KEY_BACK, &canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "library"), "Back: the library: %s", pc5_ui_screen(ui));
+    {
+        Pc5Offered offered[PC5_OFFERED];
+        CHECK(pc5_programs_load(root, "orbital-nine", offered, PC5_OFFERED) == 1 && !strcmp(offered[0].exe, first_program),
+              "one offered");
+        char error[PC5_ERROR] = "";
+        CHECK(!pc5_game_use_program(root, "orbital-nine", offered[0].exe, offered[0].bits, offered[0].api, error, sizeof(error)),
+              "used: %s", error);
+        Pc5Info info;
+        CHECK(!pc5_info_read(root, "orbital-nine", &info) && !strcmp(info.exe, first_program), "its program again: %s", info.exe);
+        CHECK(!pc5_programs_toggle(root, "orbital-nine", &offered[0]), "and not offered");
+    }
     test_controller_screens(ui, &canvas);
 
     /* A game's menu: Home screen tile, made, then taken away. */

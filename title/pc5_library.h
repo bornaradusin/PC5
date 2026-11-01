@@ -100,6 +100,21 @@ int pc5_game_folder(const char *root, const char *id, char *out, size_t size);
 /* Makes a PC5 game start another of its programs (folder: its copy, read with
  * pc5_folder_inspect), with what that program draws with. */
 int pc5_game_set_program(const char *root, const char *id, const Pc5Folder *folder, int exe, char *error, size_t size);
+/* The same with what is known of the program already: its path in the game's folder, bits and api. */
+int pc5_game_use_program(const char *root, const char *id, const char *exe, int bits, Pc5Api api, char *error, size_t size);
+
+/* A game's other programs offered at Play (prefixes/<id>/pc5/programs.txt), as an expansion with a
+ * program of its own: each its path in the game's folder, with its bits and what it draws with. */
+typedef struct Pc5Offered {
+    char exe[PC5_PATH];
+    int bits;
+    Pc5Api api;
+} Pc5Offered;
+#define PC5_OFFERED 8
+/* The game's offered programs, up to max; their count. */
+int pc5_programs_load(const char *root, const char *id, Pc5Offered *out, int max);
+/* Offers a program at Play, or stops offering it when it is offered: 1 offered now, 0 not, -1 an error. */
+int pc5_programs_toggle(const char *root, const char *id, const Pc5Offered *program);
 /* A new profile id from a name: lower-case letters, digits and '-', not used
  * by any profile or prefix under root. */
 int pc5_new_id(const char *root, const char *name, char *id, size_t size);

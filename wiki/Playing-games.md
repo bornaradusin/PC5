@@ -133,7 +133,7 @@ Choose a game in the library and press **△**. Its menu has what you change mos
 
 | Row | What it does |
 | --- | --- |
-| Change program | The program PC5 starts for this game ("Now: …"). Choose another one if PC5 picked the wrong one. See [Choosing the right program](Installing-games#choosing-the-right-program). |
+| Change program | The program PC5 starts for this game ("Now: …"). Choose another one if PC5 picked the wrong one. See [Choosing the right program](Installing-games#choosing-the-right-program). **□** on a program offers it at **Play** too (from 2.0.9): a game with an expansion that has a program of its own then asks which to start each time you play it, and the one you pick stays its program. **□** again stops offering it. |
 | Steam emulator | Only for a game with Steam's library (`steam_api.dll` or `steam_api64.dll`): **Auto** (the default) or **Off**. See [Games made for Steam](#games-made-for-steam) below. |
 | Game files | Only for games PC5 installed: the game's own folder, to copy, move, rename and delete its files (on its drive, for a game [installed on a USB drive](Installing-games#installing-a-game-on-a-usb-drive)). See [File manager](File-manager). |
 | Update | Only for games PC5 installed: copies a newer version from the USB drive over the game. Its saves, settings and options stay. See [Updating a game](Installing-games#updating-a-game). |

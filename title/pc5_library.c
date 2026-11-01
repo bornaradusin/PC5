@@ -447,6 +447,16 @@ int pc5_game_folder(const char *root, const char *id, char *out, size_t size)
 
 int pc5_game_set_program(const char *root, const char *id, const Pc5Folder *folder, int exe, char *error, size_t size)
 {
+    if (exe < 0 || exe >= folder->exe_count) {
+        snprintf(error, size, N_("Choose one of the game's programs."));
+        return -1;
+    }
+    return pc5_game_use_program(root, id, folder->exes[exe].path, folder->exes[exe].pe.bits, pc5_folder_api(folder, exe),
+                                error, size);
+}
+
+int pc5_game_use_program(const char *root, const char *id, const char *exe, int bits, Pc5Api api, char *error, size_t size)
+{
     Pc5Info info;
     char path[PC5_PATH], text[2048], windows[PC5_PATH + 32];
 
@@ -454,13 +464,13 @@ int pc5_game_set_program(const char *root, const char *id, const Pc5Folder *fold
         snprintf(error, size, N_("PC5's notes on this game are missing."));
         return -1;
     }
-    if (exe < 0 || exe >= folder->exe_count) {
+    if (!exe || !exe[0]) {
         snprintf(error, size, N_("Choose one of the game's programs."));
         return -1;
     }
-    pc5_copy(info.exe, sizeof(info.exe), folder->exes[exe].path);
-    info.bits = folder->exes[exe].pe.bits;
-    info.api = pc5_folder_api(folder, exe);
+    pc5_copy(info.exe, sizeof(info.exe), exe);
+    info.bits = bits == 64 ? 64 : 32;
+    info.api = api;
     windows_path(info.folder, info.exe, 1, windows, sizeof(windows));
     if (strlen(windows) >= 260) {
         snprintf(error, size, N_("That program is too deep in the game's folder for Windows."));
@@ -2898,4 +2908,56 @@ void pc5_install_end(Pc5Install *install)
     install->hashes = NULL;
     install->chunk = NULL;
     install->cleanup = NULL;
+}
+
+/* ---- programs offered at Play ----------------------------------------------------------- */
+int pc5_programs_load(const char *root, const char *id, Pc5Offered *out, int max)
+{
+    char path[PC5_PATH];
+    Pc5Buf text = { 0 };
+    int count = 0;
+
+    if (pc5_format(path, sizeof(path), "%s/prefixes/%s/pc5/programs.txt", root, id) || !pc5_is_file(path) ||
+        pc5_read_file(path, &text, 65536) || pc5_buf_terminate(&text)) {
+        pc5_buf_free(&text);
+        return 0;
+    }
+    /* "<bits> <api> <path>" a line */
+    for (char *line = (char *)text.data, *next; line && *line && count < max; line = next) {
+        next = strchr(line, '\n');
+        if (next) *next++ = 0;
+        int bits = 0, api = 0, at = 0;
+        if (sscanf(line, "%d %d %n", &bits, &api, &at) < 2 || !at || !line[at] || api < 0 || api > PC5_API_D3D12) continue;
+        out[count].bits = bits == 64 ? 64 : 32;
+        out[count].api = (Pc5Api)api;
+        pc5_copy(out[count].exe, sizeof(out[count].exe), line + at);
+        count++;
+    }
+    pc5_buf_free(&text);
+    return count;
+}
+
+int pc5_programs_toggle(const char *root, const char *id, const Pc5Offered *program)
+{
+    Pc5Offered list[PC5_OFFERED];
+    char path[PC5_PATH];
+    Pc5Buf text = { 0 };
+    int count = pc5_programs_load(root, id, list, PC5_OFFERED), found = -1, status = 0;
+
+    for (int i = 0; i < count; i++)
+        if (!strcmp(list[i].exe, program->exe)) found = i;
+    if (found >= 0) {
+        memmove(&list[found], &list[found + 1], sizeof(list[0]) * (size_t)(count - found - 1));
+        count--;
+    } else {
+        if (count == PC5_OFFERED) memmove(&list[0], &list[1], sizeof(list[0]) * (PC5_OFFERED - 1)), count--;
+        list[count++] = *program;
+    }
+    for (int i = 0; i < count && !status; i++)
+        status = pc5_buf_printf(&text, "%d %d %s\n", list[i].bits, (int)list[i].api, list[i].exe);
+    if (!status && (pc5_format(path, sizeof(path), "%s/prefixes/%s/pc5/programs.txt", root, id) ||
+                    pc5_write_file(path, text.data ? (const char *)text.data : "", text.len)))
+        status = -1;
+    pc5_buf_free(&text);
+    return status ? -1 : found < 0;
 }

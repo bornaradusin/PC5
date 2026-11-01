@@ -65,7 +65,8 @@ typedef enum Screen {
     S_UPDATE, S_CHECKING, S_GAME_MENU, S_GAME_READING, S_QUEUE_READ, S_QUEUE, S_BUTTONS, S_KEYS, S_REPORT,
     S_UPGRADE_ASK, S_UPGRADING, S_GAME_UPDATE_ASK, S_SAVES_ASK, S_SAVES_CONFIRM, S_PICTURE_SEARCH, S_PICTURE,
     S_PICTURE_TYPING, S_COMPATIBILITY, S_WEB_QR, S_GRAPHICS_API, S_REPORT_CHECK, S_REPORT_UPDATE, S_FILES, S_FILES_MENU,
-    S_FILES_TYPING, S_FILES_CONFLICT, S_FILES_DELETE, S_FILES_WORKING, S_TILE_ART, S_INSTALL_ASK, S_SETTINGS_TYPING, S_INSTALL_WHERE
+    S_FILES_TYPING, S_FILES_CONFLICT, S_FILES_DELETE, S_FILES_WORKING, S_TILE_ART, S_INSTALL_ASK, S_SETTINGS_TYPING, S_INSTALL_WHERE,
+    S_PLAY_WHICH
 } Screen;
 
 static const char *const screen_names[] = { "start", "covers", "library", "settings", "about", "scan", "sources",
@@ -76,7 +77,8 @@ static const char *const screen_names[] = { "start", "covers", "library", "setti
                                             "saves-ask", "saves-confirm", "picture-search", "picture", "picture-typing",
                                             "compatibility", "web-qr", "graphics-api", "report-check", "report-update", "files",
                                             "files-menu", "files-typing", "files-conflict", "files-delete",
-                                            "files-working", "tile-art", "install-ask", "settings-typing", "install-where" };
+                                            "files-working", "tile-art", "install-ask", "settings-typing", "install-where",
+                                            "play-which" };
 
 /* One game of several being installed in a row. */
 typedef enum QueueState { Q_WAITING, Q_INSTALLED, Q_FAILED, Q_STOPPED, Q_SKIPPED } QueueState;
@@ -419,6 +421,13 @@ struct Pc5Ui {
     int issue_pending;
     Pc5InstallPhase speed_phase;
     int program_for;               /* S_PROGRAMS for: 0 the review, 1 the game in launch_id */
+    /* The game's programs offered at Play (pc5_programs_load), for S_PROGRAMS' marks, and
+     * S_PLAY_WHICH's choices: the game's program first, then those; back to play_back. */
+    Pc5Offered offered[PC5_OFFERED];
+    int offered_count;
+    Pc5Offered play[PC5_OFFERED + 1];
+    int play_count;
+    int play_back;
     Screen uninstall_back;         /* where Cancel in S_UNINSTALL_CONFIRM goes */
     int update_for;                /* S_SCAN, S_SOURCES and S_READING choose a newer copy of the game in launch_id */
     /* PC5's INSTALL folder, in its own folder ("" when PC5's folder isn't found): games put there
@@ -3584,6 +3593,40 @@ static void files_update(Pc5Ui *ui, uint32_t k)
     }
 }
 
+/* Plays the game in launch_id: its program, or with other programs offered at Play
+ * (an expansion with a program of its own), a choice of them first. back: where Back goes. */
+static void play(Pc5Ui *ui, Screen back)
+{
+    Pc5Info info;
+    Pc5Offered offered[PC5_OFFERED];
+    int count = pc5_programs_load(ui->root, ui->launch_id, offered, PC5_OFFERED);
+
+    ui->play_count = 0;
+    if (count && !pc5_info_read(ui->root, ui->launch_id, &info)) {
+        char folder[PC5_PATH], file[PC5_PATH];
+        Pc5Offered *first = &ui->play[ui->play_count++];
+        pc5_copy(first->exe, sizeof(first->exe), info.exe);
+        first->bits = info.bits;
+        first->api = info.api;
+        for (int i = 0; i < count; i++) {
+            if (!strcmp(offered[i].exe, info.exe)) continue;
+            /* one whose file is gone (an update took it away) isn't offered */
+            if (!pc5_game_folder(ui->root, ui->launch_id, folder, sizeof(folder)) &&
+                !pc5_join(file, sizeof(file), folder, offered[i].exe) && !pc5_is_file(file))
+                continue;
+            ui->play[ui->play_count++] = offered[i];
+        }
+    }
+    if (ui->play_count < 2) {
+        go(ui, S_LAUNCH);
+        return;
+    }
+    ui->play_back = (int)back;
+    ui->menu = 0;
+    ui->list_top = 0;
+    go(ui, S_PLAY_WHICH);
+}
+
 /* How long PC5's logo shows as it opens, and how long the screen under it takes to fade in. */
 enum { BOOT_SHOW_MS = 1700, BOOT_FADE_MS = 500 };
 
@@ -3828,7 +3871,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 const Pc5Game *game = &ui->library.games[ui->selected];
                 if (game->playable) {
                     pc5_copy(ui->launch_id, sizeof(ui->launch_id), game->id);
-                    go(ui, S_LAUNCH);
+                    play(ui, S_LIBRARY);
                 } else {
                     char title[200], body[400];
                     pc5_tf(title, sizeof(title), "%s can't start", game->title);
@@ -4180,6 +4223,16 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         break;
     case S_PROGRAMS:
         if (list_move(&ui->menu, ui->folder.exe_count, k)) ui->dirty = 1;
+        if ((k & PC5_KEY_SQUARE) && ui->program_for && ui->menu >= 0 && ui->menu < ui->folder.exe_count) {
+            /* Square: offered at Play too, or not any more */
+            const Pc5Exe *exe = &ui->folder.exes[ui->menu];
+            Pc5Offered program = { "", exe->pe.bits, pc5_folder_api(&ui->folder, ui->menu) };
+            pc5_copy(program.exe, sizeof(program.exe), exe->path);
+            int now = pc5_programs_toggle(ui->root, ui->launch_id, &program);
+            say(ui, "PC5 program offered id=%s exe=%s now=%d", ui->launch_id, exe->path, now);
+            ui->offered_count = pc5_programs_load(ui->root, ui->launch_id, ui->offered, PC5_OFFERED);
+            ui->dirty = 1;
+        }
         if (k & back) {
             if (ui->program_for) game_menu_at(ui, GR_PROGRAM);
             go(ui, ui->program_for ? S_GAME_MENU : S_REVIEW);
@@ -4205,6 +4258,27 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                     message(ui, 1, title, body, S_LIBRARY);
                 }
             }
+        }
+        break;
+    case S_PLAY_WHICH:
+        if (list_move(&ui->menu, ui->play_count, k)) ui->dirty = 1;
+        if (k & back) {
+            go(ui, (Screen)ui->play_back);
+        } else if ((k & accept) && ui->menu >= 0 && ui->menu < ui->play_count) {
+            const Pc5Offered *chosen = &ui->play[ui->menu];
+            char error[PC5_ERROR] = "";
+            /* the game's program becomes the one chosen: its tile and the next Play start it too */
+            if (ui->menu && pc5_game_use_program(ui->root, ui->launch_id, chosen->exe, chosen->bits, chosen->api, error,
+                                                 sizeof(error))) {
+                say(ui, "PC5 problem program %s: %s", ui->launch_id, error);
+                message(ui, 0, T("This game can't start"), TX(error), (Screen)ui->play_back);
+                break;
+            }
+            if (ui->menu) {
+                say(ui, "PC5 program id=%s exe=%s (chosen at Play)", ui->launch_id, chosen->exe);
+                library_reload(ui, ui->launch_id);
+            }
+            go(ui, S_LAUNCH);
         }
         break;
     case S_GAME_MENU: {
@@ -4284,7 +4358,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             home_toggle(ui, game);
         } else if (k & accept) {
             if (row == GR_PLAY) {
-                if (game->playable) go(ui, S_LAUNCH);
+                if (game->playable) play(ui, S_GAME_MENU);
                 else message(ui, 0, T("This game can't start"), game->problem[0] ? TX(game->problem) : T("Something it needs is missing."),
                              S_GAME_MENU);
             } else if (row == GR_BUTTONS) {
@@ -4483,6 +4557,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             ui->exe = ui->menu;
             ui->list_top = 0;
             ui->program_for = 1;
+            ui->offered_count = pc5_programs_load(ui->root, ui->launch_id, ui->offered, PC5_OFFERED);
             go(ui, S_PROGRAMS);
         }
         break;
@@ -6063,9 +6138,29 @@ static void program_row(Pc5Ui *ui, Pc5Canvas *c, int i, float x, float y, float 
     char line[160], size[32];
     (void)chosen;
     pc5_size_text(exe->size, size, sizeof(size));
+    int offered = 0;
+    for (int k = 0; ui->program_for && k < ui->offered_count; k++) offered |= !strcmp(ui->offered[k].exe, exe->path);
     pc5_tf(line, sizeof(line), "%d-bit \xc2\xb7 %s \xc2\xb7 %s%s", exe->pe.bits,
              pc5_api_name(pc5_folder_api(&ui->folder, i)), size, i == ui->exe ? T(" \xc2\xb7 chosen") : "");
+    if (offered) strncat(line, T(" \xc2\xb7 offered at Play"), sizeof(line) - strlen(line) - 1);
     pc5_text(c, &ui->fonts, PC5_FACE_LABEL, (int)x, (int)y + 40, C_TEXT, exe->path, (int)w, 0);
+    pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x, (int)y + 74, C_DIM, line, (int)w, 0);
+}
+
+/* One of S_PLAY_WHICH's programs: its name, then its file, bits and graphics. */
+static void play_row(Pc5Ui *ui, Pc5Canvas *c, int i, float x, float y, float w, int chosen)
+{
+    const Pc5Offered *program = &ui->play[i];
+    const char *file = strrchr(program->exe, '/');
+    char name[PC5_PATH], line[PC5_PATH + 80];
+    (void)chosen;
+    pc5_copy(name, sizeof(name), file ? file + 1 : program->exe);
+    char *dot = strrchr(name, '.');
+    if (dot && dot != name) *dot = 0;
+    char kind[96];
+    pc5_tf(kind, sizeof(kind), "%d-bit \xc2\xb7 %s", program->bits, pc5_api_name(program->api));
+    snprintf(line, sizeof(line), "%s \xc2\xb7 %s%s", program->exe, kind, i == 0 ? T(" \xc2\xb7 chosen") : "");
+    pc5_text(c, &ui->fonts, PC5_FACE_LABEL, (int)x, (int)y + 40, C_TEXT, name, (int)w, 0);
     pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x, (int)y + 74, C_DIM, line, (int)w, 0);
 }
 
@@ -6994,9 +7089,23 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
     case S_PICTURE_TYPING: picture_screen(ui, c); break;
     case S_REVIEW: review_screen(ui, c); break;
     case S_PROGRAMS: {
-        Hint list[] = { { accept_glyph(ui), T("Choose") }, { back_glyph(ui), T("Back") } };
-        if (ui->program_for) game_menu_screen(ui, c, game_row_find(&ui->controls, ui_game_kind(ui), GR_PROGRAM, NULL));
-        list_panel(ui, c, T("Which program is the game?"), ui->folder.exe_count, program_row, "", "", list, 2, 104);
+        Hint list[] = { { accept_glyph(ui), T("Choose") }, { G_SQUARE, T("Offer at Play") }, { back_glyph(ui), T("Back") } };
+        if (ui->program_for) {
+            game_menu_screen(ui, c, game_row_find(&ui->controls, ui_game_kind(ui), GR_PROGRAM, NULL));
+            list_panel(ui, c, T("Which program is the game?"), ui->folder.exe_count, program_row, "", "", list, 3, 104);
+        } else {
+            list[1] = list[2];
+            list_panel(ui, c, T("Which program is the game?"), ui->folder.exe_count, program_row, "", "", list, 2, 104);
+        }
+        break;
+    }
+    case S_PLAY_WHICH: {
+        Hint list[] = { { accept_glyph(ui), T("Play") }, { back_glyph(ui), T("Back") } };
+        if ((Screen)ui->play_back == S_GAME_MENU)
+            game_menu_screen(ui, c, game_row_find(&ui->controls, ui_game_kind(ui), GR_PLAY, NULL));
+        else
+            library_screen(ui, c);
+        list_panel(ui, c, T("Which program?"), ui->play_count, play_row, "", "", list, 2, 104);
         break;
     }
     case S_INSTALL: install_screen(ui, c); break;
