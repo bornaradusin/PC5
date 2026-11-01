@@ -76,6 +76,10 @@ a game crashes, PC5 says so the next time it opens, and **△** there shows a QR
 GitHub's issue form, already filled in. See
 [Reporting a problem](https://github.com/bornaradusin/PC5/wiki/Reporting-a-problem).
 
+## Helping
+
+PC5 has grown beyond what one person can keep up with, and help is very welcome: testing games, checking translations, or fixing an issue and sending a pull request (tested on a PS5 first). See [CONTRIBUTING.md](CONTRIBUTING.md) for how.
+
 ## Building
 
 On Debian 13 or Ubuntu 24.04 (x86-64), as root:
