@@ -551,3 +551,4 @@ controller's speaker.
 | 309 | Web page › a game › Files › Windows › user.reg, with no game running | the registry as text; Save keeps it UTF-8/UTF-16 as it was | `PC5 web edited windows/user.reg …` |
 | 310 | Home with 5 games: right to the last one | the last three covers stay in view and the choice moves along them | |
 | 311 | Pro Evolution Soccer 6 copied in (no installer run), and its settings.exe | no "The game is not properly installed": settings opens and the game starts | `PC5 prefix installer keys added` the first time only |
+| 312 | Pro Evolution Soccer 6 installed on a USB drive (or extended storage), started from there | the same: no "not properly installed" | `PC5 prefix installer keys added` |

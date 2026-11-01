@@ -398,14 +398,27 @@ int pc5_prefix_installs(const char *root, const char *prefix, const char *progra
         pc5_format(drive, sizeof(drive), "%s/prefixes/%s/drive_c/", root, prefix))
         return -1;
     if (!pc5_is_file(system)) return 0;   /* no Windows yet: Wine makes it, and the next start adds them */
-    /* The program's folder as Windows sees it, on C: (a game on a USB drive is left as it is). */
+    /* The program's folder as Windows sees it, on C:. A game played from a USB drive or extended
+     * storage is there too: its folder on the drive is C:\Games\<folder> to Windows. */
     const char *slash = strrchr(program, '/');
     size_t length = strlen(drive);
-    if (!slash || strncmp(program, drive, length) || (size_t)(slash - program) >= sizeof(dir)) return 0;
+    char inside[PC5_PATH], top[PC5_PATH];
+    Pc5Info info;
+    if (!slash || (size_t)(slash - program) >= sizeof(dir)) return 0;
     memcpy(dir, program, (size_t)(slash - program));
     dir[slash - program] = 0;
+    if (!strncmp(dir, drive, length)) {
+        pc5_copy(inside, sizeof(inside), dir + length);
+    } else {
+        size_t n;
+        if (pc5_info_read(root, prefix, &info) || pc5_game_folder(root, prefix, top, sizeof(top))) return 0;
+        n = strlen(top);
+        if (strncmp(dir, top, n) || (dir[n] && dir[n] != '/') ||
+            pc5_format(inside, sizeof(inside), "Games/%s%s", info.folder, dir + n))
+            return 0;   /* not in the game's folder */
+    }
     size_t at = (size_t)snprintf(value, sizeof(value), "C:\\\\");
-    for (const char *p = dir + length; *p && at + 3 < sizeof(value); p++) {
+    for (const char *p = inside; *p && at + 3 < sizeof(value); p++) {
         if (*p == '/') { value[at++] = '\\'; value[at++] = '\\'; }
         else value[at++] = *p;
     }

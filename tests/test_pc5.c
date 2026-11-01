@@ -4639,6 +4639,33 @@ static void test_dotnet(void)
         pc5_buf_free(&text);
         CHECK(pc5_prefix_installs(root, "default", program) == 0, "the default prefix is left alone");
         CHECK(pc5_prefix_installs(root, "missing", program) == 0, "no Windows yet: nothing done");
+
+        /* Played from a USB drive: Windows sees its folder as C:\Games\<folder> all the same. */
+        char drive[PC5_PATH];
+        const char *usb_roots[] = { drive, NULL };
+        path(drive, sizeof(drive), "%s/installs-usb", work);
+        path(file, sizeof(file), "%s/PC5/PES6/bin/PES6.exe", drive);
+        write_text(file, "MZ");
+        path(file, sizeof(file), "%s/PC5/PES6/bin/dat/f_text.afs", drive);
+        write_text(file, "afs");
+        path(file, sizeof(file), "%s/prefixes/usbpes/system.reg", root);
+        write_text(file, "WINE REGISTRY Version 2\n");
+        path(file, sizeof(file), "%s/prefixes/usbpes/pc5/info.txt", root);
+        write_text(file, "title = Pro Evolution Soccer 6\nfolder = PES6\nexe = bin/PES6.exe\nbits = 32\napi = d3d9\n"
+                         "bytes = 0\nfiles = 0\ncover = \nusb = PC5/PES6\n");
+        pc5_usb_roots(usb_roots);
+        path(program, sizeof(program), "%s/PC5/PES6/bin/PES6.exe", drive);
+        CHECK(pc5_prefix_installs(root, "usbpes", program) == 1, "a game played from a USB drive gets the keys too");
+        path(file, sizeof(file), "%s/prefixes/usbpes/system.reg", root);
+        CHECK(!pc5_read_file(file, &text, 16384) && !pc5_buf_terminate(&text) &&
+                  strstr((char *)text.data, "\"installdir\"=\"C:\\\\Games\\\\PES6\\\\bin\\\\\"\n"
+                                            "\"lang_e\"=dword:00000000\n\"lang_f\"=dword:00000001\n"),
+              "its folder as Windows sees it, and its language: %s", text.data ? (char *)text.data : "");
+        pc5_buf_free(&text);
+        path(program, sizeof(program), "%s/elsewhere/PES6.exe", drive);
+        write_text(program, "MZ");
+        CHECK(pc5_prefix_installs(root, "usbpes", program) == 0, "a program outside the game's folder: nothing");
+        pc5_usb_roots(NULL);
     }
 
     /* The runtime: copied once, for a .NET program only. */
