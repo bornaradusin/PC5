@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 1 Nov 2026 17:00:00 +0000
+Subject: [PATCH] wsi/videoout: 120 Hz output can be turned off, and its rate
+ asked
+
+RADV opens the display at 119.88 Hz where the title's param.json declares
+high-frame-rate output, the output takes it and the vblanks then come at
+that rate. PW_PC5_HIGH_REFRESH=0 (PC5's Settings, for a TV that flickers
+or shows nothing at 120 Hz) keeps it at 59.94 Hz, as a title that doesn't
+declare it. The log says when 119.88 Hz was kept, with the period
+measured.
+
+wsi_videoout_refresh_millihertz() gives the rate the display was opened
+at, 119880 or 59940, for frame generation in libvulkan.prx, which holds a
+game at a fraction of it.
+---
+ src/vulkan/wsi/wsi_common_videoout.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/src/vulkan/wsi/wsi_common_videoout.c b/src/vulkan/wsi/wsi_common_videoout.c
+index d4312d1..13c0097 100644
+--- a/src/vulkan/wsi/wsi_common_videoout.c
++++ b/src/vulkan/wsi/wsi_common_videoout.c
+@@ -372,6 +372,11 @@ struct wsi_videoout {
+ static bool
+ videoout_title_declares_high_frame_rate(void)
+ {
++   /* PW_PC5_HIGH_REFRESH=0: the player turned 120 Hz output off (PC5's
++    * Settings), for a TV that flickers or shows nothing at 120 Hz. */
++   const char *const wanted = getenv("PW_PC5_HIGH_REFRESH");
++   if (wanted && !strcmp(wanted, "0"))
++      return false;
+    FILE *const file = fopen("/app0/sce_sys/param.json", "rb");
+    if (file == NULL)
+       return false;
+@@ -442,6 +447,8 @@ videoout_open_locked(void)
+             fprintf(stderr,
+                     "wsi/videoout: 119.88 Hz accepted, but a vblank comes every %.3f ms; 59.94 Hz restored\n",
+                     (double)period / 1e6);
++         } else {
++            fprintf(stderr, "wsi/videoout: presenting at 119.88 Hz (a vblank every %.3f ms)\n", (double)period / 1e6);
+          }
+       } else {
+          fprintf(stderr, "wsi/videoout: 119.88 Hz %s (%d); presenting at 59.94 Hz\n",
+@@ -638,6 +645,22 @@ wsi_videoout_idle(void)
+    return idle;
+ }
+ 
++/* The display's refresh rate in millihertz, once VideoOut is open: 119880
++ * where the high-frame-rate mode was taken and kept, else 59940. Opens
++ * VideoOut if no swapchain has (frame generation asks at a swapchain's first
++ * present, when it is open already). Declared here: libvulkan.prx's frame
++ * generation declares it itself. */
++uint32_t wsi_videoout_refresh_millihertz(void);
++uint32_t
++wsi_videoout_refresh_millihertz(void)
++{
++   videoout_settle_modes();
++   mtx_lock(&videoout_output.lock);
++   const bool high = videoout_output.handle >= 0 && videoout_output.high_frame_rate;
++   mtx_unlock(&videoout_output.lock);
++   return high ? VIDEOOUT_HIGH_REFRESH_MILLIHERTZ : VIDEOOUT_REFRESH_MILLIHERTZ;
++}
++
+ /* Where the presenting swapchain's images show: *frame is the size of the
+  * framebuffers flipped, *rect the part of them an image fills (all of it but
+  * for a scaled swapchain). For the hardware cursor, whose position is in the
+-- 
+2.43.0
+

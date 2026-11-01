@@ -5125,7 +5125,7 @@ static void test_tile_make(void)
           strstr((char *)param.data, "\"titleId\": \"PPSA99437\"") && strstr((char *)param.data, "\"conceptId\": \"99437\"") &&
           strstr((char *)param.data, "\"contentId\": \"UP0000-PPSA99437_00-PC5TILE000000000\"") &&
           strstr((char *)param.data, "\"titleName\": \"Neon \\\"Drift\\\" \\\\ II\"") &&
-          !strstr((char *)param.data, "11018") && strstr((char *)param.data, "\"attribute3\": 64"),
+          !strstr((char *)param.data, "11018") && strstr((char *)param.data, "\"attribute3\": 524352"),
           "the tile's: %s", param.len ? (char *)param.data : "");
     pc5_buf_free(&param);
     CHECK(pc5_tile_param("{\"titleId\": \"PPSA11018\"}", 24, "PPSA99437", "x", &param) == -1, "not a whole param.json");
@@ -5517,6 +5517,41 @@ static void test_game(const char *fonts_path)
         pc5_controls_save(game_root, "liberty", &controls);
         pc5_game_begin(&game, &ops, game_root, app, "liberty", "Liberty Town");
         CHECK(!game.frame_generation && !getenv("PW_PC5_FRAMEGEN"), "and off again");
+        /* 40 -> 120 (MihawkGen), kept as "mihawkgen": at 60 Hz PC5's own 30 -> 60 instead */
+        controls.frame_generation = 2;
+        CHECK(!pc5_controls_save(game_root, "liberty", &controls) && !pc5_controls_load(game_root, "liberty", &again) &&
+              again.frame_generation == 2, "40 -> 120 is kept with the game");
+        pc5_game_begin(&game, &ops, game_root, app, "liberty", "Liberty Town");
+        env = getenv("PW_PC5_FRAMEGEN");
+        CHECK(!getenv("PW_FRAMEGEN") && env && !strcmp(env, "1"), "40 -> 120 at 60 Hz is PC5's own 30 -> 60");
+        {
+            Pc5Settings high;
+            pc5_settings_load(game_root, &high);
+            high.high_refresh = 1;
+            pc5_settings_save(game_root, &high);
+            pc5_game_begin(&game, &ops, game_root, app, "liberty", "Liberty Town");
+            env = getenv("PW_FRAMEGEN");
+            CHECK(env && !strcmp(env, "3") && !getenv("PW_PC5_FRAMEGEN"), "40 -> 120 with 120 Hz output: MihawkGen, alone");
+            high.high_refresh = 0;
+            pc5_settings_save(game_root, &high);
+        }
+        controls.frame_generation = 0;
+        pc5_controls_save(game_root, "liberty", &controls);
+        /* 120 Hz output: off by default, on from Settings, "1" for RADV and the title */
+        pc5_game_begin(&game, &ops, game_root, app, "liberty", "Liberty Town");
+        env = getenv("PW_PC5_HIGH_REFRESH");
+        CHECK(!getenv("PW_FRAMEGEN") && env && !strcmp(env, "0"), "60 Hz by default");
+        {
+            Pc5Settings high;
+            pc5_settings_load(game_root, &high);
+            high.high_refresh = 1;
+            pc5_settings_save(game_root, &high);
+            pc5_game_begin(&game, &ops, game_root, app, "liberty", "Liberty Town");
+            env = getenv("PW_PC5_HIGH_REFRESH");
+            CHECK(game.settings.high_refresh && env && !strcmp(env, "1"), "120 Hz output on");
+            high.high_refresh = 0;
+            pc5_settings_save(game_root, &high);
+        }
         /* A 32-bit game's Memory, which Wine reads (patch 0921): Auto by default, 4 GB only
          * for a program whose large-address flag asks for it, as on Windows; 4 GB for any. */
         env = getenv("PW_LARGE_ADDRESS_AWARE");
@@ -6652,11 +6687,11 @@ static void test_screens(const char *fonts)
     press(ui, PC5_KEY_ACCEPT, &canvas);
     CHECK(controls_has("orbital-nine", "graphics_api = auto\n"), "and Auto");
     press(ui, PC5_KEY_DOWN, &canvas);
-    press(ui, PC5_KEY_ACCEPT, &canvas);     /* Frame generation, the next row: on, then off again with right */
+    press(ui, PC5_KEY_ACCEPT, &canvas);     /* Frame generation, the next row: 30 -> 60, then off (60 Hz: no 40 -> 120) */
     CHECK(!strcmp(pc5_ui_screen(ui), "game-menu") && controls_has("orbital-nine", "frame_generation = on\n"),
           "Frame generation on: %s", pc5_ui_screen(ui));
     press(ui, PC5_KEY_RIGHT, &canvas);
-    CHECK(controls_has("orbital-nine", "frame_generation = off\n"), "and off");
+    CHECK(controls_has("orbital-nine", "frame_generation = off\n"), "and off, with no 40 -> 120 at 60 Hz");
     press(ui, PC5_KEY_DOWN, &canvas);       /* Resolution: 1440p, 4K, back round to 1080p */
     press(ui, PC5_KEY_ACCEPT, &canvas);
     CHECK(controls_has("orbital-nine", "resolution = 1440p\n"), "Resolution 1440p");

@@ -160,6 +160,7 @@ int pc5_settings_load(const char *root, Pc5Settings *settings)
             settings->triggers = (Pc5Triggers)pick(value, trigger_keys, PC5_TRIGGERS_COUNT, (int)settings->triggers);
         else if (!strcmp(name, "check_updates")) settings->check_updates = on_off(value, settings->check_updates);
         else if (!strcmp(name, "keep_logs")) settings->keep_logs = on_off(value, settings->keep_logs);
+        else if (!strcmp(name, "high_refresh")) settings->high_refresh = on_off(value, settings->high_refresh);
         else if (!strcmp(name, "keyboard")) settings->keyboard_us = !strcmp(value, "us") ? 1 : !strcmp(value, "auto") ? 0 : settings->keyboard_us;
         else if (!strcmp(name, "ftp_server")) settings->ftp_server = on_off(value, settings->ftp_server);
         else if (!strcmp(name, "web_page")) settings->web_page = on_off(value, settings->web_page);
@@ -190,7 +191,7 @@ int pc5_settings_save(const char *root, const Pc5Settings *settings)
                       "memory = %s\nfps_corner = %s\noverlay_size = %s\nvibration = %d\nlight_bar = %s\ntriggers = %s\n"
                       "trigger_rumble = %d\ntrigger_resistance = %d\ncheck_updates = %s\nkeep_logs = %s\nstartup_sound = %s\n"
                       "startup_volume = %d\nftp_server = %s\nweb_page = %s\nremote_user = %s\nremote_password = %s\nlanguage = %s\n"
-                      "keyboard = %s\n",
+                      "keyboard = %s\nhigh_refresh = %s\n",
                       settings->fps ? "on" : "off", settings->frame_time ? "on" : "off",
                       settings->cpu_usage ? "on" : "off", settings->gpu_usage ? "on" : "off",
                       settings->cpu_temperature ? "on" : "off",
@@ -202,7 +203,7 @@ int pc5_settings_save(const char *root, const Pc5Settings *settings)
                       settings->keep_logs ? "on" : "off", settings->startup_sound, settings->startup_volume,
                       settings->ftp_server ? "on" : "off", settings->web_page ? "on" : "off", settings->remote_user,
                       settings->remote_password, settings->language[0] ? settings->language : "system",
-                      settings->keyboard_us ? "us" : "auto");
+                      settings->keyboard_us ? "us" : "auto", settings->high_refresh ? "on" : "off");
     for (int i = 0; i < PC5_PICTURE_SOURCES && length > 0 && (size_t)length < sizeof(text); i++)
         length += snprintf(text + length, sizeof(text) - (size_t)length, "pictures_%s = %s\n", pc5_picture_source_key(i),
                            settings->pictures_off & (1u << i) ? "off" : "on");

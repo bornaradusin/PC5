@@ -203,6 +203,7 @@ static void controls_parse(char *data, Pc5Controls *controls)
                 if (!strcmp(value, stick_keys[i])) controls->stick[name[0] == 'r'] = (Pc5StickUse)i;
         } else if (!strcmp(name, "frame_generation")) {
             if (!strcmp(value, "on")) controls->frame_generation = 1;
+            else if (!strcmp(value, "mihawkgen")) controls->frame_generation = 2;
             else if (!strcmp(value, "off")) controls->frame_generation = 0;
         } else if (!strcmp(name, "resolution")) {
             if (!strcmp(value, "1080p")) controls->resolution = 0;
@@ -272,7 +273,7 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                                    "mode = %s\nleft_stick = %s\nright_stick = %s\npointer_speed = %d\n"
                                    "# The button that slows the pointer while held, and by how much (%%)\n"
                                    "slow_button = %s\nslow_percent = %d\n"
-                                   "# Triangle on the game, then Frame generation\nframe_generation = %s\n"
+                                   "# Triangle on the game, then Frame generation: off, on (60 -> 120, or 30 -> 60 at 60 Hz) or mihawkgen (40 -> 120)\nframe_generation = %s\n"
                                    "# Triangle on a 32-bit game, then Memory: auto (as Windows) or 4gb\nmemory = %s\n"
                                    "# Triangle on the game, then Video memory: auto, 5gb or 6gb (a 64-bit Direct3D 10 to 12 game), or full\n"
                                    "video_memory = %s\n"
@@ -289,7 +290,8 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                             controls->slow_button >= 0 && controls->slow_button < PC5_BUTTONS
                                 ? control_keys[controls->slow_button] : "none",
                             controls->slow_percent,
-                            controls->frame_generation ? "on" : "off", controls->memory_4gb ? "4gb" : "auto",
+                            controls->frame_generation == 2 ? "mihawkgen" : controls->frame_generation ? "on" : "off",
+                            controls->memory_4gb ? "4gb" : "auto",
                             controls->video_memory_full      ? "full"
                             : controls->video_memory_gb == 5 ? "5gb"
                             : controls->video_memory_gb == 6 ? "6gb"

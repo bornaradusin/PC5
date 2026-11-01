@@ -110,6 +110,7 @@ typedef enum SettingRow {
     SR_OVERLAY_SIZE, SR_VIBRATION, SR_LIGHT, SR_TRIGGERS, SR_TRIGGER_RUMBLE, SR_TRIGGER_RESISTANCE,
     SR_STARTUP_SOUND, SR_STARTUP_VOLUME, SR_KEEP_LOGS, SR_PICTURES, SR_CHECK_ON_OPEN, SR_CHECK_NOW, SR_UPDATE_NOW,
     SR_FILES, SR_FTP, SR_WEB, SR_NETWORK, SR_REMOTE_USER, SR_REMOTE_PASSWORD, SR_LANGUAGE, SR_KEYBOARD,
+    SR_HIGH_REFRESH,
     SR_SOURCE   /* a picture source: SR_SOURCE + its index (pc5_cover.h) */
 } SettingRow;
 
@@ -148,6 +149,7 @@ static int page_rows(const Pc5Settings *set, int page, int offer_update, Setting
         if (set->triggers == PC5_TRIGGERS_RUMBLE || set->triggers == PC5_TRIGGERS_BOTH) rows[n++] = SR_TRIGGER_RUMBLE;
         if (set->triggers == PC5_TRIGGERS_RESISTANCE || set->triggers == PC5_TRIGGERS_BOTH)
             rows[n++] = SR_TRIGGER_RESISTANCE;
+        rows[n++] = SR_HIGH_REFRESH;
     } else if (page == PAGE_SYSTEM) {
         rows[n++] = SR_STARTUP_SOUND;
         if (strcmp(set->startup_sound, "off")) rows[n++] = SR_STARTUP_VOLUME;
@@ -2277,7 +2279,7 @@ static void setting_text(Pc5Ui *ui, SettingRow row, const char **label, char *ab
         break;
     case SR_GAMES:
         *label = T("In games");
-        pc5_copy(about, about_size, T("Vibration, light bar and triggers"));
+        pc5_copy(about, about_size, T("Vibration, light bar, triggers and 120 Hz output"));
         pc5_copy(value, value_size, "\xe2\x80\xba");
         break;
     case SR_OVERLAY:
@@ -2299,6 +2301,12 @@ static void setting_text(Pc5Ui *ui, SettingRow row, const char **label, char *ab
         pc5_tf(value, value_size, "%d of %d \xe2\x80\xba", on, PC5_PICTURE_SOURCES);
         break;
     }
+    case SR_HIGH_REFRESH:
+        *label = T("120 Hz output");
+        pc5_copy(about, about_size, set->high_refresh ? T("Games show up to 120 fps on a TV that takes it; turn on the PS5's own 120 Hz output too")
+                                                      : T("Off: games show up to 60 fps"));
+        pc5_copy(value, value_size, set->high_refresh ? T("On") : T("Off"));
+        break;
     case SR_KEYBOARD:
         *label = T("Keyboard layout");
         pc5_copy(about, about_size, set->keyboard_us ? T("A USB keyboard types as a US one in games")
@@ -2604,6 +2612,7 @@ static int setting_change(Pc5Ui *ui, SettingRow row, int step)
     switch (row) {
     case SR_KEEP_LOGS: set->keep_logs = !set->keep_logs; break;
     case SR_KEYBOARD: set->keyboard_us = !set->keyboard_us; break;
+    case SR_HIGH_REFRESH: set->high_refresh = !set->high_refresh; break;
     case SR_FTP:
         set->ftp_server = !set->ftp_server;
         ftp_apply(ui);
@@ -3010,7 +3019,7 @@ static void report_open(Pc5Ui *ui)
         snprintf(settings, sizeof(settings),
                  "%d-bit, draws with %s; Graphics API %s; Controller %s; Frame generation %s; Memory %s; CPU sharing %s%s",
                  game->bits, pc5_api_name((Pc5Api)game->api), pc5_graphics_name(k.graphics, game->api),
-                 pc5_pad_mode_name(k.mode), k.frame_generation ? "on" : "off", k.memory_4gb ? "4 GB" : "Auto",
+                 pc5_pad_mode_name(k.mode), k.frame_generation == 2 ? "40 -> 120 (MihawkGen)" : k.frame_generation ? "on" : "off", k.memory_4gb ? "4 GB" : "Auto",
                  k.cpu_sharing ? "on" : "off", k.steam_off ? "; Steam emulator off" : "");
     }
     ui->report_qr.size = 0;
@@ -4374,7 +4383,10 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 if (choices[i] == ui->controls.graphics) ui->api_choice = i;
             go(ui, S_GRAPHICS_API);
         } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_FRAMEGEN) {
-            ui->controls.frame_generation = !ui->controls.frame_generation;
+            /* Off, 60 -> 120, 40 -> 120 with 120 Hz output; Off, 30 -> 60 without (40 -> 120 shows as that) */
+            int step = (k & PC5_KEY_LEFT) ? -1 : 1, count = ui->settings.high_refresh ? 3 : 2;
+            int now = ui->controls.frame_generation >= count ? count - 1 : ui->controls.frame_generation;
+            ui->controls.frame_generation = (now + count + step) % count;
             controls_changed(ui);
             ui->dirty = 1;
         } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_RESOLUTION) {
@@ -5731,7 +5743,7 @@ static void settings_screen(Pc5Ui *ui, Pc5Canvas *c)
                    i == ui->menu, label, about, value);
     }
     SettingRow row = rows[ui->menu < count ? ui->menu : 0];
-    int changes = row == SR_KEEP_LOGS || row == SR_KEYBOARD || row == SR_FTP || row == SR_WEB || (row >= SR_FPS && row <= SR_TRIGGER_RESISTANCE) || row == SR_CHECK_ON_OPEN ||
+    int changes = row == SR_KEEP_LOGS || row == SR_KEYBOARD || row == SR_HIGH_REFRESH || row == SR_FTP || row == SR_WEB || (row >= SR_FPS && row <= SR_TRIGGER_RESISTANCE) || row == SR_CHECK_ON_OPEN ||
                   row == SR_STARTUP_SOUND || row == SR_STARTUP_VOLUME || row >= SR_SOURCE;
     Hint list[] = { { accept_glyph(ui), changes ? T("Change") : T("Choose") }, { back_glyph(ui), T("Back") }, { G_TRIANGLE, T("QR code") } };
     Pc5WebStatus web = { 0 };
@@ -5798,8 +5810,20 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
     }
     case GR_FRAMEGEN:
         *label = T("Frame generation");
-        *text = ui->controls.frame_generation ? T("Held at 30 fps and shown at 60: smoother where it runs below 60") : T("Off. On holds the game at 30 fps and shows 60");
-        *value = ui->controls.frame_generation ? T("30 \xe2\x86\x92 60 fps") : T("Off");
+        /* 40 -> 120 (MihawkGen) only with 120 Hz output: at 60 Hz it would be 30 -> 60 as well,
+         * so a game set to it shows and starts with 30 -> 60 until 120 Hz output is on again. */
+        if (ui->controls.frame_generation == 2 && ui->settings.high_refresh) {
+            *text = T("Held at 40 fps, two frames made between each two: for a game that can't hold 60");
+            *value = T("40 \xe2\x86\x92 120 fps");
+        } else if (ui->controls.frame_generation) {
+            *text = ui->settings.high_refresh ? T("Held at 60 fps, a frame made between each two: smoother on a 120 Hz TV")
+                                              : T("Held at 30 fps and shown at 60: smoother where it runs below 60");
+            *value = ui->settings.high_refresh ? T("60 \xe2\x86\x92 120 fps") : T("30 \xe2\x86\x92 60 fps");
+        } else {
+            *text = ui->settings.high_refresh ? T("Off. Left and right: 60 \xe2\x86\x92 120 or 40 \xe2\x86\x92 120 fps")
+                                              : T("Off. Left and right: 30 \xe2\x86\x92 60 fps (with 120 Hz output on, 60 \xe2\x86\x92 120 or 40 \xe2\x86\x92 120)");
+            *value = T("Off");
+        }
         break;
     case GR_RESOLUTION:
         *label = T("Resolution");
