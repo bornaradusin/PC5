@@ -583,7 +583,8 @@ static int no_links(const char *top, const char *relative)
         char at = part[i];
         if (at == '/' || !at) {
             part[i] = 0;
-            if (lstat(part, &st) || S_ISLNK(st.st_mode)) return -1;
+            if (lstat(part, &st)) return errno == ENOENT ? 0 : -1;   /* not there: nothing past it to follow */
+            if (S_ISLNK(st.st_mode)) return -1;
             part[i] = at;
             if (!at) return 0;
         }
