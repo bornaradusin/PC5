@@ -54,7 +54,8 @@ uint32_t pc5_pe_named_libraries(const char *path);
 /* The most capable API among the imports. */
 Pc5Api pc5_api_from_imports(uint32_t imports);
 /* 1 when the program at path (a path on the disk, or relative, either slash) is an Unreal
- * Engine game's, in a Binaries\Win64 folder, whose imports don't name Direct3D 12 but that
+ * Engine game's, in a folder of its Binaries (Win64, or another but Win32: Gears Tactics'
+ * is in Binaries\Steam), whose imports don't name Direct3D 12 but that
  * draws with it: it ships the Direct3D 12 Agility SDK (D3D12\D3D12Core.dll beside it, or
  * the SDK's D3D12SDKVersion export), or its code names d3d12.dll. Unreal Engine 5 loads
  * d3d12.dll itself, while its imports name only Direct3D 11 or DXGI. Some other games do

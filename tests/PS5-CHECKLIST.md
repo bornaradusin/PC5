@@ -554,4 +554,6 @@ controller's speaker.
 | 312 | Pro Evolution Soccer 6 installed on a USB drive (or extended storage), started from there | the same: no "not properly installed" | `PC5 prefix installer keys added` |
 | 313 | A French (AZERTY) USB keyboard, console in French: AltGr+0 in a game's text field (World of Tanks' login) | types @ | `PC5 keyboard layout=fr` |
 | 314 | In a game, a two-finger click on the touchpad | the console's keyboard opens; what's typed goes to the game | `PW_WINE64 hid preload libSceImeDialog id=0x96 status=0`, no `PC5 keyboard refused` |
-| 315 | Marvel's Spider-Man Remastered on Graphics API Auto | it starts with Direct3D 12 (no "DirectX 12 support not detected") | `dll_overrides=d3d8,d3d9,d3d10core,d3d11,d3d12,d3d12core,dxgi=n` |
+| 315 | Marvel's Spider-Man Remastered on Graphics API Auto | it starts with Direct3D 12 (no "DirectX 12 support not detected") | `dll_overrides=d3d8,d3d9,d3d10core,d3d11,d3d12,d3d12core,dxgi=n;amd_ags_x64=b`, no "graphics driver" message |
+| 316 | Gears Tactics (`GearGame\Binaries\Steam`) on Graphics API Auto, X on its title screen | it goes on to the menu, no crash | `dll_overrides=d3d8,d3d9,d3d10core,d3d11,d3d12,d3d12core,dxgi=n`, no `wined3d.dll` loaded |
+| 317 | The Last of Us Part II | its log no longer says `Driver Supported: NO` | `amd_ags_x64.dll` loaded as builtin |

@@ -686,6 +686,16 @@ static void test_pe(void)
                   pc5_pe_unreal_d3d12("C:\\Games\\Miles\\MilesMorales.EXE", PC5_IMPORT_DXGI) &&
                   !pc5_pe_unreal_d3d12("Spider-Man.exe", PC5_IMPORT_D3D9) && !pc5_pe_unreal_d3d12("Other/Spider.exe", PC5_IMPORT_D3D11),
               "Nixxes' Direct3D 12 ports by their program's name, outside Unreal too");
+        /* Another folder of Binaries (Gears Tactics' Steam), but not a 32-bit one's, Binaries
+         * itself or a folder only ending in it. */
+        char store[PC5_PATH];
+        const char *const places[] = { "Binaries/Steam/GearsTactics.exe", "Binaries/Win32/Game.exe", "Binaries/Game.exe",
+                                       "MyBinaries/Steam/Game.exe" };
+        for (int i = 0; i < 4; i++) {
+            path(store, sizeof(store), "%s/ue4/GearGame/%s", work, places[i]);
+            write_text(store, "MZ ... D3D12RHI d3d12.dll ...");
+            CHECK(pc5_pe_unreal_d3d12(store, PC5_IMPORT_D3D11) == (i == 0), "Unreal in %s", places[i]);
+        }
         /* One that doesn't name it where PC5 looks (Gears of War: E-Day's) but ships the
          * Direct3D 12 Agility SDK: its D3D12 folder beside it, any case. */
         char sdk[PC5_PATH];

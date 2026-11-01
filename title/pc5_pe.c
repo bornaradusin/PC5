@@ -494,7 +494,13 @@ int pc5_pe_unreal_d3d12(const char *path, uint32_t imports)
     const char *name = strrchr(lower, '/') ? strrchr(lower, '/') + 1 : lower;
     for (size_t i = 0; i < sizeof(d3d12_only) / sizeof(d3d12_only[0]); i++)
         if (!strcmp(name, d3d12_only[i])) return 1;
-    if (!strstr(lower, "/binaries/win64/") && strncmp(lower, "binaries/win64/", 15)) return 0;
+    /* An Unreal game's program is in a folder of its Binaries: Win64, or the store's build's
+     * (Gears Tactics' Binaries\Steam), but not a 32-bit one. */
+    const char *folder = NULL;
+    for (const char *at = lower; (at = strstr(at, "binaries/")); at++)
+        if (at == lower || at[-1] == '/') folder = at + 9;
+    const char *slash = folder ? strchr(folder, '/') : NULL;
+    if (!slash || slash == folder || strchr(slash + 1, '/') || !strncmp(folder, "win32/", 6)) return 0;
     /* The Agility SDK first: some programs (a large or packed one) don't show d3d12.dll's
      * name where pc5_pe_named_libraries looks. */
     return agility_sdk(path) || (pc5_pe_named_libraries(path) & PC5_IMPORT_D3D12) != 0;
