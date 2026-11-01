@@ -1,0 +1,123 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 1 Nov 2026 12:00:27 +0000
+Subject: [PATCH] PC5: two fixes from Mihawk OS (Wine patches 0976 and 0977):
+ boolean socket options read back as 1, the cursor clip inside the screen
+
+Mihawk OS 6.0.0-alpha-6's Wine patches 2085 and 2152, unchanged, as Wine
+patches 0976 and 0977 (their author kept). A game whose network code
+checks a socket option it set against TRUE took it as unset on the
+console, and a game in a smaller display mode was told its cursor clip
+reached past the screen's sides.
+---
+ PUBLICATION_ALLOWLIST.txt                     |  2 ++
+ docs/WINE_PS5_BUILD.md                        |  2 ++
+ ...lean-socket-options-read-back-as-one.patch | 32 +++++++++++++++++++
+ ...clip-stays-inside-the-virtual-screen.patch | 31 ++++++++++++++++++
+ 4 files changed, 67 insertions(+)
+ create mode 100644 wine/patches/0976-ntdll-ps5-boolean-socket-options-read-back-as-one.patch
+ create mode 100644 wine/patches/0977-win32u-the-cursor-clip-stays-inside-the-virtual-screen.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index 8a32757..7781a0e 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -672,5 +672,7 @@ wine/patches/0972-faudio-keep-resampling-taps-within-the-samples.patch
+ wine/patches/0973-ntdll-ps5-title-menu-snapshot.patch
+ wine/patches/0974-ntdll-fault-on-protected-pages-that-share-a-host-page.patch
+ wine/patches/0975-ntdll-keep-a-host-page-whole-when-accesses-beside-an-inaccessible-page-run-hot.patch
++wine/patches/0976-ntdll-ps5-boolean-socket-options-read-back-as-one.patch
++wine/patches/0977-win32u-the-cursor-clip-stays-inside-the-virtual-screen.patch
+ wine/patches/0983-ntdll-ps5-name-the-occupant-of-a-refused-reservation.patch
+ tests/test_wine_mouse_wheel.py
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 577f01c..aaa0363 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -178,6 +178,8 @@ before evaluating a candidate built from that cache.
+ | 0965 | `win32u`: setting a pixel format on the desktop window no longer posts `WM_WINE_SETPIXELFORMAT` to it. Nothing owns the server-created desktop on the PS5, so the message came back to the game's own queue and posted itself again forever. `vkCreateWin32SurfaceKHR` sets format -1 on every surface's window, so a Vulkan surface on the desktop (DXVK or Zink) kept the game on a black screen with one core busy (Syndicate) |
+ | 0974 | `ntdll`: outside images, a page made read-only or inaccessible takes writing, or all access, away from its whole 16 KiB host page, so touching it faults as on Windows; the host page used to get the union of its pages' protections, and a write to a protected page beside a writable one raised nothing (DuckStation then ran stale recompiled code). An access that faults only because of such a neighbour is single-stepped with the host page open for that one instruction, unseen by the program. On a PC, `WINE_HOST_PAGE_SIZE=16384` keeps 16 KiB host pages to run this scheme (`tests/test_wine_subpage_protect.py`) |
+ | 0975 (upstream 0986) | `ntdll`: accesses that 0974 steps over beside a protected page are counted, reads too. When a host page has had 256 of them, a write beside a read-only page is still reported there, and any other access gives the host page the union of its pages' protections, as before 0974, until a protection in it changes. Beside an inaccessible page nothing ended the stepping: Unity's Mono garbage collector (Darkwood) took about 13,000 steps a second and ran at 5 fps |
++| 0976 | `ntdll` (Mihawk OS 2085): on PS5, a boolean socket option (`SO_BROADCAST`, `SO_KEEPALIVE`, `SO_REUSEADDR` and the other boolean `SOL_SOCKET` ones, `TCP_NODELAY`) reads back as 0 or 1, as on Windows and Linux. The console's FreeBSD kernel answered with the option's flag bit (`SO_BROADCAST` as 0x20), so a program that compares the value with TRUE took a set option for unset |
++| 0977 | `win32u` (Mihawk OS 2152): `GetClipCursor` keeps the clip inside the virtual screen. In an emulated display mode (a 640x480 mode drawn letterboxed on the 1920x1080 output) the unclipped raw rect is the whole physical screen, which mapped back into the mode reached past its sides |
+ | 0983 | `ntdll`: a refused fixed reservation names what holds the range. `sceKernelReserveVirtualRange` answers ENOMEM both for a range another mapping holds and for one it cannot grant, and the callers need `EEXIST` for a collision either way, so the errno is unchanged and `sceKernelVirtualQuery` reports the cause: a record with a protection, flags and a name is a mapping, a cleared record past the end of the request is a hole. Tells a title image lying across a program's preferred base (0130) apart from an exhausted address space |
+ 
+ ## Allocator
+diff --git a/wine/patches/0976-ntdll-ps5-boolean-socket-options-read-back-as-one.patch b/wine/patches/0976-ntdll-ps5-boolean-socket-options-read-back-as-one.patch
+new file mode 100644
+index 0000000..7f8cccd
+--- /dev/null
++++ b/wine/patches/0976-ntdll-ps5-boolean-socket-options-read-back-as-one.patch
+@@ -0,0 +1,32 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: Mihawk <163614687+mihawk-99@users.noreply.github.com>
++Date: Sun, 25 Oct 2026 11:30:00 -0400
++Subject: [PATCH] ntdll: PS5: boolean socket options read back as 1.
++
++getsockopt of a boolean option gave a Windows program what the console's FreeBSD kernel answered: the option's flag
++bit, SO_BROADCAST as 0x20 and TCP_NODELAY as TF_NODELAY's bit, where Windows and Linux answer 1 (ws2_32's sock test:
++sock.c:1413, 1424, 1435, 1668 and 1712 on the console in both builds, 2026-10-25). A program that compares the value
++with TRUE (a socket library that checks its own setting) took a set option for unset. The boolean SOL_SOCKET options
++and TCP_NODELAY are now 0 or 1, in an int or a one-byte buffer.
++---
++--- a/dlls/ntdll/unix/socket.c
+++++ b/dlls/ntdll/unix/socket.c
++@@ -1587,6 +1587,18 @@
++     ret = getsockopt( fd, level, option, out_buffer, &len );
++     if (needs_close) close( fd );
++     if (ret) return sock_errno_to_status( errno );
+++#ifdef __PROSPERO__
+++    /* The console's FreeBSD kernel reads a boolean option back as its flag bit (SO_BROADCAST as 0x20, TCP_NODELAY as
+++     * TF_NODELAY's), where Windows and Linux give 1 (ws2_32 sock.c:1413-1435, 1668, 1712, 2026-10-25). */
+++    if (len && ((level == SOL_SOCKET && (option == SO_DEBUG || option == SO_ACCEPTCONN || option == SO_REUSEADDR ||
+++                                         option == SO_KEEPALIVE || option == SO_DONTROUTE || option == SO_BROADCAST ||
+++                                         option == SO_OOBINLINE)) ||
+++                (level == IPPROTO_TCP && option == TCP_NODELAY)))
+++    {
+++        if (len >= sizeof(int)) *(int *)out_buffer = !!*(int *)out_buffer;
+++        else *(char *)out_buffer = !!*(char *)out_buffer;
+++    }
+++#endif
++     if (io)
++     {
++         io->Status = STATUS_SUCCESS;
+diff --git a/wine/patches/0977-win32u-the-cursor-clip-stays-inside-the-virtual-screen.patch b/wine/patches/0977-win32u-the-cursor-clip-stays-inside-the-virtual-screen.patch
+new file mode 100644
+index 0000000..ed266c8
+--- /dev/null
++++ b/wine/patches/0977-win32u-the-cursor-clip-stays-inside-the-virtual-screen.patch
+@@ -0,0 +1,31 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: Mihawk <163614687+mihawk-99@users.noreply.github.com>
++Date: Wed, 28 Oct 2026 04:00:00 -0400
++Subject: [PATCH] win32u: the cursor clip stays inside the virtual screen.
++
++The PS5 display modes are emulated: a 640x480 mode is drawn letterboxed on the 1920x1080 display, so the raw
++coordinates the server keeps the clip in are the physical screen's. With no clip the server's rect is that whole
++screen, and mapped back into the 640x480 mode it is (-107,0)-(747,480), where Windows reports the screen,
++(0,0)-(640,480). Wine's d3d9 test checks it after a fullscreen mode change (device.c:14950); it showed on the Pro
++once the desktop could be made the foreground (patch 2151), which leaves the cursor unclipped there, and passes on the
++PC, whose mode changes are real. GetClipCursor now keeps the mapped rect inside the virtual screen, as Windows keeps
++every clip.
++---
++--- a/dlls/win32u/input.c
+++++ b/dlls/win32u/input.c
++@@ -2791,7 +2791,14 @@
++     while ((status = get_shared_desktop( &lock, &desktop_shm )) == STATUS_PENDING)
++         *rect = wine_server_get_rect( desktop_shm->cursor.clip );
++ 
++-    if (!status && type == MDT_EFFECTIVE_DPI) *rect = map_rect_raw_to_virt( *rect, dpi );
+++    if (!status && type == MDT_EFFECTIVE_DPI)
+++    {
+++        RECT virtual_rect = get_virtual_screen_rect( dpi, MDT_DEFAULT );
+++
+++        /* in an emulated display mode the unclipped raw rect is the whole physical screen, wider than the mode */
+++        *rect = map_rect_raw_to_virt( *rect, dpi );
+++        intersect_rect( rect, rect, &virtual_rect );
+++    }
++     return !status;
++ }
++ 
+-- 
+2.43.0
+

@@ -1,0 +1,182 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mpereiraesaa <manuelpereiralds@gmail.com>
+Date: Fri, 16 Oct 2026 19:50:18 +0200
+Subject: [PATCH] PC5: the game's last frames are shown before the title closes
+ or goes home
+
+prospero-win 2ccffbb (#698), after the v0.2.0 PC5 builds on, picked onto
+PC5's patches. A game closed while frames were still on their way to the
+screen could leave the console at its "Closing" screen until a reboot.
+PC5 also drains them before a game a home screen tile started goes back
+to the home screen.
+
+Once the display is RADV's, Wine ends the game's threads with a signal
+while its last frames are still on their way: the WSI's flip thread, a
+native thread of libvulkan.prx, submits a flip once the frame's fence
+signals. Replacing the process with sceSystemServiceLoadExec while such
+a flip is queued left the console at the system's "Closing" screen, and
+only a reboot recovered it (Project Eagle: three exits from the world
+hung; the same exits with a few milliseconds more before the replacement
+did not).
+
+libvulkan.prx exports pw_videoout_quiesce(): it polls
+sceVideoOutIsFlipPending until nothing has been pending for 20 ms (more
+than a refresh at 60 Hz), capped at 500 ms, taking none of the WSI's
+locks since a thread Wine ended may still hold one. The title calls it
+from restart_title when the display was Vulkan's, before closing the
+diagnostics and LoadExec, and logs
+`PW_WINE64 display quiesce reason=.. status=.. waited_ms=.. pending=..`;
+an older driver without the export logs status=unavailable and goes on
+as before.
+
+Co-authored-by: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ native/wine64_main.c      | 30 +++++++++++++++++++++++
+ tools/link_radv_prx.sh    |  2 +-
+ wine/ps5/pw_vulkan_radv.c | 51 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 82 insertions(+), 1 deletion(-)
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 0569504..e9125ec 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -423,6 +423,32 @@ static int wine_present(void *context, const void *bgra, uint32_t width, uint32_
+  * output (patch 0460), which the title must close first. The main thread
+  * owns the title's, so the driver's request waits for it to be closed. */
+ static int display_request, display_closed;
++enum { PW_WINE64_QUIESCE_MS = 500 };
++
++/* Wine's dlsym, for the exports of the modules it loaded (libvulkan.prx). */
++static void *(*wine_dlsym_fn)(void *, const char *);
++
++/* Once the display is Vulkan's, the game's last flips are still on their
++ * way when Wine exits: RADV's own flip thread submits them after the game's
++ * threads are gone. A process replaced with such a flip queued stayed at
++ * the system's "Closing" screen (Project Eagle, 2026-10-12). libvulkan.prx
++ * drains them (pw_videoout_quiesce); an older driver has no such export. */
++static void display_quiesce(const char *reason)
++{
++    int (*quiesce)(unsigned, unsigned *, int *);
++    unsigned waited = 0;
++    int pending = 0, status;
++
++    if (!__atomic_load_n(&display_closed, __ATOMIC_ACQUIRE) || !wine_dlsym_fn) return;
++    quiesce = (int (*)(unsigned, unsigned *, int *))(uintptr_t)wine_dlsym_fn(NULL, "pw_videoout_quiesce");
++    if (!quiesce) {
++        PS5LOG_LOG("PW_WINE64 display quiesce reason=%s status=unavailable", reason);
++        return;
++    }
++    status = quiesce(PW_WINE64_QUIESCE_MS, &waited, &pending);
++    PS5LOG_LOG("PW_WINE64 display quiesce reason=%s status=%d waited_ms=%u pending=%d", reason, status,
++               waited, pending);
++}
+ 
+ static int wine_release_display(void *context)
+ {
+@@ -699,6 +725,7 @@ static void restart_title_exit(const PwWineApp *app, uint32_t cycle, const char
+         PS5LOG_LOG("PW_WINE64 restart refused: arguments do not fit");
+         return;
+     }
++    display_quiesce(reason);
+     for (size_t i = 0; i < sizeof(eboots) / sizeof(eboots[0]); i++) {
+         PS5LOG_LOG("PW_WINE64 restart to=%s cycle=%u reason=%s eboot=%s", app ? app->id : "launcher",
+                    (unsigned)cycle, reason, eboots[i]);
+@@ -725,6 +752,7 @@ static void close_title_to_home(const char *reason)
+     int app = sceSystemServiceGetAppIdOfRunningBigApp(), killed = -1, exited = -1;
+ 
+     PS5LOG_LOG("PW_WINE64 exit to the home screen: started from a tile app=%d", app);
++    display_quiesce(reason);
+     pw_diagnostics_close(reason);
+     if (app > 0) killed = sceSystemServiceKillApp(app, -1, 0, 0);
+     for (int i = 0; killed >= 0 && i < 100; i++) usleep(100000);   /* the shell ends the title */
+@@ -1689,6 +1717,8 @@ int main(int argc, char **argv)
+                start.segment_count, start.module_start_result, start.adopted != NULL,
+                start.virtual_stats != NULL);
+     install_early_fault_report(&start);
++    if (status == PW_OK)
++        wine_dlsym_fn = (void *(*)(void *, const char *))(uintptr_t)pw_prx_lookup(start.descriptor, "dlsym");
+     atexit(on_exit_report);
+     if (status == PW_OK) {
+         void (*set_sink)(void (*)(const char *, size_t)) = (void (*)(void (*)(const char *, size_t)))
+diff --git a/tools/link_radv_prx.sh b/tools/link_radv_prx.sh
+index 667dc1a..d3a9d5f 100755
+--- a/tools/link_radv_prx.sh
++++ b/tools/link_radv_prx.sh
+@@ -81,7 +81,7 @@ else
+     framegen_objects+=("$work/obj/pw_framegen_none.o")
+ fi
+ python3 "$root/tools/gen_prx_descriptor.py" "$work/obj/libvulkan_desc.c" \
+-    vkGetInstanceProcAddr vkGetDeviceProcAddr pw_videoout_idle pw_videoout_show_tiled pw_videoout_cursor \
++    vkGetInstanceProcAddr vkGetDeviceProcAddr pw_videoout_idle pw_videoout_show_tiled pw_videoout_cursor pw_videoout_quiesce \
+     pw_vk_radv_profile_set_frame_hook pw_pc5_hud pw_pc5_hud_stats pw_pc5_hud_tick pw_pc5_screen_color \
+     pw_framegen_counts
+ "$sdk/bin/prospero-clang" -std=c11 -O2 -Wall -Wextra -Werror -fPIC -I"$root/wine/ps5" \
+diff --git a/wine/ps5/pw_vulkan_radv.c b/wine/ps5/pw_vulkan_radv.c
+index f70e36d..b143b6e 100644
+--- a/wine/ps5/pw_vulkan_radv.c
++++ b/wine/ps5/pw_vulkan_radv.c
+@@ -15,6 +15,7 @@
+ #include <sys/types.h>
+ #include <unistd.h>
+ #include <string.h>
++#include <time.h>
+ #include <vulkan/vulkan.h>
+ #if defined(__PROSPERO__)
+ #include <x86intrin.h>
+@@ -525,3 +526,53 @@ ssize_t readlink(const char *path, char *buffer, size_t capacity)
+     errno = ENOENT;
+     return -1;
+ }
++
++/* --- leaving the process ---------------------------------------------------
++ * The title replaces the process with sceSystemServiceLoadExec once Wine
++ * has exited. Wine ends the game's threads with a signal, so the last
++ * frames they presented are still on their way: the WSI's flip thread, a
++ * thread of this library's own, submits a flip once the frame's fence
++ * signals, and VideoOut shows it at a vblank. A process replaced while such
++ * a flip is queued stayed at the system's "Closing" screen (Project Eagle,
++ * 2026-10-12: three exits from the world hung; the same exits with a few
++ * milliseconds more before the replacement did not). This waits until no
++ * flip has been pending for a refresh period. It takes none of the WSI's
++ * locks, which a thread Wine ended may still hold. 1 with no output open,
++ * 0 drained, -1 when timeout_ms passed with flips still pending;
++ * *waited_ms says how long it took and *pending_last what VideoOut
++ * answered last. */
++extern int sceVideoOutIsFlipPending(int32_t handle);
++
++static uint64_t quiesce_now_ms(void)
++{
++    struct timespec now;
++    clock_gettime(CLOCK_MONOTONIC, &now);
++    return (uint64_t)now.tv_sec * 1000u + (uint64_t)now.tv_nsec / 1000000u;
++}
++
++int pw_videoout_quiesce(unsigned timeout_ms, unsigned *waited_ms, int *pending_last)
++{
++    /* Polled, never waited for a vblank: a wait that the output does not
++     * answer would hold the exit; 20 ms of no flip pending is more than one
++     * refresh at 60 Hz. */
++    enum { POLL_US = 4000, SETTLED_POLLS = 5 };
++    int handle = __atomic_load_n(&videoout_handle, __ATOMIC_ACQUIRE);
++    uint64_t started = quiesce_now_ms(), deadline = started + timeout_ms;
++    unsigned settled = 0;
++    int pending = 0, status = -1;
++
++    if (waited_ms) *waited_ms = 0;
++    if (pending_last) *pending_last = 0;
++    if (handle < 0) return 1;
++    for (;;) {
++        pending = sceVideoOutIsFlipPending(handle);
++        if (pending <= 0) settled++;
++        else settled = 0;
++        if (settled >= SETTLED_POLLS) { status = 0; break; }
++        if (quiesce_now_ms() >= deadline) break;
++        usleep(POLL_US);
++    }
++    if (waited_ms) *waited_ms = (unsigned)(quiesce_now_ms() - started);
++    if (pending_last) *pending_last = pending;
++    return status;
++}
+-- 
+2.43.0
+

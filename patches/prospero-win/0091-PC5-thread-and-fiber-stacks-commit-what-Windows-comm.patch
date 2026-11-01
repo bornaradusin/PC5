@@ -1,0 +1,759 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Manuel Pereira <manuelpereiralds@gmail.com>
+Date: Wed, 28 Oct 2026 19:20:47 +0100
+Subject: [PATCH] PC5: thread and fiber stacks commit what Windows commits
+ (Wine patch 0604)
+
+prospero-win d393828, after the v0.2.0 PC5 builds on, picked onto PC5's
+patches.
+
+Wine committed the whole stack of every thread and fiber, and on the
+console every committed page is direct memory at once. Assetto Corsa EVO
+creates about 2,750 fibers at startup with its exe's 1 MiB reserve and
+4 KiB commit, which cost about 2.7 GiB of direct memory (#716).
+
+Patch 0604 commits what Windows commits: the commit size at the top of
+the stack, rounded up to 16 KiB host pages, with a guard host page under
+it, growing through the guard page as Wine's stacks always could. The
+Unix side lays out thread stacks this way; RtlCreateUserStack does it for
+fibers in a title (WINE_PS5_NTDLL_DIR). Wine itself writes past a guard
+page from below: signal_start_thread clears the 60 KiB under a new
+thread's initial context, and a user callback's arguments can be larger
+than a guard page (a whole WM_GETTEXT buffer). So a fault on a reserved
+page of the thread's own stack, under its guard page, commits up to the
+stack limit; without that, wineboot died at its first thread start. A
+fiber now starts with 16 KiB committed, a thread with 64 KiB. With 4 KiB
+host pages, on a PC, stacks are committed whole as before.
+
+tests/test_wine_fiber_stacks.py runs the PC's Wine with
+WINE_HOST_PAGE_SIZE=16384: 3000 fibers commit 16 KiB each against
+1,040,384 bytes before (49 MB against 3.1 GB), a fiber and a thread
+recurse 600 KiB through their guard pages and take a 200 KB WM_GETTEXT
+buffer, and an overflow raises STATUS_STACK_OVERFLOW on both, in 64-bit
+and WoW64 processes. Before the patch a fiber's overflow under 16 KiB
+host pages ended the process ("stack overflow ... unrecoverable"): its
+4 KiB guard page shared a host page with the no-access page.
+
+On the console (2026-10-28), the same program run as a game: 3000 fibers
+committed 49 MB, against 3.12 GB and then a crash before the patch; 1000
+fibers in a WoW64 process on the native 32-bit backend, 16 MB; growth and
+overflow passed on both. Half-Life 2's menu, OpenArena with bots, the
+Direct3D 12 control and Minesweeper ran as before (frame rate and CPU
+within run-to-run noise).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ Makefile                                      |   2 +
+ PUBLICATION_ALLOWLIST.txt                     |   8 +
+ docs/WINE_PS5_BUILD.md                        |   1 +
+ tests/test_wine_fiber_stacks.py               |  81 +++++
+ tests/wine_fiber_stacks.c                     | 251 +++++++++++++++
+ ...ll-ps5-commit-stacks-as-windows-does.patch | 292 ++++++++++++++++++
+ 6 files changed, 635 insertions(+)
+ create mode 100644 tests/test_wine_fiber_stacks.py
+ create mode 100644 tests/wine_fiber_stacks.c
+ create mode 100644 wine/patches/0604-ntdll-ps5-commit-stacks-as-windows-does.patch
+
+diff --git a/Makefile b/Makefile
+index 4e695dd..2013927 100644
+--- a/Makefile
++++ b/Makefile
+@@ -187,6 +187,7 @@ test: $(addprefix $(BUILD)/,$(TESTS)) $(BUILD)/classify_x86 $(BUILD)/dbt_differe
+ 	python3 tests/test_wine_process_counters.py
+ 	python3 tests/test_wine_processor_times.py
+ 	python3 tests/test_wine_directory_changes.py
++	python3 tests/test_wine_fiber_stacks.py
+ 	python3 tests/test_wine_dib_section.py
+ 	python3 tests/test_wow64native_scaffold.py
+ 	python3 tests/test_vk_command_stream.py
+@@ -257,6 +258,7 @@ wine-check: test
+ 	python3 tests/test_wine_process_counters.py
+ 	python3 tests/test_wine_processor_times.py
+ 	python3 tests/test_wine_directory_changes.py
++	python3 tests/test_wine_fiber_stacks.py
+ 	python3 tests/test_wine_dib_section.py
+ 
+ audit:
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index 209e9e0..c182b0e 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -232,6 +232,8 @@ wine/patches/0590-ntdll-ps5-repair-null-fs-on-unix-entry.patch
+ wine/patches/0600-ntdll-ps5-direct-memory-for-anonymous-memory.patch
+ wine/patches/0601-ntdll-ps5-keep-i386-images-below-4gib.patch
+ wine/patches/0602-ntdll-map-unaligned-shared-sections-private.patch
++wine/patches/0603-ntdll-report-the-ps5-title-s-memory.patch
++wine/patches/0604-ntdll-ps5-commit-stacks-as-windows-does.patch
+ wine/patches/0610-ntdll-ps5-segv-hook-for-the-wow64-cpu.patch
+ wine/patches/0611-wow64-ps5-take-the-cpu-from-the-environment.patch
+ wine/patches/0620-ntdll-generic-processor-topology.patch
+@@ -428,6 +430,12 @@ tests/wine_processor_times.c
+ wine/patches/0889-ntdll-ps5-processor-times-from-the-process.patch
+ tests/test_wine_directory_changes.py
+ tests/wine_directory_changes.c
++tests/test_wine_directory_handles.py
++tests/wine_directory_handles.c
++tests/test_wine_fiber_stacks.py
++tests/wine_fiber_stacks.c
++tests/test_d3d12_control.py
++tests/d3d12_control.c
+ wine/patches/0884-server-ps5-poll-for-directory-changes.patch
+ tests/test_wine_sched_probe.py
+ tests/wine_sched_probe.c
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 8e60c70..0df672b 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -107,6 +107,7 @@ before evaluating a candidate built from that cache.
+ | 0600 | `ntdll`: anonymous memory in the reserved areas is direct memory, not flexible memory; a 16 GiB area at `0x1000000000` takes the allocations free to go anywhere; see [Direct memory](#direct-memory) |
+ | 0601 | `ntdll`: an i386 image is never mapped above 4 GiB, so a relocatable exe whose preferred base is taken stays in the low reserved areas instead of the high one |
+ | 0602 | `ntdll`: a writable shared section that does not start and end on 16 KiB host pages (GameMaker's `.mydata`) is mapped as a private copy instead of failing the image load; with no second process (0550) nothing shares it. The log names each such section with one ERR line |
++| 0604 | `ntdll`: thread and fiber stacks commit what Windows commits, their commit size at the top rounded up to 16 KiB host pages with a guard host page under it, and grow through the guard page; Wine committed each whole stack, and every committed page is direct memory, so Assetto Corsa EVO's 2,750 fibers (1 MiB reserved, 4 KiB committed each) took about 2.7 GiB. A fiber now starts with 16 KiB, a thread with 64 KiB (`signal_start_thread` clears the 60 KiB under its initial context). A fault on a reserved page of the thread's own stack under its guard page commits up to the stack limit, since Wine writes such frames from their low end (that clearing, a user callback's arguments such as a whole `WM_GETTEXT` buffer). A stack whose caller commits all it reserves (the WoW64 CPU's 64-bit stack) is committed whole, as before. `RtlCreateUserStack` does this in a title (`WINE_PS5_NTDLL_DIR`); on a PC, `WINE_HOST_PAGE_SIZE=16384` runs it (`tests/test_wine_fiber_stacks.py`), and with 4 KiB host pages stacks are committed whole |
+ | 0610 | `ntdll`: `__wine_ps5_set_segv_hook` lets `wowprospero` resume its own faults (fault markers) from inside Wine's SIGSEGV handler, instead of a second handler chaining to the action `sigaction` reports |
+ | 0611 | `wow64`: `WINE_PS5_WOW64_CPU` names the process's CPU backend (`wow64native.dll` or `wowprospero.dll`); when the named one cannot be loaded, the prefix's own choice is used instead of ending the process |
+ | 0614 | `wow64`: when the environment's `wow64native.dll` does not start (ntdll reports no native readiness, patch 0883), the process loads `wowprospero.dll` and runs on the translator instead of ending at its first 32-bit instruction; the log has `wow64native.dll did not start (<status>); using wowprospero.dll` |
+diff --git a/tests/test_wine_fiber_stacks.py b/tests/test_wine_fiber_stacks.py
+new file mode 100644
+index 0000000..20e9612
+--- /dev/null
++++ b/tests/test_wine_fiber_stacks.py
+@@ -0,0 +1,81 @@
++#!/usr/bin/env python3
++# SPDX-License-Identifier: LGPL-2.1-or-later
++"""Fiber and thread stacks commit what Windows commits and grow through their
++guard page, where host pages are larger than Windows pages
++(wine/patches/0604): 3000 fibers with an exe's default 1 MiB reserve and
++4 KiB commit (1000 in a WoW64 process) commit one 16 KiB host page each, a
++fiber and a thread recurse 600 KiB deep through their guard pages, and an
++overflow still raises STATUS_STACK_OVERFLOW.
++
++Needs the host Wine from tools/build_host_wine.sh (PROSPERO_HOST_WINE, default
++.deps/wine-host/install/usr/bin/wine) and the mingw compilers; without them
++the check is skipped with a message. Each program runs twice: with the PC's
++4 KiB host pages, where Wine commits stacks whole as before and only the
++growth and overflow are checked, and with WINE_HOST_PAGE_SIZE=16384, which
++makes the PC's Wine keep 16 KiB host pages as the console's does."""
++from __future__ import annotations
++
++import os
++import re
++import shutil
++import subprocess
++import sys
++import tempfile
++from pathlib import Path
++
++ROOT = Path(__file__).resolve().parents[1]
++SOURCE = ROOT / "tests" / "wine_fiber_stacks.c"
++COMPILERS = (("x86_64-w64-mingw32-gcc", 3000), ("i686-w64-mingw32-gcc", 1000))
++HOST_PAGE = 16384
++
++
++def numbers(output: str, label: str) -> dict[str, int]:
++    line = next((line for line in output.splitlines() if line.startswith(label)), "")
++    return {key: int(value) for key, value in re.findall(r"(\w+)=(\d+)", line)}
++
++
++def main() -> int:
++    wine = os.environ.get("PROSPERO_HOST_WINE", str(ROOT / ".deps/wine-host/install/usr/bin/wine"))
++    compilers = [(shutil.which(name), count) for name, count in COMPILERS]
++    if not os.access(wine, os.X_OK) or not all(compiler for compiler, _ in compilers):
++        print("wine fiber stacks skipped: needs the host Wine and the mingw compilers")
++        return 0
++    results = []
++    with tempfile.TemporaryDirectory() as directory:
++        env = dict(os.environ, WINEPREFIX=str(Path(directory) / "pfx"), WINEDEBUG="-all",
++                   WINEDLLOVERRIDES="winemenubuilder.exe=d")
++        for compiler, count in compilers:
++            arch = Path(compiler).name.split("-")[0]
++            exe = Path(directory) / f"fiber-stacks-{arch}.exe"
++            # The game's exe header: 1 MiB reserved, 4 KiB committed.
++            subprocess.run([compiler, "-O1", "-o", str(exe), str(SOURCE),
++                            "-Xlinker", "--stack", "-Xlinker", "1048576,4096"], check=True)
++            for host_page in (0, HOST_PAGE):
++                run_env = dict(env, WINE_HOST_PAGE_SIZE=str(host_page)) if host_page else env
++                done = subprocess.run([wine, str(exe), str(count)], capture_output=True, text=True,
++                                      env=run_env, timeout=300)
++                label = f"{exe.name} host pages {host_page or 'native'}"
++                assert done.returncode == 0, f"{label}: {done.stdout}{done.stderr}"
++                assert "fiber-stacks verdict=pass" in done.stdout, f"{label}: {done.stdout}"
++                fibers = numbers(done.stdout, "fibers=")
++                assert fibers.get("fibers") == count, f"{label}: {done.stdout}"
++                if host_page:
++                    fiber_growth = numbers(done.stdout, "fiber-growth")
++                    thread_growth = numbers(done.stdout, "thread-growth")
++                    # One host page at the top, and a guard host page under it.
++                    assert fibers["committed_per_fiber"] == host_page, f"{label}: {done.stdout}"
++                    assert fibers["guard_per_fiber"] == host_page, f"{label}: {done.stdout}"
++                    assert fiber_growth["before"] == host_page, f"{label}: {done.stdout}"
++                    # A thread has run its start-up (DLL thread attach) by then.
++                    assert thread_growth["before"] <= 8 * host_page, f"{label}: {done.stdout}"
++                    for growth in (fiber_growth, thread_growth):
++                        assert growth["limit_moved"] >= 512 * 1024, f"{label}: {done.stdout}"
++                results.append(f"{arch} {host_page or 'native'}: {fibers['committed_per_fiber']} bytes"
++                               f" per fiber")
++    print("wine fiber stacks passed: stacks grow through their guard page and overflow; committed "
++          + ", ".join(results))
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/tests/wine_fiber_stacks.c b/tests/wine_fiber_stacks.c
+new file mode 100644
+index 0000000..4ab749f
+--- /dev/null
++++ b/tests/wine_fiber_stacks.c
+@@ -0,0 +1,251 @@
++/* SPDX-License-Identifier: LGPL-2.1-or-later
++ * Fiber and thread stacks commit what Windows commits and grow through their
++ * guard page (patch 0604). Assetto Corsa EVO creates about 2,750 fibers with
++ * the default sizes of its exe header, 1 MiB reserved and 4 KiB committed; on
++ * the console every committed page is direct memory, and Wine committed each
++ * fiber's whole stack. This creates as many fibers (the count is argv[1]),
++ * with this exe's 1 MiB and 4 KiB, and reports what their stacks commit; then
++ * on a new fiber and a new thread it sends itself a WM_GETTEXT with a
++ * 200 KB buffer, which Wine passes to the window procedure under the stack
++ * pointer, written from its low end past the guard page, and recurses about
++ * 600 KiB deep, which must grow the stack through the guard page; last it
++ * overflows a fiber and a thread, which must still raise
++ * STATUS_STACK_OVERFLOW. */
++#include <windows.h>
++#include <stdio.h>
++#include <stdlib.h>
++
++#define DEPTH 600          /* frames of about 1 KiB */
++#define GROWTH (512 * 1024)
++
++/* The head of a fiber, as Windows and Wine's kernelbase lay it out. */
++struct fiber_head
++{
++    void *param, *except, *stack_base, *stack_limit, *stack_allocation;
++};
++
++#define TEXT_CHARS 100000  /* a WM_GETTEXT buffer of 200 KB */
++
++struct growth
++{
++    SIZE_T before, after, limit_moved;
++    int guard_below, result, callback;
++};
++
++static void *main_fiber, *recover_sp, *overflow_resume;
++static volatile LONG overflows;
++static volatile LONG stop;  /* never set: the recursion of forever() is not provably endless */
++static DWORD overflow_thread;
++static struct growth fiber_growth, thread_growth;
++
++/* What [low, high) commits, less its guard pages, and its guard pages. */
++static SIZE_T committed(const char *low, const char *high, SIZE_T *guard)
++{
++    MEMORY_BASIC_INFORMATION mbi;
++    SIZE_T total = 0;
++
++    if (guard) *guard = 0;
++    while (low < high && VirtualQuery(low, &mbi, sizeof(mbi)))
++    {
++        SIZE_T size = min(mbi.RegionSize, (SIZE_T)(high - low));
++
++        if (mbi.State == MEM_COMMIT && (mbi.Protect & PAGE_GUARD)) { if (guard) *guard += size; }
++        else if (mbi.State == MEM_COMMIT) total += size;
++        low += size;
++    }
++    return total;
++}
++
++/* What the current stack commits, from its allocation base to its top. */
++static SIZE_T own_stack(void)
++{
++    NT_TIB *tib = (NT_TIB *)NtCurrentTeb();
++    MEMORY_BASIC_INFORMATION mbi;
++
++    VirtualQuery(tib->StackLimit, &mbi, sizeof(mbi));
++    return committed(mbi.AllocationBase, tib->StackBase, NULL);
++}
++
++static __attribute__((noinline)) int recurse(int depth)
++{
++    volatile char frame[1000];
++
++    frame[0] = (char)depth;
++    frame[sizeof(frame) - 1] = 1;
++    if (!depth) return frame[0];
++    return recurse(depth - 1) + frame[sizeof(frame) - 1];
++}
++
++static __attribute__((noinline)) int forever(int depth)
++{
++    volatile char frame[1000];
++
++    frame[0] = (char)depth;
++    if (stop) return 0;
++    return forever(depth + 1) + frame[0];
++}
++
++static LRESULT CALLBACK text_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
++{
++    if (msg == WM_GETTEXT && wparam > 5)
++    {
++        lstrcpyW((WCHAR *)lparam, L"fiber");
++        return 5;
++    }
++    return DefWindowProcW(hwnd, msg, wparam, lparam);
++}
++
++/* A window procedure's WM_GETTEXT buffer, on the current stack. */
++static int large_callback(void)
++{
++    static WCHAR text[TEXT_CHARS];
++    HWND hwnd = CreateWindowExW(0, L"pw_fiber_stacks", L"", 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, NULL, NULL);
++    LRESULT length;
++
++    if (!hwnd) return 0;
++    text[0] = 0;
++    length = SendMessageW(hwnd, WM_GETTEXT, TEXT_CHARS, (LPARAM)text);
++    DestroyWindow(hwnd);
++    return length == 5 && !lstrcmpW(text, L"fiber");
++}
++
++/* Runs a large callback and recurses on the current stack, and records how
++ * it grew. */
++static void grow(struct growth *g)
++{
++    NT_TIB *tib = (NT_TIB *)NtCurrentTeb();
++    char *limit = tib->StackLimit;
++    MEMORY_BASIC_INFORMATION mbi;
++
++    g->before = own_stack();
++    g->callback = large_callback();
++    g->result = recurse(DEPTH);
++    g->after = own_stack();
++    g->limit_moved = limit - (char *)tib->StackLimit;
++    g->guard_below = VirtualQuery((char *)tib->StackLimit - 1, &mbi, sizeof(mbi)) &&
++                     mbi.State == MEM_COMMIT && (mbi.Protect & PAGE_GUARD);
++}
++
++static void print_growth(const char *what, const struct growth *g)
++{
++    printf("%s before=%llu after=%llu limit_moved=%llu guard_below=%d callback=%d\n", what,
++           (unsigned long long)g->before, (unsigned long long)g->after, (unsigned long long)g->limit_moved,
++           g->guard_below, g->callback);
++}
++
++static void WINAPI grow_fiber(void *param)
++{
++    grow(param);
++    SwitchToFiber(main_fiber);
++}
++
++static DWORD WINAPI grow_thread(void *param)
++{
++    grow(param);
++    return 0;
++}
++
++/* Where an overflowed stack resumes, on its top page. */
++static void overflow_fiber_done(void) { SwitchToFiber(main_fiber); }
++static void overflow_thread_done(void) { ExitThread(0); }
++
++static LONG CALLBACK overflow_handler(EXCEPTION_POINTERS *ep)
++{
++    if (ep->ExceptionRecord->ExceptionCode != STATUS_STACK_OVERFLOW) return EXCEPTION_CONTINUE_SEARCH;
++    if (GetCurrentThreadId() != overflow_thread) return EXCEPTION_CONTINUE_SEARCH;
++    InterlockedIncrement(&overflows);
++#ifdef _WIN64
++    ep->ContextRecord->Rsp = (DWORD64)recover_sp;
++    ep->ContextRecord->Rip = (DWORD64)overflow_resume;
++#else
++    ep->ContextRecord->Esp = (DWORD)recover_sp;
++    ep->ContextRecord->Eip = (DWORD)overflow_resume;
++#endif
++    return EXCEPTION_CONTINUE_EXECUTION;
++}
++
++static void overflow_here(void *resume)
++{
++    char *top = ((NT_TIB *)NtCurrentTeb())->StackBase;
++
++    /* A call's return address just pushed, 2 KiB under the top. */
++    recover_sp = (void *)((((UINT_PTR)top - 0x800) & ~(UINT_PTR)15) - sizeof(void *));
++    overflow_resume = resume;
++    forever(0);
++}
++
++static void WINAPI overflow_fiber(void *param)
++{
++    (void)param;
++    overflow_here((void *)overflow_fiber_done);
++}
++
++static DWORD WINAPI overflow_in_thread(void *param)
++{
++    (void)param;
++    overflow_thread = GetCurrentThreadId();
++    overflow_here((void *)overflow_thread_done);
++    return 1;
++}
++
++int main(int argc, char **argv)
++{
++    int count = argc > 1 ? atoi(argv[1]) : 3000, created = 0, i, fiber_overflow, thread_overflow;
++    void **fibers = calloc(count, sizeof(*fibers));
++    SIZE_T total = 0, guard_total = 0, reserve = 0, guard;
++    WNDCLASSW cls = { 0 };
++    HANDLE thread;
++    void *fiber;
++    BOOL ok;
++
++    cls.lpfnWndProc = text_proc;
++    cls.lpszClassName = L"pw_fiber_stacks";
++    main_fiber = ConvertThreadToFiber(NULL);
++    if (!fibers || !main_fiber || !RegisterClassW(&cls)) { printf("fiber-stacks verdict=fail setup\n"); return 1; }
++
++    for (i = 0; i < count; i++)
++    {
++        struct fiber_head *head;
++
++        if (!(fibers[i] = CreateFiberEx(0, 0, 0, grow_fiber, NULL))) break;
++        head = fibers[i];
++        total += committed(head->stack_allocation, head->stack_base, &guard);
++        guard_total += guard;
++        reserve += (char *)head->stack_base - (char *)head->stack_allocation;
++        created++;
++    }
++    printf("fibers=%d reserve_per_fiber=%llu committed=%llu committed_per_fiber=%llu guard_per_fiber=%llu\n",
++           created, (unsigned long long)(created ? reserve / created : 0), (unsigned long long)total,
++           (unsigned long long)(created ? total / created : 0), (unsigned long long)(created ? guard_total / created : 0));
++    for (i = 0; i < created; i++) DeleteFiber(fibers[i]);
++
++    fiber = CreateFiberEx(0, 0, 0, grow_fiber, &fiber_growth);
++    SwitchToFiber(fiber);
++    DeleteFiber(fiber);
++    print_growth("fiber-growth", &fiber_growth);
++
++    thread = CreateThread(NULL, 0, grow_thread, &thread_growth, 0, NULL);
++    WaitForSingleObject(thread, INFINITE);
++    CloseHandle(thread);
++    print_growth("thread-growth", &thread_growth);
++
++    AddVectoredExceptionHandler(1, overflow_handler);
++    overflow_thread = GetCurrentThreadId();
++    fiber = CreateFiberEx(0, 0, 0, overflow_fiber, NULL);
++    SwitchToFiber(fiber);
++    DeleteFiber(fiber);
++    fiber_overflow = overflows;
++    thread = CreateThread(NULL, 0, overflow_in_thread, NULL, 0, NULL);
++    WaitForSingleObject(thread, INFINITE);
++    CloseHandle(thread);
++    thread_overflow = overflows - fiber_overflow;
++    printf("overflow fiber=%d thread=%d\n", fiber_overflow, thread_overflow);
++
++    ok = created == count && fiber_overflow == 1 && thread_overflow == 1;
++    ok = ok && fiber_growth.result == DEPTH && thread_growth.result == DEPTH;
++    ok = ok && fiber_growth.after >= GROWTH && thread_growth.after >= GROWTH;
++    ok = ok && fiber_growth.guard_below && thread_growth.guard_below;
++    ok = ok && fiber_growth.callback && thread_growth.callback;
++    printf("fiber-stacks verdict=%s\n", ok ? "pass" : "fail");
++    return ok ? 0 : 1;
++}
+diff --git a/wine/patches/0604-ntdll-ps5-commit-stacks-as-windows-does.patch b/wine/patches/0604-ntdll-ps5-commit-stacks-as-windows-does.patch
+new file mode 100644
+index 0000000..2abfd5c
+--- /dev/null
++++ b/wine/patches/0604-ntdll-ps5-commit-stacks-as-windows-does.patch
+@@ -0,0 +1,292 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Wed, 28 Oct 2026 18:00:00 +0100
++Subject: [PATCH] ntdll: Commit thread and fiber stacks as Windows does on PS5.
++
++Wine commits the whole stack of a thread or fiber when it creates it,
++less the guard page at the bottom. On the PS5 every committed page is
++direct memory at once (patch 0600), so each stack cost its whole
++reserve. Assetto Corsa EVO creates about 2,750 fibers at startup, each
++with its exe's 1 MiB reserve and 4 KiB commit, and Wine committed about
++2.7 GiB of direct memory for them.
++
++Where host pages are larger than Windows pages (the console's 16 KiB,
++or a PC with WINE_HOST_PAGE_SIZE), a stack now commits what Windows
++commits: its commit size at the top, rounded up to host pages, with a
++guard host page under it, and the rest stays reserved. It grows through
++the guard page as Wine's stacks always have: grow_thread_stack commits
++that host page and guards the next one down, and SwitchToFiber puts a
++fiber's stack in the TEB, where the fault handler looks for it. The
++Unix side lays out thread stacks this way; a caller that commits all it
++reserves (the WoW64 CPU's 64-bit stack) still gets the whole stack.
++RtlCreateUserStack lays out fiber stacks this way in a PS5 title
++(WINE_PS5_NTDLL_DIR) or with WINE_HOST_PAGE_SIZE set, and returns a
++failed commit instead of ignoring it.
++
++Wine writes some of its own frames on a thread's stack starting from
++their low end, past the guard page: signal_start_thread clears the
++60 KiB under a new thread's initial context, and a user callback's
++arguments can be larger than a guard page (a WM_GETTEXT buffer is
++passed whole). A fault on a reserved page of the current thread's
++stack, under its guard page, now commits everything up to the stack
++limit, as touching each guard page in turn would have;
++virtual_setup_exception does the same before it writes an exception
++frame. So a fiber starts with 16 KiB committed and a thread with
++64 KiB. A PC with 4 KiB host pages keeps committing stacks whole, as
++upstream does.
++---
++ dlls/ntdll/thread.c       | 59 +++++++++++++++++++++++++-
++ dlls/ntdll/unix/virtual.c | 89 ++++++++++++++++++++++++++++++++++++---
++ 2 files changed, 141 insertions(+), 7 deletions(-)
++
++diff --git a/dlls/ntdll/thread.c b/dlls/ntdll/thread.c
++index fe083be..8df35db 100644
++--- a/dlls/ntdll/thread.c
+++++ b/dlls/ntdll/thread.c
++@@ -298,6 +298,35 @@ NTSTATUS WINAPI RtlCreateUserThread( HANDLE process, SECURITY_DESCRIPTOR *descr,
++ }
++ 
++ 
+++/**********************************************************************
+++ *           stack_commit_granule
+++ *
+++ * The host page a fiber stack commits and guards in when it commits what
+++ * Windows commits and grows through its guard page, as the Unix side lays
+++ * out thread stacks where host pages are larger than Windows pages; 0 to
+++ * commit the whole stack. In a PS5 title (WINE_PS5_NTDLL_DIR) every
+++ * committed page is direct memory at once, and host pages are 16 KiB; on a
+++ * PC, WINE_HOST_PAGE_SIZE keeps larger host pages to run that scheme.
+++ */
+++static SIZE_T stack_commit_granule(void)
+++{
+++    static SIZE_T granule = ~(SIZE_T)0;
+++    WCHAR value[16];
+++    SIZE_T len, size = 0;
+++
+++    if (granule != ~(SIZE_T)0) return granule;
+++    if (!RtlQueryEnvironmentVariable( NULL, L"WINE_HOST_PAGE_SIZE", 19, value, ARRAY_SIZE(value) - 1, &len ))
+++    {
+++        value[len] = 0;
+++        size = wcstoul( value, NULL, 0 );
+++        if (size <= page_size || size > 0x10000 || (size & (size - 1))) size = 0;
+++    }
+++    else if (RtlQueryEnvironmentVariable( NULL, L"WINE_PS5_NTDLL_DIR", 18, value, 0, &len ) != STATUS_VARIABLE_NOT_FOUND)
+++        size = 0x4000;
+++    return granule = size;
+++}
+++
+++
++ /**********************************************************************
++  *           RtlCreateUserStack (NTDLL.@)
++  */
++@@ -305,6 +334,7 @@ NTSTATUS WINAPI RtlCreateUserStack( SIZE_T commit, SIZE_T reserve, ULONG zero_bi
++                                     SIZE_T commit_align, SIZE_T reserve_align, INITIAL_TEB *stack )
++ {
++     PROCESS_STACK_ALLOCATION_INFORMATION alloc;
+++    SIZE_T granule = stack_commit_granule(), top = 0;
++     NTSTATUS status;
++ 
++     TRACE("commit %#Ix, reserve %#Ix, zero_bits %lu, commit_align %#Ix, reserve_align %#Ix, stack %p\n",
++@@ -331,7 +361,34 @@ NTSTATUS WINAPI RtlCreateUserStack( SIZE_T commit, SIZE_T reserve, ULONG zero_bi
++     alloc.ZeroBits = zero_bits;
++     status = NtSetInformationProcess( GetCurrentProcess(), ProcessThreadStackAllocation,
++                                       &alloc, sizeof(alloc) );
++-    if (!status)
+++    if (granule) top = max( (commit + granule - 1) & ~(granule - 1), granule );
+++    if (!status && top && top + 2 * granule <= reserve)
+++    {
+++        /* the top of the stack and a guard page under it, in host pages, over
+++         * the no-access page; the rest is committed as the stack grows
+++         * through the guard page */
+++        char *base = (char *)alloc.StackBase + reserve;
+++        SIZE_T size = top;
+++        void *addr = base - top;
+++
+++        status = NtAllocateVirtualMemory( GetCurrentProcess(), &addr, 0, &size, MEM_COMMIT, PAGE_READWRITE );
+++        addr = base - top - granule;
+++        size = granule;
+++        if (!status)
+++            status = NtAllocateVirtualMemory( GetCurrentProcess(), &addr, 0, &size, MEM_COMMIT,
+++                                              PAGE_READWRITE | PAGE_GUARD );
+++        if (status)
+++        {
+++            RtlFreeUserStack( alloc.StackBase );
+++            return status;
+++        }
+++        stack->OldStackBase = 0;
+++        stack->OldStackLimit = 0;
+++        stack->DeallocationStack = alloc.StackBase;
+++        stack->StackBase = base;
+++        stack->StackLimit = base - top;
+++    }
+++    else if (!status)
++     {
++         void *addr;
++         SIZE_T size = page_size;
++diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
++index aaaeff9..3da49eb 100644
++--- a/dlls/ntdll/unix/virtual.c
+++++ b/dlls/ntdll/unix/virtual.c
++@@ -4742,6 +4742,24 @@ NTSTATUS virtual_clear_tls_index( ULONG index )
++ }
++ 
++ 
+++/***********************************************************************
+++ *           stack_commit_on_demand
+++ *
+++ * Whether a thread stack commits what Windows commits, its top and a guard
+++ * page under it, and grows through the guard page, rather than being
+++ * committed whole. On the PS5 every committed page is direct memory at
+++ * once, so a stack committed whole costs its whole reserve (1 MiB for most,
+++ * of which a thread or fiber seldom touches more than a few pages), and its
+++ * 16 KiB host pages make a guard page larger than any frame Wine writes under
+++ * a stack pointer. A PC with 4 KiB host pages keeps committing stacks whole:
+++ * there a page costs nothing until it is touched.
+++ */
+++static inline BOOL stack_commit_on_demand(void)
+++{
+++    return host_page_size > page_size;
+++}
+++
+++
++ /***********************************************************************
++  *           virtual_alloc_thread_stack
++  */
++@@ -4751,7 +4769,7 @@ NTSTATUS virtual_alloc_thread_stack( INITIAL_TEB *stack, ULONG_PTR limit_low, UL
++     struct file_view *view;
++     NTSTATUS status;
++     sigset_t sigset;
++-    SIZE_T size;
+++    SIZE_T size, top = 0;
++ 
++     if (!reserve_size) reserve_size = main_image_info.MaximumStackSize;
++     if (!commit_size) commit_size = main_image_info.CommittedStackSize;
++@@ -4760,9 +4778,18 @@ NTSTATUS virtual_alloc_thread_stack( INITIAL_TEB *stack, ULONG_PTR limit_low, UL
++     if (size < 1024 * 1024) size = 1024 * 1024;  /* Xlib needs a large stack */
++     size = ROUND_SIZE( 0, size, granularity_mask );
++ 
+++    /* Commit the top of the stack in host pages, with a guard page under it
+++     * and the no-access page at the bottom; a caller that commits all it
+++     * reserves (the WoW64 CPU's 64-bit stack) gets the whole stack. */
+++    if (guard_page && stack_commit_on_demand() && commit_size < reserve_size)
+++    {
+++        top = ROUND_SIZE( 0, max( commit_size, 1 ), host_page_mask );
+++        if (top + 2 * host_page_size > size) top = 0;
+++    }
+++
++     server_enter_uninterrupted_section( &virtual_mutex, &sigset );
++ 
++-    status = map_view( &view, NULL, size, 0, VPROT_READ | VPROT_WRITE | VPROT_COMMITTED,
+++    status = map_view( &view, NULL, size, 0, VPROT_READ | VPROT_WRITE | (top ? 0 : VPROT_COMMITTED),
++                        limit_low, limit_high, 0 );
++     if (status != STATUS_SUCCESS) goto done;
++ 
++@@ -4770,8 +4797,16 @@ NTSTATUS virtual_alloc_thread_stack( INITIAL_TEB *stack, ULONG_PTR limit_low, UL
++     VALGRIND_STACK_REGISTER( view->base, (char *)view->base + view->size );
++ #endif
++ 
+++    if (top)
+++    {
+++        char *guard = (char *)view->base + view->size - top - host_page_size;
+++
+++        set_page_vprot_bits( guard, top + host_page_size, VPROT_COMMITTED, 0 );
+++        set_page_vprot_bits( guard, host_page_size, VPROT_GUARD, 0 );
+++        mprotect_range( guard, top + host_page_size, 0, 0 );
+++    }
++     /* setup no access guard page */
++-    if (guard_page)
+++    else if (guard_page)
++     {
++         set_page_vprot( view->base, host_page_size, 0 );
++         set_page_vprot( (char *)view->base + host_page_size, host_page_size,
++@@ -4785,7 +4820,8 @@ NTSTATUS virtual_alloc_thread_stack( INITIAL_TEB *stack, ULONG_PTR limit_low, UL
++     stack->OldStackLimit = 0;
++     stack->DeallocationStack = view->base;
++     stack->StackBase = (char *)view->base + view->size;
++-    stack->StackLimit = (char *)view->base + (guard_page ? 2 * host_page_size : 0);
+++    if (top) stack->StackLimit = (char *)stack->StackBase - top;
+++    else stack->StackLimit = (char *)view->base + (guard_page ? 2 * host_page_size : 0);
++ done:
++     server_leave_uninterrupted_section( &virtual_mutex, &sigset );
++     return status;
++@@ -4941,6 +4977,41 @@ static NTSTATUS grow_thread_stack( struct thread_data *data, char *page, struct
++ }
++ 
++ 
+++/***********************************************************************
+++ *           is_stack_reserve
+++ *
+++ * Whether page is in the reserved part of the current thread's stack,
+++ * under its guard page, in a stack committed on demand.
+++ */
+++static BOOL is_stack_reserve( struct thread_data *data, char *page, struct thread_stack_info *stack_info )
+++{
+++    if (!stack_commit_on_demand()) return FALSE;
+++    if (get_host_page_vprot( page ) & VPROT_COMMITTED) return FALSE;
+++    if ((get_page_vprot( page ) & (VPROT_READ | VPROT_WRITE)) != (VPROT_READ | VPROT_WRITE)) return FALSE;
+++    if (!is_inside_thread_stack( data, page, stack_info )) return FALSE;
+++    return page >= stack_info->start + host_page_size && page < stack_info->limit;
+++}
+++
+++
+++/***********************************************************************
+++ *           grow_thread_stack_to
+++ *
+++ * Grows a stack committed on demand to a page under its guard page that was
+++ * touched first. Wine writes some of its own frames on a thread's stack
+++ * from their low end, past the guard page: a new thread clears the 60 KiB
+++ * under its initial context (signal_start_thread), and a user callback's
+++ * arguments can be larger than a guard page (a WM_GETTEXT buffer).
+++ * Everything up to the stack limit is committed, as the guard pages in
+++ * between would have been.
+++ */
+++static NTSTATUS grow_thread_stack_to( struct thread_data *data, char *page, struct thread_stack_info *stack_info )
+++{
+++    set_page_vprot_bits( page, stack_info->limit - page, VPROT_COMMITTED, VPROT_GUARD );
+++    mprotect_range( page, stack_info->limit - page, 0, 0 );
+++    return grow_thread_stack( data, page, stack_info );
+++}
+++
+++
++ /***********************************************************************
++  *           virtual_handle_fault
++  */
++@@ -4950,6 +5021,7 @@ NTSTATUS virtual_handle_fault( struct thread_data *data, EXCEPTION_RECORD *rec,
++     ULONG_PTR err = rec->ExceptionInformation[0];
++     void *addr = (void *)rec->ExceptionInformation[1];
++     char *page = ROUND_ADDR( addr, host_page_mask );
+++    struct thread_stack_info stack_info;
++     BYTE vprot;
++ 
++     mutex_lock( &virtual_mutex );  /* no need for signal masking inside signal handler */
++@@ -4967,7 +5039,6 @@ NTSTATUS virtual_handle_fault( struct thread_data *data, EXCEPTION_RECORD *rec,
++ 
++     if (!is_inside_signal_stack( data, stack ) && (vprot & VPROT_GUARD))
++     {
++-        struct thread_stack_info stack_info;
++         if (!is_inside_thread_stack( data, page, &stack_info ))
++         {
++             set_page_vprot_bits( page, host_page_size, 0, VPROT_GUARD );
++@@ -4976,6 +5047,8 @@ NTSTATUS virtual_handle_fault( struct thread_data *data, EXCEPTION_RECORD *rec,
++         }
++         else ret = grow_thread_stack( data, page, &stack_info );
++     }
+++    else if (!is_inside_signal_stack( data, stack ) && is_stack_reserve( data, page, &stack_info ))
+++        ret = grow_thread_stack_to( data, page, &stack_info );
++     else if (err == EXCEPTION_WRITE_FAULT)
++     {
++         if (vprot & VPROT_WRITEWATCH)
++@@ -5040,8 +5113,12 @@ void *virtual_setup_exception( struct thread_data *data, void *stack_ptr, size_t
++     else if (stack < stack_info.limit)
++     {
++         char *page = ROUND_ADDR( stack, host_page_mask );
+++        NTSTATUS grown = STATUS_SUCCESS;
+++
++         mutex_lock( &virtual_mutex );  /* no need for signal masking inside signal handler */
++-        if ((get_host_page_vprot( page ) & VPROT_GUARD) && grow_thread_stack( data, page, &stack_info ))
+++        if (get_host_page_vprot( page ) & VPROT_GUARD) grown = grow_thread_stack( data, page, &stack_info );
+++        else if (is_stack_reserve( data, page, &stack_info )) grown = grow_thread_stack_to( data, page, &stack_info );
+++        if (grown)
++         {
++             rec->ExceptionCode = STATUS_STACK_OVERFLOW;
++             rec->NumberParameters = 0;
+-- 
+2.43.0
+

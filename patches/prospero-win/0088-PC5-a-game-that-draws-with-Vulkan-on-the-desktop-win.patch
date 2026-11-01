@@ -1,0 +1,93 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leo Lobato <leo@lobato.org>
+Date: Sat, 17 Oct 2026 09:49:17 +0200
+Subject: [PATCH] PC5: a game that draws with Vulkan on the desktop window no
+ longer hangs (Wine patch 0965)
+
+prospero-win f0c5ddd (#701), after the v0.2.0 PC5 builds on, picked onto
+PC5's patches.
+
+- Wine patch 0965: `set_window_pixel_format()` no longer posts `WM_WINE_SETPIXELFORMAT` to the PS5's desktop window. Nothing
+owns the server-created desktop, so the message came back to the game's own queue and posted itself again forever.
+- `vkCreateWin32SurfaceKHR` sets a pixel format on every surface's window, so a game that creates a Vulkan surface on the
+desktop (DXVK or Zink) hung on a black screen with one core busy, as reported for Syndicate.
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+Co-authored-by: Manuel Pereira <manuelpereiralds@gmail.com>
+---
+ PUBLICATION_ALLOWLIST.txt                     |  2 ++
+ docs/WINE_PS5_BUILD.md                        |  3 ++
+ ...l-format-message-loop-on-the-desktop.patch | 36 +++++++++++++++++++
+ 3 files changed, 41 insertions(+)
+ create mode 100644 wine/patches/0965-win32u-ps5-no-pixel-format-message-loop-on-the-desktop.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index 1224c58..c213e7e 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -656,4 +656,6 @@ wine/ps5/pw_framegen_vk.h
+ wine/ps5/pw_pc5_hud.h
+ wine/patches/0877-secur32-log-gnutls-errors-and-the-clock-on-handshake-failure.patch
+ tests/test_build_tls_ps5.py
++wine/patches/0965-win32u-ps5-no-pixel-format-message-loop-on-the-desktop.patch
++wine/patches/0970-ntdll-ps5-trace-each-process-query-class-once.patch
+ wine/patches/0972-faudio-keep-resampling-taps-within-the-samples.patch
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index ba1577c..a69b80f 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -175,6 +175,9 @@ before evaluating a candidate built from that cache.
+ | 0997 | `kernelbase`: on PS5, the listing 0988 writes for `fxc.exe` gives a `def` line's values as plain decimals (`1.0`, `-0.5`, `0.333333343`; vkd3d-shader writes `1.00000000e+00`, and `D3DXAssembleShader` takes no exponent), and a `vs_1_x` shader that fails to compile (vkd3d-shader's `E7002` for `sincos`) is compiled for `vs_2_0` instead, as Far Cry only assembles the listing again on a device that takes `vs_3_0` |
+ | 0998 | `ntdll`: on PS5, a non-alertable `NtWaitForSingleObject` on an event or semaphore whose one try on the shared word (0885, 0887) fails spins up to `WINE_PS5_SYNC_SPIN_US` microseconds (100 by default, 0 off, 1000 at most; never longer than a relative timeout, none for a poll or an absolute time) re-trying the word before it blocks in the server, and stops at once when the server holds the word. While it spins the word stays the client's, so `SetEvent`/`ReleaseSemaphore` need no server call either. Blur sets six events about 2000 times a frame, each waking a worker that waits again, and each of those waits and sets cost several microseconds through the server (5 to 10 ms a frame). The log says `wine-ps5: waits spin up to N us before blocking` at the first such wait, and every 65536 spins how many took the object (`wine-ps5: wait spins: …`); `tests/test_wine_sync_spin.py` runs the spin on the actual word header |
+ | 0999 | `win32u`: on PS5, the user driver hides the pointer once the player hasn't moved it or clicked for `WINE_PS5_CURSOR_IDLE_MS` milliseconds (unset or 0 never; PC5 sets 5000 for a game whose Mouse pointer option says so), both where it draws the cursor over the screen and where Vulkan frames get it from VideoOut's hardware cursor (0740); the next move, even against an edge, or click shows it again, as does the game moving it to another place itself (`SetCursorPos`; Grim Dawn moves its pointer by the controller). A game setting the same place or a new image doesn't count, and the cursor the application set is unchanged for `GetCursorInfo`. A game played with the controller that leaves the Windows cursor on showed it, still, in a corner (Valor Mortis). |
++| 0965 | `win32u`: setting a pixel format on the desktop window no longer posts `WM_WINE_SETPIXELFORMAT` to it. Nothing owns the server-created desktop on the PS5, so the message came back to the game's own queue and posted itself again forever. `vkCreateWin32SurfaceKHR` sets format -1 on every surface's window, so a Vulkan surface on the desktop (DXVK or Zink) kept the game on a black screen with one core busy (Syndicate) |
++| 0970 | `ntdll`: `NtQueryInformationProcess` traces each information class below 128 (all of Windows' classes) only the first time it is queried; Wine's own classes, such as the rarely queried `ProcessWineQpcAnchor`, keep a line per call. The title's default `+process` then still shows process creation and exit, but a game that polls a class every frame no longer fills the log: Call of Juarez Gunslinger's `ProcessAffinityMask` line, 60 times a second, pushed the `+loaddll` lines out of the title log |
++| 0972 | `faudio` (Wine's bundled FAudio 26.09): upstream FAudio a3b49d6 and 2ead980 (2026-09-26). A source voice that played at the output rate never advanced `resampleOffset`, so when it started resampling, the tap loops of `FAudio_INTERNAL_MixSource` ran from the stale offset, `toResample - tap_samples` wrapped and the SSE2 resampler wrote far past `resampled_audio`. Call of Juarez Gunslinger corrupted its process heap and crashed in the mixer, or in the heap. FAudio is a static library, so every `xaudio2_*` and `xactengine*` module is in `PE_MODULES` |
+ 
+ ## Allocator
+ 
+diff --git a/wine/patches/0965-win32u-ps5-no-pixel-format-message-loop-on-the-desktop.patch b/wine/patches/0965-win32u-ps5-no-pixel-format-message-loop-on-the-desktop.patch
+new file mode 100644
+index 0000000..02bb7c8
+--- /dev/null
++++ b/wine/patches/0965-win32u-ps5-no-pixel-format-message-loop-on-the-desktop.patch
+@@ -0,0 +1,36 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Fri, 16 Oct 2026 10:00:00 +0200
++Subject: [PATCH] win32u: Don't post a pixel format to the PS5's desktop.
++
++set_window_pixel_format() can't set a format on a window it holds no WND
++for, so it posts WM_WINE_SETPIXELFORMAT and lets the owner's thread set
++it. On a desktop Wine that owner is explorer. On the PS5 the server
++creates the desktop and nothing owns it, so the message comes back to
++this process, whose handler calls set_window_pixel_format() again, which
++posts the message again. The game's message loop never finds an empty
++queue: a black screen with one core busy (Syndicate).
++
++A game reaches this when it creates a Vulkan surface on the desktop
++window: vkCreateWin32SurfaceKHR() calls set_window_pixel_format() with
++-1 for every surface, so DXVK and Zink both hang. The desktop now keeps
++no format; get_window_pixel_format() already gives up on it.
++---
++
++diff --git a/dlls/win32u/window.c b/dlls/win32u/window.c
++--- a/dlls/win32u/window.c
+++++ b/dlls/win32u/window.c
++@@ -1734,6 +1734,11 @@ BOOL set_window_pixel_format( HWND hwnd, int format, BOOL internal )
++     if (!win || win == WND_DESKTOP || win == WND_OTHER_PROCESS)
++     {
++         WARN( "setting format %d on win %p semi-stub!\n", format, hwnd );
+++#ifdef WINE_PS5_USER_DRIVER
+++        /* no explorer owns the server-created desktop: a message posted to
+++         * it comes back to this process, lands here and is posted again */
+++        if (win == WND_DESKTOP) return FALSE;
+++#endif
++         NtUserPostMessage( hwnd, WM_WINE_SETPIXELFORMAT, format, internal );
++         return FALSE;
++     }
++-- 
++2.43.0
+-- 
+2.43.0
+

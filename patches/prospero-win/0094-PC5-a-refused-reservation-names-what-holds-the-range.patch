@@ -1,0 +1,138 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zak Peirce <plastikman@gmail.com>
+Date: Fri, 30 Oct 2026 09:32:53 -0700
+Subject: [PATCH] PC5: a refused reservation names what holds the range (Wine
+ patch 0983)
+
+prospero-win df3e85f (#737), after the v0.2.0 PC5 builds on, picked onto
+PC5's patches.
+
+sceKernelReserveVirtualRange() answers ENOMEM (0x8002000c) both for a range
+another mapping holds and for one it cannot grant, so its return code does not
+say which, while anon_mmap_tryfixed()'s callers need EEXIST for a collision in
+either case: map_view relocates on it and reserve_area skips the block. The
+errno is left alone and the cause is logged instead, through the query
+structure native/wine64_main.c already declares.
+
+At a fixed base the distinction is the whole diagnosis. 0130 notes that the
+title's own image may occupy a program's preferred base and relocates the
+program when it does; an image whose relocations were stripped at link time
+cannot be relocated and must have that base, and today it fails with
+STATUS_CONFLICTING_ADDRESSES with nothing saying whether the base was taken or
+the address space was exhausted.
+
+Claude-Session: https://claude.ai/code/session_01SLRg9a2FLR6N3VhHWuegKB
+
+Co-authored-by: Claude Opus 5 <noreply@anthropic.com>
+---
+ PUBLICATION_ALLOWLIST.txt                     |  1 +
+ docs/WINE_PS5_BUILD.md                        |  4 +-
+ ...he-occupant-of-a-refused-reservation.patch | 69 +++++++++++++++++++
+ 3 files changed, 71 insertions(+), 3 deletions(-)
+ create mode 100644 wine/patches/0983-ntdll-ps5-name-the-occupant-of-a-refused-reservation.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index da68645..8a32757 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -672,4 +672,5 @@ wine/patches/0972-faudio-keep-resampling-taps-within-the-samples.patch
+ wine/patches/0973-ntdll-ps5-title-menu-snapshot.patch
+ wine/patches/0974-ntdll-fault-on-protected-pages-that-share-a-host-page.patch
+ wine/patches/0975-ntdll-keep-a-host-page-whole-when-accesses-beside-an-inaccessible-page-run-hot.patch
++wine/patches/0983-ntdll-ps5-name-the-occupant-of-a-refused-reservation.patch
+ tests/test_wine_mouse_wheel.py
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 9b36c87..577f01c 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -176,11 +176,9 @@ before evaluating a candidate built from that cache.
+ | 0998 | `ntdll`: on PS5, a non-alertable `NtWaitForSingleObject` on an event or semaphore whose one try on the shared word (0885, 0887) fails spins up to `WINE_PS5_SYNC_SPIN_US` microseconds (100 by default, 0 off, 1000 at most; never longer than a relative timeout, none for a poll or an absolute time) re-trying the word before it blocks in the server, and stops at once when the server holds the word. While it spins the word stays the client's, so `SetEvent`/`ReleaseSemaphore` need no server call either. Blur sets six events about 2000 times a frame, each waking a worker that waits again, and each of those waits and sets cost several microseconds through the server (5 to 10 ms a frame). The log says `wine-ps5: waits spin up to N us before blocking` at the first such wait, and every 65536 spins how many took the object (`wine-ps5: wait spins: …`); `tests/test_wine_sync_spin.py` runs the spin on the actual word header |
+ | 0999 | `win32u`: on PS5, the user driver hides the pointer once the player hasn't moved it or clicked for `WINE_PS5_CURSOR_IDLE_MS` milliseconds (unset or 0 never; PC5 sets 5000 for a game whose Mouse pointer option says so), both where it draws the cursor over the screen and where Vulkan frames get it from VideoOut's hardware cursor (0740); the next move, even against an edge, or click shows it again, as does the game moving it to another place itself (`SetCursorPos`; Grim Dawn moves its pointer by the controller). A game setting the same place or a new image doesn't count, and the cursor the application set is unchanged for `GetCursorInfo`. A game played with the controller that leaves the Windows cursor on showed it, still, in a corner (Valor Mortis). |
+ | 0965 | `win32u`: setting a pixel format on the desktop window no longer posts `WM_WINE_SETPIXELFORMAT` to it. Nothing owns the server-created desktop on the PS5, so the message came back to the game's own queue and posted itself again forever. `vkCreateWin32SurfaceKHR` sets format -1 on every surface's window, so a Vulkan surface on the desktop (DXVK or Zink) kept the game on a black screen with one core busy (Syndicate) |
+-| 0970 | `ntdll`: `NtQueryInformationProcess` traces each information class below 128 (all of Windows' classes) only the first time it is queried; Wine's own classes, such as the rarely queried `ProcessWineQpcAnchor`, keep a line per call. The title's default `+process` then still shows process creation and exit, but a game that polls a class every frame no longer fills the log: Call of Juarez Gunslinger's `ProcessAffinityMask` line, 60 times a second, pushed the `+loaddll` lines out of the title log |
+-| 0972 | `faudio` (Wine's bundled FAudio 26.09): upstream FAudio a3b49d6 and 2ead980 (2026-09-26). A source voice that played at the output rate never advanced `resampleOffset`, so when it started resampling, the tap loops of `FAudio_INTERNAL_MixSource` ran from the stale offset, `toResample - tap_samples` wrapped and the SSE2 resampler wrote far past `resampled_audio`. Call of Juarez Gunslinger corrupted its process heap and crashed in the mixer, or in the heap. FAudio is a static library, so every `xaudio2_*` and `xactengine*` module is in `PE_MODULES` |
+-| 0973 | `ntdll`: a private process information class, `ProcessWineTitleMenu` (0x50574D01), returns the title's in-game menu (`wine/ps5/menu/pw_title_menu.h`): the text and cursor the title stored in the sink with `pw_wine_set_menu`, for DXVK's HUD to draw over the game once a frame. Pointer-free, one layout for PE32 and PE64; WoW64 passes it through as it does the QPC anchor (0900), and it is never traced (0970). On a PC, `PW_TITLE_MENU_DEMO=1` returns a fixed demo menu so the drawing can be checked without a console |
+ | 0974 | `ntdll`: outside images, a page made read-only or inaccessible takes writing, or all access, away from its whole 16 KiB host page, so touching it faults as on Windows; the host page used to get the union of its pages' protections, and a write to a protected page beside a writable one raised nothing (DuckStation then ran stale recompiled code). An access that faults only because of such a neighbour is single-stepped with the host page open for that one instruction, unseen by the program. On a PC, `WINE_HOST_PAGE_SIZE=16384` keeps 16 KiB host pages to run this scheme (`tests/test_wine_subpage_protect.py`) |
+ | 0975 (upstream 0986) | `ntdll`: accesses that 0974 steps over beside a protected page are counted, reads too. When a host page has had 256 of them, a write beside a read-only page is still reported there, and any other access gives the host page the union of its pages' protections, as before 0974, until a protection in it changes. Beside an inaccessible page nothing ended the stepping: Unity's Mono garbage collector (Darkwood) took about 13,000 steps a second and ran at 5 fps |
++| 0983 | `ntdll`: a refused fixed reservation names what holds the range. `sceKernelReserveVirtualRange` answers ENOMEM both for a range another mapping holds and for one it cannot grant, and the callers need `EEXIST` for a collision either way, so the errno is unchanged and `sceKernelVirtualQuery` reports the cause: a record with a protection, flags and a name is a mapping, a cleared record past the end of the request is a hole. Tells a title image lying across a program's preferred base (0130) apart from an exhausted address space |
+ 
+ ## Allocator
+ 
+diff --git a/wine/patches/0983-ntdll-ps5-name-the-occupant-of-a-refused-reservation.patch b/wine/patches/0983-ntdll-ps5-name-the-occupant-of-a-refused-reservation.patch
+new file mode 100644
+index 0000000..fbe037e
+--- /dev/null
++++ b/wine/patches/0983-ntdll-ps5-name-the-occupant-of-a-refused-reservation.patch
+@@ -0,0 +1,69 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Thu, 29 Oct 2026 16:00:00 +0200
++Subject: [PATCH] ntdll: Name the occupant of a refused reservation on PS5.
++
++sceKernelReserveVirtualRange() answers ENOMEM (0x8002000c) both for a
++range another mapping holds and for one it cannot grant, so its return
++code does not say which happened, and anon_mmap_tryfixed()'s callers
++need EEXIST for a collision in either case (map_view relocates on it;
++reserve_area skips the block). The errno is therefore kept as it is and
++the cause is logged instead.
++
++sceKernelVirtualQuery() separates them: a record with a protection,
++flags and a name describes a mapping that holds the range, while a
++cleared record reaching past the end of the request describes a hole,
++which means the reservation was refused rather than blocked.
++
++This matters at a fixed base. 0130 notes that the title's own image may
++occupy a program's preferred base (0x400000 for most executables) and
++relocates the program when it does; without this line that case and an
++exhausted address space produce the same EEXIST, and an image whose
++relocations were stripped at link time -- which cannot be relocated and
++must have its preferred base -- fails with STATUS_CONFLICTING_ADDRESSES
++and nothing saying why.
++
++Uses the query structure already declared in native/wine64_main.c.
++---
++diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
++index 5e601568fd..8125865cef 100644
++--- a/dlls/ntdll/unix/virtual.c
+++++ b/dlls/ntdll/unix/virtual.c
++@@ -836,6 +836,7 @@ static size_t unmap_area_above_user_limit( void *addr, size_t size )
++  * mmap( NULL ), whose placement region fills after a few hundred MiB, a
++  * reservation can cover the whole low 4 GiB that WoW64 needs. */
++ extern int sceKernelReserveVirtualRange( void **addr, size_t size, int flags, size_t align );
+++extern int sceKernelVirtualQuery( const void *addr, int flags, void *info, size_t size );
++ #define PS5_MAP_FIXED        0x10
++ #define PS5_MAP_NO_OVERWRITE 0x80
++ #define PS5_HEAP_RESERVE     0x4000000
++@@ -864,6 +865,29 @@ static void *anon_mmap_tryfixed( void *start, size_t size, int prot, int flags )
++     ptr = start;
++     if (sceKernelReserveVirtualRange( &ptr, size, PS5_MAP_FIXED | PS5_MAP_NO_OVERWRITE, host_page_size ))
++     {
+++        /* The kernel answers ENOMEM (0x8002000c) both for a range another
+++         * mapping holds and for one it cannot grant, so the return code
+++         * alone does not say which, and the callers below must see EEXIST
+++         * for a collision either way. Name the occupant instead, so a log
+++         * tells the two apart: a query reporting protection, flags and a
+++         * name describes a mapping, while a cleared record covering the
+++         * whole request describes a hole, meaning the reservation was
+++         * refused rather than blocked. This matters most at a fixed base,
+++         * where a title's own image lying across a program's preferred base
+++         * is indistinguishable from an exhausted address space. */
+++        struct { void *start, *end; int64_t offset; int32_t protection, memory_type;
+++                 uint8_t flags; char name[32]; } info;
+++        int query;
+++
+++        memset( &info, 0, sizeof(info) );
+++        query = sceKernelVirtualQuery( start, 1, &info, sizeof(info) );
+++        if (query || (!info.protection && !info.flags && (char *)info.end >= (char *)start + size))
+++            ERR( "reservation refused for %p-%p, which no mapping holds (query %d)\n",
+++                 start, (char *)start + size, query );
+++        else
+++            ERR( "reservation refused for %p-%p: %p-%p is \"%.31s\", protection %#x, flags %#x\n",
+++                 start, (char *)start + size, info.start, info.end, info.name,
+++                 info.protection, info.flags );
++         errno = EEXIST;
++         return MAP_FAILED;
++     }
+-- 
+2.43.0
+

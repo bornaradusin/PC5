@@ -1,0 +1,349 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leo Lobato <leo@lobato.org>
+Date: Fri, 30 Oct 2026 16:59:54 +0100
+Subject: [PATCH] PC5: accesses beside an inaccessible page stop being stepped
+ once they run hot (Wine patch 0975)
+
+prospero-win 959b2d1 (#739), after the v0.2.0 PC5 builds on, picked onto
+PC5's patches. Upstream's Wine patch 0986 is 0975 here: PC5's own 0986
+has that number.
+
+- Patch 0974 single-steps an access that faults only because a protected page shares its 16 KiB host page. It stopped
+  doing that only for writes beside a read-only page, so an access beside an inaccessible page was stepped forever.
+- Every stepped access is now counted, reads too. After 256 on one host page, a write beside a read-only page is still
+  reported, and any other access gives the host page the union of its pages' protections until a protection in it
+  changes.
+- `tests/wine_subpage_protect.c` checks that 20,000 reads and writes beside an inaccessible page stop faulting, and that
+  the next protection change faults again.
+---
+ PUBLICATION_ALLOWLIST.txt                     |   2 +
+ docs/WINE_PS5_BUILD.md                        |   6 +-
+ tests/test_wine_subpage_protect.py            |   3 +-
+ tests/wine_subpage_protect.c                  |  23 +-
+ ...-beside-an-inaccessible-page-run-hot.patch | 204 ++++++++++++++++++
+ 5 files changed, 231 insertions(+), 7 deletions(-)
+ create mode 100644 wine/patches/0975-ntdll-keep-a-host-page-whole-when-accesses-beside-an-inaccessible-page-run-hot.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index c182b0e..da68645 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -671,3 +671,5 @@ wine/patches/0970-ntdll-ps5-trace-each-process-query-class-once.patch
+ wine/patches/0972-faudio-keep-resampling-taps-within-the-samples.patch
+ wine/patches/0973-ntdll-ps5-title-menu-snapshot.patch
+ wine/patches/0974-ntdll-fault-on-protected-pages-that-share-a-host-page.patch
++wine/patches/0975-ntdll-keep-a-host-page-whole-when-accesses-beside-an-inaccessible-page-run-hot.patch
++tests/test_wine_mouse_wheel.py
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 7f8681d..9b36c87 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -66,7 +66,6 @@ before evaluating a candidate built from that cache.
+ | 0500–0899 | Execution core: signals, TEB/GS, virtual memory, process startup |
+ 
+ | Patch | Effect |
+-| --- | --- |
+ | 0100 | `ntdll`: a PS5 title has no fstab and no `getfsent`; report no default device |
+ | 0101 | `server`: resolve file names into server-owned memory instead of `realpath(path, NULL)` |
+ | 0102 | `server`: size the user shared data section to a whole host page; with 16 KiB pages that page also holds the syscall dispatcher pointer at `0x7ffe1000` (patch 0530) |
+@@ -181,6 +180,7 @@ before evaluating a candidate built from that cache.
+ | 0972 | `faudio` (Wine's bundled FAudio 26.09): upstream FAudio a3b49d6 and 2ead980 (2026-09-26). A source voice that played at the output rate never advanced `resampleOffset`, so when it started resampling, the tap loops of `FAudio_INTERNAL_MixSource` ran from the stale offset, `toResample - tap_samples` wrapped and the SSE2 resampler wrote far past `resampled_audio`. Call of Juarez Gunslinger corrupted its process heap and crashed in the mixer, or in the heap. FAudio is a static library, so every `xaudio2_*` and `xactengine*` module is in `PE_MODULES` |
+ | 0973 | `ntdll`: a private process information class, `ProcessWineTitleMenu` (0x50574D01), returns the title's in-game menu (`wine/ps5/menu/pw_title_menu.h`): the text and cursor the title stored in the sink with `pw_wine_set_menu`, for DXVK's HUD to draw over the game once a frame. Pointer-free, one layout for PE32 and PE64; WoW64 passes it through as it does the QPC anchor (0900), and it is never traced (0970). On a PC, `PW_TITLE_MENU_DEMO=1` returns a fixed demo menu so the drawing can be checked without a console |
+ | 0974 | `ntdll`: outside images, a page made read-only or inaccessible takes writing, or all access, away from its whole 16 KiB host page, so touching it faults as on Windows; the host page used to get the union of its pages' protections, and a write to a protected page beside a writable one raised nothing (DuckStation then ran stale recompiled code). An access that faults only because of such a neighbour is single-stepped with the host page open for that one instruction, unseen by the program. On a PC, `WINE_HOST_PAGE_SIZE=16384` keeps 16 KiB host pages to run this scheme (`tests/test_wine_subpage_protect.py`) |
++| 0975 (upstream 0986) | `ntdll`: accesses that 0974 steps over beside a protected page are counted, reads too. When a host page has had 256 of them, a write beside a read-only page is still reported there, and any other access gives the host page the union of its pages' protections, as before 0974, until a protection in it changes. Beside an inaccessible page nothing ended the stepping: Unity's Mono garbage collector (Darkwood) took about 13,000 steps a second and ran at 5 fps |
+ 
+ ## Allocator
+ 
+@@ -855,7 +855,6 @@ back buffer back (`GetRenderTargetData`/`LockRect`, or a staging copy and
+ `Map`) and check the centre pixel before each `Present`.
+ 
+ | Program | Result |
+-| --- | --- |
+ | Vulkan probe, x64 and x86 | Instance, physical device, win32 surface, device and swapchain all succeed, and teardown is clean |
+ | DXVK 2.6.2 D3D11, D3D10, D3D9, D3D8 pixel controls, x64 and x86 | Both frames read back with the expected centre pixel (`844c1cff`, then `1c4c84ff`) and no mismatches; every call returns `S_OK`; ps5vk logs a completed flip for each frame (`PS5VK_VIDEO_PRESENTED`, tokens 1 and 2) and no refusal |
+ | ps5vk's `vkmap` probe, x86 | Two host-visible buffers map at 32-bit addresses (`0x818e0000`, `0x81900000`) through ps5vk's low CPU alias, and a 1,024-byte GPU copy between them has no mismatches |
+@@ -898,8 +897,6 @@ shader on the console (Wine's `d3dcompiler_47`), draw a triangle and read
+ back its centre and a corner of the background. The scanout controls hold a
+ four-colour 1920x1080 pattern for 30 frames.
+ 
+-| Program | Result |
+-| --- | --- |
+ | Vulkan probe, x64 | Instance, device `PlayStation 5 GPU (RADV NAVI21)`, win32 surface on the 3840x2160 59.94 Hz plane, device and swapchain all succeed |
+ | DXVK 2.6.2 D3D11, D3D10, D3D9, D3D8 pixel controls, x64 and x86 | 8/8: both frames read back `844c1cff`, then `1c4c84ff`, no mismatches, every call `S_OK` |
+ | DXVK 2.6.2 D3D11, D3D10, D3D9, D3D8 draw controls, x64 and x86 | 8/8: triangle centre `0000ffff` and both backgrounds in each frame, both presents `S_OK` |
+@@ -1647,7 +1644,6 @@ A probe build (since removed) loaded the two modules packaged under
+ On FW 12.02 (2026-09-26, log `20260926T105641663Z`), every step passed:
+ 
+ | Step | Result |
+-| --- | --- |
+ | Load `ntdll.prx` with `sceKernelLoadStartModule` | handle `0xd0`, start result 0, about 3 ms |
+ | Descriptor and exports | PRXDESC1 found in the module's segments; nothing missing |
+ | `module_start` and `pw_wine_dl_adopt` | 0; adopted |
+diff --git a/tests/test_wine_subpage_protect.py b/tests/test_wine_subpage_protect.py
+index 84bec6e..64a80e6 100644
+--- a/tests/test_wine_subpage_protect.py
++++ b/tests/test_wine_subpage_protect.py
+@@ -3,7 +3,8 @@
+ """A read-only or inaccessible Windows page faults on access although its host
+ page is larger and its neighbours stay writable, and the neighbours work
+ without faults the program sees, in 64-bit and WoW64 processes
+-(wine/patches/0974).
++(wine/patches/0974); accesses that keep coming beside an inaccessible page stop
++being stepped over (0986).
+ 
+ Needs the host Wine from tools/build_host_wine.sh (PROSPERO_HOST_WINE, default
+ .deps/wine-host/install/usr/bin/wine) and the mingw compilers; without them
+diff --git a/tests/wine_subpage_protect.c b/tests/wine_subpage_protect.c
+index 54cb515..efdbce6 100644
+--- a/tests/wine_subpage_protect.c
++++ b/tests/wine_subpage_protect.c
+@@ -8,7 +8,7 @@
+ #include <stdio.h>
+ 
+ #define PAGE 4096
+-#define PAGES 16
++#define PAGES 20
+ 
+ static unsigned char *base;
+ static volatile LONG faults, fault_page, fault_write;
+@@ -104,6 +104,27 @@ int main(void)
+            (double)(end.QuadPart - start.QuadPart) * 1e6 / freq.QuadPart / 20000);
+     ok = ok && base[12 * PAGE + 19999 % 4096] == (unsigned char)19999;
+ 
++    /* Many reads and writes beside an inaccessible page, as a garbage collector's
++     * heap: none is seen, and they stop being stepped over (the host page keeps the
++     * union of its pages' protections). Protecting the page again splits the host
++     * page, and touching it faults again. */
++    ok = ok && protect(17, PAGE_NOACCESS);
++    QueryPerformanceCounter(&start);
++    got = faults;
++    for (i = 0; i < 20000; i++)
++    {
++        ((volatile unsigned char *)base)[16 * PAGE + (i & 4095)] = (unsigned char)i;
++        sink = base[18 * PAGE + (i & 4095)];
++    }
++    QueryPerformanceCounter(&end);
++    ok = ok && expect("20000 reads and writes beside an inaccessible page", faults - got, 0);
++    printf("subpage accesses beside an inaccessible page: %.2f us each\n",
++           (double)(end.QuadPart - start.QuadPart) * 1e6 / freq.QuadPart / 40000);
++    ok = ok && protect(17, PAGE_READWRITE) && protect(17, PAGE_NOACCESS);
++    got = faults;
++    sink = base[17 * PAGE + 9];
++    ok = ok && expect("read of the inaccessible page protected again", faults - got, 1) && fault_page == 17;
++
+     printf("subpage verdict=%s\n", ok ? "pass" : "fail");
+     fflush(stdout);
+     return ok ? 0 : 1;
+diff --git a/wine/patches/0975-ntdll-keep-a-host-page-whole-when-accesses-beside-an-inaccessible-page-run-hot.patch b/wine/patches/0975-ntdll-keep-a-host-page-whole-when-accesses-beside-an-inaccessible-page-run-hot.patch
+new file mode 100644
+index 0000000..503693a
+--- /dev/null
++++ b/wine/patches/0975-ntdll-keep-a-host-page-whole-when-accesses-beside-an-inaccessible-page-run-hot.patch
+@@ -0,0 +1,204 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Thu, 29 Oct 2026 18:00:00 +0100
++Subject: [PATCH] ntdll: Keep a host page whole when accesses beside an
++ inaccessible page run hot.
++
++Patch 0974 steps over every access that faults only because another page
++in its host page is protected, and reports a hot write beside a read-only
++page to the program. Nothing ended the stepping beside an inaccessible
++page: reads are not counted, and a write there has no read-only page to
++report. Unity's Mono garbage collector (Darkwood) writes and reads a heap
++page beside such a page all the time, and the console stepped about
++13,000 faults a second: loading took minutes and the game ran at 5 fps
++instead of 120.
++
++Every stepped access now counts. When a host page has had 256 of them, a
++write beside a read-only page is still reported there; any other access
++gives the host page the union of its pages' protections, as before 0974,
++and runs again. The host page is split again when a protection in it
++changes. A thread that faulted on the host page while another kept it
++whole runs its access again instead of getting an access violation.
++---
++ dlls/ntdll/unix/virtual.c | 107 ++++++++++++++++++++++++++++----------
++ 1 file changed, 80 insertions(+), 27 deletions(-)
++
++diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
++index 1d98ad6..843fb1e 100644
++--- a/dlls/ntdll/unix/virtual.c
+++++ b/dlls/ntdll/unix/virtual.c
++@@ -1521,6 +1521,44 @@ static SIZE_T get_vprot_range_size( char *base, SIZE_T size, BYTE mask, BYTE *vp
++     return size;
++ }
++ 
+++/* Accesses stepped over in a host page before they count as hot. */
+++#define SUBPAGE_HOT_STEPS 256
+++
+++/* Host pages whose accesses are stepped over (virtual_handle_fault); whole marks one
+++ * that ran hot beside an inaccessible page and keeps the union of its pages'
+++ * protections until one of them changes. */
+++static struct { const char *page; unsigned int steps; BOOL whole; } subpage_heat[64];
+++
+++/***********************************************************************
+++ *           subpage_forget
+++ *
+++ * A protection changes in a range: its host pages are split again.
+++ */
+++static void subpage_forget( const void *addr, size_t size )
+++{
+++    unsigned int i;
+++
+++    if (host_page_size == page_size) return;
+++    for (i = 0; i < ARRAY_SIZE(subpage_heat); i++)
+++        if (subpage_heat[i].whole && subpage_heat[i].page + host_page_size > (const char *)addr &&
+++            subpage_heat[i].page < (const char *)addr + size)
+++            subpage_heat[i].whole = FALSE;
+++}
+++
+++
+++/***********************************************************************
+++ *           subpage_whole
+++ *
+++ * Whether a host page ran hot and keeps the union of its pages' protections.
+++ */
+++static BOOL subpage_whole( const char *page )
+++{
+++    unsigned int slot = ((UINT_PTR)page / host_page_size) % ARRAY_SIZE(subpage_heat);
+++
+++    return subpage_heat[slot].page == page && subpage_heat[slot].whole;
+++}
+++
+++
++ /***********************************************************************
++  *           set_page_vprot
++  *
++@@ -1531,6 +1569,8 @@ static void set_page_vprot( const void *addr, size_t size, BYTE vprot )
++     size_t idx = (size_t)addr >> page_shift;
++     size_t end = ((size_t)addr + size + page_mask) >> page_shift;
++ 
+++    subpage_forget( addr, size );
+++
++ #ifdef _WIN64
++     while (idx >> pages_vprot_shift != end >> pages_vprot_shift)
++     {
++@@ -1555,6 +1595,8 @@ static void set_page_vprot_bits( const void *addr, size_t size, BYTE set, BYTE c
++     size_t idx = (size_t)addr >> page_shift;
++     size_t end = ((size_t)addr + size + page_mask) >> page_shift;
++ 
+++    subpage_forget( addr, size );
+++
++ #ifdef _WIN64
++     for ( ; idx < end; idx++)
++     {
++@@ -2355,7 +2397,8 @@ static inline int mprotect_exec( void *base, size_t size, int unix_prot )
++  * theirs, except in memory that is not an image: there a committed page that is
++  * read-only, or inaccessible, takes writing, or all access, away from the whole
++  * host page, so that touching it faults as on Windows. Accesses that only fault
++- * because of such a neighbour are stepped over in virtual_handle_fault.
+++ * because of such a neighbour are stepped over in virtual_handle_fault, until
+++ * they run hot beside an inaccessible page (subpage_hot).
++  */
++ static int get_host_page_unix_prot( const void *addr, const char *start, const char *end, BYTE set, BYTE clear )
++ {
++@@ -2368,6 +2411,7 @@ static int get_host_page_unix_prot( const void *addr, const char *start, const c
++     prot = get_unix_prot( (get_host_page_vprot( addr ) & ~clear) | set );
++     if (host_page_size == page_size || !(prot & (PROT_READ | PROT_WRITE))) return prot;
++     if (!(view = find_view( addr, 0 )) || (view->protect & SEC_IMAGE)) return prot;
+++    if (subpage_whole( page )) return prot;
++     for (i = 0; i < host_page_size; i += page_size)
++     {
++         vprot = get_page_vprot( page + i );
++@@ -5209,24 +5253,22 @@ static NTSTATUS grow_thread_stack_to( struct thread_data *data, char *page, stru
++ }
++ 
++ 
++-/* Steps over writes beside a read-only page before such writes count as hot. */
++-#define SUBPAGE_HOT_STEPS 256
++-
++-static struct { const char *page; unsigned int steps; } subpage_heat[64];
++-
++ /***********************************************************************
++- *           subpage_hot_write
+++ *           subpage_hot
++  *
++- * Counts a write stepped over in a host page because a page in it is read-only.
++- * Once the host page has had SUBPAGE_HOT_STEPS of them, returns that read-only
++- * page, to report the write there instead; NULL to step this one. The count
++- * starts again after a report, so a program that keeps the page read-only gets
++- * one report per SUBPAGE_HOT_STEPS writes and the rest are stepped, not a loop.
++- */
++-static char *subpage_hot_write( char *page )
+++ * Counts an access stepped over in a host page because a page in it is read-only
+++ * or inaccessible. Returns FALSE to step this one, until the host page has had
+++ * SUBPAGE_HOT_STEPS of them. Then a write beside a read-only page is reported
+++ * there instead (*report): the count starts again, so a program that keeps the
+++ * page read-only gets one report per SUBPAGE_HOT_STEPS writes and the rest are
+++ * stepped, not a loop. Any other hot access cannot be reported to the program
+++ * (a read, or a write beside an inaccessible page that the program never touches,
+++ * as a garbage collector's heap): the host page keeps the union of its pages'
+++ * protections, as without this scheme, until one of them changes.
+++ */
+++static BOOL subpage_hot( char *page, BOOL write, char **report )
++ {
++     unsigned int slot = ((UINT_PTR)page / host_page_size) % ARRAY_SIZE(subpage_heat);
++-    char *ro = NULL;
++     size_t i;
++     BYTE vprot;
++ 
++@@ -5234,17 +5276,20 @@ static char *subpage_hot_write( char *page )
++     {
++         subpage_heat[slot].page = page;
++         subpage_heat[slot].steps = 0;
+++        subpage_heat[slot].whole = FALSE;
++     }
++-    if (++subpage_heat[slot].steps < SUBPAGE_HOT_STEPS) return NULL;
++-    for (i = 0; i < host_page_size && !ro; i += page_size)
+++    if (++subpage_heat[slot].steps < SUBPAGE_HOT_STEPS) return FALSE;
+++    subpage_heat[slot].steps = 0;
+++    *report = NULL;
+++    for (i = 0; write && i < host_page_size && !*report; i += page_size)
++     {
++         vprot = get_page_vprot( page + i );
++         if ((vprot & VPROT_COMMITTED) && !(vprot & (VPROT_GUARD | VPROT_WRITEWATCH)) &&
++             (get_unix_prot( vprot ) & PROT_READ) && !(get_unix_prot( vprot ) & PROT_WRITE))
++-            ro = page + i;
+++            *report = page + i;
++     }
++-    if (ro) subpage_heat[slot].steps = 0;
++-    return ro;
+++    if (!*report) subpage_heat[slot].whole = TRUE;
+++    return TRUE;
++ }
++ 
++ 
++@@ -5317,15 +5362,23 @@ NTSTATUS virtual_handle_fault( struct thread_data *data, EXCEPTION_RECORD *rec,
++         int prot = get_unix_prot( get_page_vprot( addr ) );
++         char *protected_page;
++ 
++-        if (!(prot & need) || (get_host_page_unix_prot( page, NULL, NULL, 0, 0 ) & need))
+++        if (!(prot & need))
++             ;
++-        else if (err == EXCEPTION_WRITE_FAULT && (protected_page = subpage_hot_write( page )))
+++        else if (get_host_page_unix_prot( page, NULL, NULL, 0, 0 ) & need)
+++        {
+++            /* another thread kept the host page whole while this access faulted */
+++            if (subpage_whole( page )) ret = STATUS_SUCCESS;
+++        }
+++        else if (subpage_hot( page, err == EXCEPTION_WRITE_FAULT, &protected_page ))
++         {
++-            /* Writes beside a read-only page come too often to step each one: report a
++-             * write to that page instead, as if this one had touched it. A program that
++-             * protects pages to learn when they change (an emulator's recompiled code)
++-             * then drops its protection, and the host page is writable again. */
++-            rec->ExceptionInformation[1] = (ULONG_PTR)protected_page;
+++            /* Accesses beside a protected page come too often to step each one. Beside a
+++             * read-only page, report a write to that page instead, as if this one had
+++             * touched it: a program that protects pages to learn when they change (an
+++             * emulator's recompiled code) then drops its protection, and the host page is
+++             * writable again. Otherwise give the host page the union of its pages'
+++             * protections and run the access again. */
+++            if (protected_page) rec->ExceptionInformation[1] = (ULONG_PTR)protected_page;
+++            else if (!mprotect_range( page, host_page_size, 0, 0 )) ret = STATUS_SUCCESS;
++         }
++         else if (!mprotect_exec( page, host_page_size, get_unix_prot( get_host_page_vprot( page ) ) ))
++         {
+-- 
+2.43.0
+
