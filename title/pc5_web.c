@@ -701,12 +701,17 @@ static void game_files(Conn *c, const Pc5Game *game, const char *rest)
         return;
     }
     int code = 200;
+    Pc5Buf encoded = { 0 };
     if (pc5_textdoc_replace(&doc, (const char *)body.data, body.len)) {
         code = 400;
         pc5_copy(why, sizeof(why), N_("It isn't UTF-8 text"));
-    } else if (pc5_textdoc_write(&doc, path, why, sizeof(why))) {
+    } else if (pc5_textdoc_encode(&doc, &encoded, why, sizeof(why))) {
+        code = 400;   /* a letter its encoding can't hold: the text's, not the console's */
+    } else if (pc5_write_file(path, encoded.data, encoded.len)) {
         code = 500;
+        pc5_copy(why, sizeof(why), strerror(errno ? errno : EIO));
     }
+    pc5_buf_free(&encoded);
     say("PC5 web edited %s/%s for %s bytes=%zu lines=%d%s%s", n == 4 ? "game" : "windows", relative, game->id, body.len, doc.count,
         code == 200 ? "" : " failed: ", code == 200 ? "" : why);
     pc5_buf_free(&body);
