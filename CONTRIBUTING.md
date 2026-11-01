@@ -50,6 +50,11 @@ good place to start.
      check that the game or problem you worked on is fixed, and that a couple of other games
      you know still start as before. `tests/PS5-CHECKLIST.md` lists what to try.
    - Keep the zip from `/data/prospero-win/logs/` of your test: attach it to the pull request.
+   - **Don't break what's fixed.** A fix for a game stays tested: where the code can be checked
+     on its own, add a case to the host tests naming the game and issue (as
+     `tests/test_videoout.c` does for the display's rules), otherwise a row in
+     `tests/PS5-CHECKLIST.md`. A change must keep every earlier case passing; never edit an
+     earlier case to make a change pass.
 6. **Open a pull request** against `main`. Say what was wrong, what you changed, and how you
    tested it (which game, which console firmware, what you saw). Link the issue it fixes.
 

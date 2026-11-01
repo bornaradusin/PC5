@@ -1,0 +1,215 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 1 Nov 2026 23:50:00 +0000
+Subject: [PATCH] wsi/videoout: Only a window covering the owner's takes the
+ display
+
+Since a newer window's picture may take the display (Chronicles of the
+Wolf, Aggelos 2: a Clickteam Fusion game's menu is a window as large as
+the game's), any window of 320x200 or more did: Blade & Sword plays its
+movie through DirectShow in a framed window, whose 634x448 picture took
+the display from the fullscreen game's 640x480 one, and the game stopped
+with no picture, where before the movie's window was refused and the
+game played on.
+
+A window's picture now takes the display only when it covers the owner's,
+as large in both directions; a smaller one is refused while the owner has
+the display, as before, and the log says so once per window. The rules
+are in wsi_common_videoout_takeover.h, apart from the backend, so a host
+test checks each game's case.
+---
+ src/vulkan/wsi/wsi_common_videoout.c          | 59 +++++++-------
+ src/vulkan/wsi/wsi_common_videoout_takeover.h | 78 +++++++++++++++++++
+ 2 files changed, 110 insertions(+), 27 deletions(-)
+ create mode 100644 src/vulkan/wsi/wsi_common_videoout_takeover.h
+
+diff --git a/src/vulkan/wsi/wsi_common_videoout.c b/src/vulkan/wsi/wsi_common_videoout.c
+index 8a56e649185..a56559d5467 100644
+--- a/src/vulkan/wsi/wsi_common_videoout.c
++++ b/src/vulkan/wsi/wsi_common_videoout.c
+@@ -42,14 +42,15 @@
+  * one it takes the display from is retired, as an oldSwapchain is. A
+  * swapchain that has presented keeps the display until it is destroyed or
+  * replaced through oldSwapchain, with two exceptions for a window's picture
+- * (a swapchain of 320x200 or more, not a helper's 10x10 or 113x2): one on a
+- * window newer than the owner's takes the display, as that window is drawn
+- * over the older one on a PC (a Clickteam Fusion game's menu or level opens
+- * a window of its own, and the screen stayed black), and one takes it from
+- * an owner that hasn't presented for half a second (a window hidden but not
+- * destroyed). The owner it was taken from is retired; while the newer one
+- * has the display, the older window's new swapchains are refused, and once
+- * it is destroyed the older window's next one takes the display back.
++ * that covers the owner's (wsi_common_videoout_takeover.h): one on a window
++ * newer than the owner's takes the display, as that window is drawn over the
++ * older one on a PC (a Clickteam Fusion game's menu or level opens a window
++ * of its own, and the screen stayed black), and one takes it from an owner
++ * that hasn't presented for half a second (a window hidden but not
++ * destroyed). A smaller window (a movie's inside the game's) is refused, as
++ * before. The owner it was taken from is retired; while the newer one has
++ * the display, the older window's new swapchains are refused, and once it is
++ * destroyed the older window's next one takes the display back.
+  */
+ 
+ #include <assert.h>
+@@ -69,6 +70,7 @@
+ #include "wsi_common_entrypoints.h"
+ #include "wsi_common_private.h"
+ #include "wsi_common_videoout_scale.h"
++#include "wsi_common_videoout_takeover.h"
+ 
+ #if defined(__PROSPERO__)
+ #include <immintrin.h>
+@@ -353,16 +355,6 @@ videoout_surface_age_locked(const void *surface)
+    return videoout_surfaces[oldest].age;
+ }
+ 
+-/* A window's picture, not a helper window's (wined3d's 10x10 probe, a 113x2 strip). */
+-static bool
+-videoout_window_sized(VkExtent2D extent)
+-{
+-   return extent.width >= 320 && extent.height >= 200;
+-}
+-
+-/* How long an owner may go without presenting before a window's picture takes the display. */
+-#define VIDEOOUT_STALE_NS UINT64_C(500000000)
+-
+ struct wsi_videoout {
+    struct wsi_interface base;
+ };
+@@ -1518,27 +1510,40 @@ videoout_swapchain_destroy(struct wsi_swapchain *wsi_chain, const VkAllocationCa
+    return VK_SUCCESS;
+ }
+ 
++/* The window of age whose picture was last refused for being smaller than the
++ * owner's: the log says it once, not at each try. */
++static uint64_t videoout_refused_age;
++
+ /* Whether a new swapchain replacing old, on a window of age, extent in size,
+- * may take the display: nothing has it, old has it, what has it never
+- * presented, or the new one is a window's picture and the owner's window is
+- * older or the owner stopped presenting (*why then names it for the log). */
++ * may take the display (wsi_common_videoout_takeover.h); *why names a window
++ * taking it from an owner that presented, for the log. */
+ static bool
+ videoout_display_free_locked(const struct wsi_videoout_swapchain *old, uint64_t age, VkExtent2D extent,
+                              const char **why)
+ {
+    const struct wsi_videoout_swapchain *current = videoout_output.current;
++   struct wsi_videoout_window owner = { 0 }, chain = { age, extent.width, extent.height, false, 0 };
++   if (current)
++      owner = (struct wsi_videoout_window){ current->surface_age, current->extent.width, current->extent.height,
++                                            current->presented, current->present_ns };
+    *why = NULL;
+-   if (!current || current == old || !current->presented)
++   switch (wsi_videoout_takeover(current ? &owner : NULL, current && current == old, &chain, os_time_get_nano())) {
++   case WSI_VIDEOOUT_FREE:
+       return true;
+-   if (!videoout_window_sized(extent))
+-      return false;
+-   if (age > current->surface_age) {
++   case WSI_VIDEOOUT_NEWER:
+       *why = "a newer window's";
+       return true;
+-   }
+-   if (os_time_get_nano() - current->present_ns >= VIDEOOUT_STALE_NS) {
++   case WSI_VIDEOOUT_STALE:
+       *why = "a window's";
+       return true;
++   case WSI_VIDEOOUT_REFUSED:
++      break;
++   }
++   if (wsi_videoout_window_sized(extent.width, extent.height) && age != videoout_refused_age &&
++       (extent.width < current->extent.width || extent.height < current->extent.height)) {
++      videoout_refused_age = age;
++      fprintf(stderr, "wsi/videoout: a smaller window's %ux%u swapchain leaves the display with a %ux%u one\n",
++              extent.width, extent.height, current->extent.width, current->extent.height);
+    }
+    return false;
+ }
+diff --git a/src/vulkan/wsi/wsi_common_videoout_takeover.h b/src/vulkan/wsi/wsi_common_videoout_takeover.h
+new file mode 100644
+index 00000000000..5a406ace05a
+--- /dev/null
++++ b/src/vulkan/wsi/wsi_common_videoout_takeover.h
+@@ -0,0 +1,78 @@
++/*
++ * Copyright © 2026 bornaradusin
++ *
++ * SPDX-License-Identifier: MIT
++ */
++
++/*
++ * Whether a new VideoOut swapchain may take the display from the one that has
++ * it (wsi_common_videoout.c), apart from the rest of the backend so a host
++ * test can check it on its own, with the games each rule is for.
++ *
++ * The display is free when nothing has it, when the new swapchain replaces the
++ * one that has it (oldSwapchain), or when what has it never presented (a
++ * window that only made a context, as wined3d's hidden 10x10 window probing
++ * OpenGL does). Otherwise only a window's picture (320x200 or more, not a
++ * helper's 10x10 or 113x2 strip) that covers the owner's (as large in both
++ * directions) may take it: from an owner on an older window, as a newer window
++ * over the whole game is drawn on top on a PC (a Clickteam Fusion game opens
++ * its menu or level as a window of its own: Chronicles of the Wolf, Aggelos 2),
++ * or from an owner that hasn't presented for half a second (its window hidden
++ * but not destroyed).
++ *
++ * A smaller window keeps refused while the owner has the display, as before
++ * either rule: a DirectShow movie's video window, a framed window inside a
++ * fullscreen game's (Blade & Sword: its 634x448 movie window took the display
++ * from the game's 640x480 one, and the game stopped with no picture).
++ */
++
++#ifndef WSI_COMMON_VIDEOOUT_TAKEOVER_H
++#define WSI_COMMON_VIDEOOUT_TAKEOVER_H
++
++#include <stdbool.h>
++#include <stdint.h>
++
++/* How long an owner may go without presenting before a window's picture takes the display. */
++#define WSI_VIDEOOUT_STALE_NS UINT64_C(500000000)
++
++/* What the rules look at, of the owner and of the new swapchain. */
++struct wsi_videoout_window {
++   uint64_t age;          /* its window's: a larger one is a newer window */
++   uint32_t width, height; /* its picture's size */
++   bool presented;        /* it has queued a present */
++   uint64_t present_ns;   /* when it last queued one */
++};
++
++enum wsi_videoout_takeover {
++   WSI_VIDEOOUT_REFUSED,  /* the owner keeps the display */
++   WSI_VIDEOOUT_FREE,     /* nothing has it, the new one replaces the owner, or the owner never presented */
++   WSI_VIDEOOUT_NEWER,    /* a newer window's picture covering the owner's */
++   WSI_VIDEOOUT_STALE,    /* a picture covering the owner's, which stopped presenting */
++};
++
++/* A window's picture, not a helper window's (wined3d's 10x10 probe, a 113x2 strip). */
++static inline bool
++wsi_videoout_window_sized(uint32_t width, uint32_t height)
++{
++   return width >= 320 && height >= 200;
++}
++
++/* owner: what has the display, or NULL; replaces: the new one is its oldSwapchain's; now_ns: the time. */
++static inline enum wsi_videoout_takeover
++wsi_videoout_takeover(const struct wsi_videoout_window *owner, bool replaces, const struct wsi_videoout_window *chain,
++                      uint64_t now_ns)
++{
++   if (!owner || replaces || !owner->presented)
++      return WSI_VIDEOOUT_FREE;
++   if (!wsi_videoout_window_sized(chain->width, chain->height))
++      return WSI_VIDEOOUT_REFUSED;
++   if (chain->width < owner->width || chain->height < owner->height)
++      return WSI_VIDEOOUT_REFUSED;
++   if (chain->age > owner->age)
++      return WSI_VIDEOOUT_NEWER;
++   if (now_ns - owner->present_ns >= WSI_VIDEOOUT_STALE_NS)
++      return WSI_VIDEOOUT_STALE;
++   return WSI_VIDEOOUT_REFUSED;
++}
++
++#endif
+-- 
+2.43.0
+

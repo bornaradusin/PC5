@@ -172,6 +172,19 @@ else
     echo "test_wine_nsi: left out, no Wine source at $wine (tools/build.sh sources fetches it)"
 fi
 
+# patches/radv 0003 and 0005: which window's picture has the console's display, with the
+# swapchains games' logs showed (tests/test_videoout.c); the rules' header from the patch.
+mkdir -p "$out/videoout"
+for patch in patches/radv/*.patch; do
+    grep -q '^+++ b/src/vulkan/wsi/wsi_common_videoout_takeover\.h' "$patch" || continue
+    GIT_CEILING_DIRECTORIES=$out git -C "$out/videoout" apply --include=src/vulkan/wsi/wsi_common_videoout_takeover.h \
+        "$(realpath -- "$patch")"
+done
+[[ -f $out/videoout/src/vulkan/wsi/wsi_common_videoout_takeover.h ]] ||
+    { echo "test_videoout: no patches/radv patch adds wsi_common_videoout_takeover.h" >&2; exit 1; }
+cc -std=c11 -Wall -Wextra -Wpedantic -Werror -I"$out/videoout/src/vulkan/wsi" tests/test_videoout.c -o "$out/test_videoout"
+"$out/test_videoout"
+
 # Clang 18, as the console build uses it, finds nothing to warn about either.
 for file in title/pc5*.c; do
     # The console's own system calls (FreeBSD headers): built by tools/build.sh only. pc5_console.c,

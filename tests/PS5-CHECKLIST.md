@@ -557,3 +557,5 @@ controller's speaker.
 | 315 | Marvel's Spider-Man Remastered on Graphics API Auto | it starts with Direct3D 12 (no "DirectX 12 support not detected") | `dll_overrides=d3d8,d3d9,d3d10core,d3d11,d3d12,d3d12core,dxgi=n;amd_ags_x64=b`, no "graphics driver" message |
 | 316 | Gears Tactics (`GearGame\Binaries\Steam`) on Graphics API Auto, X on its title screen | it goes on to the menu, no crash | `dll_overrides=d3d8,d3d9,d3d10core,d3d11,d3d12,d3d12core,dxgi=n`, no `wined3d.dll` loaded |
 | 317 | The Last of Us Part II | its log no longer says `Driver Supported: NO` | `amd_ags_x64.dll` loaded as builtin |
+| 318 | Blade & Sword (The Legend of Enveloped Demons, DirectDraw), past its opening movie | the game's picture, as on 2.0.8, and it plays on | `wsi/videoout: a smaller window's 634x448 swapchain leaves the display with a 640x480 one`, no `takes the display from a 640x480` |
+| 319 | Chronicles of the Wolf: R1 menu; Aggelos 2: Start, then the item menu and back | the menu shows, not black, and the game comes back after it | `wsi/videoout: a newer window's … swapchain takes the display from a … one`, both sizes the same |
