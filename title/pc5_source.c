@@ -141,38 +141,22 @@ static int installer_program(const char *name)
 }
 
 /* Programs that are rarely the game: crash reporters, updaters, anti-cheat, servers,
- * editors and helpers. ("crash" alone would take Crashlands for a crash reporter.) */
-static int helper_program(const char *name)
+ * editors, an engine's own tools and helpers: the word that says so, or NULL. ("crash"
+ * alone would take Crashlands for a crash reporter.) Unreal's lighting and shader tools sit
+ * beside the game in its Binaries folder (A Story About My Uncle's UnrealLightmass.exe), and
+ * Easy Anti-Cheat starts a game through start_protected_game.exe. */
+static const char *helper_program(const char *name)
 {
     static const char *const words[] = { "update", "patch", "crashreport", "crashhandler", "crashsender",
                                          "crashpad", "crash_report", "crash_handler", "crashupload", "crash_upload",
                                          "crashdump", "bugsplat", "report", "easyanticheat", "battleye", "beservice",
                                          "editor", "dedicated", "server", "uploader", "cefprocess", "subprocess",
                                          "notification", "touchup", "activation", "register", "cleanup", "repair",
-                                         "diagnos", "benchmark", "helper" };
+                                         "diagnos", "benchmark", "helper", "lightmass", "shadercompile", "unrealpak",
+                                         "versionselector", "start_protected_game", "eaclauncher" };
     for (size_t i = 0; i < sizeof(words) / sizeof(words[0]); i++)
-        if (contains_ci(name, words[i])) return 1;
-    return 0;
-}
-
-/* Letters and digits only, lower case ("Crashlands 2" and "Crashlands2" alike). */
-static void squeeze(const char *text, char *out, size_t size)
-{
-    size_t n = 0;
-    for (; *text && n + 1 < size; text++)
-        if ((*text >= 'a' && *text <= 'z') || (*text >= '0' && *text <= '9') || (*text >= 'A' && *text <= 'Z'))
-            out[n++] = (char)pc5_lower((unsigned char)*text);
-    out[n] = 0;
-}
-
-/* A program named after its folder (Crashlands2.exe in "Crashlands 2") is the game, whatever
- * else its name says. */
-static int named_like(const char *folder, const char *base)
-{
-    char a[PC5_NAME * 2], b[PC5_NAME * 2];
-    squeeze(folder, a, sizeof(a));
-    squeeze(base, b, sizeof(b));
-    return strlen(a) >= 4 && strlen(b) >= 4 && (strstr(a, b) || strstr(b, a));
+        if (contains_ci(name, words[i])) return words[i];
+    return NULL;
 }
 
 /* A name Windows (or the profile format) can't take. */
@@ -233,7 +217,10 @@ static int score_program(const Pc5Folder *folder, const Pc5Exe *exe, const char 
     snprintf(base, sizeof(base), "%.*s", (int)(strlen(name) > 4 ? strlen(name) - 4 : strlen(name)), name);
     for (const char *p = relative; *p; p++) depth += *p == '/';
     if (exe->pe.dll) return -1000;
-    if (helper_folder(relative) || installer_program(name) || (helper_program(name) && !named_like(folder->name, base)))
+    /* A helper's word that is the game's own (Server Quest in its folder "Server Quest") doesn't make it one;
+     * the game's name with a helper's word added (TerrariaServer.exe beside Terraria.exe) still does. */
+    const char *helper = helper_program(name);
+    if (helper_folder(relative) || installer_program(name) || (helper && !contains_ci(folder->name, helper)))
         score -= 1000;
     if (contains_ci(name, "launch") || contains_ci(name, "config") || contains_ci(name, "settings")) score -= 40;
     if (contains_ci(name, "-shipping")) score += 60;

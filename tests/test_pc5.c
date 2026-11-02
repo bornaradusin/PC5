@@ -904,6 +904,35 @@ static void test_sources(void)
         CHECK(!pc5_folder_inspect(dir, "Crashlands 2", &folder) && !folder.problem[0] &&
               !strcmp(folder.exes[0].path, "Crashlands2.exe"), "the game before its crash handler: %s",
               folder.exe_count ? folder.exes[0].path : "");
+        /* A server or a tool named after the game is still one (Terraria's TerrariaServer.exe, from
+         * Playden's compatibility notes); Unreal's lighting tool beside the game (A Story About My Uncle's
+         * UnrealLightmass.exe) and Easy Anti-Cheat's starter (ARMORED CORE VI) aren't the game either. */
+        {
+            char from32[PC5_PATH];
+            path(from32, sizeof(from32), "%s/game32.exe", programs);
+            path(file, sizeof(file), "%s/stubs/Terraria/TerrariaServer.exe", work);
+            copy_file(from, file);
+            path(file, sizeof(file), "%s/stubs/Terraria/Terraria.exe", work);
+            copy_file(from32, file);
+            path(dir, sizeof(dir), "%s/stubs/Terraria", work);
+            CHECK(!pc5_folder_inspect(dir, "Terraria", &folder) && !strcmp(folder.exes[0].path, "Terraria.exe"),
+                  "the game, not its server named after it: %s", folder.exe_count ? folder.exes[0].path : "");
+            path(file, sizeof(file), "%s/stubs/A Story About My Uncle/Binaries/Win32/UnrealLightmass.exe", work);
+            copy_file(from, file);
+            path(file, sizeof(file), "%s/stubs/A Story About My Uncle/Binaries/Win32/ASAMU.exe", work);
+            copy_file(from32, file);
+            path(dir, sizeof(dir), "%s/stubs/A Story About My Uncle", work);
+            CHECK(!pc5_folder_inspect(dir, "A Story About My Uncle", &folder) &&
+                      !strcmp(folder.exes[0].path, "Binaries/Win32/ASAMU.exe"),
+                  "the game, not Unreal's lighting tool: %s", folder.exe_count ? folder.exes[0].path : "");
+            path(file, sizeof(file), "%s/stubs/Armored/start_protected_game.exe", work);
+            copy_file(from, file);
+            path(file, sizeof(file), "%s/stubs/Armored/Game/armoredcore6.exe", work);
+            copy_file(from32, file);
+            path(dir, sizeof(dir), "%s/stubs/Armored", work);
+            CHECK(!pc5_folder_inspect(dir, "Armored", &folder) && !strcmp(folder.exes[0].path, "Game/armoredcore6.exe"),
+                  "the game, not Easy Anti-Cheat's starter: %s", folder.exe_count ? folder.exes[0].path : "");
+        }
         /* A folder's only program is the game, a helper's word in its name or not; an installer isn't. */
         path(file, sizeof(file), "%s/stubs/Wreck/ServerQuest.exe", work);
         copy_file(from, file);
