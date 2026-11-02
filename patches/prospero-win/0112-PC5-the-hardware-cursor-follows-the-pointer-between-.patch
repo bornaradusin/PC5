@@ -1,0 +1,296 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 17:45:00 +0000
+Subject: [PATCH 112/112] PC5: the hardware cursor follows the pointer between
+ presents (Wine patch 0980)
+
+A game that draws only when something changes (Age of Empires II HD's menus)
+lost its pointer: VideoOut's hardware cursor followed it only at a present,
+and was hidden once a desktop frame had shown, while the desktop's frames with
+the cursor drawn in are left out as empty. win32u now hands each move, new
+image or hiding to libvulkan.prx's pw_videoout_cursor_follow, which shows it
+unless a desktop frame is what shows. Wine patch 0999 is the same on top of
+it, and hides the followed cursor when unused too.
+---
+ PUBLICATION_ALLOWLIST.txt                     |  1 +
+ docs/WINE_PS5_BUILD.md                        |  1 +
+ tools/link_radv_prx.sh                        |  2 +-
+ ...follows-the-pointer-between-presents.patch | 86 +++++++++++++++++++
+ ...32u-ps5-hide-the-pointer-when-unused.patch | 25 ++++--
+ wine/ps5/pw_vulkan_radv.c                     | 30 +++++++
+ 6 files changed, 136 insertions(+), 9 deletions(-)
+ create mode 100644 wine/patches/0980-win32u-ps5-the-hardware-cursor-follows-the-pointer-between-presents.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index f41ed87..66ffc05 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -686,6 +686,7 @@ wine/patches/0976-ntdll-ps5-boolean-socket-options-read-back-as-one.patch
+ wine/patches/0977-win32u-the-cursor-clip-stays-inside-the-virtual-screen.patch
+ wine/patches/0978-amd-ags-x64-a-driver-version-for-amd-sponsored-games.patch
+ wine/patches/0979-win32u-ps5-a-launch-window-takes-dialog-keys.patch
++wine/patches/0980-win32u-ps5-the-hardware-cursor-follows-the-pointer-between-presents.patch
+ wine/patches/0983-ntdll-ps5-name-the-occupant-of-a-refused-reservation.patch
+ tests/test_wine_mouse_wheel.py
+ 
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 017f817..34e7c88 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -189,6 +189,7 @@ before evaluating a candidate built from that cache.
+ | 0977 | `win32u` (Mihawk OS 2152): `GetClipCursor` keeps the clip inside the virtual screen. In an emulated display mode (a 640x480 mode drawn letterboxed on the 1920x1080 output) the unclipped raw rect is the whole physical screen, which mapped back into the mode reached past its sides |
+ | 0978 | `amd_ags_x64` (Proton's, ValveSoftware/wine, LGPL; `amd_ags.h` AMD's, MIT): AMD's GPU Services library as a builtin, answering from the Vulkan device with a current driver version, so AMD-sponsored games (Marvel's Spider-Man Remastered, The Last of Us Part II) don't take the PS5 for a missing or outdated driver; AGS's Direct3D 11 and 12 extensions go to DXVK and VKD3D-Proton. No Unix side (no libdrm on the PS5). A title overrides `amd_ags_x64` to builtin for a game's own copy to give way |
+ | 0979 | `win32u`: on PS5, a launch window that reads only the keyboard takes the dialog keys of 0911 (Cross as Enter, the D-pad as the arrows) as a dialog box does: Nixxes' (Marvel's Spider-Man Remastered and its other ports), a 792x447 pop-up of the class `GameNxApp` with Play, Settings and Quit, while it is smaller than the display both ways. The game's own window, which may share the class, covers the display and never gets those keys beside its controller |
++| 0980 | `win32u`: on PS5, each move, new image or hiding of the cursor also goes to `libvulkan.prx`'s `pw_videoout_cursor_follow`, so VideoOut's hardware cursor follows the pointer between presents, unless a desktop frame (the cursor drawn in) is what shows. A game that draws only when something changes (Age of Empires II HD's menus) had lost its pointer: it followed only at a present |
+ | 0983 | `ntdll`: a refused fixed reservation names what holds the range. `sceKernelReserveVirtualRange` answers ENOMEM both for a range another mapping holds and for one it cannot grant, and the callers need `EEXIST` for a collision either way, so the errno is unchanged and `sceKernelVirtualQuery` reports the cause: a record with a protection, flags and a name is a mapping, a cleared record past the end of the request is a hole. Tells a title image lying across a program's preferred base (0130) apart from an exhausted address space |
+ 
+ ## Allocator
+diff --git a/tools/link_radv_prx.sh b/tools/link_radv_prx.sh
+index 6309904..5708c21 100755
+--- a/tools/link_radv_prx.sh
++++ b/tools/link_radv_prx.sh
+@@ -103,7 +103,7 @@ printf '\t.section .rodata\n\t.balign 16\n\t.globl pw_mihawkgen_network\npw_miha
+ "$sdk/bin/prospero-clang" -fPIC -c "$work/obj/pw_mihawkgen_network.S" -o "$work/obj/pw_mihawkgen_network.o"
+ framegen_objects+=("$work/obj/pw_mihawkgen_network.o")
+ python3 "$root/tools/gen_prx_descriptor.py" "$work/obj/libvulkan_desc.c" \
+-    vkGetInstanceProcAddr vkGetDeviceProcAddr pw_videoout_idle pw_videoout_show_tiled pw_videoout_cursor pw_videoout_quiesce \
++    vkGetInstanceProcAddr vkGetDeviceProcAddr pw_videoout_idle pw_videoout_show_tiled pw_videoout_cursor pw_videoout_cursor_follow pw_videoout_quiesce \
+     pw_vk_radv_profile_set_frame_hook pw_pc5_hud pw_pc5_hud_stats pw_pc5_hud_tick pw_pc5_screen_color \
+     pw_framegen_counts
+ "$sdk/bin/prospero-clang" -std=c11 -O2 -Wall -Wextra -Werror -fPIC -I"$root/wine/ps5" \
+diff --git a/wine/patches/0980-win32u-ps5-the-hardware-cursor-follows-the-pointer-between-presents.patch b/wine/patches/0980-win32u-ps5-the-hardware-cursor-follows-the-pointer-between-presents.patch
+new file mode 100644
+index 0000000..ffb1de4
+--- /dev/null
++++ b/wine/patches/0980-win32u-ps5-the-hardware-cursor-follows-the-pointer-between-presents.patch
+@@ -0,0 +1,86 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: bornaradusin <bornaradusin@users.noreply.github.com>
++Date: Mon, 2 Nov 2026 17:30:00 +0000
++Subject: [PATCH] win32u: PS5: the hardware cursor follows the pointer between
++ presents.
++
++Over a swapchain's frames the cursor is VideoOut's hardware cursor, which
++ps5drv_vulkan_cursor set only after a present. A game that draws only when
++something changes (Age of Empires II HD's menus) left it where it was, or
++hidden once a desktop frame had shown (pw_videoout_show_tiled hides it, as
++a desktop frame has the cursor drawn in), and the desktop's frames with the
++cursor in them are left out as empty while a swapchain's picture shows
++(prospero-win's wine64_main): the pointer was gone. Each move, new image or
++hiding of the cursor now also goes to libvulkan.prx's
++pw_videoout_cursor_follow, which shows it unless a desktop frame is what
++shows. A libvulkan.prx without it changes nothing.
++
++diff --git a/dlls/win32u/ps5drv.c b/dlls/win32u/ps5drv.c
++index 1bca00f..a4af3d2 100644
++--- a/dlls/win32u/ps5drv.c
+++++ b/dlls/win32u/ps5drv.c
++@@ -194,6 +194,27 @@ static void present_screen(void)
++     present_frame( frame, width, height, width * 4 );
++ }
++ 
+++#ifdef SONAME_LIBVULKAN
+++/* libvulkan.prx's pw_videoout_cursor_follow, once a swapchain has presented (ps5drv_vulkan_cursor) */
+++static int (*cursor_follow)( const UINT32 *, UINT, UINT, INT, INT, UINT, UINT );
+++#endif
+++
+++/* screen_lock held: the cursor changed (moved, another image, hidden). It is drawn into the
+++ * desktop's frames, but over a swapchain's frames VideoOut's hardware cursor shows it, which
+++ * followed it only at a present: a game that draws only when something changes (Age of Empires
+++ * II HD's menus) left it where it was, or hidden after a desktop frame had shown, while the
+++ * desktop's frames with the cursor in them were left out as empty (wine64_main). It follows now,
+++ * while a swapchain's picture shows (pw_videoout_cursor_follow). */
+++static void cursor_changed(void)
+++{
+++    present_screen();
+++#ifdef SONAME_LIBVULKAN
+++    if (cursor_follow)
+++        cursor_follow( cursor_width && cursor_height ? cursor_image : NULL, cursor_width, cursor_height,
+++                       cursor.x - cursor_hotspot.x, cursor.y - cursor_hotspot.y, screen_width, screen_height );
+++#endif
+++}
+++
++ /***********************************************************************
++  *           display
++  */
++@@ -567,7 +588,7 @@ static void move_cursor( HWND hwnd, INT dx, INT dy )
++     if (cursor.x != pos.x || cursor.y != pos.y)
++     {
++         cursor = pos;
++-        if (cursor_image) present_screen();     /* the pointer moved on screen */
+++        if (cursor_image) cursor_changed();     /* the pointer moved on screen */
++     }
++     pthread_mutex_unlock( &screen_lock );
++ }
++@@ -858,7 +879,7 @@ static void ps5_SetCursor( HWND hwnd, HCURSOR handle )
++     cursor_height = height;
++     cursor_box = box;
++     if (image) cursor_hotspot = (POINT){info.xHotspot, info.yHotspot};
++-    if (old || image) present_screen();
+++    if (old || image) cursor_changed();
++     pthread_mutex_unlock( &screen_lock );
++     free( old );
++     TRACE( "cursor %p: %ux%u\n", handle, width, height );
++@@ -879,6 +900,9 @@ void ps5drv_vulkan_cursor( void *vulkan_handle )
++     {
++         looked = TRUE;
++         show = dlsym( vulkan_handle, "pw_videoout_cursor" );
+++        pthread_mutex_lock( &screen_lock );
+++        cursor_follow = dlsym( vulkan_handle, "pw_videoout_cursor_follow" );
+++        pthread_mutex_unlock( &screen_lock );
++     }
++     if (!show) return;
++     pthread_mutex_lock( &screen_lock );
++@@ -899,7 +923,7 @@ static BOOL ps5_SetCursorPos( INT x, INT y )
++     pthread_mutex_lock( &screen_lock );
++     cursor.x = x;
++     cursor.y = y;
++-    if (cursor_image) present_screen();
+++    if (cursor_image) cursor_changed();
++     pthread_mutex_unlock( &screen_lock );
++     return TRUE;
++ }
+diff --git a/wine/patches/0999-win32u-ps5-hide-the-pointer-when-unused.patch b/wine/patches/0999-win32u-ps5-hide-the-pointer-when-unused.patch
+index 24c1477..6b87dce 100644
+--- a/wine/patches/0999-win32u-ps5-hide-the-pointer-when-unused.patch
++++ b/wine/patches/0999-win32u-ps5-hide-the-pointer-when-unused.patch
+@@ -13,7 +13,7 @@ The PS5 user driver can now hide the pointer once the player hasn't moved
+ it or clicked for a while (PC5's Mouse pointer option: 5 seconds), as a
+ console's pointer fades, both where it draws the cursor over the screen
+ itself and where Vulkan frames get it from VideoOut's hardware cursor
+-(patch 0740). The next move (the mouse,
++(patch 0740, and between presents patch 0980). The next move (the mouse,
+ the touchpad or a stick working as a mouse, even against an edge) or
+ click shows it again at once, and so does the game moving it to another
+ place itself (SetCursorPos): Grim Dawn moves its pointer by the
+@@ -24,9 +24,9 @@ GetCursorInfo and everything else still see it as shown.
+ 
+ WINE_PS5_CURSOR_IDLE_MS sets the time in milliseconds. Unset or 0 never
+ hides it: only a game that asks for it changes.
+----
++
+ diff --git a/dlls/win32u/ps5drv.c b/dlls/win32u/ps5drv.c
+-index 77552fd..d062930 100644
++index c38511d..fb6178b 100644
+ --- a/dlls/win32u/ps5drv.c
+ +++ b/dlls/win32u/ps5drv.c
+ @@ -108,6 +108,42 @@ static UINT cursor_width, cursor_height;
+@@ -90,7 +90,16 @@ index 77552fd..d062930 100644
+      present_frame( frame, width, height, width * 4 );
+  }
+  
+-@@ -555,6 +591,13 @@ static void move_cursor( HWND hwnd, INT dx, INT dy )
++@@ -214,7 +250,7 @@ static void cursor_changed(void)
++     present_screen();
++ #ifdef SONAME_LIBVULKAN
++     if (cursor_follow)
++-        cursor_follow( cursor_width && cursor_height ? cursor_image : NULL, cursor_width, cursor_height,
+++        cursor_follow( cursor_width && cursor_height && cursor_shown() ? cursor_image : NULL, cursor_width, cursor_height,
++                        cursor.x - cursor_hotspot.x, cursor.y - cursor_hotspot.y, screen_width, screen_height );
++ #endif
++ }
++@@ -589,6 +625,13 @@ static void move_cursor( HWND hwnd, INT dx, INT dy )
+      if (raw_dx || raw_dy) send_motion( hwnd, dx, dy, raw_dx, raw_dy );
+      if (!server_cursor_pos( &pos )) return;
+      pthread_mutex_lock( &screen_lock );
+@@ -104,7 +113,7 @@ index 77552fd..d062930 100644
+      if (cursor.x != pos.x || cursor.y != pos.y)
+      {
+          cursor = pos;
+-@@ -874,7 +917,18 @@ static BOOL ps5_ProcessEvents( DWORD mask )
++@@ -924,7 +967,18 @@ static BOOL ps5_ProcessEvents( DWORD mask )
+              move_cursor( hwnd, event.x, event.y );
+              break;
+          case 3:
+@@ -124,7 +133,7 @@ index 77552fd..d062930 100644
+              break;
+          case 6:
+              /* The wheel: x notches, away from the player positive, as a mouse's
+-@@ -1055,7 +1109,7 @@ void ps5drv_vulkan_cursor( void *vulkan_handle )
++@@ -1108,7 +1162,7 @@ void ps5drv_vulkan_cursor( void *vulkan_handle )
+      }
+      if (!show) return;
+      pthread_mutex_lock( &screen_lock );
+@@ -133,7 +142,7 @@ index 77552fd..d062930 100644
+            cursor.x - cursor_hotspot.x, cursor.y - cursor_hotspot.y, screen_width, screen_height );
+      pthread_mutex_unlock( &screen_lock );
+  }
+-@@ -1070,6 +1124,8 @@ static BOOL ps5_GetCursorPos( POINT *pos )
++@@ -1123,6 +1177,8 @@ static BOOL ps5_GetCursorPos( POINT *pos )
+  static BOOL ps5_SetCursorPos( INT x, INT y )
+  {
+      pthread_mutex_lock( &screen_lock );
+@@ -141,7 +150,7 @@ index 77552fd..d062930 100644
+ +    if (cursor.x != x || cursor.y != y) cursor_use();
+      cursor.x = x;
+      cursor.y = y;
+-     if (cursor_image) present_screen();
++     if (cursor_image) cursor_changed();
+ -- 
+ 2.43.0
+ 
+diff --git a/wine/ps5/pw_vulkan_radv.c b/wine/ps5/pw_vulkan_radv.c
+index fea1b00..a4058f4 100644
+--- a/wine/ps5/pw_vulkan_radv.c
++++ b/wine/ps5/pw_vulkan_radv.c
+@@ -92,6 +92,7 @@ static struct {
+      * the one on screen never changes under the display. */
+     uint32_t *images;
+     int failed, enabled, current;
++    int desktop;   /* a desktop frame (the cursor drawn in) is what shows, not a swapchain's */
+     uint32_t shown[CURSOR_PIXELS];
+ } cursor;
+ 
+@@ -144,13 +145,41 @@ static void cursor_hide_locked(int handle)
+  * with its top-left corner at (x, y) of a space_width x space_height desktop,
+  * which the swapchain's frames show whole. NULL hides it. 0 shown or hidden, 1 no
+  * output yet, <0 failed. */
++static int cursor_show(const uint32_t *argb, uint32_t width, uint32_t height, int32_t x, int32_t y,
++                       uint32_t space_width, uint32_t space_height, int follow);
++
+ int pw_videoout_cursor(const uint32_t *argb, uint32_t width, uint32_t height, int32_t x, int32_t y,
+                        uint32_t space_width, uint32_t space_height)
++{
++    return cursor_show(argb, width, height, x, y, space_width, space_height, 0);
++}
++
++/* The same between presents, as the pointer moves or changes (win32u, Wine patch 0980): a game
++ * that draws only when something changes leaves a swapchain's picture on screen with nothing
++ * presenting, and the cursor followed only at a present. Nothing while a desktop frame shows:
++ * it has the cursor drawn in. */
++int pw_videoout_cursor_follow(const uint32_t *argb, uint32_t width, uint32_t height, int32_t x, int32_t y,
++                              uint32_t space_width, uint32_t space_height);
++int pw_videoout_cursor_follow(const uint32_t *argb, uint32_t width, uint32_t height, int32_t x, int32_t y,
++                              uint32_t space_width, uint32_t space_height)
++{
++    return cursor_show(argb, width, height, x, y, space_width, space_height, 1);
++}
++
++static int cursor_show(const uint32_t *argb, uint32_t width, uint32_t height, int32_t x, int32_t y,
++                       uint32_t space_width, uint32_t space_height, int follow)
+ {
+     int handle = __atomic_load_n(&videoout_handle, __ATOMIC_ACQUIRE), rc = 0;
+     uint32_t image[CURSOR_PIXELS];
+ 
+     if (handle < 0) return 1;
++    cursor_lock();
++    if (!follow) cursor.desktop = 0;   /* a swapchain presented: its picture shows */
++    else if (cursor.desktop) {
++        cursor_unlock();
++        return 0;
++    }
++    cursor_unlock();
+     if (!argb || !width || !height || !space_width || !space_height) {
+         cursor_lock();
+         cursor_hide_locked(handle);
+@@ -218,6 +247,7 @@ int pw_videoout_show_tiled(const void *tiled, uint64_t bytes, uint32_t width, ui
+     if (result == 0 && handle >= 0) {
+         cursor_lock();
+         cursor_hide_locked(handle);
++        cursor.desktop = 1;
+         cursor_unlock();
+     }
+     return result;
+-- 
+2.43.0
+
