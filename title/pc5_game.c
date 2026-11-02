@@ -851,6 +851,43 @@ static int loading_fonts(const char *app, Pc5Fonts *fonts)
     return 0;
 }
 
+int pc5_game_early_loading(const char *root, const char *app, const char *prefix, const char *title,
+                           const char *language, const char *folder, uint32_t fade_ms,
+                           void (*show)(const uint32_t *pixels, void *context), void *context,
+                           void (*wait_ms)(uint32_t ms))
+{
+    Pc5Fonts fonts;
+    Pc5Matrix *matrix;
+    char own[PC5_PATH];
+    int shown = -1;
+
+    if (!app || !app[0] || !show) return -1;
+    use_language(app, language);
+    if (loading_fonts(app, &fonts)) memset(&fonts, 0, sizeof(fonts));
+    if ((matrix = pc5_matrix_create(&fonts, title, 0))) {
+        if (root && !pc5_loading_own(root, folder, title, prefix, own, sizeof(own)))
+            (void)pc5_matrix_picture(matrix, own);
+        /* from black: the matrix fades in over its first half second */
+        for (uint32_t at = 0;; at += PC5_MATRIX_STEP_MS) {
+            const uint32_t *pixels = pc5_matrix_step(matrix);
+            if (!pixels) break;
+            show(pixels, context);
+            shown = 0;
+            if (at >= fade_ms || !wait_ms) break;
+            wait_ms(PC5_MATRIX_STEP_MS);
+        }
+        pc5_matrix_destroy(matrix);
+    } else
+        pc5_fonts_free(&fonts);
+    pc5_i18n_end();   /* read again with the game's own loading screen */
+    return shown;
+}
+
+void pc5_game_shown_before(Pc5GameSession *game)
+{
+    game->shown_before = 1;
+}
+
 void pc5_game_loading_setup(Pc5GameSession *game, const char *language, const char *folder)
 {
     pc5_copy(game->language, sizeof(game->language), language ? language : "");
@@ -874,6 +911,7 @@ const uint32_t *pc5_game_loading(Pc5GameSession *game, uint64_t now_ms)
         }
         if (!pc5_loading_own(game->root, game->folder, game->title, game->prefix, own, sizeof(own)))
             say(game, "PC5 loading picture %s: %s", own, pc5_matrix_picture(game->matrix, own) ? "not readable" : "shown");
+        if (game->shown_before) pc5_matrix_at_once(game->matrix);   /* it is already on the screen */
         game->matrix_at = 0;
     }
     if (game->matrix_at && now_ms < game->matrix_at) return NULL;

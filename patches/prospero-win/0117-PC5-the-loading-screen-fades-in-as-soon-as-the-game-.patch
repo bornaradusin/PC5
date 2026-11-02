@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 21:40:00 +0000
+Subject: [PATCH 117/117] PC5: the loading screen fades in as soon as the game's
+ process can draw
+
+PC5 showed its loading picture as it handed a game over, then the screen was
+black until Wine ran, and the loading screen came again: choppy. PC5 now fades
+its own screen to black, and the game's process shows the loading screen
+fading in from black right after the /data grant (pc5_game_early_loading),
+before Wine is loaded and the game made ready. The display is opened only
+after the grant, as opening it before made the grant fail; the fonts and
+picture are freed again before Wine is loaded, and the game's own loading
+screen carries on at once (pc5_game_shown_before).
+---
+ native/wine64_main.c | 48 +++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 47 insertions(+), 1 deletion(-)
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 459e452..72be166 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -1267,6 +1267,48 @@ static void pc5_game_folder_name(const char *executable, char *out, size_t size)
+     }
+ }
+ 
++/* The loading screen was shown as soon as the game's process could draw (pc5_early_loading). */
++static int pc5_early_shown;
++
++static void pc5_early_show(const uint32_t *pixels, void *context)
++{
++    const PwPresentFrame frame = { (const uint8_t *)pixels, PC5_MATRIX_WIDTH, PC5_MATRIX_HEIGHT,
++                                   PC5_MATRIX_WIDTH * 4, PW_PRESENT_BGRX8 };
++    (void)pw_videoout_ps5_present_scaled(context, &frame, PW_PRESENT_SCALE_FIT, 0);
++}
++
++static void pc5_early_wait(uint32_t ms)
++{
++    usleep(ms * 1000u);
++}
++
++/* A game PC5 started (its lang= word): its loading screen fades in from black as soon as the
++ * game's process can draw, right after the /data grant, before Wine is loaded and the game made
++ * ready (seconds at times). PC5 faded its own screen to black as it handed the game over, and
++ * the screen stayed black until Wine ran. The display is opened only after the grant: opened
++ * before it, it made the grant fail (2.2.2's first build). Only the display stays open, for the
++ * game (video_status is PW_OK when it is), showing the last frame: the fonts and picture are
++ * freed again before Wine is loaded, and the game's own loading screen carries on at once. */
++static void pc5_early_loading(const PwGameProfile *game, const char *executable, PwVideoOutPs5 *video,
++                              int *video_status)
++{
++    const char *app = pc5_app_root();
++    char folder[PC5_NAME];
++    int shown;
++
++    if (!pc5_language_arg[0] || !app) return;
++    if ((*video_status = pw_videoout_ps5_open(video)) != PW_OK) {
++        PS5LOG_LOG("PC5 early loading screen: no display (%s)", pw_result_name(*video_status));
++        return;
++    }
++    pc5_game_folder_name(executable, folder, sizeof(folder));
++    shown = pc5_game_early_loading(library_root, app, game ? game->app.prefix : "",
++                                   game && game->app.name[0] ? game->app.name : executable, pc5_language_arg, folder,
++                                   500, pc5_early_show, video, pc5_early_wait);
++    pc5_early_shown = shown == 0;
++    PS5LOG_LOG("PC5 early loading screen shown=%d lang=%s", pc5_early_shown, pc5_language_arg);
++}
++
+ /* In a game: PC5's settings, the game's colour, the loading screen. */
+ static void pc5_game_start(const PwGameProfile *game, const char *executable)
+ {
+@@ -1281,6 +1323,7 @@ static void pc5_game_start(const PwGameProfile *game, const char *executable)
+         pc5_game_folder_name(executable, folder, sizeof(folder));
+         pc5_game_loading_setup(&pc5_game, pc5_language_arg, folder);
+     }
++    if (pc5_early_shown) pc5_game_shown_before(&pc5_game);   /* the same screen carries on */
+     pc5_game_on = 1;
+ }
+ 
+@@ -1616,6 +1659,9 @@ int main(int argc, char **argv)
+         snprintf(prefix, sizeof(prefix), "%s/prefixes/%s", library_root, game->app.prefix);
+     else
+         snprintf(prefix, sizeof(prefix), "%s/prefix", library_root);
++#ifdef PW_PC5
++    pc5_early_loading(game, launch.executable, &video, &video_status);
++#endif
+ #ifdef PW_PC5
+     /* Each game keeps its shaders in its own folder: they last between
+      * launches and go when the game is uninstalled. */
+@@ -1842,7 +1888,7 @@ int main(int argc, char **argv)
+             rumble_at = (int (*)(uint32_t, uint32_t *, uint32_t *))
+                 (uintptr_t)pw_prx_lookup(start.descriptor, "pw_wine_rumble_at");
+         }
+-        video_status = pw_videoout_ps5_open(&video);
++        if (video_status != PW_OK) video_status = pw_videoout_ps5_open(&video);   /* open with the loading screen */
+         pad_status = pw_pad_ps5_platform_ops(&pad_ops);
+         if (pad_status == PW_OK)
+             pad_status = pw_pad_ps5_open(&pad, &pad_ops, pad_open_map,
+-- 
+2.43.0
+

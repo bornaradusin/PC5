@@ -104,6 +104,7 @@ typedef struct Pc5GameSession {
     char prefix[PC5_ID];          /* the game's id */
     char language[16];            /* PC5's language, as PC5 passed it (pc5_game_loading_setup), or "" */
     char folder[PC5_NAME];        /* the game's folder's name, for its own loading picture, or "" */
+    int shown_before;             /* the loading screen is already on the screen (pc5_game_early_loading) */
     uint32_t cover_tint;          /* the game's colour, 0 when it has no cover */
     uint32_t light, light_target; /* what the light bar shows and is going to */
     uint64_t light_at;
@@ -216,6 +217,18 @@ int pc5_game_env_name_ok(const char *name);
  * the game's prefix and the app's folder. */
 void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *root, const char *app,
                     const char *prefix, const char *title);
+/* The loading screen as soon as the game's process can draw, right after the /data grant and
+ * before Wine is loaded: the game's own picture (pc5_loading_own) or PC5's, fading in from
+ * black for fade_ms (shown with show, wait_ms between frames), then everything it took freed
+ * again, so nothing of it is in the way of what Wine sets up next. The screen keeps the last
+ * frame until the game's own loading screen carries on (pc5_game_shown_before). language as PC5
+ * passed it. 0 when shown. */
+int pc5_game_early_loading(const char *root, const char *app, const char *prefix, const char *title,
+                           const char *language, const char *folder, uint32_t fade_ms,
+                           void (*show)(const uint32_t *pixels, void *context), void *context,
+                           void (*wait_ms)(uint32_t ms));
+/* The loading screen was shown already (pc5_game_early_loading): the game's own comes at once. */
+void pc5_game_shown_before(Pc5GameSession *game);
 /* For the loading screen: PC5's language as PC5 passed it (NULL or "" English), and the name
  * of the game's folder (its own loading picture may be named after it; NULL or ""). */
 void pc5_game_loading_setup(Pc5GameSession *game, const char *language, const char *folder);

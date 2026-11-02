@@ -1331,7 +1331,7 @@ static int missing_cover_step(Pc5Ui *ui)
 /* ---- the games' backgrounds -------------------------------------------------------------------- */
 
 enum { BG_FADE_MS = 320, BG_SETTLE_MS = 160 };
-/* Play: the loading picture fades in over PC5's screen for this long before the game is handed over. */
+/* Play: PC5's screen fades to black for this long before the game is handed over. */
 enum { LAUNCH_FADE_MS = 400 };
 
 /* The worker on the games that need a background, once for each load of the library
@@ -5715,8 +5715,8 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
     case S_LAUNCH:
         if (!ui->drawn) break;
         if (ui->launch_ready) {
-            /* Made ready: the loading picture fades in over PC5's screen (LAUNCH_FADE_MS), then
-             * the game is handed over. */
+            /* Made ready: PC5's screen fades to black (LAUNCH_FADE_MS), then the game is handed
+             * over. */
             if (ui->now - ui->launch_ready_at < LAUNCH_FADE_MS) {
                 ui->dirty = 1;
                 break;
@@ -8627,26 +8627,12 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
                      (unsigned)ui->runtime.total);
             busy_dialog(ui, c, line, count, 0);
         } else {
-            /* The loading picture the game's start goes on with, at once: no spinner first. The
-             * player's own one for the game, from the loading folder, when there is one. */
-            if (!ui->launch_matrix && (ui->launch_matrix = pc5_matrix_borrow(&ui->fonts)) && index >= 0) {
-                char folder[PC5_PATH], own[PC5_PATH];
-                const Pc5Game *game = &ui->library.games[index];
-                const char *base = !pc5_game_folder(ui->root, game->id, folder, sizeof(folder)) && strrchr(folder, '/')
-                                       ? strrchr(folder, '/') + 1 : "";
-                if (!pc5_loading_own(ui->root, base, game->title, game->id, own, sizeof(own)))
-                    say(ui, "PC5 loading picture %s: %s", own,
-                        pc5_matrix_picture(ui->launch_matrix, own) ? "not readable" : "shown");
-            }
-            const uint32_t *px = ui->launch_matrix ? pc5_matrix_step(ui->launch_matrix) : NULL;
-            if (px) {
-                Pc5Image frame = { PC5_MATRIX_WIDTH, PC5_MATRIX_HEIGHT, (uint32_t *)px };
-                uint64_t since = ui->launch_ready ? ui->now - ui->launch_ready_at : 0;
-                int alpha = since >= LAUNCH_FADE_MS ? 256 : (int)(since * 256 / LAUNCH_FADE_MS);
-                pc5_draw_image(c, &frame, 0, 0, W, H, alpha);
-            } else {
-                busy_dialog(ui, c, line, NULL, 0);
-            }
+            /* Made ready: PC5's screen fades to black, and the game's process shows the loading
+             * picture from black as soon as it can draw (prospero-win 0117): one change of
+             * picture, where PC5's own loading picture went black between them. */
+            uint64_t since = ui->launch_ready ? ui->now - ui->launch_ready_at : 0;
+            int alpha = !ui->launch_ready ? 0 : since >= LAUNCH_FADE_MS ? 255 : (int)(since * 255 / LAUNCH_FADE_MS);
+            if (alpha) dim(c, alpha);
         }
         break;
     }

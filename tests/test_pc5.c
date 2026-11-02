@@ -5700,6 +5700,22 @@ static void test_own_covers(void)
     pc5_free(search);
 }
 
+
+/* pc5_game_early_loading's frames: how many, and how red the first and last are at a point. */
+static int early_frames, early_waits, early_first_red, early_last_red;
+static void early_show(const uint32_t *pixels, void *context)
+{
+    int red = (int)(pixels[360 * PC5_MATRIX_WIDTH + 200] >> 16 & 255);
+    (void)context;
+    if (!early_frames++) early_first_red = red;
+    early_last_red = red;
+}
+static void early_wait(uint32_t ms)
+{
+    (void)ms;
+    early_waits++;
+}
+
 static void test_game(const char *fonts_path)
 {
     char game_root[PC5_PATH], app[PC5_PATH], file[PC5_PATH];
@@ -6108,6 +6124,29 @@ static void test_game(const char *fonts_path)
         for (int i = 0; shown && i < PC5_MATRIX_WIDTH * PC5_MATRIX_HEIGHT; i += 97)
             reds += (shown[i] >> 16 & 255) > 150 && (shown[i] & 255) < 60;
         CHECK(shown && reds > 8500, "the player's picture fills the frame: %d", reds);
+        pc5_game_loading_done(&own);
+
+        /* As soon as the game's process can draw: the same picture, fading in from black, then
+         * freed; the game's own loading screen then carries on at once. */
+        early_frames = early_waits = 0;
+        early_first_red = early_last_red = 0;
+        CHECK(!pc5_game_early_loading(game_root, game.app, "liberty", "Liberty Town", "", "Liberty", 500, early_show, NULL,
+                                      early_wait),
+              "the early loading screen shown");
+        CHECK(early_frames >= 15 && early_frames <= 17 && early_waits == early_frames - 1,
+              "half a second of frames: %d, %d waits", early_frames, early_waits);
+        CHECK(early_first_red < 20 && early_last_red > 150, "from black to the player's picture: %d to %d", early_first_red,
+              early_last_red);
+        CHECK(pc5_game_early_loading(game_root, "", "liberty", "Liberty Town", "", "", 500, early_show, NULL, early_wait) == -1,
+              "none without PC5's folder");
+        memset(&own, 0, sizeof(own));
+        own.ops = game.ops;
+        pc5_copy(own.app, sizeof(own.app), game.app);
+        pc5_copy(own.root, sizeof(own.root), game_root);
+        pc5_copy(own.title, sizeof(own.title), "Liberty Town");
+        pc5_game_shown_before(&own);
+        shown = pc5_game_loading(&own, 50000);
+        CHECK(shown && (shown[360 * PC5_MATRIX_WIDTH + 200] >> 16 & 255) > 150, "the game's own at once, not from black");
         pc5_game_loading_done(&own);
     }
     pc5_game_end(&game, 7);
