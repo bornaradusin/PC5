@@ -1,4 +1,14 @@
+## Custom build: Media + Compatibility 1
+
+Unofficial PC5 2.1.1 extension. Native community compatibility list, delayed/trimmed silent video, per-game music settings, appearance backup/restore, and a library-wide phone appearance QR. Existing USB/internal file pickers and per-game Square reception remain. See [feature and validation notes](docs/media-compatibility-enhancements.md).
+
 # PC5
+
+Unofficial 2.1.1 modification: per-game MP3/WAV music, silent H.264 backgrounds,
+and optional phone/QR reception for all five appearance media types. Square
+opens QR; Triangle retains its original exit behavior. Existing internal/USB
+file pickers remain available. See [phone notes](docs/phone-upload.md),
+[video notes](docs/background-video.md) and [music notes](docs/library-music-mp3.md).
 
 <p align="center"><img src="art/icon0.png" width="200" alt="PC5's icon"></p>
 <p align="center"><img src="art/background-source.png" width="600" alt="PC5's home screen background"></p>
@@ -145,3 +155,4 @@ payload SDK and boilerplate, and the Lapy helper. Also:
 
 PC5 is not made by or connected to Sony, Valve, GOG, GitHub, PCGamingWiki or the Wikimedia
 Foundation.
+

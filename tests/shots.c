@@ -185,7 +185,7 @@ static Pc5Ui *open_ui(const char *root, int network)
     fmt(file, sizeof(file), "%s/eboot.bin", tile_template);
     pc5_write_file(file, "eboot", 5);
     platform = (Pc5Platform){ NULL, { NULL, network ? sample_net : offline, NULL, NULL }, fake_clock, fake_play, NULL, NULL, NULL, 0, NULL,
-                              NULL, keyboard_open, keyboard_state, keyboard_close };
+                              NULL, keyboard_open, keyboard_state, keyboard_close, NULL, NULL };
     config = (Pc5UiConfig){ root, template_prefix, fonts, roots, tiles, tile_template, NULL, NULL, NULL, NULL, 0, 0, boot_shot,
                             getenv("PC5_SHOTS_LANG") };
     Pc5Ui *ui = pc5_ui_create(&config, &platform);
@@ -215,7 +215,7 @@ static void crash_shots(const char *root)
     char file[PC5_PATH], text[2048];
     Pc5Library library;
     Pc5Platform platform = { NULL, { NULL, offline, NULL, NULL }, fake_clock, fake_play, NULL, NULL, shot_time, 0, NULL, NULL,
-                             NULL, NULL, NULL };
+                             NULL, NULL, NULL, NULL, NULL };
 
     make_library(root, 3, 1);
     pc5_library_load(root, &library);
@@ -317,10 +317,10 @@ int main(int argc, char **argv)
     ui = open_ui(root, 0);
     settle(ui);
     save("04b-library-background");
-    step(ui, PC5_KEY_R3, 1);
+    step(ui, PC5_KEY_DOWN, 1);
     settle(ui);
     save("04c-focus-mode");
-    step(ui, PC5_KEY_R3, 1);
+    step(ui, PC5_KEY_UP, 1);
     pc5_ui_destroy(ui);
 
     make_library(root, 40, 1);
@@ -334,11 +334,17 @@ int main(int argc, char **argv)
     save("06b-library-tab");
     step(ui, PC5_KEY_R1, 1);
     settle(ui);
+    save("06bb-compatibility-tab");
+    step(ui, PC5_KEY_R1, 1);
+    settle(ui);
     save("06c-install-tab");
     step(ui, PC5_KEY_R1, 1);
     settle(ui);
     save("06d-settings-tab");
-    for (int i = 0; i < 3; i++) step(ui, PC5_KEY_L1, 1);
+    step(ui, PC5_KEY_L1, 1);              /* Settings to Install */
+    step(ui, PC5_KEY_L1, 1);              /* Install to Compatibility */
+    step(ui, PC5_KEY_L1, 1);              /* Compatibility to Library */
+    step(ui, PC5_KEY_L1, 1);              /* Library to Home */
     settle(ui);
     step(ui, PC5_KEY_TRIANGLE, 1);
     settle(ui);
@@ -387,6 +393,7 @@ int main(int argc, char **argv)
     /* Its background, from Steam's library hero. */
     step(ui, PC5_KEY_DOWN, 1);
     step(ui, PC5_KEY_ACCEPT, 1);
+    step(ui, PC5_KEY_ACCEPT, 1);           /* Background image in the submenu */
     until(ui, "picture");
     settle(ui);
     step(ui, PC5_KEY_TRIANGLE, 1);
@@ -394,6 +401,7 @@ int main(int argc, char **argv)
     settle(ui);
     save("15l-background-choose");
     step(ui, PC5_KEY_BACK, 1);
+    step(ui, PC5_KEY_BACK, 1);             /* Background submenu to Appearance */
     settle(ui);
     step(ui, PC5_KEY_DOWN, 1);
     step(ui, PC5_KEY_ACCEPT, 1);           /* Home screen tile on */

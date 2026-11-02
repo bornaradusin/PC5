@@ -170,9 +170,9 @@ int pc5_prefix_fonts(const char *root, const char *prefix, const char *app);
  * failure (tried again next time). */
 int pc5_prefix_versions(const char *root, const char *prefix);
 /* Installer keys for the games that refuse to start without them ("The game is not properly
- * installed": Pro Evolution Soccer 6), known by a file beside program (the game's program, on
+ * installed": Pro Evolution Soccer 5, 6 and 2008 to 2014), known by a file beside program (the game's program, on
  * the console or on the USB drive it plays from): HKLM\Software\<key> and its Wow6432Node
- * twin, with the program's folder as Windows sees it (C:\Games\...) as the install folder and the languages the game has, appended to system.reg once. Never a CD
+ * twin, with the program's folder as Windows sees it (C:\Games\...) as the install folder and the languages the game has or its version, appended to system.reg once. Never a CD
  * key. 1 when it added some, 0 when it had them or the game needs none, -1 on a failure
  * (tried again next time). */
 int pc5_prefix_installs(const char *root, const char *prefix, const char *program);

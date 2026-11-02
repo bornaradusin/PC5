@@ -97,10 +97,19 @@ void pc5_ftp_host_init(void)
 }
 
 #ifndef PC5_FTP_SERVE
+static int host_random(void *data, size_t size)
+{
+    FILE *f = fopen("/dev/urandom", "rb");
+    if (!f) return -1;
+    int failed = fread(data, 1, size, f) != size;
+    fclose(f);
+    return failed ? -1 : 0;
+}
 void pc5_web_host_init(void);
 void pc5_web_host_init(void)
 {
     pc5_web_init(&host_ops);
+    pc5_web_random_init(host_random);
 }
 #endif
 
@@ -146,6 +155,29 @@ int main(int argc, char **argv)
     /* A line on stdin: the counts; stdin closed: stopped, as PC5 stops it. */
     char line[64];
     while (fgets(line, sizeof(line), stdin)) {
+        if (!strncmp(line, "appearance-begin", 16)) {
+            char url[160]; int failed = pc5_web_appearance_begin(url, sizeof(url));
+            printf("%s\n", failed ? "failed" : url); fflush(stdout); continue;
+        }
+        if (!strncmp(line, "appearance-finish ", 18)) {
+            pc5_web_appearance_finish(atoi(line + 18)); puts("finished"); fflush(stdout); continue;
+        }
+        if (!strncmp(line, "phone ", 6)) {
+            char url[160];
+            int failed = pc5_web_phone_begin(atoi(line + 6), "Test game </script>", url, sizeof(url));
+            printf("%s\n", failed ? "failed" : url); fflush(stdout); continue;
+        }
+        if (!strncmp(line, "phone-end", 9)) {
+            pc5_web_phone_end(); puts("ended"); fflush(stdout); continue;
+        }
+        if (!strncmp(line, "phone-take", 10)) {
+            char path[PC5_PATH];
+            int ready = pc5_web_phone_take(path, sizeof(path));
+            printf("%s\n", ready ? path : "none"); fflush(stdout); continue;
+        }
+        if (!strncmp(line, "phone-only", 10)) {
+            pc5_web_phone_only(1); puts("only"); fflush(stdout); continue;
+        }
         Pc5WebStatus status;
         pc5_web_status(&status);
         printf("uploads=%u transfers=%d\n", status.uploads, status.transfers);

@@ -6,6 +6,34 @@
 #ifndef PC5_SOUND_H
 #define PC5_SOUND_H
 #include "pc5.h"
+#include <stdio.h>
+#include <stdatomic.h>
+
+/* Import MP3 or PCM16 WAV on a worker, resampling to a local 48 kHz stereo
+ * WAV. Only a completed, closed file is renamed over destination. */
+typedef struct Pc5MusicImport {
+    pthread_t thread;
+    atomic_int stop, done;
+    int running, result;
+    char source[PC5_PATH], destination[PC5_PATH];
+} Pc5MusicImport;
+enum { PC5_MUSIC_IMPORTED = 0, PC5_MUSIC_BAD_FORMAT = -1,
+       PC5_MUSIC_IO_ERROR = -2, PC5_MUSIC_TOO_LARGE = -3, PC5_MUSIC_CANCELLED = -4 };
+int pc5_music_import_start(Pc5MusicImport *job, const char *source, const char *destination);
+void pc5_music_import_end(Pc5MusicImport *job);
+
+/* Library music streams bounded PCM WAV data instead of loading a whole song.
+ * 48 kHz, signed 16-bit PCM, mono or stereo. Output is always stereo. */
+typedef struct Pc5Music {
+    FILE *file;
+    long start;
+    uint32_t bytes, left;
+    int channels;
+} Pc5Music;
+int pc5_music_open(const char *path, Pc5Music *music);
+size_t pc5_music_read(Pc5Music *music, int16_t *stereo, size_t frames);
+int pc5_music_start_at(Pc5Music *music, unsigned seconds);
+void pc5_music_close(Pc5Music *music);
 
 enum {
     PC5_SOUND_RATE = 48000,

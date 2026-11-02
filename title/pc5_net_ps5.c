@@ -142,6 +142,8 @@ static int random_bytes(void *data, size_t size)
 void pc5_net_ps5_init(const char *app, void (*log)(const char *line));
 void pc5_net_ps5_init(const char *app, void (*log)(const char *line))
 {
+    extern void pc5_web_random_init(int (*random_bytes)(void *, size_t));
+    pc5_web_random_init(random_bytes);
     /* The console's own roots (the title sees the real root with its /data
      * grant), then the ones the app carries: Mozilla's, as Debian ships them. */
     static char bundle[PC5_PATH];

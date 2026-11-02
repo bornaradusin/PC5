@@ -7,6 +7,7 @@
  * PROGRAMS holds tests/make-test-programs.py's Windows programs, COVERS
  * tests/make-sample-covers.py's pictures. */
 #include "pc5.h"
+#include "pc5_appearance.h"
 #include "pc5_backgrounds.h"
 #include "pc5_cover.h"
 #include "pc5_files.h"
@@ -3646,7 +3647,7 @@ static void test_sound(void)
     }
     /* The app's own, each read, the default among them. */
     static const char *const own[] = { "Beeper - Push", "Cha-Ching", "System Activated", "cheap chinese speaker", "fahh",
-                                       "funny message tone", "rizz" };
+                                       "funny message tone", "rizz", "Play Has No Limits", "Welcome Arabic" };
     for (size_t i = 0; i < sizeof(own) / sizeof(own[0]); i++) {
         char file[PC5_PATH];
         Pc5Buf data = { 0 };
@@ -3840,7 +3841,7 @@ static void test_background_screen(const char *fonts)
     FakeConsole console = { 0 };
     FakeNet net = { 0 };
     Pc5Platform platform = { &console, { &net, fake_get, NULL, fake_get_authorized }, fake_clock, fake_play, NULL, fake_notify, fake_time, 0,
-                             NULL, NULL, NULL, NULL, NULL };
+                             NULL, NULL, NULL, NULL, NULL, NULL, NULL };
     const char *roots[] = { usb, NULL };
     Pc5Canvas canvas = { pc5_alloc(1920u * 1080u * 4u), 1920, 1080, 1920, 0, 0 };
     Pc5Library library;
@@ -4653,6 +4654,32 @@ static void test_dotnet(void)
         pc5_buf_free(&text);
         CHECK(pc5_prefix_installs(root, "default", program) == 0, "the default prefix is left alone");
         CHECK(pc5_prefix_installs(root, "missing", program) == 0, "no Windows yet: nothing done");
+
+        /* Pro Evolution Soccer 2011: KONAMI\PES2011 with its folder and a version, no languages,
+         * no 1.0 key, no CD key; 2014's key has a space. */
+        path(file, sizeof(file), "%s/prefixes/pes11/system.reg", root);
+        write_text(file, "WINE REGISTRY Version 2\n");
+        path(program, sizeof(program), "%s/prefixes/pes11/drive_c/Games/PES 2011/PES2011.EXE", root);
+        write_text(program, "MZ");
+        CHECK(pc5_prefix_installs(root, "pes11", program) == 1, "PES 2011 gets its key");
+        CHECK(pc5_prefix_installs(root, "pes11", program) == 0, "PES 2011: only once");
+        if (!pc5_read_file(file, &text, 16384) && !pc5_buf_terminate(&text))
+            CHECK(strstr((char *)text.data, "\n[Software\\\\Wow6432Node\\\\KONAMI\\\\PES2011]\n"
+                                            "\"installdir\"=\"C:\\\\Games\\\\PES 2011\\\\\"\n\"version\"=\"1.00.0000\"\n") &&
+                      strstr((char *)text.data, "\n[Software\\\\KONAMI\\\\PES2011]\n") &&
+                      !strstr((char *)text.data, "lang_") && !strstr((char *)text.data, "1.0]") &&
+                      !strstr((char *)text.data, "\"code\""),
+                  "PES 2011: its folder and version, both views, no languages, no key");
+        pc5_buf_free(&text);
+        path(file, sizeof(file), "%s/prefixes/pes14/system.reg", root);
+        write_text(file, "WINE REGISTRY Version 2\n");
+        path(program, sizeof(program), "%s/prefixes/pes14/drive_c/Games/PES 2014/PES2014.exe", root);
+        write_text(program, "MZ");
+        CHECK(pc5_prefix_installs(root, "pes14", program) == 1, "PES 2014 gets its key");
+        if (!pc5_read_file(file, &text, 16384) && !pc5_buf_terminate(&text))
+            CHECK(strstr((char *)text.data, "\n[Software\\\\Wow6432Node\\\\KONAMI\\\\PES 2014]\n") != NULL,
+                  "PES 2014: the key with its space");
+        pc5_buf_free(&text);
 
         /* Played from a USB drive: Windows sees its folder as C:\Games\<folder> all the same. */
         char drive[PC5_PATH];
@@ -6130,7 +6157,7 @@ static void test_tile_start(const char *fonts)
     FakeConsole console = { 0 };
     FakeNet net = { 0 };
     Pc5Platform platform = { &console, { &net, fake_get, NULL, fake_get_authorized }, fake_clock, fake_play, NULL, fake_notify, fake_time, 0, NULL, NULL,
-                             NULL, NULL, NULL };
+                             NULL, NULL, NULL, NULL, NULL };
     const char *roots[] = { usb, NULL };
     Pc5Canvas canvas = { pc5_alloc(1920u * 1080u * 4u), 1920, 1080, 1920, 0, 0 };
     Pc5Library library;
@@ -6282,6 +6309,8 @@ static void test_picture_screens(Pc5Ui *ui, Pc5Canvas *canvas, FakeConsole *cons
     unlink(background);
     press(ui, PC5_KEY_DOWN, canvas);
     press(ui, PC5_KEY_ACCEPT, canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "game-menu"), "background submenu");
+    press(ui, PC5_KEY_ACCEPT, canvas);
     until_screen(ui, "picture", canvas);
     frames(ui, 0, 0, 20, canvas);
     console->typed = "Neon Drift";
@@ -6312,7 +6341,7 @@ static void test_screens(const char *fonts)
     FakeConsole console = { 0 };
     FakeNet net = { 0 };
     Pc5Platform platform = { &console, { &net, fake_get, NULL, fake_get_authorized }, fake_clock, fake_play, fake_log, fake_notify, fake_time, 0, NULL,
-                             fake_sound, fake_keyboard_open_text, fake_keyboard_state_text, fake_keyboard_close_text };
+                             fake_sound, fake_keyboard_open_text, fake_keyboard_state_text, fake_keyboard_close_text, NULL, NULL };
     {
         /* The sounds to choose from: the app's, and one of the player's. */
         char from[PC5_PATH], to[PC5_PATH];
@@ -6421,19 +6450,23 @@ static void test_screens(const char *fonts)
         CHECK(!strcmp(pc5_ui_screen(ui), "library"), "back in the library: %s", pc5_ui_screen(ui));
     }
 
-    /* Game maintenance › Game compatibility list: the wiki's list as a QR code; back on its row. */
+    /* Compatibility is a top-level tab; root Back is inert, OPTIONS shares a report. */
     press(ui, PC5_KEY_OPTIONS, &canvas);
-    press(ui, PC5_KEY_ACCEPT, &canvas);      /* Game maintenance */
-    save_shot(&canvas, "settings-maintenance");
-    press(ui, PC5_KEY_DOWN, &canvas);
-    press(ui, PC5_KEY_DOWN, &canvas);
-    press(ui, PC5_KEY_ACCEPT, &canvas);      /* Game compatibility list */
+    press(ui, PC5_KEY_L1, &canvas);         /* Settings to Install */
+    press(ui, PC5_KEY_L1, &canvas);         /* Install to Compatibility */
     CHECK(!strcmp(pc5_ui_screen(ui), "compatibility"), "the compatibility list's code: %s", pc5_ui_screen(ui));
     save_shot(&canvas, "compatibility");
     press(ui, PC5_KEY_BACK, &canvas);
-    press(ui, PC5_KEY_UP, &canvas);
-    press(ui, PC5_KEY_UP, &canvas);
-    press(ui, PC5_KEY_ACCEPT, &canvas);      /* back on its row, two below Install games from USB */
+    CHECK(!strcmp(pc5_ui_screen(ui), "compatibility"), "root Back keeps the compatibility tab");
+    press(ui, PC5_KEY_OPTIONS, &canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "compat-share"), "OPTIONS opens the report QR: %s", pc5_ui_screen(ui));
+    press(ui, PC5_KEY_BACK, &canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "compatibility"), "Back from sharing keeps the compatibility list");
+    press(ui, PC5_KEY_R1, &canvas);         /* Compatibility to Install */
+    press(ui, PC5_KEY_R1, &canvas);         /* Install to Settings */
+    press(ui, PC5_KEY_ACCEPT, &canvas);     /* Game maintenance */
+    save_shot(&canvas, "settings-maintenance");
+    press(ui, PC5_KEY_ACCEPT, &canvas);     /* Install games from USB */
     until_screen(ui, "sources", &canvas);
     CHECK(!strcmp(pc5_ui_screen(ui), "sources"), "back on Game maintenance: %s", pc5_ui_screen(ui));
     press(ui, PC5_KEY_BACK, &canvas);        /* Game maintenance, on Install */
@@ -6880,6 +6913,20 @@ static void test_screens(const char *fonts)
     press(ui, PC5_KEY_DOWN, &canvas);       /* Play, Controller, Mouse pointer, Graphics, Appearance */
     press(ui, PC5_KEY_ACCEPT, &canvas);
     save_shot(&canvas, "game-menu-appearance");
+    for (int i = 0; i < 5; ++i) press(ui, PC5_KEY_DOWN, &canvas);
+    press(ui, PC5_KEY_ACCEPT, &canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "media-options"), "media settings opens from Appearance: %s", pc5_ui_screen(ui));
+    press(ui, PC5_KEY_LEFT, &canvas);
+    {
+        Pc5Appearance appearance;
+        CHECK(!pc5_appearance_load(root, "orbital-nine", &appearance) && appearance.volume == 25,
+              "game music volume persisted: %d", appearance.volume);
+    }
+    save_shot(&canvas, "media-options");
+    press(ui, PC5_KEY_BACK, &canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "game-menu"), "back to Appearance");
+    for (int i = 0; i < 5; ++i) press(ui, PC5_KEY_UP, &canvas);
+
     press(ui, PC5_KEY_DOWN, &canvas);
     press(ui, PC5_KEY_DOWN, &canvas);       /* Cover, Background, Home screen tile */
     press(ui, PC5_KEY_ACCEPT, &canvas);
@@ -6891,6 +6938,10 @@ static void test_screens(const char *fonts)
     CHECK(!strcmp(pc5_ui_screen(ui), "message") && !pc5_home_find(tiles, "orbital-nine", tile), "taken away");
     press(ui, PC5_KEY_ACCEPT, &canvas);
     test_picture_screens(ui, &canvas, &console);
+    press(ui, PC5_KEY_SQUARE, &canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "message"), "phone reception needs the network backend: %s", pc5_ui_screen(ui));
+    press(ui, PC5_KEY_ACCEPT, &canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "game-menu"), "phone unavailable: back to the same media row: %s", pc5_ui_screen(ui));
     press(ui, PC5_KEY_TRIANGLE, &canvas);
     CHECK(!strcmp(pc5_ui_screen(ui), "library"), "Triangle: the library from any page: %s", pc5_ui_screen(ui));
 
@@ -7006,7 +7057,7 @@ static void test_report(const char *fonts)
     FakeConsole console = { 0 };
     FakeNet net = { 0 };
     Pc5Platform platform = { &console, { &net, fake_get, NULL, fake_get_authorized }, fake_clock, fake_play, NULL, fake_notify, fake_time, 0, NULL, NULL,
-                             NULL, NULL, NULL };
+                             NULL, NULL, NULL, NULL, NULL };
     const char *roots[] = { usb, NULL };
     Pc5Canvas canvas = { pc5_alloc(1920u * 1080u * 4u), 1920, 1080, 1920, 0, 0 };
     Pc5Library library;
@@ -7113,7 +7164,7 @@ static void test_upgrade_screens(const char *fonts)
     FakeConsole console = { 0 };
     static FakeNet net;
     Pc5Platform platform = { &console, { &net, fake_get, fake_download, fake_get_authorized }, fake_clock, fake_play, NULL, fake_notify,
-                             fake_time, 0, fake_restart, NULL, NULL, NULL, NULL };
+                             fake_time, 0, fake_restart, NULL, NULL, NULL, NULL, NULL, NULL };
     const char *roots[] = { usb, NULL };
     char app[PC5_PATH], drive[PC5_PATH], folder[PC5_PATH], file[PC5_PATH], zip[PC5_PATH], digest[65];
     static char json[2048];
@@ -7576,7 +7627,7 @@ static void test_files_screens(const char *fonts)
     FakeConsole console = { 0 };
     FakeNet net = { 0 };
     Pc5Platform platform = { &console, { &net, fake_get, NULL, fake_get_authorized }, fake_clock, fake_play, fake_log, fake_notify, fake_time, 0, NULL,
-                             NULL, fake_keyboard_open_text, fake_keyboard_state_text, fake_keyboard_close_text };
+                             NULL, fake_keyboard_open_text, fake_keyboard_state_text, fake_keyboard_close_text, NULL, NULL };
     const char *roots[] = { usb, NULL };
     char usb0[PC5_PATH], ext0[PC5_PATH], file[PC5_PATH];
     path(usb0, sizeof(usb0), "%s/fm/usb0", work);
@@ -7870,7 +7921,7 @@ static void test_install_folder_screens(const char *fonts)
     FakeConsole console = { 0 };
     FakeNet net = { 0 };
     Pc5Platform platform = { &console, { &net, fake_get, NULL, fake_get_authorized }, fake_clock, fake_play, fake_log, fake_notify, fake_time, 0, NULL,
-                             NULL, fake_keyboard_open_text, fake_keyboard_state_text, fake_keyboard_close_text };
+                             NULL, fake_keyboard_open_text, fake_keyboard_state_text, fake_keyboard_close_text, NULL, NULL };
     const char *roots[] = { usb, NULL };
     char app[PC5_PATH], drive[PC5_PATH], folder[PC5_PATH], file[PC5_PATH], install_dir[PC5_PATH];
     Pc5Canvas canvas = { pc5_alloc(1920u * 1080u * 4u), 1920, 1080, 1920, 0, 0 };
@@ -7965,6 +8016,15 @@ static void test_install_folder_screens(const char *fonts)
         "s = json.load(urllib.request.urlopen('http://127.0.0.1:8125/api/status', timeout=10))\n"
         "assert s['install'] and s['address'] == '127.0.0.1:8125', s\n"
         "assert json.load(urllib.request.urlopen('http://127.0.0.1:8125/api/games', timeout=20))\"");
+    /* Library appearance is an independent temporary capability; the existing web server stays on. */
+    for (int i = 0; i < 3; ++i) press(ui, PC5_KEY_DOWN, &canvas);
+    press(ui, PC5_KEY_ACCEPT, &canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "phone-qr"), "library phone QR: %s", pc5_ui_screen(ui));
+    save_shot(&canvas, "phone-library-qr");
+    press(ui, PC5_KEY_BACK, &canvas);
+    pc5_web_status(&web);
+    CHECK(!strcmp(pc5_ui_screen(ui), "settings") && web.running, "cancel library QR preserves web setting");
+    for (int i = 0; i < 3; ++i) press(ui, PC5_KEY_UP, &canvas);
     /* A username and a password typed: both asked for; a wrong one refused. */
     press(ui, PC5_KEY_DOWN, &canvas);                                 /* Username */
     console.typed = "  kevin ";
@@ -8448,7 +8508,7 @@ static void test_launch_extras(const char *fonts)
     FakeConsole console = { 0 };
     FakeNet net = { 0 };
     Pc5Platform platform = { &console, { &net, fake_get, NULL, fake_get_authorized }, fake_clock, fake_play, fake_log, fake_notify, fake_time, 0, NULL,
-                             fake_sound, fake_keyboard_open_text, fake_keyboard_state_text, fake_keyboard_close_text };
+                             fake_sound, fake_keyboard_open_text, fake_keyboard_state_text, fake_keyboard_close_text, NULL, NULL };
     const char *roots[] = { usb, NULL };
     Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, NULL };
     Pc5Canvas canvas = { pc5_alloc(1920u * 1080u * 4u), 1920, 1080, 1920, 0, 0 };
@@ -8729,7 +8789,7 @@ static void test_language_screens(const char *fonts)
     FakeConsole console = { 0 };
     FakeNet net = { 0 };
     Pc5Platform platform = { &console, { &net, fake_get, NULL, fake_get_authorized }, fake_clock, fake_play, fake_log, fake_notify,
-                             fake_time, 0, NULL, NULL, NULL, NULL, NULL };
+                             fake_time, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
     const char *roots[] = { usb, NULL };
     char dir[PC5_PATH], file[PC5_PATH], here[PC5_PATH], settings_file[PC5_PATH];
     Pc5Buf bytes = { 0 };
