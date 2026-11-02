@@ -563,3 +563,4 @@ controller's speaker.
 | 321 | After 320: row 48's game (Samurai Warriors 4 DX's movies, Direct3D 9 to 11) | its movies still play | `D3D9: Sharing the Direct3D 11 device's Vulkan device` |
 | 322 | Marvel's Spider-Man Remastered installed before 2.1.4 (PC5 had it as DirectX 11), Graphics API Auto | it starts with Direct3D 12, not "D3D12 not supported" in its log | `dll_overrides=d3d8,d3d9,d3d10core,d3d11,d3d12,d3d12core,dxgi=n;amd_ags_x64=b`, `vkd3d-proton` lines |
 | 323 | Marvel's Spider-Man Remastered with Controller DualSense and no USB keyboard: its launch window (Play, Settings, Quit) | the D-pad moves between them and ✕ picks Play; in the game the D-pad and ✕ do only what the controller does | (Wine patch 0979) |
+| 324 | Marvel's Spider-Man Remastered past Play | its picture after the black of its first frames, not a black screen for good | no `radv/ps5: a submission holds more words between two splits`, no `Failed to submit queue(s), vr -4` |

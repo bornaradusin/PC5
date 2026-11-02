@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 00:15:00 +0000
+Subject: [PATCH] radv/ps5: A submission too large to split says what fills it
+
+Marvel's Spider-Man Remastered lost its device on its first frames with
+VKD3D-Proton: a run of more than a million words with no split in it
+("more words between two splits than one AGC submission can"). A split
+falls only before a draw or a dispatch, so the run holds other commands,
+and the log didn't say which. The first time a process has such a run,
+it now names the PM4 packets in it by opcode, the most words first, with
+their counts, so the commands that need a split of their own can be
+found from a game's log. Nothing else changes.
+---
+ src/amd/vulkan/winsys/ps5/radv_ps5_cs.c | 58 +++++++++++++++++++++++--
+ 1 file changed, 55 insertions(+), 3 deletions(-)
+
+diff --git a/src/amd/vulkan/winsys/ps5/radv_ps5_cs.c b/src/amd/vulkan/winsys/ps5/radv_ps5_cs.c
+index 3bc9af5..5b5d132 100644
+--- a/src/amd/vulkan/winsys/ps5/radv_ps5_cs.c
++++ b/src/amd/vulkan/winsys/ps5/radv_ps5_cs.c
+@@ -539,6 +539,48 @@ radv_ps5_stream_pieces(const struct radv_ps5_cs *cs, struct util_dynarray *piece
+                                 }));
+ }
+ 
++/* What fills a unit too large for one AGC submission, once a process: its
++ * PM4 packets by opcode, the most words first, so the commands that need a
++ * split of their own can be named from a game's log. */
++static void
++radv_ps5_report_unit(const struct util_dynarray *pieces, unsigned first, unsigned end, uint32_t words)
++{
++   static bool reported;
++   uint32_t packets[256] = {0}, opcode_words[256] = {0}, other = 0;
++
++   if (reported)
++      return;
++   reported = true;
++   for (unsigned p = first; p < end; p++) {
++      const struct radv_ps5_cs_chunk *const piece = util_dynarray_element(pieces, struct radv_ps5_cs_chunk, p);
++      for (uint32_t at = 0; at < piece->cdw;) {
++         const uint32_t header = piece->words[at];
++         if (header >> 30 != 3) {
++            other++;
++            at++;
++            continue;
++         }
++         const unsigned opcode = (header >> 8) & 0xff;
++         const uint32_t size = MIN2(((header >> 16) & 0x3fff) + 2, piece->cdw - at);
++         packets[opcode]++;
++         opcode_words[opcode] += size;
++         at += size;
++      }
++   }
++   fprintf(stderr, "radv/ps5: the unit holds %u words in %u pieces; by PM4 opcode:", words, end - first);
++   for (unsigned shown = 0; shown < 8; shown++) {
++      unsigned most = 0;
++      for (unsigned opcode = 1; opcode < 256; opcode++)
++         if (opcode_words[opcode] > opcode_words[most])
++            most = opcode;
++      if (!opcode_words[most])
++         break;
++      fprintf(stderr, " 0x%02x %u packets %u words;", most, packets[most], opcode_words[most]);
++      opcode_words[most] = 0;
++   }
++   fprintf(stderr, " other words %u\n", other);
++}
++
+ static uint32_t
+ radv_ps5_count_streams(struct ac_cmdbuf **streams, unsigned count)
+ {
+@@ -645,10 +687,13 @@ radv_ps5_cs_submit(struct radeon_winsys_ctx *rctx, const struct radv_winsys_subm
+    uint32_t count = preamble_words + RADV_PS5_COMPLETION_WORDS + stamp_words;
+    uint32_t fill = preamble_words;
+    bool too_large = false;
++   unsigned large = 0;
+    for (unsigned u = 0; u < unit_count; u++) {
+       struct radv_ps5_unit *const unit = util_dynarray_element(&units, struct radv_ps5_unit, u);
+-      if (preamble_words + unit->words > room)
++      if (preamble_words + unit->words > room && !too_large) {
+          too_large = true;
++         large = u;
++      }
+       if (fill > preamble_words && fill + unit->words > room) {
+          unit->starts_part = true;
+          count += preamble_words;
+@@ -661,11 +706,18 @@ radv_ps5_cs_submit(struct radeon_winsys_ctx *rctx, const struct radv_winsys_subm
+    const uint64_t seq = queue->submitted_seq + 1;
+    uint32_t *const words = too_large ? NULL : radv_ps5_queue_claim(queue, count, seq);
+    if (!words) {
++      if (too_large) {
++         fprintf(stderr, "radv/ps5: a submission holds more words between two splits than one AGC submission can\n");
++         const struct radv_ps5_unit *const unit = util_dynarray_element(&units, struct radv_ps5_unit, large);
++         radv_ps5_report_unit(&pieces, unit->first_piece,
++                              large + 1 < unit_count
++                                 ? util_dynarray_element(&units, struct radv_ps5_unit, large + 1)->first_piece
++                                 : util_dynarray_num_elements(&pieces, struct radv_ps5_cs_chunk),
++                              unit->words);
++      }
+       simple_mtx_unlock(&queue->submit_lock);
+       util_dynarray_fini(&pieces);
+       util_dynarray_fini(&units);
+-      if (too_large)
+-         fprintf(stderr, "radv/ps5: a submission holds more words between two splits than one AGC submission can\n");
+       return VK_ERROR_DEVICE_LOST;
+    }
+ 
+-- 
+2.56.0
+
