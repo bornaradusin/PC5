@@ -34,4 +34,7 @@ enum { PC5_VIDEO_OK = 0, PC5_VIDEO_FORMAT = -1, PC5_VIDEO_IO = -2, PC5_VIDEO_CAN
  * H.264 video up to 1920x1080 and 60 fps; audio tracks are never decoded. */
 int pc5_video_import_start(Pc5VideoImport *job, const char *source, const char *destination);
 void pc5_video_import_end(Pc5VideoImport *job);
+/* Whether the file opens as such a video and its first frame decodes, without copying it
+ * (stop cancels): 0 when it does. On the caller's thread. */
+int pc5_video_check(const char *path, atomic_int *stop);
 #endif

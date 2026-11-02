@@ -6,7 +6,7 @@ root = Path(__file__).resolve().parents[1]
 out = root / '.build/music-volume-check'
 out.mkdir(parents=True, exist_ok=True)
 source = (root / 'title/pc5_console.c').read_text(encoding='utf-8')
-source = source[source.index('static pthread_t music_thread;'):source.index("/* The port's volume")]
+source = source[source.index('/* A track playing, and the one before it'):source.index("/* The port's volume")]
 support = r'''
 #include <stdint.h>
 #include <stdio.h>
@@ -33,10 +33,10 @@ static int pc5_music_start_at(Pc5Music *m,unsigned s) { (void)m;return s>10?-1:0
 static size_t pc5_music_read(Pc5Music *m,int16_t *p,size_t n) { (void)m;for(size_t i=0;i<n;i++){p[2*i]=32767;p[2*i+1]=-32768;}return n; }
 static void pc5_music_close(Pc5Music *m) { m->used=0; }
 static void plain_log(const char *s) { (void)s; }
-static void sound_end(void) {}
 static void pc5_copy(char *p,size_t n,const char *s) { snprintf(p,n,"%s",s); }
 static int pc5_thread_start(pthread_t *t,void *(*worker)(void*),void *arg,int detach) { (void)detach;*t=1;worker(arg);return 0; }
 static int pthread_join(pthread_t t,void **out) { (void)t;(void)out;return 0; }
+static void music_end(void);
 '''
 main = r'''
 int main(void) {

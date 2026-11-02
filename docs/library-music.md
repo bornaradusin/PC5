@@ -1,7 +1,7 @@
-# Per-game library music (source modification)
+# Per-game library music
 
-This page describes custom update 1. For the current MP3/offline-storage update,
-see [library-music-mp3.md](library-music-mp3.md).
+The first version of library music, which played a WAV file where it was. For music
+copied to the console, and MP3, see [library-music-mp3.md](library-music-mp3.md).
 
 Select a game, press Triangle, open **Appearance**, then **Library music**.
 Browse console storage or a USB drive and select a music file. **Remove library

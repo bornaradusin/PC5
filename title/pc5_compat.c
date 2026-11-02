@@ -4,6 +4,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 static const char *const statuses[] = {
     "Unknown", "Works perfectly", "Playable with issues", "Fix out, needs testing",
@@ -68,7 +69,7 @@ int pc5_compat_parse(const char *text, size_t length, Pc5CompatEntry **entries)
     *entries = NULL;
     if (!text || !length || length > PC5_COMPAT_LIMIT || memchr(text, 0, length)) return -1;
     Pc5CompatEntry *rows = NULL;
-    int count = 0, header = 0;
+    int count = 0, capacity = 0, header = 0;
     for (size_t start = 0; start < length;) {
         size_t end = start; while (end < length && text[end] != '\n') ++end;
         const char *line = text + start; size_t len = end - start;
@@ -104,10 +105,14 @@ int pc5_compat_parse(const char *text, size_t length, Pc5CompatEntry **entries)
         }
         if (!header || !title[0] || title[0] == '-') continue;
         if (count == PC5_COMPAT_MAX) { pc5_free(rows); return -1; }
-        if (!(count % 32)) {
-            Pc5CompatEntry *more = pc5_realloc(rows, (size_t)(count + 32) * sizeof(*rows));
+        if (count == capacity) {
+            /* Doubling: a long list isn't copied again for every 32 games. */
+            int grown = capacity ? capacity * 2 : 32;
+            if (grown > PC5_COMPAT_MAX) grown = PC5_COMPAT_MAX;
+            Pc5CompatEntry *more = pc5_realloc(rows, (size_t)grown * sizeof(*rows));
             if (!more) { pc5_free(rows); return -1; }
             rows = more;
+            capacity = grown;
         }
         Pc5CompatEntry *r = &rows[count++]; memset(r, 0, sizeof(*r));
         pc5_copy(r->title, sizeof(r->title), title);
@@ -159,8 +164,14 @@ static void *compat_worker(void *context)
     } else {
         l->incoming_count = pc5_compat_parse((const char *)b.data, b.len, &l->incoming);
         if (l->incoming_count > 0) {
+            /* The offline copy is written only when the list changed, not every minute the
+             * tab is open: the console's storage isn't worn by the same file again. */
+            Pc5Buf saved = { 0 };
+            int same = !pc5_read_file(l->cache, &saved, PC5_COMPAT_LIMIT) && saved.len == b.len &&
+                       !memcmp(saved.data, b.data, b.len);
+            pc5_buf_free(&saved);
             l->result = 0;
-            if (pc5_write_file(l->cache, b.data, b.len))
+            if (!same && pc5_write_file(l->cache, b.data, b.len))
                 pc5_copy(l->error, sizeof(l->error), "Updated, but the offline copy couldn't be saved.");
         } else pc5_copy(l->error, sizeof(l->error), "The source format changed. Your saved list was kept.");
     }
@@ -173,15 +184,25 @@ int pc5_compat_refresh(Pc5Compat *l)
     if (pc5_thread_start(&l->thread, compat_worker, l, 0)) return -1;
     l->running = 1; return 0;
 }
-int pc5_compat_poll(Pc5Compat *l)
+/* The refresh's thread joined, and its list used when it got one. */
+static void compat_finish(Pc5Compat *l)
 {
-    if (!l->running || !atomic_load(&l->done)) return 0;
     pthread_join(l->thread, NULL); l->running = 0;
     if (!l->result) {
         pc5_free(l->entries); l->entries = l->incoming; l->incoming = NULL;
         l->count = l->incoming_count; l->cached = 0; l->checked = (int64_t)time(NULL);
     }
+}
+int pc5_compat_poll(Pc5Compat *l)
+{
+    if (!l->running || !atomic_load(&l->done)) return 0;
+    compat_finish(l);
     return 1;
+}
+void pc5_compat_wait(Pc5Compat *l)
+{
+    /* Its connection closed; the list itself is taken by the next poll, as usual. */
+    while (l->running && !atomic_load(&l->done)) usleep(10000);
 }
 void pc5_compat_end(Pc5Compat *l)
 {

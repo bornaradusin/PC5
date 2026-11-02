@@ -24,5 +24,7 @@ int pc5_compat_matches(const Pc5CompatEntry *entry, const char *query, int filte
 void pc5_compat_init(Pc5Compat *list, const char *root, const Pc5Http *http);
 int pc5_compat_refresh(Pc5Compat *list);
 int pc5_compat_poll(Pc5Compat *list);
+/* A refresh under way finished (its connection closed), before a game starts. */
+void pc5_compat_wait(Pc5Compat *list);
 void pc5_compat_end(Pc5Compat *list);
 #endif

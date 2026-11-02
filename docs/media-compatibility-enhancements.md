@@ -1,8 +1,8 @@
-# Media + Compatibility 1 (custom PC5 2.1.1)
+# Media and the Compatibility tab (PC5 2.1.6)
 
-This is an unofficial extension of PC5 2.1.1. Existing internal/USB pickers,
+Contributed by youss17x (#303), first made on PC5 2.1.1. Existing internal/USB pickers,
 per-game phone reception on Square, and Triangle closing the game menu remain.
-Game files, saves, upstream Wine/DXVK fixes and runtime version stay as in 2.1.1.
+Game files, saves, upstream Wine/DXVK fixes and runtime are unchanged by it.
 
 ## Community compatibility
 

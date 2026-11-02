@@ -81,7 +81,9 @@ static int association(const char *dir, const char *name, const char *folder, co
     if (pc5_read_file(config, &data, PC5_PATH - 1)) { pc5_buf_free(&data); return -1; }
     int ok = (data.len == strlen(x) && !memcmp(data.data, x, data.len)) || (data.len == strlen(y) && !memcmp(data.data, y, data.len));
     if (ok) pc5_copy(path, PC5_PATH, (const char *)data.data);
-    pc5_buf_free(&data); return ok ? 0 : -1;
+    /* One that names a file elsewhere (an older PC5's choice from a USB drive) isn't the
+     * game's own copy: the backup goes without it rather than failing. */
+    pc5_buf_free(&data); return 0;
 }
 static int look_export(Pc5Look *j, const char *dir)
 {
@@ -127,11 +129,9 @@ static int validate_slot(Pc5Look *j, int i, const char *path)
     }
     if (i == 3) { Pc5Music m; if (pc5_music_open(path, &m)) return -1; pc5_music_close(&m); }
     if (i == 4) {
-        /* Decoder validation on its worker before any current association moves. */
-        Pc5VideoImport v; char test[PC5_PATH];
-        if (pc5_format(test, sizeof(test), "%s.checked", path) || pc5_video_import_start(&v, path, test)) return -1;
-        while (!atomic_load(&v.done)) { if (atomic_load(&j->stop)) atomic_store(&v.stop, 1); usleep(10000); }
-        pc5_video_import_end(&v); unlink(test); if (v.result) return -1;
+        /* Its first frame decoded here, on the backup's worker, before any current association
+         * moves: not copied again to check it (a second copy of up to 1 GB). */
+        if (pc5_video_check(path, &j->stop)) return -1;
     }
     if (i == 5) {
         Pc5Buf b = { 0 }; Pc5Appearance o; int n = 0;
@@ -192,6 +192,12 @@ static int look_restore(Pc5Look *j, const char *dir)
             }
             if (failed) pc5_look_recover(j->root, j->prefix);
             else if (unlink(marker)) { failed = 1; pc5_look_recover(j->root, j->prefix); }
+            else {
+                /* The music and video restored are in the A slots: the B copy of each,
+                 * now used by nothing, goes (up to 2 GB and 1 GB). */
+                if (present[3] && !pc5_format(old, sizeof(old), "%s/music/track-b.wav", dir)) unlink(old);
+                if (present[4] && !pc5_format(old, sizeof(old), "%s/background-video/clip-b.mp4", dir)) unlink(old);
+            }
         }
     }
     if (!pc5_exists(marker)) look_cleanup(dir);

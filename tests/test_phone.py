@@ -28,6 +28,9 @@ support = r'''
 #include <unistd.h>
 #include <strings.h>
 #include <sys/stat.h>
+#include <dirent.h>
+#include <time.h>
+#include <utime.h>
 #endif
 enum { PC5_PATH=1024, PC5_NAME=96, PC5_ID=64, BUFFER=256*1024 };
 typedef struct { unsigned char *data; size_t len, cap; } Pc5Buf;
@@ -81,6 +84,15 @@ static int call(const char *url,const char *suffix,const char *method,const char
 }
 int main(int argc,char **argv) {
     assert(argc==2);pc5_copy(web.root,sizeof(web.root),argv[1]);
+    {   /* phone_clean: an upload left over an hour ago goes as the server starts, a recent one stays */
+        char dir[PC5_PATH],stale[PC5_PATH + 32],fresh[PC5_PATH + 32];
+        pc5_format(dir,sizeof(dir),"%s/.phone",web.root);mkdir(web.root,0755);mkdir(dir,0755);
+        snprintf(stale,sizeof(stale),"%s/stale.mp4.part",dir);snprintf(fresh,sizeof(fresh),"%s/fresh.mp4",dir);
+        FILE *f=fopen(stale,"wb");assert(f);fclose(f);f=fopen(fresh,"wb");assert(f);fclose(f);
+        struct utimbuf old={time(NULL)-7200,time(NULL)-7200};assert(!utime(stale,&old));
+        phone_clean();
+        assert(access(stale,F_OK)!=0&&access(fresh,F_OK)==0);unlink(fresh);
+    }
     strcpy(web.address,"127.0.0.1:8125");web.running=1;
     char url[160],old[160],file[PC5_PATH];
     assert(pc5_web_phone_begin(0,"Game",url,sizeof(url))==-1);

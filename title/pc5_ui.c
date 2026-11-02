@@ -207,7 +207,7 @@ static const char *const game_page_titles[GAME_PAGES] = { "", N_("Graphics"), N_
 static const GameRow game_page_rows[GAME_PAGES] = { GR_PLAY, GR_GRAPHICS, GR_APPEARANCE, GR_MANAGE, GR_BACKGROUND,
                                                   GR_MUSIC, GR_BACKGROUND_VIDEO };
 /* What a game is, for its menu's rows. */
-enum { GAME_32BIT = 1, GAME_VULKAN = 2, GAME_PC5 = 4, GAME_API = 8, GAME_STEAM = 16, GAME_DXGI = 32 };
+enum { GAME_32BIT = 1, GAME_VULKAN = 2, GAME_PC5 = 4, GAME_API = 8, GAME_STEAM = 16, GAME_DXGI = 32, GAME_MEDIA = 64 };
 
 /* kind: GAME_32BIT for Memory, GAME_VULKAN for Resolution, GAME_PC5 (PC5 installed it) for Game files and Update,
  * GAME_API (it draws with DirectDraw or Direct3D) for Graphics API, GAME_STEAM (it has Steam's library) for
@@ -218,7 +218,7 @@ static int game_rows(const Pc5Controls *controls, int kind, int page, GameRow ro
     switch (page) {
     case GP_BACKGROUND:
         rows[n++] = GR_BACKGROUND_IMAGE;
-        rows[n++] = GR_BACKGROUND_VIDEO;
+        if (kind & GAME_MEDIA) rows[n++] = GR_BACKGROUND_VIDEO;
         break;
     case GP_MUSIC:
         rows[n++] = GR_MUSIC_FILE;
@@ -242,8 +242,10 @@ static int game_rows(const Pc5Controls *controls, int kind, int page, GameRow ro
         rows[n++] = GR_BACKGROUND;
         rows[n++] = GR_HOME;
         rows[n++] = GR_ICON;
-        rows[n++] = GR_MUSIC;
-        rows[n++] = GR_MEDIA_OPTIONS;
+        /* Music, a video and their settings are kept in the game's own folder: only a game
+         * PC5 installed in a prefix of its own has one (others may share the default one). */
+        if (kind & GAME_MEDIA) rows[n++] = GR_MUSIC;
+        if (kind & GAME_MEDIA) rows[n++] = GR_MEDIA_OPTIONS;
         break;
     case GP_MANAGE:
         rows[n++] = GR_PROGRAM;
@@ -606,6 +608,8 @@ static int ui_game_kind(const Pc5Ui *ui)
     Pc5Graphics choices[PC5_GRAPHICS_COUNT];
     return (ui->library.games[index].bits == 32 ? GAME_32BIT : 0) | (ui->library.games[index].vulkan ? GAME_VULKAN : 0) |
            (ui->library.games[index].pc5 ? GAME_PC5 : 0) |
+           (ui->library.games[index].pc5 && ui->library.games[index].prefix[0] &&
+                    strcmp(ui->library.games[index].prefix, "default") ? GAME_MEDIA : 0) |
            (pc5_graphics_choices(ui->library.games[index].api, choices) > 1 ? GAME_API : 0) |
            (ui->steam_dlls > 0 ? GAME_STEAM : 0) |
            (ui->library.games[index].bits != 32 && ui->library.games[index].api >= PC5_API_D3D10 &&
@@ -1563,7 +1567,8 @@ static void picture_close(Pc5Ui *ui)
 /* Back to the game's menu, on the picker's row. */
 static void picture_leave(Pc5Ui *ui)
 {
-    GameRow row = ui->pick_kind == PICK_COVER ? GR_COVER : ui->pick_kind == PICK_ICON ? GR_ICON : GR_BACKGROUND_IMAGE;
+    GameRow row = ui->pick_kind == PICK_COVER ? GR_COVER : ui->pick_kind == PICK_ICON ? GR_ICON
+                  : ui_game_kind(ui) & GAME_MEDIA ? GR_BACKGROUND_IMAGE : GR_BACKGROUND;
     picture_close(ui);
     game_menu_at(ui, row);
     go(ui, S_GAME_MENU);
@@ -4378,6 +4383,8 @@ enum { BOOT_SHOW_MS = 1700, BOOT_FADE_MS = 500 };
 
 int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
 {
+    int from_phone;          /* an import of a file a phone sent */
+    Screen back_to;          /* where its message goes back to */
     uint32_t k;
     uint32_t accept = PC5_KEY_ACCEPT, back = PC5_KEY_BACK;
     float dt;
@@ -5098,6 +5105,8 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 game_menu_at(ui, game_page_rows[ui->game_page]);
                 ui->dirty = 1;
             }
+        } else if ((k & accept) && row == GR_BACKGROUND && !(ui_game_kind(ui) & GAME_MEDIA)) {
+            picture_open(ui, game, PICK_BACKGROUND);   /* no video for it: the picture, as before */
         } else if ((k & accept) && (row == GR_GRAPHICS || row == GR_APPEARANCE || row == GR_MANAGE || row == GR_BACKGROUND ||
                                   row == GR_MUSIC || row == GR_BACKGROUND_VIDEO)) {
             ui->game_page = row == GR_GRAPHICS ? GP_GRAPHICS : row == GR_APPEARANCE ? GP_APPEARANCE :
@@ -5535,23 +5544,28 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         if (k & back) atomic_store(&ui->music_import.stop, 1);
         if (!atomic_load(&ui->music_import.done)) break;
         pc5_music_import_end(&ui->music_import);
+        /* A file a phone sent: back to the game's menu, not to a file list it never opened. */
+        from_phone = ui->phone_source[0] != 0;
         phone_source_remove(ui);
         if (atomic_load(&ui->music_import.stop) && ui->music_import.result == PC5_MUSIC_IMPORTED) {
             unlink(ui->music_import.destination);
             ui->music_import.result = PC5_MUSIC_CANCELLED;
         }
+        if (from_phone && ui->music_import.result != PC5_MUSIC_IMPORTED) files_close(ui);
+        back_to = from_phone ? S_GAME_MENU : S_FILES;
         if (ui->music_import.result == PC5_MUSIC_CANCELLED) {
-            go(ui, S_FILES);
+            go(ui, back_to);
         } else if (ui->music_import.result != PC5_MUSIC_IMPORTED) {
             const char *why = ui->music_import.result == PC5_MUSIC_BAD_FORMAT
                 ? T("Choose a readable MP3 or 16-bit PCM WAV file. Protected or damaged files may not work.")
                 : ui->music_import.result == PC5_MUSIC_TOO_LARGE
                 ? T("The prepared music exceeds the 2 GB limit. Choose a shorter track.")
                 : T("Check free space and keep the source drive connected until importing finishes. Your previous music was kept.");
-            message(ui, 0, T("Music wasn't saved"), why, S_FILES);
+            message(ui, 0, T("Music wasn't saved"), why, back_to);
         } else if (music_save(ui, ui->music_import.destination)) {
             unlink(ui->music_import.destination);
-            message(ui, 0, T("Music wasn't saved"), T("PC5 couldn't save the music selection. Try again."), S_FILES);
+            if (from_phone) files_close(ui);
+            message(ui, 0, T("Music wasn't saved"), T("PC5 couldn't save the music selection. Try again."), back_to);
         } else {
             ui->phone_import_ok = 1;
             music_cleanup(ui, ui->music_import.destination);
@@ -5562,19 +5576,23 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         if (k & back) atomic_store(&ui->video_import.stop, 1);
         if (!atomic_load(&ui->video_import.done)) break;
         pc5_video_import_end(&ui->video_import);
+        from_phone = ui->phone_source[0] != 0;
         phone_source_remove(ui);
+        if (from_phone && (ui->video_import.result != PC5_VIDEO_OK || atomic_load(&ui->video_import.stop))) files_close(ui);
+        back_to = from_phone ? S_GAME_MENU : S_FILES;
         if (atomic_load(&ui->video_import.stop) || ui->video_import.result == PC5_VIDEO_CANCELLED) {
             unlink(ui->video_import.destination);
-            go(ui, S_FILES);
+            go(ui, back_to);
         } else if (ui->video_import.result != PC5_VIDEO_OK) {
             const char *why = ui->video_import.result == PC5_VIDEO_FORMAT
                 ? T("Choose an H.264 video up to 1920x1080, 60 fps and 1 GB. MP4 is recommended. Audio is ignored.")
                 : T("Check free space and keep the source drive connected until importing finishes. Your previous video was kept.");
             say(ui, "PC5 background video import failed: %s", ui->video_import.error);
-            message(ui, 0, T("Video wasn't saved"), ui->video_import.error[0] ? ui->video_import.error : why, S_FILES);
+            message(ui, 0, T("Video wasn't saved"), why, back_to);
         } else if (video_save(ui, ui->video_import.destination)) {
             unlink(ui->video_import.destination);
-            message(ui, 0, T("Video wasn't saved"), T("PC5 couldn't save the video selection. Try again."), S_FILES);
+            if (from_phone) files_close(ui);
+            message(ui, 0, T("Video wasn't saved"), T("PC5 couldn't save the video selection. Try again."), back_to);
         } else { ui->phone_import_ok = 1; files_close(ui); }
         break;
     case S_PHONE_QR:
@@ -5765,6 +5783,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             }
             pc5_video_stop(&ui->video);
             library_music_stop(ui);
+            if (ui->compat_initialized) pc5_compat_wait(&ui->compatibility);
             if (ui->platform.play) ui->platform.play(ui->platform.context, ui->launch_id);
             pc5_tf(title, sizeof(title), "%s didn't start", index >= 0 ? ui->library.games[index].title : T("The game"));
             say(ui, "PC5 problem play %s: the console refused to start it", ui->launch_id);
@@ -6732,7 +6751,8 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
         break;
     case GR_BACKGROUND:
         *label = T("Background");
-        *text = T("Choose a background image or a silent video");
+        *text = kind & GAME_MEDIA ? T("Choose a background image or a silent video")
+                                  : T("Another of those found, search by another name, or none");
         *value = more;
         break;
     case GR_BACKGROUND_IMAGE:

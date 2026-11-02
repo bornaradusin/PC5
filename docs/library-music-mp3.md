@@ -1,4 +1,4 @@
-# Library music: MP3 and offline storage (custom update 2)
+# Library music: MP3 and offline storage
 
 Select a game, press Triangle, then **Appearance > Library music > Choose music
 file**. Choose MP3 or WAV from USB or console storage. Square on Library music
@@ -48,7 +48,7 @@ Library music returns to Appearance; Triangle closes the game menu.
 Removal does not delete an external file originally selected. Game uninstall
 removes this data with the game's prefix according to PC5's existing rules.
 
-Associations from custom update 1 (external paths) remain readable.
+Associations to an external path, from before music was copied to the console, remain readable.
 **Select those files again once to import them locally.** This update cannot
 copy a source from a USB drive that is not connected.
 

@@ -111,12 +111,16 @@ static void media_options_input(Pc5Ui *ui, uint32_t k, uint32_t back, uint32_t a
     Pc5Appearance previous = ui->appearance, *o = &ui->appearance;
     switch (ui->media_row) {
     case 0: o->volume += step * 5; if (o->volume < 0) o->volume = 0; if (o->volume > 100) o->volume = 100; break;
-    case 1: o->music_start += step * ((k & PC5_KEY_R2) ? 10 : 1); if (o->music_start < 0) o->music_start = 0; break;
+    case 1: o->music_start += step * ((k & PC5_KEY_R2) ? 10 : 1); if (o->music_start < 0) o->music_start = 0;
+        if (o->music_start > 86400) o->music_start = 86400;   /* a day: what the settings file keeps */
+        break;
     case 2: o->video_start += step; if (o->video_start < 0) o->video_start = 0;
+        if (o->video_start > 86399) o->video_start = 86399;
         if (o->video_end && o->video_end <= o->video_start) o->video_end = o->video_start + 1;
         break;
     case 3: o->video_end = !o->video_end && step > 0 ? o->video_start + 1 : o->video_end + step;
         if (o->video_end <= o->video_start) o->video_end = 0;
+        if (o->video_end > 86400) o->video_end = 86400;
         break;
     case 4: o->fit = (o->fit + 3 + step) % 3; break;
     case 5: o->darkness += step * 5; if (o->darkness < 0) o->darkness = 0; if (o->darkness > 80) o->darkness = 80; break;

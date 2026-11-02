@@ -11,6 +11,24 @@ static struct {
 } phone;
 
 void pc5_web_random_init(int (*random_bytes)(void *, size_t)) { phone.random = random_bytes; }
+
+/* Files a phone sent that were never taken (PC5 closed during an upload or before importing
+ * it, up to 1 GB each): removed as the web server starts. Only those over an hour old, so a
+ * file still being imported from a moment ago stays. */
+static void phone_clean(void)
+{
+    char dir[PC5_PATH], file[PC5_PATH];
+    if (pc5_format(dir, sizeof(dir), "%s/.phone", web.root)) return;
+    DIR *d = opendir(dir);
+    if (!d) return;
+    time_t now = time(NULL);
+    for (struct dirent *e; (e = readdir(d));) {
+        struct stat st;
+        if (e->d_name[0] == '.' || pc5_format(file, sizeof(file), "%s/%s", dir, e->d_name)) continue;
+        if (!lstat(file, &st) && S_ISREG(st.st_mode) && now - st.st_mtime > 3600) unlink(file);
+    }
+    closedir(d);
+}
 void pc5_web_phone_only(int enabled)
 {
     pthread_mutex_lock(&web.lock); phone.only = enabled; pthread_mutex_unlock(&web.lock);
@@ -138,10 +156,11 @@ static void phone_answer(Conn *c, const char *rest)
         if (got <= 0 || fwrite(c->buffer, 1, (size_t)got, file) != (size_t)got) { failed = 1; break; }
         pthread_mutex_lock(&web.lock);
         phone.received = c->length - left;
-        /* A library QR expires after inactivity, not during a progressing
-         * large upload. Never revive an expired or replaced capability. */
+        /* A link expires after inactivity, not during a progressing large upload (a 1 GB
+         * video over slow Wi-Fi takes longer than 10 minutes). Never revive an expired or
+         * replaced capability. */
         uint64_t now = now_ms();
-        if (phone.manager && phone.active && now < phone.expires && !strcmp(token, phone.token))
+        if (phone.active && now < phone.expires && !strcmp(token, phone.token))
             phone.expires = now + 10 * 60 * 1000;
         pthread_mutex_unlock(&web.lock);
     }

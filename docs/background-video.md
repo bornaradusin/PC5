@@ -1,4 +1,4 @@
-# Experimental background video (custom update 3)
+# Experimental background video
 
 **Triangle > Appearance > Background** now contains:
 

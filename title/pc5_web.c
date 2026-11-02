@@ -1062,6 +1062,7 @@ int pc5_web_start(const Pc5WebConfig *config, uint16_t port, char *error, size_t
     if (!config || !config->root || !config->root[0]) return pc5_format(error, size, N_("PC5 has no folder to show.")), -1;
     pc5_copy(web.root, sizeof(web.root), config->root);
     pc5_copy(web.install, sizeof(web.install), config->install_dir ? config->install_dir : "");
+    phone_clean();
     web.listener = web.ops.listen(port, 8);
     if (web.listener < 0) return pc5_format(error, size, N_("Port %u is taken, or there's no network."), (unsigned)port), -1;
     if (!web.ops.lan_ip || web.ops.lan_ip(&ip) || !ip) snprintf(web.address, sizeof(web.address), ":%u", (unsigned)port);

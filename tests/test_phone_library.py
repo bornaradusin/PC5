@@ -83,8 +83,9 @@ int main(int argc,char **argv) {
     assert(pc5_web_phone_take(file,sizeof(file)));unlink(file);pc5_web_appearance_finish(1);
     char one_shot[160];assert(!pc5_web_phone_begin(3,"Game",one_shot,sizeof(one_shot)));
     expiry=phone.expires;upload_advance=200001;upload_chunk=1;
-    assert(call(one_shot,"/upload.mp3","PUT","slow",4,0)==400);
-    assert(phone.expires==expiry);
+    /* A game's own link, as the library's: kept alive while bytes still arrive. */
+    assert(call(one_shot,"/upload.mp3","PUT","slow",4,0)==201);
+    assert(phone.expires>expiry);
     upload_advance=0;upload_chunk=0;
     assert(!pc5_web_appearance_begin(url,sizeof(url)));
     clock_ms+=600001;assert(request(url,"/games","GET",NULL,0)==404);

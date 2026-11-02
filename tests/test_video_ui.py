@@ -52,7 +52,9 @@ int main(void) {
     assert(phone_row_kind(GR_MUSIC_CLEAR) == -1 && phone_row_kind(GR_VIDEO_CLEAR) == -1);
     Pc5Controls controls = { 0 };
     GameRow rows[GAME_ROWS];
-    int n = game_rows(&controls, 0, GP_APPEARANCE, rows), background = 0;
+    /* A game PC5 installed in a folder of its own has music and a video; another, none. */
+    assert(game_rows(&controls, 0, GP_APPEARANCE, rows) == 4 && game_rows(&controls, 0, GP_BACKGROUND, rows) == 1);
+    int n = game_rows(&controls, GAME_MEDIA, GP_APPEARANCE, rows), background = 0;
     assert(n == 6);
     for (int i = 0; i < n; i++) {
         if (rows[i] == GR_BACKGROUND) background++;
@@ -62,7 +64,7 @@ int main(void) {
     }
     assert(background == 1 && game_page_rows[GP_BACKGROUND] == GR_BACKGROUND);
     assert(!strcmp(game_page_titles[GP_BACKGROUND], "Background"));
-    assert(game_rows(&controls, 0, GP_BACKGROUND, rows) == 2);
+    assert(game_rows(&controls, GAME_MEDIA, GP_BACKGROUND, rows) == 2);
     assert(rows[0] == GR_BACKGROUND_IMAGE && rows[1] == GR_BACKGROUND_VIDEO);
     assert(game_rows(&controls, 0, GP_MUSIC, rows) == 2);
     assert(rows[0] == GR_MUSIC_FILE && rows[1] == GR_MUSIC_CLEAR);
@@ -74,12 +76,12 @@ int main(void) {
     int page;
     assert(game_row_find(&controls, 0, GR_BACKGROUND, &page) == 1 && page == GP_APPEARANCE);
     assert(game_row_find(&controls, 0, GR_BACKGROUND_IMAGE, &page) == 0 && page == GP_BACKGROUND);
-    assert(game_row_find(&controls, 0, GR_MUSIC, &page) == 4 && page == GP_APPEARANCE);
-    assert(game_row_find(&controls, 0, GR_BACKGROUND_VIDEO, &page) == 1 && page == GP_BACKGROUND);
-    assert(game_row_find(&controls, 0, GR_MUSIC_FILE, &page) == 0 && page == GP_MUSIC);
-    assert(game_row_find(&controls, 0, GR_MUSIC_CLEAR, &page) == 1 && page == GP_MUSIC);
-    assert(game_row_find(&controls, 0, GR_VIDEO_FILE, &page) == 0 && page == GP_VIDEO);
-    assert(game_row_find(&controls, 0, GR_VIDEO_CLEAR, &page) == 1 && page == GP_VIDEO);
+    assert(game_row_find(&controls, GAME_MEDIA, GR_MUSIC, &page) == 4 && page == GP_APPEARANCE);
+    assert(game_row_find(&controls, GAME_MEDIA, GR_BACKGROUND_VIDEO, &page) == 1 && page == GP_BACKGROUND);
+    assert(game_row_find(&controls, GAME_MEDIA, GR_MUSIC_FILE, &page) == 0 && page == GP_MUSIC);
+    assert(game_row_find(&controls, GAME_MEDIA, GR_MUSIC_CLEAR, &page) == 1 && page == GP_MUSIC);
+    assert(game_row_find(&controls, GAME_MEDIA, GR_VIDEO_FILE, &page) == 0 && page == GP_VIDEO);
+    assert(game_row_find(&controls, GAME_MEDIA, GR_VIDEO_CLEAR, &page) == 1 && page == GP_VIDEO);
     Pc5Video player = { 0 };
     assert(pc5_video_start(&player, "/missing.mp4") == -1);
     assert(!pc5_video_poll(&player)); pc5_video_stop(&player);

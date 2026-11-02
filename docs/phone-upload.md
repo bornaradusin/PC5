@@ -1,4 +1,4 @@
-# Receive appearance media from a phone (custom update 4)
+# Receive appearance media from a phone
 
 The existing Choose action and internal/USB file selection are retained.
 In Triangle > Appearance, highlight Cover, Tile picture or Library music;

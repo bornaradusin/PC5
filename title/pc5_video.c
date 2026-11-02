@@ -416,6 +416,23 @@ void pc5_video_stop(Pc5Video *video)
     pc5_free(video->front); pc5_free(video->back);
     memset(video, 0, sizeof(*video));
 }
+int pc5_video_check(const char *path, atomic_int *stop)
+{
+#ifndef PC5_VIDEO_FFMPEG
+    (void)path; (void)stop;
+    return -1;   /* no decoder in this build */
+#else
+    char error[PC5_ERROR] = "";
+    struct stat st;
+    if (stat(path, &st) || !S_ISREG(st.st_mode) || (uint64_t)st.st_size > VIDEO_LIMIT) return -1;
+    VideoDecoder *d = decoder_open(path, stop, error);
+    if (!d) return -1;
+    int first = decoder_next(d);
+    decoder_close(d);
+    return first == 1 && !atomic_load(stop) ? 0 : -1;
+#endif
+}
+
 int pc5_video_import_start(Pc5VideoImport *job, const char *source, const char *destination)
 {
     memset(job, 0, sizeof(*job));
