@@ -120,13 +120,12 @@ report. The game menu's existing report action is preserved.
 Rev3 adds Left/Right page navigation by eight filtered results, clamped at either
 end and inactive in details. The footer now repeats the share shortcut using
 the three-line Options symbol and the label Share; the same symbol/label appears
-in the header. User-supplied startup sounds Play Has No Limits (1.656s) and
-Welcome Arabic (1.292s) are included as additional named choices. They were
-converted to 48kHz PCM16 mono; existing sounds and the default are retained.
+in the header. A user-supplied startup sound, Welcome Arabic (1.292s), is included as an
+additional named choice. It was converted to 48kHz PCM16 mono; existing sounds and the default are retained.
 
 Home focus now uses Down to enter and Up to leave. The Focus mode footer text
 is removed. Focused Home shows the Up arrow beside Back. Library grid direction
-handling is unchanged. Rev4 includes the rev3 paging, Share symbol and both sounds.
+handling is unchanged. Rev4 includes the rev3 paging, Share symbol and that sound.
 
 Rev5 restores the full Share your experience header label beside the Options
 symbol, centered using measured icon and text width. The footer remains Share.
