@@ -1,0 +1,84 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 16:50:00 +0000
+Subject: [PATCH 110/110] PC5: the loading screen waits before coming back over a
+ game's picture
+
+A game that draws its own loading screen only now and then (Silence of the
+Siren) left the display idle between its pictures before it had presented for
+a second on end, and PC5's loading screen came back over its picture each
+time: the two flickered, or black and the loading screen did. Once a game's
+swapchain has presented, the loading screen comes back only after the game has
+drawn nothing for 3 seconds, as when a game presents once as it starts and
+then loads for seconds (Warcraft III). The alive line counts the loading
+screens held back (vk_held).
+---
+ native/wine64_main.c | 20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index c0ba8f6..c7df840 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -510,6 +510,8 @@ typedef struct VulkanFrames {
+     uint32_t *tiled;
+     uint64_t shown, busy, failed;
+     uint64_t kept;             /* empty desktop frames that left a swapchain's picture on screen */
++    uint64_t busy_ns;          /* when the display was last seen busy with a swapchain's flips */
++    uint64_t held;             /* loading screens not drawn over a swapchain's picture */
+ } VulkanFrames;
+ 
+ static void vulkan_frames_resolve(VulkanFrames *vf, const PwPrxDescriptor *ntdll)
+@@ -542,7 +544,7 @@ static void vulkan_frames_resolve(VulkanFrames *vf, const PwPrxDescriptor *ntdll
+  * that is quick to show something never flashes it.
+  */
+ enum { PW_WINE64_SPINNER_DELAY_MS = 500, PW_WINE64_SPINNER_STEP_MS = 83,
+-       PW_WINE64_PRESENTING_MS = 1000 };
++       PW_WINE64_PRESENTING_MS = 1000, PW_WINE64_LOADING_BACK_MS = 3000 };
+ typedef struct Loading {
+     int content;               /* the game has shown something */
+     uint32_t *pixels;          /* PW_SPINNER_WIDTH x PW_SPINNER_HEIGHT */
+@@ -658,6 +660,7 @@ static int vulkan_frames_show(VulkanFrames *vf, uint64_t *sequence, int scaling,
+     if (!vf->tiled) return 0;
+     if (!vf->idle()) {
+         vf->swapchain_seen = 1;
++        vf->busy_ns = now;
+         if (!loading->presenting_since) loading->presenting_since = now;
+         else if (now - loading->presenting_since >= PW_WINE64_PRESENTING_MS * 1000000ull)
+             loading_done(loading, "vulkan");
+@@ -681,6 +684,16 @@ static int vulkan_frames_show(VulkanFrames *vf, uint64_t *sequence, int scaling,
+                                        PW_PRESENT_BGRX8 };
+         return vulkan_frames_flip(vf, &frame, scaling);
+     }
++    /* A game that draws its own loading screen only now and then (Silence of the Siren) leaves
++     * the display idle between its pictures, before it has presented for a second on end: the
++     * loading screen came back over its picture each time, and the two flickered. It comes back
++     * only once the game has drawn nothing for PW_WINE64_LOADING_BACK_MS, as when a game
++     * presents once as it starts and then loads for seconds (Warcraft III). */
++    if (vf->swapchain_seen && !loading->content &&
++        now - vf->busy_ns < PW_WINE64_LOADING_BACK_MS * 1000000ull) {
++        vf->held++;
++        return 0;
++    }
+     if ((next = loading_frame(loading, now, started, &spinner)))
+         return vulkan_frames_flip(vf, next, PW_PRESENT_SCALE_FIT);
+     return 0;
+@@ -2204,12 +2217,13 @@ int main(int argc, char **argv)
+ 
+             PS5LOG_LOG("PW_WINE64 alive tick=%llu sink_calls=%lu frames_put=%llu shown=%llu "
+                        "rejected=%llu last=%ux%u inputs=%llu refused=%llu vk_shown=%llu vk_busy=%llu vk_kept=%llu "
+-                       "cpu_ms=%llu audio=%lu audible=%lu peak=%d",
++                       "vk_held=%llu cpu_ms=%llu audio=%lu audible=%lu peak=%d",
+                        (unsigned long long)tick, sink_calls, (unsigned long long)frames.sequence,
+                        (unsigned long long)shown, (unsigned long long)frames.rejected,
+                        frames.width, frames.height, (unsigned long long)posted,
+                        (unsigned long long)refused, (unsigned long long)vulkan_frames.shown,
+-                       (unsigned long long)vulkan_frames.busy, (unsigned long long)vulkan_frames.kept, cpu_ms(),
++                       (unsigned long long)vulkan_frames.busy, (unsigned long long)vulkan_frames.kept,
++                       (unsigned long long)vulkan_frames.held, cpu_ms(),
+                        audio_grains, audio_audible, audio_peak);
+             audio_peak = 0;
+             if (start.virtual_stats && tick % 300 == 0) {
+-- 
+2.43.0
+
