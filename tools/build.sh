@@ -369,17 +369,40 @@ step_title() {
     local foundation=$PW/.deps/ps5-native-app-boilerplate sources
     make -C "$foundation" libc
     local sdk=$foundation/.deps/native/ps5-payload-sdk
-    # Reuse the same pinned PS5 FFmpeg build used by Wine, with custom file IO.
-    # No file/network protocols or audio output are needed for backgrounds.
+    # A game's background video: H.264 in MP4 or MOV, silent, read through PC5's own file IO.
+    # The title is also the program every game runs in, so its FFmpeg is the pinned source
+    # built with only what that needs (the MP4/MOV demuxer, the H.264 parser and decoder,
+    # the scaler), not Wine's build with every format (a 22 MB libavcodec in every game).
     src_ffmpeg
-    local video_ffmpeg=$PW/.deps/wine-ps5/ffmpeg
+    local video_ffmpeg=$B/video-ffmpeg
     local video_eagain
     # The SDK driver adds startup objects unless compile-only is requested.
     # Keep -c even with -E so it never preprocesses binary crt1.o as C input.
     video_eagain=$(printf '#include <errno.h>\nPC5_ERRNO_VALUE EAGAIN\n' | "$sdk/bin/prospero-clang" -c -x c -E -P - | awk '/^PC5_ERRNO_VALUE / {value=$2} END {print value}')
     [[ $video_eagain =~ ^[0-9]+$ ]] || { echo "could not determine FFmpeg SDK EAGAIN" >&2; return 1; }
     echo "background video: FFmpeg SDK EAGAIN=$video_eagain"
-    sh "$PW/tools/build_ffmpeg_ps5.sh" --source "$PW/.deps/ffmpeg/source" --sdk "$sdk" --out "$video_ffmpeg" --jobs "$jobs"
+    local video_stamp
+    video_stamp="$(sh "$PW/tools/build_ffmpeg_ps5.sh" --print-commit) h264-mov-1"
+    if [[ $(cat "$video_ffmpeg/.pc5-stamp" 2>/dev/null) != "$video_stamp" ]]; then
+        rm -rf "$video_ffmpeg" && mkdir -p "$video_ffmpeg/build"
+        (cd "$video_ffmpeg/build" && "$PW/.deps/ffmpeg/source/configure" --prefix="$video_ffmpeg" \
+            --enable-cross-compile --target-os=freebsd --arch=x86_64 --enable-static --disable-shared --enable-pic \
+            --enable-pthreads --disable-autodetect --disable-programs --disable-doc --disable-debug --disable-network \
+            --disable-avdevice --disable-avfilter --disable-swresample --disable-everything \
+            --enable-demuxer=mov --enable-parser=h264 --enable-decoder=h264 --enable-swscale \
+            --cc="$sdk/bin/prospero-clang" --ar="$sdk/bin/llvm-ar" --ranlib="$sdk/bin/llvm-ranlib" \
+            --nm="$sdk/bin/llvm-nm" --strip="$sdk/bin/llvm-strip" \
+            --extra-cflags="-ffunction-sections -fdata-sections" > "$video_ffmpeg/configure.log" 2>&1) ||
+            { echo "background video: FFmpeg's configure failed; see $video_ffmpeg/configure.log" >&2; return 1; }
+        for licence in GPL NONFREE VERSION3; do
+            grep -q "^#define CONFIG_$licence 0$" "$video_ffmpeg/build/config.h" ||
+                { echo "background video: CONFIG_$licence is on: FFmpeg would not be LGPL 2.1" >&2; return 1; }
+        done
+        make -C "$video_ffmpeg/build" -j"$jobs" > "$video_ffmpeg/make.log" 2>&1 &&
+            make -C "$video_ffmpeg/build" install > "$video_ffmpeg/install.log" 2>&1 ||
+            { echo "background video: FFmpeg's build failed; see $video_ffmpeg/make.log" >&2; return 1; }
+        echo "$video_stamp" > "$video_ffmpeg/.pc5-stamp"
+    fi
     # Keep Wine's FFmpeg archives unchanged. Replace mem.o only in the title's
     # private copy, including internal av_mallocz/realloc/free calls in mem.c.
     "$sdk/bin/prospero-clang" -c -std=c11 -O2 -fPIC -ffunction-sections -fdata-sections \
@@ -417,7 +440,7 @@ step_title() {
     sources=$(cd "$PW" && ls native/pc5*.c | tr '\n' ' ')
     (cd "$PW" && PW_TITLE_ID=$TITLE PW_LAPY_DIR=$helper PW_EXTRA_SOURCES="$sources" \
         PW_EXTRA_CFLAGS="-DPW_PC5=1 -DPC5_VIDEO_FFMPEG=1 -DPC5_FFMPEG_EAGAIN=$video_eagain -I$video_ffmpeg/include -I$PW/wine/ps5 -I$mbedtls/include $config" \
-        PW_EXTRA_LIBS="$tls/libmbedtls-pc5.a $B/video_ffmpeg_shim.o $video_ffmpeg/lib/libavformat.a $video_ffmpeg/lib/libavcodec.a $video_ffmpeg/lib/libswscale.a $video_ffmpeg/lib/libswresample.a $B/video-avutil.a --wrap=pthread_create --version-script=$B/video-local.map" \
+        PW_EXTRA_LIBS="$tls/libmbedtls-pc5.a $B/video_ffmpeg_shim.o $video_ffmpeg/lib/libavformat.a $video_ffmpeg/lib/libavcodec.a $video_ffmpeg/lib/libswscale.a $B/video-avutil.a --wrap=pthread_create --version-script=$B/video-local.map" \
         PS5_NATIVE_FOUNDATION="$foundation" PW_FOUNDATION_READY=1 tools/build_native.sh)
     # The eboot's imports, each from a library a title gets. A title's imports from
     # libkernel_sys, libkernel_web and libScePosixForWebKit stay empty, and a call to one
