@@ -866,6 +866,37 @@ static void start_history_read(Pc5GameSession *game)
     game->start_last = (Pc5StartHistory){ dlls < 100000 ? dlls : 0, game_ms < 3600000 ? game_ms : 0 };
 }
 
+Pc5Matrix *pc5_game_early_loading(const char *app, const char *code)
+{
+    Pc5Fonts fonts;
+    char path[PC5_PATH];
+    const Pc5Language *language;
+    Pc5Matrix *matrix;
+
+    if (!app || !app[0]) return NULL;
+    if (code && code[0] && strcmp(code, "en") && !pc5_format(path, sizeof(path), "%s/pc5/lang", app))
+        (void)pc5_i18n_use(path, code, NULL, NULL);
+    memset(&fonts, 0, sizeof(fonts));
+    if (pc5_format(path, sizeof(path), "%s/pc5/fonts.bin", app) || pc5_fonts_load(&fonts, path)) return NULL;
+    language = pc5_language(pc5_language_find(pc5_i18n_code()));
+    if (language && language->cjk && !pc5_format(path, sizeof(path), "%s/pc5/fonts-%s.bin", app, pc5_i18n_code()))
+        (void)pc5_fonts_extra(&fonts, path);
+    matrix = pc5_matrix_create(&fonts, NULL, 0);
+    pc5_fonts_free(&fonts);
+    pc5_matrix_at_once(matrix);
+    return matrix;
+}
+
+void pc5_game_take_loading(Pc5GameSession *game, Pc5Matrix *matrix, uint64_t start_ms)
+{
+    if (!matrix) return;
+    pc5_matrix_destroy(game->matrix);
+    game->matrix = matrix;
+    game->matrix_failed = 0;
+    game->matrix_at = 0;
+    game->start_ms = start_ms;
+}
+
 const uint32_t *pc5_game_loading(Pc5GameSession *game, uint64_t now_ms, const Pc5Start *start)
 {
     if (start) {

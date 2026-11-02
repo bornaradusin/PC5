@@ -1,0 +1,142 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 17:40:00 +0000
+Subject: [PATCH 111/111] PC5: the loading screen shows at once in the game's
+ process, in PC5's language
+
+Between PC5 handing a game over and the game's process drawing the loading
+screen, the screen was black for 2 seconds and more (/data granted, the game
+made ready), and then the loading screen faded in, in English. PC5 passes its
+language (lang=), and the game's process shows the same loading screen as soon
+as it starts, before /data is granted, without fading in and in that language;
+the display stays open for the game, and the screen carries on as the game's
+(pc5_game_take_loading). A game PC5 asked for that isn't there any more closes
+it again for the launcher.
+---
+ native/wine64_main.c | 63 +++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 60 insertions(+), 3 deletions(-)
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index c7df840..73dc9d1 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -49,6 +49,7 @@
+ #include "pc5_console.h"
+ #include "pc5_game.h"
+ #include "pc5_library.h"
++#include "pc5_i18n.h"
+ #include "pc5_matrix.h"
+ #include "pc5_tile.h"
+ #include "../wine/ps5/pw_pc5_hud.h"
+@@ -775,13 +776,25 @@ static void restart_title_exit(const PwWineApp *app, uint32_t cycle, const char
+     static char sandbox_eboot[sizeof(sandbox_app0) + 16];
+     const char *const eboots[] = { "/app0/eboot.bin", sandbox_eboot };
+     static char storage[2 * PW_WINE_LAUNCH_PATH_MAX + 64];
+-    char *next[PW_WINE_LAUNCH_ARGS];
++    char *next[PW_WINE_LAUNCH_ARGS + 1];   /* and PC5's lang= */
++    size_t words;
+ 
+     snprintf(sandbox_eboot, sizeof(sandbox_eboot), "%s/eboot.bin", sandbox_app0);
+-    if (!pw_wine_launch_argv_exit(app, cycle, exit_after, storage, sizeof(storage), next, PW_WINE_LAUNCH_ARGS)) {
++    if (!(words = pw_wine_launch_argv_exit(app, cycle, exit_after, storage, sizeof(storage), next,
++                                           PW_WINE_LAUNCH_ARGS))) {
+         PS5LOG_LOG("PW_WINE64 restart refused: arguments do not fit");
+         return;
+     }
++#ifdef PW_PC5
++    /* The game's process shows PC5's loading screen at once, in PC5's language
++     * (pc5_early_loading): the language goes with it, as /data isn't reachable yet there. */
++    if (app) {
++        static char lang[24];
++        snprintf(lang, sizeof(lang), "lang=%s", pc5_i18n_code());
++        next[words++] = lang;
++        next[words] = NULL;
++    }
++#endif
+     display_quiesce(reason);
+     for (size_t i = 0; i < sizeof(eboots) / sizeof(eboots[0]); i++) {
+         PS5LOG_LOG("PW_WINE64 restart to=%s cycle=%u reason=%s eboot=%s", app ? app->id : "launcher",
+@@ -1250,6 +1263,40 @@ static void pc5_launcher(void)
+     pc5_console_run(&console);
+ }
+ 
++/* The loading screen the game's process showed as it started (pc5_early_loading), and when. */
++static Pc5Matrix *pc5_early_matrix;
++static uint64_t pc5_early_ms;
++
++/* A game PC5 started (its lang= word): PC5's loading screen at once, before /data is granted and
++ * the game is made ready, which took 2 seconds and more. PC5 showed the same screen as it handed
++ * the game over, and the screen between them was black until the game's process drew its own
++ * (which then faded in, in English). The display stays open for the game: video_status is
++ * PW_OK when it is. */
++static void pc5_early_loading(int argc, char **argv, PwVideoOutPs5 *video, int *video_status)
++{
++    const char *code = NULL, *app;
++    const uint32_t *pixels;
++
++    for (int i = 1; i < argc; i++)
++        if (argv[i] && !strncmp(argv[i], "lang=", 5)) code = argv[i] + 5;
++    if (!code || !(app = pc5_app_root())) return;
++    if (!(pc5_early_matrix = pc5_game_early_loading(app, code))) {
++        PS5LOG_LOG("PC5 early loading screen: not made (app=%s lang=%s)", app, code);
++        return;
++    }
++    pc5_early_ms = now_ns() / 1000000u;
++    if ((*video_status = pw_videoout_ps5_open(video)) != PW_OK) {
++        PS5LOG_LOG("PC5 early loading screen: no display (%s)", pw_result_name(*video_status));
++        return;
++    }
++    if ((pixels = pc5_matrix_step(pc5_early_matrix))) {
++        const PwPresentFrame frame = { (const uint8_t *)pixels, PC5_MATRIX_WIDTH, PC5_MATRIX_HEIGHT,
++                                       PC5_MATRIX_WIDTH * 4, PW_PRESENT_BGRX8 };
++        int shown = pw_videoout_ps5_present_scaled(video, &frame, PW_PRESENT_SCALE_FIT, 0);
++        PS5LOG_LOG("PC5 early loading screen lang=%s shown=%s", code, pw_result_name(shown));
++    }
++}
++
+ /* In a game: PC5's settings, the game's colour, the loading screen. */
+ static void pc5_game_start(const PwGameProfile *game, const char *executable)
+ {
+@@ -1259,6 +1306,8 @@ static void pc5_game_start(const PwGameProfile *game, const char *executable)
+     pc5_game_ps5_ops(&ops, pc5_log);
+     pc5_game_begin(&pc5_game, &ops, library_root, app ? app : "", game ? game->app.prefix : "",
+                    game && game->app.name[0] ? game->app.name : executable);
++    pc5_game_take_loading(&pc5_game, pc5_early_matrix, pc5_early_ms);   /* the same screen carries on */
++    pc5_early_matrix = NULL;
+     pc5_game_on = 1;
+ }
+ 
+@@ -1557,6 +1606,9 @@ int main(int argc, char **argv)
+                            &log_config, NULL) == 0)
+         ps5log_init(&log_config, title_id, PW_APP_NAME, now_ns());
+     PS5LOG_LOG("PW_WINE64 title id=%s from=%s built=%s", title_id, title_id_from, PW_TITLE_ID);
++#ifdef PW_PC5
++    pc5_early_loading(argc, argv, &video, &video_status);   /* while /app0 is still visible */
++#endif
+     pw_hid_ps5_preload(hid_log);   /* before the /data grant changes the title's credentials */
+     if (open_library() != 0) {
+         PS5LOG_LOG("PW_WINE64 startup blocked reason=data-helper-incomplete");
+@@ -1576,6 +1628,11 @@ int main(int argc, char **argv)
+                launch.start[0] ? launch.start : "-", launch.exit_after);
+     if (launch.mode != PW_WINE_LAUNCH_GAME) {
+ #ifdef PW_PC5
++        /* A game PC5 asked for that isn't there any more: the launcher opens its own display. */
++        if (video_status == PW_OK) (void)pw_videoout_ps5_close(&video);
++        video_status = PW_ERR_STATE;
++        pc5_matrix_destroy(pc5_early_matrix);
++        pc5_early_matrix = NULL;
+         pc5_launcher();
+ #endif
+         run_launcher();
+@@ -1818,7 +1875,7 @@ int main(int argc, char **argv)
+             rumble_at = (int (*)(uint32_t, uint32_t *, uint32_t *))
+                 (uintptr_t)pw_prx_lookup(start.descriptor, "pw_wine_rumble_at");
+         }
+-        video_status = pw_videoout_ps5_open(&video);
++        if (video_status != PW_OK) video_status = pw_videoout_ps5_open(&video);   /* open with PC5's loading screen */
+         pad_status = pw_pad_ps5_platform_ops(&pad_ops);
+         if (pad_status == PW_OK)
+             pad_status = pw_pad_ps5_open(&pad, &pad_ops, pad_open_map,
+-- 
+2.43.0
+

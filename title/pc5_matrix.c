@@ -81,6 +81,11 @@ Pc5Matrix *pc5_matrix_borrow(const Pc5Fonts *fonts)
     return m;
 }
 
+void pc5_matrix_at_once(Pc5Matrix *m)
+{
+    if (m) m->no_fade = 1;
+}
+
 void pc5_matrix_progress(Pc5Matrix *m, int phase, float fill)
 {
     if (!m) return;

@@ -236,6 +236,13 @@ int pc5_game_env_name_ok(const char *name);
  * the game's prefix and the app's folder. */
 void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *root, const char *app,
                     const char *prefix, const char *title);
+/* The loading screen as the game's process starts, before /data is reachable: PC5 showed it a
+ * moment before, so it comes at once (no fade), in PC5's language (code, as PC5 passed it; NULL
+ * or "" for English) from the app's folder (app/pc5/lang, app/pc5/fonts.bin). The game's process
+ * then has that language too. NULL when it can't be made. */
+Pc5Matrix *pc5_game_early_loading(const char *app, const char *code);
+/* That loading screen carries on as the game's (taken over), begun at start_ms. */
+void pc5_game_take_loading(Pc5GameSession *game, Pc5Matrix *matrix, uint64_t start_ms);
 /* The loading screen's next frame (PC5_MATRIX_WIDTH x HEIGHT, B,G,R,X), or
  * NULL when none is due yet (or it can't be drawn). */
 const uint32_t *pc5_game_loading(Pc5GameSession *game, uint64_t now_ms, const Pc5Start *start);
