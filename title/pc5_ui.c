@@ -994,7 +994,6 @@ Pc5Ui *pc5_ui_create(const Pc5UiConfig *config, const Pc5Platform *platform)
     ui->usb_roots = config->usb_roots;
     pc5_usb_roots(config->usb_roots);   /* where games played from a USB drive are looked for */
     ui->platform = *platform;
-    say(ui, "PC5 custom build=" PC5_CUSTOM_BUILD);
     if (pc5_fonts_load(&ui->fonts, config->fonts)) say(ui, "PC5 fonts missing: %s", config->fonts);
     load_art(ui, config->fonts);
     ui->hero_for = -1;
@@ -7027,7 +7026,6 @@ static void about_screen(Pc5Ui *ui, Pc5Canvas *c)
         /* TRANSLATORS: About PC5: the version (2.0.7 · PPSA11018). */
         pc5_tf(version, sizeof(version), "version %s", PC5_VERSION " \xc2\xb7 " PC5_TITLE_ID);
         pc5_text(c, &ui->fonts, PC5_FACE_BODY, (int)x + 160, (int)y + 106, C_DIM, version, 0, 0);
-        pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 64, (int)y + 150, C_ACCENT, "Custom: " PC5_CUSTOM_BUILD, 900, 0);
     }
     /* Buy Me a Coffee, on the right: a code for a phone, the address under it. */
     const int box = 300, cx = (int)(x + w) - box - 64, column = cx - 64 - ((int)x + 64);

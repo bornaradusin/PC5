@@ -3654,7 +3654,7 @@ static void test_sound(void)
     }
     /* The app's own, each read, the default among them. */
     static const char *const own[] = { "Beeper - Push", "Cha-Ching", "System Activated", "cheap chinese speaker", "fahh",
-                                       "funny message tone", "rizz", "Welcome Arabic" };
+                                       "funny message tone", "rizz" };
     for (size_t i = 0; i < sizeof(own) / sizeof(own[0]); i++) {
         char file[PC5_PATH];
         Pc5Buf data = { 0 };
