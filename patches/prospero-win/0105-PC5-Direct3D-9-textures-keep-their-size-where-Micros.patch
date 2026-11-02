@@ -1,0 +1,147 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 10:30:00 +0000
+Subject: [PATCH 105/105] PC5: Direct3D 9 textures keep their size where
+ Microsoft's are read (Wine patch 0907)
+
+Resident Evil 3's Seamless HD mod reads a texture's width and the address
+of its locked pixels straight from the object, at the offsets Microsoft's
+d3d9.dll has: Wine's layout gave it other fields, so it skipped every HD
+picture. Wine's own d3d9 now keeps them there on 32-bit.
+---
+ PUBLICATION_ALLOWLIST.txt                     |  1 +
+ docs/WINE_PS5_BUILD.md                        |  1 +
+ ...d-level-0-data-where-microsofts-does.patch | 97 +++++++++++++++++++
+ 3 files changed, 99 insertions(+)
+ create mode 100644 wine/patches/0907-d3d9-a-2d-texture-keeps-its-width-height-and-level-0-data-where-microsofts-does.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index 93a602c..b566758 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -512,6 +512,7 @@ wine/patches/0901-win32u-ps5-shared-key-state-fastpath.patch
+ wine/patches/0902-win32u-ps5-send-extended-keys-as-extended.patch
+ wine/patches/0903-ntdll-ps5-keep-the-fs-base-of-a-resumed-64-bit-thread.patch
+ wine/patches/0906-xlive-games-for-windows-live-offline-so-the-games-made-for-it-start.patch
++wine/patches/0907-d3d9-a-2d-texture-keeps-its-width-height-and-level-0-data-where-microsofts-does.patch
+ wine/ps5/input/pw_key_shared.h
+ wine/ps5/input/pw_dualsense.h
+ tests/lab/pw_qpc_bridge.c
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 5f59439..f73a1da 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -133,6 +133,7 @@ before evaluating a candidate built from that cache.
+ | 0902 | `win32u`: the PS5 driver sends the arrows, Insert, Delete, Home, End, Page Up, Page Down, right Ctrl and Alt, the Windows and menu keys and keypad `/` with `KEYEVENTF_EXTENDEDKEY`; their scan codes are the keypad's without it, so DirectInput reported the keypad's 8 for the up arrow and a game's arrow-key bindings never fired |
+ | 0903 | `ntdll`: a signal frame keeps the FS base it was taken with when the thread resumes where it was; the host's is set only where the handler sends a context to Wine's 64-bit code (the exception dispatcher, a different 64-bit context). The native WoW64 CPU sets the guest FS just before it switches to 32-bit code, and a signal in that window used to send the thread into its 32-bit code with the host FS (GTA San Andreas' DXVK workers crashing at startup in `RtlEnterCriticalSection`) |
+ | 0906 | `xlive`: Games for Windows - LIVE as a builtin, offline, with all 252 of xlive 3.5's ordinals (the numbers and names GFWL replacements publish; new code), so a game made for it starts instead of stopping at the loader ("Library xlive.dll ... not found", c0000135: Resident Evil 5's retail `RE5DX10.EXE`; GTA IV before the Complete Edition, Fallout 3, Batman: Arkham Asylum, Dark Souls: Prepare to Die Edition). User 0 is signed in locally as "Player" with a fixed offline XUID, so a game lets the profile save; its hooks succeed and leave the game its input; protected buffers are memory and protected data passes through unchanged; profile settings a game writes are kept under `HKCU\Software\Wine\xlive\<program>`; achievements are dropped, enumerations are empty and what needs Live fails with `ERROR_NOT_LOGGED_ON`; asynchronous calls complete at once. XSocket and XWSA are Winsock's (a VDP socket is UDP). A game's own `xlive.dll` (xliveless, XLiveLessNess) still loads first: the module prefers native |
++| 0907 | `d3d9`: a 2D texture keeps its level 0 width at 0x20, its height at 0x24 and, while level 0 is locked from its top left corner, its data's address at 0x90 on i386, where Microsoft's d3d9 has them (`C_ASSERT`s check them). Resident Evil 3's "Seamless HD" mod (`bio3hd.asi`, with Classic REbirth) reads them straight from the object, got a list pointer and memory past it, skipped every HD picture and showed the menu small in a corner (WineHQ bugs 53775 and 57395). DXVK's d3d9 (PC5's Auto) keeps its own layout: the mod needs Wine's |
+ | 0928 | `ntdll`: a page fault in 32-bit code on the native WoW64 CPU whose `%fs:` operand missed the 32-bit TEB gets the TEB's base back in the signal frame and runs again. sysarch(AMD64_SET_FSBASE) sets the base the CPU uses but not the GDT descriptor of the kernel's user FS selector, which the kernel writes from the thread's saved base when it switches the thread in, often while it is on its 64-bit side with the host's FS; a program that loads FS again got the low half of the host thread pointer (Fallout 1 and 2 in `GetStdHandle`, reading `%fs:0x18` at FF81C098). Only an access violation `virtual_handle_fault` left alone, not an execute fault, and not one on the stack; the first repair, and every hundredfold after, is logged; 64 repairs in one state, each within a millisecond of the last, give the fault to the program |
+ | 0929 | `ntdll`, `krnl386`: `NtSetLdtEntries` returns `STATUS_NOT_IMPLEMENTED`, as for a 64-bit process: the console refuses I386_SET_LDT (EINVAL), and `ldt_set_entry` ended the process on that. krnl386.exe16 doesn't load without LDT entries, so a lookup of a forwarded 16-bit export (`kernel32.UTRegister`, Brian Lara International Cricket 2007) fails instead of ending the game |
+ | 0930 | `win32u`: where a frame shows less than the screen (one window, or a display mode smaller than the desktop), the PS5 pointer still stops at the shown edge, but each motion goes to the server whole as raw input (`SEND_HWMSG_RAWINPUT` with a `struct raw_mouse`), as a mouse held against the screen's edge keeps reporting its motion on Windows. A game that moves a pointer of its own by `WM_INPUT` (DirectInput) stopped short of its far side once the system's pointer reached the edge first (Sacred Underworld at 1024x768) |
+diff --git a/wine/patches/0907-d3d9-a-2d-texture-keeps-its-width-height-and-level-0-data-where-microsofts-does.patch b/wine/patches/0907-d3d9-a-2d-texture-keeps-its-width-height-and-level-0-data-where-microsofts-does.patch
+new file mode 100644
+index 0000000..14c88c7
+--- /dev/null
++++ b/wine/patches/0907-d3d9-a-2d-texture-keeps-its-width-height-and-level-0-data-where-microsofts-does.patch
+@@ -0,0 +1,97 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Mon, 2 Nov 2026 10:30:00 +0000
++Subject: [PATCH] d3d9: A 2D texture keeps its width, height and locked level 0
++ data where Microsoft's d3d9 does.
++
++Some 32-bit programs read a texture object directly instead of asking
++for its description: Resident Evil 3's "Seamless HD" mod (bio3hd.asi,
++with Classic REbirth) reads the level 0 width at 0x20, its height at
++0x24 and the address of the locked level 0 data at 0x90, just before
++REbirth unlocks it, to put its HD pictures in. With Wine's layout it
++read a list pointer and memory past the object, skipped every picture,
++and the game's menu showed small in a corner (WineHQ bugs 53775 and
++57395). On i386 they are now there, checked by C_ASSERTs; the data's
++address is kept when level 0 is locked from its top left corner.
++---
++ dlls/d3d9/d3d9_private.h | 13 ++++++++++++-
++ dlls/d3d9/surface.c      |  4 ++++
++ dlls/d3d9/texture.c      | 10 ++++++++++
++ 3 files changed, 26 insertions(+), 1 deletion(-)
++
++diff --git a/dlls/d3d9/d3d9_private.h b/dlls/d3d9/d3d9_private.h
++index b1e7690..b9e377b 100644
++--- a/dlls/d3d9/d3d9_private.h
+++++ b/dlls/d3d9/d3d9_private.h
++@@ -222,10 +222,21 @@ struct d3d9_texture
++     struct d3d9_resource resource;
++     struct wined3d_texture *wined3d_texture, *draw_texture;
++     struct d3d9_device *parent_device;
++-    struct list rtv_list;
++     DWORD usage;
+++    /* Some 32-bit programs read texture objects directly at the offsets
+++     * Microsoft's d3d9.dll uses: the level 0 width at 0x20, its height at
+++     * 0x24 and the address of the level 0 data at 0x90 (the Resident Evil 3
+++     * "Seamless HD" mod, bio3hd.asi, does it from inside a lock). Keep these
+++     * fields there on i386; see the C_ASSERTs in texture.c. */
+++    UINT level0_width;
+++    UINT level0_height;
+++    struct list rtv_list;
++     BOOL flags;
++     D3DTEXTUREFILTERTYPE autogen_filter_type;
+++#ifdef __i386__
+++    BYTE native_layout_padding[0x90 - 0x38];
+++#endif
+++    void *level0_data;
++ };
++ 
++ HRESULT d3d9_texture_2d_init(struct d3d9_texture *texture, struct d3d9_device *device, unsigned int width,
++diff --git a/dlls/d3d9/surface.c b/dlls/d3d9/surface.c
++index 1ea8c60..f8e6d8e 100644
++--- a/dlls/d3d9/surface.c
+++++ b/dlls/d3d9/surface.c
++@@ -255,6 +255,10 @@ static HRESULT WINAPI d3d9_surface_LockRect(IDirect3DSurface9 *iface,
++     {
++         locked_rect->Pitch = map_desc.row_pitch;
++         locked_rect->pBits = map_desc.data;
+++        /* Programs that read the texture object directly expect the address
+++         * of the level 0 data in it while the level is locked. */
+++        if (surface->texture && !surface->sub_resource_idx && (!rect || (!rect->left && !rect->top)))
+++            surface->texture->level0_data = map_desc.data;
++     }
++ 
++     if (hr == E_INVALIDARG)
++diff --git a/dlls/d3d9/texture.c b/dlls/d3d9/texture.c
++index 8616dfb..02bdb38 100644
++--- a/dlls/d3d9/texture.c
+++++ b/dlls/d3d9/texture.c
++@@ -19,9 +19,17 @@
++  */
++ 
++ #include "d3d9_private.h"
+++#include <stddef.h>
++ 
++ WINE_DEFAULT_DEBUG_CHANNEL(d3d9);
++ 
+++#ifdef __i386__
+++/* Offsets Microsoft's d3d9.dll has and programs read directly. */
+++C_ASSERT(offsetof(struct d3d9_texture, level0_width) == 0x20);
+++C_ASSERT(offsetof(struct d3d9_texture, level0_height) == 0x24);
+++C_ASSERT(offsetof(struct d3d9_texture, level0_data) == 0x90);
+++#endif
+++
++ static ULONG d3d9_texture_incref(struct d3d9_texture *texture)
++ {
++     ULONG ref = InterlockedIncrement(&texture->resource.refcount);
++@@ -1372,6 +1380,8 @@ HRESULT d3d9_texture_2d_init(struct d3d9_texture *texture, struct d3d9_device *d
++     if (!device->d3d_parent->extended)
++         desc.usage |= WINED3DUSAGE_VIDMEM_ACCOUNTING;
++ 
+++    texture->level0_width = width;
+++    texture->level0_height = height;
++     texture->IDirect3DBaseTexture9_iface.lpVtbl = (const IDirect3DBaseTexture9Vtbl *)&d3d9_texture_2d_vtbl;
++     return d3d9_texture_init(texture, device, &desc, pool, usage, 1, level_count);
++ }
++-- 
++2.43.0
++
+-- 
+2.43.0
+

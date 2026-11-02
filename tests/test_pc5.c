@@ -1366,6 +1366,15 @@ static void test_install(void)
         CHECK(!pc5_profile_text_at("flat", &flat, "", &controls, NULL, NULL, text, sizeof(text)) && strstr(text, "desktop = 1920x1080\n"),
               "DirectDraw at 1080p");
         CHECK(strstr(text, "graphics = opengl\n") != NULL, "DirectDraw through Wine's Direct3D on Zink");
+        /* 2D only: no OpenGL, WineD3D without 3D, shown as plain Windows drawing (Heroes IV). */
+        controls.graphics = PC5_GRAPHICS_WINE_2D;
+        CHECK(!pc5_profile_text_at("flat", &flat, "", &controls, NULL, NULL, text, sizeof(text)) &&
+              strstr(text, "graphics = gdi\n") && strstr(text, "env = WINE_D3D_CONFIG=renderer=no3d") &&
+              !strstr(text, "renderer=vulkan"), "DirectDraw in 2D only: %s", text);
+        flat.api = PC5_API_D3D9;
+        CHECK(!pc5_profile_text_at("flat", &flat, "", &controls, NULL, NULL, text, sizeof(text)) &&
+              !strstr(text, "no3d") && strstr(text, "graphics = dxvk\n"), "2D only is DirectDraw's alone: Auto");
+        controls.graphics = PC5_GRAPHICS_AUTO;
         flat.api = PC5_API_GDI;
         CHECK(!pc5_profile_text_at("flat", &flat, "", &controls, NULL, NULL, text, sizeof(text)) && strstr(text, "graphics = gdi\n"),
               "plain Windows drawing stays with Wine");
@@ -1653,16 +1662,22 @@ static void test_install(void)
     /* The choices each kind of game has, and their names. */
     {
         Pc5Graphics choices[PC5_GRAPHICS_COUNT];
-        CHECK(pc5_graphics_choices(PC5_API_D3D11, choices) == 3 && choices[1] == PC5_GRAPHICS_WINE &&
-              choices[2] == PC5_GRAPHICS_WINE_VULKAN, "Direct3D 11: Auto, WineD3D, WineD3D on Vulkan");
+        CHECK(pc5_graphics_choices(PC5_API_D3D11, choices) == 3 && choices[1] == PC5_GRAPHICS_WINE_VULKAN &&
+              choices[2] == PC5_GRAPHICS_WINE, "Direct3D 11: Auto, Alternative (WineD3D on Vulkan), Compatibility (WineD3D)");
         CHECK(pc5_graphics_choices(PC5_API_D3D12, choices) == 2 && choices[1] == PC5_GRAPHICS_WINE &&
-              !strcmp(pc5_graphics_name(PC5_GRAPHICS_WINE, PC5_API_D3D12), "Wine's VKD3D"), "Direct3D 12: Auto, Wine's VKD3D");
-        CHECK(pc5_graphics_choices(PC5_API_DDRAW, choices) == 2 && choices[1] == PC5_GRAPHICS_WINE_VULKAN,
-              "DirectDraw: Auto (WineD3D already), WineD3D on Vulkan");
+              !strcmp(pc5_graphics_name(PC5_GRAPHICS_WINE, PC5_API_D3D12), "Alternative") &&
+              !strcmp(pc5_graphics_tech_name(PC5_GRAPHICS_WINE, PC5_API_D3D12), "Wine's VKD3D"), "Direct3D 12: Auto, Alternative (Wine's VKD3D)");
+        CHECK(pc5_graphics_choices(PC5_API_DDRAW, choices) == 3 && choices[1] == PC5_GRAPHICS_WINE_VULKAN &&
+              choices[2] == PC5_GRAPHICS_WINE_2D, "DirectDraw: Auto (WineD3D already), WineD3D on Vulkan, 2D only");
         CHECK(!pc5_graphics_choices(PC5_API_OPENGL, choices) && !pc5_graphics_choices(PC5_API_GDI, choices) &&
               !pc5_graphics_choices(PC5_API_VULKAN, choices), "OpenGL, Vulkan, plain drawing: none");
-        CHECK(!strcmp(pc5_graphics_name(PC5_GRAPHICS_WINE_VULKAN, PC5_API_D3D9), "WineD3D on Vulkan") &&
-              !strcmp(pc5_graphics_name(PC5_GRAPHICS_AUTO, PC5_API_D3D9), "Auto"), "the names");
+        CHECK(!strcmp(pc5_graphics_name(PC5_GRAPHICS_WINE_VULKAN, PC5_API_D3D9), "Alternative") &&
+              !strcmp(pc5_graphics_name(PC5_GRAPHICS_WINE, PC5_API_D3D9), "Compatibility (slow)") &&
+              !strcmp(pc5_graphics_name(PC5_GRAPHICS_WINE_2D, PC5_API_DDRAW), "2D only") &&
+              !strcmp(pc5_graphics_name(PC5_GRAPHICS_AUTO, PC5_API_D3D9), "Auto"), "the menu's names");
+        CHECK(!strcmp(pc5_graphics_tech_name(PC5_GRAPHICS_WINE_VULKAN, PC5_API_D3D9), "WineD3D on Vulkan") &&
+              !strcmp(pc5_graphics_tech_name(PC5_GRAPHICS_WINE, PC5_API_D3D9), "WineD3D") &&
+              !strcmp(pc5_graphics_tech_name(PC5_GRAPHICS_WINE_2D, PC5_API_DDRAW), "WineD3D 2D only"), "the logs' names");
     }
     /* Installing the same folder again makes a second game, never a second copy over the first. */
     CHECK(install_folder("NeonDrift", 0, 0, id, sizeof(id)) == PC5_INSTALL_DONE && !strcmp(id, "neondrift-2"), "second: %s", id);
@@ -6767,6 +6782,14 @@ static void test_screens(const char *fonts)
     press(ui, PC5_KEY_RIGHT, &canvas);
     CHECK(!strcmp(pc5_ui_screen(ui), "game-menu") && !controls_has("orbital-nine", "graphics_api = wine\n"),
           "right on Graphics API changes nothing");
+    /* □ About: what Graphics mode does and each choice, in plain words; any of back, accept or □ closes it. */
+    press(ui, PC5_KEY_SQUARE, &canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "setting-about"), "□ opens the setting's About: %s", pc5_ui_screen(ui));
+    pc5_ui_draw(ui, &canvas);
+    save_shot(&canvas, "game-menu-setting-about");
+    press(ui, PC5_KEY_BACK, &canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "game-menu") && !controls_has("orbital-nine", "graphics_api = wine\n"),
+          "and back closes it, changing nothing: %s", pc5_ui_screen(ui));
     press(ui, PC5_KEY_ACCEPT, &canvas);
     CHECK(!strcmp(pc5_ui_screen(ui), "graphics-api"), "Graphics API opens its window: %s", pc5_ui_screen(ui));
     press(ui, PC5_KEY_DOWN, &canvas);

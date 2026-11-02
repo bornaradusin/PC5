@@ -76,7 +76,7 @@ typedef enum Screen {
     S_FILES_TYPING, S_FILES_CONFLICT, S_FILES_DELETE, S_FILES_WORKING, S_TILE_ART, S_INSTALL_ASK, S_SETTINGS_TYPING, S_INSTALL_WHERE,
     S_PLAY_WHICH, S_FILES_EDIT, S_FILES_EDIT_MENU, S_FILES_EDIT_TYPING, S_FILES_EDIT_LEAVE,
     S_MUSIC_IMPORT, S_VIDEO_IMPORT, S_PHONE_QR, S_COMPAT_SEARCH, S_COMPAT_REPORT, S_MEDIA_OPTIONS, S_LOOK_CONFIRM, S_LOOK_WORK,
-    S_MEDIA_DELETE, S_COMPAT_SHARE
+    S_MEDIA_DELETE, S_COMPAT_SHARE, S_SETTING_ABOUT
 } Screen;
 
 static const char *const screen_names[] = { "start", "covers", "library", "settings", "about", "scan", "sources",
@@ -90,7 +90,7 @@ static const char *const screen_names[] = { "start", "covers", "library", "setti
                                             "files-working", "tile-art", "install-ask", "settings-typing", "install-where",
                                             "play-which", "files-edit", "files-edit-menu", "files-edit-typing",
                                             "files-edit-leave", "music-import", "video-import", "phone-qr", "compat-search", "compat-report", "media-options", "look-confirm", "look-work",
-                                            "media-delete", "compat-share" };
+                                            "media-delete", "compat-share", "setting-about" };
 
 /* One game of several being installed in a row. */
 typedef enum QueueState { Q_WAITING, Q_INSTALLED, Q_FAILED, Q_STOPPED, Q_SKIPPED } QueueState;
@@ -204,6 +204,7 @@ enum { GAME_ROWS = 7, GAME_PAGES = 7, GP_MAIN = 0, GP_GRAPHICS = 1, GP_APPEARANC
 static const char *const game_page_titles[GAME_PAGES] = { "", N_("Graphics"), N_("Appearance"), N_("Manage"), N_("Background"),
                                                         N_("Library music"), N_("Background video") };
 /* The parent row that opens each page; Back returns to that row. */
+static int setting_about(Pc5Ui *ui, GameRow row, const char *lines[6]);
 static const GameRow game_page_rows[GAME_PAGES] = { GR_PLAY, GR_GRAPHICS, GR_APPEARANCE, GR_MANAGE, GR_BACKGROUND,
                                                   GR_MUSIC, GR_BACKGROUND_VIDEO };
 /* What a game is, for its menu's rows. */
@@ -2488,7 +2489,7 @@ static void setting_text(Pc5Ui *ui, SettingRow row, const char **label, char *ab
         pc5_copy(value, value_size, set->cpu_temperature ? T("On") : T("Off"));
         break;
     case SR_SOC_TEMPERATURE:
-        *label = T("SoC temperature");
+        *label = T("Chip temperature");
         pc5_copy(about, about_size, T("The console chip's, in degrees Celsius"));
         pc5_copy(value, value_size, set->soc_temperature ? T("On") : T("Off"));
         break;
@@ -2783,7 +2784,7 @@ static void controls_changed(Pc5Ui *ui)
         pc5_pad_mode_name(k->mode), pc5_stick_use_name(k->stick[0]), pc5_stick_use_name(k->stick[1]), k->speed,
         k->slow_button >= 0 ? pc5_control_name(k->slow_button) : "none", k->slow_percent, k->frame_generation,
         k->memory_4gb ? "4gb" : "auto", k->video_memory_full ? "full" : k->video_memory_gb == 5 ? "5gb" : k->video_memory_gb == 6 ? "6gb" : "auto", k->resolution == 2 ? "2160p" : k->resolution == 1 ? "1440p" : "1080p",
-        k->stretch ? "stretch" : "keep", k->cpu_sharing, pc5_graphics_name(k->graphics, ui_game_api(ui)));
+        k->stretch ? "stretch" : "keep", k->cpu_sharing, pc5_graphics_tech_name(k->graphics, ui_game_api(ui)));
 }
 
 /* A Button mapping row moves to its next (step 1) or previous (-1) value: 1 when it changed. */
@@ -3109,7 +3110,7 @@ static void report_open(Pc5Ui *ui)
         pc5_controls_load(ui->root, game->prefix, &k);
         snprintf(settings, sizeof(settings),
                  "%d-bit, draws with %s; Graphics API %s; Controller %s; Frame generation %s; Memory %s; CPU sharing %s%s",
-                 game->bits, pc5_api_name((Pc5Api)game->api), pc5_graphics_name(k.graphics, game->api),
+                 game->bits, pc5_api_name((Pc5Api)game->api), pc5_graphics_tech_name(k.graphics, game->api),
                  pc5_pad_mode_name(k.mode), k.frame_generation == 2 ? "40 -> 120 (MihawkGen)" : k.frame_generation ? "on" : "off", k.memory_4gb ? "4 GB" : "Auto",
                  k.cpu_sharing ? "on" : "off", k.steam_off ? "; Steam emulator off" : "");
     }
@@ -5096,7 +5097,9 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         if (ui->menu >= count) ui->menu = count - 1;
         if (list_move(&ui->menu, count, k)) ui->dirty = 1;
         GameRow row = rows[ui->menu];
+        const char *about_lines[6];
         if ((k & PC5_KEY_SQUARE) && phone_row_kind(row) >= 0) phone_open(ui, game, phone_row_kind(row));
+        else if ((k & PC5_KEY_SQUARE) && setting_about(ui, row, about_lines) > 0) go(ui, S_SETTING_ABOUT);
         else if (k & PC5_KEY_TRIANGLE) go(ui, S_LIBRARY);
         else if (k & back) {
             /* Return to this page's parent, focused on the row that opened it. */
@@ -5205,7 +5208,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 media_delete_begin(ui, 0);
             } else if (row == GR_PROGRAM) {
                 if (!game->pc5) message(ui, 0, T("PC5 didn't install this game"),
-                                        T("Its program is set in its prospero-win profile."), S_GAME_MENU);
+                                        T("PC5 didn't install it, so its program can't be changed here."), S_GAME_MENU);
                 else go(ui, S_GAME_READING);
             } else if (row == GR_FILES) {
                 files_open(ui, 1);
@@ -5359,6 +5362,9 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         }
         break;
     }
+    case S_SETTING_ABOUT:
+        if (k & (back | accept | PC5_KEY_SQUARE)) go(ui, S_GAME_MENU);
+        break;
     case S_GRAPHICS_API: {
         Pc5Graphics choices[PC5_GRAPHICS_COUNT];
         int count = pc5_graphics_choices(ui_game_api(ui), choices);
@@ -5773,7 +5779,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 const Pc5Game *game = &ui->library.games[index];
                 pc5_controls_load(ui->root, ui->launch_id, &chosen);
                 say(ui, "PC5 play id=%s api=%s graphics=%s bits=%d", ui->launch_id, pc5_api_name(game->api),
-                    pc5_graphics_name(chosen.graphics, game->api), game->bits);
+                    pc5_graphics_tech_name(chosen.graphics, game->api), game->bits);
             } else {
                 say(ui, "PC5 play id=%s", ui->launch_id);
             }
@@ -6659,7 +6665,7 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
     case GR_POINTER:
         *label = T("Mouse pointer");
         *text = ui->controls.pointer_hide ? T("Hides when not moved or clicked for 5 s") : T("Stays as the game shows it");
-        *value = ui->controls.pointer_hide ? T("Hides when unused") : T("Game controlled");
+        *value = ui->controls.pointer_hide ? T("Auto-hide") : T("Normal");
         break;
     case GR_GRAPHICS:
         *label = T("Graphics");
@@ -6680,13 +6686,13 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
         int api = ui_game_api(ui);
         const char *about_api =
             ui->controls.graphics == PC5_GRAPHICS_AUTO
-                ? (api == PC5_API_D3D12  ? T("Best for most games; change it only if the picture is wrong or it won't start")
-                   : api == PC5_API_DDRAW ? T("Wine's own Direct3D draws it; change it only if the picture is wrong")
-                                          : T("Best for most games; change it only if the picture is wrong or it won't start"))
-            : api == PC5_API_D3D12 ? T("Wine's own Direct3D 12; if it doesn't help, set it back to Auto")
-            : ui->controls.graphics == PC5_GRAPHICS_WINE_VULKAN ? T("Wine's own Direct3D on Vulkan; if it doesn't help, set it back to Auto")
-                                                                 : T("Wine's own Direct3D on OpenGL; if it doesn't help, set it back to Auto");
-        *label = T("Graphics API");
+                ? (api == PC5_API_DDRAW ? T("The usual way for older games like this; change it only if the picture is wrong")
+                                        : T("Best for most games; change it only if the picture is wrong or it won't start"))
+            : api == PC5_API_D3D12 ? T("A slower way to draw it; set it back to Auto if it doesn't help")
+            : ui->controls.graphics == PC5_GRAPHICS_WINE_2D ? T("Drawn in 2D only; set it back to Auto if it doesn't help")
+            : ui->controls.graphics == PC5_GRAPHICS_WINE_VULKAN ? T("Another way to draw it; set it back to Auto if it doesn't help")
+                                                                 : T("The slowest way, but it starts the most games; Auto if it doesn't help");
+        *label = T("Graphics mode");
         *text = about_api;
         *value = T(pc5_graphics_name(ui->controls.graphics, api));
         break;
@@ -6719,13 +6725,13 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
         *value = ui->controls.stretch ? T("Stretch") : T("Keep");
         break;
     case GR_MEMORY:
-        *label = T("Memory");
+        *label = T("Game memory");
         *text = ui->controls.memory_4gb ? T("4 GB even for a game not made for it: room for mods; Auto if it misbehaves")
-                                        : T("As Windows: 4 GB for a game made for it, otherwise 2 GB");
+                                        : T("2 GB, or 4 GB for a game made for it, as on Windows");
         *value = ui->controls.memory_4gb ? T("4 GB") : T("Auto");
         break;
     case GR_VIDEO_MEMORY:
-        *label = T("Video memory");
+        *label = T("Graphics memory");
         if (!(kind & GAME_32BIT)) {
             *text = ui->controls.video_memory_full ? T("All 8 GB: the game may take memory the rest of it needs")
                     : ui->controls.video_memory_gb ? T("More for the game's textures, less for the rest; Auto if it runs out of memory")
@@ -6736,12 +6742,12 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
             }
         } else
             *text = ui->controls.video_memory_full ? T("All the console's; Auto if the game says there is too little")
-                                                   : T("2 GB at most, a number older games' checks can read");
-        *value = ui->controls.video_memory_full ? T("Full") : T("Auto");
+                                                   : T("2 GB at most, so older games don't get confused");
+        *value = ui->controls.video_memory_full ? T("Maximum") : T("Auto");
         break;
     case GR_CPU_SHARING:
-        *label = T("CPU sharing");
-        *text = ui->controls.cpu_sharing ? T("Its threads take turns, as on a PC: steadier for some games") : T("Fastest for most games; turn on if it freezes or stutters");
+        *label = T("Stutter fix");
+        *text = ui->controls.cpu_sharing ? T("The game's work takes turns, as on a PC: steadier for some games") : T("Fastest for most games; turn on if it freezes or stutters");
         *value = ui->controls.cpu_sharing ? T("On") : T("Off");
         break;
     case GR_COVER:
@@ -6843,6 +6849,111 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
     }
 }
 
+/* What a game setting does, in plain words, for its About window (□ on the row): a line on what
+ * it is, then one for each choice. 0 for a row without one. */
+static int setting_about(Pc5Ui *ui, GameRow row, const char *lines[6])
+{
+    int n = 0, api = ui_game_api(ui), bits32 = ui_game_kind(ui) & GAME_32BIT;
+    switch (row) {
+    case GR_CONTROLLER:
+        lines[n++] = T("What the game sees when you play with the controller.");
+        lines[n++] = T("Xbox controller: what most PC games expect. Try this first.");
+        lines[n++] = T("DualSense: a PS5 controller plugged into a PC, with PlayStation buttons in games that support it.");
+        lines[n++] = T("Keyboard & mouse: for games with no controller support. The buttons press keys and the sticks move the mouse; Button mapping changes which key each one sends.");
+        break;
+    case GR_POINTER:
+        lines[n++] = T("Whether the mouse pointer shows over the game.");
+        lines[n++] = T("Normal: the game decides, as on a PC.");
+        lines[n++] = T("Auto-hide: hidden after 5 seconds without moving or clicking, for a game that leaves it on the screen.");
+        break;
+    case GR_GRAPHICS_API:
+        lines[n++] = T("How the game's pictures are made on the console. Auto is right for almost every game; the others are for a game that won't start or shows a wrong picture.");
+        if (api == PC5_API_DDRAW) {
+            lines[n++] = T("Alternative: another way to draw the game. Try it if the picture is wrong with Auto.");
+            lines[n++] = T("2D only: for a 2D game that flickers or shows only part of its screen.");
+        } else if (api == PC5_API_D3D12) {
+            lines[n++] = T("Alternative: slower than Auto. Try it if the game won't start or its picture is wrong.");
+        } else {
+            lines[n++] = T("Alternative: another way to draw the game. Try it if the picture is wrong with Auto. Some mods need it.");
+            lines[n++] = T("Compatibility (slow): the slowest, but it starts the most games.");
+        }
+        lines[n++] = T("Choose the row to see each one with what it does.");
+        break;
+    case GR_FRAMEGEN:
+        lines[n++] = T("Makes extra frames between the game's own, so movement looks smoother. It can add a little delay to the controls.");
+        lines[n++] = T("30 \xe2\x86\x92 60 fps: the game is held at 30 fps and shown at 60.");
+        lines[n++] = T("60 \xe2\x86\x92 120 fps: held at 60 and shown at 120, on a 120 Hz TV with 120 Hz output on in Settings.");
+        lines[n++] = T("40 \xe2\x86\x92 120 fps: held at 40, two frames made between each two, for a game that can't hold 60.");
+        break;
+    case GR_RESOLUTION:
+        lines[n++] = T("The size the game is drawn at. The console always shows 4K, so a smaller picture is scaled up.");
+        lines[n++] = T("1080p: the fastest, and right for most games.");
+        lines[n++] = T("1440p: sharper, but slower.");
+        lines[n++] = T("4K: the sharpest, four times the work of 1080p: only for light games.");
+        break;
+    case GR_ASPECT:
+        lines[n++] = T("The shape of the picture on the TV.");
+        lines[n++] = T("Keep: the picture's own shape. An older 4:3 game gets black bars at the sides.");
+        lines[n++] = T("Stretch: fills the whole screen, so a 4:3 picture gets wider.");
+        break;
+    case GR_MEMORY:
+        lines[n++] = T("How much memory an older 32-bit game may use.");
+        lines[n++] = T("Auto: as on Windows, 4 GB for a game made for it, otherwise 2 GB.");
+        lines[n++] = T("4 GB: for a game that runs out of memory, often with big mods. Set it back to Auto if the game misbehaves.");
+        break;
+    case GR_VIDEO_MEMORY:
+        lines[n++] = T("How much graphics memory the game is told the console has. The PS5's memory is shared by the game and its graphics, so more for graphics leaves less for the game.");
+        if (bits32) {
+            lines[n++] = T("Auto: 2 GB at most, so older games don't get confused by a large number.");
+            lines[n++] = T("Maximum: all of it, for a game that says there is too little.");
+        } else {
+            lines[n++] = T("Auto: 4 GB, room for both.");
+            lines[n++] = T("5 GB or 6 GB: more for textures. Set it back to Auto if the game runs out of memory.");
+            lines[n++] = T("Maximum: all of it, only for a game that won't start because it sees too little.");
+        }
+        break;
+    case GR_CPU_SHARING:
+        lines[n++] = T("Changes how the game's work is shared out on the console's processor.");
+        lines[n++] = T("Off: the fastest for most games.");
+        lines[n++] = T("On: the game's work takes turns, as on a PC. Try it if the game freezes, stutters or hangs while loading; it can be a little slower.");
+        break;
+    case GR_STEAM:
+        lines[n++] = T("Many PC games need Steam running to start. The console has no Steam, so PC5 stands in for it.");
+        lines[n++] = T("Auto: the game starts as if Steam were running, offline.");
+        lines[n++] = T("Off: the game's own Steam files are used. It won't find Steam and may not start; only for a game that misbehaves with Auto.");
+        break;
+    default:
+        break;
+    }
+    return n;
+}
+
+/* The About window over the game menu: what the chosen setting does and what each choice means. */
+static void setting_about_dialog(Pc5Ui *ui, Pc5Canvas *c, GameRow row, const char *title)
+{
+    enum { LINE = 36, TEXT_W = 1100 - 120 };
+    const char *lines[6];
+    int count = setting_about(ui, row, lines), wraps[6];
+    float w = 1100, h = 130 + 110, x, y, cy;
+    for (int i = 0; i < count; i++) {
+        wraps[i] = pc5_text_lines(&ui->fonts, PC5_FACE_SMALL, TEXT_W, lines[i]);
+        h += wraps[i] * LINE + 18;
+    }
+    x = (W - w) / 2;
+    y = (H - h) / 2;
+    dim(c, 150);
+    panel(c, x, y, w, h);
+    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 60, (int)y + 92, C_TEXT, title, (int)w - 120, 0);
+    cy = y + 130;
+    for (int i = 0; i < count; i++) {
+        pc5_text_wrap(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 60, (int)cy + LINE, TEXT_W, wraps[i], LINE,
+                      i ? C_DIM : C_TEXT, lines[i], 0);
+        cy += wraps[i] * LINE + 18;
+    }
+    Hint list[] = { { back_glyph(ui), T("Back") } };
+    hints(ui, c, (int)x + 60, (int)(y + h - 40), list, 1);
+}
+
 static void game_menu_screen(Pc5Ui *ui, Pc5Canvas *c, int chosen)
 {
     int index = pc5_library_find(&ui->library, ui->launch_id), kind = ui_game_kind(ui), page = ui->game_page;
@@ -6867,9 +6978,24 @@ static void game_menu_screen(Pc5Ui *ui, Pc5Canvas *c, int chosen)
     GameRow row = chosen >= 0 && chosen < count ? rows[chosen] : GR_PLAY;
     int changes = row == GR_CONTROLLER || row == GR_FRAMEGEN || row == GR_RESOLUTION || row == GR_ASPECT ||
                   row == GR_MEMORY || row == GR_VIDEO_MEMORY || row == GR_CPU_SHARING || row == GR_HOME || row == GR_STEAM;
+    const char *about_lines[6];
+    int has_about = setting_about(ui, row, about_lines) > 0;
     Hint list[] = { { accept_glyph(ui), changes ? T("Change") : T("Choose") }, { back_glyph(ui), T("Back") },
-                    { G_SQUARE, T("Receive from phone") } };
-    hints(ui, c, (int)x + 64, 1012, list, phone_row_kind(row) >= 0 ? 3 : 2);
+                    { G_SQUARE, has_about ? T("About") : T("Receive from phone") } };
+    hints(ui, c, (int)x + 64, 1012, list, phone_row_kind(row) >= 0 || has_about ? 3 : 2);
+}
+
+/* The About window of the game menu's chosen row, over the menu. */
+static void setting_about_screen(Pc5Ui *ui, Pc5Canvas *c)
+{
+    int index = pc5_library_find(&ui->library, ui->launch_id), kind = ui_game_kind(ui);
+    GameRow rows[GAME_ROWS];
+    int count = game_rows(&ui->controls, kind, ui->game_page, rows);
+    char about[200];
+    const char *label, *text, *value;
+    if (index < 0 || ui->menu < 0 || ui->menu >= count) return;
+    game_row_text(ui, &ui->library.games[index], kind, rows[ui->menu], about, sizeof(about), &label, &text, &value);
+    setting_about_dialog(ui, c, rows[ui->menu], label);
 }
 
 /* Button mapping: what each button and stick does while the game plays the keyboard and mouse. */
@@ -6972,14 +7098,15 @@ static void keys_dialog(Pc5Ui *ui, Pc5Canvas *c)
 static const char *graphics_about(Pc5Graphics graphics, int api)
 {
     if (graphics == PC5_GRAPHICS_AUTO)
-        return api == PC5_API_D3D12   ? T("PC5's choice: VKD3D-Proton turns the game's Direct3D 12 into Vulkan. The fastest, and what most games want.")
-               : api == PC5_API_DDRAW ? T("PC5's choice: Wine's own Direct3D draws the game's DirectDraw with OpenGL.")
-                                      : T("PC5's choice: DXVK turns the game's Direct3D into Vulkan. The fastest, and what most games want.");
+        return api == PC5_API_DDRAW ? T("The usual way for older games like this one, with their 2D and 3D.")
+                                    : T("The fastest, and what most games want. Leave it here unless the game won't start or its picture is wrong.");
     if (api == PC5_API_D3D12)
-        return T("Wine's own Direct3D 12 (VKD3D). Slower than Auto; try it if the game won't start or draws wrong.");
+        return T("Another way to draw the game, slower than Auto. Try it if the game won't start or its picture is wrong.");
+    if (graphics == PC5_GRAPHICS_WINE_2D)
+        return T("Draws everything in 2D, the way ordinary Windows programs are drawn. For a 2D game that flickers or shows only part of its screen; a game with 3D scenes won't start with it.");
     if (graphics == PC5_GRAPHICS_WINE_VULKAN)
-        return T("Wine's own Direct3D, drawing with Vulkan. Try it if the game draws wrong with Auto; often faster than WineD3D.");
-    return T("Wine's own Direct3D, drawing with OpenGL. The slowest; try it if the game won't start with the others.");
+        return T("Another way to draw the game. Try it if the picture is wrong with Auto; faster than Compatibility. Some mods need it.");
+    return T("The slowest, but it starts the most games. Try it if the game won't start with the others.");
 }
 
 /* The Graphics API window: each choice for the game, with all it does; the one in use is marked. */
@@ -6999,7 +7126,7 @@ static void graphics_dialog(Pc5Ui *ui, Pc5Canvas *c)
     y = (H - h) / 2;
     dim(c, 150);
     panel(c, x, y, w, h);
-    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 60, (int)y + 92, C_TEXT, T("Graphics API"), (int)w - 120, 0);
+    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 60, (int)y + 92, C_TEXT, T("Graphics mode"), (int)w - 120, 0);
     pc5_tf(title, sizeof(title), "The game uses %s", pc5_api_name((Pc5Api)api));
     pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 60, (int)y + 136, C_DIM, title, (int)w - 120, 0);
     cy = y + 170;
@@ -7275,7 +7402,7 @@ static void review_screen(Pc5Ui *ui, Pc5Canvas *c)
         ny += 90;
     } else if (exe && (exe->pe.imports & PC5_IMPORT_DOTNET)) {
         pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)ny, (int)tw, 2, 40, C_DIM,
-                      T("A .NET program: it runs with Wine Mono, which PC5 sets up the first time a .NET game starts."), 0);
+                      T("A .NET program: PC5 sets up what it needs the first time a .NET game starts."), 0);
         ny += 90;
     }
     pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)ny, (int)tw, 4, 40, C_DIM,
@@ -8143,6 +8270,7 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
     case S_BUTTONS: buttons_screen(ui, c); break;
     case S_KEYS: buttons_screen(ui, c); keys_dialog(ui, c); break;
     case S_GRAPHICS_API: game_menu_screen(ui, c, ui->menu); graphics_dialog(ui, c); break;
+    case S_SETTING_ABOUT: game_menu_screen(ui, c, ui->menu); setting_about_screen(ui, c); break;
     case S_GAME_READING: {
         int index = pc5_library_find(&ui->library, ui->launch_id);
         pc5_tf(line, sizeof(line), "Reading %s", index >= 0 ? ui->library.games[index].title : T("the game"));

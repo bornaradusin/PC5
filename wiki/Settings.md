@@ -119,7 +119,7 @@ The overlay is a small box over every game, updated every second. Each line can 
 | CPU usage | How busy the console's CPU is, with everything it runs |
 | GPU usage | How busy the console's GPU is (from 2.0.4) |
 | CPU temperature | The CPU's temperature, in degrees Celsius |
-| SoC temperature | The console chip's temperature, in degrees Celsius |
+| Chip temperature | The console's main chip's temperature, in degrees Celsius (called SoC temperature before 2.1.9) |
 | Memory | The memory the game uses, of what it has, in GB |
 | Corner | Where the overlay sits: Top left, **Top right**, Bottom left or Bottom right |
 | Size | **Normal**: every line at once, in small text. **Large** (from 1.9.2): twice the size, readable from the sofa, two lines at a time, the next two every 3 seconds when more are on. The memory then shows the GB in use. **Extra large** (from 1.9.5): every line at once, as Normal, shown at twice the size by the console (its overlay image magnified by the display), at no cost to the game; nothing takes turns. If the console refuses that, the overlay stays at Normal's size and the game's log says `PC5 overlay magnified=1 rc=…`. |

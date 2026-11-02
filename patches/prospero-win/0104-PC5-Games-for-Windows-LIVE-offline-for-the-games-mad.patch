@@ -1,0 +1,2511 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 10:20:00 +0000
+Subject: [PATCH 104/104] PC5: Games for Windows - LIVE, offline, for the games
+ made for it (Wine patch 0906)
+
+A game that imports xlive.dll stopped at the loader, as Wine has no
+Games for Windows - LIVE: Resident Evil 5's retail RE5DX10.EXE ended with
+"Library xlive.dll not found" (c0000135) before showing anything. A
+builtin xlive.dll now has all of xlive 3.5's ordinals, signs in a local
+profile so the game saves, and answers every online call as offline. A
+game's own xlive.dll (xliveless and its like) is still used first.
+---
+ PUBLICATION_ALLOWLIST.txt                     |    1 +
+ docs/WINE_PS5_BUILD.md                        |    1 +
+ ...fline-so-the-games-made-for-it-start.patch | 2459 +++++++++++++++++
+ 3 files changed, 2461 insertions(+)
+ create mode 100644 wine/patches/0906-xlive-games-for-windows-live-offline-so-the-games-made-for-it-start.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index bc98dcf..93a602c 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -511,6 +511,7 @@ tests/test_pw_key_shared.c
+ wine/patches/0901-win32u-ps5-shared-key-state-fastpath.patch
+ wine/patches/0902-win32u-ps5-send-extended-keys-as-extended.patch
+ wine/patches/0903-ntdll-ps5-keep-the-fs-base-of-a-resumed-64-bit-thread.patch
++wine/patches/0906-xlive-games-for-windows-live-offline-so-the-games-made-for-it-start.patch
+ wine/ps5/input/pw_key_shared.h
+ wine/ps5/input/pw_dualsense.h
+ tests/lab/pw_qpc_bridge.c
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 3190ec6..5f59439 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -132,6 +132,7 @@ before evaluating a candidate built from that cache.
+ | 0899 | `include`: list the PS5 sync headers (0810, 0820, 0885, 0887) in `include/Makefile.in`, which makedep needs to resolve them; configure failed without it |
+ | 0902 | `win32u`: the PS5 driver sends the arrows, Insert, Delete, Home, End, Page Up, Page Down, right Ctrl and Alt, the Windows and menu keys and keypad `/` with `KEYEVENTF_EXTENDEDKEY`; their scan codes are the keypad's without it, so DirectInput reported the keypad's 8 for the up arrow and a game's arrow-key bindings never fired |
+ | 0903 | `ntdll`: a signal frame keeps the FS base it was taken with when the thread resumes where it was; the host's is set only where the handler sends a context to Wine's 64-bit code (the exception dispatcher, a different 64-bit context). The native WoW64 CPU sets the guest FS just before it switches to 32-bit code, and a signal in that window used to send the thread into its 32-bit code with the host FS (GTA San Andreas' DXVK workers crashing at startup in `RtlEnterCriticalSection`) |
++| 0906 | `xlive`: Games for Windows - LIVE as a builtin, offline, with all 252 of xlive 3.5's ordinals (the numbers and names GFWL replacements publish; new code), so a game made for it starts instead of stopping at the loader ("Library xlive.dll ... not found", c0000135: Resident Evil 5's retail `RE5DX10.EXE`; GTA IV before the Complete Edition, Fallout 3, Batman: Arkham Asylum, Dark Souls: Prepare to Die Edition). User 0 is signed in locally as "Player" with a fixed offline XUID, so a game lets the profile save; its hooks succeed and leave the game its input; protected buffers are memory and protected data passes through unchanged; profile settings a game writes are kept under `HKCU\Software\Wine\xlive\<program>`; achievements are dropped, enumerations are empty and what needs Live fails with `ERROR_NOT_LOGGED_ON`; asynchronous calls complete at once. XSocket and XWSA are Winsock's (a VDP socket is UDP). A game's own `xlive.dll` (xliveless, XLiveLessNess) still loads first: the module prefers native |
+ | 0928 | `ntdll`: a page fault in 32-bit code on the native WoW64 CPU whose `%fs:` operand missed the 32-bit TEB gets the TEB's base back in the signal frame and runs again. sysarch(AMD64_SET_FSBASE) sets the base the CPU uses but not the GDT descriptor of the kernel's user FS selector, which the kernel writes from the thread's saved base when it switches the thread in, often while it is on its 64-bit side with the host's FS; a program that loads FS again got the low half of the host thread pointer (Fallout 1 and 2 in `GetStdHandle`, reading `%fs:0x18` at FF81C098). Only an access violation `virtual_handle_fault` left alone, not an execute fault, and not one on the stack; the first repair, and every hundredfold after, is logged; 64 repairs in one state, each within a millisecond of the last, give the fault to the program |
+ | 0929 | `ntdll`, `krnl386`: `NtSetLdtEntries` returns `STATUS_NOT_IMPLEMENTED`, as for a 64-bit process: the console refuses I386_SET_LDT (EINVAL), and `ldt_set_entry` ended the process on that. krnl386.exe16 doesn't load without LDT entries, so a lookup of a forwarded 16-bit export (`kernel32.UTRegister`, Brian Lara International Cricket 2007) fails instead of ending the game |
+ | 0930 | `win32u`: where a frame shows less than the screen (one window, or a display mode smaller than the desktop), the PS5 pointer still stops at the shown edge, but each motion goes to the server whole as raw input (`SEND_HWMSG_RAWINPUT` with a `struct raw_mouse`), as a mouse held against the screen's edge keeps reporting its motion on Windows. A game that moves a pointer of its own by `WM_INPUT` (DirectInput) stopped short of its far side once the system's pointer reached the edge first (Sacred Underworld at 1024x768) |
+diff --git a/wine/patches/0906-xlive-games-for-windows-live-offline-so-the-games-made-for-it-start.patch b/wine/patches/0906-xlive-games-for-windows-live-offline-so-the-games-made-for-it-start.patch
+new file mode 100644
+index 0000000..0c2a909
+--- /dev/null
++++ b/wine/patches/0906-xlive-games-for-windows-live-offline-so-the-games-made-for-it-start.patch
+@@ -0,0 +1,2459 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: bornaradusin <bornaradusin@users.noreply.github.com>
++Date: Mon, 2 Nov 2026 12:00:00 +0000
++Subject: [PATCH] xlive: Games for Windows - LIVE offline, so the games made
++ for it start.
++
++A game made for Games for Windows - LIVE imports xlive.dll, by ordinal,
++and Windows' loader refuses it without the library: Resident Evil 5's
++retail RE5DX10.EXE stopped at once, "Library xlive.dll ... not found"
++(c0000135). GTA IV before its Complete Edition, Fallout 3, Batman: Arkham
++Asylum, Dark Souls: Prepare to Die Edition, Street Fighter IV and
++BioShock 2 are such games too.
++
++This is a builtin xlive.dll with all 252 of xlive 3.5's ordinals, which
++answers as Live does for a profile signed in locally: user 0 is signed in
++locally (eXUserSigninState_SignedInLocally) as "Player" with a fixed
++offline XUID, as a game needs a signed-in profile to save. Its hooks
++(XLiveInitialize, XLiveInput, XLiveRender, the device calls) succeed and
++leave the game its input; protected buffers are plain memory and
++protected data is passed through as it is; profile settings a game writes
++are kept in the registry, under HKCU\Software\Wine\xlive\<program>;
++achievements are taken and forgotten, enumerations are empty, and what
++needs Live fails with ERROR_NOT_LOGGED_ON. Asynchronous calls complete at
++once. The XSocket and XWSA calls are Winsock's, a VDP socket being UDP;
++the XNet ones answer for the loopback address.
++
++The ordinals and names are those GFWL replacements publish
++(XLiveLessNess' xlive_exports.def); the code is new. Three functions whose
++arguments aren't known stay stubs. A game's own xlive.dll (xliveless, or
++XLiveLessNess) still loads first: the module prefers a native one.
++---
++ configure              |    2 +
++ configure.ac           |    1 +
++ dlls/xlive/Makefile.in |    7 +
++ dlls/xlive/main.c      | 2084 ++++++++++++++++++++++++++++++++++++++++
++ dlls/xlive/xlive.spec  |  274 ++++++
++ 5 files changed, 2368 insertions(+)
++ create mode 100644 dlls/xlive/Makefile.in
++ create mode 100644 dlls/xlive/main.c
++ create mode 100644 dlls/xlive/xlive.spec
++
++diff --git a/configure b/configure
++index 50b8006..62c79a5 100755
++--- a/configure
+++++ b/configure
++@@ -1667,6 +1667,7 @@ enable_xinput1_3
++ enable_xinput1_4
++ enable_xinput9_1_0
++ enable_xinputuap
+++enable_xlive
++ enable_xmllite
++ enable_xolehlp
++ enable_xpsprint
++@@ -23077,6 +23078,7 @@ wine_fn_config_makefile dlls/xinput1_3/tests enable_tests
++ wine_fn_config_makefile dlls/xinput1_4 enable_xinput1_4
++ wine_fn_config_makefile dlls/xinput9_1_0 enable_xinput9_1_0
++ wine_fn_config_makefile dlls/xinputuap enable_xinputuap
+++wine_fn_config_makefile dlls/xlive enable_xlive
++ wine_fn_config_makefile dlls/xmllite enable_xmllite
++ wine_fn_config_makefile dlls/xmllite/tests enable_tests
++ wine_fn_config_makefile dlls/xolehlp enable_xolehlp
++diff --git a/configure.ac b/configure.ac
++index eae581f..7590b79 100644
++--- a/configure.ac
+++++ b/configure.ac
++@@ -3522,6 +3522,7 @@ WINE_CONFIG_MAKEFILE(dlls/xinput1_3/tests)
++ WINE_CONFIG_MAKEFILE(dlls/xinput1_4)
++ WINE_CONFIG_MAKEFILE(dlls/xinput9_1_0)
++ WINE_CONFIG_MAKEFILE(dlls/xinputuap)
+++WINE_CONFIG_MAKEFILE(dlls/xlive)
++ WINE_CONFIG_MAKEFILE(dlls/xmllite)
++ WINE_CONFIG_MAKEFILE(dlls/xmllite/tests)
++ WINE_CONFIG_MAKEFILE(dlls/xolehlp)
++diff --git a/dlls/xlive/Makefile.in b/dlls/xlive/Makefile.in
++new file mode 100644
++index 0000000..27bf88d
++--- /dev/null
+++++ b/dlls/xlive/Makefile.in
++@@ -0,0 +1,7 @@
+++MODULE    = xlive.dll
+++IMPORTS   = ws2_32 bcrypt advapi32
+++
+++EXTRADLLFLAGS = -Wb,--prefer-native
+++
+++SOURCES = \
+++	main.c
++diff --git a/dlls/xlive/main.c b/dlls/xlive/main.c
++new file mode 100644
++index 0000000..b057c5c
++--- /dev/null
+++++ b/dlls/xlive/main.c
++@@ -0,0 +1,2084 @@
+++/*
+++ * Games for Windows - LIVE (xlive.dll), an offline stand-in
+++ *
+++ * This library is free software; you can redistribute it and/or
+++ * modify it under the terms of the GNU Lesser General Public
+++ * License as published by the Free Software Foundation; either
+++ * version 2.1 of the License, or (at your option) any later version.
+++ *
+++ * This library is distributed in the hope that it will be useful,
+++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+++ * Lesser General Public License for more details.
+++ *
+++ * You should have received a copy of the GNU Lesser General Public
+++ * License along with this library; if not, write to the Free Software
+++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+++ */
+++
+++/*
+++ * A game made for Games for Windows - LIVE imports xlive.dll by ordinal and
+++ * doesn't start without it. Live itself is gone; this answers as Live does
+++ * for a profile signed in locally, without a network account:
+++ *
+++ * - one user, index 0, signed in locally (eXUserSigninState_SignedInLocally)
+++ *   as "Player" with a fixed offline XUID, so a game lets that profile save;
+++ * - the runtime's hooks (XLiveInitialize, XLiveInput, XLiveRender, the device
+++ *   calls) succeed and do nothing, and input is never taken from the game;
+++ * - protected buffers are plain memory and protected data is passed through
+++ *   unchanged (saves made by the real runtime, which encrypts them, can't be
+++ *   read);
+++ * - profile settings a game writes (its options, often in the title specific
+++ *   settings) are kept in the registry, under
+++ *   HKCU\Software\Wine\xlive\<the program's file name>;
+++ * - achievements are accepted and dropped, enumerations of content, friends
+++ *   and the like are empty, and what needs Live (statistics, storage,
+++ *   marketplace, invitations, arbitration) fails with ERROR_NOT_LOGGED_ON as
+++ *   for a local profile;
+++ * - asynchronous calls complete at once: the XOVERLAPPED gets the result and
+++ *   its event is set, and the call returns ERROR_IO_PENDING as Live does.
+++ *
+++ * Unknown signatures (XLiveUninstallTitle, XLiveVerifyArcadeLicense,
+++ * XUserEstimateRankForRating) are spec stubs: with stdcall a wrong argument
+++ * count would unbalance the caller's stack.
+++ */
+++
+++#include <stdarg.h>
+++#include <stdio.h>
+++#include <stdlib.h>
+++#include <wchar.h>
+++
+++#include "windef.h"
+++#include "winbase.h"
+++#include "winerror.h"
+++#include "winreg.h"
+++#include "winuser.h"
+++#include "winsock2.h"
+++#include "bcrypt.h"
+++
+++#include "wine/debug.h"
+++
+++WINE_DEFAULT_DEBUG_CHANNEL(xlive);
+++
+++/* Report a call to something offline once a function, then quietly. */
+++#define FIXME_ONCE(...) do { static BOOL once; if (!once) { once = TRUE; FIXME(__VA_ARGS__); } else TRACE(__VA_ARGS__); } while (0)
+++
+++typedef ULONGLONG XUID;
+++
+++typedef struct _XOVERLAPPED XOVERLAPPED;
+++typedef void (WINAPI *PXOVERLAPPED_COMPLETION_ROUTINE)(DWORD error, DWORD count, XOVERLAPPED *overlapped);
+++
+++struct _XOVERLAPPED
+++{
+++    ULONG_PTR InternalLow;
+++    ULONG_PTR InternalHigh;
+++    ULONG_PTR InternalContext;
+++    HANDLE hEvent;
+++    PXOVERLAPPED_COMPLETION_ROUTINE pCompletionRoutine;
+++    DWORD_PTR dwCompletionContext;
+++    DWORD dwExtendedError;
+++};
+++
+++typedef struct { BYTE ab[8]; } XNKID;
+++typedef struct { BYTE ab[16]; } XNKEY;
+++
+++typedef struct
+++{
+++    IN_ADDR ina;
+++    IN_ADDR inaOnline;
+++    WORD wPortOnline;
+++    BYTE abEnet[6];
+++    BYTE abOnline[20];
+++} XNADDR;
+++
+++typedef struct
+++{
+++    XNKID sessionID;
+++    XNADDR hostAddress;
+++    XNKEY keyExchangeKey;
+++} XSESSION_INFO;
+++
+++typedef struct
+++{
+++    INT iStatus;
+++    UINT cina;
+++    IN_ADDR aina[8];
+++} XNDNS;
+++
+++typedef struct
+++{
+++    BYTE bFlags;
+++    BYTE bReserved;
+++    WORD cProbesXmit;
+++    WORD cProbesRecv;
+++    WORD cbData;
+++    BYTE *pbData;
+++    WORD wRttMinInMsecs;
+++    WORD wRttMedInMsecs;
+++    DWORD dwUpBitsPerSec;
+++    DWORD dwDnBitsPerSec;
+++} XNQOSINFO;
+++
+++typedef struct
+++{
+++    UINT cxnqos;
+++    UINT cxnqosPending;
+++    XNQOSINFO axnqosinfo[1];
+++} XNQOS;
+++
+++#define XNET_XNQOSINFO_COMPLETE         0x01
+++
+++#define XNET_GET_XNADDR_ETHERNET        0x0002
+++#define XNET_GET_XNADDR_STATIC          0x0004
+++
+++#define XNET_ETHERNET_LINK_ACTIVE       0x01
+++#define XNET_ETHERNET_LINK_100MBPS      0x02
+++#define XNET_ETHERNET_LINK_FULL_DUPLEX  0x08
+++
+++#define XNET_CONNECT_STATUS_CONNECTED   2
+++#define XNET_XNADDR_PLATFORM_WINPC      1
+++#define XONLINE_NAT_OPEN                1
+++
+++#define IPPROTO_VDP 254
+++
+++typedef enum
+++{
+++    eXUserSigninState_NotSignedIn,
+++    eXUserSigninState_SignedInLocally,
+++    eXUserSigninState_SignedInToLive,
+++} XUSER_SIGNIN_STATE;
+++
+++#define XUSER_NAME_SIZE 16
+++
+++typedef struct
+++{
+++    XUID xuid;
+++    DWORD dwInfoFlags;
+++    XUSER_SIGNIN_STATE UserSigninState;
+++    DWORD dwGuestNumber;
+++    DWORD dwSponsorUserIndex;
+++    CHAR szUserName[XUSER_NAME_SIZE];
+++} XUSER_SIGNIN_INFO;
+++
+++typedef struct
+++{
+++    UINT cbSize;
+++    HWND hWnd;
+++    UINT uMSG;
+++    WPARAM wParam;
+++    LPARAM lParam;
+++    BOOL fHandled;
+++    LRESULT lRet;
+++} XLIVE_INPUT_INFO;
+++
+++typedef struct
+++{
+++    DWORD cbSize;
+++    DWORD dwFlags;
+++} XLIVE_PROTECTED_DATA_INFORMATION;
+++
+++typedef struct
+++{
+++    WORD wNumStrings;
+++    HRESULT *pStringResult;
+++} STRING_VERIFY_RESPONSE;
+++
+++typedef struct
+++{
+++    DWORD dwSearchResults;
+++    void *pResults;
+++} XSESSION_SEARCHRESULT_HEADER;
+++
+++typedef struct
+++{
+++    DWORD dwUserIndexHost;
+++    DWORD dwGameType;
+++    DWORD dwGameMode;
+++    DWORD dwFlags;
+++    DWORD dwMaxPublicSlots;
+++    DWORD dwMaxPrivateSlots;
+++    DWORD dwAvailablePublicSlots;
+++    DWORD dwAvailablePrivateSlots;
+++    DWORD dwActualMemberCount;
+++    DWORD dwReturnedMemberCount;
+++    DWORD eState;
+++    ULONGLONG qwNonce;
+++    XSESSION_INFO sessionInfo;
+++    XNKID xnkidArbitration;
+++    void *pSessionMembers;
+++} XSESSION_LOCAL_DETAILS;
+++
+++#define XUSER_DATA_TYPE_INT32    1
+++#define XUSER_DATA_TYPE_UNICODE  4
+++#define XUSER_DATA_TYPE_BINARY   6
+++
+++typedef struct
+++{
+++    BYTE type;
+++    union
+++    {
+++        LONG nData;
+++        LONGLONG i64Data;
+++        double dblData;
+++        struct { DWORD cbData; WCHAR *pwszData; } string;
+++        float fData;
+++        struct { DWORD cbData; BYTE *pbData; } binary;
+++        FILETIME ftData;
+++    };
+++} XUSER_DATA;
+++
+++typedef enum
+++{
+++    XSOURCE_NO_VALUE,
+++    XSOURCE_DEFAULT,
+++    XSOURCE_TITLE,
+++    XSOURCE_PERMISSION_DENIED,
+++} XUSER_PROFILE_SOURCE;
+++
+++typedef struct
+++{
+++    XUSER_PROFILE_SOURCE source;
+++    union
+++    {
+++        DWORD dwUserIndex;
+++        XUID xuid;
+++    } user;
+++    DWORD dwSettingId;
+++    XUSER_DATA data;
+++} XUSER_PROFILE_SETTING;
+++
+++typedef struct
+++{
+++    DWORD dwSettingsLen;
+++    XUSER_PROFILE_SETTING *pSettings;
+++} XUSER_READ_PROFILE_SETTING_RESULT;
+++
+++#ifndef _WIN64
+++C_ASSERT(sizeof(XOVERLAPPED) == 28);
+++C_ASSERT(sizeof(XNADDR) == 36);
+++C_ASSERT(sizeof(XUSER_SIGNIN_INFO) == 40);
+++C_ASSERT(sizeof(XUSER_DATA) == 16);
+++C_ASSERT(sizeof(XUSER_PROFILE_SETTING) == 40);
+++#endif
+++
+++/* A profile setting's id has its type and its largest size in it. */
+++#define SETTING_TYPE(id) (((id) >> 28) & 0xf)
+++#define SETTING_SIZE(id) (((id) >> 16) & 0xfff)
+++
+++/* The one user: signed in locally, so a game lets it save, but not to Live. */
+++#define OFFLINE_USER  0
+++#define OFFLINE_XUID  0xe000000000000001ull
+++static const char user_name[] = "Player";
+++
+++/* Live's local port for system link and its online port. */
+++#define SYSTEM_LINK_PORT 3074
+++
+++static BOOL user_exists( DWORD index )
+++{
+++    return index == OFFLINE_USER;
+++}
+++
+++/* Complete an asynchronous call at once: its XOVERLAPPED gets the result and,
+++ * if it has one, its event is set; without one the result is returned. */
+++static DWORD complete( XOVERLAPPED *overlapped, DWORD result, DWORD count )
+++{
+++    if (!overlapped) return result;
+++    overlapped->InternalLow = result;
+++    overlapped->InternalHigh = count;
+++    overlapped->dwExtendedError = HRESULT_FROM_WIN32( result );
+++    if (overlapped->hEvent) SetEvent( overlapped->hEvent );
+++    return ERROR_IO_PENDING;
+++}
+++
+++/* Enumerations, sessions and listeners are events: XCloseHandle closes them. */
+++static HANDLE new_handle(void)
+++{
+++    return CreateEventW( NULL, TRUE, FALSE, NULL );
+++}
+++
+++/* An empty enumeration: the buffer a game makes for it holds the items it asked for. */
+++static DWORD empty_enumerator( DWORD items, DWORD item_size, DWORD *buffer_size, HANDLE *handle )
+++{
+++    if (!handle) return ERROR_INVALID_PARAMETER;
+++    if (buffer_size) *buffer_size = max( items, 1 ) * item_size;
+++    if (!(*handle = new_handle())) return GetLastError();
+++    return ERROR_SUCCESS;
+++}
+++
+++static void random_bytes( void *buffer, ULONG size )
+++{
+++    static ULONG seed;
+++    BYTE *p = buffer;
+++
+++    if (!BCryptGenRandom( NULL, buffer, size, BCRYPT_USE_SYSTEM_PREFERRED_RNG )) return;
+++    if (!seed) seed = GetTickCount() | 1;
+++    while (size--) *p++ = (seed = seed * 1103515245 + 12345) >> 16;
+++}
+++
+++static void local_xnaddr( XNADDR *addr )
+++{
+++    memset( addr, 0, sizeof(*addr) );
+++    addr->ina.s_addr = htonl( INADDR_LOOPBACK );
+++    addr->wPortOnline = htons( SYSTEM_LINK_PORT );
+++    addr->abEnet[0] = 0x02;
+++    addr->abEnet[5] = 0x01;
+++}
+++
+++/* Sockets. */
+++
+++SOCKET WINAPI XSocketCreate( int af, int type, int protocol )
+++{
+++    TRACE( "%d, %d, %d\n", af, type, protocol );
+++    /* VDP, Live's UDP with voice, is plain UDP between two of these. */
+++    if (protocol == IPPROTO_VDP) protocol = IPPROTO_UDP;
+++    return socket( af, type, protocol );
+++}
+++
+++int WINAPI XWSACancelOverlappedIO( SOCKET s )
+++{
+++    TRACE( "%#Ix\n", (ULONG_PTR)s );
+++    if (CancelIo( (HANDLE)s )) return 0;
+++    WSASetLastError( WSAENOTSOCK );
+++    return SOCKET_ERROR;
+++}
+++
+++/* Secure network. */
+++
+++INT WINAPI XNetStartup( const void *params )
+++{
+++    TRACE( "%p\n", params );
+++    return 0;
+++}
+++
+++INT WINAPI XNetStartupEx( const void *params, DWORD version )
+++{
+++    TRACE( "%p, %#lx\n", params, version );
+++    return 0;
+++}
+++
+++INT WINAPI XNetCleanup(void)
+++{
+++    TRACE( "\n" );
+++    return 0;
+++}
+++
+++INT WINAPI XNetRandom( BYTE *buffer, UINT size )
+++{
+++    TRACE( "%p, %u\n", buffer, size );
+++    if (buffer) random_bytes( buffer, size );
+++    return 0;
+++}
+++
+++INT WINAPI XNetCreateKey( XNKID *id, XNKEY *key )
+++{
+++    TRACE( "%p, %p\n", id, key );
+++    if (id)
+++    {
+++        random_bytes( id, sizeof(*id) );
+++        id->ab[0] &= ~0xf0; /* a system link key */
+++    }
+++    if (key) random_bytes( key, sizeof(*key) );
+++    return 0;
+++}
+++
+++INT WINAPI XNetRegisterKey( const XNKID *id, const XNKEY *key )
+++{
+++    TRACE( "%p, %p\n", id, key );
+++    return 0;
+++}
+++
+++INT WINAPI XNetUnregisterKey( const XNKID *id )
+++{
+++    TRACE( "%p\n", id );
+++    return 0;
+++}
+++
+++INT WINAPI XNetReplaceKey( const XNKID *old_id, const XNKID *new_id )
+++{
+++    TRACE( "%p, %p\n", old_id, new_id );
+++    return 0;
+++}
+++
+++INT WINAPI XNetXnAddrToInAddr( const XNADDR *addr, const XNKID *id, IN_ADDR *ina )
+++{
+++    TRACE( "%p, %p, %p\n", addr, id, ina );
+++    if (!addr || !ina) return WSAEINVAL;
+++    *ina = addr->ina;
+++    return 0;
+++}
+++
+++INT WINAPI XNetServerToInAddr( IN_ADDR server, DWORD service, IN_ADDR *ina )
+++{
+++    TRACE( "%#lx, %#lx, %p\n", server.s_addr, service, ina );
+++    if (!ina) return WSAEINVAL;
+++    *ina = server;
+++    return 0;
+++}
+++
+++INT WINAPI XNetTsAddrToInAddr( const void *tsaddr, DWORD service, const XNKID *id, IN_ADDR *ina )
+++{
+++    FIXME_ONCE( "%p, %#lx, %p, %p: no terminal servers offline\n", tsaddr, service, id, ina );
+++    return WSAEINVAL;
+++}
+++
+++INT WINAPI XNetInAddrToXnAddr( IN_ADDR ina, XNADDR *addr, XNKID *id )
+++{
+++    TRACE( "%#lx, %p, %p\n", ina.s_addr, addr, id );
+++    if (!addr) return WSAEINVAL;
+++    local_xnaddr( addr );
+++    addr->ina = ina;
+++    if (id) memset( id, 0, sizeof(*id) );
+++    return 0;
+++}
+++
+++INT WINAPI XNetInAddrToServer( IN_ADDR ina, IN_ADDR *server )
+++{
+++    TRACE( "%#lx, %p\n", ina.s_addr, server );
+++    if (!server) return WSAEINVAL;
+++    *server = ina;
+++    return 0;
+++}
+++
+++INT WINAPI XNetInAddrToString( IN_ADDR ina, char *buffer, INT size )
+++{
+++    const BYTE *b = (const BYTE *)&ina;
+++    char text[16];
+++    int len;
+++
+++    TRACE( "%#lx, %p, %d\n", ina.s_addr, buffer, size );
+++    len = snprintf( text, sizeof(text), "%u.%u.%u.%u", b[0], b[1], b[2], b[3] );
+++    if (!buffer || size <= len) return WSAEMSGSIZE;
+++    memcpy( buffer, text, len + 1 );
+++    return 0;
+++}
+++
+++INT WINAPI XNetUnregisterInAddr( IN_ADDR ina )
+++{
+++    TRACE( "%#lx\n", ina.s_addr );
+++    return 0;
+++}
+++
+++INT WINAPI XNetXnAddrToMachineId( const XNADDR *addr, ULONGLONG *id )
+++{
+++    TRACE( "%p, %p\n", addr, id );
+++    if (!addr || !id) return WSAEINVAL;
+++    *id = 0xfa00000000000000ull | addr->ina.s_addr;
+++    return 0;
+++}
+++
+++INT WINAPI XNetConnect( IN_ADDR ina )
+++{
+++    TRACE( "%#lx\n", ina.s_addr );
+++    return 0;
+++}
+++
+++INT WINAPI XNetGetConnectStatus( IN_ADDR ina )
+++{
+++    TRACE( "%#lx\n", ina.s_addr );
+++    return XNET_CONNECT_STATUS_CONNECTED;
+++}
+++
+++INT WINAPI XNetDnsLookup( const char *host, HANDLE event, XNDNS **result )
+++{
+++    XNDNS *dns;
+++
+++    FIXME_ONCE( "%s, %p, %p: no names offline\n", debugstr_a(host), event, result );
+++    if (!result) return WSAEINVAL;
+++    if (!(dns = calloc( 1, sizeof(*dns) ))) return WSAENOBUFS;
+++    dns->iStatus = WSAHOST_NOT_FOUND;
+++    *result = dns;
+++    if (event) SetEvent( event );
+++    return 0;
+++}
+++
+++INT WINAPI XNetDnsRelease( XNDNS *dns )
+++{
+++    TRACE( "%p\n", dns );
+++    free( dns );
+++    return 0;
+++}
+++
+++INT WINAPI XNetQosListen( const XNKID *id, const BYTE *data, UINT size, DWORD bits_per_sec, DWORD flags )
+++{
+++    TRACE( "%p, %p, %u, %lu, %#lx\n", id, data, size, bits_per_sec, flags );
+++    return 0;
+++}
+++
+++/* Every probe completes and reaches nobody. */
+++static INT qos_result( UINT count, HANDLE event, XNQOS **result )
+++{
+++    XNQOS *qos;
+++    UINT i;
+++
+++    if (!result) return WSAEINVAL;
+++    if (!(qos = calloc( 1, offsetof( XNQOS, axnqosinfo[max( count, 1 )] ) ))) return WSAENOBUFS;
+++    qos->cxnqos = count;
+++    for (i = 0; i < count; i++) qos->axnqosinfo[i].bFlags = XNET_XNQOSINFO_COMPLETE;
+++    *result = qos;
+++    if (event) SetEvent( event );
+++    return 0;
+++}
+++
+++INT WINAPI XNetQosLookup( UINT count_xna, const XNADDR **xna, const XNKID **id, const XNKEY **key,
+++                          UINT count_ina, const IN_ADDR *ina, const DWORD *service, UINT probes,
+++                          DWORD bits_per_sec, DWORD flags, HANDLE event, XNQOS **result )
+++{
+++    TRACE( "%u, %p, %p, %p, %u, %p, %p, %u, %lu, %#lx, %p, %p\n", count_xna, xna, id, key, count_ina,
+++           ina, service, probes, bits_per_sec, flags, event, result );
+++    return qos_result( count_xna + count_ina, event, result );
+++}
+++
+++INT WINAPI XNetQosServiceLookup( DWORD flags, HANDLE event, XNQOS **result )
+++{
+++    TRACE( "%#lx, %p, %p\n", flags, event, result );
+++    return qos_result( 0, event, result );
+++}
+++
+++INT WINAPI XNetQosRelease( XNQOS *qos )
+++{
+++    TRACE( "%p\n", qos );
+++    free( qos );
+++    return 0;
+++}
+++
+++INT WINAPI XNetQosGetListenStats( const XNKID *id, void *stats )
+++{
+++    FIXME_ONCE( "%p, %p\n", id, stats );
+++    return WSAEINVAL;
+++}
+++
+++DWORD WINAPI XNetGetTitleXnAddr( XNADDR *addr )
+++{
+++    TRACE( "%p\n", addr );
+++    if (addr) local_xnaddr( addr );
+++    return XNET_GET_XNADDR_ETHERNET | XNET_GET_XNADDR_STATIC;
+++}
+++
+++DWORD WINAPI XNetGetDebugXnAddr( XNADDR *addr )
+++{
+++    return XNetGetTitleXnAddr( addr );
+++}
+++
+++DWORD WINAPI XNetGetEthernetLinkStatus(void)
+++{
+++    TRACE( "\n" );
+++    return XNET_ETHERNET_LINK_ACTIVE | XNET_ETHERNET_LINK_100MBPS | XNET_ETHERNET_LINK_FULL_DUPLEX;
+++}
+++
+++DWORD WINAPI XNetGetBroadcastVersionStatus( BOOL reset )
+++{
+++    TRACE( "%d\n", reset );
+++    return 0;
+++}
+++
+++INT WINAPI XNetGetOpt( DWORD option, BYTE *value, DWORD *size )
+++{
+++    FIXME_ONCE( "%#lx, %p, %p\n", option, value, size );
+++    return WSAEINVAL;
+++}
+++
+++INT WINAPI XNetSetOpt( DWORD option, const BYTE *value, DWORD size )
+++{
+++    TRACE( "%#lx, %p, %lu\n", option, value, size );
+++    return 0;
+++}
+++
+++INT WINAPI XNetGetXnAddrPlatform( const XNADDR *addr, DWORD *platform )
+++{
+++    TRACE( "%p, %p\n", addr, platform );
+++    if (!platform) return WSAEINVAL;
+++    *platform = XNET_XNADDR_PLATFORM_WINPC;
+++    return 0;
+++}
+++
+++INT WINAPI XNetGetSystemLinkPort( WORD *port )
+++{
+++    TRACE( "%p\n", port );
+++    if (!port) return WSAEINVAL;
+++    *port = htons( SYSTEM_LINK_PORT );
+++    return 0;
+++}
+++
+++INT WINAPI XNetSetSystemLinkPort( WORD port )
+++{
+++    TRACE( "%u\n", ntohs( port ) );
+++    return 0;
+++}
+++
+++DWORD WINAPI XNetGetCurrentAdapter( char *name, ULONG *size )
+++{
+++    TRACE( "%p, %p\n", name, size );
+++    if (!size) return ERROR_INVALID_PARAMETER;
+++    if (!name || !*size)
+++    {
+++        *size = 1;
+++        return ERROR_INSUFFICIENT_BUFFER;
+++    }
+++    name[0] = 0;
+++    *size = 1;
+++    return ERROR_SUCCESS;
+++}
+++
+++/* Guide actions and notifications. */
+++
+++void WINAPI XCustomSetAction( DWORD index, const WCHAR *text, DWORD flags )
+++{
+++    TRACE( "%lu, %s, %#lx\n", index, debugstr_w(text), flags );
+++}
+++
+++BOOL WINAPI XCustomGetLastActionPress( DWORD *user, DWORD *action, XUID *xuid )
+++{
+++    TRACE( "%p, %p, %p\n", user, action, xuid );
+++    return FALSE;
+++}
+++
+++DWORD WINAPI XCustomSetDynamicActions( DWORD user, XUID xuid, const void *actions, WORD count )
+++{
+++    TRACE( "%lu, %s, %p, %u\n", user, wine_dbgstr_longlong(xuid), actions, count );
+++    return ERROR_SUCCESS;
+++}
+++
+++BOOL WINAPI XCustomGetLastActionPressEx( DWORD *user, DWORD *action, XUID *xuid, BYTE *payload, WORD *size )
+++{
+++    TRACE( "%p, %p, %p, %p, %p\n", user, action, xuid, payload, size );
+++    return FALSE;
+++}
+++
+++void WINAPI XCustomRegisterDynamicActions(void)
+++{
+++    TRACE( "\n" );
+++}
+++
+++void WINAPI XCustomUnregisterDynamicActions(void)
+++{
+++    TRACE( "\n" );
+++}
+++
+++BOOL WINAPI XCustomGetCurrentGamercard( DWORD *user, XUID *xuid )
+++{
+++    TRACE( "%p, %p\n", user, xuid );
+++    return FALSE;
+++}
+++
+++/* A listener is an event that is never set: nothing happens that Live would tell. */
+++HANDLE WINAPI XNotifyCreateListener( ULONGLONG areas )
+++{
+++    TRACE( "%s\n", wine_dbgstr_longlong(areas) );
+++    return new_handle();
+++}
+++
+++BOOL WINAPI XNotifyGetNext( HANDLE listener, DWORD filter, DWORD *id, ULONG_PTR *param )
+++{
+++    TRACE( "%p, %#lx, %p, %p\n", listener, filter, id, param );
+++    return FALSE;
+++}
+++
+++void WINAPI XNotifyPositionUI( DWORD position )
+++{
+++    TRACE( "%#lx\n", position );
+++}
+++
+++DWORD WINAPI XNotifyDelayUI( ULONG delay )
+++{
+++    TRACE( "%lu\n", delay );
+++    return ERROR_SUCCESS;
+++}
+++
+++DWORD WINAPI XGetOverlappedExtendedError( XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p\n", overlapped );
+++    if (!overlapped) return GetLastError();
+++    if (overlapped->InternalLow == ERROR_IO_PENDING) return ERROR_IO_INCOMPLETE;
+++    return overlapped->dwExtendedError;
+++}
+++
+++DWORD WINAPI XGetOverlappedResult( XOVERLAPPED *overlapped, DWORD *result, BOOL wait )
+++{
+++    TRACE( "%p, %p, %d\n", overlapped, result, wait );
+++    if (!overlapped) return ERROR_INVALID_PARAMETER;
+++    if (overlapped->InternalLow == ERROR_IO_PENDING)
+++    {
+++        if (!wait || !overlapped->hEvent) return ERROR_IO_INCOMPLETE;
+++        WaitForSingleObject( overlapped->hEvent, INFINITE );
+++    }
+++    if (result) *result = overlapped->InternalHigh;
+++    return overlapped->InternalLow;
+++}
+++
+++DWORD WINAPI XCancelOverlapped( XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p\n", overlapped );
+++    return ERROR_SUCCESS;
+++}
+++
+++BOOL WINAPI XCloseHandle( HANDLE handle )
+++{
+++    TRACE( "%p\n", handle );
+++    return CloseHandle( handle );
+++}
+++
+++DWORD WINAPI XEnumerate( HANDLE handle, void *buffer, DWORD size, DWORD *count, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p, %p, %lu, %p, %p\n", handle, buffer, size, count, overlapped );
+++    if (count) *count = 0;
+++    return complete( overlapped, ERROR_NO_MORE_FILES, 0 );
+++}
+++
+++DWORD WINAPI XEnumerateBack( HANDLE handle, void *buffer, DWORD size, DWORD *count, XOVERLAPPED *overlapped )
+++{
+++    return XEnumerate( handle, buffer, size, count, overlapped );
+++}
+++
+++/* The runtime. */
+++
+++HRESULT WINAPI XLiveInitialize( void *info )
+++{
+++    TRACE( "%p\n", info );
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLiveInitializeEx( void *info, DWORD version )
+++{
+++    TRACE( "%p, %#lx\n", info, version );
+++    return S_OK;
+++}
+++
+++void WINAPI XLiveUninitialize(void)
+++{
+++    TRACE( "\n" );
+++}
+++
+++/* The guide never takes a message: the game gets them all. */
+++HRESULT WINAPI XLiveInput( XLIVE_INPUT_INFO *info )
+++{
+++    if (info)
+++    {
+++        info->fHandled = FALSE;
+++        info->lRet = 0;
+++    }
+++    return S_FALSE;
+++}
+++
+++BOOL WINAPI XLivePreTranslateMessage( const MSG *msg )
+++{
+++    return FALSE;
+++}
+++
+++HRESULT WINAPI XLiveRender(void)
+++{
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLiveOnCreateDevice( void *device, void *params )
+++{
+++    TRACE( "%p, %p\n", device, params );
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLiveOnDestroyDevice(void)
+++{
+++    TRACE( "\n" );
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLiveOnResetDevice( void *params )
+++{
+++    TRACE( "%p\n", params );
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XHVCreateEngine( void *params, HANDLE *worker, void **engine )
+++{
+++    FIXME_ONCE( "%p, %p, %p: no voice chat\n", params, worker, engine );
+++    if (worker) *worker = NULL;
+++    if (engine) *engine = NULL;
+++    return E_FAIL;
+++}
+++
+++HRESULT WINAPI XLiveRegisterDataSection( DWORD a, DWORD b, DWORD c )
+++{
+++    TRACE( "%#lx, %#lx, %#lx\n", a, b, c );
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLiveUnregisterDataSection( DWORD a )
+++{
+++    TRACE( "%#lx\n", a );
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLiveUpdateHashes( DWORD a, DWORD b )
+++{
+++    TRACE( "%#lx, %#lx\n", a, b );
+++    return S_OK;
+++}
+++
+++/* No update is ever needed. */
+++HRESULT WINAPI XLiveGetUpdateInformation( void *info )
+++{
+++    TRACE( "%p\n", info );
+++    return S_FALSE;
+++}
+++
+++HRESULT WINAPI XLiveUpdateSystem( const WCHAR *command_line )
+++{
+++    TRACE( "%s\n", debugstr_w(command_line) );
+++    return S_FALSE;
+++}
+++
+++HRESULT WINAPI XLiveGetLiveIdError( HRESULT *auth_state, HRESULT *request, WCHAR *url, DWORD *url_size )
+++{
+++    TRACE( "%p, %p, %p, %p\n", auth_state, request, url, url_size );
+++    if (auth_state) *auth_state = S_OK;
+++    if (request) *request = S_OK;
+++    if (url && url_size && *url_size) url[0] = 0;
+++    if (url_size) *url_size = 0;
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLiveSetSponsorToken( const WCHAR *token, DWORD title )
+++{
+++    TRACE( "%s, %#lx\n", debugstr_w(token), title );
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLiveLoadLibraryEx( const WCHAR *name, HMODULE *module, DWORD flags )
+++{
+++    HMODULE ret;
+++
+++    TRACE( "%s, %p, %#lx\n", debugstr_w(name), module, flags );
+++    if (!module) return E_POINTER;
+++    if (!(ret = LoadLibraryExW( name, NULL, flags ))) return HRESULT_FROM_WIN32( GetLastError() );
+++    *module = ret;
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLiveFreeLibrary( HMODULE module )
+++{
+++    TRACE( "%p\n", module );
+++    if (!FreeLibrary( module )) return HRESULT_FROM_WIN32( GetLastError() );
+++    return S_OK;
+++}
+++
+++/* Only a debug runtime has levels. */
+++HRESULT WINAPI XLiveSetDebugLevel( DWORD level, DWORD *old_level )
+++{
+++    TRACE( "%lu, %p\n", level, old_level );
+++    if (old_level) *old_level = 0;
+++    return E_FAIL;
+++}
+++
+++HRESULT WINAPI XLiveVerifyDataFile( const WCHAR *path )
+++{
+++    TRACE( "%s\n", debugstr_w(path) );
+++    return S_OK;
+++}
+++
+++/* Protected buffers: plain memory. */
+++
+++struct pbuffer
+++{
+++    DWORD size;
+++    BYTE data[1];
+++};
+++
+++HRESULT WINAPI XLivePBufferAllocate( DWORD size, struct pbuffer **buffer )
+++{
+++    struct pbuffer *ret;
+++
+++    TRACE( "%lu, %p\n", size, buffer );
+++    if (!buffer) return E_POINTER;
+++    if (!(ret = calloc( 1, offsetof( struct pbuffer, data[size] ) ))) return E_OUTOFMEMORY;
+++    ret->size = size;
+++    *buffer = ret;
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLivePBufferFree( struct pbuffer *buffer )
+++{
+++    TRACE( "%p\n", buffer );
+++    free( buffer );
+++    return S_OK;
+++}
+++
+++static BOOL pbuffer_range( const struct pbuffer *buffer, DWORD offset, DWORD size )
+++{
+++    return buffer && offset <= buffer->size && size <= buffer->size - offset;
+++}
+++
+++HRESULT WINAPI XLivePBufferGetByteArray( struct pbuffer *buffer, DWORD offset, BYTE *value, DWORD size )
+++{
+++    TRACE( "%p, %lu, %p, %lu\n", buffer, offset, value, size );
+++    if (!value || !pbuffer_range( buffer, offset, size )) return E_INVALIDARG;
+++    memcpy( value, buffer->data + offset, size );
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLivePBufferSetByteArray( struct pbuffer *buffer, DWORD offset, const BYTE *value, DWORD size )
+++{
+++    TRACE( "%p, %lu, %p, %lu\n", buffer, offset, value, size );
+++    if (!value || !pbuffer_range( buffer, offset, size )) return E_INVALIDARG;
+++    memcpy( buffer->data + offset, value, size );
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLivePBufferGetByte( struct pbuffer *buffer, DWORD offset, BYTE *value )
+++{
+++    return XLivePBufferGetByteArray( buffer, offset, value, sizeof(*value) );
+++}
+++
+++HRESULT WINAPI XLivePBufferSetByte( struct pbuffer *buffer, DWORD offset, BYTE value )
+++{
+++    return XLivePBufferSetByteArray( buffer, offset, &value, sizeof(value) );
+++}
+++
+++HRESULT WINAPI XLivePBufferGetDWORD( struct pbuffer *buffer, DWORD offset, DWORD *value )
+++{
+++    return XLivePBufferGetByteArray( buffer, offset, (BYTE *)value, sizeof(*value) );
+++}
+++
+++HRESULT WINAPI XLivePBufferSetDWORD( struct pbuffer *buffer, DWORD offset, DWORD value )
+++{
+++    return XLivePBufferSetByteArray( buffer, offset, (const BYTE *)&value, sizeof(value) );
+++}
+++
+++/* Protected data: passed through as it is. */
+++
+++struct protected_data
+++{
+++    DWORD magic;
+++    DWORD flags;
+++};
+++
+++#define PROTECTED_DATA_MAGIC 0x44505850 /* PXPD */
+++
+++static HANDLE new_protected_data( DWORD flags )
+++{
+++    struct protected_data *data;
+++
+++    if (!(data = malloc( sizeof(*data) ))) return NULL;
+++    data->magic = PROTECTED_DATA_MAGIC;
+++    data->flags = flags;
+++    return data;
+++}
+++
+++static struct protected_data *get_protected_data( HANDLE handle )
+++{
+++    struct protected_data *data = handle;
+++
+++    if (!data || data->magic != PROTECTED_DATA_MAGIC) return NULL;
+++    return data;
+++}
+++
+++HRESULT WINAPI XLiveCreateProtectedDataContext( XLIVE_PROTECTED_DATA_INFORMATION *info, HANDLE *handle )
+++{
+++    DWORD flags = info && info->cbSize >= sizeof(*info) ? info->dwFlags : 0;
+++
+++    TRACE( "%p, %p\n", info, handle );
+++    if (!handle) return E_POINTER;
+++    if (!(*handle = new_protected_data( flags ))) return E_OUTOFMEMORY;
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLiveQueryProtectedDataInformation( HANDLE handle, XLIVE_PROTECTED_DATA_INFORMATION *info )
+++{
+++    struct protected_data *data = get_protected_data( handle );
+++
+++    TRACE( "%p, %p\n", handle, info );
+++    if (!data || !info || info->cbSize < sizeof(*info)) return E_INVALIDARG;
+++    info->dwFlags = data->flags;
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLiveCloseProtectedDataContext( HANDLE handle )
+++{
+++    struct protected_data *data = get_protected_data( handle );
+++
+++    TRACE( "%p\n", handle );
+++    if (!data) return E_INVALIDARG;
+++    data->magic = 0;
+++    free( data );
+++    return S_OK;
+++}
+++
+++static HRESULT pass_through( const BYTE *in, DWORD in_size, BYTE *out, DWORD *out_size )
+++{
+++    if (!out_size || (in_size && !in)) return E_INVALIDARG;
+++    if (!out || *out_size < in_size)
+++    {
+++        *out_size = in_size;
+++        return HRESULT_FROM_WIN32( ERROR_INSUFFICIENT_BUFFER );
+++    }
+++    if (in_size) memmove( out, in, in_size );
+++    *out_size = in_size;
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLiveProtectData( const BYTE *in, DWORD in_size, BYTE *out, DWORD *out_size, HANDLE handle )
+++{
+++    TRACE( "%p, %lu, %p, %p, %p\n", in, in_size, out, out_size, handle );
+++    return pass_through( in, in_size, out, out_size );
+++}
+++
+++HRESULT WINAPI XLiveUnprotectData( const BYTE *in, DWORD in_size, BYTE *out, DWORD *out_size, HANDLE *handle )
+++{
+++    HRESULT hr;
+++
+++    TRACE( "%p, %lu, %p, %p, %p\n", in, in_size, out, out_size, handle );
+++    if (FAILED(hr = pass_through( in, in_size, out, out_size ))) return hr;
+++    if (handle && !get_protected_data( *handle ) && !(*handle = new_protected_data( 0 ))) return E_OUTOFMEMORY;
+++    return S_OK;
+++}
+++
+++/* Guide user interface: nothing is shown. */
+++
+++DWORD WINAPI XShowMessagesUI( DWORD user )
+++{
+++    TRACE( "%lu\n", user );
+++    return ERROR_SUCCESS;
+++}
+++
+++DWORD WINAPI XShowGameInviteUI( DWORD user, const XUID *recipients, DWORD count, const WCHAR *text )
+++{
+++    TRACE( "%lu, %p, %lu, %s\n", user, recipients, count, debugstr_w(text) );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XShowMessageComposeUI( DWORD user, const XUID *recipients, DWORD count, const WCHAR *text )
+++{
+++    TRACE( "%lu, %p, %lu, %s\n", user, recipients, count, debugstr_w(text) );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XShowFriendRequestUI( DWORD user, XUID xuid )
+++{
+++    TRACE( "%lu, %s\n", user, wine_dbgstr_longlong(xuid) );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XShowCustomPlayerListUI( DWORD user, DWORD flags, const WCHAR *title, const WCHAR *description,
+++                                      const BYTE *image, DWORD image_size, const void *players, DWORD count,
+++                                      const void *x_button, const void *y_button, void *result,
+++                                      XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %#lx, %s, ...\n", user, flags, debugstr_w(title) );
+++    return complete( overlapped, ERROR_CANCELLED, 0 );
+++}
+++
+++DWORD WINAPI XShowPlayerReviewUI( DWORD user, XUID xuid )
+++{
+++    TRACE( "%lu, %s\n", user, wine_dbgstr_longlong(xuid) );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XShowGuideUI( DWORD user )
+++{
+++    TRACE( "%lu\n", user );
+++    return ERROR_SUCCESS;
+++}
+++
+++DWORD WINAPI XShowKeyboardUI( DWORD user, DWORD flags, const WCHAR *default_text, const WCHAR *title,
+++                              const WCHAR *description, WCHAR *result, DWORD result_size, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %#lx, %s, %s, %s, %p, %lu, %p\n", user, flags, debugstr_w(default_text), debugstr_w(title),
+++           debugstr_w(description), result, result_size, overlapped );
+++    if (result && result_size) lstrcpynW( result, default_text ? default_text : L"", result_size );
+++    return complete( overlapped, ERROR_CANCELLED, 0 );
+++}
+++
+++DWORD WINAPI XShowArcadeUI( DWORD user )
+++{
+++    TRACE( "%lu\n", user );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XShowAchievementsUI( DWORD user )
+++{
+++    TRACE( "%lu\n", user );
+++    return ERROR_SUCCESS;
+++}
+++
+++DWORD WINAPI XShowGamerCardUI( DWORD user, XUID xuid )
+++{
+++    TRACE( "%lu, %s\n", user, wine_dbgstr_longlong(xuid) );
+++    return ERROR_SUCCESS;
+++}
+++
+++DWORD WINAPI XShowSigninUI( DWORD panes, DWORD flags )
+++{
+++    TRACE( "%lu, %#lx\n", panes, flags );
+++    return ERROR_SUCCESS;
+++}
+++
+++DWORD WINAPI XShowPlayersUI( DWORD user )
+++{
+++    TRACE( "%lu\n", user );
+++    return ERROR_SUCCESS;
+++}
+++
+++DWORD WINAPI XShowFriendsUI( DWORD user )
+++{
+++    TRACE( "%lu\n", user );
+++    return ERROR_SUCCESS;
+++}
+++
+++DWORD WINAPI XShowGuideKeyRemapUI( DWORD user )
+++{
+++    TRACE( "%lu\n", user );
+++    return ERROR_SUCCESS;
+++}
+++
+++/* The first button, as if it were pressed. */
+++DWORD WINAPI XShowMessageBoxUI( DWORD user, const WCHAR *title, const WCHAR *text, DWORD count,
+++                                const WCHAR **buttons, DWORD focus, DWORD flags, DWORD *result,
+++                                XOVERLAPPED *overlapped )
+++{
+++    FIXME_ONCE( "%lu, %s, %s, %lu, %p, %lu, %#lx, %p, %p\n", user, debugstr_w(title), debugstr_w(text),
+++                count, buttons, focus, flags, result, overlapped );
+++    if (result) *result = focus;
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XShowMarketplaceUI( DWORD user, DWORD entry, ULONGLONG offer, DWORD categories )
+++{
+++    TRACE( "%lu, %#lx, %s, %#lx\n", user, entry, wine_dbgstr_longlong(offer), categories );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XShowMarketplaceDownloadItemsUI( DWORD user, DWORD entry, const ULONGLONG *offers, DWORD count,
+++                                              HRESULT *result, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %#lx, %p, %lu, %p, %p\n", user, entry, offers, count, result, overlapped );
+++    if (result) *result = HRESULT_FROM_WIN32( ERROR_NOT_LOGGED_ON );
+++    return complete( overlapped, ERROR_NOT_LOGGED_ON, 0 );
+++}
+++
+++/* Server locator: no servers. */
+++
+++HRESULT WINAPI XLocatorServerAdvertise( DWORD user, DWORD type, XNKID id, XNKEY key, DWORD max_public,
+++                                        DWORD max_private, DWORD filled_public, DWORD filled_private, DWORD count,
+++                                        const void *properties, XOVERLAPPED *overlapped )
+++{
+++    FIXME_ONCE( "%lu, %#lx, ...: no servers offline\n", user, type );
+++    return E_FAIL;
+++}
+++
+++HRESULT WINAPI XLocatorServerUnAdvertise( DWORD user, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %p\n", user, overlapped );
+++    return E_FAIL;
+++}
+++
+++HRESULT WINAPI XLocatorGetServiceProperty( DWORD user, DWORD count, void *properties, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %lu, %p, %p\n", user, count, properties, overlapped );
+++    return E_FAIL;
+++}
+++
+++DWORD WINAPI XLocatorCreateServerEnumerator( DWORD user, DWORD items, DWORD count_ids, const DWORD *ids,
+++                                             DWORD count_filters, const void *filters, DWORD count_sorters,
+++                                             const void *sorters, DWORD *buffer_size, HANDLE *handle )
+++{
+++    TRACE( "%lu, %lu, ...\n", user, items );
+++    return empty_enumerator( items, 0x100, buffer_size, handle );
+++}
+++
+++DWORD WINAPI XLocatorCreateServerEnumeratorByIDs( DWORD user, DWORD items, DWORD count_ids, const DWORD *ids,
+++                                                  DWORD count, const ULONGLONG *servers, DWORD *buffer_size,
+++                                                  HANDLE *handle )
+++{
+++    TRACE( "%lu, %lu, ...\n", user, items );
+++    return empty_enumerator( items, 0x100, buffer_size, handle );
+++}
+++
+++HRESULT WINAPI XLocatorServiceInitialize( void *info, HANDLE *handle )
+++{
+++    TRACE( "%p, %p\n", info, handle );
+++    if (!handle) return E_POINTER;
+++    if (!(*handle = new_handle())) return HRESULT_FROM_WIN32( GetLastError() );
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLocatorServiceUnInitialize( HANDLE handle )
+++{
+++    TRACE( "%p\n", handle );
+++    CloseHandle( handle );
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLocatorCreateKey( XNKID *id, XNKEY *key )
+++{
+++    TRACE( "%p, %p\n", id, key );
+++    XNetCreateKey( id, key );
+++    return S_OK;
+++}
+++
+++/* Sign-in: one user, signed in locally. */
+++
+++HRESULT WINAPI XLiveManageCredentials( const WCHAR *name, const WCHAR *password, DWORD flags,
+++                                       XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%s, %p, %#lx, %p\n", debugstr_w(name), password, flags, overlapped );
+++    return E_FAIL;
+++}
+++
+++HRESULT WINAPI XLiveSignin( const WCHAR *name, const WCHAR *password, DWORD flags, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%s, %p, %#lx, %p\n", debugstr_w(name), password, flags, overlapped );
+++    return E_FAIL;
+++}
+++
+++HRESULT WINAPI XLiveSignout( XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p\n", overlapped );
+++    complete( overlapped, ERROR_SUCCESS, 0 );
+++    return S_OK;
+++}
+++
+++XUSER_SIGNIN_STATE WINAPI XUserGetSigninState( DWORD user )
+++{
+++    TRACE( "%lu\n", user );
+++    return user_exists( user ) ? eXUserSigninState_SignedInLocally : eXUserSigninState_NotSignedIn;
+++}
+++
+++DWORD WINAPI XUserGetXUID( DWORD user, XUID *xuid )
+++{
+++    TRACE( "%lu, %p\n", user, xuid );
+++    if (!xuid) return ERROR_INVALID_PARAMETER;
+++    if (!user_exists( user )) return ERROR_NO_SUCH_USER;
+++    *xuid = OFFLINE_XUID;
+++    return ERROR_SUCCESS;
+++}
+++
+++DWORD WINAPI XUserGetName( DWORD user, char *name, DWORD size )
+++{
+++    TRACE( "%lu, %p, %lu\n", user, name, size );
+++    if (!name || !size) return ERROR_INVALID_PARAMETER;
+++    if (!user_exists( user )) return ERROR_NO_SUCH_USER;
+++    lstrcpynA( name, user_name, size );
+++    return ERROR_SUCCESS;
+++}
+++
+++DWORD WINAPI XUserGetSigninInfo( DWORD user, DWORD flags, XUSER_SIGNIN_INFO *info )
+++{
+++    TRACE( "%lu, %#lx, %p\n", user, flags, info );
+++    if (!info) return ERROR_INVALID_PARAMETER;
+++    memset( info, 0, sizeof(*info) );
+++    if (!user_exists( user )) return ERROR_NO_SUCH_USER;
+++    info->xuid = OFFLINE_XUID;
+++    info->UserSigninState = eXUserSigninState_SignedInLocally;
+++    info->dwSponsorUserIndex = ~0u;
+++    lstrcpynA( info->szUserName, user_name, sizeof(info->szUserName) );
+++    return ERROR_SUCCESS;
+++}
+++
+++/* A local profile has none of Live's privileges (multiplayer, communications). */
+++DWORD WINAPI XUserCheckPrivilege( DWORD user, DWORD privilege, BOOL *result )
+++{
+++    TRACE( "%lu, %lu, %p\n", user, privilege, result );
+++    if (!result) return ERROR_INVALID_PARAMETER;
+++    *result = FALSE;
+++    if (!user_exists( user )) return ERROR_NO_SUCH_USER;
+++    return ERROR_SUCCESS;
+++}
+++
+++DWORD WINAPI XUserAreUsersFriends( DWORD user, const XUID *xuids, DWORD count, BOOL *result,
+++                                   XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %p, %lu, %p, %p\n", user, xuids, count, result, overlapped );
+++    if (result) *result = FALSE;
+++    return complete( overlapped, ERROR_NOT_LOGGED_ON, 0 );
+++}
+++
+++DWORD WINAPI XUserMuteListQuery( DWORD user, XUID xuid, BOOL *muted )
+++{
+++    TRACE( "%lu, %s, %p\n", user, wine_dbgstr_longlong(xuid), muted );
+++    if (!muted) return ERROR_INVALID_PARAMETER;
+++    *muted = FALSE;
+++    return ERROR_SUCCESS;
+++}
+++
+++DWORD WINAPI XUserReadGamerPictureByKey( const XUSER_DATA *key, BOOL small_picture, BYTE *buffer, DWORD pitch,
+++                                         DWORD height, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p, %d, %p, %lu, %lu, %p\n", key, small_picture, buffer, pitch, height, overlapped );
+++    return complete( overlapped, ERROR_NOT_FOUND, 0 );
+++}
+++
+++DWORD WINAPI XUserReadGamerPicture( DWORD user, BOOL small_picture, BYTE *buffer, DWORD pitch, DWORD height,
+++                                    XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %d, %p, %lu, %lu, %p\n", user, small_picture, buffer, pitch, height, overlapped );
+++    return complete( overlapped, ERROR_NOT_FOUND, 0 );
+++}
+++
+++DWORD WINAPI XUserReadAchievementPicture( DWORD user, DWORD title, DWORD picture, BYTE *buffer, DWORD pitch,
+++                                          DWORD height, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %#lx, %lu, %p, %lu, %lu, %p\n", user, title, picture, buffer, pitch, height, overlapped );
+++    return complete( overlapped, ERROR_NOT_FOUND, 0 );
+++}
+++
+++DWORD WINAPI XUserAwardGamerPicture( DWORD user, DWORD picture, DWORD reserved, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %lu, %#lx, %p\n", user, picture, reserved, overlapped );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++/* Achievements are taken and forgotten. */
+++DWORD WINAPI XUserWriteAchievements( DWORD count, const void *achievements, XOVERLAPPED *overlapped )
+++{
+++    FIXME_ONCE( "%lu, %p, %p: not kept\n", count, achievements, overlapped );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XUserCreateAchievementEnumerator( DWORD title, DWORD user, XUID xuid, DWORD flags, DWORD start,
+++                                               DWORD items, DWORD *buffer_size, HANDLE *handle )
+++{
+++    TRACE( "%#lx, %lu, %s, %#lx, %lu, %lu, %p, %p\n", title, user, wine_dbgstr_longlong(xuid), flags, start,
+++           items, buffer_size, handle );
+++    return empty_enumerator( items, 0x200, buffer_size, handle );
+++}
+++
+++void WINAPI XUserSetProperty( DWORD user, DWORD id, DWORD size, const void *value )
+++{
+++    TRACE( "%lu, %#lx, %lu, %p\n", user, id, size, value );
+++}
+++
+++void WINAPI XUserSetContext( DWORD user, DWORD id, DWORD value )
+++{
+++    TRACE( "%lu, %#lx, %lu\n", user, id, value );
+++}
+++
+++DWORD WINAPI XUserSetContextEx( DWORD user, DWORD id, DWORD value, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %#lx, %lu, %p\n", user, id, value, overlapped );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XUserSetPropertyEx( DWORD user, DWORD id, DWORD size, const void *value, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %#lx, %lu, %p, %p\n", user, id, size, value, overlapped );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XUserGetProperty( DWORD user, DWORD *size, void *property, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %p, %p, %p\n", user, size, property, overlapped );
+++    return complete( overlapped, ERROR_NOT_FOUND, 0 );
+++}
+++
+++DWORD WINAPI XUserGetContext( DWORD user, void *context, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %p, %p\n", user, context, overlapped );
+++    return complete( overlapped, ERROR_NOT_FOUND, 0 );
+++}
+++
+++FLOAT WINAPI XUserGetReputationStars( FLOAT rating )
+++{
+++    TRACE( "%f\n", rating );
+++    return 0.0f;
+++}
+++
+++/* Statistics and leaderboards are Live's. */
+++
+++DWORD WINAPI XUserReadStats( DWORD title, DWORD count_xuids, const XUID *xuids, DWORD count_specs,
+++                             const void *specs, DWORD *size, void *results, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%#lx, %lu, %p, %lu, %p, %p, %p, %p\n", title, count_xuids, xuids, count_specs, specs, size,
+++           results, overlapped );
+++    return complete( overlapped, ERROR_NOT_LOGGED_ON, 0 );
+++}
+++
+++DWORD WINAPI XUserCreateStatsEnumeratorByRank( DWORD title, DWORD start, DWORD rows, DWORD count_specs,
+++                                               const void *specs, DWORD *buffer_size, HANDLE *handle )
+++{
+++    TRACE( "%#lx, %lu, %lu, ...\n", title, start, rows );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XUserCreateStatsEnumeratorByRating( DWORD title, LONGLONG rating, DWORD rows, DWORD count_specs,
+++                                                 const void *specs, DWORD *buffer_size, HANDLE *handle )
+++{
+++    TRACE( "%#lx, %s, %lu, ...\n", title, wine_dbgstr_longlong(rating), rows );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XUserCreateStatsEnumeratorByXuid( DWORD title, XUID xuid, DWORD rows, DWORD count_specs,
+++                                               const void *specs, DWORD *buffer_size, HANDLE *handle )
+++{
+++    TRACE( "%#lx, %s, %lu, ...\n", title, wine_dbgstr_longlong(xuid), rows );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XUserResetStatsView( DWORD user, DWORD view, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %lu, %p\n", user, view, overlapped );
+++    return complete( overlapped, ERROR_NOT_LOGGED_ON, 0 );
+++}
+++
+++DWORD WINAPI XUserResetStatsViewAllUsers( DWORD view, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %p\n", view, overlapped );
+++    return complete( overlapped, ERROR_NOT_LOGGED_ON, 0 );
+++}
+++
+++/* Profile settings: kept in the registry, by program. */
+++
+++static HKEY open_settings( BOOL create )
+++{
+++    WCHAR path[MAX_PATH + 32], module[MAX_PATH], *name;
+++    HKEY key;
+++    LSTATUS status;
+++
+++    if (!GetModuleFileNameW( NULL, module, ARRAY_SIZE(module) )) return NULL;
+++    if ((name = wcsrchr( module, '\\' ))) name++;
+++    else name = module;
+++    swprintf( path, ARRAY_SIZE(path), L"Software\\Wine\\xlive\\%s", name );
+++    if (create) status = RegCreateKeyExW( HKEY_CURRENT_USER, path, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL );
+++    else status = RegOpenKeyExW( HKEY_CURRENT_USER, path, 0, KEY_READ, &key );
+++    return status ? NULL : key;
+++}
+++
+++static BOOL setting_has_data( DWORD id )
+++{
+++    return SETTING_TYPE( id ) == XUSER_DATA_TYPE_UNICODE || SETTING_TYPE( id ) == XUSER_DATA_TYPE_BINARY;
+++}
+++
+++/* The buffer a reading needs: the settings, each followed by room for its data. */
+++static DWORD settings_size( DWORD count, const DWORD *ids )
+++{
+++    DWORD i, size = sizeof(XUSER_READ_PROFILE_SETTING_RESULT);
+++
+++    for (i = 0; i < count; i++)
+++    {
+++        size += sizeof(XUSER_PROFILE_SETTING);
+++        if (setting_has_data( ids[i] )) size += (SETTING_SIZE( ids[i] ) + 7) & ~7;
+++    }
+++    return size;
+++}
+++
+++static void read_setting( HKEY key, BOOL own, DWORD id, XUSER_PROFILE_SETTING *setting, BYTE **data )
+++{
+++    WCHAR name[16];
+++    DWORD size = SETTING_SIZE( id ), type;
+++    BYTE value[8] = {0};
+++
+++    setting->dwSettingId = id;
+++    setting->source = XSOURCE_NO_VALUE;
+++    setting->data.type = SETTING_TYPE( id );
+++    swprintf( name, ARRAY_SIZE(name), L"%08x", id );
+++
+++    if (setting_has_data( id ))
+++    {
+++        setting->data.binary.pbData = *data;
+++        setting->data.binary.cbData = 0;
+++        memset( *data, 0, size );
+++        if (own && key && !RegQueryValueExW( key, name, NULL, &type, *data, &size ) && type == REG_BINARY)
+++        {
+++            setting->data.binary.cbData = size;
+++            setting->source = XSOURCE_TITLE;
+++        }
+++        *data += (SETTING_SIZE( id ) + 7) & ~7;
+++        return;
+++    }
+++    size = sizeof(value);
+++    if (own && key && !RegQueryValueExW( key, name, NULL, &type, value, &size ) && type == REG_BINARY)
+++    {
+++        memcpy( &setting->data.i64Data, value, sizeof(value) );
+++        setting->source = XSOURCE_TITLE;
+++    }
+++}
+++
+++static DWORD read_settings( DWORD count_xuids, const XUID *xuids, DWORD count, const DWORD *ids, DWORD *size,
+++                            XUSER_READ_PROFILE_SETTING_RESULT *results, XOVERLAPPED *overlapped )
+++{
+++    DWORD i, j, needed;
+++    XUSER_PROFILE_SETTING *setting;
+++    BYTE *data;
+++    HKEY key;
+++
+++    if (!size || (count && !ids)) return ERROR_INVALID_PARAMETER;
+++    needed = sizeof(*results);
+++    for (i = 0; i < count_xuids; i++) needed += settings_size( count, ids ) - sizeof(*results);
+++    if (!results || *size < needed)
+++    {
+++        *size = needed;
+++        return ERROR_INSUFFICIENT_BUFFER;
+++    }
+++
+++    key = open_settings( FALSE );
+++    memset( results, 0, needed );
+++    setting = (XUSER_PROFILE_SETTING *)(results + 1);
+++    data = (BYTE *)(setting + count_xuids * count);
+++    results->dwSettingsLen = count_xuids * count;
+++    results->pSettings = setting;
+++    for (i = 0; i < count_xuids; i++)
+++    {
+++        BOOL own = !xuids || xuids[i] == OFFLINE_XUID;
+++        for (j = 0; j < count; j++, setting++)
+++        {
+++            if (xuids) setting->user.xuid = xuids[i];
+++            else setting->user.dwUserIndex = OFFLINE_USER;
+++            read_setting( key, own, ids[j], setting, &data );
+++        }
+++    }
+++    if (key) RegCloseKey( key );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XUserReadProfileSettings( DWORD title, DWORD user, DWORD count, const DWORD *ids, DWORD *size,
+++                                       XUSER_READ_PROFILE_SETTING_RESULT *results, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%#lx, %lu, %lu, %p, %p, %p, %p\n", title, user, count, ids, size, results, overlapped );
+++    if (!user_exists( user )) return ERROR_NO_SUCH_USER;
+++    return read_settings( 1, NULL, count, ids, size, results, overlapped );
+++}
+++
+++DWORD WINAPI XUserReadProfileSettingsByXuid( DWORD title, DWORD user, DWORD count_xuids, const XUID *xuids,
+++                                             DWORD count, const DWORD *ids, DWORD *size,
+++                                             XUSER_READ_PROFILE_SETTING_RESULT *results, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%#lx, %lu, %lu, %p, %lu, %p, %p, %p, %p\n", title, user, count_xuids, xuids, count, ids, size,
+++           results, overlapped );
+++    if (!xuids && count_xuids) return ERROR_INVALID_PARAMETER;
+++    return read_settings( count_xuids, xuids, count, ids, size, results, overlapped );
+++}
+++
+++DWORD WINAPI XUserWriteProfileSettings( DWORD user, DWORD count, const XUSER_PROFILE_SETTING *settings,
+++                                        XOVERLAPPED *overlapped )
+++{
+++    DWORD i;
+++    HKEY key;
+++
+++    TRACE( "%lu, %lu, %p, %p\n", user, count, settings, overlapped );
+++    if (!user_exists( user )) return ERROR_NO_SUCH_USER;
+++    if (count && !settings) return ERROR_INVALID_PARAMETER;
+++    if (!(key = open_settings( TRUE ))) return complete( overlapped, ERROR_ACCESS_DENIED, 0 );
+++    for (i = 0; i < count; i++)
+++    {
+++        const XUSER_PROFILE_SETTING *setting = &settings[i];
+++        const void *value = &setting->data.i64Data;
+++        DWORD size = sizeof(setting->data.i64Data);
+++        WCHAR name[16];
+++
+++        if (setting->data.type == XUSER_DATA_TYPE_UNICODE || setting->data.type == XUSER_DATA_TYPE_BINARY)
+++        {
+++            value = setting->data.binary.pbData;
+++            size = min( setting->data.binary.cbData, SETTING_SIZE( setting->dwSettingId ) );
+++            if (!value) size = 0;
+++        }
+++        swprintf( name, ARRAY_SIZE(name), L"%08x", setting->dwSettingId );
+++        RegSetValueExW( key, name, 0, REG_BINARY, value, size );
+++    }
+++    RegCloseKey( key );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++/* Sessions: local ones work, finding others finds nothing. */
+++
+++DWORD WINAPI XSessionCreate( DWORD flags, DWORD user, DWORD max_public, DWORD max_private, ULONGLONG *nonce,
+++                             XSESSION_INFO *info, XOVERLAPPED *overlapped, HANDLE *handle )
+++{
+++    TRACE( "%#lx, %lu, %lu, %lu, %p, %p, %p, %p\n", flags, user, max_public, max_private, nonce, info,
+++           overlapped, handle );
+++    if (!handle) return ERROR_INVALID_PARAMETER;
+++    if (nonce) random_bytes( nonce, sizeof(*nonce) );
+++    if (info)
+++    {
+++        XNetCreateKey( &info->sessionID, &info->keyExchangeKey );
+++        local_xnaddr( &info->hostAddress );
+++    }
+++    if (!(*handle = new_handle())) return GetLastError();
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XSessionStart( HANDLE session, DWORD flags, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p, %#lx, %p\n", session, flags, overlapped );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XSessionEnd( HANDLE session, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p, %p\n", session, overlapped );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XSessionDelete( HANDLE session, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p, %p\n", session, overlapped );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XSessionModify( HANDLE session, DWORD flags, DWORD max_public, DWORD max_private,
+++                             XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p, %#lx, %lu, %lu, %p\n", session, flags, max_public, max_private, overlapped );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XSessionMigrateHost( HANDLE session, DWORD user, XSESSION_INFO *info, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p, %lu, %p, %p\n", session, user, info, overlapped );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XSessionJoinLocal( HANDLE session, DWORD count, const DWORD *users, const BOOL *private_slots,
+++                                XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p, %lu, %p, %p, %p\n", session, count, users, private_slots, overlapped );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XSessionJoinRemote( HANDLE session, DWORD count, const XUID *xuids, const BOOL *private_slots,
+++                                 XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p, %lu, %p, %p, %p\n", session, count, xuids, private_slots, overlapped );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XSessionLeaveLocal( HANDLE session, DWORD count, const DWORD *users, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p, %lu, %p, %p\n", session, count, users, overlapped );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XSessionLeaveRemote( HANDLE session, DWORD count, const XUID *xuids, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p, %lu, %p, %p\n", session, count, xuids, overlapped );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XSessionWriteStats( HANDLE session, XUID xuid, DWORD count, const void *views,
+++                                 XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p, %s, %lu, %p, %p\n", session, wine_dbgstr_longlong(xuid), count, views, overlapped );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XSessionFlushStats( HANDLE session, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p, %p\n", session, overlapped );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XSessionModifySkill( HANDLE session, DWORD count, const XUID *xuids, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p, %lu, %p, %p\n", session, count, xuids, overlapped );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XSessionCalculateSkill( DWORD a, DWORD b, DWORD c, DWORD d, DWORD e )
+++{
+++    FIXME_ONCE( "%#lx, %#lx, %#lx, %#lx, %#lx\n", a, b, c, d, e );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XSessionArbitrationRegister( HANDLE session, DWORD flags, ULONGLONG nonce, DWORD *size,
+++                                          void *results, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p, %#lx, %s, %p, %p, %p\n", session, flags, wine_dbgstr_longlong(nonce), size, results, overlapped );
+++    return complete( overlapped, ERROR_NOT_LOGGED_ON, 0 );
+++}
+++
+++DWORD WINAPI XSessionGetDetails( HANDLE session, DWORD *size, XSESSION_LOCAL_DETAILS *details,
+++                                 XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p, %p, %p, %p\n", session, size, details, overlapped );
+++    if (!size) return ERROR_INVALID_PARAMETER;
+++    if (!details || *size < sizeof(*details))
+++    {
+++        *size = sizeof(*details);
+++        return ERROR_INSUFFICIENT_BUFFER;
+++    }
+++    memset( details, 0, sizeof(*details) );
+++    local_xnaddr( &details->sessionInfo.hostAddress );
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++static DWORD no_search_results( DWORD *size, XSESSION_SEARCHRESULT_HEADER *results, XOVERLAPPED *overlapped )
+++{
+++    if (!size) return ERROR_INVALID_PARAMETER;
+++    if (!results || *size < sizeof(*results))
+++    {
+++        *size = sizeof(*results);
+++        return ERROR_INSUFFICIENT_BUFFER;
+++    }
+++    results->dwSearchResults = 0;
+++    results->pResults = NULL;
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++DWORD WINAPI XSessionSearch( DWORD procedure, DWORD user, DWORD count, WORD count_properties,
+++                             WORD count_contexts, void *properties, void *contexts, DWORD *size,
+++                             XSESSION_SEARCHRESULT_HEADER *results, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%#lx, %lu, %lu, ...\n", procedure, user, count );
+++    return no_search_results( size, results, overlapped );
+++}
+++
+++DWORD WINAPI XSessionSearchEx( DWORD procedure, DWORD user, DWORD count, DWORD count_users,
+++                               WORD count_properties, WORD count_contexts, void *properties, void *contexts,
+++                               DWORD *size, XSESSION_SEARCHRESULT_HEADER *results, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%#lx, %lu, %lu, ...\n", procedure, user, count );
+++    return no_search_results( size, results, overlapped );
+++}
+++
+++DWORD WINAPI XSessionSearchByID( XNKID id, DWORD user, DWORD *size, XSESSION_SEARCHRESULT_HEADER *results,
+++                                 XOVERLAPPED *overlapped )
+++{
+++    TRACE( "..., %lu, %p, %p, %p\n", user, size, results, overlapped );
+++    return no_search_results( size, results, overlapped );
+++}
+++
+++/* Strings are all allowed. */
+++DWORD WINAPI XStringVerify( DWORD flags, const char *locale, DWORD count, const void *strings, DWORD size,
+++                            STRING_VERIFY_RESPONSE *results, XOVERLAPPED *overlapped )
+++{
+++    DWORD i;
+++
+++    TRACE( "%#lx, %s, %lu, %p, %lu, %p, %p\n", flags, debugstr_a(locale), count, strings, size, results,
+++           overlapped );
+++    if (!results || size < sizeof(*results) + count * sizeof(HRESULT)) return ERROR_INSUFFICIENT_BUFFER;
+++    results->wNumStrings = count;
+++    results->pStringResult = (HRESULT *)(results + 1);
+++    for (i = 0; i < count; i++) results->pStringResult[i] = S_OK;
+++    return complete( overlapped, ERROR_SUCCESS, 0 );
+++}
+++
+++/* Online storage. */
+++
+++static DWORD storage_progress( XOVERLAPPED *overlapped, DWORD *percent, ULONGLONG *numerator,
+++                               ULONGLONG *denominator )
+++{
+++    if (percent) *percent = 0;
+++    if (numerator) *numerator = 0;
+++    if (denominator) *denominator = 0;
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XStorageUploadFromMemoryGetProgress( XOVERLAPPED *overlapped, DWORD *percent, ULONGLONG *numerator,
+++                                                  ULONGLONG *denominator )
+++{
+++    TRACE( "%p, %p, %p, %p\n", overlapped, percent, numerator, denominator );
+++    return storage_progress( overlapped, percent, numerator, denominator );
+++}
+++
+++DWORD WINAPI XStorageDownloadToMemoryGetProgress( XOVERLAPPED *overlapped, DWORD *percent,
+++                                                  ULONGLONG *numerator, ULONGLONG *denominator )
+++{
+++    TRACE( "%p, %p, %p, %p\n", overlapped, percent, numerator, denominator );
+++    return storage_progress( overlapped, percent, numerator, denominator );
+++}
+++
+++DWORD WINAPI XStorageUploadFromMemory( DWORD user, const WCHAR *path, DWORD size, const BYTE *buffer,
+++                                       XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %s, %lu, %p, %p\n", user, debugstr_w(path), size, buffer, overlapped );
+++    return complete( overlapped, ERROR_NOT_LOGGED_ON, 0 );
+++}
+++
+++DWORD WINAPI XStorageEnumerate( DWORD user, const WCHAR *path, DWORD start, DWORD count, DWORD size,
+++                                void *results, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %s, %lu, %lu, %lu, %p, %p\n", user, debugstr_w(path), start, count, size, results, overlapped );
+++    return complete( overlapped, ERROR_NOT_LOGGED_ON, 0 );
+++}
+++
+++DWORD WINAPI XStorageDelete( DWORD user, const WCHAR *path, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %s, %p\n", user, debugstr_w(path), overlapped );
+++    return complete( overlapped, ERROR_NOT_LOGGED_ON, 0 );
+++}
+++
+++DWORD WINAPI XStorageDownloadToMemory( DWORD user, const WCHAR *path, DWORD size, const BYTE *buffer,
+++                                       DWORD results_size, void *results, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %s, %lu, %p, %lu, %p, %p\n", user, debugstr_w(path), size, buffer, results_size, results,
+++           overlapped );
+++    return complete( overlapped, ERROR_NOT_LOGGED_ON, 0 );
+++}
+++
+++DWORD WINAPI XStorageBuildServerPath( DWORD user, DWORD facility, const void *info, DWORD info_size,
+++                                      const WCHAR *item, WCHAR *path, DWORD *path_size )
+++{
+++    TRACE( "%lu, %lu, %p, %lu, %s, %p, %p\n", user, facility, info, info_size, debugstr_w(item), path, path_size );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XStorageBuildServerPathByXuid( XUID xuid, DWORD facility, const void *info, DWORD info_size,
+++                                            const WCHAR *item, WCHAR *path, DWORD *path_size )
+++{
+++    TRACE( "%s, %lu, %p, %lu, %s, %p, %p\n", wine_dbgstr_longlong(xuid), facility, info, info_size,
+++           debugstr_w(item), path, path_size );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++/* Online, friends, presence and invitations. */
+++
+++DWORD WINAPI XOnlineStartup(void)
+++{
+++    TRACE( "\n" );
+++    return ERROR_SUCCESS;
+++}
+++
+++DWORD WINAPI XOnlineCleanup(void)
+++{
+++    TRACE( "\n" );
+++    return ERROR_SUCCESS;
+++}
+++
+++DWORD WINAPI XOnlineGetNatType(void)
+++{
+++    TRACE( "\n" );
+++    return XONLINE_NAT_OPEN;
+++}
+++
+++DWORD WINAPI XOnlineGetServiceInfo( DWORD service, void *info )
+++{
+++    TRACE( "%#lx, %p\n", service, info );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XTitleServerCreateEnumerator( const char *info, DWORD items, DWORD *buffer_size, HANDLE *handle )
+++{
+++    TRACE( "%s, %lu, %p, %p\n", debugstr_a(info), items, buffer_size, handle );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XFriendsCreateEnumerator( DWORD user, DWORD start, DWORD count, DWORD *buffer_size, HANDLE *handle )
+++{
+++    TRACE( "%lu, %lu, %lu, %p, %p\n", user, start, count, buffer_size, handle );
+++    return empty_enumerator( count, 0x100, buffer_size, handle );
+++}
+++
+++DWORD WINAPI XPresenceInitialize( DWORD peers )
+++{
+++    TRACE( "%lu\n", peers );
+++    return ERROR_SUCCESS;
+++}
+++
+++DWORD WINAPI XPresenceSubscribe( DWORD user, DWORD count, const XUID *xuids )
+++{
+++    TRACE( "%lu, %lu, %p\n", user, count, xuids );
+++    return ERROR_SUCCESS;
+++}
+++
+++DWORD WINAPI XPresenceUnsubscribe( DWORD user, DWORD count, const XUID *xuids )
+++{
+++    TRACE( "%lu, %lu, %p\n", user, count, xuids );
+++    return ERROR_SUCCESS;
+++}
+++
+++DWORD WINAPI XPresenceCreateEnumerator( DWORD user, DWORD count_xuids, const XUID *xuids, DWORD start,
+++                                        DWORD count, DWORD *buffer_size, HANDLE *handle )
+++{
+++    TRACE( "%lu, %lu, %p, %lu, %lu, %p, %p\n", user, count_xuids, xuids, start, count, buffer_size, handle );
+++    return empty_enumerator( count, 0x100, buffer_size, handle );
+++}
+++
+++DWORD WINAPI XInviteGetAcceptedInfo( DWORD user, void *info )
+++{
+++    TRACE( "%lu, %p\n", user, info );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XInviteSend( DWORD user, DWORD count, const XUID *xuids, const WCHAR *text, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %lu, %p, %s, %p\n", user, count, xuids, debugstr_w(text), overlapped );
+++    return complete( overlapped, ERROR_NOT_LOGGED_ON, 0 );
+++}
+++
+++DWORD WINAPI XUserFindUsers( XUID xuid, DWORD count, const void *users, DWORD size, void *results,
+++                             XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%s, %lu, %p, %lu, %p, %p\n", wine_dbgstr_longlong(xuid), count, users, size, results, overlapped );
+++    return complete( overlapped, ERROR_NOT_LOGGED_ON, 0 );
+++}
+++
+++DWORD WINAPI XLiveGetLocalOnlinePort( WORD *port )
+++{
+++    TRACE( "%p\n", port );
+++    if (!port) return E_POINTER;
+++    *port = htons( SYSTEM_LINK_PORT );
+++    return S_OK;
+++}
+++
+++/* The guide's key: never pressed. */
+++DWORD WINAPI XLiveGetGuideKey( void *keystroke )
+++{
+++    TRACE( "%p\n", keystroke );
+++    if (keystroke) memset( keystroke, 0, 8 );
+++    return S_OK;
+++}
+++
+++DWORD WINAPI XLiveGetUPnPState( DWORD *state )
+++{
+++    TRACE( "%p\n", state );
+++    if (state) *state = 0;
+++    return S_OK;
+++}
+++
+++/* Content: none installed, so a game has its retail content only. */
+++
+++HRESULT WINAPI XLiveProtectedLoadLibrary( HANDLE access, void *reserved, const WCHAR *name, DWORD flags,
+++                                          HMODULE *module )
+++{
+++    TRACE( "%p, %p, %s, %#lx, %p\n", access, reserved, debugstr_w(name), flags, module );
+++    return XLiveLoadLibraryEx( name, module, flags );
+++}
+++
+++HRESULT WINAPI XLiveProtectedCreateFile( HANDLE access, void *reserved, const WCHAR *path, DWORD access_mask,
+++                                         DWORD share, SECURITY_ATTRIBUTES *sa, DWORD disposition,
+++                                         DWORD attributes, HANDLE *file )
+++{
+++    HANDLE ret;
+++
+++    TRACE( "%p, %p, %s, %#lx, %#lx, %p, %lu, %#lx, %p\n", access, reserved, debugstr_w(path), access_mask,
+++           share, sa, disposition, attributes, file );
+++    if (!file) return E_POINTER;
+++    ret = CreateFileW( path, access_mask, share, sa, disposition, attributes, NULL );
+++    if (ret == INVALID_HANDLE_VALUE) return HRESULT_FROM_WIN32( GetLastError() );
+++    *file = ret;
+++    return S_OK;
+++}
+++
+++HRESULT WINAPI XLiveProtectedVerifyFile( HANDLE access, void *reserved, const WCHAR *path )
+++{
+++    TRACE( "%p, %p, %s\n", access, reserved, debugstr_w(path) );
+++    return S_OK;
+++}
+++
+++DWORD WINAPI XLiveContentCreateAccessHandle( DWORD title, void *content, DWORD version, struct pbuffer *license,
+++                                             ULONG offset, HANDLE *access, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%#lx, %p, %lu, %p, %lu, %p, %p\n", title, content, version, license, offset, access, overlapped );
+++    if (access) *access = NULL;
+++    return complete( overlapped, ERROR_NOT_FOUND, 0 );
+++}
+++
+++DWORD WINAPI XLiveContentInstallPackage( void *content, const WCHAR *path, void *callback )
+++{
+++    TRACE( "%p, %s, %p\n", content, debugstr_w(path), callback );
+++    return E_FAIL;
+++}
+++
+++DWORD WINAPI XLiveContentUninstall( void *content, XUID *xuid, void *callback )
+++{
+++    TRACE( "%p, %p, %p\n", content, xuid, callback );
+++    return E_FAIL;
+++}
+++
+++DWORD WINAPI XLiveContentVerifyInstalledPackage( void *content, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%p, %p\n", content, overlapped );
+++    return complete( overlapped, ERROR_NOT_FOUND, 0 );
+++}
+++
+++DWORD WINAPI XLiveContentInstallLicense( void *content, const WCHAR *path, XUID *xuid )
+++{
+++    TRACE( "%p, %s, %p\n", content, debugstr_w(path), xuid );
+++    return E_FAIL;
+++}
+++
+++static DWORD no_content( WCHAR *text, DWORD *size )
+++{
+++    if (text && size && *size) text[0] = 0;
+++    if (size) *size = 0;
+++    return HRESULT_FROM_WIN32( ERROR_NOT_FOUND );
+++}
+++
+++DWORD WINAPI XLiveContentGetPath( DWORD user, void *content, WCHAR *path, DWORD *size )
+++{
+++    TRACE( "%lu, %p, %p, %p\n", user, content, path, size );
+++    return no_content( path, size );
+++}
+++
+++DWORD WINAPI XLiveContentGetDisplayName( DWORD user, void *content, WCHAR *name, DWORD *size )
+++{
+++    TRACE( "%lu, %p, %p, %p\n", user, content, name, size );
+++    return no_content( name, size );
+++}
+++
+++DWORD WINAPI XLiveContentGetLicensePath( DWORD user, void *content, WCHAR *path, DWORD *size )
+++{
+++    TRACE( "%lu, %p, %p, %p\n", user, content, path, size );
+++    return no_content( path, size );
+++}
+++
+++DWORD WINAPI XLiveContentGetThumbnail( DWORD user, void *content, BYTE *thumbnail, DWORD *size )
+++{
+++    TRACE( "%lu, %p, %p, %p\n", user, content, thumbnail, size );
+++    if (size) *size = 0;
+++    return HRESULT_FROM_WIN32( ERROR_NOT_FOUND );
+++}
+++
+++DWORD WINAPI XLiveContentCreateEnumerator( DWORD items, void *info, DWORD *buffer_size, HANDLE *handle )
+++{
+++    TRACE( "%lu, %p, %p, %p\n", items, info, buffer_size, handle );
+++    return empty_enumerator( items, 0x200, buffer_size, handle );
+++}
+++
+++DWORD WINAPI XLiveContentRetrieveOffersByDate( DWORD user, DWORD version, SYSTEMTIME *start, void *offers,
+++                                               DWORD *count, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %lu, %p, %p, %p, %p\n", user, version, start, offers, count, overlapped );
+++    if (count) *count = 0;
+++    return complete( overlapped, ERROR_NOT_LOGGED_ON, 0 );
+++}
+++
+++BOOL WINAPI XLiveMarketplaceDoesContentIdMatch( const BYTE *id, const void *content )
+++{
+++    TRACE( "%p, %p\n", id, content );
+++    return FALSE;
+++}
+++
+++/* Marketplace. */
+++
+++DWORD WINAPI XContentGetMarketplaceCounts( DWORD user, DWORD categories, DWORD size, void *results,
+++                                           XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %#lx, %lu, %p, %p\n", user, categories, size, results, overlapped );
+++    return complete( overlapped, ERROR_NOT_LOGGED_ON, 0 );
+++}
+++
+++DWORD WINAPI XMarketplaceConsumeAssets( DWORD user, DWORD count, const void *assets, XOVERLAPPED *overlapped )
+++{
+++    TRACE( "%lu, %lu, %p, %p\n", user, count, assets, overlapped );
+++    return complete( overlapped, ERROR_NOT_LOGGED_ON, 0 );
+++}
+++
+++DWORD WINAPI XMarketplaceCreateAssetEnumerator( DWORD user, DWORD items, DWORD *buffer_size, HANDLE *handle )
+++{
+++    TRACE( "%lu, %lu, %p, %p\n", user, items, buffer_size, handle );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XMarketplaceCreateOfferEnumerator( DWORD user, DWORD type, DWORD categories, DWORD items,
+++                                                DWORD *buffer_size, HANDLE *handle )
+++{
+++    TRACE( "%lu, %#lx, %#lx, %lu, %p, %p\n", user, type, categories, items, buffer_size, handle );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XMarketplaceCreateOfferEnumeratorByOffering( DWORD user, DWORD items, const ULONGLONG *offers,
+++                                                          WORD count, DWORD *buffer_size, HANDLE *handle )
+++{
+++    TRACE( "%lu, %lu, %p, %u, %p, %p\n", user, items, offers, count, buffer_size, handle );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XMarketplaceGetDownloadStatus( DWORD user, ULONGLONG offer, DWORD *result )
+++{
+++    TRACE( "%lu, %s, %p\n", user, wine_dbgstr_longlong(offer), result );
+++    return ERROR_NOT_LOGGED_ON;
+++}
+++
+++DWORD WINAPI XMarketplaceGetImageUrl( DWORD title, ULONGLONG offer, DWORD size, WCHAR *url )
+++{
+++    TRACE( "%#lx, %s, %lu, %p\n", title, wine_dbgstr_longlong(offer), size, url );
+++    if (url && size) url[0] = 0;
+++    return ERROR_NOT_LOGGED_ON;
+++}
++diff --git a/dlls/xlive/xlive.spec b/dlls/xlive/xlive.spec
++new file mode 100644
++index 0000000..a619200
++--- /dev/null
+++++ b/dlls/xlive/xlive.spec
++@@ -0,0 +1,274 @@
+++# Games for Windows - LIVE (xlive.dll), an offline stand-in.
+++# Games import xlive.dll by ordinal: every ordinal of xlive.dll 3.5 is here.
+++
+++# Windows sockets (XSocket*, XWSA*): Winsock's own, but for XSocketCreate,
+++# which takes a VDP socket for a UDP one, and XWSACancelOverlappedIO.
+++1 stdcall XWSAStartup(long ptr) ws2_32.WSAStartup
+++2 stdcall XWSACleanup() ws2_32.WSACleanup
+++3 stdcall XSocketCreate(long long long)
+++4 stdcall XSocketClose(long) ws2_32.closesocket
+++5 stdcall XSocketShutdown(long long) ws2_32.shutdown
+++6 stdcall XSocketIOCTLSocket(long long ptr) ws2_32.ioctlsocket
+++7 stdcall XSocketSetSockOpt(long long long ptr long) ws2_32.setsockopt
+++8 stdcall XSocketGetSockOpt(long long long ptr ptr) ws2_32.getsockopt
+++9 stdcall XSocketGetSockName(long ptr ptr) ws2_32.getsockname
+++10 stdcall XSocketGetPeerName(long ptr ptr) ws2_32.getpeername
+++11 stdcall XSocketBind(long ptr long) ws2_32.bind
+++12 stdcall XSocketConnect(long ptr long) ws2_32.connect
+++13 stdcall XSocketListen(long long) ws2_32.listen
+++14 stdcall XSocketAccept(long ptr ptr) ws2_32.accept
+++15 stdcall XSocketSelect(long ptr ptr ptr ptr) ws2_32.select
+++16 stdcall XWSAGetOverlappedResult(long ptr ptr long ptr) ws2_32.WSAGetOverlappedResult
+++17 stdcall XWSACancelOverlappedIO(long)
+++18 stdcall XSocketRecv(long ptr long long) ws2_32.recv
+++19 stdcall XWSARecv(long ptr long ptr ptr ptr ptr) ws2_32.WSARecv
+++20 stdcall XSocketRecvFrom(long ptr long long ptr ptr) ws2_32.recvfrom
+++21 stdcall XWSARecvFrom(long ptr long ptr ptr ptr ptr ptr ptr) ws2_32.WSARecvFrom
+++22 stdcall XSocketSend(long ptr long long) ws2_32.send
+++23 stdcall XWSASend(long ptr long ptr long ptr ptr) ws2_32.WSASend
+++24 stdcall XSocketSendTo(long ptr long long ptr long) ws2_32.sendto
+++25 stdcall XWSASendTo(long ptr long ptr long ptr long ptr ptr) ws2_32.WSASendTo
+++26 stdcall XSocketInet_Addr(str) ws2_32.inet_addr
+++27 stdcall XSocketWSAGetLastError() ws2_32.WSAGetLastError
+++28 stdcall XWSASetLastError(long) ws2_32.WSASetLastError
+++29 stdcall XWSACreateEvent() ws2_32.WSACreateEvent
+++30 stdcall XWSACloseEvent(long) ws2_32.WSACloseEvent
+++31 stdcall XWSASetEvent(long) ws2_32.WSASetEvent
+++32 stdcall XWSAResetEvent(long) ws2_32.WSAResetEvent
+++33 stdcall XWSAWaitForMultipleEvents(long ptr long long long) ws2_32.WSAWaitForMultipleEvents
+++34 stdcall XWSAFDIsSet(long ptr) ws2_32.__WSAFDIsSet
+++35 stdcall XWSAEventSelect(long long long) ws2_32.WSAEventSelect
+++37 stdcall XSocketHTONL(long) ws2_32.htonl
+++38 stdcall XSocketNTOHS(long) ws2_32.ntohs
+++39 stdcall XSocketNTOHL(long) ws2_32.ntohl
+++40 stdcall XSocketHTONS(long) ws2_32.htons
+++
+++# Secure network (XNet*): the loopback address, keys from the system's
+++# random numbers, everything "connected"; QoS and DNS answer nothing.
+++51 stdcall XNetStartup(ptr)
+++52 stdcall XNetCleanup()
+++53 stdcall XNetRandom(ptr long)
+++54 stdcall XNetCreateKey(ptr ptr)
+++55 stdcall XNetRegisterKey(ptr ptr)
+++56 stdcall XNetUnregisterKey(ptr)
+++57 stdcall XNetXnAddrToInAddr(ptr ptr ptr)
+++58 stdcall XNetServerToInAddr(long long ptr)
+++59 stdcall XNetTsAddrToInAddr(ptr long ptr ptr)
+++60 stdcall XNetInAddrToXnAddr(long ptr ptr)
+++61 stdcall XNetInAddrToServer(long ptr)
+++62 stdcall XNetInAddrToString(long ptr long)
+++63 stdcall XNetUnregisterInAddr(long)
+++64 stdcall XNetXnAddrToMachineId(ptr ptr)
+++65 stdcall XNetConnect(long)
+++66 stdcall XNetGetConnectStatus(long)
+++67 stdcall XNetDnsLookup(str long ptr)
+++68 stdcall XNetDnsRelease(ptr)
+++69 stdcall XNetQosListen(ptr ptr long long long)
+++70 stdcall XNetQosLookup(long ptr ptr ptr long ptr ptr long long long long ptr)
+++71 stdcall XNetQosServiceLookup(long long ptr)
+++72 stdcall XNetQosRelease(ptr)
+++73 stdcall XNetGetTitleXnAddr(ptr)
+++74 stdcall XNetGetDebugXnAddr(ptr)
+++75 stdcall XNetGetEthernetLinkStatus()
+++76 stdcall XNetGetBroadcastVersionStatus(long)
+++77 stdcall XNetQosGetListenStats(ptr ptr)
+++78 stdcall XNetGetOpt(long ptr ptr)
+++79 stdcall XNetSetOpt(long ptr long)
+++80 stdcall XNetStartupEx(ptr long)
+++81 stdcall XNetReplaceKey(ptr ptr)
+++82 stdcall XNetGetXnAddrPlatform(ptr ptr)
+++83 stdcall XNetGetSystemLinkPort(ptr)
+++84 stdcall XNetSetSystemLinkPort(long)
+++
+++# Guide actions and notifications.
+++472 stdcall XCustomSetAction(long wstr long)
+++473 stdcall XCustomGetLastActionPress(ptr ptr ptr)
+++474 stdcall XCustomSetDynamicActions(long int64 ptr long)
+++476 stdcall XCustomGetLastActionPressEx(ptr ptr ptr ptr ptr)
+++477 stdcall XCustomRegisterDynamicActions()
+++478 stdcall XCustomUnregisterDynamicActions()
+++479 stdcall XCustomGetCurrentGamercard(ptr ptr)
+++651 stdcall XNotifyGetNext(long long ptr ptr)
+++652 stdcall XNotifyPositionUI(long)
+++653 stdcall XNotifyDelayUI(long)
+++1082 stdcall XGetOverlappedExtendedError(ptr)
+++1083 stdcall XGetOverlappedResult(ptr ptr long)
+++
+++# The runtime itself, its rendering hooks and protected buffers and data.
+++5000 stdcall XLiveInitialize(ptr)
+++5001 stdcall XLiveInput(ptr)
+++5002 stdcall XLiveRender()
+++5003 stdcall XLiveUninitialize()
+++5005 stdcall XLiveOnCreateDevice(ptr ptr)
+++5006 stdcall XLiveOnDestroyDevice()
+++5007 stdcall XLiveOnResetDevice(ptr)
+++5008 stdcall XHVCreateEngine(ptr ptr ptr)
+++5010 stdcall XLiveRegisterDataSection(long long long)
+++5011 stdcall XLiveUnregisterDataSection(long)
+++5012 stdcall XLiveUpdateHashes(long long)
+++5016 stdcall XLivePBufferAllocate(long ptr)
+++5017 stdcall XLivePBufferFree(ptr)
+++5018 stdcall XLivePBufferGetByte(ptr long ptr)
+++5019 stdcall XLivePBufferSetByte(ptr long long)
+++5020 stdcall XLivePBufferGetDWORD(ptr long ptr)
+++5021 stdcall XLivePBufferSetDWORD(ptr long long)
+++5022 stdcall XLiveGetUpdateInformation(ptr)
+++5023 stdcall XNetGetCurrentAdapter(ptr ptr)
+++5024 stdcall XLiveUpdateSystem(wstr)
+++5025 stdcall XLiveGetLiveIdError(ptr ptr ptr ptr)
+++5026 stdcall XLiveSetSponsorToken(wstr long)
+++5027 stub XLiveUninstallTitle
+++5028 stdcall XLiveLoadLibraryEx(wstr ptr long)
+++5029 stdcall XLiveFreeLibrary(long)
+++5030 stdcall XLivePreTranslateMessage(ptr)
+++5031 stdcall XLiveSetDebugLevel(long ptr)
+++5032 stub XLiveVerifyArcadeLicense
+++5034 stdcall XLiveProtectData(ptr long ptr ptr long)
+++5035 stdcall XLiveUnprotectData(ptr long ptr ptr ptr)
+++5036 stdcall XLiveCreateProtectedDataContext(ptr ptr)
+++5037 stdcall XLiveQueryProtectedDataInformation(long ptr)
+++5038 stdcall XLiveCloseProtectedDataContext(long)
+++5039 stdcall XLiveVerifyDataFile(wstr)
+++
+++# Guide user interface.
+++5206 stdcall XShowMessagesUI(long)
+++5208 stdcall XShowGameInviteUI(long ptr long wstr)
+++5209 stdcall XShowMessageComposeUI(long ptr long wstr)
+++5210 stdcall XShowFriendRequestUI(long int64)
+++5212 stdcall XShowCustomPlayerListUI(long long wstr wstr ptr long ptr long ptr ptr ptr ptr)
+++5214 stdcall XShowPlayerReviewUI(long int64)
+++5215 stdcall XShowGuideUI(long)
+++5216 stdcall XShowKeyboardUI(long long wstr wstr wstr ptr long ptr)
+++5218 stdcall XShowArcadeUI(long)
+++
+++# Server locator.
+++5230 stdcall XLocatorServerAdvertise(long long int64 int128 long long long long long ptr ptr)
+++5231 stdcall XLocatorServerUnAdvertise(long ptr)
+++5233 stdcall XLocatorGetServiceProperty(long long ptr ptr)
+++5234 stdcall XLocatorCreateServerEnumerator(long long long ptr long ptr long ptr ptr ptr)
+++5235 stdcall XLocatorCreateServerEnumeratorByIDs(long long long ptr long ptr ptr ptr)
+++5236 stdcall XLocatorServiceInitialize(ptr ptr)
+++5237 stdcall XLocatorServiceUnInitialize(long)
+++5238 stdcall XLocatorCreateKey(ptr ptr)
+++
+++# Users, their profile, achievements and handles.
+++5250 stdcall XShowAchievementsUI(long)
+++5251 stdcall XCloseHandle(long)
+++5252 stdcall XShowGamerCardUI(long int64)
+++5254 stdcall XCancelOverlapped(ptr)
+++5255 stdcall XEnumerateBack(long ptr long ptr ptr)
+++5256 stdcall XEnumerate(long ptr long ptr ptr)
+++5257 stdcall XLiveManageCredentials(wstr wstr long ptr)
+++5258 stdcall XLiveSignout(ptr)
+++5259 stdcall XLiveSignin(wstr wstr long ptr)
+++5260 stdcall XShowSigninUI(long long)
+++5261 stdcall XUserGetXUID(long ptr)
+++5262 stdcall XUserGetSigninState(long)
+++5263 stdcall XUserGetName(long ptr long)
+++5264 stdcall XUserAreUsersFriends(long ptr long ptr ptr)
+++5265 stdcall XUserCheckPrivilege(long long ptr)
+++5266 stdcall XShowMessageBoxUI(long wstr wstr long ptr long long ptr ptr)
+++5267 stdcall XUserGetSigninInfo(long long ptr)
+++5270 stdcall XNotifyCreateListener(int64)
+++5271 stdcall XShowPlayersUI(long)
+++5273 stdcall XUserReadGamerPictureByKey(ptr long ptr long long ptr)
+++5274 stdcall XUserAwardGamerPicture(long long long ptr)
+++5275 stdcall XShowFriendsUI(long)
+++5276 stdcall XUserSetProperty(long long long ptr)
+++5277 stdcall XUserSetContext(long long long)
+++5278 stdcall XUserWriteAchievements(long ptr ptr)
+++5279 stdcall XUserReadAchievementPicture(long long long ptr long long ptr)
+++5280 stdcall XUserCreateAchievementEnumerator(long long int64 long long long ptr ptr)
+++5281 stdcall XUserReadStats(long long ptr long ptr ptr ptr ptr)
+++5282 stdcall XUserReadGamerPicture(long long ptr long long ptr)
+++5284 stdcall XUserCreateStatsEnumeratorByRank(long long long long ptr ptr ptr)
+++5285 stdcall XUserCreateStatsEnumeratorByRating(long int64 long long ptr ptr ptr)
+++5286 stdcall XUserCreateStatsEnumeratorByXuid(long int64 long long ptr ptr ptr)
+++5287 stdcall XUserResetStatsView(long long ptr)
+++5288 stdcall XUserGetProperty(long ptr ptr ptr)
+++5289 stdcall XUserGetContext(long ptr ptr)
+++5290 stdcall XUserGetReputationStars(float)
+++5291 stdcall XUserResetStatsViewAllUsers(long ptr)
+++5292 stdcall XUserSetContextEx(long long long ptr)
+++5293 stdcall XUserSetPropertyEx(long long long ptr ptr)
+++5294 stdcall XLivePBufferGetByteArray(ptr long ptr long)
+++5295 stdcall XLivePBufferSetByteArray(ptr long ptr long)
+++5296 stdcall XLiveGetLocalOnlinePort(ptr)
+++5297 stdcall XLiveInitializeEx(ptr long)
+++5298 stdcall XLiveGetGuideKey(ptr)
+++5299 stdcall XShowGuideKeyRemapUI(long)
+++
+++# Sessions, storage, friends, presence and invitations.
+++5300 stdcall XSessionCreate(long long long long ptr ptr ptr ptr)
+++5303 stdcall XStringVerify(long str long ptr long ptr ptr)
+++5304 stdcall XStorageUploadFromMemoryGetProgress(ptr ptr ptr ptr)
+++5305 stdcall XStorageUploadFromMemory(long wstr long ptr ptr)
+++5306 stdcall XStorageEnumerate(long wstr long long long ptr ptr)
+++5307 stdcall XStorageDownloadToMemoryGetProgress(ptr ptr ptr ptr)
+++5308 stdcall XStorageDelete(long wstr ptr)
+++5309 stdcall XStorageBuildServerPathByXuid(int64 long ptr long wstr ptr ptr)
+++5310 stdcall XOnlineStartup()
+++5311 stdcall XOnlineCleanup()
+++5312 stdcall XFriendsCreateEnumerator(long long long ptr ptr)
+++5313 stdcall XPresenceInitialize(long)
+++5314 stdcall XUserMuteListQuery(long int64 ptr)
+++5315 stdcall XInviteGetAcceptedInfo(long ptr)
+++5316 stdcall XInviteSend(long long ptr wstr ptr)
+++5317 stdcall XSessionWriteStats(long int64 long ptr ptr)
+++5318 stdcall XSessionStart(long long ptr)
+++5319 stdcall XSessionSearchEx(long long long long long long ptr ptr ptr ptr ptr)
+++5320 stdcall XSessionSearchByID(int64 long ptr ptr ptr)
+++5321 stdcall XSessionSearch(long long long long long ptr ptr ptr ptr ptr)
+++5322 stdcall XSessionModify(long long long long ptr)
+++5323 stdcall XSessionMigrateHost(long long ptr ptr)
+++5324 stdcall XOnlineGetNatType()
+++5325 stdcall XSessionLeaveLocal(long long ptr ptr)
+++5326 stdcall XSessionJoinRemote(long long ptr ptr ptr)
+++5327 stdcall XSessionJoinLocal(long long ptr ptr ptr)
+++5328 stdcall XSessionGetDetails(long ptr ptr ptr)
+++5329 stdcall XSessionFlushStats(long ptr)
+++5330 stdcall XSessionDelete(long ptr)
+++5331 stdcall XUserReadProfileSettings(long long long ptr ptr ptr ptr)
+++5332 stdcall XSessionEnd(long ptr)
+++5333 stdcall XSessionArbitrationRegister(long long int64 ptr ptr ptr)
+++5334 stdcall XOnlineGetServiceInfo(long ptr)
+++5335 stdcall XTitleServerCreateEnumerator(str long ptr ptr)
+++5336 stdcall XSessionLeaveRemote(long long ptr ptr)
+++5337 stdcall XUserWriteProfileSettings(long long ptr ptr)
+++5338 stdcall XPresenceSubscribe(long long ptr)
+++5339 stdcall XUserReadProfileSettingsByXuid(long long long ptr long ptr ptr ptr ptr)
+++5340 stdcall XPresenceCreateEnumerator(long long ptr long long ptr ptr)
+++5341 stdcall XPresenceUnsubscribe(long long ptr)
+++5342 stdcall XSessionModifySkill(long long ptr ptr)
+++5343 stdcall XSessionCalculateSkill(long long long long long)
+++5344 stdcall XStorageBuildServerPath(long long ptr long wstr ptr ptr)
+++5345 stdcall XStorageDownloadToMemory(long wstr long ptr long ptr ptr)
+++5346 stub XUserEstimateRankForRating
+++
+++# Content (downloadable content and its licences) and marketplace.
+++5347 stdcall XLiveProtectedLoadLibrary(long ptr wstr long ptr)
+++5348 stdcall XLiveProtectedCreateFile(long ptr wstr long long ptr long long ptr)
+++5349 stdcall XLiveProtectedVerifyFile(long ptr wstr)
+++5350 stdcall XLiveContentCreateAccessHandle(long ptr long ptr long ptr ptr)
+++5351 stdcall XLiveContentInstallPackage(ptr wstr ptr)
+++5352 stdcall XLiveContentUninstall(ptr ptr ptr)
+++5354 stdcall XLiveContentVerifyInstalledPackage(ptr ptr)
+++5355 stdcall XLiveContentGetPath(long ptr ptr ptr)
+++5356 stdcall XLiveContentGetDisplayName(long ptr ptr ptr)
+++5357 stdcall XLiveContentGetThumbnail(long ptr ptr ptr)
+++5358 stdcall XLiveContentInstallLicense(ptr wstr ptr)
+++5359 stdcall XLiveGetUPnPState(ptr)
+++5360 stdcall XLiveContentCreateEnumerator(long ptr ptr ptr)
+++5361 stdcall XLiveContentRetrieveOffersByDate(long long ptr ptr ptr ptr)
+++5362 stdcall XLiveMarketplaceDoesContentIdMatch(ptr ptr)
+++5363 stdcall XLiveContentGetLicensePath(long ptr ptr ptr)
+++5365 stdcall XShowMarketplaceUI(long long int64 long)
+++5366 stdcall XShowMarketplaceDownloadItemsUI(long long ptr long ptr ptr)
+++5367 stdcall XContentGetMarketplaceCounts(long long long ptr ptr)
+++5370 stdcall XMarketplaceConsumeAssets(long long ptr ptr)
+++5371 stdcall XMarketplaceCreateAssetEnumerator(long long ptr ptr)
+++5372 stdcall XMarketplaceCreateOfferEnumerator(long long long long ptr ptr)
+++5374 stdcall XMarketplaceGetDownloadStatus(long int64 ptr)
+++5375 stdcall XMarketplaceGetImageUrl(long int64 long ptr)
+++5376 stdcall XMarketplaceCreateOfferEnumeratorByOffering(long long ptr long ptr ptr)
+++5377 stdcall XUserFindUsers(int64 long ptr long ptr ptr)
++-- 
++2.43.0
++
+-- 
+2.43.0
+

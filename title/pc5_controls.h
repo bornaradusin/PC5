@@ -35,11 +35,18 @@ typedef enum Pc5StickUse {
  *   WINE         Wine's own: WineD3D on OpenGL (Mesa Zink) for Direct3D 8 to 11 and
  *                DirectDraw, Wine's VKD3D for Direct3D 12
  *   WINE_VULKAN  WineD3D drawing with Vulkan itself, without OpenGL (Wine's VKD3D
- *                for Direct3D 12, as WINE) */
+ *                for Direct3D 12, as WINE)
+ *   WINE_2D      DirectDraw only: WineD3D without 3D (renderer=no3d), every picture
+ *                made on the CPU and shown the way plain Windows drawing is, so a
+ *                game that mixes DirectDraw with plain Windows drawing on one window
+ *                (Heroes of Might and Magic IV) shows both in one picture instead of
+ *                flickering between them. A DirectDraw game's Direct3D (7 and older)
+ *                can't start with it. */
 typedef enum Pc5Graphics {
     PC5_GRAPHICS_AUTO,
     PC5_GRAPHICS_WINE,
     PC5_GRAPHICS_WINE_VULKAN,
+    PC5_GRAPHICS_WINE_2D,
     PC5_GRAPHICS_COUNT
 } Pc5Graphics;
 
@@ -128,6 +135,8 @@ const char *pc5_control_name(int control);
 int pc5_graphics_choices(int api, Pc5Graphics choices[PC5_GRAPHICS_COUNT]);
 /* The choice as the game menu shows it: "Auto", "WineD3D", "WineD3D on Vulkan", "Wine's VKD3D". */
 const char *pc5_graphics_name(Pc5Graphics graphics, int api);
+/* Its technical name (WineD3D on Vulkan, ...), untranslated: for logs, reports and the web page. */
+const char *pc5_graphics_tech_name(Pc5Graphics graphics, int api);
 /* "Xbox controller", "DualSense", "Keyboard & mouse". */
 const char *pc5_pad_mode_name(Pc5PadMode mode);
 /* A stick's use: "Keys", "Mouse pointer", "Nothing". */

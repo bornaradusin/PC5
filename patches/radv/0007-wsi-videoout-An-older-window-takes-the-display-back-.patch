@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 10:00:00 +0000
+Subject: [PATCH] wsi/videoout: An older window takes the display back from one
+ left behind
+
+A window's picture smaller than the owner's was always refused, so a
+movie's window inside a game's doesn't take the display (Blade & Sword).
+Ruined King, changing its resolution, shows a 3840x2160 picture once on a
+window of its own and then leaves that window; its own window's next
+picture, 2560x1080 or 1920x1080, was refused for being smaller, and the
+game stayed on its last picture for good.
+
+Once the owner has stopped presenting for half a second, a picture on an
+older window now takes the display whatever its size: that window is the
+game's own, going on after the newer one was left. A newer smaller
+window, a movie's, is refused as before, and helpers' strips are too.
+---
+ src/vulkan/wsi/wsi_common_videoout_takeover.h | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/src/vulkan/wsi/wsi_common_videoout_takeover.h b/src/vulkan/wsi/wsi_common_videoout_takeover.h
+index 5a406ac..48e14ee 100644
+--- a/src/vulkan/wsi/wsi_common_videoout_takeover.h
++++ b/src/vulkan/wsi/wsi_common_videoout_takeover.h
+@@ -24,6 +24,13 @@
+  * either rule: a DirectShow movie's video window, a framed window inside a
+  * fullscreen game's (Blade & Sword: its 634x448 movie window took the display
+  * from the game's 640x480 one, and the game stopped with no picture).
++ *
++ * Except an older window's picture, of any window's size, once the owner on a
++ * newer window stopped presenting: that window was left behind and the game
++ * goes on in its own. Ruined King, changing its resolution, shows a 3840x2160
++ * picture once on a window of its own and leaves it; its own window's next
++ * picture, 2560x1080 or 1920x1080, was refused for being smaller, and the game
++ * stayed on its last picture for good.
+  */
+ 
+ #ifndef WSI_COMMON_VIDEOOUT_TAKEOVER_H
+@@ -47,7 +54,7 @@ enum wsi_videoout_takeover {
+    WSI_VIDEOOUT_REFUSED,  /* the owner keeps the display */
+    WSI_VIDEOOUT_FREE,     /* nothing has it, the new one replaces the owner, or the owner never presented */
+    WSI_VIDEOOUT_NEWER,    /* a newer window's picture covering the owner's */
+-   WSI_VIDEOOUT_STALE,    /* a picture covering the owner's, which stopped presenting */
++   WSI_VIDEOOUT_STALE,    /* a picture covering the owner's, or an older window's, the owner stopped presenting */
+ };
+ 
+ /* A window's picture, not a helper window's (wined3d's 10x10 probe, a 113x2 strip). */
+@@ -67,7 +74,8 @@ wsi_videoout_takeover(const struct wsi_videoout_window *owner, bool replaces, co
+    if (!wsi_videoout_window_sized(chain->width, chain->height))
+       return WSI_VIDEOOUT_REFUSED;
+    if (chain->width < owner->width || chain->height < owner->height)
+-      return WSI_VIDEOOUT_REFUSED;
++      return chain->age < owner->age && now_ns - owner->present_ns >= WSI_VIDEOOUT_STALE_NS ? WSI_VIDEOOUT_STALE
++                                                                                              : WSI_VIDEOOUT_REFUSED;
+    if (chain->age > owner->age)
+       return WSI_VIDEOOUT_NEWER;
+    if (now_ns - owner->present_ns >= WSI_VIDEOOUT_STALE_NS)
+-- 
+2.56.0
+

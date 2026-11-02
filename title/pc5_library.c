@@ -340,7 +340,13 @@ int pc5_profile_text_at(const char *id, const Pc5Info *info, const char *argumen
      * Auto, pc5_controls.h): the console's 8 GB doesn't fit the 32-bit numbers an older game's
      * check reads it into. In MB, as WINE_D3D_CONFIG takes it. */
     int video_cap = info->bits == 32 && !(controls && controls->video_memory_full);
-    if (chosen == PC5_GRAPHICS_WINE_VULKAN || !strcmp(graphics, "dxvk"))
+    /* 2D only (DirectDraw): no OpenGL or Vulkan at all. WineD3D makes every picture on the CPU and
+     * puts it on the window as plain Windows drawing, where the game's own GDI drawing goes too. */
+    if (chosen == PC5_GRAPHICS_WINE_2D) {
+        graphics = "gdi";
+        wine_d3d = video_cap ? "\n[debug]\nenv = WINE_D3D_CONFIG=renderer=no3d,VideoMemorySize=2048\n"
+                             : "\n[debug]\nenv = WINE_D3D_CONFIG=renderer=no3d\n";
+    } else if (chosen == PC5_GRAPHICS_WINE_VULKAN || !strcmp(graphics, "dxvk"))
         wine_d3d = video_cap ? "\n[debug]\nenv = WINE_D3D_CONFIG=renderer=vulkan,VideoMemorySize=2048\n"
                              : "\n[debug]\nenv = WINE_D3D_CONFIG=renderer=vulkan\n";
     else if (video_cap)

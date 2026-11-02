@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
-/* Which window's picture has the console's display (patches/radv 0003 and 0005,
+/* Which window's picture has the console's display (patches/radv 0003, 0005 and 0007,
  * wsi_common_videoout_takeover.h), with the swapchains the games' own logs showed. A
  * game fixed by these rules stays here, so a change to them that would break it
  * again fails this test before it reaches a release. */
@@ -71,6 +71,19 @@ int main(void)
     /* a newer window larger than the owner's (a launcher's, then the game's) takes it */
     CHECK(take(window(1, 640, 480, 1, 1000), window(2, 1920, 1080, 0, 0), 1000) == WSI_VIDEOOUT_NEWER,
           "a larger newer window");
+
+    /* Ruined King (#288), changing its resolution: a 3840x2160 picture once on a window of its
+     * own, then left; the game's own window, older, goes on at 2560x1080 and was refused for
+     * being smaller, and the game stayed on its last picture. */
+    CHECK(take(window(2, 3840, 2160, 1, 1000), window(1, 2560, 1080, 0, 0), 1040) == WSI_VIDEOOUT_REFUSED,
+          "Ruined King: not while the 4K picture presents");
+    CHECK(take(window(2, 3840, 2160, 1, 1000), window(1, 2560, 1080, 0, 0), 1500) == WSI_VIDEOOUT_STALE,
+          "Ruined King: the game's own window, once the 4K one stopped");
+    CHECK(take(window(2, 3840, 2160, 1, 1000), window(1, 1920, 1080, 0, 0), 3000) == WSI_VIDEOOUT_STALE,
+          "Ruined King: at 1080p too");
+    /* still never a newer smaller window (Blade & Sword's movie, above), nor a helper's */
+    CHECK(take(window(2, 3840, 2160, 1, 1000), window(1, 113, 2, 0, 0), 9000) == WSI_VIDEOOUT_REFUSED,
+          "an older helper's strip");
 
     /* Helpers' pictures never take it from an owner that presents: wined3d's 10x10 probe,
      * Warcraft III's and Blade & Sword's 111x1, Max Payne 3's 113x2 (#262). */

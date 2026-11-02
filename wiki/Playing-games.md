@@ -93,12 +93,14 @@ Choose a game in the library and press **△**. Its menu has what you change mos
 | Play | Starts the game. |
 | Controller | What the game sees: **Xbox controller** (the default), **DualSense**, or **Keyboard & mouse**. Press **✕** or left / right to change it. See [Controllers](Controllers). |
 | Button mapping | Only with Keyboard & mouse: what each button and stick sends. See [Controllers](Controllers#button-mapping). |
-| Mouse pointer | **Shown** (the default): the pointer stays as the game shows it. **Hides when unused**: it hides when you haven't moved it or clicked for 5 seconds, for a game that leaves it in a corner. See [Controllers](Controllers). |
-| Graphics › | Graphics API, frame generation, resolution, aspect ratio, memory, video memory and CPU sharing. See [Graphics](#graphics). |
+| Mouse pointer | **Normal** (the default): the pointer stays as the game shows it. **Auto-hide**: it hides when you haven't moved it or clicked for 5 seconds, for a game that leaves it in a corner. See [Controllers](Controllers). |
+| Graphics › | Graphics mode, frame generation, resolution, aspect ratio, game memory, graphics memory and stutter fix. See [Graphics](#graphics). |
 | Appearance › | The game's cover, its background (a picture or a video), its home screen tile, the tile's picture and its music. See [Appearance](#appearance). |
 | Manage › | The program PC5 starts, its files, updating the game and uninstalling it. See [Manage](#manage). |
 
 **○** goes back from a group to the menu, and from the menu to the library. **△** closes the menu from anywhere in it.
+
+From 2.1.9, **□ About** on a setting opens a window that says in plain words what the setting does and what each choice means. **○** closes it.
 
 ### Graphics
 
@@ -107,13 +109,13 @@ Choose a game in the library and press **△**. Its menu has what you change mos
 
 | Row | What it does |
 | --- | --- |
-| Graphics API | Only for games drawn with Direct3D or DirectDraw: what turns the game's graphics into Vulkan, which the console draws with. See [Graphics API](#graphics-api) below. |
+| Graphics mode | Only for games drawn with Direct3D or DirectDraw: how the game's pictures are made. **Auto** suits almost every game. See [Graphics mode](#graphics-mode) below. |
 | Frame generation | **Off** (the default) or **30 → 60 fps**. See [Frame generation](#frame-generation) below. |
 | Resolution | Only for games drawn with Direct3D, Vulkan or OpenGL: **1080p** (the default), **1440p** or **4K**. See [Resolution](#resolution) below. |
 | Aspect ratio | **Keep** (the default) or **Stretch**. See [Aspect ratio](#aspect-ratio) below. |
-| Memory | Only for 32-bit games: **Auto** (the default from 1.9.8) or **4 GB**. Auto is as on Windows: a game made for more memory (its program says so) gets 4 GB of address space, any other gets 2 GB. 4 GB gives every game 4 GB, room for big textures and mods, but an older game not made for it can crash with it. From 1.4.0 to 1.9.7 every game had 4 GB; a game left as it was is Auto from 1.9.8. |
-| Video memory | For 32-bit games and for 64-bit Direct3D 10, 11 and 12 games: **Auto** (the default) or **Full**. For a 32-bit game, Auto tells it it has 2 GB of video memory: some older games misread more than that, and refuse to start or say they need more than there is. For a 64-bit game, Auto tells it 4 GB: the console's memory is shared between the game and its graphics, and a game told 8 GB of its own could take so much that the rest ran out ("failed to allocate memory"). A 64-bit game also has **5 GB** and **6 GB**: for a game that warns there is too little video memory on Auto, more room for its textures and less for the rest. If it then crashes or says it ran out of memory, go back a step. **Full** tells the game all the console's. |
-| CPU sharing | **Off** (the default) or **On**. The console runs each of a game's threads on a CPU of its own until it waits, where Windows lets them take turns, so a game that keeps more threads busy than its 13 CPUs can stop for seconds at a time and carry on after a while, or after the PS button. **On** gives the game's threads turns, as on a PC. It applies the next time the game starts. |
+| Game memory | Only for 32-bit games: **Auto** (the default from 1.9.8) or **4 GB**. Auto is as on Windows: a game made for more memory (its program says so) gets 4 GB of address space, any other gets 2 GB. 4 GB gives every game 4 GB, room for big textures and mods, but an older game not made for it can crash with it. From 1.4.0 to 1.9.7 every game had 4 GB; a game left as it was is Auto from 1.9.8. |
+| Graphics memory | For 32-bit games and for 64-bit Direct3D 10, 11 and 12 games: **Auto** (the default) or **Maximum**. For a 32-bit game, Auto tells it it has 2 GB of video memory: some older games misread more than that, and refuse to start or say they need more than there is. For a 64-bit game, Auto tells it 4 GB: the console's memory is shared between the game and its graphics, and a game told 8 GB of its own could take so much that the rest ran out ("failed to allocate memory"). A 64-bit game also has **5 GB** and **6 GB**: for a game that warns there is too little video memory on Auto, more room for its textures and less for the rest. If it then crashes or says it ran out of memory, go back a step. **Maximum** tells the game all the console's. Before 2.1.9 it was called Video memory, and Maximum was Full. |
+| Stutter fix | **Off** (the default) or **On**. The console runs each of a game's threads on a CPU of its own until it waits, where Windows lets them take turns, so a game that keeps more threads busy than its 13 CPUs can stop for seconds at a time and carry on after a while, or after the PS button. **On** gives the game's threads turns, as on a PC. It applies the next time the game starts. Before 2.1.9 it was called CPU sharing. |
 
 ### Appearance
 
@@ -182,18 +184,20 @@ A game drawn with Direct3D, Vulkan or OpenGL can be drawn at **1080p** (the defa
 - Games drawn with DirectDraw or plain Windows drawing are drawn at 1080p, so the row isn't shown for them.
 - A change takes effect the next time the game starts.
 
-## Graphics API
+## Graphics mode
 
-From 1.9.2, **△ › Graphics › Graphics API** chooses who turns a game's Direct3D or DirectDraw into Vulkan. **Auto** (the default) is what PC5 chooses, and suits most games; the others are for a game that doesn't run, or doesn't look right, that way:
+**△ › Graphics › Graphics mode** (called Graphics API before 2.1.9) chooses how a game's Direct3D or DirectDraw pictures are made on the console. **Auto** (the default) suits almost every game; the others are for a game that doesn't start, or doesn't look right, with it:
 
-| Choice | Direct3D 8 to 11 | Direct3D 12 | DirectDraw |
-| --- | --- | --- | --- |
-| **Auto** | DXVK | VKD3D-Proton | WineD3D with OpenGL |
-| **WineD3D** | Wine's own Direct3D, with OpenGL | — | — |
-| **WineD3D on Vulkan** | Wine's own Direct3D, drawing with Vulkan itself | — | Wine's own, drawing with Vulkan itself |
-| **Wine's VKD3D** | — | Wine's own Direct3D 12 | — |
+| Choice | What it is for | Direct3D 8 to 11 | Direct3D 12 | DirectDraw |
+| --- | --- | --- | --- | --- |
+| **Auto** | Almost every game: the fastest | DXVK | VKD3D-Proton | WineD3D with OpenGL |
+| **Alternative** | A wrong picture with Auto, and some mods (Resident Evil 3's HD mod) | Wine's own Direct3D, drawing with Vulkan | Wine's own Direct3D 12 | Wine's own, drawing with Vulkan |
+| **Compatibility (slow)** | A game that won't start with the others | Wine's own Direct3D, with OpenGL | — | — |
+| **2D only** | A 2D game that flickers or shows only part of its screen (from 2.1.9) | — | — | Wine's own, without 3D: every picture made on the CPU, as plain Windows drawing |
 
-From 1.9.3 it opens a window with the game's choices and what each does, the one in use marked **In use**: choose one with ✕, or leave with ○. It applies the next time the game starts, and stays with the game. Wine's own Direct3D is usually slower than DXVK and VKD3D-Proton, and WineD3D on Vulkan is the newest of them; if a game only runs with one of them, say so in its [issue](Reporting-a-problem) or [compatibility report](Game-compatibility).
+Before 2.1.9, Alternative was called **WineD3D on Vulkan** (or **Wine's VKD3D** for a Direct3D 12 game) and Compatibility was **WineD3D**: older reports and compatibility entries use those names, and so do logs and the [web page](Web-page).
+
+It opens a window with the game's choices and what each does, the one in use marked **In use**: choose one with ✕, or leave with ○. It applies the next time the game starts, and stays with the game. If a game only runs with one of them, say so in its [issue](Reporting-a-problem) or [compatibility report](Game-compatibility).
 
 ## Aspect ratio
 
@@ -213,7 +217,7 @@ A game whose picture has another shape than the screen's, such as a 4:3 game, is
 
 ## The overlay
 
-PC5 can show an overlay over every game: FPS, frame time, CPU and GPU usage, CPU and SoC temperatures, and memory. Turn it on in **Settings › Overlay**. See [Settings](Settings#overlay).
+PC5 can show an overlay over every game: FPS, frame time, CPU and GPU usage, CPU and chip temperatures, and memory. Turn it on in **Settings › Overlay**. See [Settings](Settings#overlay).
 
 ## When a game doesn't start
 

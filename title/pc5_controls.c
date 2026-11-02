@@ -64,16 +64,18 @@ static int key_index(const char *name)
 }
 
 /* controls.txt's names for a game's Graphics API (Pc5Graphics). */
-static const char *const graphics_keys[PC5_GRAPHICS_COUNT] = { "auto", "wine", "wine_vulkan" };
+static const char *const graphics_keys[PC5_GRAPHICS_COUNT] = { "auto", "wine", "wine_vulkan", "wine_2d" };
 
 int pc5_graphics_choices(int api, Pc5Graphics choices[PC5_GRAPHICS_COUNT])
 {
     int n = 0;
     if (api == PC5_API_DDRAW || (api >= PC5_API_D3D8 && api <= PC5_API_D3D11)) {
+        /* Auto, Alternative (WineD3D on Vulkan), Compatibility (WineD3D on OpenGL, the slowest).
+         * For DirectDraw, PC5's choice is already WineD3D on OpenGL; it can draw in 2D only. */
         choices[n++] = PC5_GRAPHICS_AUTO;
-        /* For DirectDraw, PC5's choice is already WineD3D on OpenGL. */
-        if (api != PC5_API_DDRAW) choices[n++] = PC5_GRAPHICS_WINE;
         choices[n++] = PC5_GRAPHICS_WINE_VULKAN;
+        if (api != PC5_API_DDRAW) choices[n++] = PC5_GRAPHICS_WINE;
+        if (api == PC5_API_DDRAW) choices[n++] = PC5_GRAPHICS_WINE_2D;
     } else if (api == PC5_API_D3D12) {
         choices[n++] = PC5_GRAPHICS_AUTO;
         choices[n++] = PC5_GRAPHICS_WINE;
@@ -81,11 +83,22 @@ int pc5_graphics_choices(int api, Pc5Graphics choices[PC5_GRAPHICS_COUNT])
     return n;
 }
 
+/* The menu's names: plain words, as a player picks them. */
 const char *pc5_graphics_name(Pc5Graphics graphics, int api)
 {
     if (graphics == PC5_GRAPHICS_AUTO) return N_("Auto");
-    if (api == PC5_API_D3D12) return N_("Wine's VKD3D");
-    return graphics == PC5_GRAPHICS_WINE_VULKAN ? N_("WineD3D on Vulkan") : "WineD3D";
+    if (api == PC5_API_D3D12) return N_("Alternative");
+    if (graphics == PC5_GRAPHICS_WINE_2D) return N_("2D only");
+    return graphics == PC5_GRAPHICS_WINE_VULKAN ? N_("Alternative") : N_("Compatibility (slow)");
+}
+
+/* What each one is, for logs, reports and the web page: the names a log is read by. */
+const char *pc5_graphics_tech_name(Pc5Graphics graphics, int api)
+{
+    if (graphics == PC5_GRAPHICS_AUTO) return "Auto";
+    if (api == PC5_API_D3D12) return "Wine's VKD3D";
+    if (graphics == PC5_GRAPHICS_WINE_2D) return "WineD3D 2D only";
+    return graphics == PC5_GRAPHICS_WINE_VULKAN ? "WineD3D on Vulkan" : "WineD3D";
 }
 
 void pc5_controls_default(Pc5Controls *controls)
@@ -274,13 +287,13 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                                    "# The button that slows the pointer while held, and by how much (%%)\n"
                                    "slow_button = %s\nslow_percent = %d\n"
                                    "# Triangle on the game, then Frame generation: off, on (60 -> 120, or 30 -> 60 at 60 Hz) or mihawkgen (40 -> 120)\nframe_generation = %s\n"
-                                   "# Triangle on a 32-bit game, then Memory: auto (as Windows) or 4gb\nmemory = %s\n"
-                                   "# Triangle on the game, then Video memory: auto, 5gb or 6gb (a 64-bit Direct3D 10 to 12 game), or full\n"
+                                   "# Triangle on a 32-bit game, then Game memory: auto (as Windows) or 4gb\nmemory = %s\n"
+                                   "# Triangle on the game, then Graphics memory: auto, 5gb or 6gb (a 64-bit Direct3D 10 to 12 game), or full (Maximum)\n"
                                    "video_memory = %s\n"
                                    "# Triangle on the game, then Resolution\nresolution = %s\n"
                                    "# Triangle on the game, then Aspect ratio\naspect_ratio = %s\n"
-                                   "# Triangle on the game, then CPU sharing\ncpu_sharing = %s\n"
-                                   "# Triangle on the game, then Graphics API\ngraphics_api = %s\n"
+                                   "# Triangle on the game, then Stutter fix\ncpu_sharing = %s\n"
+                                   "# Triangle on the game, then Graphics mode: auto, wine_vulkan (Alternative), wine (Compatibility) or wine_2d (2D only)\ngraphics_api = %s\n"
                                    "# Triangle on the game, then Manage, then Steam emulator: auto or off\n"
                                    "steam_emulator = %s\n"
                                    "# Triangle on the game, then Controller: the mouse pointer shown, or hides when unused\n"
