@@ -507,6 +507,12 @@ step_wineps5() {
     need tools; need radv
     cd "$PW"
     local sdk=$PW/.deps/ps5-native-app-boilerplate/.deps/native/ps5-payload-sdk work=$PW/.deps/wine-ps5
+    # GnuTLS and nettle for Wine's schannel: without them a game's HTTPS through Windows'
+    # own networking (WinHTTP, WinINet, libcurl's schannel) failed with SEC_E_SECPKG_NOT_FOUND
+    # ("no schannel support"), as World of Tanks' web services did. build_wine_ps5.sh links
+    # libgnutls.prx and secur32 when they're there; package_release.sh ships them.
+    stage "TLS for Wine's schannel"
+    tools/build_tls_ps5.sh --sdk "$sdk" --jobs "$jobs"
     stage "Wine for the PS5"
     PATH="$B/venv/bin:$PATH" tools/build_wine_ps5.sh --source "$PW/.deps/wine/source" \
         --host-tools "$PW/.deps/wine-tools/build" --prx-foundation "$B/prx-foundation" \
@@ -516,7 +522,7 @@ step_wineps5() {
           grep -E "error:|\] Error [0-9]|No rule to make|undefined (symbol|reference)" "$work/make.log" | tail -25
           return 1; }
     # The link is skipped, not failed, when something it needs is missing: check what it made.
-    for module in ntdll win32u winevulkan libvulkan winedmo winegstreamer; do
+    for module in ntdll win32u winevulkan libvulkan winedmo winegstreamer libgnutls; do
         [[ -f $work/prx/sce_module/$module.prx ]] ||
             { echo "no $module.prx: see the prx section of .deps/wine-ps5/report.json" >&2; return 1; }
     done

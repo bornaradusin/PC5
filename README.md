@@ -136,7 +136,7 @@ payload SDK and boilerplate, and the Lapy helper. Also:
 - FAudio's resampler fix as Leo Lobato backported it to prospero-win (zlib)
 - Wine Mono (MIT, its parts under their own licences), FFmpeg (LGPL 2.1 or later)
 - ps5-framegen by Swordpdf (GPL 3.0 or later, its shaders from AMD's FSR3 under MIT)
-- VKD3D-Proton (LGPL 2.1 or later), Mbed TLS (Apache 2.0 or GPL 2.0 or later), Mozilla's root
+- VKD3D-Proton (LGPL 2.1 or later), Mbed TLS (Apache 2.0 or GPL 2.0 or later), GnuTLS and nettle (LGPL), Mozilla's root
   certificates (MPL 2.0)
 - stb_image and stb_image_write (public domain / MIT), Project Nayuki's QR Code generator (MIT)
 - the PS5 Forwarder Format by heydemoura (GPL 3.0 or later)
