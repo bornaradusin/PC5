@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 09:10:00 +0000
+Subject: [PATCH 102/102] PC5: the alive line says how loud the game's sound is
+
+A player who heard nothing from World of Tanks sent a log whose audible
+count rose all the time: any sample but zero counts, so it couldn't tell
+the game's sound from noise a step above silence. The alive line now
+has peak=, the loudest sample since the line before (0 to 32768).
+---
+ native/wine64_main.c | 19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index fe37082..86c43a8 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -471,15 +471,23 @@ _Static_assert(PW_WINE_AUDIO_GRAIN == PW_AUDIO_PS5_GRAIN && PW_WINE_AUDIO_RATE =
+                "Wine's audio grain is the port's");
+ static PwAudioPs5Ops audio_ops;
+ static int audio_port = -1;
+-/* Grains played, and those with any sound in them. */
++/* Grains played, those with any sound in them, and the loudest sample since the last alive
++ * line (0 to 32768): "audible" alone can't tell a game's sound from noise a step above
++ * silence, and a player who hears nothing needs to know which. */
+ static volatile unsigned long audio_grains, audio_audible;
++static volatile int audio_peak;
+ 
+ static int wine_audio(void *context, const int16_t *frames)
+ {
++    int peak = 0;
+     (void)context;
+     audio_grains++;
+-    for (size_t i = 0; i < 2u * PW_WINE_AUDIO_GRAIN; i++)
+-        if (frames[i]) { audio_audible++; break; }
++    for (size_t i = 0; i < 2u * PW_WINE_AUDIO_GRAIN; i++) {
++        int level = frames[i] < 0 ? -(int)frames[i] : frames[i];
++        if (level > peak) peak = level;
++    }
++    if (peak) audio_audible++;
++    if (peak > audio_peak) audio_peak = peak;
+     return audio_ops.output(audio_port, frames) < 0 ? -1 : 0;
+ }
+ 
+@@ -2131,12 +2139,13 @@ int main(int argc, char **argv)
+ 
+             PS5LOG_LOG("PW_WINE64 alive tick=%llu sink_calls=%lu frames_put=%llu shown=%llu "
+                        "rejected=%llu last=%ux%u inputs=%llu refused=%llu vk_shown=%llu vk_busy=%llu "
+-                       "cpu_ms=%llu audio=%lu audible=%lu",
++                       "cpu_ms=%llu audio=%lu audible=%lu peak=%d",
+                        (unsigned long long)tick, sink_calls, (unsigned long long)frames.sequence,
+                        (unsigned long long)shown, (unsigned long long)frames.rejected,
+                        frames.width, frames.height, (unsigned long long)posted,
+                        (unsigned long long)refused, (unsigned long long)vulkan_frames.shown,
+-                       (unsigned long long)vulkan_frames.busy, cpu_ms(), audio_grains, audio_audible);
++                       (unsigned long long)vulkan_frames.busy, cpu_ms(), audio_grains, audio_audible, audio_peak);
++            audio_peak = 0;
+             if (start.virtual_stats && tick % 300 == 0) {
+                 static uint64_t faults_logged;
+ 
+-- 
+2.43.0
+
