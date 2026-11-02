@@ -186,6 +186,122 @@ static int sound_started, sound_user = -1;
 static atomic_int sound_stop;
 
 static int sound_volume = 100;   /* Settings › System › Startup sound volume, in percent */
+static void sound_end(void);
+
+/* Main-output music has its own port and bounded streaming buffer. It never
+ * uses the controller speaker or the startup sound's allocation. */
+/* A track playing, and the one before it fading out on its own port, so moving to another
+ * cover doesn't wait for the fade (about 0.1 s each time): the one before is joined once it
+ * has finished, or when music stops for good (music_end, before a game). */
+typedef struct MusicPlayer {
+    pthread_t thread;
+    int started;
+    atomic_int stop, done;
+    char file[PC5_PATH];
+    int offset;
+} MusicPlayer;
+static MusicPlayer music_players[2];
+static int music_current = -1;   /* index of the track playing, -1 none */
+static int music_volume = 30, music_offset;
+
+static void *play_music(void *argument)
+{
+    MusicPlayer *player = argument;
+    Pc5Music music;
+    PwAudioPs5Ops ops;
+    int16_t grain[AUDIO_GRAIN * 2];
+    int port = -1, gain = 0;
+    const char *music_file = player->file;
+    int music_offset = player->offset;
+    if (pc5_music_open(music_file, &music)) {
+        atomic_store(&player->done, 1);
+        plain_log("PC5 library music: missing or unsupported WAV");
+        return NULL;
+    }
+    if (music_offset && pc5_music_start_at(&music, (unsigned)music_offset)) {
+        plain_log("PC5 music offset exceeds track; playing from the beginning");
+    }
+    if (pw_audio_ps5_platform_ops(&ops) == PW_OK && ops.init() >= 0) {
+        /* Main output (0), signed 16-bit stereo (1). */
+        port = ops.open(0xff, 0, 0, AUDIO_GRAIN, PC5_SOUND_RATE, 1);
+        if (port >= 0) {
+            int32_t volumes[8];
+            for (int i = 0; i < 8; i++) volumes[i] = AUDIO_VOLUME_0DB;
+            (void)ops.volume(port, 3, volumes);
+        }
+    }
+    if (port < 0) plain_log("PC5 library music: main audio output unavailable");
+    while (port >= 0) {
+        int stopping = atomic_load(&player->stop);
+        if (stopping && !gain) break;
+        if (pc5_music_read(&music, grain, AUDIO_GRAIN) != AUDIO_GRAIN) break;
+        for (int i = 0; i < AUDIO_GRAIN; i++) {
+            /* 100 ms fade at the game's own volume. Widen before multiplying. */
+            if (stopping) { if (gain) gain--; }
+            else if (gain < 4800) gain++;
+            for (int c = 0; c < 2; c++)
+                grain[i * 2 + c] = (int16_t)((int64_t)grain[i * 2 + c] * gain * music_volume / 480000);
+        }
+        if (ops.output(port, grain) < 0) break;
+    }
+    if (port >= 0) {
+        (void)ops.output(port, NULL);
+        (void)ops.close(port);
+    }
+    pc5_music_close(&music);
+    atomic_store(&player->done, 1);
+    return NULL;
+}
+
+/* A player that has finished, or every one when wait: joined. */
+static void music_reap(int wait)
+{
+    for (int i = 0; i < 2; i++) {
+        MusicPlayer *player = &music_players[i];
+        if (!player->started || (!wait && !atomic_load(&player->done))) continue;
+        atomic_store(&player->stop, 1);
+        pthread_join(player->thread, NULL);
+        player->started = 0;
+        if (music_current == i) music_current = -1;
+    }
+}
+
+/* Music stopped for good, faded and joined: before a game, a restart or PC5 leaving. */
+static void music_end(void)
+{
+    music_reap(1);
+}
+
+static void music_play(void *context, const char *path)
+{
+    (void)context;
+    music_reap(0);
+    /* The track playing fades out by itself; a third one waits only for the oldest. */
+    if (music_current >= 0) {
+        atomic_store(&music_players[music_current].stop, 1);
+        music_current = -1;
+    }
+    if (!path || !path[0]) return;
+    int slot = !music_players[0].started ? 0 : !music_players[1].started ? 1 : -1;
+    if (slot < 0) {
+        music_reap(1);
+        slot = 0;
+    }
+    MusicPlayer *player = &music_players[slot];
+    pc5_copy(player->file, sizeof(player->file), path);
+    player->offset = music_offset;
+    atomic_store(&player->stop, 0);
+    atomic_store(&player->done, 0);
+    player->started = !pc5_thread_start(&player->thread, play_music, player, 0);
+    if (player->started) music_current = slot;
+}
+
+static void music_play_options(void *context, const char *path, int volume, int start_seconds)
+{
+    music_volume = volume >= 0 && volume <= 100 ? volume : 30;
+    music_offset = start_seconds >= 0 && start_seconds <= 86400 ? start_seconds : 0;
+    music_play(context, path);
+}
 
 /* The port's volume (sceAudioOut's, AUDIO_VOLUME_0DB the most) for that percent, on its square:
  * 50 % is a quarter of the most, 10 % a hundredth, so the lower steps are quiet. PC5 sets only
@@ -337,6 +453,7 @@ static void restart(void *context)
     const char *const eboots[] = { "/app0/eboot.bin", sandbox };
     (void)context;
 
+    music_end();
     sound_end();
     if (pad_status == PW_OK) pw_pad_ps5_close(&pad);
     if (video_status == PW_OK) pw_videoout_ps5_close(&video);
@@ -375,6 +492,7 @@ static void play(void *context, const char *id)
     static const PwPadKeyMap open_map[] = { { PAD_CROSS, 0x20, 0, 0, "cross" } };
     PwPadPs5Ops ops;
     (void)context;
+    music_end();
     sound_end();
     if (pad_status == PW_OK) pw_pad_ps5_close(&pad);
     if (video_status == PW_OK) pw_videoout_ps5_close(&video);
@@ -486,7 +604,7 @@ void pc5_console_run(const Pc5Console *config)
 
     watch_for_crashes(config->root);
     platform = (Pc5Platform){ NULL, { NULL, pc5_net_get, pc5_net_download, pc5_net_get_authorized }, clock_text, play, log_line, notify_text,
-                              unix_time, enter == 0, restart, sound_try, keyboard_open, keyboard_state, keyboard_close };
+                              unix_time, enter == 0, restart, sound_try, keyboard_open, keyboard_state, keyboard_close, music_play, music_play_options };
     {
         /* The console's language (SCE_SYSTEM_SERVICE_PARAM_ID_LANG), which PC5 shows unless its
          * Language setting says another. */

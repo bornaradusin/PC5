@@ -18,6 +18,10 @@
 #include "pc5_report.h"
 #include "pc5_settings.h"
 #include "pc5_sound.h"
+#include "pc5_video.h"
+#include "pc5_compat.h"
+#include "pc5_appearance.h"
+#include "pc5_look.h"
 #include "pc5_steam.h"
 #include "pc5_textdoc.h"
 #include "pc5_source.h"
@@ -54,8 +58,8 @@ enum { COVER_W = 200, COVER_H = 300, COVER_GAP = 18, ROW_TOP = 612, CHOSEN_W = 2
 #define C_DEFAULT_TINT 0xff2a3442u
 
 /* The library's tabs (Settings and Install open their pages), and the Library tab's lists. */
-enum { TAB_HOME, TAB_LIBRARY, TAB_INSTALL, TAB_SETTINGS, TABS };
-static const char *const tab_names[TABS] = { N_("Home"), N_("Library"), N_("Install"), N_("Settings") };
+enum { TAB_HOME, TAB_LIBRARY, TAB_COMPATIBILITY, TAB_INSTALL, TAB_SETTINGS, TABS };
+static const char *const tab_names[TABS] = { N_("Home"), N_("Library"), N_("Compatibility"), N_("Install"), N_("Settings") };
 /* The Library tab's filters, its pills (L2 and R2 move between them). */
 enum { LIST_ALL, LIST_RECENT, LIST_FAVOURITES, LIST_USB, LIST_ATTENTION, LISTS };
 static const char *const list_names[LISTS] = { N_("All"), N_("Recently played"), N_("Favourites"), N_("USB drive"), N_("Needs attention") };
@@ -70,7 +74,9 @@ typedef enum Screen {
     S_UPGRADE_ASK, S_UPGRADING, S_GAME_UPDATE_ASK, S_SAVES_ASK, S_SAVES_CONFIRM, S_PICTURE_SEARCH, S_PICTURE,
     S_PICTURE_TYPING, S_COMPATIBILITY, S_WEB_QR, S_GRAPHICS_API, S_REPORT_CHECK, S_REPORT_UPDATE, S_FILES, S_FILES_MENU,
     S_FILES_TYPING, S_FILES_CONFLICT, S_FILES_DELETE, S_FILES_WORKING, S_TILE_ART, S_INSTALL_ASK, S_SETTINGS_TYPING, S_INSTALL_WHERE,
-    S_PLAY_WHICH, S_FILES_EDIT, S_FILES_EDIT_MENU, S_FILES_EDIT_TYPING, S_FILES_EDIT_LEAVE
+    S_PLAY_WHICH, S_FILES_EDIT, S_FILES_EDIT_MENU, S_FILES_EDIT_TYPING, S_FILES_EDIT_LEAVE,
+    S_MUSIC_IMPORT, S_VIDEO_IMPORT, S_PHONE_QR, S_COMPAT_SEARCH, S_COMPAT_REPORT, S_MEDIA_OPTIONS, S_LOOK_CONFIRM, S_LOOK_WORK,
+    S_MEDIA_DELETE, S_COMPAT_SHARE
 } Screen;
 
 static const char *const screen_names[] = { "start", "covers", "library", "settings", "about", "scan", "sources",
@@ -83,7 +89,8 @@ static const char *const screen_names[] = { "start", "covers", "library", "setti
                                             "files-menu", "files-typing", "files-conflict", "files-delete",
                                             "files-working", "tile-art", "install-ask", "settings-typing", "install-where",
                                             "play-which", "files-edit", "files-edit-menu", "files-edit-typing",
-                                            "files-edit-leave" };
+                                            "files-edit-leave", "music-import", "video-import", "phone-qr", "compat-search", "compat-report", "media-options", "look-confirm", "look-work",
+                                            "media-delete", "compat-share" };
 
 /* One game of several being installed in a row. */
 typedef enum QueueState { Q_WAITING, Q_INSTALLED, Q_FAILED, Q_STOPPED, Q_SKIPPED } QueueState;
@@ -104,6 +111,7 @@ typedef struct QueueGame {
 
 /* The wiki's game compatibility list, which Game maintenance shows as a QR code. */
 #define PC5_COMPATIBILITY "https://github.com/bornaradusin/PC5/wiki/Game-compatibility"
+#define PC5_COMPATIBILITY_NEW "https://github.com/bornaradusin/PC5/discussions/new?category=game-compatibility"
 
 /* Settings: its rows, on seven pages. */
 typedef enum SettingRow {
@@ -111,7 +119,7 @@ typedef enum SettingRow {
     SR_FPS, SR_FRAME_TIME, SR_CPU_USAGE, SR_GPU_USAGE, SR_CPU_TEMPERATURE, SR_SOC_TEMPERATURE, SR_MEMORY, SR_FPS_CORNER,
     SR_OVERLAY_SIZE, SR_VIBRATION, SR_LIGHT, SR_TRIGGERS, SR_TRIGGER_RUMBLE, SR_TRIGGER_RESISTANCE,
     SR_STARTUP_SOUND, SR_STARTUP_VOLUME, SR_KEEP_LOGS, SR_PICTURES, SR_CHECK_ON_OPEN, SR_CHECK_NOW, SR_UPDATE_NOW,
-    SR_FILES, SR_FTP, SR_WEB, SR_NETWORK, SR_REMOTE_USER, SR_REMOTE_PASSWORD, SR_LANGUAGE, SR_KEYBOARD,
+    SR_FILES, SR_FTP, SR_WEB, SR_PHONE_LIBRARY, SR_NETWORK, SR_REMOTE_USER, SR_REMOTE_PASSWORD, SR_LANGUAGE, SR_KEYBOARD,
     SR_HIGH_REFRESH,
     SR_SOURCE   /* a picture source: SR_SOURCE + its index (pc5_cover.h) */
 } SettingRow;
@@ -165,12 +173,12 @@ static int page_rows(const Pc5Settings *set, int page, int offer_update, Setting
     } else if (page == PAGE_MAINTENANCE) {
         rows[n++] = SR_INSTALL;
         rows[n++] = SR_UNINSTALL;
-        rows[n++] = SR_COMPATIBILITY;
     } else if (page == PAGE_NETWORK) {
         rows[n++] = SR_FTP;
         rows[n++] = SR_WEB;
         rows[n++] = SR_REMOTE_USER;
         rows[n++] = SR_REMOTE_PASSWORD;
+        rows[n++] = SR_PHONE_LIBRARY;
     } else {
         rows[n++] = SR_MAINTENANCE;
         rows[n++] = SR_GAMES;
@@ -183,20 +191,23 @@ static int page_rows(const Pc5Settings *set, int page, int offer_update, Setting
     return n;
 }
 
-/* A game's menu, on four pages: Play, Controller (and Button mapping while it plays the keyboard
- * and mouse) and the three groups on the first; each group's rows on a page of its own. */
+/* The game's groups and media submenus each have their own page. */
 typedef enum GameRow {
     GR_PLAY, GR_CONTROLLER, GR_BUTTONS, GR_POINTER, GR_GRAPHICS, GR_APPEARANCE, GR_MANAGE,
     GR_GRAPHICS_API, GR_FRAMEGEN, GR_RESOLUTION, GR_ASPECT, GR_MEMORY, GR_VIDEO_MEMORY, GR_CPU_SHARING,
-    GR_COVER, GR_BACKGROUND, GR_HOME, GR_ICON,
+    GR_COVER, GR_BACKGROUND, GR_HOME, GR_ICON, GR_MUSIC, GR_MUSIC_CLEAR,
+    GR_BACKGROUND_IMAGE, GR_BACKGROUND_VIDEO, GR_VIDEO_CLEAR, GR_MEDIA_OPTIONS, GR_MUSIC_FILE, GR_VIDEO_FILE,
     GR_PROGRAM, GR_STEAM, GR_FILES, GR_UPDATE, GR_REPORT, GR_UNINSTALL
 } GameRow;
-enum { GAME_ROWS = 7, GAME_PAGES = 4, GP_MAIN = 0, GP_GRAPHICS = 1, GP_APPEARANCE = 2, GP_MANAGE = 3 };
-static const char *const game_page_titles[GAME_PAGES] = { "", N_("Graphics"), N_("Appearance"), N_("Manage") };
-/* The first page's row that opens each page. */
-static const GameRow game_page_rows[GAME_PAGES] = { GR_PLAY, GR_GRAPHICS, GR_APPEARANCE, GR_MANAGE };
+enum { GAME_ROWS = 7, GAME_PAGES = 7, GP_MAIN = 0, GP_GRAPHICS = 1, GP_APPEARANCE = 2, GP_MANAGE = 3, GP_BACKGROUND = 4,
+       GP_MUSIC = 5, GP_VIDEO = 6 };
+static const char *const game_page_titles[GAME_PAGES] = { "", N_("Graphics"), N_("Appearance"), N_("Manage"), N_("Background"),
+                                                        N_("Library music"), N_("Background video") };
+/* The parent row that opens each page; Back returns to that row. */
+static const GameRow game_page_rows[GAME_PAGES] = { GR_PLAY, GR_GRAPHICS, GR_APPEARANCE, GR_MANAGE, GR_BACKGROUND,
+                                                  GR_MUSIC, GR_BACKGROUND_VIDEO };
 /* What a game is, for its menu's rows. */
-enum { GAME_32BIT = 1, GAME_VULKAN = 2, GAME_PC5 = 4, GAME_API = 8, GAME_STEAM = 16, GAME_DXGI = 32 };
+enum { GAME_32BIT = 1, GAME_VULKAN = 2, GAME_PC5 = 4, GAME_API = 8, GAME_STEAM = 16, GAME_DXGI = 32, GAME_MEDIA = 64 };
 
 /* kind: GAME_32BIT for Memory, GAME_VULKAN for Resolution, GAME_PC5 (PC5 installed it) for Game files and Update,
  * GAME_API (it draws with DirectDraw or Direct3D) for Graphics API, GAME_STEAM (it has Steam's library) for
@@ -205,6 +216,18 @@ static int game_rows(const Pc5Controls *controls, int kind, int page, GameRow ro
 {
     int n = 0;
     switch (page) {
+    case GP_BACKGROUND:
+        rows[n++] = GR_BACKGROUND_IMAGE;
+        if (kind & GAME_MEDIA) rows[n++] = GR_BACKGROUND_VIDEO;
+        break;
+    case GP_MUSIC:
+        rows[n++] = GR_MUSIC_FILE;
+        rows[n++] = GR_MUSIC_CLEAR;
+        break;
+    case GP_VIDEO:
+        rows[n++] = GR_VIDEO_FILE;
+        rows[n++] = GR_VIDEO_CLEAR;
+        break;
     case GP_GRAPHICS:
         if (kind & GAME_API) rows[n++] = GR_GRAPHICS_API;
         rows[n++] = GR_FRAMEGEN;
@@ -219,6 +242,10 @@ static int game_rows(const Pc5Controls *controls, int kind, int page, GameRow ro
         rows[n++] = GR_BACKGROUND;
         rows[n++] = GR_HOME;
         rows[n++] = GR_ICON;
+        /* Music, a video and their settings are kept in the game's own folder: only a game
+         * PC5 installed in a prefix of its own has one (others may share the default one). */
+        if (kind & GAME_MEDIA) rows[n++] = GR_MUSIC;
+        if (kind & GAME_MEDIA) rows[n++] = GR_MEDIA_OPTIONS;
         break;
     case GP_MANAGE:
         rows[n++] = GR_PROGRAM;
@@ -406,9 +433,19 @@ struct Pc5Ui {
     char report_game[PC5_NAME], report_url[PC5_REPORT_URL];
     Pc5Qr report_qr;
     Pc5Qr coffee_qr;                  /* About PC5: Buy Me a Coffee's page, made once */
+    Pc5Compat compatibility;
+    int compat_initialized, compat_at, compat_filter, compat_detail, compat_scroll;
+    char compat_query[128];
+    uint64_t compat_refresh_at;
+    Pc5Appearance appearance;
+    int media_row, files_look, media_delete_video;
+    Pc5Look look;
+    char look_source[PC5_PATH];
     Pc5Qr compatibility_qr;           /* Game maintenance › Game compatibility list: the wiki's page, made once */
     Pc5Qr web_qr;                     /* Network › Web page (Triangle): its address, made as it is shown */
-    char web_url[80];
+    char web_url[160];
+    int phone_kind, phone_temporary, phone_library, phone_manager_pending, phone_import_ok;
+    char phone_source[PC5_PATH];
     char launch_id[PC5_ID];
     char start[PC5_ID];               /* a home screen tile's game, until it is started */
     int removing_tiles;               /* the game being uninstalled had a tile, deleted with it */
@@ -475,7 +512,7 @@ struct Pc5Ui {
     QueueGame *queue;
     int queue_count, queue_at, queue_phase, queue_review, queue_installing, queue_stop_all;
 
-    /* The library's tabs along the top (TAB_*), Focus mode (R3: the game's picture alone), and
+    /* The library's tabs along the top (TAB_*), focus (Down enters, Up leaves), and
      * what the top of Home shows for the chosen game: its details (genres, a line, its logo),
      * its settings, loaded once it stays chosen a moment. */
     int tab, focus;
@@ -523,6 +560,16 @@ struct Pc5Ui {
     /* The file manager (pc5_files.h): a game's own folder, from its menu (files_game), or the
      * console's places, from Settings. */
     int files_game;                /* 1: the folder of the game in launch_id, and nothing above it */
+    int files_music;               /* read-only file selection for library music */
+    char music_id[PC5_ID], music_want[PC5_PATH], music_playing[PC5_PATH];
+    uint64_t music_since;
+    Pc5MusicImport music_import;
+    Pc5Video video;
+    Pc5VideoImport video_import;
+    int files_video;
+    char video_id[PC5_ID], video_want[PC5_PATH];
+    uint64_t video_report_at;
+    unsigned video_report_shown;
     char files_top[PC5_PATH];      /* the game's folder, or the place opened ("" at the places) */
     char files_path[PC5_PATH];     /* the folder shown, "" for the places */
     FilesPlace files_place[FILES_PLACES];
@@ -561,6 +608,8 @@ static int ui_game_kind(const Pc5Ui *ui)
     Pc5Graphics choices[PC5_GRAPHICS_COUNT];
     return (ui->library.games[index].bits == 32 ? GAME_32BIT : 0) | (ui->library.games[index].vulkan ? GAME_VULKAN : 0) |
            (ui->library.games[index].pc5 ? GAME_PC5 : 0) |
+           (ui->library.games[index].pc5 && ui->library.games[index].prefix[0] &&
+                    strcmp(ui->library.games[index].prefix, "default") ? GAME_MEDIA : 0) |
            (pc5_graphics_choices(ui->library.games[index].api, choices) > 1 ? GAME_API : 0) |
            (ui->steam_dlls > 0 ? GAME_STEAM : 0) |
            (ui->library.games[index].bits != 32 && ui->library.games[index].api >= PC5_API_D3D10 &&
@@ -583,6 +632,15 @@ static void game_menu_at(Pc5Ui *ui, GameRow row)
 const char *pc5_ui_screen(const Pc5Ui *ui)
 {
     return screen_names[ui->screen];
+}
+
+/* Start and stop must use the same provider: an extended-only host need not
+ * supply the legacy callback, and may use a different player when both exist. */
+static void library_music_stop(Pc5Ui *ui)
+{
+    if (ui->platform.music_options) ui->platform.music_options(ui->platform.context, "", 0, 0);
+    else if (ui->platform.music) ui->platform.music(ui->platform.context, "");
+    ui->music_playing[0] = 0;
 }
 
 static void say(Pc5Ui *ui, const char *format, ...) __attribute__((format(printf, 2, 3)));
@@ -611,7 +669,7 @@ static void go(Pc5Ui *ui, Screen screen)
                  screen == S_QUEUE_READ || screen == S_QUEUE || screen == S_CHECKING || screen == S_UPGRADE_ASK ||
                  screen == S_UPGRADING || screen == S_GAME_UPDATE_ASK || screen == S_SAVES_ASK || screen == S_REPORT ||
                  screen == S_PICTURE_SEARCH || screen == S_PICTURE || screen == S_PICTURE_TYPING ||
-                 screen == S_FILES_WORKING);
+                 screen == S_FILES_WORKING || screen == S_MUSIC_IMPORT || screen == S_VIDEO_IMPORT);
     ui->drawn = 0;
     ui->dirty = 1;
     say(ui, "PC5 screen=%s", screen_names[screen]);
@@ -753,6 +811,8 @@ static void library_reload(Pc5Ui *ui, const char *select_id)
         pc5_copy(keep, sizeof(keep), ui->library.games[ui->selected].id);
     covers_clear(ui);
     pc5_library_load(ui->root, &ui->library);
+    for (int i = 0; i < ui->library.count; ++i)
+        if (ui->library.games[i].pc5) pc5_look_recover(ui->root, ui->library.games[i].prefix);
     ui->library_loads++;
     ui->selected = 0;
     if (keep[0]) {
@@ -956,6 +1016,13 @@ Pc5Ui *pc5_ui_create(const Pc5UiConfig *config, const Pc5Platform *platform)
 void pc5_ui_destroy(Pc5Ui *ui)
 {
     if (!ui) return;
+    library_music_stop(ui);
+    atomic_store(&ui->look.stop, 1); pc5_look_end(&ui->look);
+    if (ui->compat_initialized) pc5_compat_end(&ui->compatibility);
+    pc5_music_import_end(&ui->music_import);
+    pc5_video_import_end(&ui->video_import);
+    if (ui->phone_source[0]) unlink(ui->phone_source);
+    pc5_video_stop(&ui->video);
     pc5_ftp_stop();
     pc5_web_stop();
     /* The update's thread works in ui: it stops first (or finishes putting files in place). */
@@ -1500,7 +1567,8 @@ static void picture_close(Pc5Ui *ui)
 /* Back to the game's menu, on the picker's row. */
 static void picture_leave(Pc5Ui *ui)
 {
-    GameRow row = ui->pick_kind == PICK_COVER ? GR_COVER : ui->pick_kind == PICK_ICON ? GR_ICON : GR_BACKGROUND;
+    GameRow row = ui->pick_kind == PICK_COVER ? GR_COVER : ui->pick_kind == PICK_ICON ? GR_ICON
+                  : ui_game_kind(ui) & GAME_MEDIA ? GR_BACKGROUND_IMAGE : GR_BACKGROUND;
     picture_close(ui);
     game_menu_at(ui, row);
     go(ui, S_GAME_MENU);
@@ -2285,9 +2353,14 @@ static void setting_text(Pc5Ui *ui, SettingRow row, const char **label, char *ab
         *label = T("Uninstall game");
         pc5_copy(about, about_size, T("Deletes a game (its saves can be kept), or saves kept from before"));
         break;
+    case SR_PHONE_LIBRARY:
+        *label = T("Library appearance from phone");
+        pc5_copy(about, about_size, T("One QR code to choose any installed game and send its pictures, music or video"));
+        pc5_copy(value, value_size, T("Open"));
+        break;
     case SR_COMPATIBILITY:
         *label = T("Game compatibility list");
-        pc5_copy(about, about_size, T("Games players have tried, on your phone with a QR code"));
+        pc5_copy(about, about_size, T("Browse community reports, settings and saved offline results"));
         break;
     case SR_MAINTENANCE:
         *label = T("Game maintenance");
@@ -2557,6 +2630,7 @@ static void ftp_apply(Pc5Ui *ui)
 /* PC5's page for a browser, as its setting says: started (with PC5's folders) or stopped. */
 static void web_apply(Pc5Ui *ui)
 {
+    pc5_web_phone_only(0);
     ui->web_error[0] = 0;
     if (!ui->settings.web_page) {
         pc5_web_stop();
@@ -3101,6 +3175,17 @@ static void settings_open(Pc5Ui *ui, int page, int row);
 static void lists_make(Pc5Ui *ui);
 static void hero_refresh(Pc5Ui *ui);
 
+static int home_focus_input(Pc5Ui *ui, uint32_t k)
+{
+    if (ui->tab != TAB_HOME || !ui->library.count) return 0;
+    if (((k & PC5_KEY_DOWN) && !ui->focus) || ((k & PC5_KEY_UP) && ui->focus)) {
+        ui->focus = (k & PC5_KEY_DOWN) != 0;
+        ui->dirty = 1;
+        return 1;
+    }
+    return 0;
+}
+
 /* Square: a game in or out of the Library tab's Favourites (pc5/favourite.txt). */
 static void favourite_toggle(Pc5Ui *ui, int index)
 {
@@ -3115,6 +3200,20 @@ static void favourite_toggle(Pc5Ui *ui, int index)
     ui->dirty = 1;
 }
 
+static void compatibility_open(Pc5Ui *ui)
+{
+    ui->tab = TAB_COMPATIBILITY;
+    if (!ui->compat_initialized) {
+        pc5_compat_init(&ui->compatibility, ui->root, &ui->platform.http);
+        ui->compat_initialized = 1;
+    }
+    pc5_compat_refresh(&ui->compatibility);
+    ui->compat_refresh_at = ui->now;
+    ui->compat_detail = ui->compat_scroll = 0;
+    if (!ui->compatibility_qr.size) pc5_qr_make(PC5_COMPATIBILITY, &ui->compatibility_qr);
+    go(ui, S_COMPATIBILITY);
+}
+
 static void tab_move(Pc5Ui *ui, int by)
 {
     int shown = ui->screen == S_SETTINGS ? (ui->tab == TAB_INSTALL ? TAB_INSTALL : TAB_SETTINGS) : ui->tab;
@@ -3122,7 +3221,8 @@ static void tab_move(Pc5Ui *ui, int by)
     ui->tab = next;
     ui->focus = 0;
     ui->dirty = 1;
-    if (next == TAB_INSTALL) settings_open(ui, PAGE_MAINTENANCE, 0);
+    if (next == TAB_COMPATIBILITY) compatibility_open(ui);
+    else if (next == TAB_INSTALL) settings_open(ui, PAGE_MAINTENANCE, 0);
     else if (next == TAB_SETTINGS) settings_open(ui, 0, 0);
     else {
         if (next == TAB_LIBRARY) lists_make(ui);
@@ -3162,6 +3262,8 @@ static int files_writable(const Pc5Ui *ui, const char *dir)
     if (ui->files_game) {
         if (pc5_files_within(ui->files_top, dir)) base = ui->files_top;
     } else {
+        const char *internal = !strncmp(ui->root, "/data/", 6) ? "/data" : ui->root;
+        if (ui->files_look == 2 && pc5_files_within(internal, dir)) base = internal;
         if (ui->app[0] && pc5_files_within(ui->app, dir)) return 0;
         /* PC5's own folder, as it is on the drive: only its INSTALL folder can change */
         if (ui->pc5_folder[0] && pc5_files_within(ui->pc5_folder, dir) &&
@@ -3250,6 +3352,12 @@ static int files_count(const Pc5Ui *ui)
 static void files_places(Pc5Ui *ui)
 {
     int n = 0;
+    if (ui->files_look) {
+        FilesPlace *place = &ui->files_place[n++];
+        pc5_copy(place->name, sizeof(place->name), T("Internal storage"));
+        pc5_copy(place->path, sizeof(place->path), !strncmp(ui->root, "/data/", 6) ? "/data" : ui->root);
+        place->read_only = ui->files_look != 2;
+    }
     for (const char *const *d = files_drives(ui); *d && n < FILES_PLACES - 3; d++) {
         if (!pc5_is_dir(*d)) continue;
         FilesPlace *place = &ui->files_place[n++];
@@ -3293,8 +3401,210 @@ static void files_load(Pc5Ui *ui, const char *select)
         if (!strcmp(ui->files.items[i].name, keep)) ui->files_at = i;
 }
 
+static int music_config_path(Pc5Ui *ui, const Pc5Game *game, char *out, size_t size)
+{
+    return pc5_format(out, size, "%s/prefixes/%s/pc5/music.txt", ui->root, game->prefix);
+}
+
+/* Only the association changes here. New files are prepared by the import
+ * worker before this atomic commit; legacy external paths remain readable. */
+static int music_save(Pc5Ui *ui, const char *path)
+{
+    int index = pc5_library_find(&ui->library, ui->launch_id);
+    char dest[PC5_PATH], temp[PC5_PATH], dir[PC5_PATH];
+    if (index < 0 || music_config_path(ui, &ui->library.games[index], dest, sizeof(dest))) return -1;
+    if (!path[0]) {
+        if (unlink(dest) && errno != ENOENT) return -1;
+    } else {
+        if (path[0] != '/' || strchr(path, '\n') || strchr(path, '\r') ||
+            pc5_format(temp, sizeof(temp), "%s.tmp", dest)) return -1;
+        pc5_copy(dir, sizeof(dir), dest);
+        char *slash = strrchr(dir, '/');
+        if (!slash) return -1;
+        *slash = 0;
+        if (pc5_mkdirs(dir) || pc5_write_file(temp, path, strlen(path)) || rename(temp, dest)) {
+            unlink(temp);
+            return -1;
+        }
+    }
+    ui->music_id[0] = 0;   /* read the changed selection again */
+    return 0;
+}
+
+static int music_slots(Pc5Ui *ui, char *a, char *b, char *dir)
+{
+    int index = pc5_library_find(&ui->library, ui->launch_id);
+    if (index < 0 || pc5_format(dir, PC5_PATH, "%s/prefixes/%s/pc5/music", ui->root,
+                                ui->library.games[index].prefix) ||
+        pc5_format(a, PC5_PATH, "%s/track-a.wav", dir) || pc5_format(b, PC5_PATH, "%s/track-b.wav", dir)) return -1;
+    return 0;
+}
+
+/* Clean only the two application-owned slots, never a legacy external file. */
+static void music_cleanup(Pc5Ui *ui, const char *keep)
+{
+    char a[PC5_PATH], b[PC5_PATH], dir[PC5_PATH];
+    if (music_slots(ui, a, b, dir)) return;
+    if (!keep || strcmp(keep, a)) unlink(a);
+    if (!keep || strcmp(keep, b)) unlink(b);
+}
+
+static void music_import_begin(Pc5Ui *ui, const char *source)
+{
+    char a[PC5_PATH], b[PC5_PATH], dir[PC5_PATH], config[PC5_PATH];
+    int index = pc5_library_find(&ui->library, ui->launch_id);
+    Pc5Buf previous = { 0 };
+    if (index < 0 || music_slots(ui, a, b, dir) || pc5_mkdirs(dir) ||
+        music_config_path(ui, &ui->library.games[index], config, sizeof(config))) {
+        message(ui, 0, T("Music wasn't saved"), T("PC5 couldn't create the game's music folder. Check free space."), S_FILES);
+        return;
+    }
+    (void)pc5_read_file(config, &previous, PC5_PATH - 1);
+    int use_b = previous.len == strlen(a) && !memcmp(previous.data, a, previous.len);
+    pc5_buf_free(&previous);
+    if (pc5_music_import_start(&ui->music_import, source, use_b ? b : a)) {
+        message(ui, 0, T("Music wasn't saved"), T("PC5 couldn't start importing the music. Try again."), S_FILES);
+        return;
+    }
+    go(ui, S_MUSIC_IMPORT);
+}
+
+static int video_paths(Pc5Ui *ui, const Pc5Game *game, char *config, char *dir, char *a, char *b)
+{
+    return pc5_format(config, PC5_PATH, "%s/prefixes/%s/pc5/background-video.txt", ui->root, game->prefix) ||
+           pc5_format(dir, PC5_PATH, "%s/prefixes/%s/pc5/background-video", ui->root, game->prefix) ||
+           pc5_format(a, PC5_PATH, "%s/clip-a.mp4", dir) || pc5_format(b, PC5_PATH, "%s/clip-b.mp4", dir);
+}
+
+static int video_save(Pc5Ui *ui, const char *path)
+{
+    int index = pc5_library_find(&ui->library, ui->launch_id);
+    char config[PC5_PATH], dir[PC5_PATH], a[PC5_PATH], b[PC5_PATH], temp[PC5_PATH];
+    if (index < 0 || video_paths(ui, &ui->library.games[index], config, dir, a, b)) return -1;
+    if (!path[0]) {
+        if (unlink(config) && errno != ENOENT) return -1;
+    } else {
+        if ((strcmp(path, a) && strcmp(path, b)) || pc5_format(temp, sizeof(temp), "%s.tmp", config)) return -1;
+        if (pc5_write_file(temp, path, strlen(path)) || rename(temp, config)) { unlink(temp); return -1; }
+    }
+    pc5_video_stop(&ui->video);
+    ui->video_id[0] = 0;
+    if (strcmp(path, a)) unlink(a);
+    if (strcmp(path, b)) unlink(b);
+    return 0;
+}
+
+static void video_import_begin(Pc5Ui *ui, const char *source)
+{
+    int index = pc5_library_find(&ui->library, ui->launch_id);
+    char config[PC5_PATH], dir[PC5_PATH], a[PC5_PATH], b[PC5_PATH];
+    Pc5Buf previous = { 0 };
+    if (index < 0 || video_paths(ui, &ui->library.games[index], config, dir, a, b) || pc5_mkdirs(dir)) {
+        message(ui, 0, T("Video wasn't saved"), T("PC5 couldn't create the game's video folder. Check free space."), S_FILES);
+        return;
+    }
+    (void)pc5_read_file(config, &previous, PC5_PATH - 1);
+    int use_b = previous.len == strlen(a) && !memcmp(previous.data, a, previous.len);
+    pc5_buf_free(&previous);
+    if (pc5_video_import_start(&ui->video_import, source, use_b ? b : a)) {
+        message(ui, 0, T("Video wasn't saved"), T("This build couldn't start the video importer."), S_FILES);
+        return;
+    }
+    go(ui, S_VIDEO_IMPORT);
+}
+
+static void video_follow(Pc5Ui *ui)
+{
+    int eligible = (ui->screen == S_LIBRARY || ui->screen == S_GAME_MENU) && ui->tab != TAB_INSTALL &&
+                   ui->selected >= 0 && ui->selected < ui->library.count;
+    if (ui->screen == S_LIBRARY && ui->tab == TAB_LIBRARY && !ui->list_count[ui->list_at]) eligible = 0;
+    const Pc5Game *game = eligible ? &ui->library.games[ui->selected] : NULL;
+    const char *id = game ? game->id : "";
+    if (strcmp(ui->video_id, id) || (!id[0] && ui->video_want[0])) {
+        pc5_video_stop(&ui->video);
+        pc5_copy(ui->video_id, sizeof(ui->video_id), id);
+        ui->video_want[0] = 0;
+        if (game) {
+            char config[PC5_PATH], dir[PC5_PATH], a[PC5_PATH], b[PC5_PATH];
+            Pc5Buf saved = { 0 };
+            if (!video_paths(ui, game, config, dir, a, b) && !pc5_read_file(config, &saved, PC5_PATH - 1) &&
+                saved.len && !memchr(saved.data, 0, saved.len)) {
+                if ((saved.len == strlen(a) && !memcmp(saved.data, a, saved.len)) ||
+                    (saved.len == strlen(b) && !memcmp(saved.data, b, saved.len))) {
+                    memcpy(ui->video_want, saved.data, saved.len);
+                    ui->video_want[saved.len] = 0;
+                }
+            }
+            pc5_buf_free(&saved);
+        }
+        ui->dirty = 1;
+    }
+    /* Open on the first eligible update; the worker supplies the first frame
+     * as soon as it can, without an intentional cover-selection delay. */
+    if (ui->video_want[0] && !ui->video.running) {
+        ui->video_report_at = ui->now;
+        ui->video_report_shown = 0;
+        Pc5Appearance options;
+        pc5_appearance_load(ui->root, game->prefix, &options);
+        if (pc5_video_start_options(&ui->video, ui->video_want, &options)) {
+            say(ui, "PC5 background video: couldn't start; keeping image");
+            ui->video_want[0] = 0;
+        }
+    }
+    if (pc5_video_poll(&ui->video)) ui->dirty = 1;
+    if (ui->video.running && ui->now - ui->video_report_at >= 5000) {
+        unsigned shown = atomic_load(&ui->video.shown);
+        unsigned tenths = (unsigned)((uint64_t)(shown - ui->video_report_shown) * 10000 / (ui->now - ui->video_report_at));
+        say(ui, "PC5 background video fps=%u.%u decoded=%u dropped=%u", tenths / 10, tenths % 10,
+            atomic_load(&ui->video.decoded), atomic_load(&ui->video.dropped));
+        ui->video_report_at = ui->now;
+        ui->video_report_shown = shown;
+    }
+    if (ui->video.running && atomic_load(&ui->video.done)) {
+        if (ui->video.failed) say(ui, "PC5 background video: %s; keeping image", ui->video.error);
+        pc5_video_stop(&ui->video);
+        ui->video_want[0] = 0;
+        ui->dirty = 1;
+    }
+}
+
+static void music_follow(Pc5Ui *ui)
+{
+    if (!ui->platform.music && !ui->platform.music_options) return;
+    int eligible = (ui->screen == S_LIBRARY || ui->screen == S_GAME_MENU) &&
+                   ui->tab != TAB_INSTALL && ui->selected >= 0 && ui->selected < ui->library.count;
+    if (ui->screen == S_LIBRARY && ui->tab == TAB_LIBRARY && !ui->list_count[ui->list_at]) eligible = 0;
+    const Pc5Game *game = eligible ? &ui->library.games[ui->selected] : NULL;
+    const char *id = game ? game->id : "";
+    if (strcmp(ui->music_id, id) || (!id[0] && ui->music_want[0])) {
+        if (ui->music_playing[0]) library_music_stop(ui);
+        ui->music_playing[0] = ui->music_want[0] = 0;
+        pc5_copy(ui->music_id, sizeof(ui->music_id), id);
+        ui->music_since = ui->now;
+        char path[PC5_PATH];
+        Pc5Buf file = { 0 };
+        if (game && !music_config_path(ui, game, path, sizeof(path)) &&
+            !pc5_read_file(path, &file, PC5_PATH - 1) && file.len && file.data[0] == '/' &&
+            !memchr(file.data, 0, file.len) && !memchr(file.data, '\n', file.len) && !memchr(file.data, '\r', file.len)) {
+            memcpy(ui->music_want, file.data, file.len);
+            ui->music_want[file.len] = 0;
+        }
+        pc5_buf_free(&file);
+    }
+    if (ui->music_want[0] && !ui->music_playing[0] && ui->now - ui->music_since >= 350) {
+        Pc5Appearance options;
+        pc5_appearance_load(ui->root, game->prefix, &options);
+        if (ui->platform.music_options) ui->platform.music_options(ui->platform.context, ui->music_want, options.volume, options.music_start);
+        else ui->platform.music(ui->platform.context, ui->music_want);
+        pc5_copy(ui->music_playing, sizeof(ui->music_playing), ui->music_want);
+    }
+}
+
 static void files_open(Pc5Ui *ui, int game)
 {
+    ui->files_music = 0;
+    ui->files_video = 0;
+    ui->files_look = 0;
     ui->files_game = game;
     ui->files_top[0] = ui->files_path[0] = 0;
     ui->files_changed = 0;
@@ -3318,6 +3628,125 @@ static void files_open(Pc5Ui *ui, int game)
     go(ui, S_FILES);
 }
 
+#include "pc5_ui_enhancements_input.h"
+
+static int phone_row_kind(GameRow row)
+{
+    return row == GR_COVER ? PC5_PHONE_COVER : row == GR_BACKGROUND_IMAGE ? PC5_PHONE_BACKGROUND :
+           row == GR_ICON ? PC5_PHONE_ICON : (row == GR_MUSIC || row == GR_MUSIC_FILE) ? PC5_PHONE_MUSIC :
+           (row == GR_BACKGROUND_VIDEO || row == GR_VIDEO_FILE) ? PC5_PHONE_VIDEO : -1;
+}
+
+static void phone_end(Pc5Ui *ui)
+{
+    pc5_web_phone_end();
+    ui->phone_library = ui->phone_manager_pending = 0;
+    if (ui->phone_temporary) { pc5_web_stop(); pc5_web_phone_only(0); ui->phone_temporary = 0; }
+}
+
+static void phone_source_remove(Pc5Ui *ui)
+{
+    if (ui->phone_source[0]) unlink(ui->phone_source);
+    ui->phone_source[0] = 0;
+}
+
+static void phone_open(Pc5Ui *ui, const Pc5Game *game, int kind)
+{
+    Pc5WebStatus status;
+    Screen return_to = kind == 5 ? S_SETTINGS : S_GAME_MENU;
+    if (kind == 5) settings_open(ui, PAGE_NETWORK, 4);
+    if (!game->pc5 || !game->prefix[0] || !strcmp(game->prefix, "default")) {
+        message(ui, 0, T("PC5 didn't install this game"), T("Phone uploads need a game with its own PC5 folder."), return_to);
+        return;
+    }
+    pc5_web_status(&status);
+    ui->phone_temporary = !status.running;
+    if (ui->phone_temporary) {
+        const Pc5WebConfig config = { ui->root, "" };
+        pc5_web_phone_only(1);
+        if (pc5_web_start(&config, PC5_WEB_PORT, ui->web_error, sizeof(ui->web_error))) {
+            phone_end(ui);
+            message(ui, 0, T("Phone connection unavailable"), TX(ui->web_error), return_to);
+            return;
+        }
+    }
+    phone_source_remove(ui);
+    ui->phone_kind = kind;
+    ui->phone_library = kind == 5;
+    if ((kind == 5 ? pc5_web_appearance_begin(ui->web_url, sizeof(ui->web_url)) : pc5_web_phone_begin(kind, game->title, ui->web_url, sizeof(ui->web_url))) || pc5_qr_make(ui->web_url, &ui->web_qr)) {
+        phone_end(ui);
+        message(ui, 0, T("Phone connection unavailable"), T("Check the network, then try again. The phone and PS5 must share a network or phone hotspot."), return_to);
+        return;
+    }
+    go(ui, S_PHONE_QR);
+}
+
+static void phone_picture_use(Pc5Ui *ui, const Pc5Game *game)
+{
+    Pc5Buf data = { 0 };
+    Pc5Image original = { 0 }, composed = { 0 };
+    int kind = ui->phone_kind;
+    int failed = pc5_read_file(ui->phone_source, &data, 20u << 20) || pc5_image_decode(data.data, data.len, &original);
+    if (!failed) failed = kind == PC5_PHONE_COVER ? pc5_cover_compose(&original, &composed) :
+                          kind == PC5_PHONE_ICON ? pc5_icon_compose(&original, &composed) :
+                          pc5_background_compose(&original, &composed);
+    pc5_buf_free(&data); pc5_image_free(&original);
+    phone_source_remove(ui);
+    if (!failed) {
+        picture_close(ui);
+        ui->pick = pc5_alloc(sizeof(*ui->pick));
+        if (!ui->pick) failed = 1;
+    }
+    if (failed) {
+        pc5_image_free(&composed);
+        message(ui, 0, T("Picture wasn't saved"), T("Choose a readable JPEG or PNG image, at most 20 MB. Your previous picture was kept."), S_GAME_MENU);
+        return;
+    }
+    ui->pick->count = 1;
+    ui->pick_kind = kind == PC5_PHONE_COVER ? PICK_COVER : kind == PC5_PHONE_ICON ? PICK_ICON : PICK_BACKGROUND;
+    ui->pick_at = ui->pick_now = 0;
+    ui->pick_count = 1;
+    ui->pick_image = composed;
+    ui->pick_tint = pc5_image_tint(&composed);
+    pick_use(ui, game);
+}
+
+static void phone_update(Pc5Ui *ui, uint32_t k, uint32_t back)
+{
+    Pc5PhoneStatus status;
+    pc5_web_phone_status(&status);
+    ui->dirty = 1;
+    if ((k & back) || !status.active) {
+        int library = ui->phone_library;
+        phone_end(ui);
+        if (library) settings_open(ui, PAGE_NETWORK, 4);
+        else go(ui, S_GAME_MENU);
+        return;
+    }
+    if (!pc5_web_phone_take(ui->phone_source, sizeof(ui->phone_source))) return;
+    if (ui->phone_library) {
+        if (!pc5_web_appearance_target(ui->launch_id, sizeof(ui->launch_id), &ui->phone_kind)) {
+            phone_source_remove(ui); pc5_web_appearance_finish(0); return;
+        }
+        ui->phone_manager_pending = 1; ui->phone_import_ok = 0;
+        if (!ui->config.tiles_root || !pc5_home_find(ui->config.tiles_root, ui->launch_id, ui->tile)) ui->tile[0] = 0;
+    } else phone_end(ui);
+    int index = pc5_library_find(&ui->library, ui->launch_id);
+    if (index < 0) { phone_source_remove(ui); go(ui, S_LIBRARY); return; }
+    if (ui->phone_kind == PC5_PHONE_MUSIC || ui->phone_kind == PC5_PHONE_VIDEO) {
+        /* Reuse the existing importer and its commit/cancellation/error UI. */
+        files_open(ui, 0);
+        ui->files_music = ui->phone_kind == PC5_PHONE_MUSIC;
+        ui->files_video = ui->phone_kind == PC5_PHONE_VIDEO;
+        if (ui->files_music) music_import_begin(ui, ui->phone_source);
+        else video_import_begin(ui, ui->phone_source);
+        if (ui->screen != S_MUSIC_IMPORT && ui->screen != S_VIDEO_IMPORT) phone_source_remove(ui);
+    } else {
+        phone_picture_use(ui, &ui->library.games[index]);
+        ui->phone_import_ok = ui->screen != S_MESSAGE;
+    }
+}
+
 static void files_close(Pc5Ui *ui)
 {
     pc5_files_list_free(&ui->files);
@@ -3326,7 +3755,17 @@ static void files_close(Pc5Ui *ui)
     ui->files_path[0] = 0;
     say(ui, "PC5 files close changed=%d", ui->files_changed);
     if (ui->files_changed) library_reload(ui, NULL);
-    if (ui->files_game) {
+    if (ui->files_look) {
+        ui->files_look = 0; go(ui, S_MEDIA_OPTIONS);
+    } else if (ui->files_video) {
+        ui->files_video = 0;
+        game_menu_at(ui, GR_VIDEO_FILE);
+        go(ui, S_GAME_MENU);
+    } else if (ui->files_music) {
+        ui->files_music = 0;
+        game_menu_at(ui, GR_MUSIC_FILE);
+        go(ui, S_GAME_MENU);
+    } else if (ui->files_game) {
         game_menu_at(ui, GR_FILES);
         go(ui, S_GAME_MENU);
     } else {
@@ -3381,6 +3820,28 @@ static void files_enter(Pc5Ui *ui)
     if (ui->files_at >= ui->files.count) return;
     const Pc5FileItem *item = &ui->files.items[ui->files_at];
     if (!item->dir) {
+        if (ui->files_video) {
+            if (files_join(next, sizeof(next), ui->files_path, item->name)) return;
+            video_import_begin(ui, next);
+            return;
+        }
+        if (ui->files_look == 2) return; /* This picker chooses folders, never files. */
+        if (ui->files_look == 1) {
+            if (files_join(next, sizeof(next), ui->files_path, item->name) || !pc5_ends_with_ci(item->name, ".pc5look")) {
+                message(ui, 0, T("Choose an appearance backup"), T("Choose a .pc5look backup made by PC5."), S_FILES); return;
+            }
+            pc5_copy(ui->look_source, sizeof(ui->look_source), next);
+            ui->button = 0; go(ui, S_LOOK_CONFIRM); return;
+        }
+        if (ui->files_music) {
+            if (files_join(next, sizeof(next), ui->files_path, item->name) ||
+                (!pc5_ends_with_ci(item->name, ".mp3") && !pc5_ends_with_ci(item->name, ".wav"))) {
+                message(ui, 0, T("Choose a music file"), T("Choose an MP3 or a 16-bit PCM WAV file."), S_FILES);
+                return;
+            }
+            music_import_begin(ui, next);
+            return;
+        }
         if (files_edit_open(ui, 1)) files_menu_open(ui);   /* not text: what can be done with it */
         return;
     }
@@ -3785,6 +4246,27 @@ static void files_edit_update(Pc5Ui *ui, uint32_t k)
     }
 }
 
+static void look_export_here(Pc5Ui *ui)
+{
+    char path[PC5_PATH], part[PC5_PATH];
+    if (!files_writable(ui, ui->files_path)) {
+        message(ui, 0, T("Choose a writable folder"), T("Open a folder on internal storage or a USB drive, then choose Save here."), S_FILES);
+        return;
+    }
+    int found = 0;
+    for (int suffix = 0; suffix < 1000; ++suffix) {
+        if (pc5_format(path, sizeof(path), "%s/%s-%llu-%d.pc5look", ui->files_path, ui->launch_id,
+                       (unsigned long long)ui->now, suffix) || pc5_format(part, sizeof(part), "%s.part", path)) break;
+        if (!pc5_exists(path) && !pc5_exists(part)) { found = 1; break; }
+    }
+    if (!found) {
+        message(ui, 0, T("Backup wasn't saved"), T("Choose another folder. The backup name is unavailable or its path is too long."), S_FILES);
+        return;
+    }
+    files_close(ui);
+    look_begin(ui, path, 0);
+}
+
 static void files_update(Pc5Ui *ui, uint32_t k)
 {
     const uint32_t accept = PC5_KEY_ACCEPT, back = PC5_KEY_BACK;
@@ -3796,11 +4278,12 @@ static void files_update(Pc5Ui *ui, uint32_t k)
         if ((k & PC5_KEY_R1) && count) ui->files_at = ui->files_at + 8 < count ? ui->files_at + 8 : count - 1;
         if (ui->files_at != before) ui->dirty = 1;
         if (k & back) files_up(ui);
+        else if (ui->files_look == 2 && (k & PC5_KEY_OPTIONS)) look_export_here(ui);
         else if ((k & accept) && count) files_enter(ui);
-        else if ((k & PC5_KEY_SQUARE) && ui->files_path[0] && ui->files_ticked && ui->files_at < ui->files.count) {
+        else if (!ui->files_look && !ui->files_music && !ui->files_video && (k & PC5_KEY_SQUARE) && ui->files_path[0] && ui->files_ticked && ui->files_at < ui->files.count) {
             ui->files_ticked[ui->files_at] = !ui->files_ticked[ui->files_at];
             ui->dirty = 1;
-        } else if (k & PC5_KEY_TRIANGLE) {
+        } else if (!ui->files_look && !ui->files_music && !ui->files_video && (k & PC5_KEY_TRIANGLE)) {
             files_menu_open(ui);
         }
         break;
@@ -3900,6 +4383,8 @@ enum { BOOT_SHOW_MS = 1700, BOOT_FADE_MS = 500 };
 
 int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
 {
+    int from_phone;          /* an import of a file a phone sent */
+    Screen back_to;          /* where its message goes back to */
     uint32_t k;
     uint32_t accept = PC5_KEY_ACCEPT, back = PC5_KEY_BACK;
     float dt;
@@ -4096,11 +4581,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             favourite_toggle(ui, ui->selected);
             break;
         }
-        if ((k & PC5_KEY_R3) && ui->tab == TAB_HOME && count) {
-            ui->focus = !ui->focus;
-            ui->dirty = 1;
-            break;
-        }
+        if (home_focus_input(ui, k)) break;
         /* Library: a grid of the filter's games; L2 and R2 change the filter */
         if (count && ui->tab == TAB_LIBRARY) {
             int l = ui->list_at, n = ui->list_count[l], *at = &ui->list_item[l];
@@ -4215,10 +4696,12 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 break;
             }
             case SR_COMPATIBILITY:
-                if (!ui->compatibility_qr.size) pc5_qr_make(PC5_COMPATIBILITY, &ui->compatibility_qr);
-                say(ui, "PC5 compatibility list qr=%d", ui->compatibility_qr.size);
-                go(ui, S_COMPATIBILITY);
+                compatibility_open(ui);
                 break;
+            case SR_PHONE_LIBRARY: {
+                const Pc5Game library = { .title = "Library appearance", .prefix = "library", .pc5 = 1 };
+                phone_open(ui, &library, 5); break;
+            }
             case SR_GAMES: settings_open(ui, PAGE_GAMES, 0); break;
             case SR_OVERLAY: settings_open(ui, PAGE_OVERLAY, 0); break;
             case SR_SYSTEM: settings_open(ui, PAGE_SYSTEM, 0); break;
@@ -4268,7 +4751,54 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         if (k & (back | accept)) settings_open(ui, 0, ROW_ABOUT);
         break;
     case S_COMPATIBILITY:
-        if (k & (back | accept)) settings_open(ui, PAGE_MAINTENANCE, ROW_COMPATIBILITY);
+        if (k & (PC5_KEY_L1 | PC5_KEY_R1))
+            tab_move(ui, k & PC5_KEY_R1 ? 1 : -1);
+        else compatibility_input(ui, k, back, accept);
+        break;
+    case S_COMPAT_SEARCH: {
+        int state = ui->platform.keyboard_state ? ui->platform.keyboard_state(ui->platform.context) : -1;
+        if (state == 1) break;
+        char text[128] = "";
+        int rc = ui->platform.keyboard_close ? ui->platform.keyboard_close(ui->platform.context, text, sizeof(text)) : -1;
+        if (rc > 0) { pc5_copy(ui->compat_query, sizeof(ui->compat_query), text); ui->compat_at = 0; }
+        go(ui, S_COMPATIBILITY); break;
+    }
+    case S_COMPAT_REPORT:
+    case S_COMPAT_SHARE:
+        if (k & (back | accept)) go(ui, S_COMPATIBILITY);
+        break;
+    case S_MEDIA_OPTIONS:
+        media_options_input(ui, k, back, accept);
+        break;
+    case S_MEDIA_DELETE:
+        media_delete_input(ui, k, back, accept);
+        break;
+    case S_LOOK_CONFIRM:
+        if (k & back) go(ui, S_FILES);
+        else {
+            if (k & PC5_KEY_LEFT) ui->button = 0;
+            if (k & PC5_KEY_RIGHT) ui->button = 1;
+            if (k & accept) {
+                if (ui->button) look_begin(ui, ui->look_source, 1);
+                else go(ui, S_FILES);
+            }
+            if (k) ui->dirty = 1;
+        }
+        break;
+    case S_LOOK_WORK:
+        if (k & back) atomic_store(&ui->look.stop, 1);
+        if (atomic_load(&ui->look.done)) {
+            pc5_look_end(&ui->look);
+            if (!ui->look.result) {
+                library_reload(ui, ui->launch_id);
+                ui->music_id[0] = ui->video_id[0] = ui->bg_id[0] = ui->bg_key[0] = 0;
+                pc5_appearance_load(ui->root, ui->look.prefix, &ui->appearance);
+                int game = pc5_library_find(&ui->library, ui->launch_id);
+                if (ui->look.restore && game >= 0) tile_art_refresh(ui, &ui->library.games[game]);
+            }
+            message(ui, !ui->look.result, ui->look.result ? T("Appearance wasn't changed") : T("Appearance backup complete"),
+                ui->look.result ? ui->look.error : ui->look.restore ? T("The saved appearance was restored. Game files and saves were kept.") : ui->look.archive, S_MEDIA_OPTIONS);
+        }
         break;
     case S_WEB_QR: {
         SettingRow rows[PAGE_ROWS];
@@ -4566,16 +5096,22 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         if (ui->menu >= count) ui->menu = count - 1;
         if (list_move(&ui->menu, count, k)) ui->dirty = 1;
         GameRow row = rows[ui->menu];
-        if (k & PC5_KEY_TRIANGLE) go(ui, S_LIBRARY);
+        if ((k & PC5_KEY_SQUARE) && phone_row_kind(row) >= 0) phone_open(ui, game, phone_row_kind(row));
+        else if (k & PC5_KEY_TRIANGLE) go(ui, S_LIBRARY);
         else if (k & back) {
-            /* A group's page back to the first, on the group's row. */
+            /* Return to this page's parent, focused on the row that opened it. */
             if (ui->game_page == GP_MAIN) go(ui, S_LIBRARY);
             else {
                 game_menu_at(ui, game_page_rows[ui->game_page]);
                 ui->dirty = 1;
             }
-        } else if ((k & accept) && (row == GR_GRAPHICS || row == GR_APPEARANCE || row == GR_MANAGE)) {
-            ui->game_page = row == GR_GRAPHICS ? GP_GRAPHICS : row == GR_APPEARANCE ? GP_APPEARANCE : GP_MANAGE;
+        } else if ((k & accept) && row == GR_BACKGROUND && !(ui_game_kind(ui) & GAME_MEDIA)) {
+            picture_open(ui, game, PICK_BACKGROUND);   /* no video for it: the picture, as before */
+        } else if ((k & accept) && (row == GR_GRAPHICS || row == GR_APPEARANCE || row == GR_MANAGE || row == GR_BACKGROUND ||
+                                  row == GR_MUSIC || row == GR_BACKGROUND_VIDEO)) {
+            ui->game_page = row == GR_GRAPHICS ? GP_GRAPHICS : row == GR_APPEARANCE ? GP_APPEARANCE :
+                            row == GR_BACKGROUND ? GP_BACKGROUND : row == GR_MUSIC ? GP_MUSIC :
+                            row == GR_BACKGROUND_VIDEO ? GP_VIDEO : GP_MANAGE;
             ui->menu = 0;
             ui->dirty = 1;
         } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_CONTROLLER) {
@@ -4647,8 +5183,26 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             } else if (row == GR_BUTTONS) {
                 ui->pad_row = ui->pad_top = 0;
                 go(ui, S_BUTTONS);
-            } else if (row == GR_COVER || row == GR_BACKGROUND || row == GR_ICON) {
+            } else if (row == GR_COVER || row == GR_BACKGROUND_IMAGE || row == GR_ICON) {
                 picture_open(ui, game, row == GR_COVER ? PICK_COVER : row == GR_ICON ? PICK_ICON : PICK_BACKGROUND);
+            } else if (row == GR_VIDEO_FILE) {
+                files_open(ui, 0);
+                ui->files_video = 1;
+            } else if (row == GR_VIDEO_CLEAR) {
+                media_delete_begin(ui, 1);
+            } else if (row == GR_MUSIC_FILE) {
+                files_open(ui, 0);
+                ui->files_music = 1;
+            } else if (row == GR_MEDIA_OPTIONS) {
+                if (!game->pc5 || !game->prefix[0] || !strcmp(game->prefix, "default")) {
+                    message(ui, 0, T("PC5 didn't install this game"), T("Media settings need a game with its own PC5 folder."), S_GAME_MENU);
+                    break;
+                }
+                pc5_appearance_load(ui->root, game->prefix, &ui->appearance);
+                ui->media_row = 0;
+                go(ui, S_MEDIA_OPTIONS);
+            } else if (row == GR_MUSIC_CLEAR) {
+                media_delete_begin(ui, 0);
             } else if (row == GR_PROGRAM) {
                 if (!game->pc5) message(ui, 0, T("PC5 didn't install this game"),
                                         T("Its program is set in its prospero-win profile."), S_GAME_MENU);
@@ -4986,6 +5540,64 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
     case S_REPORT:
         if (k & (accept | back)) go(ui, S_MESSAGE);
         break;
+    case S_MUSIC_IMPORT:
+        if (k & back) atomic_store(&ui->music_import.stop, 1);
+        if (!atomic_load(&ui->music_import.done)) break;
+        pc5_music_import_end(&ui->music_import);
+        /* A file a phone sent: back to the game's menu, not to a file list it never opened. */
+        from_phone = ui->phone_source[0] != 0;
+        phone_source_remove(ui);
+        if (atomic_load(&ui->music_import.stop) && ui->music_import.result == PC5_MUSIC_IMPORTED) {
+            unlink(ui->music_import.destination);
+            ui->music_import.result = PC5_MUSIC_CANCELLED;
+        }
+        if (from_phone && ui->music_import.result != PC5_MUSIC_IMPORTED) files_close(ui);
+        back_to = from_phone ? S_GAME_MENU : S_FILES;
+        if (ui->music_import.result == PC5_MUSIC_CANCELLED) {
+            go(ui, back_to);
+        } else if (ui->music_import.result != PC5_MUSIC_IMPORTED) {
+            const char *why = ui->music_import.result == PC5_MUSIC_BAD_FORMAT
+                ? T("Choose a readable MP3 or 16-bit PCM WAV file. Protected or damaged files may not work.")
+                : ui->music_import.result == PC5_MUSIC_TOO_LARGE
+                ? T("The prepared music exceeds the 2 GB limit. Choose a shorter track.")
+                : T("Check free space and keep the source drive connected until importing finishes. Your previous music was kept.");
+            message(ui, 0, T("Music wasn't saved"), why, back_to);
+        } else if (music_save(ui, ui->music_import.destination)) {
+            unlink(ui->music_import.destination);
+            if (from_phone) files_close(ui);
+            message(ui, 0, T("Music wasn't saved"), T("PC5 couldn't save the music selection. Try again."), back_to);
+        } else {
+            ui->phone_import_ok = 1;
+            music_cleanup(ui, ui->music_import.destination);
+            files_close(ui);
+        }
+        break;
+    case S_VIDEO_IMPORT:
+        if (k & back) atomic_store(&ui->video_import.stop, 1);
+        if (!atomic_load(&ui->video_import.done)) break;
+        pc5_video_import_end(&ui->video_import);
+        from_phone = ui->phone_source[0] != 0;
+        phone_source_remove(ui);
+        if (from_phone && (ui->video_import.result != PC5_VIDEO_OK || atomic_load(&ui->video_import.stop))) files_close(ui);
+        back_to = from_phone ? S_GAME_MENU : S_FILES;
+        if (atomic_load(&ui->video_import.stop) || ui->video_import.result == PC5_VIDEO_CANCELLED) {
+            unlink(ui->video_import.destination);
+            go(ui, back_to);
+        } else if (ui->video_import.result != PC5_VIDEO_OK) {
+            const char *why = ui->video_import.result == PC5_VIDEO_FORMAT
+                ? T("Choose an H.264 video up to 1920x1080, 60 fps and 1 GB. MP4 is recommended. Audio is ignored.")
+                : T("Check free space and keep the source drive connected until importing finishes. Your previous video was kept.");
+            say(ui, "PC5 background video import failed: %s", ui->video_import.error);
+            message(ui, 0, T("Video wasn't saved"), why, back_to);
+        } else if (video_save(ui, ui->video_import.destination)) {
+            unlink(ui->video_import.destination);
+            if (from_phone) files_close(ui);
+            message(ui, 0, T("Video wasn't saved"), T("PC5 couldn't save the video selection. Try again."), back_to);
+        } else { ui->phone_import_ok = 1; files_close(ui); }
+        break;
+    case S_PHONE_QR:
+        phone_update(ui, k, back);
+        break;
     case S_FILES:
     case S_FILES_MENU:
     case S_FILES_TYPING:
@@ -5169,6 +5781,9 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 char where[PC5_PATH];
                 if (!pc5_game_folder(ui->root, ui->launch_id, where, sizeof(where))) say(ui, "PC5 play from usb dir=%s", where);
             }
+            pc5_video_stop(&ui->video);
+            library_music_stop(ui);
+            if (ui->compat_initialized) pc5_compat_wait(&ui->compatibility);
             if (ui->platform.play) ui->platform.play(ui->platform.context, ui->launch_id);
             pc5_tf(title, sizeof(title), "%s didn't start", index >= 0 ? ui->library.games[index].title : T("The game"));
             say(ui, "PC5 problem play %s: the console refused to start it", ui->launch_id);
@@ -5177,6 +5792,47 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         break;
     }
 
+    if (ui->phone_library && ui->phone_manager_pending && ui->screen != S_PHONE_QR &&
+        ui->screen != S_MUSIC_IMPORT && ui->screen != S_VIDEO_IMPORT && ui->screen != S_TILE_ART) {
+        pc5_web_appearance_finish(ui->phone_import_ok);
+        ui->phone_manager_pending = 0;
+        if (ui->screen == S_MESSAGE) ui->back_to = S_PHONE_QR;
+        else go(ui, S_PHONE_QR);
+    }
+    if (ui->compat_initialized && ui->compatibility.running && atomic_load(&ui->compatibility.done)) {
+        /* Poll replaces/frees the old table. Copy the selected identity first,
+         * so a background refresh cannot switch the report being read. */
+        int indices[PC5_COMPAT_MAX], count = compatibility_indices(ui, indices);
+        int selected = ui->compat_at >= 0 && ui->compat_at < count;
+        char title[256] = "", report[256] = "";
+        if (selected) {
+            const Pc5CompatEntry *entry = &ui->compatibility.entries[indices[ui->compat_at]];
+            pc5_copy(title, sizeof(title), entry->title);
+            pc5_copy(report, sizeof(report), entry->report);
+        }
+        if (pc5_compat_poll(&ui->compatibility)) {
+            if (!ui->compatibility.result) {
+                count = compatibility_indices(ui, indices);
+                int same = -1, by_title = -1;
+                for (int i = 0; selected && i < count; ++i) {
+                    const Pc5CompatEntry *entry = &ui->compatibility.entries[indices[i]];
+                    if (strcmp(entry->title, title)) continue;
+                    if (by_title < 0) by_title = i;
+                    if (!strcmp(entry->report, report)) { same = i; break; }
+                }
+                if (same < 0) same = by_title; /* a newer report for the same game */
+                if (same >= 0) ui->compat_at = same;
+                else {
+                    if (ui->compat_at < 0) ui->compat_at = 0;
+                    if (ui->compat_at >= count) ui->compat_at = count ? count - 1 : 0;
+                    ui->compat_detail = ui->compat_scroll = 0;
+                }
+            }
+            ui->dirty = 1;
+        }
+    }
+    video_follow(ui);
+    music_follow(ui);
     update_check_follow(ui);
     /* The chosen game's background, behind the library and what opens over it. */
     if (ui->screen != S_START && ui->screen != S_COVERS && ui->screen != S_UPDATE && ui->screen != S_UPGRADE_ASK) {
@@ -5225,7 +5881,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         if (strcmp(clock, ui->clock)) { pc5_copy(ui->clock, sizeof(ui->clock), clock); ui->dirty = 1; }
     }
     /* Spinners turn. */
-    if (ui->screen == S_START || ui->screen == S_COVERS || ui->screen == S_SCAN || ui->screen == S_READING ||
+    if (ui->screen == S_LOOK_WORK || ui->screen == S_VIDEO_IMPORT || ui->screen == S_MUSIC_IMPORT || ui->screen == S_START || ui->screen == S_COVERS || ui->screen == S_SCAN || ui->screen == S_READING ||
         ui->screen == S_SEARCH || ui->screen == S_REMOVING || ui->screen == S_LAUNCH || ui->screen == S_UPDATE ||
         ui->screen == S_CHECKING || ui->screen == S_GAME_READING || ui->screen == S_QUEUE_READ || ui->fetching ||
         (ui->screen == S_UPGRADING && atomic_load(&ui->upgrade.step) != PC5_UPGRADE_DONE &&
@@ -5238,7 +5894,8 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
 
 /* ---- drawing: pieces ------------------------------------------------------------------------- */
 
-typedef enum Glyph { G_CROSS, G_CIRCLE, G_SQUARE, G_TRIANGLE, G_OPTIONS, G_L1, G_R1, G_L1R1, G_R3, G_L2R2 } Glyph;
+typedef enum Glyph { G_CROSS, G_CIRCLE, G_SQUARE, G_TRIANGLE, G_OPTIONS, G_L1, G_R1, G_L1R1, G_R3, G_L2R2, G_L2, G_R2,
+                     G_OPTIONS_PAD, G_UP_PAD } Glyph;
 
 static const Pc5Image *glyph_icon(Pc5Ui *ui, Glyph glyph)
 {
@@ -5260,8 +5917,8 @@ static int button_glyph(Pc5Ui *ui, Pc5Canvas *c, Glyph glyph, int x, int y)
         return (int)w;
     }
 
-    if (glyph == G_OPTIONS || glyph == G_L1 || glyph == G_R1 || glyph == G_R3 || glyph == G_L2R2) {
-        const char *text = glyph == G_OPTIONS ? "OPTIONS" : glyph == G_L1 ? "L1" : glyph == G_R1 ? "R1" : glyph == G_R3 ? "R3" : "L2 R2";
+    if (glyph == G_OPTIONS || glyph == G_L1 || glyph == G_R1 || glyph == G_R3 || glyph == G_L2R2 || glyph == G_L2 || glyph == G_R2) {
+        const char *text = glyph == G_OPTIONS ? "OPTIONS" : glyph == G_L1 ? "L1" : glyph == G_R1 ? "R1" : glyph == G_R3 ? "R3" : glyph == G_L2 ? "L2" : glyph == G_R2 ? "R2" : "L2 R2";
         int tw = pc5_text_width(&ui->fonts, PC5_FACE_BUTTON, text), w = tw + 24;
         /* white with dark letters, as PC5's pictures of the buttons */
         pc5_round_rect(c, x, cy - 15, w, 30, 15, 0xf2ffffffu);
@@ -5276,6 +5933,15 @@ static int button_glyph(Pc5Ui *ui, Pc5Canvas *c, Glyph glyph, int x, int y)
     const uint32_t ink = 0xff15171cu;
     pc5_circle(c, cx, cy, r, 0xf2ffffffu);
     switch (glyph) {
+    case G_UP_PAD:
+        pc5_line(c, cx, cy + 7, cx, cy - 7, 2, ink);
+        pc5_line(c, cx - 6, cy - 1, cx, cy - 7, 2, ink);
+        pc5_line(c, cx, cy - 7, cx + 6, cy - 1, 2, ink);
+        break;
+    case G_OPTIONS_PAD:
+        for (int line = -1; line <= 1; ++line)
+            pc5_line(c, cx - 6, cy + line * 5, cx + 6, cy + line * 5, 2, ink);
+        break;
     case G_CROSS:
         pc5_line(c, cx - 6, cy - 6, cx + 6, cy + 6, 2.6f, ink);
         pc5_line(c, cx - 6, cy + 6, cx + 6, cy - 6, 2.6f, ink);
@@ -5300,8 +5966,8 @@ static int glyph_width(Pc5Ui *ui, Glyph glyph)
     const Pc5Image *icon = glyph_icon(ui, glyph);
     if (icon) return icon->w;
     if (glyph == G_L1R1) return glyph_width(ui, G_L1) + 8 + glyph_width(ui, G_R1);
-    if (glyph == G_OPTIONS || glyph == G_L1 || glyph == G_R1 || glyph == G_R3 || glyph == G_L2R2) {
-        const char *text = glyph == G_OPTIONS ? "OPTIONS" : glyph == G_L1 ? "L1" : glyph == G_R1 ? "R1" : glyph == G_R3 ? "R3" : "L2 R2";
+    if (glyph == G_OPTIONS || glyph == G_L1 || glyph == G_R1 || glyph == G_R3 || glyph == G_L2R2 || glyph == G_L2 || glyph == G_R2) {
+        const char *text = glyph == G_OPTIONS ? "OPTIONS" : glyph == G_L1 ? "L1" : glyph == G_R1 ? "R1" : glyph == G_R3 ? "R3" : glyph == G_L2 ? "L2" : glyph == G_R2 ? "R2" : "L2 R2";
         return pc5_text_width(&ui->fonts, PC5_FACE_BUTTON, text) + 24;
     }
     return 32;
@@ -5442,6 +6108,10 @@ static void backdrop(Pc5Ui *ui, Pc5Canvas *c)
     plan.from = fading && ui->bg_old_has ? ui->bg_old : fading ? ui->composed : plan.to;
     plan.a = fading ? (uint32_t)(since * 256 / BG_FADE_MS) : 256;
     plan.b = 256 - plan.a;
+    if (ui->video.have && ui->video.front) {
+        plan.to = plan.from = ui->video.front;
+        plan.a = 256; plan.b = 0;
+    }
     plan.compose = !ui->hero_backdrop && (plan.to == ui->composed || plan.from == ui->composed) &&
                    (glow != ui->composed_glow || !ui->composed_ready);
     if (plan.compose) {
@@ -5551,8 +6221,7 @@ static int pill(Pc5Ui *ui, Pc5Canvas *c, int x, int y, int h, const char *text, 
 /* The tab shown as chosen: Settings or Install while their pages are open. */
 static int tab_shown(const Pc5Ui *ui)
 {
-    if (ui->screen == S_SETTINGS || ui->screen == S_SETTINGS_TYPING || ui->screen == S_WEB_QR ||
-        ui->screen == S_COMPATIBILITY)
+    if (ui->screen == S_SETTINGS || ui->screen == S_SETTINGS_TYPING || ui->screen == S_WEB_QR)
         return ui->tab == TAB_INSTALL ? TAB_INSTALL : TAB_SETTINGS;
     return ui->tab;
 }
@@ -5838,7 +6507,7 @@ static void library_screen(Pc5Ui *ui, Pc5Canvas *c)
     if (ui->focus && ui->library.count && ui->tab == TAB_HOME) {
         pc5_text(c, &ui->fonts, PC5_FACE_TITLE, MARGIN + 2, 1014, 0x90000000u, ui->library.games[ui->selected].title, 1100, 0);
         pc5_text(c, &ui->fonts, PC5_FACE_TITLE, MARGIN, 1012, C_TEXT, ui->library.games[ui->selected].title, 1100, 0);
-        Hint list[] = { { G_R3, T("Back") }, { accept_glyph(ui), T("Play") } };
+        Hint list[] = { { G_UP_PAD, T("Back") }, { accept_glyph(ui), T("Play") } };
         hints_right(ui, c, 1012, list, 2);
         return;
     }
@@ -5868,8 +6537,6 @@ static void library_screen(Pc5Ui *ui, Pc5Canvas *c)
     }
     hero(ui, c);
     cover_row(ui, c);
-    Hint left[] = { { G_R3, T("Focus mode") } };
-    hints(ui, c, MARGIN, 1012, left, 1);
     Hint list[] = { { accept_glyph(ui), T("Play") }, { G_TRIANGLE, T("Game options") }, { G_SQUARE, T("Favourite") }, { G_OPTIONS, T("Settings") } };
     hints_right(ui, c, 1012, list, 4);
 }
@@ -5992,7 +6659,7 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
     case GR_POINTER:
         *label = T("Mouse pointer");
         *text = ui->controls.pointer_hide ? T("Hides when not moved or clicked for 5 s") : T("Stays as the game shows it");
-        *value = ui->controls.pointer_hide ? T("Hides when unused") : T("Shown");
+        *value = ui->controls.pointer_hide ? T("Hides when unused") : T("Game controlled");
         break;
     case GR_GRAPHICS:
         *label = T("Graphics");
@@ -6084,8 +6751,49 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
         break;
     case GR_BACKGROUND:
         *label = T("Background");
-        *text = T("Another of those found, search by another name, or none");
+        *text = kind & GAME_MEDIA ? T("Choose a background image or a silent video")
+                                  : T("Another of those found, search by another name, or none");
         *value = more;
+        break;
+    case GR_BACKGROUND_IMAGE:
+        *label = T("Background image");
+        *text = T("Choose a still image; it also appears when video playback is unavailable");
+        *value = more;
+        break;
+    case GR_BACKGROUND_VIDEO:
+        *label = T("Background video");
+        *text = T("Choose or remove this game's silent background video");
+        *value = more;
+        break;
+    case GR_VIDEO_FILE:
+        *label = T("Choose video file");
+        *text = T("Import H.264 video to console storage; experimental 1080p/60, without audio");
+        *value = more;
+        break;
+    case GR_VIDEO_CLEAR:
+        *label = T("Remove background video");
+        *text = T("Delete the imported video and return to the background image; keep the source file");
+        *value = more;
+        break;
+    case GR_MUSIC:
+        *label = T("Library music");
+        *text = T("Choose or remove the music that plays on this game's cover");
+        *value = more;
+        break;
+    case GR_MUSIC_FILE:
+        *label = T("Choose music file");
+        *text = T("Import MP3 or WAV to console storage: plays on this cover, even without USB");
+        *value = more;
+        break;
+    case GR_MEDIA_OPTIONS:
+        *label = T("Media settings and backup");
+        *text = T("Music volume and start, video loop, framing, darkness and appearance backup");
+        *value = more;
+        break;
+    case GR_MUSIC_CLEAR:
+        *label = T("Remove library music");
+        *text = T("Delete this game's imported music; the original source file is kept");
+        *value = "";
         break;
     case GR_ICON:
         *label = T("Tile picture");
@@ -6159,8 +6867,9 @@ static void game_menu_screen(Pc5Ui *ui, Pc5Canvas *c, int chosen)
     GameRow row = chosen >= 0 && chosen < count ? rows[chosen] : GR_PLAY;
     int changes = row == GR_CONTROLLER || row == GR_FRAMEGEN || row == GR_RESOLUTION || row == GR_ASPECT ||
                   row == GR_MEMORY || row == GR_VIDEO_MEMORY || row == GR_CPU_SHARING || row == GR_HOME || row == GR_STEAM;
-    Hint list[] = { { accept_glyph(ui), changes ? T("Change") : T("Choose") }, { back_glyph(ui), T("Back") } };
-    hints(ui, c, (int)x + 64, 1012, list, 2);
+    Hint list[] = { { accept_glyph(ui), changes ? T("Change") : T("Choose") }, { back_glyph(ui), T("Back") },
+                    { G_SQUARE, T("Receive from phone") } };
+    hints(ui, c, (int)x + 64, 1012, list, phone_row_kind(row) >= 0 ? 3 : 2);
 }
 
 /* Button mapping: what each button and stick does while the game plays the keyboard and mouse. */
@@ -6849,27 +7558,33 @@ static void web_qr_screen(Pc5Ui *ui, Pc5Canvas *c)
     hints(ui, c, (int)x + 80, (int)(y + h - 60), list, 1);
 }
 
-static void compatibility_screen(Pc5Ui *ui, Pc5Canvas *c)
+static void phone_screen(Pc5Ui *ui, Pc5Canvas *c)
 {
-    float w = 1500, h = 700, x = (W - w) / 2, y = (H - h) / 2;
-    dim(c, 170);
-    panel(c, x, y, w, h);
-    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 80, (int)y + 100, C_TEXT, T("Game compatibility list"), 0, 0);
-    int box = 560, qx = (int)(x + w) - box - 70, qy = (int)y + 70;
-    qr_draw(c, &ui->compatibility_qr, qx, qy, box);
-    int tx = (int)x + 80, tw = qx - tx - 60, at = (int)y + 190;
-    at += 42 * pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, tx, at, tw, 4, 42, C_DIM,
-                             ui->compatibility_qr.size
-                                 ? T("Scan the code with your phone: PC5's wiki opens on the list of games players have "
-                                   "tried, how each ran and the settings that helped.")
-                                 : T("On your phone or computer, open github.com/bornaradusin/PC5/wiki/Game-compatibility: "
-                                   "the games players have tried, how each ran and the settings that helped."), 0) + 24;
-    pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, tx, at, tw, 4, 42, C_DIM,
-                  T("Got a game running? Add a game, at the top of the list's page: the form takes a minute. You need a GitHub "
-                  "account."), 0);
-    Hint list[] = { { back_glyph(ui), T("Back") } };
-    hints(ui, c, tx, (int)(y + h - 48), list, 1);
+    float w = 1600, h = 800, x = (W - w) / 2, y = (H - h) / 2;
+    Pc5PhoneStatus status;
+    char line[256];
+    static const char *const kinds[] = { N_("Cover"), N_("Background image"), N_("Tile picture"), N_("Library music"), N_("Background video") };
+    pc5_web_phone_status(&status);
+    dim(c, 170); panel(c, x, y, w, h);
+    int tx = (int)x + 60, tw = 760;
+    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, tx, (int)y + 100, C_TEXT, T("Receive from phone"), tw, 0);
+    int index = pc5_library_find(&ui->library, ui->launch_id);
+    pc5_text(c, &ui->fonts, PC5_FACE_BODY, tx, (int)y + 155, C_TEXT, index >= 0 ? ui->library.games[index].title : "", tw, 0);
+    pc5_text(c, &ui->fonts, PC5_FACE_LABEL, tx, (int)y + 210, C_ACCENT, ui->phone_library ? T("Library appearance from phone") : T(kinds[ui->phone_kind]), tw, 0);
+    pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, tx, (int)y + 270, tw, 4, 40, C_DIM,
+                  T("Connect your phone and PS5 to the same network or phone hotspot. Scan this code and choose one file. Keep this screen open."), 0);
+    pc5_text_wrap(c, &ui->fonts, PC5_FACE_SMALL, tx, (int)y + 455, tw, 3, 32, C_DIM, ui->web_url, 0);
+    pc5_text_wrap(c, &ui->fonts, PC5_FACE_SMALL, tx, (int)y + 555, tw, 3, 32, C_DIM,
+                  T("This link expires after 10 minutes or when you leave. Your previous selection stays until import succeeds."), 0);
+    if (status.total) pc5_tf(line, sizeof(line), "Receiving: %u%%", (unsigned)(status.received * 100 / status.total));
+    else pc5_copy(line, sizeof(line), T("Waiting for a file"));
+    pc5_text(c, &ui->fonts, PC5_FACE_BODY, tx, (int)y + 685, C_TEXT, line, tw, 0);
+    qr_draw(c, &ui->web_qr, (int)(x + w) - 650, (int)y + 90, 580);
+    Hint list[] = { { back_glyph(ui), T("Cancel") } };
+    hints(ui, c, tx, (int)(y + h - 40), list, 1);
 }
+
+#include "pc5_ui_enhancements_draw.h"
 
 /* PC5 updating itself: its steps, the download's and the unpacking's progress, then done. */
 static void upgrade_screen(Pc5Ui *ui, Pc5Canvas *c)
@@ -7089,10 +7804,26 @@ static void files_list_screen(Pc5Ui *ui, Pc5Canvas *c)
     Hint places[] = { { accept_glyph(ui), T("Open") }, { back_glyph(ui), T("Back") } };
     /* On a file ✕ shows its actions too, as △ does: said once. */
     Hint list[] = { { accept_glyph(ui), T("Open") }, { G_SQUARE, T("Tick") }, { G_TRIANGLE, T("Actions") }, { back_glyph(ui), T("Back") } };
+    Hint music[] = { { accept_glyph(ui), T("Choose") }, { back_glyph(ui), T("Back") } };
+    if (ui->files_look) {
+        if (ui->files_look == 2) {
+            if (!ui->files_path[0]) pc5_copy(title, sizeof(title), T("Choose backup destination"));
+            pc5_copy(empty, sizeof(empty), T("Open a folder, then press OPTIONS to save the backup here."));
+        } else pc5_copy(title, sizeof(title), T("Choose an appearance backup"));
+    } else if (ui->files_music) {
+        pc5_copy(title, sizeof(title), T("Choose a music file"));
+        pc5_copy(empty, sizeof(empty), T("Choose an MP3 or a 16-bit PCM WAV file."));
+    }
+    if (ui->files_video) {
+        pc5_copy(title, sizeof(title), T("Choose a background video"));
+        pc5_copy(empty, sizeof(empty), T("H.264 up to 1080p/60 and 1 GB; MP4 recommended. Playback is silent."));
+    }
     ui->menu = ui->files_at;
     ui->list_top = ui->files_list_top;
+    Hint destination[] = { { accept_glyph(ui), T("Open folder") }, { G_OPTIONS, T("Save here") }, { back_glyph(ui), T("Back") } };
     list_panel(ui, c, title, files_count(ui), files_row, ui->files.error ? T("PC5 can't open this folder") : T("This folder is empty"),
-               empty, ui->files_path[0] ? list + !folder : places, ui->files_path[0] ? 4 - !folder : 2, ui->files_path[0] ? 80 : 104);
+               empty, ui->files_look == 2 ? destination : (ui->files_look || ui->files_music || ui->files_video) ? music : ui->files_path[0] ? list + !folder : places,
+               ui->files_look == 2 ? 3 : (ui->files_look || ui->files_music || ui->files_video) ? 2 : ui->files_path[0] ? 4 - !folder : 2, ui->files_path[0] ? 80 : 104);
     ui->files_list_top = ui->list_top;
     ui->menu = keep;
 }
@@ -7383,6 +8114,13 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
     case S_UPDATE:
         start_screen(ui, c, T("Checking for a newer PC5"), 0);
         break;
+    case S_COMPATIBILITY:
+    case S_COMPAT_SEARCH:
+    case S_COMPAT_REPORT:
+    case S_COMPAT_SHARE:
+        backdrop(ui, c);
+        top_bar(ui, c);
+        break;
     default:
         library_screen(ui, c);
         break;
@@ -7434,7 +8172,23 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
     }
     case S_ABOUT: about_screen(ui, c); break;
     case S_COMPATIBILITY: compatibility_screen(ui, c); break;
+    case S_COMPAT_REPORT: compatibility_report_screen(ui, c); break;
+    case S_COMPAT_SHARE: compatibility_report_screen(ui, c); break;
+    case S_COMPAT_SEARCH: compatibility_screen(ui, c); break;
+    case S_MEDIA_OPTIONS: media_options_screen(ui, c); break;
+    case S_MEDIA_DELETE:
+        game_menu_screen(ui, c, ui->menu);
+        confirm_dialog(ui, c, ui->media_delete_video ? T("Remove background video?") : T("Remove library music?"),
+                       ui->media_delete_video ? T("Delete this game's imported video and return to the background image? The original source file is kept.")
+                                              : T("Delete this game's imported music? The original source file is kept."),
+                       T("Cancel"), T("Delete"), 1, NULL);
+        break;
+    case S_LOOK_CONFIRM:
+        confirm_dialog(ui, c, T("Restore this appearance?"), T("This replaces this game's pictures, music, video and media settings. Game files and saves are kept."), T("Cancel"), T("Restore"), 1, NULL); break;
+    case S_LOOK_WORK:
+        busy_dialog(ui, c, ui->look.restore ? T("Restoring appearance") : T("Exporting appearance"), T("Keep the drive connected. Back cancels."), 1); break;
     case S_WEB_QR: web_qr_screen(ui, c); break;
+    case S_PHONE_QR: phone_screen(ui, c); break;
     case S_SCAN: busy_dialog(ui, c, T("Looking at the USB drives"), NULL, 0); break;
     case S_SOURCES: sources_screen(ui, c); break;
     case S_READING:
@@ -7586,6 +8340,14 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
         }
         break;
     case S_MESSAGE: message_dialog(ui, c); break;
+    case S_MUSIC_IMPORT:
+        busy_dialog(ui, c, T("Importing library music"),
+                    T("Preparing a copy on the console. Keep the source drive connected until this finishes."), 1);
+        break;
+    case S_VIDEO_IMPORT:
+        busy_dialog(ui, c, T("Importing background video"),
+                    T("Copying video to the console. Keep the source drive connected until this finishes."), 1);
+        break;
     case S_REPORT: library_screen(ui, c); report_screen(ui, c); break;
     case S_FILES:
     case S_FILES_MENU:

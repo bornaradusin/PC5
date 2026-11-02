@@ -15,11 +15,11 @@ A game without a background of its own shows PC5's picture instead, and a game w
 | Button | On Home |
 | --- | --- |
 | Left / right, or the left stick | Move between games |
-| L1 / R1 | The previous or next tab: Home, Library, Install, Settings |
+| L1 / R1 | The previous or next tab: Home, Library, Compatibility, Install, Settings |
 | ✕ | Play the chosen game |
 | △ | The chosen game's menu |
 | □ | Mark the game as a favourite, or unmark it (a star on its cover) |
-| R3 | Focus mode: only the game's picture, until R3 again |
+| Down | Focus mode: only the game's picture (and its video), until **Up** |
 | Options | Settings |
 
 If the console is set to confirm with **○**, PC5 follows it: **○** plays and chooses, and **✕** goes back.
@@ -95,7 +95,7 @@ Choose a game in the library and press **△**. Its menu has what you change mos
 | Button mapping | Only with Keyboard & mouse: what each button and stick sends. See [Controllers](Controllers#button-mapping). |
 | Mouse pointer | **Shown** (the default): the pointer stays as the game shows it. **Hides when unused**: it hides when you haven't moved it or clicked for 5 seconds, for a game that leaves it in a corner. See [Controllers](Controllers). |
 | Graphics › | Graphics API, frame generation, resolution, aspect ratio, memory, video memory and CPU sharing. See [Graphics](#graphics). |
-| Appearance › | The game's cover, its background, its home screen tile and the tile's picture. See [Appearance](#appearance). |
+| Appearance › | The game's cover, its background (a picture or a video), its home screen tile, the tile's picture and its music. See [Appearance](#appearance). |
 | Manage › | The program PC5 starts, its files, updating the game and uninstalling it. See [Manage](#manage). |
 
 **○** goes back from a group to the menu, and from the menu to the library. **△** closes the menu from anywhere in it.
@@ -123,9 +123,13 @@ Choose a game in the library and press **△**. Its menu has what you change mos
 | Row | What it does |
 | --- | --- |
 | Cover | Another of the covers found for the game, one found for a name you type, or the card made from its icon. See [Changing a cover or background](Covers#changing-a-cover-or-background). |
-| Background | Another of the backgrounds found, one found for a name you type, or none. See [Changing a cover or background](Covers#changing-a-cover-or-background). |
+| Background | Another of the backgrounds found, one found for a name you type, or none. See [Changing a cover or background](Covers#changing-a-cover-or-background). For a game PC5 installed, it opens **Background image** (that choice) and **Background video**: a silent H.264 video (MP4 or MOV, up to 1080p and 60 fps, at most 1 GB) copied to the console and played behind the cover, or **Remove background video** to go back to the picture. |
 | Home screen tile | **Off** or **On**: a tile on the PS5's home screen, an app of its own that starts this game. See [Home screen tiles](Home-screen-tiles). |
 | Tile picture | The tile's picture: a square one from SteamGridDB (with your key), or one made from its cover. See [The tile's picture](Home-screen-tiles#the-tiles-picture). |
+| Library music | For a game PC5 installed: an MP3 or WAV file (16-bit), copied to the console, that plays while the game's cover is chosen, fading in and out. **Remove library music** stops it. |
+| Media settings | For a game PC5 installed: the music's volume and where it starts, where the video starts and ends its loop, how it fills the screen (Stretch, Fit or Fill), how much it's darkened, and **Export appearance backup** / **Restore appearance backup**: the game's pictures, music, video and these settings in one `.pc5look` file, on the console or a USB drive. Restoring checks the whole file first and keeps the game's files and saves. |
+
+**□ on Cover, Background image, Tile picture, Library music or Background video: receive it from your phone.** PC5 shows a QR code: with the phone on the same network as the console (or the console on the phone's hotspot), scan it, choose one file and send it. Keep the QR code on screen until it's received; the link works for 10 minutes without use, and only on your network. A picture can be JPEG or PNG up to 20 MB, music up to 512 MB, a video up to 1 GB.
 
 ### Manage
 

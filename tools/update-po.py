@@ -262,7 +262,7 @@ def extract_web(path):
 def collect():
     entries = {}   # (ctxt, id) -> [refs, notes]
     order = []
-    sources = sorted((ROOT / "title").glob("pc5*.c"))
+    sources = sorted((ROOT / "title").glob("pc5*.c")) + sorted((ROOT / "title").glob("pc5_ui_enhancements*.h"))
     found = []
     for path in sources:
         found += extract_c(path)

@@ -44,6 +44,7 @@ typedef struct Conn {
     uint64_t length;                /* Content-Length, or UINT64_MAX when not said */
     int expect_continue;
     char authorization[256];
+    char phone_token[33];
     uint8_t *buffer;
 } Conn;
 
@@ -163,6 +164,7 @@ static const char *reason(int code)
     case 401: return "Unauthorized";
     case 404: return "Not Found";
     case 405: return "Method Not Allowed";
+    case 409: return "Conflict";
     case 411: return "Length Required";
     case 413: return "Payload Too Large";
     case 415: return "Unsupported Media Type";
@@ -177,7 +179,7 @@ static int send_head(Conn *c, int code, const char *type, uint64_t length, const
     char head[PC5_PATH + 512];
     int n = snprintf(head, sizeof(head),
                      "HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: %llu\r\nCache-Control: no-store\r\n"
-                     "X-Content-Type-Options: nosniff\r\nConnection: close\r\n%s\r\n",
+                     "X-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\nConnection: close\r\n%s\r\n",
                      code, reason(code), type, (unsigned long long)length, extra ? extra : "");
     if (n < 0 || (size_t)n >= sizeof(head)) return -1;
     return send_all(c->sock, head, (size_t)n);
@@ -308,6 +310,7 @@ static int parse_head(Conn *c)
 }
 
 /* The body's next bytes: what was read with the head first. Bytes, 0 at its end, -1 on a failure. */
+static int phone_alive(const char *token);
 static int read_body(Conn *c, uint64_t *left, void *out, size_t size)
 {
     if (!*left) return 0;
@@ -323,7 +326,7 @@ static int read_body(Conn *c, uint64_t *left, void *out, size_t size)
     /* Waited for a little at a time, so a stop is seen within a wait. */
     for (uint64_t started = now_ms();;) {
         int got = web.ops.recv(c->sock, out, size, WAIT_MS);
-        if (stopping()) return -1;
+        if (stopping() || (c->phone_token[0] && !phone_alive(c->phone_token))) return -1;
         if (got == -2 && now_ms() - started < BODY_MS) continue;
         if (got <= 0) return -1;
         *left -= (uint64_t)got;
@@ -957,9 +960,20 @@ static void upload(Conn *c, const char *relative)
     else if (!failed) respond_text(c, 500, write_failed ? "The console couldn't write it (is it full?)" : "Couldn't keep it");
 }
 
+#include "pc5_web_phone.h"
+#include "pc5_web_library.h"
+
 static void answer(Conn *c)
 {
     const char *p = c->path;
+    if (!strncmp(p, "/appearance/", 12)) { appearance_answer(c, p + 12); return; }
+    if (!strncmp(p, "/phone/", 7)) {
+        pthread_mutex_lock(&web.lock); int manager = phone.manager; pthread_mutex_unlock(&web.lock);
+        if (manager) respond_text(c, 404, "Not an appearance action");
+        else phone_answer(c, p + 7);
+        return;
+    }
+    if (phone_only()) { respond_text(c, 404, "Not here"); return; }
     if (!strcmp(p, "/") || !strcmp(p, "/index.html")) {
         size_t size = 0;
         for (int i = 0; pc5_web_page[i]; i++) size += strlen(pc5_web_page[i]);
@@ -987,7 +1001,7 @@ static void *conn_thread(void *arg)
         int parsed = parse_head(c);
         if (parsed == -2) respond_text(c, 411, "Send it with Content-Length");
         else if (parsed) respond_text(c, 400, "PC5 didn't understand that");
-        else if (!logged_in(c))
+        else if (strncmp(c->path, "/phone/", 7) && strncmp(c->path, "/appearance/", 12) && !logged_in(c))
             send_head(c, 401, "text/plain; charset=utf-8", 0, "WWW-Authenticate: Basic realm=\"PC5\", charset=\"UTF-8\"\r\n");
         else answer(c);
     }
@@ -1048,6 +1062,7 @@ int pc5_web_start(const Pc5WebConfig *config, uint16_t port, char *error, size_t
     if (!config || !config->root || !config->root[0]) return pc5_format(error, size, N_("PC5 has no folder to show.")), -1;
     pc5_copy(web.root, sizeof(web.root), config->root);
     pc5_copy(web.install, sizeof(web.install), config->install_dir ? config->install_dir : "");
+    phone_clean();
     web.listener = web.ops.listen(port, 8);
     if (web.listener < 0) return pc5_format(error, size, N_("Port %u is taken, or there's no network."), (unsigned)port), -1;
     if (!web.ops.lan_ip || web.ops.lan_ip(&ip) || !ip) snprintf(web.address, sizeof(web.address), ":%u", (unsigned)port);
@@ -1072,6 +1087,7 @@ int pc5_web_start(const Pc5WebConfig *config, uint16_t port, char *error, size_t
 
 void pc5_web_stop(void)
 {
+    pc5_web_phone_end();
     if (!web.running) return;
     pthread_mutex_lock(&web.lock);
     web.stopping = 1;

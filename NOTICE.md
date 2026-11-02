@@ -1,5 +1,16 @@
 # Notice
 
+PC5 also links the project's pinned LGPL FFmpeg libraries into the
+title for silent H.264 background playback, using custom file IO and the same
+title-safe libc/thread adapters used by the Wine media modules. FFmpeg source
+and license texts remain in the standard source bundle and LICENSES/ffmpeg/.
+
+Library music vendors dr_mp3 v0.7.4 (David Reid,
+based on minimp3 by lieff), under MIT No Attribution / public domain. The exact
+revision and unchanged header are in `title/third_party/dr_mp3.NOTICE` and
+`dr_mp3.h`; license texts are in `dr_mp3.LICENSE` and packaged in
+`LICENSES/dr_mp3/`.
+
 PC5's own code (`title/`, `tools/`, `tests/`, `art/`, `patches/`) is under the GNU LGPL 2.1
 or later. Parts from elsewhere, each under its own licence:
 

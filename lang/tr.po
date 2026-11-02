@@ -47,7 +47,7 @@ msgstr "Sol ok"
 msgid "Right arrow"
 msgstr "Sağ ok"
 
-#: title/pc5_controls.c:30 title/pc5_controls.c:57 title/pc5_ui.c:6229
+#: title/pc5_controls.c:30 title/pc5_controls.c:57 title/pc5_ui.c:6938
 msgid "Nothing"
 msgstr "Hiçbiri"
 
@@ -144,13 +144,13 @@ msgid "Keys"
 msgstr "Tuşlar"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_controls.c:57 title/pc5_ui.c:5993
+#: title/pc5_controls.c:57 title/pc5_ui.c:6660
 msgid "Mouse pointer"
 msgstr "Fare imleci"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_controls.c:86 title/pc5_ui.c:2331 title/pc5_ui.c:6058
-#: title/pc5_ui.c:6073 title/pc5_ui.c:6113
+#: title/pc5_controls.c:86 title/pc5_ui.c:2404 title/pc5_ui.c:6725
+#: title/pc5_ui.c:6740 title/pc5_ui.c:6821
 msgid "Auto"
 msgstr "Otomatik"
 
@@ -278,20 +278,20 @@ msgstr "%s taşınamıyor: %s."
 msgid "PC5 ran out of memory deleting %s."
 msgstr "%s silinirken PC5'in belleği yetmedi."
 
-#: title/pc5_ftp.c:626 title/pc5_web.c:1047
+#: title/pc5_ftp.c:626 title/pc5_web.c:1061
 msgid "There's no network here."
 msgstr "Ağ bağlantısı yok."
 
-#: title/pc5_ftp.c:628 title/pc5_ui.c:2545
+#: title/pc5_ftp.c:628 title/pc5_ui.c:2618
 msgid "PC5's INSTALL folder isn't there."
 msgstr "PC5'in INSTALL klasörü yok."
 
-#: title/pc5_ftp.c:633 title/pc5_web.c:1052
+#: title/pc5_ftp.c:633 title/pc5_web.c:1067
 #, c-format
 msgid "Port %u is taken, or there's no network."
 msgstr "Port %u kullanımda ya da ağ yok."
 
-#: title/pc5_ftp.c:647 title/pc5_web.c:1066
+#: title/pc5_ftp.c:647 title/pc5_web.c:1081
 msgid "PC5 can't start it."
 msgstr "PC5 bunu başlatamıyor."
 
@@ -766,13 +766,13 @@ msgid "Extra large"
 msgstr "Çok büyük"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_settings.c:19 title/pc5_ui.c:291 title/pc5_ui.c:2325
-#: title/pc5_ui.c:2337 title/pc5_ui.c:2350 title/pc5_ui.c:2363
-#: title/pc5_ui.c:2395 title/pc5_ui.c:2400 title/pc5_ui.c:2405
-#: title/pc5_ui.c:2410 title/pc5_ui.c:2415 title/pc5_ui.c:2420
-#: title/pc5_ui.c:2425 title/pc5_ui.c:2474 title/pc5_ui.c:2487
-#: title/pc5_ui.c:2526 title/pc5_ui.c:6041 title/pc5_ui.c:6078
-#: title/pc5_ui.c:6099 title/pc5_ui.c:6113
+#: title/pc5_settings.c:19 title/pc5_ui.c:318 title/pc5_ui.c:2398
+#: title/pc5_ui.c:2410 title/pc5_ui.c:2423 title/pc5_ui.c:2436
+#: title/pc5_ui.c:2468 title/pc5_ui.c:2473 title/pc5_ui.c:2478
+#: title/pc5_ui.c:2483 title/pc5_ui.c:2488 title/pc5_ui.c:2493
+#: title/pc5_ui.c:2498 title/pc5_ui.c:2547 title/pc5_ui.c:2560
+#: title/pc5_ui.c:2599 title/pc5_ui.c:6708 title/pc5_ui.c:6745
+#: title/pc5_ui.c:6807 title/pc5_ui.c:6821
 msgid "Off"
 msgstr "Kapalı"
 
@@ -962,7 +962,7 @@ msgstr "Kutucuk değiştirilemiyor: %s."
 msgid "PC5 can't put the tile in place: %s."
 msgstr "Kutucuk yerine konamıyor: %s."
 
-#: title/pc5_tile.c:636 title/pc5_ui.c:3996
+#: title/pc5_tile.c:636 title/pc5_ui.c:4481
 msgid ""
 "It isn't in PC5 any more. Take the tile off the home screen, or install "
 "the game again."
@@ -974,120 +974,141 @@ msgid "PC5 lost its place readying the game."
 msgstr "PC5 oyunu hazırlarken nerede kaldığını kaybetti."
 
 #. One of the tabs along the top of the screen: one short word.
-#: title/pc5_ui.c:58
+#: title/pc5_ui.c:62
 msgid "Home"
 msgstr "Ana Sayfa"
 
 #. One of the tabs along the top of the screen: one short word.
-#: title/pc5_ui.c:58
+#: title/pc5_ui.c:62
 msgid "Library"
 msgstr "Kitaplık"
 
 #. One of the tabs along the top of the screen: one short word.
+#: title/pc5_ui.c:62
+msgid "Compatibility"
+msgstr "Uyumluluk"
+
+#. One of the tabs along the top of the screen: one short word.
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:58 title/pc5_ui.c:6577 title/pc5_ui.c:7617
+#: title/pc5_ui.c:62 title/pc5_ui.c:7286 title/pc5_ui.c:8379
 msgid "Install"
 msgstr "Yükle"
 
 #. One of the tabs along the top of the screen: one short word.
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:58 title/pc5_ui.c:121 title/pc5_ui.c:5857 title/pc5_ui.c:5873
+#: title/pc5_ui.c:62 title/pc5_ui.c:129 title/pc5_ui.c:6526 title/pc5_ui.c:6540
 msgid "Settings"
 msgstr "Ayarlar"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:61
+#: title/pc5_ui.c:65 title/pc5_ui_enhancements_draw.h:58
 msgid "All"
 msgstr "Tümü"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:61
+#: title/pc5_ui.c:65
 msgid "Recently played"
 msgstr "Son oynanan"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:61
+#: title/pc5_ui.c:65
 msgid "Favourites"
 msgstr "Favoriler"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:61 title/pc5_ui.c:5729 title/pc5_ui.c:7484
+#: title/pc5_ui.c:65 title/pc5_ui.c:6398 title/pc5_ui.c:8238
 msgid "USB drive"
 msgstr "USB sürücü"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:61
+#: title/pc5_ui.c:65
 msgid "Needs attention"
 msgstr "Dikkat gerekli"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:121 title/pc5_ui.c:2298
+#: title/pc5_ui.c:129 title/pc5_ui.c:2371
 msgid "In games"
 msgstr "Oyun içi"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:121 title/pc5_ui.c:2308
+#: title/pc5_ui.c:129 title/pc5_ui.c:2381
 msgid "System"
 msgstr "Sistem"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:121 title/pc5_ui.c:2303
+#: title/pc5_ui.c:129 title/pc5_ui.c:2376
 msgid "Overlay"
 msgstr "Katman"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:121 title/pc5_ui.c:2316
+#: title/pc5_ui.c:129 title/pc5_ui.c:2389
 msgid "Picture sources"
 msgstr "Resim kaynakları"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:122 title/pc5_ui.c:2293
+#: title/pc5_ui.c:130 title/pc5_ui.c:2366
 msgid "Game maintenance"
 msgstr "Oyun bakımı"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:122 title/pc5_ui.c:2367
+#: title/pc5_ui.c:130 title/pc5_ui.c:2440
 msgid "Network"
 msgstr "Ağ"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:195 title/pc5_ui.c:5998
+#: title/pc5_ui.c:204 title/pc5_ui.c:6665
 msgid "Graphics"
 msgstr "Grafik"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:195 title/pc5_ui.c:6003
+#: title/pc5_ui.c:204 title/pc5_ui.c:6670
 msgid "Appearance"
 msgstr "Görünüm"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:195 title/pc5_ui.c:6008
+#: title/pc5_ui.c:204 title/pc5_ui.c:6675
 msgid "Manage"
 msgstr "Yönet"
 
+#. A page's title, at the top of the Settings or game menu drawer.
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:204 title/pc5_ui.c:6753
+msgid "Background"
+msgstr "Arka plan"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:205 title/pc5_ui.c:6779 title/pc5_ui.c:7566
+msgid "Library music"
+msgstr "Kitaplık müziği"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:205 title/pc5_ui.c:6764 title/pc5_ui.c:7566
+msgid "Background video"
+msgstr "Arka plan videosu"
+
 #. a percentage (Vibration 50%); put a space before % where your language does.
-#: title/pc5_ui.c:293 title/pc5_ui.c:6200
+#: title/pc5_ui.c:320 title/pc5_ui.c:6909
 #, c-format
 msgid "%d%%"
 msgstr "%%%d"
 
-#: title/pc5_ui.c:893
+#: title/pc5_ui.c:953
 #, c-format
 msgid ""
 "You have %s, the version before: PC5 downloads only what changed (%s)"
 msgstr ""
 "Sende %s var, bir önceki sürüm: PC5 yalnızca değişenleri indirir (%s)"
 
-#: title/pc5_ui.c:898
+#: title/pc5_ui.c:958
 #, c-format
 msgid ""
 "You have %s, more than one version behind: PC5 downloads the whole app (%s)"
@@ -1095,16 +1116,17 @@ msgstr ""
 "Sende %s var, birden fazla sürüm geride: PC5 uygulamanın tamamını indirir "
 "(%s)"
 
-#: title/pc5_ui.c:901
+#: title/pc5_ui.c:961
 #, c-format
 msgid "You have %s: PC5 downloads the whole app (%s)"
 msgstr "Sende %s var: PC5 uygulamanın tamamını indirir (%s)"
 
-#: title/pc5_ui.c:1548 title/pc5_ui.c:4653
+#: title/pc5_ui.c:1616 title/pc5_ui.c:3659 title/pc5_ui.c:5198
+#: title/pc5_ui.c:5207
 msgid "PC5 didn't install this game"
 msgstr "Bu oyunu PC5 yüklemedi"
 
-#: title/pc5_ui.c:1549
+#: title/pc5_ui.c:1617
 msgid ""
 "Its cover can only be changed as in Covers on the wiki: a picture of your "
 "own."
@@ -1112,11 +1134,11 @@ msgstr ""
 "Kapağı yalnızca vikideki Covers sayfasında anlatıldığı gibi "
 "değiştirilebilir: kendi resminle."
 
-#: title/pc5_ui.c:1550
+#: title/pc5_ui.c:1618
 msgid "Only a game PC5 installed has a tile picture."
 msgstr "Yalnızca PC5'in yüklediği bir oyunun kutucuk resmi olur."
 
-#: title/pc5_ui.c:1551
+#: title/pc5_ui.c:1619
 msgid ""
 "Its background can only be changed as in Covers on the wiki: a picture of "
 "your own."
@@ -1124,87 +1146,87 @@ msgstr ""
 "Arka planı yalnızca vikideki Covers sayfasında anlatıldığı gibi "
 "değiştirilebilir: kendi resminle."
 
-#: title/pc5_ui.c:1557
+#: title/pc5_ui.c:1625
 msgid "PC5 ran out of memory"
 msgstr "PC5'in belleği yetmedi"
 
-#: title/pc5_ui.c:1557
+#: title/pc5_ui.c:1625
 msgid "Close PC5 and open it again."
 msgstr "PC5'i kapatıp yeniden aç."
 
-#: title/pc5_ui.c:1731
+#: title/pc5_ui.c:1799
 msgid "The cover wasn't changed"
 msgstr "Kapak değiştirilmedi"
 
-#: title/pc5_ui.c:1732
+#: title/pc5_ui.c:1800
 msgid "The tile picture wasn't changed"
 msgstr "Kutucuk resmi değiştirilmedi"
 
-#: title/pc5_ui.c:1732
+#: title/pc5_ui.c:1800
 msgid "The background wasn't changed"
 msgstr "Arka plan değiştirilmedi"
 
-#: title/pc5_ui.c:1734
+#: title/pc5_ui.c:1802
 msgid "PC5 can't write to the game's folder in /data/prospero-win/prefixes."
 msgstr "/data/prospero-win/prefixes içindeki oyun klasörüne yazılamıyor."
 
-#: title/pc5_ui.c:1735
+#: title/pc5_ui.c:1803
 msgid "PC5 couldn't make the card from the game's icon and name."
 msgstr "Oyunun simgesi ve adından kart yapılamadı."
 
-#: title/pc5_ui.c:1808 title/pc5_ui.c:6418
+#: title/pc5_ui.c:1876 title/pc5_ui.c:7127
 #, c-format
 msgid "USB drive %d"
 msgstr "USB sürücü %d"
 
-#: title/pc5_ui.c:1810
+#: title/pc5_ui.c:1878
 #, c-format
 msgid "Extended storage %d"
 msgstr "Genişletilmiş depolama %d"
 
-#: title/pc5_ui.c:1812
+#: title/pc5_ui.c:1880
 msgid "Console storage"
 msgstr "Konsol depolaması"
 
-#: title/pc5_ui.c:1830
+#: title/pc5_ui.c:1898
 #, c-format
 msgid "%s can't be installed"
 msgstr "%s yüklenemiyor"
 
-#: title/pc5_ui.c:1878
+#: title/pc5_ui.c:1946
 #, c-format
 msgid "%s can't be updated"
 msgstr "%s güncellenemiyor"
 
-#: title/pc5_ui.c:1878 title/pc5_ui.c:2956 title/pc5_ui.c:4523
-#: title/pc5_ui.c:5082 title/pc5_ui.c:5173 title/pc5_ui.c:6814
+#: title/pc5_ui.c:1946 title/pc5_ui.c:3030 title/pc5_ui.c:5053
+#: title/pc5_ui.c:5694 title/pc5_ui.c:5788 title/pc5_ui.c:7523
 msgid "The game"
 msgstr "Oyun"
 
-#: title/pc5_ui.c:1943
+#: title/pc5_ui.c:2011
 #, c-format
 msgid "Its Windows needs %s and the console has %s free."
 msgstr "Windows'u %s istiyor, konsolda %s boş yer var."
 
-#: title/pc5_ui.c:1943
+#: title/pc5_ui.c:2011
 #, c-format
 msgid "The game needs %s and the console has %s free."
 msgstr "Oyun %s istiyor, konsolda %s boş yer var."
 
-#: title/pc5_ui.c:1945 title/pc5_ui.c:4494
+#: title/pc5_ui.c:2013 title/pc5_ui.c:5024
 msgid "Not enough space"
 msgstr "Yeterli yer yok"
 
-#: title/pc5_ui.c:1965
+#: title/pc5_ui.c:2033
 msgid "It has no program to start."
 msgstr "Başlatılacak programı yok."
 
-#: title/pc5_ui.c:2040
+#: title/pc5_ui.c:2108
 #, c-format
 msgid "%s is partly updated"
 msgstr "%s kısmen güncellendi"
 
-#: title/pc5_ui.c:2041
+#: title/pc5_ui.c:2109
 #, c-format
 msgid ""
 "%u of its files couldn't be put in place. %s Update it again; its saves, "
@@ -1213,20 +1235,20 @@ msgstr ""
 "Dosyalarından %u tanesi yerine konamadı. %s Yeniden güncelle; kayıtları, "
 "ayarları ve seçenekleri olduğu gibi."
 
-#: title/pc5_ui.c:2045
+#: title/pc5_ui.c:2113
 #, c-format
 msgid "%s is updated"
 msgstr "%s güncellendi"
 
-#: title/pc5_ui.c:2046
+#: title/pc5_ui.c:2114
 msgid "Its saves, settings and options are as they were."
 msgstr "Kayıtları, ayarları ve seçenekleri olduğu gibi."
 
-#: title/pc5_ui.c:2049
+#: title/pc5_ui.c:2117
 msgid "Update stopped"
 msgstr "Güncelleme durduruldu"
 
-#: title/pc5_ui.c:2050
+#: title/pc5_ui.c:2118
 msgid ""
 "The copy made so far was deleted: the game is as it was. The USB drive "
 "wasn't changed."
@@ -1234,151 +1256,171 @@ msgstr ""
 "Şimdiye kadar yapılan kopya silindi: oyun olduğu gibi. USB sürücü "
 "değiştirilmedi."
 
-#: title/pc5_ui.c:2053
+#: title/pc5_ui.c:2121
 #, c-format
 msgid "%s wasn't updated"
 msgstr "%s güncellenmedi"
 
-#: title/pc5_ui.c:2054
+#: title/pc5_ui.c:2122
 #, c-format
 msgid "%s PC5 finishes the update the next time it starts."
 msgstr "%s PC5 güncellemeyi bir sonraki açılışında bitirir."
 
-#: title/pc5_ui.c:2054
+#: title/pc5_ui.c:2122
 #, c-format
 msgid "%s The game is as it was."
 msgstr "%s Oyun olduğu gibi."
 
-#: title/pc5_ui.c:2070
+#: title/pc5_ui.c:2138
 #, c-format
 msgid "%s is installed"
 msgstr "%s yüklendi"
 
-#: title/pc5_ui.c:2075
+#: title/pc5_ui.c:2143
 msgid "It's in your library, with the saves and settings it had before."
 msgstr "Önceki kayıtları ve ayarlarıyla kitaplığında."
 
-#: title/pc5_ui.c:2076
+#: title/pc5_ui.c:2144
 msgid "It's in your library. Press the button to play it from there."
 msgstr "Kitaplığında. Oradan oynamak için tuşa bas."
 
-#: title/pc5_ui.c:2080
+#: title/pc5_ui.c:2148
 msgid "Install stopped"
 msgstr "Yükleme durduruldu"
 
-#: title/pc5_ui.c:2080
+#: title/pc5_ui.c:2148
 #, c-format
 msgid "%s wasn't installed"
 msgstr "%s yüklenmedi"
 
-#: title/pc5_ui.c:2081
+#: title/pc5_ui.c:2149
 msgid "Everything copied so far was deleted. The USB drive wasn't changed."
 msgstr "Şimdiye kadar kopyalanan her şey silindi. USB sürücü değiştirilmedi."
 
-#: title/pc5_ui.c:2083
+#: title/pc5_ui.c:2151
 #, c-format
 msgid "%s Nothing was kept."
 msgstr "%s Hiçbir şey saklanmadı."
 
-#: title/pc5_ui.c:2084
+#: title/pc5_ui.c:2152
 #, c-format
 msgid "%s PC5 tries again the next time it starts."
 msgstr "%s PC5 bir sonraki açılışında yeniden dener."
 
-#: title/pc5_ui.c:2138
+#: title/pc5_ui.c:2206
 msgid "PC5 can't read this folder."
 msgstr "Bu klasör okunamıyor."
 
-#: title/pc5_ui.c:2222
+#: title/pc5_ui.c:2290
 msgid "stopped, nothing kept."
 msgstr "durduruldu, hiçbir şey saklanmadı."
 
-#: title/pc5_ui.c:2222
+#: title/pc5_ui.c:2290
 msgid "not installed."
 msgstr "yüklenmedi."
 
-#: title/pc5_ui.c:2228
+#: title/pc5_ui.c:2296
 msgid "1 game is installed"
 msgstr "1 oyun yüklendi"
 
-#: title/pc5_ui.c:2228
+#: title/pc5_ui.c:2296
 #, c-format
 msgid "%d games are installed"
 msgstr "%d oyun yüklendi"
 
-#: title/pc5_ui.c:2230
+#: title/pc5_ui.c:2298
 #, c-format
 msgid "%d of %d games are installed"
 msgstr "%2$d oyundan %1$d tanesi yüklendi"
 
-#: title/pc5_ui.c:2232
+#: title/pc5_ui.c:2300
 msgid "No game was installed"
 msgstr "Hiç oyun yüklenmedi"
 
-#: title/pc5_ui.c:2233
+#: title/pc5_ui.c:2301
 msgid "They're in your library. The USB drive wasn't changed."
 msgstr "Kitaplığındalar. USB sürücü değiştirilmedi."
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2281 title/pc5_ui.c:6607
+#: title/pc5_ui.c:2349 title/pc5_ui.c:7316
 msgid "Install games from USB"
 msgstr "USB'den oyun yükle"
 
-#: title/pc5_ui.c:2282
+#: title/pc5_ui.c:2350
 msgid "Copies one game, or several in a row, to the console"
 msgstr "Bir oyunu ya da art arda birkaçını konsola kopyalar"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2285 title/pc5_ui.c:7550 title/pc5_ui.c:7557
+#: title/pc5_ui.c:2353 title/pc5_ui.c:8304 title/pc5_ui.c:8311
 msgid "Uninstall game"
 msgstr "Oyunu kaldır"
 
-#: title/pc5_ui.c:2286
+#: title/pc5_ui.c:2354
 msgid "Deletes a game (its saves can be kept), or saves kept from before"
 msgstr ""
 "Bir oyunu (kayıtları saklanabilir) ya da önceden saklanan kayıtları siler"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2289 title/pc5_ui.c:6857
+#: title/pc5_ui.c:2357 title/pc5_ui.c:7573
+msgid "Library appearance from phone"
+msgstr "Telefondan kitaplık görünümü"
+
+#: title/pc5_ui.c:2358
+msgid ""
+"One QR code to choose any installed game and send its pictures, music or "
+"video"
+msgstr ""
+"Yüklü herhangi bir oyunu seçip ona resim, müzik ya da video göndermek için "
+"tek bir QR kodu"
+
+#. A menu row's value, shown at its right: keep it short (about 15 characters).
+#. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
+#: title/pc5_ui.c:2359 title/pc5_ui.c:7804 title/pc5_ui.c:7806
+msgid "Open"
+msgstr "Aç"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:2362
 msgid "Game compatibility list"
 msgstr "Oyun uyumluluk listesi"
 
-#: title/pc5_ui.c:2290
-msgid "Games players have tried, on your phone with a QR code"
-msgstr "Oyuncuların denediği oyunlar, QR koduyla telefonunda"
+#: title/pc5_ui.c:2363
+msgid "Browse community reports, settings and saved offline results"
+msgstr ""
+"Topluluk raporlarına, ayarlara ve kaydedilmiş çevrimdışı sonuçlara göz at"
 
-#: title/pc5_ui.c:2294
+#: title/pc5_ui.c:2367
 msgid "Installing, uninstalling and the compatibility list"
 msgstr "Yükleme, kaldırma ve uyumluluk listesi"
 
-#: title/pc5_ui.c:2299
+#: title/pc5_ui.c:2372
 msgid "Vibration, light bar, triggers and 120 Hz output"
 msgstr "Titreşim, ışık çubuğu, tetikler ve 120 Hz çıkış"
 
-#: title/pc5_ui.c:2304
+#: title/pc5_ui.c:2377
 msgid "FPS, frame time, CPU and GPU use, temperatures and memory"
 msgstr "FPS, kare süresi, CPU ve GPU kullanımı, sıcaklıklar ve bellek"
 
-#: title/pc5_ui.c:2310
+#: title/pc5_ui.c:2383
 msgid "Startup sound, logs, picture sources, updates and language"
 msgstr "Açılış sesi, günlükler, resim kaynakları, güncellemeler ve dil"
 
-#: title/pc5_ui.c:2317
+#: title/pc5_ui.c:2390
 msgid "Where covers and backgrounds are looked for"
 msgstr "Kapakların ve arka planların arandığı yerler"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2318
+#: title/pc5_ui.c:2391
 #, c-format
 msgid "%d of %d ›"
 msgstr "%d/%d ›"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2322
+#: title/pc5_ui.c:2395
 msgid "120 Hz output"
 msgstr "120 Hz çıkış"
 
-#: title/pc5_ui.c:2323
+#: title/pc5_ui.c:2396
 msgid ""
 "Games show up to 120 fps on a TV that takes it; turn on the PS5's own 120 "
 "Hz output too"
@@ -1386,87 +1428,87 @@ msgstr ""
 "Destekleyen bir TV'de oyunlar 120 fps'ye kadar gösterilir; PS5'in kendi "
 "120 Hz çıkışını da açın"
 
-#: title/pc5_ui.c:2324
+#: title/pc5_ui.c:2397
 msgid "Off: games show up to 60 fps"
 msgstr "Kapalı: oyunlar en fazla 60 fps gösterilir"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2325 title/pc5_ui.c:2337 title/pc5_ui.c:2350
-#: title/pc5_ui.c:2363 title/pc5_ui.c:2395 title/pc5_ui.c:2400
-#: title/pc5_ui.c:2405 title/pc5_ui.c:2410 title/pc5_ui.c:2415
-#: title/pc5_ui.c:2420 title/pc5_ui.c:2425 title/pc5_ui.c:2474
-#: title/pc5_ui.c:2526 title/pc5_ui.c:6078 title/pc5_ui.c:6099
+#: title/pc5_ui.c:2398 title/pc5_ui.c:2410 title/pc5_ui.c:2423
+#: title/pc5_ui.c:2436 title/pc5_ui.c:2468 title/pc5_ui.c:2473
+#: title/pc5_ui.c:2478 title/pc5_ui.c:2483 title/pc5_ui.c:2488
+#: title/pc5_ui.c:2493 title/pc5_ui.c:2498 title/pc5_ui.c:2547
+#: title/pc5_ui.c:2599 title/pc5_ui.c:6745 title/pc5_ui.c:6807
 msgid "On"
 msgstr "Açık"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2328
+#: title/pc5_ui.c:2401
 msgid "Keyboard layout"
 msgstr "Klavye düzeni"
 
-#: title/pc5_ui.c:2329
+#: title/pc5_ui.c:2402
 msgid "A USB keyboard types as a US one in games"
 msgstr "USB klavye oyunlarda ABD klavyesi gibi yazar"
 
-#: title/pc5_ui.c:2330
+#: title/pc5_ui.c:2403
 msgid "A USB keyboard types as your language's in games"
 msgstr "USB klavye oyunlarda dilinizin düzeniyle yazar"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2331
+#: title/pc5_ui.c:2404
 msgid "US"
 msgstr "ABD"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2334
+#: title/pc5_ui.c:2407
 msgid "Keep all logs"
 msgstr "Tüm günlükleri sakla"
 
-#: title/pc5_ui.c:2335
+#: title/pc5_ui.c:2408
 msgid "Every session's log is kept for 7 days"
 msgstr "Her oturumun günlüğü 7 gün saklanır"
 
-#: title/pc5_ui.c:2336
+#: title/pc5_ui.c:2409
 msgid "Problem sessions and each game's newest; turn on when testing a game"
 msgstr "Sorunlu oturumlar ve her oyunun en yenisi; bir oyunu denerken aç"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2342
+#: title/pc5_ui.c:2415
 msgid "FTP server"
 msgstr "FTP sunucusu"
 
-#: title/pc5_ui.c:2344
+#: title/pc5_ui.c:2417
 #, c-format
 msgid ""
 "ftp://%s from a PC (FileZilla): the INSTALL folder, while PC5 is open"
 msgstr "Bir PC'den ftp://%s (FileZilla): PC5 açıkken INSTALL klasörü"
 
-#: title/pc5_ui.c:2347 title/pc5_ui.c:2360
+#: title/pc5_ui.c:2420 title/pc5_ui.c:2433
 #, c-format
 msgid "Not started: %.150s"
 msgstr "Başlatılmadı: %.150s"
 
-#: title/pc5_ui.c:2349
+#: title/pc5_ui.c:2422
 msgid "Send games from a PC to PC5's INSTALL folder, then install them here"
 msgstr ""
 "Oyunları bir PC'den PC5'in INSTALL klasörüne gönder, sonra burada yükle"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2356
+#: title/pc5_ui.c:2429
 msgid "Web page"
 msgstr "Web sayfası"
 
-#: title/pc5_ui.c:2358
+#: title/pc5_ui.c:2431
 #, c-format
 msgid ""
 "http://%s in a browser on a phone or a PC; Triangle: a QR code for it"
 msgstr "Telefonda ya da PC'de tarayıcıda http://%s; Üçgen: QR kodu"
 
-#: title/pc5_ui.c:2362
+#: title/pc5_ui.c:2435
 msgid "PC5 from a browser: send games, launch options, logs"
 msgstr "Tarayıcıdan PC5: oyun gönder, başlatma seçenekleri, günlükler"
 
-#: title/pc5_ui.c:2368
+#: title/pc5_ui.c:2441
 msgid ""
 "From a PC or a phone: the FTP server, the web page, a username and password"
 msgstr ""
@@ -1474,236 +1516,236 @@ msgstr ""
 "parola"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2372
+#: title/pc5_ui.c:2445
 msgid "Username"
 msgstr "Kullanıcı adı"
 
-#: title/pc5_ui.c:2373
+#: title/pc5_ui.c:2446
 msgid "The username the FTP server and the web page ask for"
 msgstr "FTP sunucusunun ve web sayfasının istediği kullanıcı adı"
 
-#: title/pc5_ui.c:2374
+#: title/pc5_ui.c:2447
 msgid "None set: any username will do"
 msgstr "Ayarlanmadı: herhangi bir kullanıcı adı olur"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2375
+#: title/pc5_ui.c:2448
 msgid "Any"
 msgstr "Herhangi"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2378
+#: title/pc5_ui.c:2451
 msgid "Password"
 msgstr "Parola"
 
-#: title/pc5_ui.c:2379
+#: title/pc5_ui.c:2452
 msgid "The password the FTP server and the web page ask for"
 msgstr "FTP sunucusunun ve web sayfasının istediği parola"
 
-#: title/pc5_ui.c:2380
+#: title/pc5_ui.c:2453
 msgid "Optional: none set, no password is asked for"
 msgstr "İsteğe bağlı: ayarlanmadı, parola sorulmaz"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2381 title/pc5_ui.c:6196
+#: title/pc5_ui.c:2454 title/pc5_ui.c:6905
 msgid "None"
 msgstr "Yok"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2384 title/pc5_ui.c:7073
+#: title/pc5_ui.c:2457 title/pc5_ui.c:7788
 msgid "File manager"
 msgstr "Dosya yöneticisi"
 
-#: title/pc5_ui.c:2385
+#: title/pc5_ui.c:2458
 msgid "Copy, move, rename and delete files on the console and its drives"
 msgstr ""
 "Konsoldaki ve sürücülerindeki dosyaları kopyala, taşı, yeniden adlandır ve "
 "sil"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2389
+#: title/pc5_ui.c:2462
 msgid "About PC5"
 msgstr "PC5 hakkında"
 
-#: title/pc5_ui.c:2390
+#: title/pc5_ui.c:2463
 msgid "Version, free space and credits"
 msgstr "Sürüm, boş alan ve emeği geçenler"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2393
+#: title/pc5_ui.c:2466
 msgid "Show FPS"
 msgstr "FPS'yi göster"
 
-#: title/pc5_ui.c:2394
+#: title/pc5_ui.c:2467
 msgid "Frames shown each second"
 msgstr "Saniyede gösterilen kare sayısı"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2398
+#: title/pc5_ui.c:2471
 msgid "Frame time"
 msgstr "Kare süresi"
 
-#: title/pc5_ui.c:2399
+#: title/pc5_ui.c:2472
 msgid "How long a frame takes, on average, in milliseconds"
 msgstr "Bir karenin ortalama süresi, milisaniye olarak"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2403
+#: title/pc5_ui.c:2476
 msgid "CPU usage"
 msgstr "CPU kullanımı"
 
-#: title/pc5_ui.c:2404
+#: title/pc5_ui.c:2477
 msgid "How busy the console's CPU is, with everything it runs"
 msgstr "Konsolun CPU'sunun, çalıştırdığı her şeyle ne kadar meşgul olduğu"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2408
+#: title/pc5_ui.c:2481
 msgid "GPU usage"
 msgstr "GPU kullanımı"
 
-#: title/pc5_ui.c:2409
+#: title/pc5_ui.c:2482
 msgid "How busy the console's GPU is"
 msgstr "Konsolun GPU'sunun ne kadar meşgul olduğu"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2413
+#: title/pc5_ui.c:2486
 msgid "CPU temperature"
 msgstr "CPU sıcaklığı"
 
-#: title/pc5_ui.c:2414
+#: title/pc5_ui.c:2487
 msgid "In degrees Celsius"
 msgstr "Santigrat derece olarak"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2418
+#: title/pc5_ui.c:2491
 msgid "SoC temperature"
 msgstr "SoC sıcaklığı"
 
-#: title/pc5_ui.c:2419
+#: title/pc5_ui.c:2492
 msgid "The console chip's, in degrees Celsius"
 msgstr "Konsol yongasının, santigrat derece olarak"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2423 title/pc5_ui.c:6055
+#: title/pc5_ui.c:2496 title/pc5_ui.c:6722
 msgid "Memory"
 msgstr "Bellek"
 
-#: title/pc5_ui.c:2424
+#: title/pc5_ui.c:2497
 msgid "What the game uses, of what it has, in GB"
 msgstr "Oyunun kullandığı ve sahip olduğu, GB olarak"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2428
+#: title/pc5_ui.c:2501
 msgid "Corner"
 msgstr "Köşe"
 
-#: title/pc5_ui.c:2429
+#: title/pc5_ui.c:2502
 msgid "Where the overlay sits on the screen"
 msgstr "Katmanın ekranda durduğu yer"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2433 title/pc5_ui.c:6549
+#: title/pc5_ui.c:2506 title/pc5_ui.c:7258
 msgid "Size"
 msgstr "Boyut"
 
-#: title/pc5_ui.c:2435
+#: title/pc5_ui.c:2508
 msgid "Every line at once, twice the size, by the console"
 msgstr "Tüm satırlar aynı anda, iki kat boyutta, konsol tarafından"
 
-#: title/pc5_ui.c:2436
+#: title/pc5_ui.c:2509
 msgid "Twice the size, two lines at a time, taking turns"
 msgstr "İki kat boyutta, sırayla ikişer satır"
 
-#: title/pc5_ui.c:2437
+#: title/pc5_ui.c:2510
 msgid "Every line at once, in small text"
 msgstr "Tüm satırlar aynı anda, küçük yazıyla"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2441
+#: title/pc5_ui.c:2514
 msgid "Vibration"
 msgstr "Titreşim"
 
-#: title/pc5_ui.c:2442
+#: title/pc5_ui.c:2515
 msgid "How strongly the controller rumbles with the game"
 msgstr "Kumandanın oyunla ne kadar güçlü titreştiği"
 
-#: title/pc5_ui.c:2443
+#: title/pc5_ui.c:2516
 msgid "The game's rumble on the controller"
 msgstr "Oyunun titreşimi kumandada"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2447
+#: title/pc5_ui.c:2520
 msgid "Light bar"
 msgstr "Işık çubuğu"
 
-#: title/pc5_ui.c:2448
+#: title/pc5_ui.c:2521
 msgid "The colour of what is on screen"
 msgstr "Ekrandakinin rengi"
 
-#: title/pc5_ui.c:2449
+#: title/pc5_ui.c:2522
 msgid "The main colour of the game's cover"
 msgstr "Oyun kapağının ana rengi"
 
-#: title/pc5_ui.c:2450
+#: title/pc5_ui.c:2523
 msgid "PC5 leaves the console's colour"
 msgstr "PC5 konsolun rengine dokunmaz"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2454
+#: title/pc5_ui.c:2527
 msgid "Adaptive triggers"
 msgstr "Uyarlanabilir tetikler"
 
-#: title/pc5_ui.c:2455
+#: title/pc5_ui.c:2528
 msgid "L2 and R2 vibrate with the game's rumble"
 msgstr "L2 ve R2 oyunun titreşimiyle titrer"
 
-#: title/pc5_ui.c:2456
+#: title/pc5_ui.c:2529
 msgid "L2 and R2 push back as you press them"
 msgstr "L2 ve R2 bastıkça direnç gösterir"
 
-#: title/pc5_ui.c:2457
+#: title/pc5_ui.c:2530
 msgid "L2 and R2 push back, and buzz with the rumble"
 msgstr "L2 ve R2 direnç gösterir ve titreşimle titrer"
 
-#: title/pc5_ui.c:2458
+#: title/pc5_ui.c:2531
 msgid "Rumble, resistance or both on L2 and R2"
 msgstr "L2 ve R2'de titreşim, direnç ya da ikisi"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2462
+#: title/pc5_ui.c:2535
 msgid "Trigger rumble"
 msgstr "Tetik titreşimi"
 
-#: title/pc5_ui.c:2463
+#: title/pc5_ui.c:2536
 msgid "How strongly L2 and R2 vibrate"
 msgstr "L2 ve R2'nin ne kadar güçlü titreştiği"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2467
+#: title/pc5_ui.c:2540
 msgid "Trigger resistance"
 msgstr "Tetik direnci"
 
-#: title/pc5_ui.c:2468
+#: title/pc5_ui.c:2541
 msgid "How firmly L2 and R2 push back"
 msgstr "L2 ve R2'nin ne kadar sert direnç gösterdiği"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2472
+#: title/pc5_ui.c:2545
 msgid "Check when PC5 opens"
 msgstr "PC5 açılınca denetle"
 
-#: title/pc5_ui.c:2473
+#: title/pc5_ui.c:2546
 msgid "Asks GitHub for a newer PC5 each time you open PC5, and offers it"
 msgstr ""
 "PC5'i her açtığında GitHub'da daha yeni bir PC5 var mı diye bakar ve onu "
 "önerir"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2477
+#: title/pc5_ui.c:2550
 msgid "Check now"
 msgstr "Şimdi denetle"
 
-#: title/pc5_ui.c:2479
+#: title/pc5_ui.c:2552
 #, c-format
 msgid ""
 "PC5 %s is out: copy it over this one from github.com/bornaradusin/PC5"
@@ -1712,121 +1754,121 @@ msgstr ""
 "kopyala"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2485
+#: title/pc5_ui.c:2558
 msgid "Startup sound"
 msgstr "Açılış sesi"
 
-#: title/pc5_ui.c:2486
+#: title/pc5_ui.c:2559
 msgid "On the controller's speaker when PC5 opens"
 msgstr "PC5 açılınca kumandanın hoparlöründen"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2490
+#: title/pc5_ui.c:2563
 msgid "Startup sound volume"
 msgstr "Açılış sesi düzeyi"
 
-#: title/pc5_ui.c:2491
+#: title/pc5_ui.c:2564
 msgid "How loud the startup sound plays"
 msgstr "Açılış sesinin ne kadar yüksek çaldığı"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2497
+#: title/pc5_ui.c:2570
 msgid "Language"
 msgstr "Dil"
 
-#: title/pc5_ui.c:2499
+#: title/pc5_ui.c:2572
 msgid "PC5's screens and web page; System default follows the console"
 msgstr "PC5'in ekranları ve web sayfası; Sistem varsayılanı konsolu izler"
 
-#: title/pc5_ui.c:2502
+#: title/pc5_ui.c:2575
 #, c-format
 msgid "As the console: %s"
 msgstr "Konsoldaki gibi: %s"
 
 #. the Language setting's value when PC5 follows the console's language.
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2504
+#: title/pc5_ui.c:2577
 msgid "System default"
 msgstr "Sistem varsayılanı"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:2509 title/pc5_ui.c:7400 title/pc5_ui.c:7633
+#: title/pc5_ui.c:2582 title/pc5_ui.c:8138 title/pc5_ui.c:8395
 msgid "Update now"
 msgstr "Şimdi güncelle"
 
-#: title/pc5_ui.c:2513
+#: title/pc5_ui.c:2586
 #, c-format
 msgid "%.160s, installs it and restarts PC5"
 msgstr "%.160s, yükler ve PC5'i yeniden başlatır"
 
-#: title/pc5_ui.c:2519
+#: title/pc5_ui.c:2592
 msgid "Its store's covers and backgrounds"
 msgstr "Mağazasının kapakları ve arka planları"
 
-#: title/pc5_ui.c:2519
+#: title/pc5_ui.c:2592
 msgid "Covers and backgrounds its members made, with your key"
 msgstr "Üyelerinin yaptığı kapaklar ve arka planlar, senin anahtarınla"
 
-#: title/pc5_ui.c:2520
+#: title/pc5_ui.c:2593
 msgid "Its catalogue's covers and backgrounds"
 msgstr "Kataloğunun kapakları ve arka planları"
 
-#: title/pc5_ui.c:2520
+#: title/pc5_ui.c:2593
 msgid "The cover on the game's page, and its Steam background"
 msgstr "Oyunun sayfasındaki kapak ve Steam arka planı"
 
-#: title/pc5_ui.c:2521
+#: title/pc5_ui.c:2594
 msgid "Steam's pictures for a game Steam's search misses"
 msgstr "Steam aramasının kaçırdığı bir oyun için Steam'in resimleri"
 
-#: title/pc5_ui.c:2529
+#: title/pc5_ui.c:2602
 #, c-format
 msgid "Needs your key, in %s"
 msgstr "%s içinde anahtarın gerekli"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2530
+#: title/pc5_ui.c:2603
 msgid "No key"
 msgstr "Anahtar yok"
 
-#: title/pc5_ui.c:2532
+#: title/pc5_ui.c:2605
 #, c-format
 msgid "It refused the key in %s: check it there"
 msgstr "%s içindeki anahtarı reddetti: orada denetle"
 
-#: title/pc5_ui.c:2777
+#: title/pc5_ui.c:2851
 msgid "Home screen tiles aren't available"
 msgstr "Ana ekran kutucukları kullanılamıyor"
 
-#: title/pc5_ui.c:2777
+#: title/pc5_ui.c:2851
 msgid "This copy of PC5 has no tile program."
 msgstr "PC5'in bu kopyasında kutucuk programı yok."
 
-#: title/pc5_ui.c:2784
+#: title/pc5_ui.c:2858
 #, c-format
 msgid "PC5 can't delete its folder, %s/%s."
 msgstr "Klasörü silinemiyor: %s/%s."
 
-#: title/pc5_ui.c:2785
+#: title/pc5_ui.c:2859
 msgid "The tile wasn't taken away"
 msgstr "Kutucuk kaldırılmadı"
 
-#: title/pc5_ui.c:2789
+#: title/pc5_ui.c:2863
 msgid "Taken off the home screen"
 msgstr "Ana ekrandan kaldırıldı"
 
-#: title/pc5_ui.c:2790
+#: title/pc5_ui.c:2864
 msgid ""
 "The tile's folder is deleted. If the tile is still on the home screen, "
 "delete it there."
 msgstr "Kutucuğun klasörü silindi. Kutucuk hâlâ ana ekrandaysa orada sil."
 
-#: title/pc5_ui.c:2807 title/pc5_ui.c:2823
+#: title/pc5_ui.c:2881 title/pc5_ui.c:2897
 msgid "The tile wasn't made"
 msgstr "Kutucuk yapılmadı"
 
-#: title/pc5_ui.c:2810
+#: title/pc5_ui.c:2884
 #, c-format
 msgid ""
 "Its tile, %s, appears on the home screen once you close PC5 and "
@@ -1839,11 +1881,11 @@ msgstr ""
 "başlatır ve oyundan çıkınca ana ekrana dönülür. PC5'in klasöründen (%s) "
 "çalışır: PC5'i orada tut."
 
-#: title/pc5_ui.c:2815 title/pc5_ui.c:2830
+#: title/pc5_ui.c:2889 title/pc5_ui.c:2904
 msgid "Added to the home screen"
 msgstr "Ana ekrana eklendi"
 
-#: title/pc5_ui.c:2827
+#: title/pc5_ui.c:2901
 #, c-format
 msgid ""
 "Its tile, %s, appears on the home screen once ShadowMountPlus finds it in "
@@ -1853,29 +1895,29 @@ msgstr ""
 "Kutucuğu (%s), ShadowMountPlus onu %s içinde bulduğunda ana ekranda "
 "görünür. Oyunu hemen başlatır ve oyundan çıkınca ana ekrana dönülür."
 
-#: title/pc5_ui.c:2929
+#: title/pc5_ui.c:3003
 #, c-format
 msgid "PC5 %s is available on GitHub (you have %s)."
 msgstr "PC5 %s GitHub'da (sendeki: %s)."
 
-#: title/pc5_ui.c:2963
+#: title/pc5_ui.c:3037
 #, c-format
 msgid "%s stopped with an error"
 msgstr "%s bir hatayla durdu"
 
-#: title/pc5_ui.c:2964
+#: title/pc5_ui.c:3038
 #, c-format
 msgid "Wine reported a crash. Its log is kept as %.120s in %.120s."
 msgstr ""
 "Wine bir çökme bildirdi. Günlüğü %2$.120s içinde %1$.120s olarak "
 "saklanıyor."
 
-#: title/pc5_ui.c:2967
+#: title/pc5_ui.c:3041
 #, c-format
 msgid "%s closed before showing anything"
 msgstr "%s hiçbir şey göstermeden kapandı"
 
-#: title/pc5_ui.c:2968
+#: title/pc5_ui.c:3042
 #, c-format
 msgid ""
 "If PC5 started the wrong program, choose Change program in the game's menu "
@@ -1884,12 +1926,12 @@ msgstr ""
 "PC5 yanlış programı başlattıysa oyunun menüsünde (Üçgen) Programı "
 "değiştir'i seç. Günlüğü %2$.120s içinde %1$.120s olarak saklanıyor."
 
-#: title/pc5_ui.c:2972
+#: title/pc5_ui.c:3046
 #, c-format
 msgid "%s had to be closed"
 msgstr "%s kapatılmak zorunda kalındı"
 
-#: title/pc5_ui.c:2973
+#: title/pc5_ui.c:3047
 #, c-format
 msgid ""
 "It didn't close when asked, so PC5 ended it. Its log is kept as %.120s in "
@@ -1898,26 +1940,26 @@ msgstr ""
 "İstendiğinde kapanmadı, bu yüzden PC5 onu sonlandırdı. Günlüğü %2$.120s "
 "içinde %1$.120s olarak saklanıyor."
 
-#: title/pc5_ui.c:2977
+#: title/pc5_ui.c:3051
 #, c-format
 msgid "%s ended unexpectedly"
 msgstr "%s beklenmedik şekilde sona erdi"
 
-#: title/pc5_ui.c:2978
+#: title/pc5_ui.c:3052
 msgid "PC5 ended unexpectedly last time"
 msgstr "PC5 geçen sefer beklenmedik şekilde sona erdi"
 
-#: title/pc5_ui.c:2979
+#: title/pc5_ui.c:3053
 #, c-format
 msgid "Its log is kept as %.120s in %.120s."
 msgstr "Günlüğü %2$.120s içinde %1$.120s olarak saklanıyor."
 
-#: title/pc5_ui.c:3001
+#: title/pc5_ui.c:3075
 #, c-format
 msgid "No log of %s yet"
 msgstr "%s için henüz günlük yok"
 
-#: title/pc5_ui.c:3002
+#: title/pc5_ui.c:3076
 msgid ""
 "Play it once until the problem happens, then come back here: its log goes "
 "with the report."
@@ -1925,12 +1967,12 @@ msgstr ""
 "Sorun çıkana kadar bir kez oyna, sonra buraya dön: günlüğü raporla "
 "birlikte gider."
 
-#: title/pc5_ui.c:3016
+#: title/pc5_ui.c:3090
 #, c-format
 msgid "Report a problem with %s"
 msgstr "%s ile ilgili bir sorun bildir"
 
-#: title/pc5_ui.c:3017
+#: title/pc5_ui.c:3091
 #, c-format
 msgid ""
 "Its newest log, %.120s, is in %.120s/logs. Press Triangle for a QR code "
@@ -1941,77 +1983,151 @@ msgstr ""
 "doldurulmuş GitHub formunu açan bir QR kodu için Üçgen'e bas; o zip "
 "dosyasını oraya ekle."
 
-#: title/pc5_ui.c:3262
+#: title/pc5_ui.c:3357
+msgid "Internal storage"
+msgstr "Dahili depolama"
+
+#: title/pc5_ui.c:3370
 msgid "PC5's INSTALL folder"
 msgstr "PC5'in INSTALL klasörü"
 
-#: title/pc5_ui.c:3268
+#: title/pc5_ui.c:3376
 msgid "PC5's app"
 msgstr "PC5'in uygulaması"
 
-#: title/pc5_ui.c:3273
+#: title/pc5_ui.c:3381
 msgid "Whole console"
 msgstr "Tüm konsol"
 
-#: title/pc5_ui.c:3306
+#: title/pc5_ui.c:3459 title/pc5_ui.c:3466 title/pc5_ui.c:5564
+#: title/pc5_ui.c:5568 title/pc5_ui_enhancements_input.h:19
+msgid "Music wasn't saved"
+msgstr "Müzik kaydedilmedi"
+
+#: title/pc5_ui.c:3459
+msgid "PC5 couldn't create the game's music folder. Check free space."
+msgstr "PC5 oyunun müzik klasörünü oluşturamadı. Boş alanı denetle."
+
+#: title/pc5_ui.c:3466
+msgid "PC5 couldn't start importing the music. Try again."
+msgstr "PC5 müziği içe aktarmaya başlayamadı. Yeniden dene."
+
+#: title/pc5_ui.c:3503 title/pc5_ui.c:3510 title/pc5_ui.c:5591
+#: title/pc5_ui.c:5595 title/pc5_ui_enhancements_input.h:19
+msgid "Video wasn't saved"
+msgstr "Video kaydedilmedi"
+
+#: title/pc5_ui.c:3503
+msgid "PC5 couldn't create the game's video folder. Check free space."
+msgstr "PC5 oyunun video klasörünü oluşturamadı. Boş alanı denetle."
+
+#: title/pc5_ui.c:3510
+msgid "This build couldn't start the video importer."
+msgstr "Bu sürüm video içe aktarıcıyı başlatamadı."
+
+#: title/pc5_ui.c:3616
 msgid "Plug in the game's USB drive"
 msgstr "Oyunun USB sürücüsünü tak"
 
-#: title/pc5_ui.c:3306
+#: title/pc5_ui.c:3616
 msgid "Its files are on the USB drive it plays from."
 msgstr "Dosyaları, oynandığı USB sürücüde."
 
-#: title/pc5_ui.c:3308
+#: title/pc5_ui.c:3618
 msgid "PC5 can't find the game's folder"
 msgstr "Oyunun klasörü bulunamıyor"
 
-#: title/pc5_ui.c:3308 title/pc5_ui.c:4829
+#: title/pc5_ui.c:3618 title/pc5_ui.c:5383
 msgid "Its files may be missing: uninstall it and install it again."
 msgstr "Dosyaları eksik olabilir: kaldırıp yeniden yükle."
 
-#: title/pc5_ui.c:3388 title/pc5_ui.c:7094
+#: title/pc5_ui.c:3659
+msgid "Phone uploads need a game with its own PC5 folder."
+msgstr "Telefondan yükleme için kendi PC5 klasörü olan bir oyun gerekir."
+
+#: title/pc5_ui.c:3669 title/pc5_ui.c:3678
+msgid "Phone connection unavailable"
+msgstr "Telefon bağlantısı kullanılamıyor"
+
+#: title/pc5_ui.c:3678
+msgid ""
+"Check the network, then try again. The phone and PS5 must share a network "
+"or phone hotspot."
+msgstr ""
+"Ağı denetle, sonra yeniden dene. Telefon ve PS5 aynı ağda ya da telefonun "
+"erişim noktasında olmalı."
+
+#: title/pc5_ui.c:3702
+msgid "Picture wasn't saved"
+msgstr "Resim kaydedilmedi"
+
+#: title/pc5_ui.c:3702
+msgid ""
+"Choose a readable JPEG or PNG image, at most 20 MB. Your previous picture "
+"was kept."
+msgstr ""
+"Okunabilir, en fazla 20 MB bir JPEG ya da PNG resim seç. Önceki resmin "
+"korundu."
+
+#: title/pc5_ui.c:3831 title/pc5_ui.c:7812
+msgid "Choose an appearance backup"
+msgstr "Bir görünüm yedeği seç"
+
+#: title/pc5_ui.c:3831
+msgid "Choose a .pc5look backup made by PC5."
+msgstr "PC5'in oluşturduğu bir .pc5look yedeği seç."
+
+#: title/pc5_ui.c:3839 title/pc5_ui.c:7814
+msgid "Choose a music file"
+msgstr "Bir müzik dosyası seç"
+
+#: title/pc5_ui.c:3839 title/pc5_ui.c:7815
+msgid "Choose an MP3 or a 16-bit PCM WAV file."
+msgstr "Bir MP3 ya da 16 bit PCM WAV dosyası seç."
+
+#: title/pc5_ui.c:3849 title/pc5_ui.c:7824
 msgid "PC5 can't open this folder"
 msgstr "Bu klasör açılamıyor"
 
-#: title/pc5_ui.c:3388
+#: title/pc5_ui.c:3849
 msgid "Its path is too long."
 msgstr "Yolu çok uzun."
 
-#: title/pc5_ui.c:3444
+#: title/pc5_ui.c:3905
 msgid "Nothing was deleted"
 msgstr "Hiçbir şey silinmedi"
 
-#: title/pc5_ui.c:3444
+#: title/pc5_ui.c:3905
 msgid "Nothing was moved"
 msgstr "Hiçbir şey taşınmadı"
 
-#: title/pc5_ui.c:3444
+#: title/pc5_ui.c:3905
 msgid "Nothing was copied"
 msgstr "Hiçbir şey kopyalanmadı"
 
-#: title/pc5_ui.c:3490
+#: title/pc5_ui.c:3951
 msgid "Nothing was pasted"
 msgstr "Hiçbir şey yapıştırılmadı"
 
-#: title/pc5_ui.c:3490
+#: title/pc5_ui.c:3951
 msgid "Those items are here already, and were left as they were."
 msgstr "Bu öğeler zaten burada ve olduğu gibi bırakıldı."
 
-#: title/pc5_ui.c:3493
+#: title/pc5_ui.c:3954
 msgid "Stopped"
 msgstr "Durduruldu"
 
-#: title/pc5_ui.c:3494
+#: title/pc5_ui.c:3955
 msgid "What was deleted so far is gone; the rest is still here."
 msgstr "Şimdiye kadar silinenler gitti; geri kalanı hâlâ burada."
 
-#: title/pc5_ui.c:3495
+#: title/pc5_ui.c:3956
 msgid ""
 "What was moved so far is here. Nothing was deleted from where it came from."
 msgstr ""
 "Şimdiye kadar taşınanlar burada. Geldiği yerden hiçbir şey silinmedi."
 
-#: title/pc5_ui.c:3496
+#: title/pc5_ui.c:3957
 msgid ""
 "What was copied so far is here; the file being copied when it stopped was "
 "deleted."
@@ -2019,83 +2135,83 @@ msgstr ""
 "Şimdiye kadar kopyalananlar burada; durduğunda kopyalanmakta olan dosya "
 "silindi."
 
-#: title/pc5_ui.c:3499
+#: title/pc5_ui.c:3960
 msgid "Not everything was deleted"
 msgstr "Her şey silinmedi"
 
-#: title/pc5_ui.c:3499
+#: title/pc5_ui.c:3960
 msgid "Not everything was moved"
 msgstr "Her şey taşınmadı"
 
-#: title/pc5_ui.c:3499
+#: title/pc5_ui.c:3960
 msgid "Not everything was copied"
 msgstr "Her şey kopyalanmadı"
 
-#: title/pc5_ui.c:3511 title/pc5_ui.c:3515
+#: title/pc5_ui.c:3972 title/pc5_ui.c:3976
 msgid "That name can't be used"
 msgstr "Bu ad kullanılamaz"
 
-#: title/pc5_ui.c:3515
+#: title/pc5_ui.c:3976
 msgid "The path would be too long."
 msgstr "Yol çok uzun olur."
 
-#: title/pc5_ui.c:3524 title/pc5_ui.c:3537
+#: title/pc5_ui.c:3985 title/pc5_ui.c:3998
 #, c-format
 msgid "This folder has %.200s already."
 msgstr "Bu klasörde zaten %.200s var."
 
-#: title/pc5_ui.c:3525 title/pc5_ui.c:3538
+#: title/pc5_ui.c:3986 title/pc5_ui.c:3999
 msgid "That name is taken"
 msgstr "Bu ad alınmış"
 
-#: title/pc5_ui.c:3529 title/pc5_ui.c:3542
+#: title/pc5_ui.c:3990 title/pc5_ui.c:4003
 #, c-format
 msgid "%s."
 msgstr "%s."
 
-#: title/pc5_ui.c:3531
+#: title/pc5_ui.c:3992
 msgid "PC5 can't rename it"
 msgstr "Yeniden adlandırılamıyor"
 
-#: title/pc5_ui.c:3544
+#: title/pc5_ui.c:4005
 msgid "PC5 can't make the folder"
 msgstr "Klasör oluşturulamıyor"
 
 #. The title of the console's on-screen keyboard.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:3578 title/pc5_ui.c:7116
+#: title/pc5_ui.c:4039 title/pc5_ui.c:7847
 msgid "Rename"
 msgstr "Yeniden adlandır"
 
 #. The title of the console's on-screen keyboard.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:3578 title/pc5_ui.c:3580 title/pc5_ui.c:7117
+#: title/pc5_ui.c:4039 title/pc5_ui.c:4041 title/pc5_ui.c:7848
 msgid "New folder"
 msgstr "Yeni klasör"
 
-#: title/pc5_ui.c:3583 title/pc5_ui.c:3684 title/pc5_ui.c:4214
-#: title/pc5_ui.c:4703
+#: title/pc5_ui.c:4044 title/pc5_ui.c:4145 title/pc5_ui.c:4695
+#: title/pc5_ui.c:5257 title/pc5_ui_enhancements_input.h:56
 msgid "The keyboard didn't open"
 msgstr "Klavye açılmadı"
 
-#: title/pc5_ui.c:3583 title/pc5_ui.c:3684 title/pc5_ui.c:4214
-#: title/pc5_ui.c:4703
+#: title/pc5_ui.c:4044 title/pc5_ui.c:4145 title/pc5_ui.c:4695
+#: title/pc5_ui.c:5257 title/pc5_ui_enhancements_input.h:56
 msgid "The console's on-screen keyboard can't be used just now."
 msgstr "Konsolun ekran klavyesi şu anda kullanılamıyor."
 
-#: title/pc5_ui.c:3623
+#: title/pc5_ui.c:4084
 msgid "PC5 can't open it as text"
 msgstr "PC5 bunu metin olarak açamıyor"
 
-#: title/pc5_ui.c:3653
+#: title/pc5_ui.c:4114
 msgid "PC5 couldn't save it"
 msgstr "PC5 bunu kaydedemedi"
 
-#: title/pc5_ui.c:3670
+#: title/pc5_ui.c:4131
 msgid "This line is too long to change here"
 msgstr "Bu satır burada değiştirmek için çok uzun"
 
-#: title/pc5_ui.c:3671
+#: title/pc5_ui.c:4132
 msgid ""
 "The console's keyboard holds about 1000 characters. Change it from PC5's "
 "web page, or a computer over FTP."
@@ -2103,96 +2219,130 @@ msgstr ""
 "Konsolun klavyesi yaklaşık 1000 karakter alır. PC5'in web sayfasından ya "
 "da FTP ile bir bilgisayardan değiştirin."
 
-#: title/pc5_ui.c:3676 title/pc5_ui.c:7222
+#: title/pc5_ui.c:4137 title/pc5_ui.c:7953
 #, c-format
 msgid "Line %d"
 msgstr "Satır %d"
 
-#: title/pc5_ui.c:3678
+#: title/pc5_ui.c:4139
 msgid "New line"
 msgstr "Yeni satır"
 
-#: title/pc5_ui.c:3995
+#: title/pc5_ui.c:4253
+msgid "Choose a writable folder"
+msgstr "Yazılabilir bir klasör seç"
+
+#: title/pc5_ui.c:4253
+msgid ""
+"Open a folder on internal storage or a USB drive, then choose Save here."
+msgstr ""
+"Dahili depolamada ya da bir USB sürücüde bir klasör aç, sonra Buraya "
+"kaydet'i seç."
+
+#: title/pc5_ui.c:4263
+msgid "Backup wasn't saved"
+msgstr "Yedek kaydedilmedi"
+
+#: title/pc5_ui.c:4263
+msgid ""
+"Choose another folder. The backup name is unavailable or its path is too "
+"long."
+msgstr "Başka bir klasör seç. Yedek adı kullanılamıyor ya da yolu çok uzun."
+
+#: title/pc5_ui.c:4480
 msgid "This tile's game can't start"
 msgstr "Bu kutucuğun oyunu başlatılamıyor"
 
-#: title/pc5_ui.c:4041
+#: title/pc5_ui.c:4526
 msgid "PC5 couldn't restart"
 msgstr "PC5 yeniden başlatılamadı"
 
-#: title/pc5_ui.c:4042
+#: title/pc5_ui.c:4527
 msgid ""
 "The new version is installed. Close PC5 from the PS button and open it "
 "again."
 msgstr "Yeni sürüm yüklendi. PS tuşundan PC5'i kapatıp yeniden aç."
 
-#: title/pc5_ui.c:4052
+#: title/pc5_ui.c:4537
 msgid "The update was stopped"
 msgstr "Güncelleme durduruldu"
 
-#: title/pc5_ui.c:4052
+#: title/pc5_ui.c:4537
 msgid "PC5 is as it was, and what was downloaded is deleted."
 msgstr "PC5 olduğu gibi, indirilenler silindi."
 
-#: title/pc5_ui.c:4055
+#: title/pc5_ui.c:4540
 msgid "PC5's update isn't finished"
 msgstr "PC5'in güncellemesi bitmedi"
 
-#: title/pc5_ui.c:4055
+#: title/pc5_ui.c:4540
 msgid "PC5 wasn't updated"
 msgstr "PC5 güncellenmedi"
 
-#: title/pc5_ui.c:4145 title/pc5_ui.c:5065 title/pc5_ui.c:5082
-#: title/pc5_ui.c:5152
+#: title/pc5_ui.c:4626 title/pc5_ui.c:5677 title/pc5_ui.c:5694
+#: title/pc5_ui.c:5764
 #, c-format
 msgid "%s can't start"
 msgstr "%s başlatılamıyor"
 
-#: title/pc5_ui.c:4146
+#: title/pc5_ui.c:4627
 #, c-format
 msgid ""
 "%s You can uninstall it from its menu (Triangle) and install it again."
 msgstr "%s Menüsünden (Üçgen) kaldırıp yeniden yükleyebilirsin."
 
-#: title/pc5_ui.c:4147 title/pc5_ui.c:4645
+#: title/pc5_ui.c:4628 title/pc5_ui.c:5181
 msgid "Something it needs is missing."
 msgstr "Gerek duyduğu bir şey eksik."
 
 #. The title of the console's on-screen keyboard.
-#: title/pc5_ui.c:4209
+#: title/pc5_ui.c:4690
 msgid "Username (empty: any)"
 msgstr "Kullanıcı adı (boş: herhangi)"
 
 #. The title of the console's on-screen keyboard.
-#: title/pc5_ui.c:4209
+#: title/pc5_ui.c:4690
 msgid "Password (empty: none)"
 msgstr "Parola (boş: yok)"
 
-#: title/pc5_ui.c:4334 title/pc5_ui.c:4465
+#: title/pc5_ui.c:4799
+msgid "Appearance wasn't changed"
+msgstr "Görünüm değiştirilmedi"
+
+#: title/pc5_ui.c:4799
+msgid "Appearance backup complete"
+msgstr "Görünüm yedeği tamamlandı"
+
+#: title/pc5_ui.c:4800
+msgid "The saved appearance was restored. Game files and saves were kept."
+msgstr ""
+"Kaydedilen görünüm geri yüklendi. Oyun dosyaları ve kayıtlar korundu."
+
+#: title/pc5_ui.c:4864 title/pc5_ui.c:4995
 msgid "Out of memory"
 msgstr "Bellek yetersiz"
 
-#: title/pc5_ui.c:4334 title/pc5_ui.c:4465
+#: title/pc5_ui.c:4864 title/pc5_ui.c:4995
 msgid "PC5 couldn't make room to read the folders."
 msgstr "PC5 klasörleri okumak için yer açamadı."
 
-#: title/pc5_ui.c:4346
+#: title/pc5_ui.c:4876
 msgid "PC5 can't read that folder"
 msgstr "Bu klasör okunamıyor"
 
-#: title/pc5_ui.c:4346
+#: title/pc5_ui.c:4876
 msgid "Check that the USB drive is still plugged in."
 msgstr "USB sürücünün hâlâ takılı olduğunu denetle."
 
-#: title/pc5_ui.c:4397
+#: title/pc5_ui.c:4927
 msgid "Nothing to install"
 msgstr "Yüklenecek bir şey yok"
 
-#: title/pc5_ui.c:4397
+#: title/pc5_ui.c:4927
 msgid "None of these folders has a game PC5 can install."
 msgstr "Bu klasörlerin hiçbirinde PC5'in yükleyebileceği bir oyun yok."
 
-#: title/pc5_ui.c:4402
+#: title/pc5_ui.c:4932
 #, c-format
 msgid ""
 "Together they need %s and the console has %s free. Go back and untick some."
@@ -2200,67 +2350,71 @@ msgstr ""
 "Hepsi birlikte %s istiyor, konsolda %s boş yer var. Geri dönüp bazılarının "
 "işaretini kaldır."
 
-#: title/pc5_ui.c:4404
+#: title/pc5_ui.c:4934
 msgid "Not enough space for all of them"
 msgstr "Hepsi için yeterli yer yok"
 
-#: title/pc5_ui.c:4438
+#: title/pc5_ui.c:4968
 msgid "This folder can't be installed"
 msgstr "Bu klasör yüklenemez"
 
-#: title/pc5_ui.c:4493
+#: title/pc5_ui.c:5023
 #, c-format
 msgid "The update needs %s and the console has %s free."
 msgstr "Güncelleme %s istiyor, konsolda %s boş yer var."
 
-#: title/pc5_ui.c:4526
+#: title/pc5_ui.c:5056
 #, c-format
 msgid "%s's program wasn't changed"
 msgstr "%s programı değiştirilmedi"
 
-#: title/pc5_ui.c:4530
+#: title/pc5_ui.c:5060
 #, c-format
 msgid "%s starts %s now"
 msgstr "%s artık şunu başlatıyor: %s"
 
-#: title/pc5_ui.c:4531
+#: title/pc5_ui.c:5061
 #, c-format
 msgid "It runs as %d-bit %s."
 msgstr "%d bit %s olarak çalışır."
 
-#: title/pc5_ui.c:4550 title/pc5_ui.c:4645
+#: title/pc5_ui.c:5080 title/pc5_ui.c:5181
 msgid "This game can't start"
 msgstr "Bu oyun başlatılamıyor"
 
-#: title/pc5_ui.c:4654
+#: title/pc5_ui.c:5198
+msgid "Media settings need a game with its own PC5 folder."
+msgstr "Medya ayarları için kendi PC5 klasörü olan bir oyun gerekir."
+
+#: title/pc5_ui.c:5208
 msgid "Its program is set in its prospero-win profile."
 msgstr "Programı, prospero-win profilinde ayarlı."
 
-#: title/pc5_ui.c:4697
+#: title/pc5_ui.c:5251
 msgid "Search for covers by name"
 msgstr "Ada göre kapak ara"
 
-#: title/pc5_ui.c:4698
+#: title/pc5_ui.c:5252
 msgid "Search for tile pictures by name"
 msgstr "Ada göre kutucuk resmi ara"
 
-#: title/pc5_ui.c:4699
+#: title/pc5_ui.c:5253
 msgid "Search for backgrounds by name"
 msgstr "Ada göre arka plan ara"
 
-#: title/pc5_ui.c:4757
+#: title/pc5_ui.c:5311
 msgid "Your mapping wasn't saved"
 msgstr "Eşlemen kaydedilmedi"
 
-#: title/pc5_ui.c:4757
+#: title/pc5_ui.c:5311
 msgid "PC5 couldn't write it to the console's storage."
 msgstr "PC5 bunu konsolun depolamasına yazamadı."
 
-#: title/pc5_ui.c:4760
+#: title/pc5_ui.c:5314
 msgid "Saved as your mapping"
 msgstr "Eşlemen olarak kaydedildi"
 
-#: title/pc5_ui.c:4761
+#: title/pc5_ui.c:5315
 msgid ""
 "Games set up from now on start with it, and Use my mapping puts it on any "
 "game."
@@ -2268,31 +2422,31 @@ msgstr ""
 "Bundan sonra kurulan oyunlar bununla başlar; Eşlememi kullan ile herhangi "
 "bir oyuna uygulanır."
 
-#: title/pc5_ui.c:4829
+#: title/pc5_ui.c:5383
 msgid "PC5 can't read the game's folder"
 msgstr "Oyunun klasörü okunamıyor"
 
-#: title/pc5_ui.c:4834
+#: title/pc5_ui.c:5388
 msgid "This game has one program"
 msgstr "Bu oyunun tek programı var"
 
-#: title/pc5_ui.c:4834
+#: title/pc5_ui.c:5388
 msgid "There is no other program in its folder to start."
 msgstr "Klasöründe başlatılacak başka program yok."
 
-#: title/pc5_ui.c:4928
+#: title/pc5_ui.c:5482
 #, c-format
 msgid "%s wasn't uninstalled"
 msgstr "%s kaldırılmadı"
 
-#: title/pc5_ui.c:4929
+#: title/pc5_ui.c:5483
 #, c-format
 msgid "%s Nothing was changed."
 msgstr "%s Hiçbir şey değiştirilmedi."
 
 #. added after the sentence before it, hence the space at its start.
 #. Keep the space at the start or end: the text is joined to another.
-#: title/pc5_ui.c:4952
+#: title/pc5_ui.c:5506
 msgid ""
 " Its home screen tile's folder was deleted: if the tile is still on the "
 "home screen, delete it there."
@@ -2300,41 +2454,41 @@ msgstr ""
 " Ana ekran kutucuğunun klasörü silindi: kutucuk hâlâ ana ekrandaysa orada "
 "sil."
 
-#: title/pc5_ui.c:4955
+#: title/pc5_ui.c:5509
 #, c-format
 msgid "The saves of %s weren't fully deleted"
 msgstr "%s kayıtları tamamen silinmedi"
 
-#: title/pc5_ui.c:4955
+#: title/pc5_ui.c:5509
 #, c-format
 msgid "The saves of %s are deleted"
 msgstr "%s kayıtları silindi"
 
-#: title/pc5_ui.c:4957
+#: title/pc5_ui.c:5511
 #, c-format
 msgid "%s PC5 finishes deleting them the next time it starts."
 msgstr "%s PC5 bir sonraki açılışında silmeyi bitirir."
 
-#: title/pc5_ui.c:4958
+#: title/pc5_ui.c:5512
 msgid "Its saves and settings, kept when it was uninstalled, are gone."
 msgstr "Kaldırıldığında saklanan kayıtları ve ayarları silindi."
 
-#: title/pc5_ui.c:4960
+#: title/pc5_ui.c:5514
 #, c-format
 msgid "%s wasn't fully uninstalled"
 msgstr "%s tamamen kaldırılmadı"
 
-#: title/pc5_ui.c:4960
+#: title/pc5_ui.c:5514
 #, c-format
 msgid "%s is uninstalled"
 msgstr "%s kaldırıldı"
 
-#: title/pc5_ui.c:4961
+#: title/pc5_ui.c:5515
 #, c-format
 msgid "%s PC5 finishes it the next time it starts."
 msgstr "%s PC5 bunu bir sonraki açılışında bitirir."
 
-#: title/pc5_ui.c:4963
+#: title/pc5_ui.c:5517
 #, c-format
 msgid ""
 "Its saves and settings are kept: installing it again puts them back. "
@@ -2343,17 +2497,61 @@ msgstr ""
 "Kayıtları ve ayarları saklandı: yeniden yüklemek onları geri getirir. "
 "Ayarlar › Oyun bakımı › Oyunu kaldır onları siler.%s"
 
-#: title/pc5_ui.c:4965
+#: title/pc5_ui.c:5519
 #, c-format
 msgid "The game, its saves and its settings were deleted.%s"
 msgstr "Oyun, kayıtları ve ayarları silindi.%s"
 
-#: title/pc5_ui.c:5134
+#: title/pc5_ui.c:5560
+msgid ""
+"Choose a readable MP3 or 16-bit PCM WAV file. Protected or damaged files "
+"may not work."
+msgstr ""
+"Okunabilir bir MP3 ya da 16 bit PCM WAV dosyası seç. Korumalı ya da "
+"hasarlı dosyalar çalışmayabilir."
+
+#: title/pc5_ui.c:5562
+msgid "The prepared music exceeds the 2 GB limit. Choose a shorter track."
+msgstr "Hazırlanan müzik 2 GB sınırını aşıyor. Daha kısa bir parça seç."
+
+#: title/pc5_ui.c:5563
+msgid ""
+"Check free space and keep the source drive connected until importing "
+"finishes. Your previous music was kept."
+msgstr ""
+"Boş alanı denetle ve içe aktarma bitene kadar kaynak sürücüyü takılı tut. "
+"Önceki müziğin korundu."
+
+#: title/pc5_ui.c:5568 title/pc5_ui_enhancements_input.h:21
+msgid "PC5 couldn't save the music selection. Try again."
+msgstr "PC5 müzik seçimini kaydedemedi. Yeniden dene."
+
+#: title/pc5_ui.c:5588
+msgid ""
+"Choose an H.264 video up to 1920x1080, 60 fps and 1 GB. MP4 is "
+"recommended. Audio is ignored."
+msgstr ""
+"En fazla 1920x1080, 60 fps ve 1 GB bir H.264 video seç. MP4 önerilir. Ses "
+"yok sayılır."
+
+#: title/pc5_ui.c:5589
+msgid ""
+"Check free space and keep the source drive connected until importing "
+"finishes. Your previous video was kept."
+msgstr ""
+"Boş alanı denetle ve içe aktarma bitene kadar kaynak sürücüyü takılı tut. "
+"Önceki videon korundu."
+
+#: title/pc5_ui.c:5595
+msgid "PC5 couldn't save the video selection. Try again."
+msgstr "PC5 video seçimini kaydedemedi. Yeniden dene."
+
+#: title/pc5_ui.c:5746
 #, c-format
 msgid "%s needs Steam"
 msgstr "%s için Steam gerekli"
 
-#: title/pc5_ui.c:5137
+#: title/pc5_ui.c:5749
 msgid ""
 "Its program is wrapped in Steam's DRM (SteamStub), which starts only with "
 "Steam running, and Steam doesn't run on the console. A copy of the game "
@@ -2363,79 +2561,80 @@ msgstr ""
 "sarılı ve Steam konsolda çalışmıyor. Oyunun bu DRM'siz bir kopyası "
 "başlayabilir."
 
-#: title/pc5_ui.c:5173
+#: title/pc5_ui.c:5788
 #, c-format
 msgid "%s didn't start"
 msgstr "%s başlamadı"
 
-#: title/pc5_ui.c:5175
+#: title/pc5_ui.c:5790
 msgid "The console refused to start it. Try again, or restart PC5."
 msgstr "Konsol başlatmayı reddetti. Yeniden dene ya da PC5'i yeniden başlat."
 
-#: title/pc5_ui.c:5700 title/pc5_ui.c:5710
+#: title/pc5_ui.c:6369 title/pc5_ui.c:6379
 msgid "Play Game"
 msgstr "Oyunu Oyna"
 
 #. a chip under the game's name: 64-bit or 32-bit. Keep it short.
-#: title/pc5_ui.c:5721
+#: title/pc5_ui.c:6390
 #, c-format
 msgid "%d-bit"
 msgstr "%d bit"
 
-#: title/pc5_ui.c:5725
+#: title/pc5_ui.c:6394
 msgid "Frame gen"
 msgstr "Kare üretimi"
 
-#: title/pc5_ui.c:5726
+#: title/pc5_ui.c:6395
 #, c-format
 msgid "Controller: %s"
 msgstr "Kumanda: %s"
 
-#: title/pc5_ui.c:5815
+#: title/pc5_ui.c:6484
 msgid "No games yet."
 msgstr "Henüz oyun yok."
 
-#: title/pc5_ui.c:5815
+#: title/pc5_ui.c:6484
 msgid "Nothing played yet: games show here once you play them."
 msgstr "Henüz bir şey oynanmadı: oyunlar oynadıktan sonra burada görünür."
 
-#: title/pc5_ui.c:5816
+#: title/pc5_ui.c:6485
 msgid "No favourites yet: press Square on a game to add it."
 msgstr "Henüz favori yok: eklemek için bir oyunda Kare'ye bas."
 
-#: title/pc5_ui.c:5817
+#: title/pc5_ui.c:6486
 msgid "No game is played from a USB drive."
 msgstr "USB sürücüden oynanan oyun yok."
 
-#: title/pc5_ui.c:5817
+#: title/pc5_ui.c:6486
 msgid "Every game can start."
 msgstr "Her oyun başlayabilir."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5841 title/pc5_ui.c:5888 title/pc5_ui.c:5964
-#: title/pc5_ui.c:6162 title/pc5_ui.c:6229 title/pc5_ui.c:6258
-#: title/pc5_ui.c:6311 title/pc5_ui.c:6358 title/pc5_ui.c:6580
-#: title/pc5_ui.c:6589 title/pc5_ui.c:6606 title/pc5_ui.c:6827
-#: title/pc5_ui.c:6870 title/pc5_ui.c:7030 title/pc5_ui.c:7089
-#: title/pc5_ui.c:7091 title/pc5_ui.c:7157 title/pc5_ui.c:7188
-#: title/pc5_ui.c:7190 title/pc5_ui.c:7233 title/pc5_ui.c:7431
-#: title/pc5_ui.c:7514 title/pc5_ui.c:7525 title/pc5_ui.c:7549
-#: title/pc5_ui.c:7555
+#: title/pc5_ui.c:6510 title/pc5_ui.c:6555 title/pc5_ui.c:6631
+#: title/pc5_ui.c:6870 title/pc5_ui.c:6938 title/pc5_ui.c:6967
+#: title/pc5_ui.c:7020 title/pc5_ui.c:7067 title/pc5_ui.c:7289
+#: title/pc5_ui.c:7298 title/pc5_ui.c:7315 title/pc5_ui.c:7536
+#: title/pc5_ui.c:7745 title/pc5_ui.c:7804 title/pc5_ui.c:7806
+#: title/pc5_ui.c:7807 title/pc5_ui.c:7823 title/pc5_ui.c:7888
+#: title/pc5_ui.c:7919 title/pc5_ui.c:7921 title/pc5_ui.c:7964
+#: title/pc5_ui.c:8169 title/pc5_ui.c:8268 title/pc5_ui.c:8279
+#: title/pc5_ui.c:8303 title/pc5_ui.c:8309 title/pc5_ui_enhancements_draw.h:121
+#: title/pc5_ui_enhancements_draw.h:133 title/pc5_ui_enhancements_draw.h:159
 msgid "Back"
 msgstr "Geri"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5841 title/pc5_ui.c:5865 title/pc5_ui.c:5873
-#: title/pc5_ui.c:5978 title/pc5_ui.c:7525
+#: title/pc5_ui.c:6510 title/pc5_ui.c:6534 title/pc5_ui.c:6540
+#: title/pc5_ui.c:6645 title/pc5_ui.c:8279
 msgid "Play"
 msgstr "Oyna"
 
-#: title/pc5_ui.c:5851
+#: title/pc5_ui.c:6520
 msgid "No games yet"
 msgstr "Henüz oyun yok"
 
-#: title/pc5_ui.c:5853
+#: title/pc5_ui.c:6522
 msgid ""
 "Put a game's folder in PC5/INSTALL on a USB drive, then open Install › "
 "Install games from USB."
@@ -2443,7 +2642,7 @@ msgstr ""
 "Bir oyunun klasörünü USB sürücüde PC5/INSTALL içine koy, sonra Yükle › "
 "USB'den oyun yükle'yi aç."
 
-#: title/pc5_ui.c:5856
+#: title/pc5_ui.c:6525
 msgid ""
 "Or send it from a phone or PC: Settings › Network › Web page or FTP server."
 msgstr ""
@@ -2451,125 +2650,121 @@ msgstr ""
 "FTP sunucusu."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5857
+#: title/pc5_ui.c:6526
 msgid "Tabs"
 msgstr "Sekmeler"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5865
+#: title/pc5_ui.c:6534 title/pc5_ui_enhancements_draw.h:57
+#: title/pc5_ui_enhancements_draw.h:102
 msgid "Filter"
 msgstr "Filtre"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5865 title/pc5_ui.c:5873
+#: title/pc5_ui.c:6534 title/pc5_ui.c:6540
 msgid "Game options"
 msgstr "Oyun seçenekleri"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5865 title/pc5_ui.c:5873
+#: title/pc5_ui.c:6534 title/pc5_ui.c:6540
 msgid "Favourite"
 msgstr "Favori"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5871
-msgid "Focus mode"
-msgstr "Odak modu"
-
-#. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5964 title/pc5_ui.c:6162 title/pc5_ui.c:6228
-#: title/pc5_ui.c:7189
+#: title/pc5_ui.c:6631 title/pc5_ui.c:6870 title/pc5_ui.c:6937
+#: title/pc5_ui.c:7920
 msgid "Change"
 msgstr "Değiştir"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5964 title/pc5_ui.c:6162 title/pc5_ui.c:6258
-#: title/pc5_ui.c:6311 title/pc5_ui.c:6589 title/pc5_ui.c:7157
-#: title/pc5_ui.c:7233 title/pc5_ui.c:7514
+#: title/pc5_ui.c:6631 title/pc5_ui.c:6870 title/pc5_ui.c:6967
+#: title/pc5_ui.c:7020 title/pc5_ui.c:7298 title/pc5_ui.c:7807
+#: title/pc5_ui.c:7888 title/pc5_ui.c:7964 title/pc5_ui.c:8268
 msgid "Choose"
 msgstr "Seç"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:5964
+#: title/pc5_ui.c:6631
 msgid "QR code"
 msgstr "QR kodu"
 
-#: title/pc5_ui.c:5979
+#: title/pc5_ui.c:6646
 msgid "To leave it, hold the touchpad and OPTIONS for 2 s"
 msgstr "Çıkmak için dokunmatik yüzeyi ve OPTIONS'ı 2 sn basılı tut"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5983
+#: title/pc5_ui.c:6650 title/pc5_ui_enhancements_draw.h:111
 msgid "Controller"
 msgstr "Kumanda"
 
-#: title/pc5_ui.c:5984
+#: title/pc5_ui.c:6651
 msgid "The game sees a DualSense, as one plugged into a PC"
 msgstr "Oyun, PC'ye takılı gibi bir DualSense görür"
 
-#: title/pc5_ui.c:5984
+#: title/pc5_ui.c:6651
 msgid "The buttons press keys, the sticks move the mouse"
 msgstr "Tuşlar klavye tuşlarına basar, çubuklar fareyi oynatır"
 
-#: title/pc5_ui.c:5984
+#: title/pc5_ui.c:6651
 msgid "Games with controller support see an Xbox controller"
 msgstr "Kumanda destekli oyunlar bir Xbox kumandası görür"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:5988 title/pc5_ui.c:6169
+#: title/pc5_ui.c:6655 title/pc5_ui.c:6878
 msgid "Button mapping"
 msgstr "Tuş eşleme"
 
-#: title/pc5_ui.c:5989
+#: title/pc5_ui.c:6656
 msgid "The key or mouse button each one sends"
 msgstr "Her birinin gönderdiği tuş ya da fare düğmesi"
 
-#: title/pc5_ui.c:5994
+#: title/pc5_ui.c:6661
 msgid "Hides when not moved or clicked for 5 s"
 msgstr "5 sn hareket ettirilmez veya tıklanmazsa gizlenir"
 
-#: title/pc5_ui.c:5994
+#: title/pc5_ui.c:6661
 msgid "Stays as the game shows it"
 msgstr "Oyunun gösterdiği gibi kalır"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:5995
+#: title/pc5_ui.c:6662
 msgid "Hides when unused"
 msgstr "Kullanılmazsa gizlenir"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:5995
-msgid "Shown"
-msgstr "Gösterilir"
+#: title/pc5_ui.c:6662
+msgid "Game controlled"
+msgstr "Oyun belirler"
 
-#: title/pc5_ui.c:5999
+#: title/pc5_ui.c:6666
 msgid "Frames, resolution, aspect ratio, memory and CPU"
 msgstr "Kareler, çözünürlük, en boy oranı, bellek ve CPU"
 
-#: title/pc5_ui.c:5999
+#: title/pc5_ui.c:6666
 msgid "Frame generation, resolution, aspect ratio and CPU"
 msgstr "Kare üretimi, çözünürlük, en boy oranı ve CPU"
 
-#: title/pc5_ui.c:5999
+#: title/pc5_ui.c:6666
 msgid "Frame generation, aspect ratio, memory and CPU"
 msgstr "Kare üretimi, en boy oranı, bellek ve CPU"
 
-#: title/pc5_ui.c:5999
+#: title/pc5_ui.c:6666
 msgid "Frame generation, aspect ratio and CPU"
 msgstr "Kare üretimi, en boy oranı ve CPU"
 
-#: title/pc5_ui.c:6004
+#: title/pc5_ui.c:6671
 msgid "Its cover, its background and a home screen tile"
 msgstr "Kapağı, arka planı ve bir ana ekran kutucuğu"
 
-#: title/pc5_ui.c:6009
+#: title/pc5_ui.c:6676
 msgid "Its program, updating it and uninstalling it"
 msgstr "Programı, güncellenmesi ve kaldırılması"
 
-#: title/pc5_ui.c:6009
+#: title/pc5_ui.c:6676
 msgid "Its program and uninstalling it"
 msgstr "Programı ve kaldırılması"
 
-#: title/pc5_ui.c:6016 title/pc5_ui.c:6018
+#: title/pc5_ui.c:6683 title/pc5_ui.c:6685
 msgid ""
 "Best for most games; change it only if the picture is wrong or it won't "
 "start"
@@ -2577,37 +2772,37 @@ msgstr ""
 "Çoğu oyun için en iyisi; yalnızca görüntü bozuksa ya da başlamıyorsa "
 "değiştir"
 
-#: title/pc5_ui.c:6017
+#: title/pc5_ui.c:6684
 msgid "Wine's own Direct3D draws it; change it only if the picture is wrong"
 msgstr "Wine'ın kendi Direct3D'si çizer; yalnızca görüntü bozuksa değiştir"
 
-#: title/pc5_ui.c:6019
+#: title/pc5_ui.c:6686
 msgid "Wine's own Direct3D 12; if it doesn't help, set it back to Auto"
 msgstr "Wine'ın kendi Direct3D 12'si; işe yaramazsa Otomatik'e geri al"
 
-#: title/pc5_ui.c:6020
+#: title/pc5_ui.c:6687
 msgid ""
 "Wine's own Direct3D on Vulkan; if it doesn't help, set it back to Auto"
 msgstr ""
 "Vulkan üzerinde Wine'ın kendi Direct3D'si; işe yaramazsa Otomatik'e geri al"
 
-#: title/pc5_ui.c:6021
+#: title/pc5_ui.c:6688
 msgid ""
 "Wine's own Direct3D on OpenGL; if it doesn't help, set it back to Auto"
 msgstr ""
 "OpenGL üzerinde Wine'ın kendi Direct3D'si; işe yaramazsa Otomatik'e geri al"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6022 title/pc5_ui.c:6293
+#: title/pc5_ui.c:6689 title/pc5_ui.c:7002
 msgid "Graphics API"
 msgstr "Grafik API'si"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6028
+#: title/pc5_ui.c:6695
 msgid "Frame generation"
 msgstr "Kare üretimi"
 
-#: title/pc5_ui.c:6032
+#: title/pc5_ui.c:6699
 msgid ""
 "Held at 40 fps, two frames made between each two: for a game that can't "
 "hold 60"
@@ -2616,38 +2811,38 @@ msgstr ""
 "tutamayan bir oyun için"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6033
+#: title/pc5_ui.c:6700
 msgid "40 → 120 fps"
 msgstr "40 → 120 fps"
 
-#: title/pc5_ui.c:6035
+#: title/pc5_ui.c:6702
 msgid ""
 "Held at 60 fps, a frame made between each two: smoother on a 120 Hz TV"
 msgstr ""
 "60 fps'de tutulur, her iki karenin arasına bir kare üretilir: 120 Hz TV'de "
 "daha akıcı"
 
-#: title/pc5_ui.c:6036
+#: title/pc5_ui.c:6703
 msgid "Held at 30 fps and shown at 60: smoother where it runs below 60"
 msgstr ""
 "30 fps'de tutulur, 60'ta gösterilir: 60'ın altında çalıştığı yerlerde daha "
 "akıcı"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6037
+#: title/pc5_ui.c:6704
 msgid "60 → 120 fps"
 msgstr "60 → 120 fps"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6037
+#: title/pc5_ui.c:6704
 msgid "30 → 60 fps"
 msgstr "30 → 60 fps"
 
-#: title/pc5_ui.c:6039
+#: title/pc5_ui.c:6706
 msgid "Off. Left and right: 60 → 120 or 40 → 120 fps"
 msgstr "Kapalı. Sol ve sağ: 60 → 120 veya 40 → 120 fps"
 
-#: title/pc5_ui.c:6040
+#: title/pc5_ui.c:6707
 msgid ""
 "Off. Left and right: 30 → 60 fps (with 120 Hz output on, 60 → 120 or 40 → "
 "120)"
@@ -2656,150 +2851,221 @@ msgstr ""
 "120)"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6045
+#: title/pc5_ui.c:6712
 msgid "Resolution"
 msgstr "Çözünürlük"
 
-#: title/pc5_ui.c:6046
+#: title/pc5_ui.c:6713
 msgid "Drawn at 4K, as the console shows it; four times the work of 1080p"
 msgstr "Konsolun gösterdiği gibi 4K'da çizilir; 1080p'nin dört katı iş"
 
-#: title/pc5_ui.c:6046
+#: title/pc5_ui.c:6713
 msgid "Drawn at 1440p and shown at 4K; sharper than 1080p, slower"
 msgstr "1440p'de çizilir, 4K'da gösterilir; 1080p'den keskin, daha yavaş"
 
-#: title/pc5_ui.c:6046
+#: title/pc5_ui.c:6713
 msgid "Drawn at 1080p and shown at 4K by the console"
 msgstr "1080p'de çizilir, konsol tarafından 4K'da gösterilir"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6047
+#: title/pc5_ui.c:6714
 msgid "4K"
 msgstr "4K"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6050
+#: title/pc5_ui.c:6717
 msgid "Aspect ratio"
 msgstr "En boy oranı"
 
-#: title/pc5_ui.c:6051
+#: title/pc5_ui.c:6718
 msgid "Stretched to fill the screen: a 4:3 picture gets wider"
 msgstr "Ekranı dolduracak şekilde uzatılır: 4:3 bir görüntü genişler"
 
-#: title/pc5_ui.c:6051
+#: title/pc5_ui.c:6718
 msgid "The picture's own shape, with bars beside a 4:3 one"
 msgstr "Görüntünün kendi şekli, 4:3 olanın yanlarında şeritlerle"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6052
+#: title/pc5_ui.c:6719 title/pc5_ui_enhancements_draw.h:146
 msgid "Stretch"
 msgstr "Uzat"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6052
+#: title/pc5_ui.c:6719
 msgid "Keep"
 msgstr "Koru"
 
-#: title/pc5_ui.c:6056
+#: title/pc5_ui.c:6723
 msgid ""
 "4 GB even for a game not made for it: room for mods; Auto if it misbehaves"
 msgstr ""
 "Bunun için yapılmamış bir oyuna bile 4 GB: modlar için yer; sorun çıkarsa "
 "Otomatik"
 
-#: title/pc5_ui.c:6057
+#: title/pc5_ui.c:6724
 msgid "As Windows: 4 GB for a game made for it, otherwise 2 GB"
 msgstr "Windows gibi: bunun için yapılmış oyuna 4 GB, değilse 2 GB"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6058
+#: title/pc5_ui.c:6725
 msgid "4 GB"
 msgstr "4 GB"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6061
+#: title/pc5_ui.c:6728
 msgid "Video memory"
 msgstr "Video belleği"
 
-#: title/pc5_ui.c:6063
+#: title/pc5_ui.c:6730
 msgid "All 8 GB: the game may take memory the rest of it needs"
 msgstr ""
 "8 GB'nin tamamı: oyun, geri kalanının ihtiyaç duyduğu belleği alabilir"
 
-#: title/pc5_ui.c:6064
+#: title/pc5_ui.c:6731
 msgid ""
 "More for the game's textures, less for the rest; Auto if it runs out of "
 "memory"
 msgstr ""
 "Oyunun dokularına daha çok, geri kalanına daha az; bellek biterse Otomatik"
 
-#: title/pc5_ui.c:6065
+#: title/pc5_ui.c:6732
 msgid ""
 "4 GB, so the game leaves room for the rest: the console's memory is shared"
 msgstr ""
 "4 GB, böylece oyun geri kalanına yer bırakır: konsolun belleği paylaşımlı"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6067
+#: title/pc5_ui.c:6734
 msgid "6 GB"
 msgstr "6 GB"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6067
+#: title/pc5_ui.c:6734
 msgid "5 GB"
 msgstr "5 GB"
 
-#: title/pc5_ui.c:6071
+#: title/pc5_ui.c:6738
 msgid "All the console's; Auto if the game says there is too little"
 msgstr "Konsolun tamamı; oyun çok az olduğunu söylerse Otomatik"
 
-#: title/pc5_ui.c:6072
+#: title/pc5_ui.c:6739
 msgid "2 GB at most, a number older games' checks can read"
 msgstr "En fazla 2 GB, eski oyunların denetimlerinin okuyabildiği bir sayı"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6073
+#: title/pc5_ui.c:6740
 msgid "Full"
 msgstr "Tam"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6076
+#: title/pc5_ui.c:6743
 msgid "CPU sharing"
 msgstr "CPU paylaşımı"
 
-#: title/pc5_ui.c:6077
+#: title/pc5_ui.c:6744
 msgid "Its threads take turns, as on a PC: steadier for some games"
 msgstr ""
 "İş parçacıkları PC'deki gibi sırayla çalışır: bazı oyunlarda daha kararlı"
 
-#: title/pc5_ui.c:6077
+#: title/pc5_ui.c:6744
 msgid "Fastest for most games; turn on if it freezes or stutters"
 msgstr "Çoğu oyun için en hızlısı; donar ya da takılırsa aç"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6081
+#: title/pc5_ui.c:6748 title/pc5_ui.c:7566
 msgid "Cover"
 msgstr "Kapak"
 
-#: title/pc5_ui.c:6082
+#: title/pc5_ui.c:6749
 msgid "Another of those found, or search by another name"
 msgstr "Bulunanlardan bir başkası ya da başka bir adla ara"
 
-#. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6086
-msgid "Background"
-msgstr "Arka plan"
+#: title/pc5_ui.c:6754
+msgid "Choose a background image or a silent video"
+msgstr "Bir arka plan resmi ya da sessiz bir video seç"
 
-#: title/pc5_ui.c:6087
+#: title/pc5_ui.c:6755
 msgid "Another of those found, search by another name, or none"
 msgstr "Bulunanlardan bir başkası, başka bir adla ara ya da hiçbiri"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6091
+#: title/pc5_ui.c:6759 title/pc5_ui.c:7566
+msgid "Background image"
+msgstr "Arka plan resmi"
+
+#: title/pc5_ui.c:6760
+msgid ""
+"Choose a still image; it also appears when video playback is unavailable"
+msgstr "Durağan bir resim seç; video oynatılamadığında da görünür"
+
+#: title/pc5_ui.c:6765
+msgid "Choose or remove this game's silent background video"
+msgstr "Bu oyunun sessiz arka plan videosunu seç ya da kaldır"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:6769
+msgid "Choose video file"
+msgstr "Video dosyası seç"
+
+#: title/pc5_ui.c:6770
+msgid ""
+"Import H.264 video to console storage; experimental 1080p/60, without audio"
+msgstr "H.264 videoyu konsol depolamasına aktar; deneysel 1080p/60, sessiz"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:6774
+msgid "Remove background video"
+msgstr "Arka plan videosunu kaldır"
+
+#: title/pc5_ui.c:6775
+msgid ""
+"Delete the imported video and return to the background image; keep the "
+"source file"
+msgstr ""
+"İçe aktarılan videoyu sil ve arka plan resmine dön; kaynak dosya korunur"
+
+#: title/pc5_ui.c:6780
+msgid "Choose or remove the music that plays on this game's cover"
+msgstr "Bu oyunun kapağında çalan müziği seç ya da kaldır"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:6784
+msgid "Choose music file"
+msgstr "Müzik dosyası seç"
+
+#: title/pc5_ui.c:6785
+msgid ""
+"Import MP3 or WAV to console storage: plays on this cover, even without USB"
+msgstr ""
+"MP3 ya da WAV'ı konsol depolamasına aktar: bu kapakta çalar, USB olmadan da"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:6789
+msgid "Media settings and backup"
+msgstr "Medya ayarları ve yedek"
+
+#: title/pc5_ui.c:6790
+msgid ""
+"Music volume and start, video loop, framing, darkness and appearance backup"
+msgstr ""
+"Müzik ses düzeyi ve başlangıcı, video döngüsü, çerçeveleme, karartma ve "
+"görünüm yedeği"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:6794
+msgid "Remove library music"
+msgstr "Kitaplık müziğini kaldır"
+
+#: title/pc5_ui.c:6795
+msgid "Delete this game's imported music; the original source file is kept"
+msgstr "Bu oyunun içe aktarılan müziğini sil; özgün kaynak dosya korunur"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:6799 title/pc5_ui.c:7566
 msgid "Tile picture"
 msgstr "Kutucuk resmi"
 
-#: title/pc5_ui.c:6092
+#: title/pc5_ui.c:6800
 msgid ""
 "Its home screen tile's picture: a square one found online, or one made "
 "from its cover"
@@ -2807,156 +3073,160 @@ msgstr ""
 "Ana ekran kutucuğunun resmi: internette bulunan kare bir resim ya da "
 "kapağından yapılan"
 
-#: title/pc5_ui.c:6096
+#: title/pc5_ui.c:6804
 #, c-format
 msgid "Its tile, %.40s, starts the game"
 msgstr "Kutucuğu (%.40s) oyunu başlatır"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6097
+#: title/pc5_ui.c:6805
 msgid "Home screen tile"
 msgstr "Ana ekran kutucuğu"
 
-#: title/pc5_ui.c:6098
+#: title/pc5_ui.c:6806
 msgid "A tile on the PS5's home screen that starts it"
 msgstr "PS5 ana ekranında onu başlatan bir kutucuk"
 
-#: title/pc5_ui.c:6103
+#: title/pc5_ui.c:6811
 #, c-format
 msgid "Now: %.150s"
 msgstr "Şu an: %.150s"
 
 #. A menu row's name (about 30 characters fit).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6104 title/pc5_ui.c:6579
+#: title/pc5_ui.c:6812 title/pc5_ui.c:7288
 msgid "Change program"
 msgstr "Programı değiştir"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6110
+#: title/pc5_ui.c:6818
 msgid "Steam emulator"
 msgstr "Steam öykünücüsü"
 
-#: title/pc5_ui.c:6111
+#: title/pc5_ui.c:6819
 msgid "Steam's own library: the game won't find Steam on the console"
 msgstr "Steam'in kendi kütüphanesi: oyun konsolda Steam'i bulamaz"
 
-#: title/pc5_ui.c:6112
+#: title/pc5_ui.c:6820
 msgid "Stands in for Steam, which the game asks for; Off if it misbehaves"
 msgstr "Oyunun istediği Steam'in yerini tutar; sorun çıkarsa Kapalı"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6116 title/pc5_ui.c:7067
+#: title/pc5_ui.c:6824 title/pc5_ui.c:7782
 msgid "Game files"
 msgstr "Oyun dosyaları"
 
-#: title/pc5_ui.c:6117
+#: title/pc5_ui.c:6825
 msgid "Its folder: copy, move, rename and delete its files"
 msgstr "Klasörü: dosyalarını kopyala, taşı, yeniden adlandır ve sil"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:6121 title/pc5_ui.c:7452
+#: title/pc5_ui.c:6829 title/pc5_ui.c:8206
 msgid "Update"
 msgstr "Güncelle"
 
-#: title/pc5_ui.c:6122
+#: title/pc5_ui.c:6830
 msgid "A newer copy from USB; its saves and settings stay"
 msgstr "USB'den daha yeni bir kopya; kayıtları ve ayarları kalır"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6126
+#: title/pc5_ui.c:6834
 msgid "Report a problem"
 msgstr "Sorun bildir"
 
-#: title/pc5_ui.c:6127
+#: title/pc5_ui.c:6835
 msgid "A QR code for GitHub's form, filled in from the game's newest log"
 msgstr "Oyunun en yeni günlüğünden doldurulan GitHub formu için bir QR kodu"
 
 #. A menu row's name (about 30 characters fit).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6131 title/pc5_ui.c:7549 title/pc5_ui.c:7577
+#: title/pc5_ui.c:6839 title/pc5_ui.c:8303 title/pc5_ui.c:8331
 msgid "Uninstall"
 msgstr "Kaldır"
 
-#: title/pc5_ui.c:6132
+#: title/pc5_ui.c:6840
 msgid "Deletes the game, or keeps its saves for later"
 msgstr "Oyunu siler ya da kayıtlarını sonrası için saklar"
 
-#: title/pc5_ui.c:6175
+#: title/pc5_ui.c:6871 title/pc5_ui.c:7570
+msgid "Receive from phone"
+msgstr "Telefondan al"
+
+#: title/pc5_ui.c:6884
 msgid "Touchpad + OPTIONS for 2 s still leaves the game"
 msgstr "Dokunmatik yüzey + OPTIONS 2 sn yine de oyundan çıkarır"
 
-#: title/pc5_ui.c:6183
+#: title/pc5_ui.c:6892
 msgid "Right stick"
 msgstr "Sağ çubuk"
 
-#: title/pc5_ui.c:6183
+#: title/pc5_ui.c:6892
 msgid "Left stick"
 msgstr "Sol çubuk"
 
-#: title/pc5_ui.c:6191
+#: title/pc5_ui.c:6900
 msgid "Pointer speed"
 msgstr "İmleç hızı"
 
 #. which picture is shown: 3 of 12.
-#: title/pc5_ui.c:6192 title/pc5_ui.c:6390 title/pc5_ui.c:6994
+#: title/pc5_ui.c:6901 title/pc5_ui.c:7099 title/pc5_ui.c:7709
 #, c-format
 msgid "%d of %d"
 msgstr "%d/%d"
 
-#: title/pc5_ui.c:6195
+#: title/pc5_ui.c:6904
 msgid "Slow pointer button"
 msgstr "İmleci yavaşlatma tuşu"
 
 #. Keep the space at the start or end: the text is joined to another.
-#: title/pc5_ui.c:6199
+#: title/pc5_ui.c:6908
 msgid "    Slower by"
 msgstr "    Yavaşlatma oranı"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6204
+#: title/pc5_ui.c:6913
 msgid "Slows the pointer"
 msgstr "İmleci yavaşlatır"
 
-#: title/pc5_ui.c:6208
+#: title/pc5_ui.c:6917
 msgid "Reset to default"
 msgstr "Varsayılana sıfırla"
 
-#: title/pc5_ui.c:6211
+#: title/pc5_ui.c:6920
 msgid "Save as my mapping"
 msgstr "Eşlemem olarak kaydet"
 
-#: title/pc5_ui.c:6214
+#: title/pc5_ui.c:6923
 msgid "Use my mapping"
 msgstr "Eşlememi kullan"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6226
+#: title/pc5_ui.c:6935
 msgid "Choose a key"
 msgstr "Tuş seç"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6226
+#: title/pc5_ui.c:6935
 msgid "Reset"
 msgstr "Sıfırla"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:6227 title/pc5_ui.c:7207 title/pc5_ui.c:7278
+#: title/pc5_ui.c:6936 title/pc5_ui.c:7938 title/pc5_ui.c:8009
 msgid "Save"
 msgstr "Kaydet"
 
-#: title/pc5_ui.c:6227
+#: title/pc5_ui.c:6936
 msgid "Use"
 msgstr "Kullan"
 
-#: title/pc5_ui.c:6248
+#: title/pc5_ui.c:6957
 #, c-format
 msgid "What %s sends"
 msgstr "%s ne gönderiyor"
 
-#: title/pc5_ui.c:6266
+#: title/pc5_ui.c:6975
 msgid ""
 "PC5's choice: VKD3D-Proton turns the game's Direct3D 12 into Vulkan. The "
 "fastest, and what most games want."
@@ -2964,14 +3234,14 @@ msgstr ""
 "PC5'in seçimi: VKD3D-Proton oyunun Direct3D 12'sini Vulkan'a çevirir. En "
 "hızlısı ve çoğu oyunun istediği."
 
-#: title/pc5_ui.c:6267
+#: title/pc5_ui.c:6976
 msgid ""
 "PC5's choice: Wine's own Direct3D draws the game's DirectDraw with OpenGL."
 msgstr ""
 "PC5'in seçimi: Wine'ın kendi Direct3D'si oyunun DirectDraw'ını OpenGL ile "
 "çizer."
 
-#: title/pc5_ui.c:6268
+#: title/pc5_ui.c:6977
 msgid ""
 "PC5's choice: DXVK turns the game's Direct3D into Vulkan. The fastest, and "
 "what most games want."
@@ -2979,7 +3249,7 @@ msgstr ""
 "PC5'in seçimi: DXVK oyunun Direct3D'sini Vulkan'a çevirir. En hızlısı ve "
 "çoğu oyunun istediği."
 
-#: title/pc5_ui.c:6270
+#: title/pc5_ui.c:6979
 msgid ""
 "Wine's own Direct3D 12 (VKD3D). Slower than Auto; try it if the game won't "
 "start or draws wrong."
@@ -2987,7 +3257,7 @@ msgstr ""
 "Wine'ın kendi Direct3D 12'si (VKD3D). Otomatik'ten yavaş; oyun başlamıyor "
 "ya da yanlış çiziyorsa dene."
 
-#: title/pc5_ui.c:6272
+#: title/pc5_ui.c:6981
 msgid ""
 "Wine's own Direct3D, drawing with Vulkan. Try it if the game draws wrong "
 "with Auto; often faster than WineD3D."
@@ -2995,7 +3265,7 @@ msgstr ""
 "Vulkan ile çizen Wine'ın kendi Direct3D'si. Oyun Otomatik ile yanlış "
 "çiziyorsa dene; çoğu zaman WineD3D'den hızlı."
 
-#: title/pc5_ui.c:6273
+#: title/pc5_ui.c:6982
 msgid ""
 "Wine's own Direct3D, drawing with OpenGL. The slowest; try it if the game "
 "won't start with the others."
@@ -3003,16 +3273,16 @@ msgstr ""
 "OpenGL ile çizen Wine'ın kendi Direct3D'si. En yavaşı; oyun diğerleriyle "
 "başlamıyorsa dene."
 
-#: title/pc5_ui.c:6294
+#: title/pc5_ui.c:7003
 #, c-format
 msgid "The game uses %s"
 msgstr "Oyun %s kullanıyor"
 
-#: title/pc5_ui.c:6306
+#: title/pc5_ui.c:7015
 msgid "In use"
 msgstr "Kullanımda"
 
-#: title/pc5_ui.c:6326
+#: title/pc5_ui.c:7035
 msgid ""
 "PC5 runs your PC games with prospero-win: Wine, DXVK for Direct3D 8 to 11, "
 "VKD3D-Proton for Direct3D 12, and Mesa (RADV for Vulkan, Zink for OpenGL)."
@@ -3021,7 +3291,7 @@ msgstr ""
 "DXVK, Direct3D 12 için VKD3D-Proton ve Mesa (Vulkan için RADV, OpenGL için "
 "Zink)."
 
-#: title/pc5_ui.c:6328
+#: title/pc5_ui.c:7037
 msgid ""
 "Covers come from Steam, GOG, PCGamingWiki and Wikidata, and SteamGridDB "
 "with your key. No game is part of PC5."
@@ -3029,206 +3299,206 @@ msgstr ""
 "Kapaklar Steam, GOG, PCGamingWiki ve Wikidata'dan, anahtarınla da "
 "SteamGridDB'den gelir. Hiçbir oyun PC5'in parçası değildir."
 
-#: title/pc5_ui.c:6329
+#: title/pc5_ui.c:7038
 msgid "Free software under the GNU LGPL 2.1 or later."
 msgstr "GNU LGPL 2.1 veya sonrası altında özgür yazılım."
 
 #. About PC5: the version (2.0.7 · PPSA11018).
-#: title/pc5_ui.c:6338
+#: title/pc5_ui.c:7047
 #, c-format
 msgid "version %s"
 msgstr "sürüm %s"
 
-#: title/pc5_ui.c:6344
+#: title/pc5_ui.c:7053
 msgid "Like PC5?"
 msgstr "PC5'i sevdin mi?"
 
-#: title/pc5_ui.c:6347
+#: title/pc5_ui.c:7056
 msgid "Buy me a coffee"
 msgstr "Bana bir kahve ısmarla"
 
-#: title/pc5_ui.c:6351
+#: title/pc5_ui.c:7060
 #, c-format
 msgid "Games are kept in %.150s"
 msgstr "Oyunlar şurada saklanır: %.150s"
 
-#: title/pc5_ui.c:6355
+#: title/pc5_ui.c:7064
 #, c-format
 msgid "%s free on the console"
 msgstr "Konsolda %s boş"
 
-#: title/pc5_ui.c:6415
+#: title/pc5_ui.c:7124
 msgid "INSTALL folder"
 msgstr "INSTALL klasörü"
 
-#: title/pc5_ui.c:6417
+#: title/pc5_ui.c:7126
 #, c-format
 msgid "INSTALL folder, %.20s"
 msgstr "INSTALL klasörü, %.20s"
 
-#: title/pc5_ui.c:6433
+#: title/pc5_ui.c:7142
 msgid "No program found: it will be skipped"
 msgstr "Program bulunamadı: atlanacak"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6437
+#: title/pc5_ui.c:7146
 #, c-format
 msgid "%s · %d-bit · %s · %s"
 msgstr "%s · %d bit · %s · %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6450
+#: title/pc5_ui.c:7159
 #, c-format
 msgid "%d-bit · %s · %s%s"
 msgstr "%d bit · %s · %s%s"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6451 title/pc5_ui.c:6469
+#: title/pc5_ui.c:7160 title/pc5_ui.c:7178
 msgid " · chosen"
 msgstr " · seçili"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6452
+#: title/pc5_ui.c:7161
 msgid " · offered at Play"
 msgstr " · oynarken sunulur"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6468 title/pc5_ui.c:6546
+#: title/pc5_ui.c:7177 title/pc5_ui.c:7255
 #, c-format
 msgid "%d-bit · %s"
 msgstr "%d bit · %s"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6483
+#: title/pc5_ui.c:7192
 msgid "Jan"
 msgstr "Oca"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6483
+#: title/pc5_ui.c:7192
 msgid "Feb"
 msgstr "Şub"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6483
+#: title/pc5_ui.c:7192
 msgid "Mar"
 msgstr "Mar"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6483
+#: title/pc5_ui.c:7192
 msgid "Apr"
 msgstr "Nis"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6483
+#: title/pc5_ui.c:7192
 msgid "May"
 msgstr "May"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6483
+#: title/pc5_ui.c:7192
 msgid "Jun"
 msgstr "Haz"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6484
+#: title/pc5_ui.c:7193
 msgid "Jul"
 msgstr "Tem"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6484
+#: title/pc5_ui.c:7193
 msgid "Aug"
 msgstr "Ağu"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6484
+#: title/pc5_ui.c:7193
 msgid "Sep"
 msgstr "Eyl"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6484
+#: title/pc5_ui.c:7193
 msgid "Oct"
 msgstr "Eki"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6484
+#: title/pc5_ui.c:7193
 msgid "Nov"
 msgstr "Kas"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:6484
+#: title/pc5_ui.c:7193
 msgid "Dec"
 msgstr "Ara"
 
-#: title/pc5_ui.c:6486
+#: title/pc5_ui.c:7195
 #, c-format
 msgid "Saves of %s"
 msgstr "%s kayıtları"
 
 #. the day, the month (Jan to Dec, translated on their own) and the year: put them in your order with %1$d, %2$s, %3$d.
-#: title/pc5_ui.c:6495
+#: title/pc5_ui.c:7204
 #, c-format
 msgid "Kept %d %s %d; installing it again puts them back"
 msgstr "%d %s %d tarihinde saklandı; yeniden yüklemek onları geri getirir"
 
-#: title/pc5_ui.c:6498
+#: title/pc5_ui.c:7207
 msgid "Kept when it was uninstalled; installing it again puts them back"
 msgstr "Kaldırıldığında saklandı; yeniden yüklemek onları geri getirir"
 
-#: title/pc5_ui.c:6534
+#: title/pc5_ui.c:7243
 #, c-format
 msgid "Cover %d of %d"
 msgstr "Kapak %d/%d"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6535
+#: title/pc5_ui.c:7244
 #, c-format
 msgid "Made from the game's icon · %d of %d"
 msgstr "Oyunun simgesinden yapıldı · %d/%d"
 
-#: title/pc5_ui.c:6543
+#: title/pc5_ui.c:7252
 msgid "Program"
 msgstr "Program"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6544
+#: title/pc5_ui.c:7253
 msgid "none found"
 msgstr "bulunamadı"
 
-#: title/pc5_ui.c:6545
+#: title/pc5_ui.c:7254
 msgid "Runs as"
 msgstr "Çalışma şekli"
 
-#: title/pc5_ui.c:6550
+#: title/pc5_ui.c:7259
 #, c-format
 msgid "%s in %u file"
 msgstr "%s (%u dosya)"
 
-#: title/pc5_ui.c:6550
+#: title/pc5_ui.c:7259
 #, c-format
 msgid "%s in %u files"
 msgstr "%s (%u dosya)"
 
-#: title/pc5_ui.c:6551
+#: title/pc5_ui.c:7260
 msgid "Space"
 msgstr "Alan"
 
-#: title/pc5_ui.c:6555
+#: title/pc5_ui.c:7264
 #, c-format
 msgid "%s free after installing"
 msgstr "Yüklemeden sonra %s boş"
 
-#: title/pc5_ui.c:6555
+#: title/pc5_ui.c:7264
 #, c-format
 msgid "not enough: %s free"
 msgstr "yetersiz: %s boş"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6557
+#: title/pc5_ui.c:7266
 msgid "unknown"
 msgstr "bilinmiyor"
 
-#: title/pc5_ui.c:6569
+#: title/pc5_ui.c:7278
 msgid ""
 "A .NET program: it runs with Wine Mono, which PC5 sets up the first time a "
 ".NET game starts."
@@ -3236,7 +3506,7 @@ msgstr ""
 "Bir .NET programı: Wine Mono ile çalışır; PC5 onu bir .NET oyunu ilk "
 "başladığında kurar."
 
-#: title/pc5_ui.c:6573
+#: title/pc5_ui.c:7282
 msgid ""
 "The game is copied once and checked, to the console or, with a USB drive "
 "plugged in, to its PC5 folder. Whether a game runs is only known by trying "
@@ -3247,35 +3517,35 @@ msgstr ""
 "anlaşılır."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6577 title/pc5_ui.c:6848
+#: title/pc5_ui.c:7286 title/pc5_ui.c:7557
 msgid "Done"
 msgstr "Bitti"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6578 title/pc5_ui.c:7028
+#: title/pc5_ui.c:7287 title/pc5_ui.c:7743
 msgid "Other covers"
 msgstr "Diğer kapaklar"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6589 title/pc5_ui.c:6605
+#: title/pc5_ui.c:7298 title/pc5_ui.c:7314
 msgid "Look again"
 msgstr "Yeniden bak"
 
-#: title/pc5_ui.c:6590
+#: title/pc5_ui.c:7299
 #, c-format
 msgid "Update %s from USB"
 msgstr "USB'den güncelle: %s"
 
-#: title/pc5_ui.c:6590 title/pc5_ui.c:7410 title/pc5_ui.c:7446
-#: title/pc5_ui.c:7558 title/pc5_ui.c:7638
+#: title/pc5_ui.c:7299 title/pc5_ui.c:8148 title/pc5_ui.c:8200
+#: title/pc5_ui.c:8312 title/pc5_ui.c:8400
 msgid "the game"
 msgstr "oyun"
 
-#: title/pc5_ui.c:6591 title/pc5_ui.c:6608
+#: title/pc5_ui.c:7300 title/pc5_ui.c:7317
 msgid "No game folders found"
 msgstr "Oyun klasörü bulunamadı"
 
-#: title/pc5_ui.c:6592
+#: title/pc5_ui.c:7301
 msgid ""
 "Put the newer copy's folder (the one with the game's .exe in it) at the "
 "top of a USB drive formatted as exFAT, plug the drive into the PS5, then "
@@ -3285,26 +3555,26 @@ msgstr ""
 "biçimlendirilmiş bir USB sürücünün en üst düzeyine koy, sürücüyü PS5'e "
 "tak, sonra yeniden bak."
 
-#: title/pc5_ui.c:6599
+#: title/pc5_ui.c:7308
 #, c-format
 msgid "Install ticked (%d)"
 msgstr "İşaretlileri yükle (%d)"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6603
+#: title/pc5_ui.c:7312
 msgid "Install one"
 msgstr "Birini yükle"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6604 title/pc5_ui.c:7091
+#: title/pc5_ui.c:7313 title/pc5_ui.c:7806
 msgid "Tick"
 msgstr "İşaretle"
 
-#: title/pc5_ui.c:6607
+#: title/pc5_ui.c:7316
 msgid "Install games from the INSTALL folder"
 msgstr "INSTALL klasöründen oyun yükle"
 
-#: title/pc5_ui.c:6609
+#: title/pc5_ui.c:7318
 msgid ""
 "Put each game's folder (the one with its .exe in it) at the top of a USB "
 "drive formatted as exFAT, plug the drive into the PS5, then look again."
@@ -3313,110 +3583,110 @@ msgstr ""
 "biçimlendirilmiş bir USB sürücünün en üst düzeyine koy, sürücüyü PS5'e "
 "tak, sonra yeniden bak."
 
-#: title/pc5_ui.c:6623
+#: title/pc5_ui.c:7332
 msgid "Putting back its saves and settings"
 msgstr "Kayıtları ve ayarları geri konuyor"
 
-#: title/pc5_ui.c:6623
+#: title/pc5_ui.c:7332
 msgid "Setting up the game's Windows"
 msgstr "Oyunun Windows'u kuruluyor"
 
-#: title/pc5_ui.c:6626
+#: title/pc5_ui.c:7335
 msgid "Copying the newer version"
 msgstr "Yeni sürüm kopyalanıyor"
 
-#: title/pc5_ui.c:6626
+#: title/pc5_ui.c:7335
 msgid "Copying the game"
 msgstr "Oyun kopyalanıyor"
 
-#: title/pc5_ui.c:6627
+#: title/pc5_ui.c:7336
 msgid "Checking the copy against the USB drive"
 msgstr "Kopya USB sürücüyle karşılaştırılıyor"
 
-#: title/pc5_ui.c:6628 title/pc5_ui.c:6902
+#: title/pc5_ui.c:7337 title/pc5_ui.c:7617
 msgid "Putting the new files in place"
 msgstr "Yeni dosyalar yerine konuyor"
 
-#: title/pc5_ui.c:6628 title/pc5_ui.c:6630
+#: title/pc5_ui.c:7337 title/pc5_ui.c:7339
 msgid "Finishing"
 msgstr "Bitiriliyor"
 
-#: title/pc5_ui.c:6631
+#: title/pc5_ui.c:7340
 msgid "Stopping: deleting what was copied"
 msgstr "Durduruluyor: kopyalananlar siliniyor"
 
-#: title/pc5_ui.c:6631
+#: title/pc5_ui.c:7340
 msgid "Deleting what was copied"
 msgstr "Kopyalananlar siliniyor"
 
-#: title/pc5_ui.c:6636
+#: title/pc5_ui.c:7345
 #, c-format
 msgid "Game %d of %d"
 msgstr "Oyun %d/%d"
 
-#: title/pc5_ui.c:6639
+#: title/pc5_ui.c:7348
 #, c-format
 msgid "Updating %s"
 msgstr "Güncelleniyor: %s"
 
-#: title/pc5_ui.c:6639
+#: title/pc5_ui.c:7348
 #, c-format
 msgid "Installing %s"
 msgstr "Yükleniyor: %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6641 title/pc5_ui.c:6911
+#: title/pc5_ui.c:7350 title/pc5_ui.c:7626
 #, c-format
 msgid "Step %d of 3 · %s"
 msgstr "Adım %d/3 · %s"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6655 title/pc5_ui.c:6926
+#: title/pc5_ui.c:7364 title/pc5_ui.c:7641
 msgid " · under a minute left"
 msgstr " · bir dakikadan az kaldı"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6656 title/pc5_ui.c:6927
+#: title/pc5_ui.c:7365 title/pc5_ui.c:7642
 #, c-format
 msgid " · about %d min left"
 msgstr " · yaklaşık %d dk kaldı"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6658 title/pc5_ui.c:6929
+#: title/pc5_ui.c:7367 title/pc5_ui.c:7644
 #, c-format
 msgid "%s of %s · %s/s%s"
 msgstr "%s / %s · %s/sn%s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:6660 title/pc5_ui.c:6931
+#: title/pc5_ui.c:7369 title/pc5_ui.c:7646
 #, c-format
 msgid "%s of %s · measuring the speed"
 msgstr "%s / %s · hız ölçülüyor"
 
-#: title/pc5_ui.c:6663
+#: title/pc5_ui.c:7372
 #, c-format
 msgid "%u of %u files"
 msgstr "%u/%u dosya"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6667 title/pc5_ui.c:6942 title/pc5_ui.c:7263
-#: title/pc5_ui.c:7538 title/pc5_ui.c:7546
+#: title/pc5_ui.c:7376 title/pc5_ui.c:7657 title/pc5_ui.c:7994
+#: title/pc5_ui.c:8292 title/pc5_ui.c:8300
 msgid "Stop"
 msgstr "Durdur"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6772
+#: title/pc5_ui.c:7481
 msgid "OK"
 msgstr "Tamam"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6772 title/pc5_ui.c:6810
+#: title/pc5_ui.c:7481 title/pc5_ui.c:7519
 msgid "Report on GitHub"
 msgstr "GitHub'da bildir"
 
-#: title/pc5_ui.c:6816
+#: title/pc5_ui.c:7525
 #, c-format
 msgid ""
 "1. Scan the code with your phone. GitHub's form for a new issue opens, "
@@ -3425,20 +3695,20 @@ msgstr ""
 "1. Kodu telefonunla tara. %s, PC5'in sürümü ve PC5'in gördükleriyle "
 "doldurulmuş, yeni bir sorun için GitHub formu açılır."
 
-#: title/pc5_ui.c:6819
+#: title/pc5_ui.c:7528
 #, c-format
 msgid "1. On your phone or computer, open %s and choose New issue."
 msgstr ""
 "1. Telefonunda ya da bilgisayarında %s adresini aç ve New issue'yu seç."
 
-#: title/pc5_ui.c:6822
+#: title/pc5_ui.c:7531
 #, c-format
 msgid "2. Copy %s off the console, from %s/logs, as you copy files to it."
 msgstr ""
 "2. Konsola dosya kopyaladığın gibi, %s dosyasını %s/logs içinden konsoldan "
 "kopyala."
 
-#: title/pc5_ui.c:6826
+#: title/pc5_ui.c:7535
 msgid ""
 "3. Say what happened, attach the zip, and submit. You need a GitHub "
 "account."
@@ -3446,11 +3716,11 @@ msgstr ""
 "3. Ne olduğunu anlat, zip dosyasını ekle ve gönder. Bir GitHub hesabın "
 "olmalı."
 
-#: title/pc5_ui.c:6839
+#: title/pc5_ui.c:7548
 msgid "PC5's web page"
 msgstr "PC5'in web sayfası"
 
-#: title/pc5_ui.c:6843
+#: title/pc5_ui.c:7552
 #, c-format
 msgid ""
 "Scan the code with your phone, or open %s in a browser on a PC on the same "
@@ -3459,7 +3729,7 @@ msgstr ""
 "Kodu telefonunla tara ya da aynı ağdaki bir PC'de tarayıcıda %s adresini "
 "aç."
 
-#: title/pc5_ui.c:6846
+#: title/pc5_ui.c:7555
 msgid ""
 "From there: send a game's folder to install, report a problem with a game "
 "(its log and settings go with it), edit launch options and download logs. "
@@ -3469,39 +3739,45 @@ msgstr ""
 "(günlüğü ve ayarları da gider), başlatma seçeneklerini düzenle ve "
 "günlükleri indir. PC5 açıkken çalışır."
 
-#: title/pc5_ui.c:6863
+#: title/pc5_ui.c:7575
 msgid ""
-"Scan the code with your phone: PC5's wiki opens on the list of games "
-"players have tried, how each ran and the settings that helped."
+"Connect your phone and PS5 to the same network or phone hotspot. Scan this "
+"code and choose one file. Keep this screen open."
 msgstr ""
-"Kodu telefonunla tara: PC5'in vikisi, oyuncuların denediği oyunların, her "
-"birinin nasıl çalıştığının ve işe yarayan ayarların listesinde açılır."
+"Telefonunu ve PS5'i aynı ağa ya da telefonun erişim noktasına bağla. Bu "
+"kodu tara ve bir dosya seç. Bu ekranı açık tut."
 
-#: title/pc5_ui.c:6865
+#: title/pc5_ui.c:7578
 msgid ""
-"On your phone or computer, open "
-"github.com/bornaradusin/PC5/wiki/Game-compatibility: the games players "
-"have tried, how each ran and the settings that helped."
+"This link expires after 10 minutes or when you leave. Your previous "
+"selection stays until import succeeds."
 msgstr ""
-"Telefonunda ya da bilgisayarında "
-"github.com/bornaradusin/PC5/wiki/Game-compatibility adresini aç: "
-"oyuncuların denediği oyunlar, her birinin nasıl çalıştığı ve işe yarayan "
-"ayarlar."
+"Bu bağlantının süresi 10 dakika sonra ya da ayrıldığında dolar. Önceki "
+"seçimin, içe aktarma başarılı olana kadar kalır."
 
-#: title/pc5_ui.c:6868
-msgid ""
-"Got a game running? Add a game, at the top of the list's page: the form "
-"takes a minute. You need a GitHub account."
-msgstr ""
-"Bir oyunu çalıştırdın mı? Listenin sayfasının en üstündeki Add a game ile "
-"ekle: form bir dakika sürer. Bir GitHub hesabın olmalı."
+#: title/pc5_ui.c:7579
+#, c-format
+msgid "Receiving: %u%%"
+msgstr "Alınıyor: %u%%"
 
-#: title/pc5_ui.c:6891
+#: title/pc5_ui.c:7580
+msgid "Waiting for a file"
+msgstr "Dosya bekleniyor"
+
+#. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
+#. In a question window: the title, its text, or a button's label (keep buttons short).
+#: title/pc5_ui.c:7583 title/pc5_ui.c:8009 title/pc5_ui.c:8045
+#: title/pc5_ui.c:8184 title/pc5_ui.c:8187 title/pc5_ui.c:8206
+#: title/pc5_ui.c:8314 title/pc5_ui.c:8327 title/pc5_ui.c:8331
+msgid "Cancel"
+msgstr "İptal"
+
+#: title/pc5_ui.c:7606
 #, c-format
 msgid "PC5 %s is installed"
 msgstr "PC5 %s yüklendi"
 
-#: title/pc5_ui.c:6894
+#: title/pc5_ui.c:7609
 msgid ""
 "PC5 restarts now with the new version. Your games, saves and settings are "
 "as they were."
@@ -3510,112 +3786,112 @@ msgstr ""
 "ayarların olduğu gibi."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6895
+#: title/pc5_ui.c:7610
 msgid "Restart PC5"
 msgstr "PC5'i yeniden başlat"
 
-#: title/pc5_ui.c:6900
+#: title/pc5_ui.c:7615
 msgid "Downloading it from GitHub"
 msgstr "GitHub'dan indiriliyor"
 
-#: title/pc5_ui.c:6901
+#: title/pc5_ui.c:7616
 msgid "Unpacking it and checking every file"
 msgstr "Açılıyor ve her dosya denetleniyor"
 
-#: title/pc5_ui.c:6903
+#: title/pc5_ui.c:7618
 msgid "Deleting the old files"
 msgstr "Eski dosyalar siliniyor"
 
-#: title/pc5_ui.c:6904
+#: title/pc5_ui.c:7619
 msgid "Asking GitHub and finding PC5's folder"
 msgstr "GitHub'a soruluyor ve PC5'in klasörü bulunuyor"
 
-#: title/pc5_ui.c:6907 title/pc5_ui.c:7246
+#: title/pc5_ui.c:7622 title/pc5_ui.c:7977
 msgid "Stopping"
 msgstr "Durduruluyor"
 
-#: title/pc5_ui.c:6908
+#: title/pc5_ui.c:7623
 #, c-format
 msgid "Updating PC5 to %s"
 msgstr "PC5 %s sürümüne güncelleniyor"
 
-#: title/pc5_ui.c:6909
+#: title/pc5_ui.c:7624
 msgid "Updating PC5"
 msgstr "PC5 güncelleniyor"
 
-#: title/pc5_ui.c:6916
+#: title/pc5_ui.c:7631
 #, c-format
 msgid "%llu of %llu files"
 msgstr "%llu/%llu dosya"
 
-#: title/pc5_ui.c:6938
+#: title/pc5_ui.c:7653
 #, c-format
 msgid "Into %.280s"
 msgstr "Hedef: %.280s"
 
-#: title/pc5_ui.c:6946
+#: title/pc5_ui.c:7661
 msgid "Don't turn the console off now. This takes a moment."
 msgstr "Konsolu şimdi kapatma. Bu biraz sürer."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6960 title/pc5_ui.c:7293
+#: title/pc5_ui.c:7675 title/pc5_ui.c:8024
 msgid "Skip"
 msgstr "Atla"
 
-#: title/pc5_ui.c:6999
+#: title/pc5_ui.c:7714
 msgid "Its cover"
 msgstr "Kapağı"
 
-#: title/pc5_ui.c:6999
+#: title/pc5_ui.c:7714
 msgid "Its tile picture"
 msgstr "Kutucuk resmi"
 
-#: title/pc5_ui.c:6999
+#: title/pc5_ui.c:7714
 msgid "Its background"
 msgstr "Arka planı"
 
-#: title/pc5_ui.c:7003
+#: title/pc5_ui.c:7718
 msgid "The cover it has now"
 msgstr "Şu anki kapağı"
 
-#: title/pc5_ui.c:7003
+#: title/pc5_ui.c:7718
 msgid "The tile picture it has now"
 msgstr "Şu anki kutucuk resmi"
 
-#: title/pc5_ui.c:7003
+#: title/pc5_ui.c:7718
 msgid "The background it has now"
 msgstr "Şu anki arka planı"
 
-#: title/pc5_ui.c:7005
+#: title/pc5_ui.c:7720
 msgid "A cover found online"
 msgstr "İnternette bulunan bir kapak"
 
-#: title/pc5_ui.c:7005
+#: title/pc5_ui.c:7720
 msgid "A square picture found online"
 msgstr "İnternette bulunan kare bir resim"
 
-#: title/pc5_ui.c:7005
+#: title/pc5_ui.c:7720
 msgid "A background found online"
 msgstr "İnternette bulunan bir arka plan"
 
-#: title/pc5_ui.c:7007
+#: title/pc5_ui.c:7722
 msgid "Made from the game's icon and name"
 msgstr "Oyunun simgesi ve adından yapıldı"
 
-#: title/pc5_ui.c:7008
+#: title/pc5_ui.c:7723
 msgid "Made from its cover"
 msgstr "Kapağından yapıldı"
 
-#: title/pc5_ui.c:7008
+#: title/pc5_ui.c:7723
 msgid "None: a backdrop made from its cover"
 msgstr "Yok: kapağından yapılan bir fon"
 
-#: title/pc5_ui.c:7015
+#: title/pc5_ui.c:7730
 #, c-format
 msgid "Nothing found for “%s”."
 msgstr "“%s” için bir şey bulunamadı."
 
-#: title/pc5_ui.c:7017
+#: title/pc5_ui.c:7732
 msgid ""
 "Square pictures come from SteamGridDB: put your key in api_keys.txt "
 "(Covers on the wiki)."
@@ -3623,158 +3899,179 @@ msgstr ""
 "Kare resimler SteamGridDB'den gelir: anahtarını api_keys.txt dosyasına koy "
 "(vikideki Covers)."
 
-#: title/pc5_ui.c:7019
+#: title/pc5_ui.c:7734
 msgid "Nothing found for its name."
 msgstr "Adıyla bir şey bulunamadı."
 
-#: title/pc5_ui.c:7022
+#: title/pc5_ui.c:7737
 #, c-format
 msgid "Found for “%s”"
 msgstr "“%s” için bulunanlar"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7027
+#: title/pc5_ui.c:7742
 msgid "Use this"
 msgstr "Bunu kullan"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7028
+#: title/pc5_ui.c:7743
 msgid "Other pictures"
 msgstr "Diğer resimler"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7028
+#: title/pc5_ui.c:7743
 msgid "Other backgrounds"
 msgstr "Diğer arka planlar"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7029
+#: title/pc5_ui.c:7744
 msgid "Search by name"
 msgstr "Ada göre ara"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7043 title/pc5_ui.c:7083 title/pc5_ui.c:7186
+#: title/pc5_ui.c:7758 title/pc5_ui.c:7798 title/pc5_ui.c:7917
 msgid " · read-only"
 msgstr " · salt okunur"
 
-#: title/pc5_ui.c:7059
+#: title/pc5_ui.c:7774
 msgid "Folder"
 msgstr "Klasör"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7084
+#: title/pc5_ui.c:7799
 #, c-format
 msgid " · %d ticked"
 msgstr " · %d işaretli"
 
-#: title/pc5_ui.c:7086
+#: title/pc5_ui.c:7801
 msgid "△ Paste or New folder puts something in it."
 msgstr "△ Yapıştır ya da Yeni klasör buraya bir şey koyar."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7089 title/pc5_ui.c:7091
-msgid "Open"
-msgstr "Aç"
-
-#. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7091 title/pc5_ui.c:7189
+#: title/pc5_ui.c:7806 title/pc5_ui.c:7920
 msgid "Actions"
 msgstr "İşlemler"
 
-#: title/pc5_ui.c:7094
+#: title/pc5_ui.c:7810
+msgid "Choose backup destination"
+msgstr "Yedek konumunu seç"
+
+#: title/pc5_ui.c:7811
+msgid "Open a folder, then press OPTIONS to save the backup here."
+msgstr "Bir klasör aç, sonra yedeği buraya kaydetmek için OPTIONS'a bas."
+
+#: title/pc5_ui.c:7818
+msgid "Choose a background video"
+msgstr "Bir arka plan videosu seç"
+
+#: title/pc5_ui.c:7819
+msgid "H.264 up to 1080p/60 and 1 GB; MP4 recommended. Playback is silent."
+msgstr "En fazla 1080p/60 ve 1 GB H.264; MP4 önerilir. Oynatma sessizdir."
+
+#. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
+#: title/pc5_ui.c:7823
+msgid "Open folder"
+msgstr "Klasörü aç"
+
+#. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
+#: title/pc5_ui.c:7823
+msgid "Save here"
+msgstr "Buraya kaydet"
+
+#: title/pc5_ui.c:7824
 msgid "This folder is empty"
 msgstr "Bu klasör boş"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7105
+#: title/pc5_ui.c:7836
 msgid "Copy"
 msgstr "Kopyala"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7105
+#: title/pc5_ui.c:7836
 msgid "Then Paste puts a copy in another folder"
 msgstr "Sonra Yapıştır başka bir klasöre bir kopya koyar"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7106
+#: title/pc5_ui.c:7837
 msgid "Cut"
 msgstr "Kes"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7106
+#: title/pc5_ui.c:7837
 msgid "Then Paste moves it to another folder"
 msgstr "Sonra Yapıştır onu başka bir klasöre taşır"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7109
+#: title/pc5_ui.c:7840
 msgid "Paste"
 msgstr "Yapıştır"
 
-#: title/pc5_ui.c:7110
+#: title/pc5_ui.c:7841
 #, c-format
 msgid "Moves %d item from %.120s"
 msgstr "%2$.120s içinden %1$d öğe taşır"
 
-#: title/pc5_ui.c:7110
+#: title/pc5_ui.c:7841
 #, c-format
 msgid "Moves %d items from %.120s"
 msgstr "%2$.120s içinden %1$d öğe taşır"
 
-#: title/pc5_ui.c:7110
+#: title/pc5_ui.c:7841
 #, c-format
 msgid "Copies %d item from %.120s"
 msgstr "%2$.120s içinden %1$d öğe kopyalar"
 
-#: title/pc5_ui.c:7110
+#: title/pc5_ui.c:7841
 #, c-format
 msgid "Copies %d items from %.120s"
 msgstr "%2$.120s içinden %1$d öğe kopyalar"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7116
+#: title/pc5_ui.c:7847
 msgid "Type its new name"
 msgstr "Yeni adını yaz"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7117
+#: title/pc5_ui.c:7848
 msgid "An empty folder in this one"
 msgstr "Bunun içinde boş bir klasör"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7118 title/pc5_ui.c:7314 title/pc5_ui.c:7549
-#: title/pc5_ui.c:7555 title/pc5_ui.c:7560
+#: title/pc5_ui.c:7849 title/pc5_ui.c:8045 title/pc5_ui.c:8184
+#: title/pc5_ui.c:8303 title/pc5_ui.c:8309 title/pc5_ui.c:8314
 msgid "Delete"
 msgstr "Sil"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7118
+#: title/pc5_ui.c:7849
 msgid "Deleted for good: there is no undo"
 msgstr "Kalıcı olarak silinir: geri alınamaz"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7120
+#: title/pc5_ui.c:7851
 msgid "Untick all"
 msgstr "Tüm işaretleri kaldır"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7120
+#: title/pc5_ui.c:7851
 msgid "Tick all"
 msgstr "Tümünü işaretle"
 
-#: title/pc5_ui.c:7121
+#: title/pc5_ui.c:7852
 msgid "Every item in this folder"
 msgstr "Bu klasördeki her öğe"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7125
+#: title/pc5_ui.c:7856
 msgid "Edit"
 msgstr "Düzenle"
 
-#: title/pc5_ui.c:7126
+#: title/pc5_ui.c:7857
 msgid ""
 "A text file (.ini, .cfg, .txt and the like), changed a line at a time"
 msgstr ""
@@ -3782,164 +4079,158 @@ msgstr ""
 "değiştirilir"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7128
+#: title/pc5_ui.c:7859
 msgid "View"
 msgstr "Görüntüle"
 
-#: title/pc5_ui.c:7129
+#: title/pc5_ui.c:7860
 msgid "A text file, shown: nothing here can be changed"
 msgstr ""
 "Bir metin dosyası, yalnızca gösterilir: burada hiçbir şey değiştirilemez"
 
-#: title/pc5_ui.c:7142
+#: title/pc5_ui.c:7873
 #, c-format
 msgid "%d items"
 msgstr "%d öğe"
 
-#: title/pc5_ui.c:7144
+#: title/pc5_ui.c:7875
 msgid "This folder"
 msgstr "Bu klasör"
 
-#: title/pc5_ui.c:7148
+#: title/pc5_ui.c:7879
 msgid "Read-only: PC5 changes nothing here"
 msgstr "Salt okunur: PC5 burada hiçbir şeyi değiştirmez"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7187
+#: title/pc5_ui.c:7918
 msgid " · not saved"
 msgstr " · kaydedilmedi"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7188 title/pc5_ui.c:7190
+#: title/pc5_ui.c:7919 title/pc5_ui.c:7921
 msgid "Page"
 msgstr "Sayfa"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7189
+#: title/pc5_ui.c:7920
 msgid "Add a line"
 msgstr "Satır ekle"
 
-#: title/pc5_ui.c:7193
+#: title/pc5_ui.c:7924
 msgid "This file is empty"
 msgstr "Bu dosya boş"
 
-#: title/pc5_ui.c:7194
+#: title/pc5_ui.c:7925
 msgid "There's nothing in it."
 msgstr "İçinde hiçbir şey yok."
 
-#: title/pc5_ui.c:7194
+#: title/pc5_ui.c:7925
 msgid "✕ puts a first line in it."
 msgstr "✕ ilk satırı ekler."
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7203
+#: title/pc5_ui.c:7934
 msgid "Add a line below"
 msgstr "Altına satır ekle"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7203
+#: title/pc5_ui.c:7934
 msgid "Typed with the keyboard, under the line chosen"
 msgstr "Klavyeyle yazılır, seçilen satırın altına"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7204
+#: title/pc5_ui.c:7935
 msgid "Add a line above"
 msgstr "Üstüne satır ekle"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7204
+#: title/pc5_ui.c:7935
 msgid "Typed with the keyboard, over the line chosen"
 msgstr "Klavyeyle yazılır, seçilen satırın üstüne"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7205
+#: title/pc5_ui.c:7936
 msgid "Delete line"
 msgstr "Satırı sil"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7205
+#: title/pc5_ui.c:7936
 msgid "The line chosen goes; nothing is saved until Save"
 msgstr "Seçilen satır gider; Kaydet'e kadar hiçbir şey kaydedilmez"
 
-#: title/pc5_ui.c:7208
+#: title/pc5_ui.c:7939
 msgid "Written back as it was: UTF-16, with its line ends"
 msgstr "Olduğu gibi geri yazılır: UTF-16, kendi satır sonlarıyla"
 
-#: title/pc5_ui.c:7209
+#: title/pc5_ui.c:7940
 msgid "Written back as it was: one byte a letter, with its line ends"
 msgstr ""
 "Olduğu gibi geri yazılır: harf başına bir bayt, kendi satır sonlarıyla"
 
-#: title/pc5_ui.c:7210
+#: title/pc5_ui.c:7941
 msgid "Written back as it was: UTF-8, with its line ends"
 msgstr "Olduğu gibi geri yazılır: UTF-8, kendi satır sonlarıyla"
 
-#: title/pc5_ui.c:7223
+#: title/pc5_ui.c:7954
 msgid "This file"
 msgstr "Bu dosya"
 
-#: title/pc5_ui.c:7247
+#: title/pc5_ui.c:7978
 msgid "Deleting"
 msgstr "Siliniyor"
 
-#: title/pc5_ui.c:7248
+#: title/pc5_ui.c:7979
 msgid "Moving"
 msgstr "Taşınıyor"
 
-#: title/pc5_ui.c:7248
+#: title/pc5_ui.c:7979
 msgid "Copying"
 msgstr "Kopyalanıyor"
 
-#: title/pc5_ui.c:7250
+#: title/pc5_ui.c:7981
 msgid "Getting ready"
 msgstr "Hazırlanıyor"
 
-#: title/pc5_ui.c:7257
+#: title/pc5_ui.c:7988
 #, c-format
 msgid "%s of %s"
 msgstr "%s / %s"
 
-#: title/pc5_ui.c:7259
+#: title/pc5_ui.c:7990
 #, c-format
 msgid "%u of %u"
 msgstr "%u/%u"
 
-#: title/pc5_ui.c:7277
+#: title/pc5_ui.c:8008
 #, c-format
 msgid "Save the changes to %.200s?"
 msgstr "%.200s dosyasındaki değişiklikler kaydedilsin mi?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7278
+#: title/pc5_ui.c:8009
 msgid "Don't save leaves the file as it was before."
 msgstr "Kaydetme, dosyayı önceki hâliyle bırakır."
 
-#. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7278 title/pc5_ui.c:7314 title/pc5_ui.c:7452
-#: title/pc5_ui.c:7560 title/pc5_ui.c:7573 title/pc5_ui.c:7577
-msgid "Cancel"
-msgstr "İptal"
-
-#: title/pc5_ui.c:7279
+#: title/pc5_ui.c:8010
 msgid "Don't save"
 msgstr "Kaydetme"
 
-#: title/pc5_ui.c:7288
+#: title/pc5_ui.c:8019
 #, c-format
 msgid "This folder has %.200s already"
 msgstr "Bu klasörde zaten %.200s var"
 
-#: title/pc5_ui.c:7288 title/pc5_ui.c:7303
+#: title/pc5_ui.c:8019 title/pc5_ui.c:8034
 msgid "it"
 msgstr "o"
 
-#: title/pc5_ui.c:7289
+#: title/pc5_ui.c:8020
 #, c-format
 msgid "This folder has %d of the %d items already"
 msgstr "Bu klasörde %2$d öğeden %1$d tanesi zaten var"
 
-#: title/pc5_ui.c:7291
+#: title/pc5_ui.c:8022
 msgid ""
 "Skip leaves those as they are. Keep both gives the new ones a name like "
 "“name (2)”. Replace overwrites files and puts folders' contents together."
@@ -3948,50 +4239,50 @@ msgstr ""
 "bir ad verir. Değiştir dosyaların üzerine yazar ve klasörlerin içeriğini "
 "birleştirir."
 
-#: title/pc5_ui.c:7293
+#: title/pc5_ui.c:8024
 msgid "Keep both"
 msgstr "İkisini de tut"
 
-#: title/pc5_ui.c:7293
+#: title/pc5_ui.c:8024
 msgid "Replace"
 msgstr "Değiştir"
 
-#: title/pc5_ui.c:7298
+#: title/pc5_ui.c:8029
 #, c-format
 msgid "Delete %d items?"
 msgstr "%d öğe silinsin mi?"
 
-#: title/pc5_ui.c:7303
+#: title/pc5_ui.c:8034
 #, c-format
 msgid "Delete %.200s?"
 msgstr "%.200s silinsin mi?"
 
-#: title/pc5_ui.c:7304
+#: title/pc5_ui.c:8035
 msgid "Delete?"
 msgstr "Silinsin mi?"
 
-#: title/pc5_ui.c:7306
+#: title/pc5_ui.c:8037
 #, c-format
 msgid "%u file"
 msgstr "%u dosya"
 
-#: title/pc5_ui.c:7306
+#: title/pc5_ui.c:8037
 #, c-format
 msgid "%u files"
 msgstr "%u dosya"
 
-#: title/pc5_ui.c:7307
+#: title/pc5_ui.c:8038
 #, c-format
 msgid "%u folder"
 msgstr "%u klasör"
 
-#: title/pc5_ui.c:7307
+#: title/pc5_ui.c:8038
 #, c-format
 msgid "%u folders"
 msgstr "%u klasör"
 
 #. the first %s is a count of files ("3 files"), the second of folders, the third a size ("2.1 GB").
-#: title/pc5_ui.c:7310
+#: title/pc5_ui.c:8041
 #, c-format
 msgid ""
 "At least %s and %s, %s. They're deleted for good: there is no backup and "
@@ -4000,36 +4291,36 @@ msgstr ""
 "En az %s ve %s, %s. Kalıcı olarak silinirler: yedek yok, geri alma yok."
 
 #. the first %s is a count of files ("3 files"), the second of folders, the third a size ("2.1 GB").
-#: title/pc5_ui.c:7310
+#: title/pc5_ui.c:8041
 #, c-format
 msgid ""
 "%s and %s, %s. They're deleted for good: there is no backup and no undo."
 msgstr "%s ve %s, %s. Kalıcı olarak silinirler: yedek yok, geri alma yok."
 
-#: title/pc5_ui.c:7377
+#: title/pc5_ui.c:8108
 msgid "Finishing an install or uninstall that was cut short"
 msgstr "Yarıda kalan bir yükleme ya da kaldırma bitiriliyor"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7380
+#: title/pc5_ui.c:8111
 #, c-format
 msgid "Getting covers · %d of %d"
 msgstr "Kapaklar alınıyor · %d/%d"
 
-#: title/pc5_ui.c:7384 title/pc5_ui.c:7393 title/pc5_ui.c:7624
+#: title/pc5_ui.c:8115 title/pc5_ui.c:8131 title/pc5_ui.c:8386
 msgid "Checking for a newer PC5"
 msgstr "Daha yeni bir PC5 denetleniyor"
 
-#: title/pc5_ui.c:7393
+#: title/pc5_ui.c:8131
 msgid "Asking GitHub"
 msgstr "GitHub'a soruluyor"
 
-#: title/pc5_ui.c:7397
+#: title/pc5_ui.c:8135
 #, c-format
 msgid "PC5 %s is available"
 msgstr "PC5 %s çıktı"
 
-#: title/pc5_ui.c:7398
+#: title/pc5_ui.c:8136
 #, c-format
 msgid ""
 "%s, installs it and restarts. Your games, saves and settings stay. Later: "
@@ -4039,69 +4330,123 @@ msgstr ""
 "Sonra: Ayarlar › Sistem."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7400 title/pc5_ui.c:7617
+#: title/pc5_ui.c:8138 title/pc5_ui.c:8379
 msgid "Later"
 msgstr "Sonra"
 
-#: title/pc5_ui.c:7410 title/pc5_ui.c:7441
+#: title/pc5_ui.c:8148 title/pc5_ui.c:8195
 #, c-format
 msgid "Reading %s"
 msgstr "Okunuyor: %s"
 
-#: title/pc5_ui.c:7411
+#: title/pc5_ui.c:8149
 msgid "Finding its programs"
 msgstr "Programları bulunuyor"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7416
+#: title/pc5_ui.c:8154
 #, c-format
 msgid "Getting ready · %d of %d"
 msgstr "Hazırlanıyor · %d/%d"
 
-#: title/pc5_ui.c:7420
+#: title/pc5_ui.c:8158
 msgid "reading its files"
 msgstr "dosyaları okunuyor"
 
-#: title/pc5_ui.c:7420
+#: title/pc5_ui.c:8158
 msgid "looking for its cover"
 msgstr "kapağı aranıyor"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7429
+#: title/pc5_ui.c:8167
 #, c-format
 msgid "Install %d game · %s"
 msgstr "%d oyun yükle · %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7429
+#: title/pc5_ui.c:8167
 #, c-format
 msgid "Install %d games · %s"
 msgstr "%d oyun yükle · %s"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7431
+#: title/pc5_ui.c:8169
 msgid "Install all"
 msgstr "Tümünü yükle"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7431
+#: title/pc5_ui.c:8169
 msgid "Review"
 msgstr "İncele"
 
-#: title/pc5_ui.c:7438
+#. In a question window: the title, its text, or a button's label (keep buttons short).
+#: title/pc5_ui.c:8181
+msgid "Remove background video?"
+msgstr "Arka plan videosu kaldırılsın mı?"
+
+#. In a question window: the title, its text, or a button's label (keep buttons short).
+#: title/pc5_ui.c:8181
+msgid "Remove library music?"
+msgstr "Kitaplık müziği kaldırılsın mı?"
+
+#: title/pc5_ui.c:8182
+msgid ""
+"Delete this game's imported video and return to the background image? The "
+"original source file is kept."
+msgstr ""
+"Bu oyunun içe aktarılan videosu silinip arka plan resmine dönülsün mü? "
+"Özgün kaynak dosya korunur."
+
+#: title/pc5_ui.c:8183
+msgid "Delete this game's imported music? The original source file is kept."
+msgstr ""
+"Bu oyunun içe aktarılan müziği silinsin mi? Özgün kaynak dosya korunur."
+
+#. In a question window: the title, its text, or a button's label (keep buttons short).
+#: title/pc5_ui.c:8187
+msgid "Restore this appearance?"
+msgstr "Bu görünüm geri yüklensin mi?"
+
+#. In a question window: the title, its text, or a button's label (keep buttons short).
+#: title/pc5_ui.c:8187
+msgid ""
+"This replaces this game's pictures, music, video and media settings. Game "
+"files and saves are kept."
+msgstr ""
+"Bu, oyunun resimlerini, müziğini, videosunu ve medya ayarlarını "
+"değiştirir. Oyun dosyaları ve kayıtlar korunur."
+
+#. In a question window: the title, its text, or a button's label (keep buttons short).
+#: title/pc5_ui.c:8187
+msgid "Restore"
+msgstr "Geri yükle"
+
+#: title/pc5_ui.c:8189
+msgid "Restoring appearance"
+msgstr "Görünüm geri yükleniyor"
+
+#: title/pc5_ui.c:8189
+msgid "Exporting appearance"
+msgstr "Görünüm dışa aktarılıyor"
+
+#: title/pc5_ui.c:8189
+msgid "Keep the drive connected. Back cancels."
+msgstr "Sürücüyü takılı tut. Geri iptal eder."
+
+#: title/pc5_ui.c:8192
 msgid "Looking at the USB drives"
 msgstr "USB sürücülere bakılıyor"
 
-#: title/pc5_ui.c:7442
+#: title/pc5_ui.c:8196
 msgid "Counting its files and finding its program"
 msgstr "Dosyaları sayılıyor ve programı bulunuyor"
 
-#: title/pc5_ui.c:7449
+#: title/pc5_ui.c:8203
 #, c-format
 msgid "Update %s?"
 msgstr "%s güncellensin mi?"
 
-#: title/pc5_ui.c:7450
+#: title/pc5_ui.c:8204
 #, c-format
 msgid ""
 "PC5 copies %s (%s) from the USB drive over the game's folder: the files it "
@@ -4112,17 +4457,17 @@ msgstr ""
 "içindeki dosyalar oyununkilerin yerini alır, diğerleri kalır. Kayıtları, "
 "ayarları ve seçenekleri de kalır."
 
-#: title/pc5_ui.c:7462
+#: title/pc5_ui.c:8216
 #, c-format
 msgid "Where should the %d games go?"
 msgstr "%d oyun nereye gitsin?"
 
-#: title/pc5_ui.c:7463
+#: title/pc5_ui.c:8217
 #, c-format
 msgid "Where should %s go?"
 msgstr "%s nereye gitsin?"
 
-#: title/pc5_ui.c:7467
+#: title/pc5_ui.c:8221
 #, c-format
 msgid ""
 "The console has %s free. Extended storage (%.40s) has %s free: a game "
@@ -4132,7 +4477,7 @@ msgstr ""
 "var: oradaki bir oyun PC5 klasöründen çalışır. Kayıtları her durumda "
 "konsolda kalır."
 
-#: title/pc5_ui.c:7472
+#: title/pc5_ui.c:8226
 #, c-format
 msgid ""
 "The console has %s free. The USB drive (%.40s) has %s free: a game there "
@@ -4143,27 +4488,27 @@ msgstr ""
 "oyun onun PC5 klasöründen oynanır, bu yüzden sürücüyü hızlı bir porta "
 "takılı tut. Kayıtları her iki durumda da konsolda kalır."
 
-#: title/pc5_ui.c:7482
+#: title/pc5_ui.c:8236
 #, c-format
 msgid "Left and right choose among the %d drives a game can go on."
 msgstr "Sol ve sağ, bir oyunun kurulabileceği %d sürücü arasından seçer."
 
-#: title/pc5_ui.c:7484
+#: title/pc5_ui.c:8238
 msgid "Extended storage"
 msgstr "Genişletilmiş depolama"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7487
+#: title/pc5_ui.c:8241
 msgid "Console"
 msgstr "Konsol"
 
-#: title/pc5_ui.c:7492
+#: title/pc5_ui.c:8246
 #, c-format
 msgid "Put back the saves of %s?"
 msgstr "%s kayıtları geri konsun mu?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7494
+#: title/pc5_ui.c:8248
 msgid ""
 "They were kept when it was uninstalled: its saves, settings and options "
 "come back with it. Start fresh: they stay kept, for later."
@@ -4171,67 +4516,67 @@ msgstr ""
 "Kaldırıldığında saklanmışlardı: kayıtları, ayarları ve seçenekleri onunla "
 "geri gelir. Sıfırdan başla: sonrası için saklı kalırlar."
 
-#: title/pc5_ui.c:7495
+#: title/pc5_ui.c:8249
 msgid "Start fresh"
 msgstr "Sıfırdan başla"
 
-#: title/pc5_ui.c:7495
+#: title/pc5_ui.c:8249
 msgid "Put them back"
 msgstr "Geri koy"
 
-#: title/pc5_ui.c:7499
+#: title/pc5_ui.c:8253
 msgid "Looking for the cover"
 msgstr "Kapak aranıyor"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:7499 title/pc5_ui.c:7505
+#: title/pc5_ui.c:8253 title/pc5_ui.c:8259
 msgid "On Steam, GOG and others"
 msgstr "Steam, GOG ve diğerlerinde"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:7504
+#: title/pc5_ui.c:8258
 #, c-format
 msgid "“%s”, %s"
 msgstr "“%s”, %s"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:7504
+#: title/pc5_ui.c:8258
 msgid "on Steam, GOG and others"
 msgstr "Steam, GOG ve diğerlerinde"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:7506
+#: title/pc5_ui.c:8260
 msgid "Looking for covers"
 msgstr "Kapaklar aranıyor"
 
-#: title/pc5_ui.c:7507
+#: title/pc5_ui.c:8261
 msgid "Looking for tile pictures"
 msgstr "Kutucuk resimleri aranıyor"
 
-#: title/pc5_ui.c:7507
+#: title/pc5_ui.c:8261
 msgid "Looking for backgrounds"
 msgstr "Arka planlar aranıyor"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7514
+#: title/pc5_ui.c:8268
 msgid "Offer at Play"
 msgstr "Oynarken sun"
 
-#: title/pc5_ui.c:7517 title/pc5_ui.c:7520
+#: title/pc5_ui.c:8271 title/pc5_ui.c:8274
 msgid "Which program is the game?"
 msgstr "Oyun hangi program?"
 
-#: title/pc5_ui.c:7530
+#: title/pc5_ui.c:8284
 msgid "Which program?"
 msgstr "Hangi program?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7537
+#: title/pc5_ui.c:8291
 msgid "Stop updating?"
 msgstr "Güncelleme durdurulsun mu?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7537
+#: title/pc5_ui.c:8291
 msgid ""
 "The copy made so far is deleted and the game stays as it was. The USB "
 "drive isn't changed."
@@ -4239,16 +4584,16 @@ msgstr ""
 "Şimdiye kadar yapılan kopya silinir ve oyun olduğu gibi kalır. USB sürücü "
 "değiştirilmez."
 
-#: title/pc5_ui.c:7538
+#: title/pc5_ui.c:8292
 msgid "Keep updating"
 msgstr "Güncellemeye devam et"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7540 title/pc5_ui.c:7545
+#: title/pc5_ui.c:8294 title/pc5_ui.c:8299
 msgid "Stop installing?"
 msgstr "Yükleme durdurulsun mu?"
 
-#: title/pc5_ui.c:7541
+#: title/pc5_ui.c:8295
 msgid ""
 "What this game copied so far is deleted; games already installed stay. The "
 "USB drive isn't changed. Press the back button to keep installing."
@@ -4257,34 +4602,34 @@ msgstr ""
 "kalır. USB sürücü değiştirilmez. Yüklemeye devam etmek için geri tuşuna "
 "bas."
 
-#: title/pc5_ui.c:7543
+#: title/pc5_ui.c:8297
 msgid "Stop this game"
 msgstr "Bu oyunu durdur"
 
-#: title/pc5_ui.c:7543
+#: title/pc5_ui.c:8297
 msgid "Stop all"
 msgstr "Tümünü durdur"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7545
+#: title/pc5_ui.c:8299
 msgid "Everything copied so far is deleted. The USB drive isn't changed."
 msgstr "Şimdiye kadar kopyalanan her şey silinir. USB sürücü değiştirilmez."
 
-#: title/pc5_ui.c:7546
+#: title/pc5_ui.c:8300
 msgid "Keep installing"
 msgstr "Yüklemeye devam et"
 
-#: title/pc5_ui.c:7550
+#: title/pc5_ui.c:8304
 msgid "There are no games to uninstall"
 msgstr "Kaldırılacak oyun yok"
 
-#: title/pc5_ui.c:7558
+#: title/pc5_ui.c:8312
 #, c-format
 msgid "Delete the saves of %s?"
 msgstr "%s kayıtları silinsin mi?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7559
+#: title/pc5_ui.c:8313
 msgid ""
 "Its saves and settings, kept when it was uninstalled, are deleted. There "
 "is no backup and no undo."
@@ -4292,12 +4637,12 @@ msgstr ""
 "Kaldırıldığında saklanan kayıtları ve ayarları silinir. Yedek yok, geri "
 "alma yok."
 
-#: title/pc5_ui.c:7568
+#: title/pc5_ui.c:8322
 #, c-format
 msgid "Uninstall %s?"
 msgstr "%s kaldırılsın mı?"
 
-#: title/pc5_ui.c:7571
+#: title/pc5_ui.c:8325
 msgid ""
 "Keep saves: the game goes, its saves and settings stay, and installing it "
 "again puts them back. Delete all: the game, its saves and settings go, "
@@ -4307,37 +4652,60 @@ msgstr ""
 "onları geri getirir. Tümünü sil: oyun, kayıtları ve ayarları gider; yedek "
 "yok, geri alma yok."
 
-#: title/pc5_ui.c:7573
+#: title/pc5_ui.c:8327
 msgid "Keep saves"
 msgstr "Kayıtları tut"
 
-#: title/pc5_ui.c:7573
+#: title/pc5_ui.c:8327
 msgid "Delete all"
 msgstr "Tümünü sil"
 
-#: title/pc5_ui.c:7576
+#: title/pc5_ui.c:8330
 msgid ""
 "This deletes the game and all its saves and settings. There is no backup "
 "and no undo."
 msgstr ""
 "Bu, oyunu ve tüm kayıtlarını ve ayarlarını siler. Yedek yok, geri alma yok."
 
-#: title/pc5_ui.c:7581
+#: title/pc5_ui.c:8335
 #, c-format
 msgid "Deleting the saves of %s"
 msgstr "%s kayıtları siliniyor"
 
-#: title/pc5_ui.c:7581
+#: title/pc5_ui.c:8335
 #, c-format
 msgid "Uninstalling %s"
 msgstr "Kaldırılıyor: %s"
 
-#: title/pc5_ui.c:7584
+#: title/pc5_ui.c:8338
 #, c-format
 msgid "%u files and folders deleted"
 msgstr "%u dosya ve klasör silindi"
 
-#: title/pc5_ui.c:7605
+#: title/pc5_ui.c:8344
+msgid "Importing library music"
+msgstr "Kitaplık müziği içe aktarılıyor"
+
+#: title/pc5_ui.c:8345
+msgid ""
+"Preparing a copy on the console. Keep the source drive connected until "
+"this finishes."
+msgstr ""
+"Konsolda bir kopya hazırlanıyor. Bu bitene kadar kaynak sürücüyü takılı "
+"tut."
+
+#: title/pc5_ui.c:8348
+msgid "Importing background video"
+msgstr "Arka plan videosu içe aktarılıyor"
+
+#: title/pc5_ui.c:8349
+msgid ""
+"Copying video to the console. Keep the source drive connected until this "
+"finishes."
+msgstr ""
+"Video konsola kopyalanıyor. Bu bitene kadar kaynak sürücüyü takılı tut."
+
+#: title/pc5_ui.c:8367
 #, c-format
 msgid ""
 "%d game is waiting in PC5's INSTALL folders (its own, and PC5/INSTALL on "
@@ -4348,7 +4716,7 @@ msgstr ""
 "%d oyun bekliyor. Şimdi yüklensin mi? Oradan yüklenen bir oyun INSTALL "
 "klasöründen çıkarılıp PC5'in kitaplığına taşınır."
 
-#: title/pc5_ui.c:7605
+#: title/pc5_ui.c:8367
 #, c-format
 msgid ""
 "%d games are waiting in PC5's INSTALL folders (its own, and PC5/INSTALL on "
@@ -4359,7 +4727,7 @@ msgstr ""
 "%d oyun bekliyor. Şimdi yüklensinler mi? Oradan yüklenen bir oyun INSTALL "
 "klasöründen çıkarılıp PC5'in kitaplığına taşınır."
 
-#: title/pc5_ui.c:7605
+#: title/pc5_ui.c:8367
 #, c-format
 msgid ""
 "%d game is waiting in PC5's INSTALL folder. Install it now? A game "
@@ -4369,7 +4737,7 @@ msgstr ""
 "PC5'in INSTALL klasöründe %d oyun bekliyor. Şimdi yüklensin mi? Oradan "
 "yüklenen bir oyun INSTALL klasöründen çıkarılıp PC5'in kitaplığına taşınır."
 
-#: title/pc5_ui.c:7605
+#: title/pc5_ui.c:8367
 #, c-format
 msgid ""
 "%d games are waiting in PC5's INSTALL folder. Install them now? A game "
@@ -4380,33 +4748,33 @@ msgstr ""
 "yüklenen bir oyun INSTALL klasöründen çıkarılıp PC5'in kitaplığına taşınır."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7617
+#: title/pc5_ui.c:8379
 msgid "Games in PC5's INSTALL folder"
 msgstr "PC5'in INSTALL klasöründeki oyunlar"
 
-#: title/pc5_ui.c:7622
+#: title/pc5_ui.c:8384
 msgid "Updating the home screen tile"
 msgstr "Ana ekran kutucuğu güncelleniyor"
 
-#: title/pc5_ui.c:7622
+#: title/pc5_ui.c:8384
 msgid "Its picture and background"
 msgstr "Resmi ve arka planı"
 
-#: title/pc5_ui.c:7624
+#: title/pc5_ui.c:8386
 msgid "A newer one may have fixed it"
 msgstr "Daha yeni bir sürüm bunu düzeltmiş olabilir"
 
-#: title/pc5_ui.c:7627
+#: title/pc5_ui.c:8389
 #, c-format
 msgid "Update to PC5 %s first?"
 msgstr "Önce PC5 %s sürümüne güncellensin mi?"
 
-#: title/pc5_ui.c:7629
+#: title/pc5_ui.c:8391
 #, c-format
 msgid "You have %s"
 msgstr "Sendeki: %s"
 
-#: title/pc5_ui.c:7630
+#: title/pc5_ui.c:8392
 #, c-format
 msgid ""
 "This may already be fixed in it. Update, try the game again, and report it "
@@ -4416,21 +4784,21 @@ msgstr ""
 "oluyorsa bildir. %s."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7633
+#: title/pc5_ui.c:8395
 msgid "Report anyway"
 msgstr "Yine de bildir"
 
-#: title/pc5_ui.c:7638
+#: title/pc5_ui.c:8400
 #, c-format
 msgid "Starting %s"
 msgstr "Başlatılıyor: %s"
 
-#: title/pc5_ui.c:7641
+#: title/pc5_ui.c:8403
 #, c-format
 msgid "Installing %.80s for it, once"
 msgstr "Onun için %.80s yükleniyor, bir kez"
 
-#: title/pc5_ui.c:7645
+#: title/pc5_ui.c:8407
 #, c-format
 msgid "Setting up .NET for your games, once: %u of %u"
 msgstr "Oyunların için .NET kuruluyor, bir kez: %u/%u"
@@ -4649,13 +5017,223 @@ msgstr ""
 msgid "PC5 can't start the update (%d)."
 msgstr "PC5 güncellemeyi başlatamıyor (%d)."
 
-#: title/pc5_web.c:708
+#: title/pc5_web.c:711
 msgid "It isn't UTF-8 text"
 msgstr "Bu UTF-8 metin değil"
 
-#: title/pc5_web.c:1048
+#: title/pc5_web.c:1062
 msgid "PC5 has no folder to show."
 msgstr "PC5'in gösterecek klasörü yok."
+
+#: title/pc5_ui_enhancements_draw.h:46
+msgid "Game compatibility"
+msgstr "Oyun uyumluluk listesi"
+
+#. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
+#: title/pc5_ui_enhancements_draw.h:49 title/pc5_ui_enhancements_draw.h:129
+msgid "Share your experience"
+msgstr "Deneyimini paylaş"
+
+#: title/pc5_ui_enhancements_draw.h:54
+msgid "L1 / R1: Change tab"
+msgstr "L1 / R1: Sekme değiştir"
+
+#. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
+#: title/pc5_ui_enhancements_draw.h:57 title/pc5_ui_enhancements_draw.h:102
+msgid "Search"
+msgstr "Ara"
+
+#: title/pc5_ui_enhancements_draw.h:57
+msgid "All games"
+msgstr "Tüm oyunlar"
+
+#: title/pc5_ui_enhancements_draw.h:71
+msgid "Loading community reports..."
+msgstr "Topluluk raporları yükleniyor..."
+
+#: title/pc5_ui_enhancements_draw.h:71
+msgid "No matching games. Refresh or change the search and filter."
+msgstr "Eşleşen oyun yok. Yenile ya da aramayı ve filtreyi değiştir."
+
+#: title/pc5_ui_enhancements_draw.h:79 title/pc5_ui_enhancements_draw.h:112
+msgid "Settings that helped"
+msgstr "İşe yarayan ayarlar"
+
+#: title/pc5_ui_enhancements_draw.h:81
+msgid "No settings reported"
+msgstr "Bildirilen ayar yok"
+
+#: title/pc5_ui_enhancements_draw.h:85
+msgid "Checking for updates..."
+msgstr "Güncellemeler denetleniyor..."
+
+#: title/pc5_ui_enhancements_draw.h:86
+msgid "Saved list • Refresh to check for changes"
+msgstr "Kaydedilmiş liste • Değişiklikleri denetlemek için yenile"
+
+#: title/pc5_ui_enhancements_draw.h:86
+msgid "Last checked this session • Automatic refresh every minute"
+msgstr "Son denetim bu oturumda • Her dakika otomatik yenileme"
+
+#: title/pc5_ui_enhancements_draw.h:96
+msgid "Last checked"
+msgstr "Son denetim"
+
+#: title/pc5_ui_enhancements_draw.h:99
+msgid ""
+"Community reports: results depend on the game build, settings and PC5 "
+"version."
+msgstr ""
+"Topluluk raporları: sonuçlar oyunun derlemesine, ayarlara ve PC5 sürümüne "
+"bağlıdır."
+
+#: title/pc5_ui_enhancements_draw.h:101
+msgid "Left / Right: Page"
+msgstr "Sol / Sağ: Sayfa"
+
+#. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
+#: title/pc5_ui_enhancements_draw.h:102
+msgid "Details"
+msgstr "Ayrıntılar"
+
+#: title/pc5_ui_enhancements_draw.h:103
+msgid "Clear search"
+msgstr "Aramayı temizle"
+
+#: title/pc5_ui_enhancements_draw.h:103
+msgid "Refresh"
+msgstr "Yenile"
+
+#: title/pc5_ui_enhancements_draw.h:103
+msgid "Share"
+msgstr "Paylaş"
+
+#: title/pc5_ui_enhancements_draw.h:111
+msgid "Store and version"
+msgstr "Mağaza ve sürüm"
+
+#: title/pc5_ui_enhancements_draw.h:112
+msgid "Notes"
+msgstr "Notlar"
+
+#. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
+#: title/pc5_ui_enhancements_draw.h:121 title/pc5_ui_enhancements_draw.h:129
+msgid "Read user report"
+msgstr "Raporu oku"
+
+#: title/pc5_ui_enhancements_draw.h:132
+msgid "Scan to share your game's compatibility on GitHub"
+msgstr "Oyununun uyumluluğunu GitHub'da paylaşmak için tara"
+
+#: title/pc5_ui_enhancements_draw.h:132
+msgid "Scan to read the original report on GitHub"
+msgstr "Özgün raporu GitHub'da okumak için tara"
+
+#: title/pc5_ui_enhancements_draw.h:138
+msgid "Media settings"
+msgstr "Medya ayarları"
+
+#: title/pc5_ui_enhancements_draw.h:139
+msgid "Music volume"
+msgstr "Müzik ses düzeyi"
+
+#: title/pc5_ui_enhancements_draw.h:139
+msgid "Music starts at"
+msgstr "Müzik başlangıcı"
+
+#: title/pc5_ui_enhancements_draw.h:139
+msgid "Video starts at"
+msgstr "Video başlangıcı"
+
+#: title/pc5_ui_enhancements_draw.h:139
+msgid "Video ends at"
+msgstr "Video bitişi"
+
+#: title/pc5_ui_enhancements_draw.h:139
+msgid "Video framing"
+msgstr "Video çerçeveleme"
+
+#: title/pc5_ui_enhancements_draw.h:139
+msgid "Additional video dimming"
+msgstr "Ek video karartma"
+
+#: title/pc5_ui_enhancements_draw.h:139
+msgid "Export appearance backup"
+msgstr "Görünüm yedeğini dışa aktar"
+
+#: title/pc5_ui_enhancements_draw.h:139
+msgid "Restore appearance backup"
+msgstr "Görünüm yedeğini geri yükle"
+
+#. A menu row's value, shown at its right: keep it short (about 15 characters).
+#: title/pc5_ui_enhancements_draw.h:145
+msgid "End of file"
+msgstr "Dosya sonu"
+
+#. A menu row's value, shown at its right: keep it short (about 15 characters).
+#: title/pc5_ui_enhancements_draw.h:146
+msgid "Fit (keep whole picture)"
+msgstr "Sığdır (tüm resim)"
+
+#. A menu row's value, shown at its right: keep it short (about 15 characters).
+#: title/pc5_ui_enhancements_draw.h:146
+msgid "Fill (crop edges)"
+msgstr "Doldur (kırp)"
+
+#. A menu row's value, shown at its right: keep it short (about 15 characters).
+#: title/pc5_ui_enhancements_draw.h:148
+msgid "Choose folder / internal / USB"
+msgstr "Klasör seç / dahili / USB"
+
+#. A menu row's value, shown at its right: keep it short (about 15 characters).
+#: title/pc5_ui_enhancements_draw.h:149
+msgid "Choose from files / USB"
+msgstr "Dosyalardan seç / USB"
+
+#: title/pc5_ui_enhancements_draw.h:157
+msgid "Left / Right to adjust. Saved automatically for this game."
+msgstr "Ayarlamak için Sol / Sağ. Bu oyun için otomatik kaydedilir."
+
+#: title/pc5_ui_enhancements_draw.h:158
+msgid ""
+"Music fades in and out. Video stays silent. An offset beyond the file uses "
+"its beginning."
+msgstr ""
+"Müzik yavaşça açılıp kapanır. Video sessiz kalır. Dosyanın ötesindeki bir "
+"kaydırma, dosyanın başını kullanır."
+
+#: title/pc5_ui_enhancements_input.h:20
+msgid "PC5 couldn't remove the video selection. Try again."
+msgstr "PC5 video seçimini kaldıramadı. Yeniden dene."
+
+#: title/pc5_ui_enhancements_input.h:47
+msgid "QR code unavailable"
+msgstr "QR kodu kullanılamıyor"
+
+#: title/pc5_ui_enhancements_input.h:47
+msgid "Try opening the compatibility report again."
+msgstr "Uyumluluk raporunu yeniden açmayı dene."
+
+#. The title of the console's on-screen keyboard.
+#: title/pc5_ui_enhancements_input.h:53
+msgid "Search games"
+msgstr "Oyun ara"
+
+#: title/pc5_ui_enhancements_input.h:94
+msgid "Appearance operation couldn't start"
+msgstr "Görünüm işlemi başlatılamadı"
+
+#: title/pc5_ui_enhancements_input.h:94
+msgid "Check the game's folder and free space."
+msgstr "Oyunun klasörünü ve boş alanı denetle."
+
+#: title/pc5_ui_enhancements_input.h:131
+msgid "Settings weren't saved"
+msgstr "Ayarlar kaydedilmedi"
+
+#: title/pc5_ui_enhancements_input.h:131
+msgid "Check free space and try again."
+msgstr "Boş alanı denetle ve yeniden dene."
 
 #. Web page text.
 #: title/pc5_web_page.html:52
@@ -5174,6 +5752,39 @@ msgstr ""
 msgctxt "web"
 msgid "Type the game's folder name first (no / or \\)."
 msgstr "Önce oyunun klasör adını yaz (/ ya da \\ olmadan)."
+
+#~ msgid "Games players have tried, on your phone with a QR code"
+#~ msgstr "Oyuncuların denediği oyunlar, QR koduyla telefonunda"
+
+#~ msgid "Focus mode"
+#~ msgstr "Odak modu"
+
+#~ msgid "Shown"
+#~ msgstr "Gösterilir"
+
+#~ msgid ""
+#~ "Scan the code with your phone: PC5's wiki opens on the list of games "
+#~ "players have tried, how each ran and the settings that helped."
+#~ msgstr ""
+#~ "Kodu telefonunla tara: PC5'in vikisi, oyuncuların denediği oyunların, her "
+#~ "birinin nasıl çalıştığının ve işe yarayan ayarların listesinde açılır."
+
+#~ msgid ""
+#~ "On your phone or computer, open "
+#~ "github.com/bornaradusin/PC5/wiki/Game-compatibility: the games players "
+#~ "have tried, how each ran and the settings that helped."
+#~ msgstr ""
+#~ "Telefonunda ya da bilgisayarında "
+#~ "github.com/bornaradusin/PC5/wiki/Game-compatibility adresini aç: "
+#~ "oyuncuların denediği oyunlar, her birinin nasıl çalıştığı ve işe yarayan "
+#~ "ayarlar."
+
+#~ msgid ""
+#~ "Got a game running? Add a game, at the top of the list's page: the form "
+#~ "takes a minute. You need a GitHub account."
+#~ msgstr ""
+#~ "Bir oyunu çalıştırdın mı? Listenin sayfasının en üstündeki Add a game ile "
+#~ "ekle: form bir dakika sürer. Bir GitHub hesabın olmalı."
 
 #~ msgid "Keep changing"
 #~ msgstr "Değiştirmeye devam et"

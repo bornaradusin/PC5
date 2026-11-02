@@ -1,4 +1,4 @@
-PC5's Settings hold installing and uninstalling games and the game compatibility list, the settings that apply in every game (the controller's rumble, light bar and triggers, and the overlay), PC5's own system settings (the startup sound, the logs, where covers and backgrounds come from, and updates) and the About screen. Settings that belong to one game (its controller, graphics, cover, background, home screen tile and program) are in that game's menu instead: see [Playing games](Playing-games#the-game-menu). The row chosen says what it does under its name.
+PC5's Settings hold installing and uninstalling games, the settings that apply in every game (the controller's rumble, light bar and triggers, and the overlay), PC5's own system settings (the startup sound, the logs, where covers and backgrounds come from, and updates) and the About screen. Settings that belong to one game (its controller, graphics, cover, background, home screen tile and program) are in that game's menu instead: see [Playing games](Playing-games#the-game-menu). The row chosen says what it does under its name.
 
 ## Opening Settings
 
@@ -21,7 +21,7 @@ Changes are saved at once, in `/data/prospero-win/pc5/settings.txt`. Settings fo
 
 | Row | What it does |
 | --- | --- |
-| Game maintenance › | Installing and uninstalling games, and the game compatibility list. See [Game maintenance](#game-maintenance). |
+| Game maintenance › | Installing and uninstalling games. See [Game maintenance](#game-maintenance). |
 | In games › | Vibration, light bar and adaptive triggers. See [In games](#in-games). |
 | Overlay › | The overlay shown over every game. See [Overlay](#overlay). |
 | File manager › | Copy, move, rename and delete files on the console and its drives. See [File manager](File-manager). |
@@ -38,10 +38,8 @@ Changes are saved at once, in `/data/prospero-win/pc5/settings.txt`. Settings fo
 | --- | --- |
 | Install games from USB | Copies one game, or several in a row, from a USB drive to the console. See [Installing games](Installing-games). |
 | Uninstall game | Lists your games to uninstall one, keeping its saves or not, then the saves kept from games uninstalled before, to delete them. See [Uninstalling a game](Installing-games#uninstalling-a-game). |
-| Game compatibility list | Shows a QR code: scan it with your phone to open the [game compatibility list](Game-compatibility), the games players have tried, how each ran and the settings that helped. **Add a game** at the top of that page reports one of yours. |
 
-![The game compatibility list's QR code](images/compatibility-list.png)
-*Game maintenance › Game compatibility list.*
+The [game compatibility list](Game-compatibility) has a tab of its own from 2.1.6: **Compatibility**, between Library and Install. It lists the games players have tried, how each ran and the settings that helped, with search (**L2**/**R2**), a filter by result (**□**) and each report's details. **△** refreshes it (it does so every minute while it's open), and the last list stays for when the console is offline. A report's QR code opens it on your phone, and **Share** opens the form to add a game of yours.
 
 ## In games
 
@@ -89,6 +87,7 @@ For sending games and managing PC5 from a PC or a phone on the same network as t
 | Web page | **Off**, On | PC5's page for a browser: send games, report a problem with a game, edit a game's launch options, download logs. The row shows the address, for example `http://192.168.1.20:8125`; **△** shows it as a QR code for your phone (from 2.0.4). See [Web page](Web-page). |
 | Username | **Any**, or one you type | The username the FTP server and the web page ask for. Press **✕** to type it with the on-screen keyboard; leave it empty for any username. |
 | Password | **None**, or one you type | The password they ask for. It is optional: with none, no password is asked for. Press **✕** to type it; leave it empty to remove it. |
+| Library appearance from phone | | A QR code for your phone, on the same network: choose any game PC5 installed and send it a cover, background, tile picture, music or video, as many as you like while the code is on screen. It works with the web page off. |
 
 With a username or a password set, both the FTP server and the web page ask for them. They are saved in `settings.txt` as they are typed, so anyone who can read the console's files can read them: use a password you don't use anywhere else.
 

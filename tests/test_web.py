@@ -266,6 +266,92 @@ def main():
         assert request(server.base, "api/status", auth=("kevin", "pass word"))[0] == 200
         assert request(server.base, "upload/x.txt", "PUT", b"x", auth=("kevin", "pass word"))[0] == 201
         checks += 6
+        # A phone capability bypasses Basic only for its one media session.
+        def command(text):
+            server.process.stdin.write(text + "\n")
+            server.process.stdin.flush()
+            return server.process.stdout.readline().strip()
+        previous = None
+        for kind, ext in enumerate(("png", "jpg", "jpeg", "MP3", "mp4")):
+            url = command("phone %d" % kind)
+            path = urllib.parse.urlsplit(url).path.lstrip("/")
+            assert url.startswith("http://") and len(path.rsplit("/", 1)[1]) == 32
+            if previous:
+                assert request(server.base, previous)[0] == 404
+            status, page, _ = request(server.base, path)
+            assert status == 200 and b"XMLHttpRequest" in page
+            assert b"Test game </script>" not in page and b"\\u003c/script>" in page
+            assert request(server.base, path + "/upload.exe", "PUT", b"x")[0] == 400
+            assert request(server.base, path + "/upload." + ext, "PUT", b"")[0] == 413
+            data = b"synthetic transport fixture; importer validates content separately"
+            assert request(server.base, path + "/upload." + ext, "PUT", data)[0] == 201
+            assert request(server.base, path + "/upload." + ext, "PUT", data)[0] == 409
+            saved = command("phone-take")
+            assert os.path.isfile(saved) and open(saved, "rb").read() == data
+            assert request(server.base, path)[0] == 404
+            os.unlink(saved)
+            previous = path
+            checks += 10
+        url = command("phone 3")
+        path = urllib.parse.urlsplit(url).path.lstrip("/")
+        assert request(server.base, path + "/upload.mp4", "PUT", b"x")[0] == 400
+        # Partial upload cancellation must release the session within socket polling time.
+        sock = socket.create_connection(("127.0.0.1", server.port), timeout=5)
+        sock.sendall(("PUT /%s/upload.mp3 HTTP/1.1\r\nHost: localhost\r\nContent-Length: 9999\r\n\r\nx" % path).encode())
+        time.sleep(.2)
+        assert command("phone-end") == "ended"
+        time.sleep(.8)
+        sock.close()
+        url2 = command("phone 0")
+        assert url2.startswith("http://") and url2 != url
+        assert request(server.base, path)[0] == 404
+        path2 = urllib.parse.urlsplit(url2).path.lstrip("/")
+        assert request(server.base, path2 + "/upload.png", "PUT", b"pending")[0] == 201
+        command("phone-end")
+        assert not glob.glob(os.path.join(root, ".phone", "*"))
+        url3 = command("phone 4")
+        path3 = urllib.parse.urlsplit(url3).path.lstrip("/")
+        command("phone-only")
+        assert request(server.base, "api/games", auth=("kevin", "pass word"))[0] == 404
+        assert request(server.base, path3)[0] == 200
+        checks += 8
+        # One temporary appearance QR can target any installed game, without
+        # exposing the existing file/log/launch APIs or sharing Basic credentials.
+        url = command("appearance-begin")
+        manager = urllib.parse.urlsplit(url).path.lstrip("/")
+        assert manager.startswith("appearance/")
+        assert request(server.base, manager)[0] == 200
+        status, payload, _ = request(server.base, manager + "/games")
+        assert status == 200
+        available = json.loads(payload)
+        assert available and all(set(g) == {"id", "title"} for g in available)
+        game = urllib.parse.quote(available[0]["id"], safe="")
+        assert request(server.base, "phone/" + manager.split("/")[1])[0] == 404
+        assert request(server.base, manager + "/api/logs")[0] == 404
+        assert request(server.base, manager + "/upload/../0.png", "PUT", b"x")[0] == 400
+        # A second connection cannot change the target of a streaming upload.
+        partial = manager + "/upload/" + game + "/0.png"
+        sock = socket.create_connection(("127.0.0.1", server.port), timeout=5)
+        sock.sendall(("PUT /%s HTTP/1.1\r\nHost: localhost\r\nContent-Length: 9999\r\n\r\nx" % partial).encode())
+        time.sleep(.2)
+        assert request(server.base, manager + "/upload/" + game + "/3.mp3", "PUT", b"second")[0] == 409
+        sock.close()
+        time.sleep(.8)
+        for kind, ext in ((0, "png"), (1, "jpg"), (2, "png"), (3, "mp3"), (4, "mp4")):
+            target = manager + "/upload/" + game + "/%d.%s" % (kind, ext)
+            assert request(server.base, target, "PUT", b"fixture")[0] == 201
+            assert request(server.base, target, "PUT", b"second")[0] == 409
+            saved = command("phone-take")
+            assert os.path.isfile(saved) and open(saved, "rb").read() == b"fixture"
+            assert json.loads(request(server.base, manager + "/status")[1])["processing"]
+            assert request(server.base, target, "PUT", b"second")[0] == 409
+            os.unlink(saved)
+            command("appearance-finish 1")
+            assert json.loads(request(server.base, manager + "/status")[1])["result"] == 1
+            checks += 7
+        command("phone-end")
+        assert request(server.base, manager)[0] == 404
+        checks += 8
     finally:
         server.stop()
     print("web page passed: %d checks" % checks)

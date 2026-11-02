@@ -564,3 +564,20 @@ controller's speaker.
 | 322 | Marvel's Spider-Man Remastered installed before 2.1.4 (PC5 had it as DirectX 11), Graphics API Auto | it starts with Direct3D 12, not "D3D12 not supported" in its log | `dll_overrides=d3d8,d3d9,d3d10core,d3d11,d3d12,d3d12core,dxgi=n;amd_ags_x64=b`, `vkd3d-proton` lines |
 | 323 | Marvel's Spider-Man Remastered with Controller DualSense and no USB keyboard: its launch window (Play, Settings, Quit) | the D-pad moves between them and ✕ picks Play; in the game the D-pad and ✕ do only what the controller does | (Wine patch 0979) |
 | 324 | Marvel's Spider-Man Remastered past Play | its picture after the black of its first frames, not a black screen for good | no `radv/ps5: a submission holds more words between two splits`, no `Failed to submit queue(s), vr -4` |
+
+## Custom media navigation changes (pending on PS5)
+
+- Triangle > Appearance > Library music contains Choose music file and Remove
+  library music. Background > Background video contains Choose video file and
+  Remove background video. The removal rows are inside their media submenus.
+- Choose opens the existing internal/USB picker. Square on each media submenu
+  entry and its Choose row opens the correct phone QR; removal has no QR.
+- After choosing/importing a file, focus returns to its Choose row. Back from
+  either submenu focuses its parent entry. Triangle still closes the game menu.
+- Each removal opens a confirmation with Cancel selected first. Cancel/Back
+  keeps the media and focuses its removal row. Confirm removes only the game's
+  managed copy/association; the original source remains. Music becomes silent;
+  video returns to the still background image.
+- Select a cover with a video: decoding starts without an intentional delay;
+  the image stays visible until the first frame is ready. Rapidly switch covers,
+  open settings and launch/return from a game; no stale clip or worker remains.
