@@ -378,27 +378,14 @@ static int folder_has(const char *dir, const char *name)
 /* Games whose program refuses to start without the keys its installer wrote ("The game is not
  * properly installed"), known by a file in the program's folder (so its settings program
  * gets them too). PC5 copies a game's folder and runs no installer, so it writes them itself:
- * the folder as the installer would have, and the languages whose files the game has or the
- * version the installer recorded. The CD key the installer asked for is not among them: that
- * is the player's. Pro Evolution Soccer 5 and 6 keep their languages; from 2008 on, the games
- * keep a version under HKLM\Software\KONAMI (the keys as the players' .reg files for them
- * have it; 6 and 2011 tried on the console). */
+ * the folder as the installer would have, and the languages whose files the game has.
+ * The CD key the installer asked for is not among them: that is the player's. */
 static const struct {
     const char *marker;      /* a file in the game's folder, any case */
     const char *key;         /* under HKLM\Software (and Wow6432Node), with the registry's doubled backslashes */
-    const char *languages;   /* "lang_<c>" for each <c> whose dat/<c>_text.afs is there; the first when none
-                              * is (and the key's "1.0" below it), or NULL */
-    const char *version;     /* "version", or NULL */
+    const char *languages;   /* "lang_<c>" for each <c> whose dat/<c>_text.afs is there; the first when none is */
 } installer_keys[] = {
-    { "PES5.exe", "KONAMIPES5\\\\PES5", "efgis", NULL },          /* Pro Evolution Soccer 5 */
-    { "PES6.exe", "KONAMIPES6\\\\PES6", "efgisp", NULL },         /* Pro Evolution Soccer 6 and its settings.exe */
-    { "pes2008.exe", "KONAMI\\\\PES2008", NULL, "1.00.0000" },
-    { "PES2009.exe", "KONAMI\\\\PES2009", NULL, "1.00.0000" },
-    { "pes2010.exe", "KONAMI\\\\PES2010", NULL, "1.00.0000" },
-    { "pes2011.exe", "KONAMI\\\\PES2011", NULL, "1.00.0000" },
-    { "pes2012.exe", "KONAMI\\\\PES2012", NULL, "1.00.0000" },
-    { "pes2013.exe", "KONAMI\\\\PES2013", NULL, "1.00.0000" },
-    { "PES2014.exe", "KONAMI\\\\PES 2014", NULL, "1.00.0000" },   /* its key has a space */
+    { "PES6.exe", "KONAMIPES6\\\\PES6", "efgisp" },   /* Pro Evolution Soccer 6 and its settings.exe */
 };
 
 int pc5_prefix_installs(const char *root, const char *prefix, const char *program)
@@ -445,25 +432,22 @@ int pc5_prefix_installs(const char *root, const char *prefix, const char *progra
         int held = file_holds(system, needle);
         if (held < 0) return -1;
         if (held) continue;
-        char languages[160] = "", version[64] = "", data[PC5_PATH], afs[16];
+        char languages[160] = "", data[PC5_PATH], afs[16];
         int any = 0;
         size_t used = 0;
-        for (const char *c = installer_keys[i].languages; c && *c; c++) {
+        for (const char *c = installer_keys[i].languages; *c; c++) {
             snprintf(afs, sizeof(afs), "%c_text.afs", *c);
             int has = !pc5_format(data, sizeof(data), "%s/dat", dir) && folder_has(data, afs);
             any |= has;
             used += (size_t)snprintf(languages + used, sizeof(languages) - used, "\"lang_%c\"=dword:0000000%d\n", *c, has);
         }
-        if (installer_keys[i].languages && !any) languages[strlen("\"lang_x\"=dword:0000000")] = '1';   /* the first language */
-        if (installer_keys[i].version) snprintf(version, sizeof(version), "\"version\"=\"%s\"\n", installer_keys[i].version);
+        if (!any) languages[strlen("\"lang_x\"=dword:0000000")] = '1';   /* the first language */
         used = 0;
         for (int wow = 0; wow < 2; wow++) {
             const char *node = wow ? "Wow6432Node\\\\" : "";
-            int n = snprintf(text + used, sizeof(text) - used, "\n[Software\\\\%s%s]\n\"installdir\"=\"%s\"\n%s%s", node,
-                             installer_keys[i].key, value, languages, version);
-            if (n >= 0 && (size_t)n < sizeof(text) - used && installer_keys[i].languages)
-                n += snprintf(text + used + n, sizeof(text) - used - (size_t)n, "\n[Software\\\\%s%s\\\\1.0]\n", node,
-                              installer_keys[i].key);
+            int n = snprintf(text + used, sizeof(text) - used,
+                             "\n[Software\\\\%s%s]\n\"installdir\"=\"%s\"\n%s\n[Software\\\\%s%s\\\\1.0]\n", node,
+                             installer_keys[i].key, value, languages, node, installer_keys[i].key);
             if (n < 0 || (size_t)n >= sizeof(text) - used) return -1;
             used += (size_t)n;
         }

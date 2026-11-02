@@ -4655,32 +4655,6 @@ static void test_dotnet(void)
         CHECK(pc5_prefix_installs(root, "default", program) == 0, "the default prefix is left alone");
         CHECK(pc5_prefix_installs(root, "missing", program) == 0, "no Windows yet: nothing done");
 
-        /* Pro Evolution Soccer 2011: KONAMI\PES2011 with its folder and a version, no languages,
-         * no 1.0 key, no CD key; 2014's key has a space. */
-        path(file, sizeof(file), "%s/prefixes/pes11/system.reg", root);
-        write_text(file, "WINE REGISTRY Version 2\n");
-        path(program, sizeof(program), "%s/prefixes/pes11/drive_c/Games/PES 2011/PES2011.EXE", root);
-        write_text(program, "MZ");
-        CHECK(pc5_prefix_installs(root, "pes11", program) == 1, "PES 2011 gets its key");
-        CHECK(pc5_prefix_installs(root, "pes11", program) == 0, "PES 2011: only once");
-        if (!pc5_read_file(file, &text, 16384) && !pc5_buf_terminate(&text))
-            CHECK(strstr((char *)text.data, "\n[Software\\\\Wow6432Node\\\\KONAMI\\\\PES2011]\n"
-                                            "\"installdir\"=\"C:\\\\Games\\\\PES 2011\\\\\"\n\"version\"=\"1.00.0000\"\n") &&
-                      strstr((char *)text.data, "\n[Software\\\\KONAMI\\\\PES2011]\n") &&
-                      !strstr((char *)text.data, "lang_") && !strstr((char *)text.data, "1.0]") &&
-                      !strstr((char *)text.data, "\"code\""),
-                  "PES 2011: its folder and version, both views, no languages, no key");
-        pc5_buf_free(&text);
-        path(file, sizeof(file), "%s/prefixes/pes14/system.reg", root);
-        write_text(file, "WINE REGISTRY Version 2\n");
-        path(program, sizeof(program), "%s/prefixes/pes14/drive_c/Games/PES 2014/PES2014.exe", root);
-        write_text(program, "MZ");
-        CHECK(pc5_prefix_installs(root, "pes14", program) == 1, "PES 2014 gets its key");
-        if (!pc5_read_file(file, &text, 16384) && !pc5_buf_terminate(&text))
-            CHECK(strstr((char *)text.data, "\n[Software\\\\Wow6432Node\\\\KONAMI\\\\PES 2014]\n") != NULL,
-                  "PES 2014: the key with its space");
-        pc5_buf_free(&text);
-
         /* Played from a USB drive: Windows sees its folder as C:\Games\<folder> all the same. */
         char drive[PC5_PATH];
         const char *usb_roots[] = { drive, NULL };

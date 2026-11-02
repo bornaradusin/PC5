@@ -561,7 +561,6 @@ controller's speaker.
 | 319 | Chronicles of the Wolf: R1 menu; Aggelos 2: Start, then the item menu and back | the menu shows, not black, and the game comes back after it | `wsi/videoout: a newer window's … swapchain takes the display from a … one`, both sizes the same |
 | 320 | Ruined King: A League of Legends Story (Unity), a cutscene | the cutscene's picture, not black with sound | `D3D11: A video device shares a Direct3D 11 device's Vulkan device`, `LocalShare: … textures shared within the process`, no `Failed to create shared resource` |
 | 321 | After 320: row 48's game (Samurai Warriors 4 DX's movies, Direct3D 9 to 11) | its movies still play | `D3D9: Sharing the Direct3D 11 device's Vulkan device` |
-| 322 | Pro Evolution Soccer 2011 copied in (no installer run), and its settings.exe | no "PES 2011 has not been installed": settings opens and the game starts (2008 to 2014 are written the same way, from the players' .reg files) | `PC5 prefix installer keys added` the first time only |
 
 ## Custom media navigation changes (pending on PS5)
 
