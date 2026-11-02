@@ -1,0 +1,111 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 1 Nov 2026 23:45:00 +0000
+Subject: [PATCH] PC5: the controller starts a game from its launch window
+ (Wine patch 0979)
+
+Marvel's Spider-Man Remastered shows a launch window first (Play,
+Settings, Quit) that reads the keyboard only: with the controller as the
+game's XInput controller or DualSense, Cross and the D-pad did nothing
+there, and the game could not be started without a USB keyboard. Its
+window, of the class GameNxApp, now takes the dialog keys of Wine patch
+0911 as a dialog box does, while it is smaller than the display: Cross is
+Enter and the D-pad the arrows. The game's own window covers the display
+and never gets them.
+---
+ PUBLICATION_ALLOWLIST.txt                     |  1 +
+ docs/WINE_PS5_BUILD.md                        |  1 +
+ ...s5-a-launch-window-takes-dialog-keys.patch | 57 +++++++++++++++++++
+ 3 files changed, 59 insertions(+)
+ create mode 100644 wine/patches/0979-win32u-ps5-a-launch-window-takes-dialog-keys.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index cf79d4e..7c68e55 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -680,6 +680,7 @@ wine/patches/0975-ntdll-keep-a-host-page-whole-when-accesses-beside-an-inaccessi
+ wine/patches/0976-ntdll-ps5-boolean-socket-options-read-back-as-one.patch
+ wine/patches/0977-win32u-the-cursor-clip-stays-inside-the-virtual-screen.patch
+ wine/patches/0978-amd-ags-x64-a-driver-version-for-amd-sponsored-games.patch
++wine/patches/0979-win32u-ps5-a-launch-window-takes-dialog-keys.patch
+ wine/patches/0983-ntdll-ps5-name-the-occupant-of-a-refused-reservation.patch
+ tests/test_wine_mouse_wheel.py
+ 
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index dcfbb5a..a129023 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -183,6 +183,7 @@ before evaluating a candidate built from that cache.
+ | 0976 | `ntdll` (Mihawk OS 2085): on PS5, a boolean socket option (`SO_BROADCAST`, `SO_KEEPALIVE`, `SO_REUSEADDR` and the other boolean `SOL_SOCKET` ones, `TCP_NODELAY`) reads back as 0 or 1, as on Windows and Linux. The console's FreeBSD kernel answered with the option's flag bit (`SO_BROADCAST` as 0x20), so a program that compares the value with TRUE took a set option for unset |
+ | 0977 | `win32u` (Mihawk OS 2152): `GetClipCursor` keeps the clip inside the virtual screen. In an emulated display mode (a 640x480 mode drawn letterboxed on the 1920x1080 output) the unclipped raw rect is the whole physical screen, which mapped back into the mode reached past its sides |
+ | 0978 | `amd_ags_x64` (Proton's, ValveSoftware/wine, LGPL; `amd_ags.h` AMD's, MIT): AMD's GPU Services library as a builtin, answering from the Vulkan device with a current driver version, so AMD-sponsored games (Marvel's Spider-Man Remastered, The Last of Us Part II) don't take the PS5 for a missing or outdated driver; AGS's Direct3D 11 and 12 extensions go to DXVK and VKD3D-Proton. No Unix side (no libdrm on the PS5). A title overrides `amd_ags_x64` to builtin for a game's own copy to give way |
++| 0979 | `win32u`: on PS5, a launch window that reads only the keyboard takes the dialog keys of 0911 (Cross as Enter, the D-pad as the arrows) as a dialog box does: Nixxes' (Marvel's Spider-Man Remastered and its other ports), a 792x447 pop-up of the class `GameNxApp` with Play, Settings and Quit, while it is smaller than the display both ways. The game's own window, which may share the class, covers the display and never gets those keys beside its controller |
+ | 0983 | `ntdll`: a refused fixed reservation names what holds the range. `sceKernelReserveVirtualRange` answers ENOMEM both for a range another mapping holds and for one it cannot grant, and the callers need `EEXIST` for a collision either way, so the errno is unchanged and `sceKernelVirtualQuery` reports the cause: a record with a protection, flags and a name is a mapping, a cleared record past the end of the request is a hole. Tells a title image lying across a program's preferred base (0130) apart from an exhausted address space |
+ 
+ ## Allocator
+diff --git a/wine/patches/0979-win32u-ps5-a-launch-window-takes-dialog-keys.patch b/wine/patches/0979-win32u-ps5-a-launch-window-takes-dialog-keys.patch
+new file mode 100644
+index 0000000..7d1e3b0
+--- /dev/null
++++ b/wine/patches/0979-win32u-ps5-a-launch-window-takes-dialog-keys.patch
+@@ -0,0 +1,57 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: bornaradusin <bornaradusin@users.noreply.github.com>
++Date: Sun, 1 Nov 2026 23:45:00 +0000
++Subject: [PATCH] win32u: A PS5 launch window that reads only the keyboard
++ takes dialog keys too.
++
++Marvel's Spider-Man Remastered (and Nixxes' other ports) first shows a
++launch window with Play, Settings and Quit: a 792x447 pop-up of the class
++GameNxApp, which reads the keyboard and not the controller. With the
++controller as the game's XInput controller or DualSense there is no
++keyboard, so the game could not be started without one plugged in.
++Cross and the D-pad go to Wine as dialog keys (patch 0911): such a window
++now takes them as a dialog box does, while it is smaller than the display
++both ways. The game's own window, which may share the class, covers the
++display, so the game never gets those keys beside its controller.
++---
++ dlls/win32u/ps5drv.c | 22 +++++++++++++++++++---
++ 1 file changed, 19 insertions(+), 3 deletions(-)
++
++diff --git a/dlls/win32u/ps5drv.c b/dlls/win32u/ps5drv.c
++index 189f253..1bd1d1a 100644
++--- a/dlls/win32u/ps5drv.c
+++++ b/dlls/win32u/ps5drv.c
++@@ -583,11 +583,27 @@ static BOOL is_extended_key( WORD vk )
++ static BOOL is_dialog( HWND hwnd )
++ {
++     static const WCHAR dialogW[] = {'#','3','2','7','7','0'};
+++    /* Also a launch window that reads only the keyboard, drawn as a window of
+++     * its own: Nixxes' (Marvel's Spider-Man Remastered, Miles Morales,
+++     * Ratchet & Clank: Rift Apart), class GameNxApp, a 792x447 pop-up with
+++     * Play, Settings and Quit. The game's own window may share the class, so
+++     * only one smaller than the display both ways is a launch window: the
+++     * game's covers it, and never gets the keys beside the controller. */
+++    static const WCHAR nxappW[] = {'G','a','m','e','N','x','A','p','p'};
+++    static const struct ratio raw;
++     WCHAR buffer[16];
++     UNICODE_STRING name = {0, sizeof(buffer), buffer};
++-
++-    return hwnd && NtUserGetClassName( hwnd, FALSE, &name ) == ARRAY_SIZE(dialogW) &&
++-           !memcmp( buffer, dialogW, sizeof(dialogW) );
+++    RECT rect, display;
+++    INT len;
+++
+++    if (!hwnd) return FALSE;
+++    len = NtUserGetClassName( hwnd, FALSE, &name );
+++    if (len == ARRAY_SIZE(dialogW) && !memcmp( buffer, dialogW, sizeof(dialogW) )) return TRUE;
+++    if (len != ARRAY_SIZE(nxappW) || memcmp( buffer, nxappW, sizeof(nxappW) )) return FALSE;
+++    display = get_virtual_screen_rect( raw, MDT_DEFAULT );
+++    return get_window_rect( hwnd, &rect, raw ) &&
+++           rect.right - rect.left < display.right - display.left &&
+++           rect.bottom - rect.top < display.bottom - display.top;
++ }
++ 
++ /* The dialog keys sent down, so that each one's release is sent too, even
++-- 
++2.56.0
++
+-- 
+2.56.0
+

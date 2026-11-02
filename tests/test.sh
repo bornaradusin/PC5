@@ -172,6 +172,20 @@ else
     echo "test_wine_nsi: left out, no Wine source at $wine (tools/build.sh sources fetches it)"
 fi
 
+# Wine patches 0911 and 0979: the windows that take the controller's dialog keys (a dialog box,
+# and Spider-Man's launch window), taken from Wine's ps5drv.c with prospero-win's patches applied
+# (the driver is prospero-win's own, so no Wine source is needed).
+mkdir -p "$out/wine-dialog/dlls/win32u"
+for patch in "$PW"/wine/patches/*.patch; do
+    grep -q '^+++ b/dlls/win32u/ps5drv\.c' "$patch" || continue
+    GIT_CEILING_DIRECTORIES=$out git -C "$out/wine-dialog" apply --include=dlls/win32u/ps5drv.c "$patch"
+done
+awk '/^static BOOL is_dialog\(/ {p=1} p {print} p && /^}/ {exit}' \
+    "$out/wine-dialog/dlls/win32u/ps5drv.c" > "$out/wine-dialog/dialog_func.c"
+grep -q GameNxApp "$out/wine-dialog/dialog_func.c" || { echo "test_wine_dialog: Wine patch 0979 isn't applied" >&2; exit 1; }
+cc -std=c11 -Wall -Wextra -Werror -I"$out/wine-dialog" tests/test_wine_dialog.c -o "$out/test_wine_dialog"
+"$out/test_wine_dialog"
+
 # patches/radv 0003 and 0005: which window's picture has the console's display, with the
 # swapchains games' logs showed (tests/test_videoout.c); the rules' header from the patch.
 mkdir -p "$out/videoout"
