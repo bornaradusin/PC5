@@ -1,0 +1,756 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 21:00:00 +0000
+Subject: [PATCH 116/116] PC5: surround sound, 5.1 or 7.1, for a game that asks (Wine
+ patch 0949)
+
+A game's Sound output in PC5 sets WINE_PS5_SPEAKERS: 6 or 8 offers games a
+5.1 or 7.1 mix format and speakers, the mixer routes each channel to its own
+speaker instead of folding to stereo, and the title opens the console's port
+in 8 channels. If the console refuses 7.1 it plays stereo as before. mmdevapi
+now takes the driver's speakers each run, so DirectSound games see them too.
+---
+ PUBLICATION_ALLOWLIST.txt                     |  1 +
+ docs/WINE_PS5_BUILD.md                        | 12 ++-
+ native/pw_audio_ps5.c                         | 19 +++-
+ native/pw_audio_ps5.h                         | 10 +-
+ native/wine64_main.c                          | 23 ++++-
+ src/pw_audio_mix.c                            | 92 +++++++++++++++----
+ src/pw_audio_mix.h                            | 28 ++++--
+ tests/test_pw_audio_mix.c                     | 65 +++++++++++++
+ tests/test_pw_audio_ps5.c                     | 21 ++++-
+ ...i-ps5-the-speakers-follow-the-driver.patch | 42 +++++++++
+ wine/wineps5/unix.c                           | 47 +++++++---
+ 11 files changed, 310 insertions(+), 50 deletions(-)
+ create mode 100644 wine/patches/0949-mmdevapi-ps5-the-speakers-follow-the-driver.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index c140929..805a821 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -611,6 +611,7 @@ wine/patches/0945-ntdll-ps5-read-ahead-for-small-reads.patch
+ wine/patches/0946-win32u-ps5-report-the-refresh-rate-asked-of-the-display.patch
+ wine/patches/0947-win32u-a-virtual-desktop-offers-the-display-s-rate.patch
+ wine/patches/0948-ntdll-ps5-gather-small-writes.patch
++wine/patches/0949-mmdevapi-ps5-the-speakers-follow-the-driver.patch
+ wine/patches/0953-wow64-ps5-a-32-bit-allocation-stays-below-the-process-limit.patch
+ wine/patches/0954-server-ps5-resolve-an-opened-file-s-directory-once.patch
+ wine/patches/0955-ntdll-ps5-keep-the-directories-a-process-resolved.patch
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 50a9f3d..1918750 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -156,6 +156,7 @@ before evaluating a candidate built from that cache.
+ | 0946 | `win32u` (Mihawk OS 0924): the PS5 driver's display mode reports the rate in `WINE_PS5_REFRESH` (120 when the title opens the display at 119.88 Hz, PC5's 120 Hz output) instead of always 60, so a game paces itself and shows its rate from it |
+ | 0947 | `win32u` (Mihawk OS 1188): in a virtual desktop, the virtual source starts at the display's own rate and keeps the modes it generated, so 120 Hz modes stay offered after a game's 60 Hz mode change |
+ | 0948 | `ntdll`: on PS5, a synchronous write of 4 KiB or less to a regular file (no event, APC, write-through or unbuffered I/O) is kept and written with the ones after it at the same handle's next position, in one `pwrite` of up to 64 KiB; any other use of a file (`server_get_unix_fd`, a name opened or looked at, `NtClose`, `NtDuplicateObject`, the process's end) writes them first. The console's kernel takes about a millisecond a write: Aggelos 2 saved its config 4 bytes at a time on every menu picture |
++| 0949 | `mmdevapi`: on PS5, the audio driver's `PKEY_AudioEndpoint_PhysicalSpeakers` replaces the one kept in the registry each time the devices are listed. mmdevapi kept the first it stored, so a prefix that once ran in stereo told DirectSound games stereo after a game's Sound output in PC5 was set to 5.1 or 7.1 (`WINE_PS5_SPEAKERS`). A driver without an answer leaves what is kept |
+ | 0953 | `wow64`: a 32-bit caller's allocation with its own address requirements (an alignment) and no highest address is kept below the 32-bit process's limit, as on Windows; it landed above 4 GiB and the game faulted on the address's low half. From PS5_MihawkOS |
+ | 0954 | `server`: on PS5, an opened file's directory is resolved with `realpath` once and kept (64 entries, checked by device and inode), so an open costs two system calls instead of one a path component. From PS5_MihawkOS (its 2080) |
+ | 0955 | `ntdll`: on PS5, the directories a process resolved are kept by their upper-cased Windows path (1024 slots) and a lookup starts from the longest one, checked with one `fstatat`; a directory's case sensitivity is not asked (the console's disk is). From PS5_MihawkOS (its 2081) |
+@@ -614,15 +615,20 @@ means no audio.
+ stage like `wowprospero.prx`. Its stream, buffer and WoW64 code follows
+ Wine's OSS driver.
+ - It offers one render endpoint, `PS5`, and no capture.
+-- Its mix format is 48 kHz float stereo. A stream may use any PCM or float
++- Its mix format is 48 kHz float stereo, or 5.1 or 7.1 when the title sets
++  `WINE_PS5_SPEAKERS` to 6 or 8 (a game's Sound output in PC5); its
++  PhysicalSpeakers say the same (patch 0949). A stream may use any PCM or float
+   format `src/pw_audio_mix.h` decodes: winmm and dsound open theirs with
+   `AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM`.
+ - One Unix thread mixes every started stream into a grain of 256 16-bit
+-  stereo frames, then passes it to `pw_wine_audio_output`. That is the audio
++  frames, stereo or (for 5.1 and 7.1) 7.1 in Windows' order, then passes it
++  to `pw_wine_audio_output`. That is the audio
+   sink ntdll exports (`wine/ps5/pw_wine_sink.h`); the driver finds it with
+   `dlsym`.
+ - The title plays each grain on the console's main port with
+-  `sceAudioOutOutput`, which returns once the port has taken it. The port is
++  `sceAudioOutOutput`, which returns once the port has taken it. For 7.1 it
++  opens the port's standard-order 8-channel format; if the console refuses,
++  it opens stereo and sets `WINE_PS5_SPEAKERS` to 2 before Wine reads it. The port is
+   therefore the clock, and each stream's event is set once per period.
+ - It reports itself unavailable when the title set no sink, so mmdevapi
+   offers no device.
+diff --git a/native/pw_audio_ps5.c b/native/pw_audio_ps5.c
+index 496bc27..6d9900c 100644
+--- a/native/pw_audio_ps5.c
++++ b/native/pw_audio_ps5.c
+@@ -4,7 +4,11 @@
+ 
+ enum { PW_AUDIO_PS5_USER_SYSTEM=0xff, PW_AUDIO_PS5_PORT_MAIN=0,
+        PW_AUDIO_PS5_PORT_INDEX=0, PW_AUDIO_PS5_FORMAT_S16_STEREO=1,
+-       PW_AUDIO_PS5_VOLUME_FLAGS=3, PW_AUDIO_PS5_VOLUME_0DB=0x8000 };
++       /* 8 channels in the standard order (Windows'); the plain 8-channel format
++        * has the side and back pairs the other way round */
++       PW_AUDIO_PS5_FORMAT_S16_8CH_STD=6,
++       PW_AUDIO_PS5_VOLUME_FLAGS=3, PW_AUDIO_PS5_VOLUME_FLAGS_8CH=0xff,
++       PW_AUDIO_PS5_VOLUME_0DB=0x8000 };
+ 
+ #ifndef PW_AUDIO_PS5_HOST_TEST
+ extern int sceAudioOutInit(void);
+@@ -41,17 +45,24 @@ int pw_audio_ps5_platform_ops(PwAudioPs5Ops *ops)
+ }
+ 
+ int pw_audio_ps5_open_port(const PwAudioPs5Ops *ops,int *handle)
++{
++    return pw_audio_ps5_open_port_channels(ops,PW_AUDIO_PS5_CHANNELS,handle);
++}
++
++int pw_audio_ps5_open_port_channels(const PwAudioPs5Ops *ops,unsigned channels,int *handle)
+ {
+     int32_t volumes[8];
+-    if(!ops || !handle || !ops->init || !ops->open || !ops->volume || !ops->close)
++    if(!ops || !handle || !ops->init || !ops->open || !ops->volume || !ops->close ||
++       (channels!=PW_AUDIO_PS5_CHANNELS && channels!=PW_AUDIO_PS5_SURROUND_CHANNELS))
+         return PW_ERR_PRECONDITION;
++    const int surround=channels==PW_AUDIO_PS5_SURROUND_CHANNELS;
+     if(ops->init()<0)return PW_ERR_STATE;
+     int port=ops->open(PW_AUDIO_PS5_USER_SYSTEM,PW_AUDIO_PS5_PORT_MAIN,
+         PW_AUDIO_PS5_PORT_INDEX,PW_AUDIO_PS5_GRAIN,PW_AUDIO_PS5_RATE,
+-        PW_AUDIO_PS5_FORMAT_S16_STEREO);
++        surround?PW_AUDIO_PS5_FORMAT_S16_8CH_STD:PW_AUDIO_PS5_FORMAT_S16_STEREO);
+     if(port<0)return PW_ERR_STATE;
+     for(unsigned i=0;i<8;i++)volumes[i]=PW_AUDIO_PS5_VOLUME_0DB;
+-    if(ops->volume(port,PW_AUDIO_PS5_VOLUME_FLAGS,volumes)<0) {
++    if(ops->volume(port,surround?PW_AUDIO_PS5_VOLUME_FLAGS_8CH:PW_AUDIO_PS5_VOLUME_FLAGS,volumes)<0) {
+         (void)ops->close(port);return PW_ERR_STATE;
+     }
+     *handle=port;
+diff --git a/native/pw_audio_ps5.h b/native/pw_audio_ps5.h
+index deed9ca..53a2ade 100644
+--- a/native/pw_audio_ps5.h
++++ b/native/pw_audio_ps5.h
+@@ -4,13 +4,14 @@
+ /*
+  * The console's main audio port, for a caller that mixes and clocks
+  * itself: Wine's audio driver (wine/wineps5) hands the title one grain of
+- * 16-bit stereo at a time, and each output call returns when the port has
++ * 16-bit stereo (or 7.1, for a game's surround Sound output) at a time, and each output call returns when the port has
+  * taken it.
+  */
+ #include "../include/prospero_win.h"
+ #include <stdint.h>
+ 
+-enum { PW_AUDIO_PS5_RATE=48000, PW_AUDIO_PS5_GRAIN=256, PW_AUDIO_PS5_CHANNELS=2 };
++enum { PW_AUDIO_PS5_RATE=48000, PW_AUDIO_PS5_GRAIN=256, PW_AUDIO_PS5_CHANNELS=2,
++       PW_AUDIO_PS5_SURROUND_CHANNELS=8 };
+ 
+ typedef struct PwAudioPs5Ops {
+     int (*init)(void);
+@@ -28,5 +29,10 @@ int pw_audio_ps5_platform_ops(PwAudioPs5Ops *);
+  * then calls ops->output(*handle, grain) and ops->close(*handle).
+  * PW_ERR_STATE when the library refuses. */
+ int pw_audio_ps5_open_port(const PwAudioPs5Ops *ops,int *handle);
++/* The same with channels per frame: PW_AUDIO_PS5_CHANNELS (stereo) or
++ * PW_AUDIO_PS5_SURROUND_CHANNELS (7.1 in Windows' order: front left and
++ * right, centre, low frequency, back left and right, side left and right).
++ * The console mixes 7.1 down for what the TV or receiver takes. */
++int pw_audio_ps5_open_port_channels(const PwAudioPs5Ops *ops,unsigned channels,int *handle);
+ 
+ #endif
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 6e6f0cd..459e452 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -472,6 +472,9 @@ _Static_assert(PW_WINE_AUDIO_GRAIN == PW_AUDIO_PS5_GRAIN && PW_WINE_AUDIO_RATE =
+                "Wine's audio grain is the port's");
+ static PwAudioPs5Ops audio_ops;
+ static int audio_port = -1;
++/* Channels per frame the port takes: 2, or 8 (7.1) for a game's surround Sound output in PC5
++ * (WINE_PS5_SPEAKERS 6 or 8, which the driver reads too: it offers games 5.1 or 7.1). */
++static unsigned audio_channels = PW_AUDIO_PS5_CHANNELS;
+ /* Grains played, those with any sound in them, and the loudest sample since the last alive
+  * line (0 to 32768): "audible" alone can't tell a game's sound from noise a step above
+  * silence, and a player who hears nothing needs to know which. */
+@@ -483,7 +486,7 @@ static int wine_audio(void *context, const int16_t *frames)
+     int peak = 0;
+     (void)context;
+     audio_grains++;
+-    for (size_t i = 0; i < 2u * PW_WINE_AUDIO_GRAIN; i++) {
++    for (size_t i = 0; i < (size_t)audio_channels * PW_WINE_AUDIO_GRAIN; i++) {
+         int level = frames[i] < 0 ? -(int)frames[i] : frames[i];
+         if (level > peak) peak = level;
+     }
+@@ -1899,10 +1902,22 @@ int main(int argc, char **argv)
+             void (*set_audio)(PwWineAudioSink, void *) = (void (*)(PwWineAudioSink, void *))
+                 (uintptr_t)pw_prx_lookup(start.descriptor, "pw_wine_set_audio_sink");
+             int audio_status = set_audio ? pw_audio_ps5_platform_ops(&audio_ops) : PW_ERR_NOT_FOUND;
+-            if (audio_status == PW_OK) audio_status = pw_audio_ps5_open_port(&audio_ops, &audio_port);
++            const char *speakers = getenv("WINE_PS5_SPEAKERS");
++            const int wanted = speakers && (!strcmp(speakers, "6") || !strcmp(speakers, "8")) ? atoi(speakers) : 2;
++            audio_channels = wanted > 2 ? PW_AUDIO_PS5_SURROUND_CHANNELS : PW_AUDIO_PS5_CHANNELS;
++            if (audio_status == PW_OK)
++                audio_status = pw_audio_ps5_open_port_channels(&audio_ops, audio_channels, &audio_port);
++            if (audio_status != PW_OK && audio_channels != PW_AUDIO_PS5_CHANNELS && set_audio) {
++                /* the console would not open 7.1: stereo, and the driver offers games stereo */
++                PS5LOG_LOG("PW_WINE64 audio surround refused status=%s: stereo", pw_result_name(audio_status));
++                audio_channels = PW_AUDIO_PS5_CHANNELS;
++                audio_status = pw_audio_ps5_open_port_channels(&audio_ops, audio_channels, &audio_port);
++                setenv("WINE_PS5_SPEAKERS", "2", 1);
++            } else if (wanted == 2)
++                setenv("WINE_PS5_SPEAKERS", "2", 1);
+             if (audio_status == PW_OK) set_audio(wine_audio, NULL);
+-            PS5LOG_LOG("PW_WINE64 audio sink=%d port=%d status=%s", set_audio != NULL, audio_port,
+-                       pw_result_name(audio_status));
++            PS5LOG_LOG("PW_WINE64 audio sink=%d port=%d status=%s speakers=%d channels=%u", set_audio != NULL, audio_port,
++                       pw_result_name(audio_status), audio_channels == PW_AUDIO_PS5_CHANNELS ? 2 : wanted, audio_channels);
+         }
+         /* The game starts in its profile's working directory. A title
+          * cannot chdir, so ntdll keeps a logical one (wine/ps5/pw_wine_cwd.h),
+diff --git a/src/pw_audio_mix.c b/src/pw_audio_mix.c
+index fe35c21..d639e5a 100644
+--- a/src/pw_audio_mix.c
++++ b/src/pw_audio_mix.c
+@@ -51,17 +51,56 @@ int pw_audio_mix_format_check(const PwAudioMixFormat *format)
+     return format->block_align==format->channels*(format->bits/8u)?PW_OK:PW_ERR_UNSUPPORTED;
+ }
+ 
+-/* The weights folding each channel into the left and right outputs, times its gain. */
+-static void fold_weights(PwAudioMixStream *stream)
++/* The outputs of 7.1, in Windows' order. */
++enum { OUT_FL,OUT_FR,OUT_FC,OUT_LFE,OUT_BL,OUT_BR,OUT_SL,OUT_SR };
++
++/* Where a speaker of the stream's goes in 7.1: up to two outputs, each at weight. A stream
++ * without side speakers (5.1 as most games play it, quad) has its back pair on the sides,
++ * where 5.1's surround speakers stand. */
++static unsigned surround_route(uint32_t speaker,uint32_t mask,unsigned out[2],float weight[2])
++{
++    int sides=(mask&(SIDE_LEFT|SIDE_RIGHT))!=0;
++    weight[0]=weight[1]=1;
++    switch(speaker) {
++    case FRONT_LEFT:case TOP_FRONT_LEFT:out[0]=OUT_FL;return 1;
++    case FRONT_RIGHT:case TOP_FRONT_RIGHT:out[0]=OUT_FR;return 1;
++    case FRONT_CENTER:case TOP_CENTER:case TOP_FRONT_CENTER:out[0]=OUT_FC;return 1;
++    case LOW_FREQUENCY:out[0]=OUT_LFE;return 1;
++    case BACK_LEFT:case TOP_BACK_LEFT:out[0]=sides?OUT_BL:OUT_SL;return 1;
++    case BACK_RIGHT:case TOP_BACK_RIGHT:out[0]=sides?OUT_BR:OUT_SR;return 1;
++    case SIDE_LEFT:out[0]=OUT_SL;return 1;
++    case SIDE_RIGHT:out[0]=OUT_SR;return 1;
++    case FRONT_LEFT_OF_CENTER:out[0]=OUT_FL;out[1]=OUT_FC;weight[0]=weight[1]=SIDE;return 2;
++    case FRONT_RIGHT_OF_CENTER:out[0]=OUT_FR;out[1]=OUT_FC;weight[0]=weight[1]=SIDE;return 2;
++    case BACK_CENTER:case TOP_BACK_CENTER:
++        out[0]=sides?OUT_BL:OUT_SL;out[1]=sides?OUT_BR:OUT_SR;weight[0]=weight[1]=SIDE;return 2;
++    default:return 0;
++    }
++}
++
++/* How much of each channel goes to each output, times its gain: folded to stereo, or
++ * each to its own speaker of 7.1. */
++static void route_weights(PwAudioMixStream *stream)
+ {
+     const PwAudioMixFormat *format=&stream->format;
+     uint32_t mask=format->channel_mask;
+     if(bit_count(mask)<format->channels && format->channels<=PW_AUDIO_MIX_USUAL_CHANNELS)
+         mask=usual_mask[format->channels];
++    const uint32_t all=mask;
++    memset(stream->route,0,sizeof(stream->route));
+     for(unsigned channel=0;channel<format->channels;channel++) {
+         uint32_t speaker=mask&-mask;
+-        float left=0,right=0;
++        float *route=stream->route[channel],gain=stream->gain[channel];
+         mask&=mask-1;
++        if(stream->outputs==PW_AUDIO_MIX_SURROUND) {
++            unsigned out[2];float weight[2];
++            /* mono stays on the front pair, as in stereo */
++            if(format->channels==1){route[OUT_FL]=route[OUT_FR]=gain;continue;}
++            unsigned count=surround_route(speaker,all,out,weight);
++            for(unsigned i=0;i<count;i++)route[out[i]]+=weight[i]*gain;
++            continue;
++        }
++        float left=0,right=0;
+         if(format->channels==1)left=right=1;
+         else if(speaker==FRONT_LEFT)left=1;
+         else if(speaker==FRONT_RIGHT)right=1;
+@@ -70,8 +109,7 @@ static void fold_weights(PwAudioMixStream *stream)
+         else if(speaker&CENTER)left=right=SIDE;
+         /* the low-frequency channel is not folded in: speakers reproduce
+          * what they can of the others' bass */
+-        stream->left[channel]=left*stream->gain[channel];
+-        stream->right[channel]=right*stream->gain[channel];
++        route[0]=left*gain;route[1]=right*gain;
+     }
+ }
+ 
+@@ -84,7 +122,8 @@ int pw_audio_mix_stream_init(PwAudioMixStream *stream,const PwAudioMixFormat *fo
+     memset(stream,0,sizeof(*stream));
+     stream->format=*format;stream->frames=frames;stream->capacity=capacity;
+     for(unsigned channel=0;channel<PW_AUDIO_MIX_MAX_CHANNELS;channel++)stream->gain[channel]=1;
+-    fold_weights(stream);
++    stream->outputs=PW_AUDIO_MIX_STEREO;
++    route_weights(stream);
+     pw_audio_mix_stream_reset(stream);
+     return pw_audio_mix_set_rate(stream,format->rate);
+ }
+@@ -94,7 +133,19 @@ void pw_audio_mix_stream_reset(PwAudioMixStream *stream)
+     if(!stream)return;
+     stream->offset=stream->held=0;stream->consumed=0;
+     stream->phase=ONE;      /* the first output frame reads one */
+-    stream->previous[0]=stream->previous[1]=stream->current[0]=stream->current[1]=0;
++    memset(stream->previous,0,sizeof(stream->previous));
++    memset(stream->current,0,sizeof(stream->current));
++}
++
++int pw_audio_mix_set_outputs(PwAudioMixStream *stream,uint32_t outputs)
++{
++    if(!stream)return PW_ERR_PRECONDITION;
++    if(outputs!=PW_AUDIO_MIX_STEREO && outputs!=PW_AUDIO_MIX_SURROUND)return PW_ERR_UNSUPPORTED;
++    stream->outputs=outputs;
++    route_weights(stream);
++    memset(stream->previous,0,sizeof(stream->previous));
++    memset(stream->current,0,sizeof(stream->current));
++    return PW_OK;
+ }
+ 
+ int pw_audio_mix_set_rate(PwAudioMixStream *stream,uint32_t rate)
+@@ -113,7 +164,7 @@ int pw_audio_mix_set_gain(PwAudioMixStream *stream,const float *gain,uint32_t co
+         float value=gain[channel];
+         stream->gain[channel]=value>1?1:value>0?value:0;
+     }
+-    fold_weights(stream);
++    route_weights(stream);
+     return PW_OK;
+ }
+ 
+@@ -138,18 +189,20 @@ static float sample(const uint8_t *at,const PwAudioMixFormat *format)
+     }
+ }
+ 
+-/* Take the oldest held frame, folded to stereo, as the resampler's current one. */
++/* Take the oldest held frame, routed to the outputs, as the resampler's current one. */
+ static void take_frame(PwAudioMixStream *stream)
+ {
+     const PwAudioMixFormat *format=&stream->format;
+     const uint8_t *at=stream->frames+(size_t)stream->offset*format->block_align;
+-    float left=0,right=0;
++    float mixed[PW_AUDIO_MIX_SURROUND]={0};
++    const unsigned outputs=stream->outputs;
+     for(unsigned channel=0;channel<format->channels;channel++) {
+         float value=sample(at+channel*(format->bits/8u),format);
+-        left+=value*stream->left[channel];right+=value*stream->right[channel];
++        const float *route=stream->route[channel];
++        for(unsigned out=0;out<outputs;out++)mixed[out]+=value*route[out];
+     }
+-    stream->previous[0]=stream->current[0];stream->previous[1]=stream->current[1];
+-    stream->current[0]=left;stream->current[1]=right;
++    memcpy(stream->previous,stream->current,sizeof(stream->previous));
++    memcpy(stream->current,mixed,sizeof(stream->current));
+     if(++stream->offset==stream->capacity)stream->offset=0;
+     stream->held--;stream->consumed++;
+ }
+@@ -158,6 +211,7 @@ uint32_t pw_audio_mix_add(PwAudioMixStream *stream,float *accumulator,uint32_t f
+ {
+     uint32_t done=0;
+     if(!stream || !accumulator)return 0;
++    const unsigned outputs=stream->outputs;
+     for(;done<frames;done++) {
+         while(stream->phase>=ONE) {
+             if(!stream->held)return done;
+@@ -165,17 +219,23 @@ uint32_t pw_audio_mix_add(PwAudioMixStream *stream,float *accumulator,uint32_t f
+             stream->phase-=ONE;
+         }
+         float t=(float)(uint32_t)stream->phase*(1.0f/4294967296.0f);
+-        accumulator[2*done]+=stream->previous[0]+(stream->current[0]-stream->previous[0])*t;
+-        accumulator[2*done+1]+=stream->previous[1]+(stream->current[1]-stream->previous[1])*t;
++        float *frame=accumulator+(size_t)outputs*done;
++        for(unsigned out=0;out<outputs;out++)
++            frame[out]+=stream->previous[out]+(stream->current[out]-stream->previous[out])*t;
+         stream->phase+=stream->step;
+     }
+     return done;
+ }
+ 
+ void pw_audio_mix_store(const float *accumulator,int16_t *output,uint32_t frames)
++{
++    pw_audio_mix_store_channels(accumulator,output,frames,PW_AUDIO_MIX_STEREO);
++}
++
++void pw_audio_mix_store_channels(const float *accumulator,int16_t *output,uint32_t frames,uint32_t channels)
+ {
+     if(!accumulator || !output)return;
+-    for(uint32_t i=0;i<2*frames;i++) {
++    for(size_t i=0;i<(size_t)channels*frames;i++) {
+         float value=accumulator[i];
+         value=value>1?1:value<-1?-1:value;
+         value*=32767;
+diff --git a/src/pw_audio_mix.h b/src/pw_audio_mix.h
+index ae79e28..447fd29 100644
+--- a/src/pw_audio_mix.h
++++ b/src/pw_audio_mix.h
+@@ -5,12 +5,14 @@
+ 
+ /* The mixer of Wine's PS5 audio driver (wine/wineps5): it turns the streams
+  * Windows programs play, in whatever PCM format each one chose, into the
+- * console's one output format, 16-bit stereo at 48 kHz.
++ * console's one output format, 16-bit at 48 kHz: stereo, or 7.1 when a
++ * game's Sound output in PC5 asks for surround.
+  *
+  * Each stream reads from a ring of frames its driver fills (mmdevapi's
+  * local buffer). Mixing converts every sample to float, applies the
+- * stream's per-channel gain, folds the channels down to stereo by speaker
+- * position, resamples linearly to 48 kHz and adds the result to a float
++ * stream's per-channel gain, routes the channels to the output's speakers
++ * by position (folding them down to stereo, or each to its own of 7.1),
++ * resamples linearly to 48 kHz and adds the result to a float
+  * accumulator; store then clamps the sum to 16 bits. A stream that runs out
+  * of frames adds silence and resumes where it stopped.
+  *
+@@ -25,6 +27,9 @@ enum {
+     PW_AUDIO_MIX_MIN_RATE=1000,PW_AUDIO_MIX_MAX_RATE=384000,
+     /* PCM: 8-bit unsigned, 16/24/32-bit signed little-endian; FLOAT: 32-bit */
+     PW_AUDIO_MIX_PCM=1,PW_AUDIO_MIX_FLOAT=3,
++    /* the output: stereo, or 7.1 as Windows orders it (front left, front right, centre,
++     * low frequency, back left, back right, side left, side right) */
++    PW_AUDIO_MIX_STEREO=2,PW_AUDIO_MIX_SURROUND=8,
+ };
+ 
+ typedef struct PwAudioMixFormat {
+@@ -43,16 +48,21 @@ typedef struct PwAudioMixStream {
+     uint32_t offset,held;       /* the oldest unplayed frame, and how many there are */
+     uint64_t consumed;          /* frames taken from the ring since init or reset */
+     float gain[PW_AUDIO_MIX_MAX_CHANNELS];
+-    float left[PW_AUDIO_MIX_MAX_CHANNELS],right[PW_AUDIO_MIX_MAX_CHANNELS];
++    uint32_t outputs;           /* PW_AUDIO_MIX_STEREO or PW_AUDIO_MIX_SURROUND */
++    /* how much of each channel goes to each output, times its gain */
++    float route[PW_AUDIO_MIX_MAX_CHANNELS][PW_AUDIO_MIX_SURROUND];
+     uint64_t step,phase;        /* input frames per output frame, and position: 32.32 */
+-    float previous[2],current[2];
++    float previous[PW_AUDIO_MIX_SURROUND],current[PW_AUDIO_MIX_SURROUND];
+ } PwAudioMixStream;
+ 
+ /* PW_OK when the mixer can play the format; PW_ERR_UNSUPPORTED otherwise. */
+ int pw_audio_mix_format_check(const PwAudioMixFormat *format);
+-/* A stream of format reading the ring frames[capacity], empty, at unity gain. */
++/* A stream of format reading the ring frames[capacity], empty, at unity gain,
++ * mixed to stereo. */
+ int pw_audio_mix_stream_init(PwAudioMixStream *stream,const PwAudioMixFormat *format,
+                              const uint8_t *frames,uint32_t capacity);
++/* Mix the stream to outputs channels (PW_AUDIO_MIX_STEREO or PW_AUDIO_MIX_SURROUND). */
++int pw_audio_mix_set_outputs(PwAudioMixStream *stream,uint32_t outputs);
+ /* Forget the held frames and the resampler's history (a stopped stream's Reset). */
+ void pw_audio_mix_stream_reset(PwAudioMixStream *stream);
+ /* Play the same frames at another rate (IAudioClockAdjustment). */
+@@ -60,11 +70,13 @@ int pw_audio_mix_set_rate(PwAudioMixStream *stream,uint32_t rate);
+ /* One gain per channel of the stream's format, 0 (silent) to 1 (unity). */
+ int pw_audio_mix_set_gain(PwAudioMixStream *stream,const float *gain,uint32_t count);
+ 
+-/* Add frames 48 kHz stereo frames of the stream to accumulator (left,right
+- * pairs). Returns how many of them had data: fewer than frames when the
++/* Add frames 48 kHz frames of the stream to accumulator, interleaved, as
++ * many channels each as the stream's outputs. Returns how many of them had data: fewer than frames when the
+  * ring ran out. */
+ uint32_t pw_audio_mix_add(PwAudioMixStream *stream,float *accumulator,uint32_t frames);
+ /* Clamp frames accumulated stereo frames into 16-bit output. */
+ void pw_audio_mix_store(const float *accumulator,int16_t *output,uint32_t frames);
++/* The same for frames of channels each. */
++void pw_audio_mix_store_channels(const float *accumulator,int16_t *output,uint32_t frames,uint32_t channels);
+ 
+ #endif
+diff --git a/tests/test_pw_audio_mix.c b/tests/test_pw_audio_mix.c
+index 1aa5ff6..59e1462 100644
+--- a/tests/test_pw_audio_mix.c
++++ b/tests/test_pw_audio_mix.c
+@@ -282,6 +282,70 @@ static void test_mix_and_store(void)
+     assert(out[0]==16384 && out[1]==-16384 && out[2]==0 && out[3]==-1);
+ }
+ 
++/* Surround: each channel on its own speaker of 7.1, in Windows' order. */
++static void test_surround(void)
++{
++    static float out8[8*4];
++    PwAudioMixStream s;
++    int16_t ring[8*2]={0};
++    int16_t grain[8*2];
++    PwAudioMixFormat f=pcm(48000,8,16);
++    for(int i=0;i<8;i++)ring[i]=(int16_t)(1000*(i+1));
++    assert(pw_audio_mix_stream_init(&s,&f,(const uint8_t *)ring,2)==PW_OK && s.outputs==2);
++    assert(pw_audio_mix_set_outputs(NULL,8)==PW_ERR_PRECONDITION);
++    assert(pw_audio_mix_set_outputs(&s,6)==PW_ERR_UNSUPPORTED && s.outputs==2);
++    assert(pw_audio_mix_set_outputs(&s,PW_AUDIO_MIX_SURROUND)==PW_OK);
++    s.held=2;
++    memset(out8,0,sizeof(out8));
++    assert(pw_audio_mix_add(&s,out8,2)==2);
++    /* the first frame comes out second: the resampler's history is first */
++    for(int i=0;i<8;i++)assert(out8[i]==0 && near(out8[8+i],ring[i]/32768.0f));
++    pw_audio_mix_store_channels(out8,grain,2,8);
++    assert(grain[0]==0 && grain[8]==1000 && grain[15]==8000);
++
++    /* 5.1 without a mask (back pair): the back pair plays on the sides, as 5.1's surround */
++    int16_t ring6[6*2]={0};
++    f=pcm(48000,6,16);
++    for(int i=0;i<6;i++)ring6[i]=(int16_t)(1000*(i+1));
++    assert(pw_audio_mix_stream_init(&s,&f,(const uint8_t *)ring6,2)==PW_OK);
++    assert(pw_audio_mix_set_outputs(&s,8)==PW_OK);
++    s.held=2;memset(out8,0,sizeof(out8));
++    assert(pw_audio_mix_add(&s,out8,2)==2);
++    const float *frame=out8+8;
++    assert(near(frame[0],1000/32768.0f) && near(frame[1],2000/32768.0f) && near(frame[2],3000/32768.0f));
++    assert(near(frame[3],4000/32768.0f) && frame[4]==0 && frame[5]==0);
++    assert(near(frame[6],5000/32768.0f) && near(frame[7],6000/32768.0f));
++
++    /* stereo stays on the front pair; mono on both of it */
++    int16_t ring2[2*2]={3000,-3000,0,0};
++    f=pcm(48000,2,16);
++    assert(pw_audio_mix_stream_init(&s,&f,(const uint8_t *)ring2,2)==PW_OK && pw_audio_mix_set_outputs(&s,8)==PW_OK);
++    s.held=2;memset(out8,0,sizeof(out8));
++    assert(pw_audio_mix_add(&s,out8,2)==2);
++    assert(near(out8[8],3000/32768.0f) && near(out8[9],-3000/32768.0f));
++    for(int i=2;i<8;i++)assert(out8[8+i]==0);
++    int16_t ring1[2]={2000,0};
++    f=pcm(48000,1,16);
++    assert(pw_audio_mix_stream_init(&s,&f,(const uint8_t *)ring1,2)==PW_OK && pw_audio_mix_set_outputs(&s,8)==PW_OK);
++    s.held=2;memset(out8,0,sizeof(out8));
++    assert(pw_audio_mix_add(&s,out8,2)==2);
++    assert(near(out8[8],2000/32768.0f) && near(out8[9],2000/32768.0f) && out8[10]==0);
++
++    /* the gain still applies, and stereo again folds */
++    f=pcm(48000,8,16);
++    assert(pw_audio_mix_stream_init(&s,&f,(const uint8_t *)ring,2)==PW_OK && pw_audio_mix_set_outputs(&s,8)==PW_OK);
++    const float gain[8]={1,1,1,1,1,1,0.5f,0};
++    assert(pw_audio_mix_set_gain(&s,gain,8)==PW_OK);
++    s.held=2;memset(out8,0,sizeof(out8));
++    assert(pw_audio_mix_add(&s,out8,2)==2);
++    assert(near(out8[14],3500/32768.0f) && out8[15]==0);
++    assert(pw_audio_mix_set_outputs(&s,2)==PW_OK);
++    s.offset=0;s.held=2;s.phase=(uint64_t)1<<32;memset(out8,0,sizeof(out8));
++    assert(pw_audio_mix_add(&s,out8,2)==2);
++    /* left, second out: 1000 + centre 3000*0.707 + back 5000*0.707 + side 7000*0.5*0.707 */
++    assert(near(out8[2],(1000+(3000+5000+3500)*0.70710678f)/32768.0f));
++}
++
+ int main(void)
+ {
+     test_format_check();
+@@ -294,6 +358,7 @@ int main(void)
+     test_downsample();
+     test_wrap_underrun_reset();
+     test_mix_and_store();
++    test_surround();
+     puts("audio mix passed");
+     return 0;
+ }
+diff --git a/tests/test_pw_audio_ps5.c b/tests/test_pw_audio_ps5.c
+index b2e4ce5..4094858 100644
+--- a/tests/test_pw_audio_ps5.c
++++ b/tests/test_pw_audio_ps5.c
+@@ -4,13 +4,14 @@
+ #include <string.h>
+ 
+ static unsigned inits,opens,volumes,outputs,closes;
++static uint32_t want_format=1;static int want_flags=3;
+ static int16_t last[PW_AUDIO_PS5_GRAIN*2];
+ 
+ static int op_init(void){inits++;return 0;}
+ static int op_open(int u,int t,int i,uint32_t g,uint32_t r,uint32_t f)
+-{assert(u==0xff&&t==0&&i==0&&g==256&&r==48000&&f==1);opens++;return 7;}
++{assert(u==0xff&&t==0&&i==0&&g==256&&r==48000&&f==want_format);opens++;return 7;}
+ static int op_volume(int h,int flags,const int32_t *v)
+-{assert(h==7&&flags==3&&v[0]==0x8000&&v[7]==0x8000);volumes++;return 0;}
++{assert(h==7&&flags==want_flags&&v[0]==0x8000&&v[7]==0x8000);volumes++;return 0;}
+ static int op_output(int h,const void *p)
+ {
+     assert(h==7);memcpy(last,p,sizeof(last));outputs++;return 0;
+@@ -51,9 +52,25 @@ static void test_open_port(void)
+     inits=opens=volumes=outputs=closes=0;
+ }
+ 
++/* 7.1 for a game's surround Sound output: the standard-order 8-channel format, every
++ * channel's volume set. */
++static void test_open_surround(void)
++{
++    PwAudioPs5Ops ops={op_init,op_open,op_volume,op_output,op_close};
++    int handle=-1;
++    inits=opens=volumes=outputs=closes=0;
++    assert(pw_audio_ps5_open_port_channels(&ops,6,&handle)==PW_ERR_PRECONDITION && !inits && handle==-1);
++    want_format=6;want_flags=0xff;
++    assert(pw_audio_ps5_open_port_channels(&ops,8,&handle)==PW_OK && handle==7 && opens==1 && volumes==1);
++    want_format=1;want_flags=3;handle=-1;
++    assert(pw_audio_ps5_open_port_channels(&ops,2,&handle)==PW_OK && handle==7 && opens==2);
++    inits=opens=volumes=outputs=closes=0;
++}
++
+ int main(void)
+ {
+     test_open_port();
++    test_open_surround();
+     PwAudioPs5Ops ops;
+     assert(pw_audio_ps5_platform_ops(NULL)==PW_ERR_PRECONDITION);
+     /* The host build has no console library behind the ops. */
+diff --git a/wine/patches/0949-mmdevapi-ps5-the-speakers-follow-the-driver.patch b/wine/patches/0949-mmdevapi-ps5-the-speakers-follow-the-driver.patch
+new file mode 100644
+index 0000000..3c567f5
+--- /dev/null
++++ b/wine/patches/0949-mmdevapi-ps5-the-speakers-follow-the-driver.patch
+@@ -0,0 +1,42 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: bornaradusin <bornaradusin@users.noreply.github.com>
++Date: Mon, 2 Nov 2026 21:00:00 +0000
++Subject: [PATCH] mmdevapi: PS5: the speakers follow the driver.
++
++mmdevapi kept the first PhysicalSpeakers it stored in the registry, so a
++prefix that once ran in stereo told DirectSound games stereo for good. On
++PS5 the audio driver's speakers change between runs with each game's
++Sound output in PC5 (stereo, 5.1 or 7.1), so the driver's answer now
++replaces the kept one each time the devices are listed. A driver without an answer
++leaves what is kept.
++
++diff --git a/dlls/mmdevapi/devenum.c b/dlls/mmdevapi/devenum.c
++index 8440b5d..c7aea97 100644
++--- a/dlls/mmdevapi/devenum.c
+++++ b/dlls/mmdevapi/devenum.c
++@@ -542,18 +542,11 @@ static MMDevice *MMDevice_Create(const WCHAR *name, GUID *id, EDataFlow flow, DW
++                 MMDevice_SetPropValue(id, flow, &PKEY_AudioEndpoint_FormFactor, &pv);
++             }
++ 
+++            /* PS5: the driver's speakers replace the ones kept from an earlier run, as
+++             * each game's Sound output in PC5 changes them between runs; a driver
+++             * without an answer leaves what is kept */
++             if (flow != eCapture)
++-            {
++-                PROPVARIANT pv2;
++-
++-                PropVariantInit(&pv2);
++-
++-                /* make read-write by not overwriting if already set */
++-                if (FAILED(MMDevice_GetPropValue(id, flow, &PKEY_AudioEndpoint_PhysicalSpeakers, &pv2)) || pv2.vt != VT_UI4)
++-                    set_driver_prop_value(id, flow, &PKEY_AudioEndpoint_PhysicalSpeakers);
++-
++-                PropVariantClear(&pv2);
++-            }
+++                set_driver_prop_value(id, flow, &PKEY_AudioEndpoint_PhysicalSpeakers);
++ 
++             pv.vt = VT_LPWSTR;
++             pv.pwszVal = drvs.module_name;
++-- 
++2.43.0
++
+diff --git a/wine/wineps5/unix.c b/wine/wineps5/unix.c
+index 05129fc..8bbcd90 100644
+--- a/wine/wineps5/unix.c
++++ b/wine/wineps5/unix.c
+@@ -12,7 +12,9 @@
+  * (wine/ps5/pw_wine_sink.h), which returns once the console's port has
+  * taken it, so the port is the clock. The sink is found with dlsym, as the
+  * user driver finds pw_wine_present; without one the driver reports itself
+- * unavailable.
++ * unavailable. The console's format is stereo, or 7.1 when a game's Sound
++ * output in PC5 is 5.1 or 7.1 (WINE_PS5_SPEAKERS, which the title sets to 2
++ * when the console would not open 7.1): games are then offered 5.1 or 7.1.
+  *
+  * The stream, buffer, timing and WoW64 code follows Wine's OSS driver
+  * (dlls/wineoss.drv/oss.c, Copyright 2011 Andrew Eikum for CodeWeavers,
+@@ -83,6 +85,25 @@ static HANDLE mixer_thread;
+ static int (*audio_available)(void);
+ static int (*audio_output)(const int16_t *frames);
+ 
++/* The speakers games are offered (2, 6 or 8) and the channels the console takes (2 or 8),
++ * from WINE_PS5_SPEAKERS. */
++static UINT32 speakers(void)
++{
++    static UINT32 count;
++    if (!count)
++    {
++        const char *wanted = getenv("WINE_PS5_SPEAKERS");
++        count = wanted && !strcmp(wanted, "8") ? 8 : wanted && !strcmp(wanted, "6") ? 6 : 2;
++        ERR("speakers %u: games are offered %s\n", count, count == 8 ? "7.1" : count == 6 ? "5.1" : "stereo");
++    }
++    return count;
++}
++
++static UINT32 output_channels(void)
++{
++    return speakers() == 2 ? PW_AUDIO_MIX_STEREO : PW_AUDIO_MIX_SURROUND;
++}
++
+ static NTSTATUS ps5_not_implemented(void *args)
+ {
+     return STATUS_SUCCESS;
+@@ -337,7 +358,8 @@ static NTSTATUS ps5_create_stream(void *args)
+         params->result = E_OUTOFMEMORY;
+         goto exit;
+     }
+-    if (pw_audio_mix_stream_init(&stream->mix, &format, stream->local_buffer, stream->bufsize_frames))
++    if (pw_audio_mix_stream_init(&stream->mix, &format, stream->local_buffer, stream->bufsize_frames) ||
++        pw_audio_mix_set_outputs(&stream->mix, output_channels()))
+     {
+         params->result = AUDCLNT_E_UNSUPPORTED_FORMAT;
+         goto exit;
+@@ -388,8 +410,9 @@ static NTSTATUS ps5_release_stream(void *args)
+  * title, which returns once the console's port took it. */
+ static void mixer_loop(void *args)
+ {
+-    static float accumulator[2 * PW_WINE_AUDIO_GRAIN];
+-    static int16_t grain[2 * PW_WINE_AUDIO_GRAIN];
++    static float accumulator[PW_AUDIO_MIX_SURROUND * PW_WINE_AUDIO_GRAIN];
++    static int16_t grain[PW_AUDIO_MIX_SURROUND * PW_WINE_AUDIO_GRAIN];
++    const UINT32 channels = output_channels();
+     struct ps5_stream *stream;
+     BOOL playing;
+     UINT32 grains_since_report = 0, report_short;
+@@ -407,7 +430,7 @@ static void mixer_loop(void *args)
+             continue;
+         }
+ 
+-        memset(accumulator, 0, sizeof(accumulator));
++        memset(accumulator, 0, channels * PW_WINE_AUDIO_GRAIN * sizeof(*accumulator));
+         for (stream = streams; stream; stream = stream->next)
+         {
+             if (!stream->playing) continue;
+@@ -426,7 +449,7 @@ static void mixer_loop(void *args)
+                 if (stream->event) NtSetEvent(stream->event, NULL);
+             }
+         }
+-        pw_audio_mix_store(accumulator, grain, PW_WINE_AUDIO_GRAIN);
++        pw_audio_mix_store_channels(accumulator, grain, PW_WINE_AUDIO_GRAIN, channels);
+         /* Every 1000 grains (about 5.3 s), name the streams whose buffer ran
+          * short: the application did not refill it in time. */
+         report_short = 0;
+@@ -651,7 +674,7 @@ static NTSTATUS ps5_is_format_supported(void *args)
+     return STATUS_SUCCESS;
+ }
+ 
+-/* What the mixer adds in: float stereo at the console's rate. */
++/* What the mixer adds in: float at the console's rate, stereo or the game's surround. */
+ static NTSTATUS ps5_get_mix_format(void *args)
+ {
+     struct get_mix_format_params *params = args;
+@@ -664,14 +687,15 @@ static NTSTATUS ps5_get_mix_format(void *args)
+     }
+ 
+     fmt->Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE;
+-    fmt->Format.nChannels = 2;
++    fmt->Format.nChannels = speakers();
+     fmt->Format.nSamplesPerSec = PW_WINE_AUDIO_RATE;
+     fmt->Format.wBitsPerSample = 32;
+     fmt->Format.nBlockAlign = fmt->Format.nChannels * fmt->Format.wBitsPerSample / 8;
+     fmt->Format.nAvgBytesPerSec = fmt->Format.nSamplesPerSec * fmt->Format.nBlockAlign;
+     fmt->Format.cbSize = sizeof(WAVEFORMATEXTENSIBLE) - sizeof(WAVEFORMATEX);
+     fmt->Samples.wValidBitsPerSample = fmt->Format.wBitsPerSample;
+-    fmt->dwChannelMask = KSAUDIO_SPEAKER_STEREO;
++    fmt->dwChannelMask = speakers() == 8 ? KSAUDIO_SPEAKER_7POINT1_SURROUND
++                       : speakers() == 6 ? KSAUDIO_SPEAKER_5POINT1 : KSAUDIO_SPEAKER_STEREO;
+     fmt->SubFormat = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
+ 
+     params->result = S_OK;
+@@ -858,7 +882,7 @@ static NTSTATUS ps5_is_started(void *args)
+  * without one as no sound device (Splinter Cell: Conviction's says "no sound device was found").
+  * The console's output is HDMI audio from its AMD chip, named as an HD Audio function; the last
+  * part is from the endpoint's GUID, as Windows uses a persistent random number. Their speakers
+- * are stereo, as the mixer plays. */
++ * are what the mixer plays: stereo, 5.1 or 7.1 (Wine patch 0949 makes them current each run). */
+ static NTSTATUS ps5_get_prop_value(void *args)
+ {
+     static const GUID PKEY_AudioEndpoint_GUID = {
+@@ -893,7 +917,8 @@ static NTSTATUS ps5_get_prop_value(void *args)
+     else if (!memcmp(&params->prop->fmtid, &PKEY_AudioEndpoint_GUID, sizeof(GUID)) && params->prop->pid == 3)
+     {
+         params->value->vt = VT_UI4;   /* PhysicalSpeakers */
+-        params->value->ulVal = 0x3;   /* SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT */
++        params->value->ulVal = speakers() == 8 ? KSAUDIO_SPEAKER_7POINT1_SURROUND
++                             : speakers() == 6 ? KSAUDIO_SPEAKER_5POINT1 : KSAUDIO_SPEAKER_STEREO;
+         params->result = S_OK;
+     }
+     return STATUS_SUCCESS;
+-- 
+2.43.0
+

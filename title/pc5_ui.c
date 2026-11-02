@@ -193,13 +193,13 @@ static int page_rows(const Pc5Settings *set, int page, int offer_update, Setting
 
 /* The game's groups and media submenus each have their own page. */
 typedef enum GameRow {
-    GR_PLAY, GR_CONTROLLER, GR_BUTTONS, GR_POINTER, GR_GRAPHICS, GR_APPEARANCE, GR_MANAGE,
+    GR_PLAY, GR_CONTROLLER, GR_BUTTONS, GR_POINTER, GR_GRAPHICS, GR_SOUND, GR_APPEARANCE, GR_MANAGE,
     GR_GRAPHICS_API, GR_FRAMEGEN, GR_RESOLUTION, GR_ASPECT, GR_MEMORY, GR_VIDEO_MEMORY, GR_CPU_SHARING,
     GR_COVER, GR_BACKGROUND, GR_HOME, GR_ICON, GR_MUSIC, GR_MUSIC_CLEAR,
     GR_BACKGROUND_IMAGE, GR_BACKGROUND_VIDEO, GR_VIDEO_CLEAR, GR_MEDIA_OPTIONS, GR_MUSIC_FILE, GR_VIDEO_FILE,
     GR_PROGRAM, GR_STEAM, GR_FILES, GR_UPDATE, GR_REPORT, GR_UNINSTALL
 } GameRow;
-enum { GAME_ROWS = 7, GAME_PAGES = 7, GP_MAIN = 0, GP_GRAPHICS = 1, GP_APPEARANCE = 2, GP_MANAGE = 3, GP_BACKGROUND = 4,
+enum { GAME_ROWS = 8, GAME_PAGES = 7, GP_MAIN = 0, GP_GRAPHICS = 1, GP_APPEARANCE = 2, GP_MANAGE = 3, GP_BACKGROUND = 4,
        GP_MUSIC = 5, GP_VIDEO = 6 };
 static const char *const game_page_titles[GAME_PAGES] = { "", N_("Graphics"), N_("Appearance"), N_("Manage"), N_("Background"),
                                                         N_("Library music"), N_("Background video") };
@@ -262,6 +262,7 @@ static int game_rows(const Pc5Controls *controls, int kind, int page, GameRow ro
         if (controls->mode == PC5_PAD_KEYBOARD) rows[n++] = GR_BUTTONS;
         rows[n++] = GR_POINTER;
         rows[n++] = GR_GRAPHICS;
+        rows[n++] = GR_SOUND;
         rows[n++] = GR_APPEARANCE;
         rows[n++] = GR_MANAGE;
         break;
@@ -3130,10 +3131,11 @@ static void report_open(Pc5Ui *ui)
         Pc5Controls k;
         pc5_controls_load(ui->root, game->prefix, &k);
         snprintf(settings, sizeof(settings),
-                 "%d-bit, draws with %s; Graphics API %s; Controller %s; Frame generation %s; Memory %s; CPU sharing %s%s",
+                 "%d-bit, draws with %s; Graphics API %s; Controller %s; Frame generation %s; Memory %s; CPU sharing %s%s%s",
                  game->bits, pc5_api_name((Pc5Api)game->api), pc5_graphics_tech_name(k.graphics, game->api),
                  pc5_pad_mode_name(k.mode), k.frame_generation == 2 ? "40 -> 120 (MihawkGen)" : k.frame_generation ? "on" : "off", k.memory_4gb ? "4 GB" : "Auto",
-                 k.cpu_sharing ? "on" : "off", k.steam_off ? "; Steam emulator off" : "");
+                 k.cpu_sharing ? "on" : "off", k.steam_off ? "; Steam emulator off" : "",
+                 k.surround == 2 ? "; Sound 7.1" : k.surround == 1 ? "; Sound 5.1" : "");
     }
     ui->report_qr.size = 0;
     if (pc5_report_url_settings(&ui->report, ui->report_game, settings, ui->report_url, sizeof(ui->report_url)) ||
@@ -5207,6 +5209,11 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             ui->controls.pointer_hide = !ui->controls.pointer_hide;
             controls_changed(ui);
             ui->dirty = 1;
+        } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_SOUND) {
+            /* Stereo, 5.1, 7.1: → and ✕ go on, ← back */
+            ui->controls.surround = (ui->controls.surround + ((k & PC5_KEY_LEFT) ? 2 : 1)) % 3;
+            controls_changed(ui);
+            ui->dirty = 1;
         } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_CPU_SHARING) {
             ui->controls.cpu_sharing = !ui->controls.cpu_sharing;
             controls_changed(ui);
@@ -6790,6 +6797,12 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
                                                    : T("2 GB at most, so older games don't get confused");
         *value = ui->controls.video_memory_full ? T("Maximum") : T("Auto");
         break;
+    case GR_SOUND:
+        *label = T("Sound output");
+        *text = ui->controls.surround ? T("Each sound on its own speaker of a surround system; Stereo if it is silent")
+                                      : T("Two speakers, for a TV or headphones; 5.1 or 7.1 for a surround system");
+        *value = ui->controls.surround == 2 ? "7.1" : ui->controls.surround == 1 ? "5.1" : T("Stereo");
+        break;
     case GR_CPU_SHARING:
         *label = T("Stutter fix");
         *text = ui->controls.cpu_sharing ? T("The game's work takes turns, as on a PC: steadier for some games") : T("Fastest for most games; turn on if it freezes or stutters");
@@ -6963,6 +6976,12 @@ static int setting_about(Pc5Ui *ui, GameRow row, const char *lines[6])
             lines[n++] = T("Maximum: all of it, only for a game that won't start because it sees too little.");
         }
         break;
+    case GR_SOUND:
+        lines[n++] = T("How many speakers the game is told the console has.");
+        lines[n++] = T("Stereo: two, right for a TV or headphones.");
+        lines[n++] = T("5.1 or 7.1: the game plays each sound on its own speaker of a surround system, and the PS5 sends it on as it does its own games' sound.");
+        lines[n++] = T("If the game is silent or plays only from the front, set it back to Stereo.");
+        break;
     case GR_CPU_SHARING:
         lines[n++] = T("Changes how the game's work is shared out on the console's processor.");
         lines[n++] = T("Off: the fastest for most games.");
@@ -7028,7 +7047,8 @@ static void game_menu_screen(Pc5Ui *ui, Pc5Canvas *c, int chosen)
     }
     GameRow row = chosen >= 0 && chosen < count ? rows[chosen] : GR_PLAY;
     int changes = row == GR_CONTROLLER || row == GR_FRAMEGEN || row == GR_RESOLUTION || row == GR_ASPECT ||
-                  row == GR_MEMORY || row == GR_VIDEO_MEMORY || row == GR_CPU_SHARING || row == GR_HOME || row == GR_STEAM;
+                  row == GR_MEMORY || row == GR_VIDEO_MEMORY || row == GR_CPU_SHARING || row == GR_HOME || row == GR_STEAM ||
+                  row == GR_SOUND;
     const char *about_lines[6];
     int has_about = setting_about(ui, row, about_lines) > 0;
     Hint list[] = { { accept_glyph(ui), changes ? T("Change") : T("Choose") }, { back_glyph(ui), T("Back") },

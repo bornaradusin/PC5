@@ -109,6 +109,10 @@ typedef struct Pc5Controls {
                                    * [runtime] thread_scheduling); 0: each keeps its CPU until it waits */
     Pc5Graphics graphics;         /* who turns the game's Direct3D or DirectDraw into Vulkan */
     int steam_off;                /* 1: Valve's steam_api DLL as the game has it; 0, Auto: the Steam emulator (pc5_steam.h) */
+    /* Sound output: 0 stereo; 1 5.1, 2 7.1, the speakers the game is offered (WINE_PS5_SPEAKERS
+     * 6 or 8 for the title and Wine's audio driver, the console's port then in 7.1).
+     * "speakers = 2|6|8". */
+    int surround;
 } Pc5Controls;
 
 /* A key, mouse button or nothing, as prospero-win names it in a profile, and as

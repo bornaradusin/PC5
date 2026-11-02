@@ -376,6 +376,7 @@ int main(int argc, char **argv)
     save("15e-game-menu-frame-generation");
     step(ui, PC5_KEY_ACCEPT, 1);           /* and off again */
     step(ui, PC5_KEY_BACK, 1);
+    step(ui, PC5_KEY_DOWN, 1);             /* Sound output */
     step(ui, PC5_KEY_DOWN, 1);
     step(ui, PC5_KEY_ACCEPT, 1);           /* Appearance */
     settle(ui);

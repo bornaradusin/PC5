@@ -5820,6 +5820,23 @@ static void test_game(const char *fonts_path)
         pc5_controls_save(game_root, "liberty", &controls);
         pc5_game_begin(&game, &ops, game_root, app, "liberty", "Liberty Town");
         CHECK(!getenv("WINE_PS5_SCHED"), "and off again");
+        /* Sound output: the speakers the game is offered, stereo by default. */
+        env = getenv("WINE_PS5_SPEAKERS");
+        CHECK(env && !strcmp(env, "2"), "stereo by default: %s", env ? env : "(none)");
+        for (int surround = 1; surround <= 2; surround++) {
+            controls.surround = surround;
+            pc5_controls_save(game_root, "liberty", &controls);
+            CHECK(!pc5_controls_load(game_root, "liberty", &again) && again.surround == surround, "Sound output %d kept", surround);
+            pc5_game_begin(&game, &ops, game_root, app, "liberty", "Liberty Town");
+            env = getenv("WINE_PS5_SPEAKERS");
+            CHECK(env && !strcmp(env, surround == 2 ? "8" : "6"), "%s tells Wine: %s", surround == 2 ? "7.1" : "5.1",
+                  env ? env : "(none)");
+        }
+        controls.surround = 0;
+        pc5_controls_save(game_root, "liberty", &controls);
+        pc5_game_begin(&game, &ops, game_root, app, "liberty", "Liberty Town");
+        env = getenv("WINE_PS5_SPEAKERS");
+        CHECK(env && !strcmp(env, "2"), "and stereo again");
     }
 
     /* The light bar: the cover's colour, brought up to a light bar's brightness, once. */
@@ -6925,6 +6942,7 @@ static void test_screens(const char *fonts)
             rows_uncut(ui, &canvas, where, page == 2);
             press(ui, PC5_KEY_BACK, &canvas);
             press(ui, PC5_KEY_UP, &canvas);
+            if (page == 1) press(ui, PC5_KEY_UP, &canvas);   /* past Sound output, a value */
         }
         /* The Graphics API window, where the game has one. */
         press(ui, PC5_KEY_DOWN, &canvas);
@@ -7031,6 +7049,19 @@ static void test_screens(const char *fonts)
     CHECK(controls_has("orbital-nine", "cpu_sharing = off\n"), "and off");
     press(ui, PC5_KEY_BACK, &canvas);       /* the first page again, on Graphics */
     CHECK(!strcmp(pc5_ui_screen(ui), "game-menu"), "Back: the first page: %s", pc5_ui_screen(ui));
+    press(ui, PC5_KEY_DOWN, &canvas);       /* Sound output: Stereo, 5.1, 7.1 and round, both ways */
+    CHECK(controls_has("orbital-nine", "speakers = 2\n"), "Sound output: stereo");
+    press(ui, PC5_KEY_RIGHT, &canvas);
+    CHECK(controls_has("orbital-nine", "speakers = 6\n"), "then 5.1");
+    press(ui, PC5_KEY_ACCEPT, &canvas);
+    CHECK(controls_has("orbital-nine", "speakers = 8\n"), "then 7.1");
+    press(ui, PC5_KEY_RIGHT, &canvas);
+    CHECK(controls_has("orbital-nine", "speakers = 2\n"), "then stereo again");
+    press(ui, PC5_KEY_LEFT, &canvas);
+    CHECK(controls_has("orbital-nine", "speakers = 8\n"), "left: 7.1");
+    press(ui, PC5_KEY_LEFT, &canvas);
+    press(ui, PC5_KEY_LEFT, &canvas);
+    CHECK(controls_has("orbital-nine", "speakers = 2\n"), "and back to stereo");
     press(ui, PC5_KEY_DOWN, &canvas);
     press(ui, PC5_KEY_DOWN, &canvas);       /* Manage */
     press(ui, PC5_KEY_ACCEPT, &canvas);
@@ -7095,7 +7126,8 @@ static void test_screens(const char *fonts)
     press(ui, PC5_KEY_DOWN, &canvas);
     press(ui, PC5_KEY_DOWN, &canvas);
     press(ui, PC5_KEY_DOWN, &canvas);
-    press(ui, PC5_KEY_DOWN, &canvas);       /* Play, Controller, Mouse pointer, Graphics, Appearance */
+    press(ui, PC5_KEY_DOWN, &canvas);
+    press(ui, PC5_KEY_DOWN, &canvas);       /* Play, Controller, Mouse pointer, Graphics, Sound output, Appearance */
     press(ui, PC5_KEY_ACCEPT, &canvas);
     save_shot(&canvas, "game-menu-appearance");
     for (int i = 0; i < 5; ++i) press(ui, PC5_KEY_DOWN, &canvas);

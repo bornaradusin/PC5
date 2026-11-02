@@ -713,6 +713,7 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
      * reads (patch 0882, WINE_PS5_SCHED=1; the profile says it too, but PC5 writes
      * only the profiles of the games it installed). */
     int memory_4gb = 0, stretch = 0, cpu_sharing = 0, video_memory_full = 0, video_memory_gb = 0, pointer_hide = 0;
+    int surround = 0;
     if (prefix && prefix[0]) {
         Pc5Controls controls;
         pc5_controls_load(root, prefix, &controls);
@@ -723,6 +724,7 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         video_memory_full = controls.video_memory_full;
         video_memory_gb = controls.video_memory_gb == 5 || controls.video_memory_gb == 6 ? controls.video_memory_gb : 0;
         pointer_hide = controls.pointer_hide;
+        surround = controls.surround;
         /* A two-finger click mapped to a key (Keyboard & mouse): the game's, not PC5's keyboard. */
         game->two_finger_key = controls.mode == PC5_PAD_KEYBOARD &&
                                strcmp(pc5_keys[controls.key[PC5_TWO_FINGER] % pc5_key_count].name, "none");
@@ -790,6 +792,9 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
     else setenv("PW_LARGE_ADDRESS_AWARE", "0", 1);
     if (cpu_sharing) setenv("WINE_PS5_SCHED", "1", 1);
     else unsetenv("WINE_PS5_SCHED");
+    /* Sound output: the speakers the game is offered (Wine's audio driver) and, for 5.1 or 7.1,
+     * the console's port in 7.1; the title plays stereo if the console won't open that. */
+    setenv("WINE_PS5_SPEAKERS", surround == 2 ? "8" : surround == 1 ? "6" : "2", 1);
     /* The game's own settings it reads from its environment (pc5/env.txt, pc5_game.h). */
     {
         char names[512];
@@ -815,12 +820,13 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
     if (path[0]) setenv("WINEPATH", path, 1);
     else unsetenv("WINEPATH");
     say(game, "PC5 game fps=%d overlay=%#x corner=%d vibration=%d light=%d triggers=%d trigger_rumble=%d "
-        "trigger_resistance=%d tint=%06x frame_generation=%d memory_32bit=%s aspect_ratio=%s cpu_sharing=%d high_refresh=%d",
+        "trigger_resistance=%d tint=%06x frame_generation=%d memory_32bit=%s aspect_ratio=%s cpu_sharing=%d high_refresh=%d speakers=%d",
         game->settings.fps,
         pc5_game_overlay_lines(&game->settings), (int)game->settings.fps_corner, game->settings.vibration,
         (int)game->settings.light_bar, (int)game->settings.triggers, game->settings.trigger_rumble,
         game->settings.trigger_resistance, (unsigned)game->cover_tint, game->frame_generation, memory_4gb ? "4gb" : "auto",
-        stretch ? "stretch" : "keep", cpu_sharing, game->settings.high_refresh);
+        stretch ? "stretch" : "keep", cpu_sharing, game->settings.high_refresh,
+        surround == 2 ? 8 : surround == 1 ? 6 : 2);
 }
 
 /* PC5's language from the app's folder: code as PC5 passed it. */
