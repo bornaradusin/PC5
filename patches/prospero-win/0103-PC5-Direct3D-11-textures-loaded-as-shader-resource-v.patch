@@ -1,0 +1,216 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 10:00:00 +0000
+Subject: [PATCH 103/103] PC5: Direct3D 11 textures loaded as shader resource views
+ (Wine patch 0982)
+
+D3DX11CreateShaderResourceViewFromMemory was a stub, and its FromFile and
+FromResource siblings were not exported: Dragon Ball Xenoverse 2 loads
+its textures that way, got none, showed a black screen and crashed.
+---
+ PUBLICATION_ALLOWLIST.txt                     |   1 +
+ docs/WINE_PS5_BUILD.md                        |   1 +
+ ...ews-from-a-file-memory-or-a-resource.patch | 167 ++++++++++++++++++
+ 3 files changed, 169 insertions(+)
+ create mode 100644 wine/patches/0982-d3dx11-shader-resource-views-from-a-file-memory-or-a-resource.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index 7c68e55..bc98dcf 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -619,6 +619,7 @@ wine/patches/0962-vkd3d-shader-fx-write-null-shader-and-texture-states-for-fx-2-
+ wine/patches/0963-vkd3d-shader-hlsl-compile-ps-1-x-effect-shaders-as-ps-2-0.patch
+ wine/patches/0971-kernelbase-ps5-no-debugger-in-a-title.patch
+ wine/patches/0981-win32u-register-builtin-classes-without-waiting.patch
++wine/patches/0982-d3dx11-shader-resource-views-from-a-file-memory-or-a-resource.patch
+ wine/patches/0984-win32u-ps5-tell-windows-when-the-controller-comes-or-goes.patch
+ wine/patches/0985-ntdll-ps5-serve-wine-dlls-missing-from-system32.patch
+ wine/patches/0986-ntdll-ps5-list-wine-s-dlls-and-copy-one-before-it-changes.patch
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index e69cb83..3190ec6 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -161,6 +161,7 @@ before evaluating a candidate built from that cache.
+ | 0971 | `kernelbase`: in a title, an unhandled exception doesn't start a debugger (which can't start there) and ends the process after the game's own filter: reading AeDebug took the process heap's lock a faulting thread could hold, and the crash froze the game instead of ending it. From Playden's prospero-win |
+ | 0972 | `faudio` (Wine's bundled FAudio 26.09): upstream FAudio a3b49d6 and 2ead980 (2026-09-26). A source voice that played at the output rate never advanced `resampleOffset`, so when it started resampling, the tap loops of `FAudio_INTERNAL_MixSource` ran from the stale offset, `toResample - tap_samples` wrapped and the SSE2 resampler wrote far past `resampled_audio`. A game corrupted its process heap and crashed in the mixer, or in the heap. FAudio is a static library, so every `xaudio2_*` and `xactengine*` module is in `PE_MODULES` |
+ | 0981 | `win32u`: the builtin window classes are registered without waiting on another thread under the loader lock: Source games hung at start. From Playden's prospero-win |
++| 0982 | `d3dx11`: `D3DX11CreateShaderResourceViewFromMemory`, a stub that returned `E_NOTIMPL`, and `…FromFileA/W` and `…FromResourceA/W`, not exported, each make the texture as the matching `D3DX11CreateTexture*` does and return a view of the whole of it, which holds the texture. Dragon Ball Xenoverse 2 loads its 600 start-up textures that way: it got none, showed a black screen and crashed |
+ | 0984 | `win32u`: when a controller connects or disconnects (`pw_wine_pad_changes`), the driver posts `WM_DEVICECHANGE` with `DBT_DEVNODES_CHANGED` to the top-level windows, as the plug and play service does on Windows: an Unreal Engine 4 game kept a controller that went off lost after it came back. From Playden's prospero-win |
+ | 0985 | `ntdll`: on PS5, a name opened (`FILE_OPEN`) that a prefix's `windows/system32` or `windows/syswow64` doesn't have is Wine's own file of that name (in lower case) for that architecture, from the app's `lib/wine`: PC5's prefixes hold no copy of Wine's DLLs (some 300 MB a game). A file the game makes there is found first |
+ | 0986 | `ntdll`: on PS5, a listing of a prefix's `system32` or `syswow64` also shows the files 0985 serves; an open that changes one of them (write, delete, attributes, overwrite, delete on close) copies Wine's file into the prefix first and opens the copy, so a game replaces or changes its own; `FILE_OVERWRITE` is served too; `NtDeleteFile` of one leaves Wine's file and succeeds. The first copy is logged |
+diff --git a/wine/patches/0982-d3dx11-shader-resource-views-from-a-file-memory-or-a-resource.patch b/wine/patches/0982-d3dx11-shader-resource-views-from-a-file-memory-or-a-resource.patch
+new file mode 100644
+index 0000000..ef3a02b
+--- /dev/null
++++ b/wine/patches/0982-d3dx11-shader-resource-views-from-a-file-memory-or-a-resource.patch
+@@ -0,0 +1,167 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Mon, 2 Nov 2026 10:00:00 +0000
++Subject: [PATCH] d3dx11: Shader resource views from a file, memory or a
++ resource.
++
++D3DX11CreateShaderResourceViewFromMemory was a stub that returned
++E_NOTIMPL, and the FromFile and FromResource ones weren't exported at
++all. A game that loads its textures that way (Dragon Ball Xenoverse 2,
++600 of them at start) got no texture from any, showed a black screen and
++then crashed on one. Each now makes the texture as the matching
++D3DX11CreateTexture* does and returns a view of the whole of it, which
++holds the texture.
++---
++diff --git a/include/d3dx11tex.h b/include/d3dx11tex.h
++index 386945f..851099b 100644
++--- a/include/d3dx11tex.h
+++++ b/include/d3dx11tex.h
++@@ -140,6 +140,18 @@ extern "C" {
++ HRESULT WINAPI D3DX11CreateShaderResourceViewFromMemory(ID3D11Device *device, const void *data,
++         SIZE_T data_size, D3DX11_IMAGE_LOAD_INFO *load_info, ID3DX11ThreadPump *pump,
++         ID3D11ShaderResourceView **view, HRESULT *hresult);
+++HRESULT WINAPI D3DX11CreateShaderResourceViewFromFileA(ID3D11Device *device, const char *filename,
+++        D3DX11_IMAGE_LOAD_INFO *load_info, ID3DX11ThreadPump *pump, ID3D11ShaderResourceView **view,
+++        HRESULT *hresult);
+++HRESULT WINAPI D3DX11CreateShaderResourceViewFromFileW(ID3D11Device *device, const WCHAR *filename,
+++        D3DX11_IMAGE_LOAD_INFO *load_info, ID3DX11ThreadPump *pump, ID3D11ShaderResourceView **view,
+++        HRESULT *hresult);
+++HRESULT WINAPI D3DX11CreateShaderResourceViewFromResourceA(ID3D11Device *device, HMODULE module,
+++        const char *resource, D3DX11_IMAGE_LOAD_INFO *load_info, ID3DX11ThreadPump *pump,
+++        ID3D11ShaderResourceView **view, HRESULT *hresult);
+++HRESULT WINAPI D3DX11CreateShaderResourceViewFromResourceW(ID3D11Device *device, HMODULE module,
+++        const WCHAR *resource, D3DX11_IMAGE_LOAD_INFO *load_info, ID3DX11ThreadPump *pump,
+++        ID3D11ShaderResourceView **view, HRESULT *hresult);
++ HRESULT WINAPI D3DX11CreateTextureFromFileA(ID3D11Device *device, const char *filename,
++         D3DX11_IMAGE_LOAD_INFO *load_info, ID3DX11ThreadPump *pump, ID3D11Resource **texture,
++         HRESULT *hresult);
++diff --git a/dlls/d3dx11_43/d3dx11_43.spec b/dlls/d3dx11_43/d3dx11_43.spec
++index 2033d60..442509a 100644
++--- a/dlls/d3dx11_43/d3dx11_43.spec
+++++ b/dlls/d3dx11_43/d3dx11_43.spec
++@@ -15,11 +15,11 @@
++ @ stub D3DX11CreateAsyncShaderResourceViewProcessor
++ @ stub D3DX11CreateAsyncTextureInfoProcessor
++ @ stub D3DX11CreateAsyncTextureProcessor
++-@ stub D3DX11CreateShaderResourceViewFromFileA
++-@ stub D3DX11CreateShaderResourceViewFromFileW
+++@ stdcall D3DX11CreateShaderResourceViewFromFileA(ptr str ptr ptr ptr ptr)
+++@ stdcall D3DX11CreateShaderResourceViewFromFileW(ptr wstr ptr ptr ptr ptr)
++ @ stdcall D3DX11CreateShaderResourceViewFromMemory(ptr ptr long ptr ptr ptr ptr)
++-@ stub D3DX11CreateShaderResourceViewFromResourceA
++-@ stub D3DX11CreateShaderResourceViewFromResourceW
+++@ stdcall D3DX11CreateShaderResourceViewFromResourceA(ptr long str ptr ptr ptr ptr)
+++@ stdcall D3DX11CreateShaderResourceViewFromResourceW(ptr long wstr ptr ptr ptr ptr)
++ @ stdcall D3DX11CreateTextureFromFileA(ptr str ptr ptr ptr ptr)
++ @ stdcall D3DX11CreateTextureFromFileW(ptr wstr ptr ptr ptr ptr)
++ @ stdcall D3DX11CreateTextureFromMemory(ptr ptr long ptr ptr ptr ptr)
++diff --git a/dlls/d3dx11_43/texture.c b/dlls/d3dx11_43/texture.c
++index 5d4eaa4..4d62a0e 100644
++--- a/dlls/d3dx11_43/texture.c
+++++ b/dlls/d3dx11_43/texture.c
++@@ -732,14 +732,100 @@ HRESULT WINAPI D3DX11CreateTextureFromResourceW(ID3D11Device *device, HMODULE mo
++     return hr;
++ }
++ 
+++/* A shader resource view of the whole of a texture just made (hr its result), which it then
+++ * holds: what the game asked for instead of the texture. */
+++static HRESULT view_from_texture(ID3D11Device *device, HRESULT hr, ID3D11Resource *texture,
+++        ID3D11ShaderResourceView **view, HRESULT *hresult)
+++{
+++    if (SUCCEEDED(hr))
+++    {
+++        hr = ID3D11Device_CreateShaderResourceView(device, texture, NULL, view);
+++        ID3D11Resource_Release(texture);
+++    }
+++    if (hresult)
+++        *hresult = hr;
+++    return hr;
+++}
+++
++ HRESULT WINAPI D3DX11CreateShaderResourceViewFromMemory(ID3D11Device *device, const void *data,
++         SIZE_T data_size, D3DX11_IMAGE_LOAD_INFO *load_info, ID3DX11ThreadPump *pump,
++         ID3D11ShaderResourceView **view, HRESULT *hresult)
++ {
++-    FIXME("device %p, data %p, data_size %Iu, load_info %p, pump %p, view %p, hresult %p stub!\n",
+++    ID3D11Resource *texture = NULL;
+++
+++    TRACE("device %p, data %p, data_size %Iu, load_info %p, pump %p, view %p, hresult %p.\n",
++             device, data, data_size, load_info, pump, view, hresult);
++ 
++-    return E_NOTIMPL;
+++    if (!device)
+++        return E_INVALIDARG;
+++    if (!data)
+++        return E_FAIL;
+++
+++    if (pump)
+++        FIXME("D3DX11 thread pump is currently unimplemented.\n");
+++
+++    return view_from_texture(device, create_texture(device, data, data_size, load_info, &texture),
+++            texture, view, hresult);
+++}
+++
+++HRESULT WINAPI D3DX11CreateShaderResourceViewFromFileA(ID3D11Device *device, const char *src_file,
+++        D3DX11_IMAGE_LOAD_INFO *load_info, ID3DX11ThreadPump *pump, ID3D11ShaderResourceView **view,
+++        HRESULT *hresult)
+++{
+++    ID3D11Resource *texture = NULL;
+++
+++    TRACE("device %p, src_file %s, load_info %p, pump %p, view %p, hresult %p.\n",
+++            device, debugstr_a(src_file), load_info, pump, view, hresult);
+++
+++    if (!device)
+++        return E_INVALIDARG;
+++    return view_from_texture(device, D3DX11CreateTextureFromFileA(device, src_file, load_info, pump, &texture, NULL),
+++            texture, view, hresult);
+++}
+++
+++HRESULT WINAPI D3DX11CreateShaderResourceViewFromFileW(ID3D11Device *device, const WCHAR *src_file,
+++        D3DX11_IMAGE_LOAD_INFO *load_info, ID3DX11ThreadPump *pump, ID3D11ShaderResourceView **view,
+++        HRESULT *hresult)
+++{
+++    ID3D11Resource *texture = NULL;
+++
+++    TRACE("device %p, src_file %s, load_info %p, pump %p, view %p, hresult %p.\n",
+++            device, debugstr_w(src_file), load_info, pump, view, hresult);
+++
+++    if (!device)
+++        return E_INVALIDARG;
+++    return view_from_texture(device, D3DX11CreateTextureFromFileW(device, src_file, load_info, pump, &texture, NULL),
+++            texture, view, hresult);
+++}
+++
+++HRESULT WINAPI D3DX11CreateShaderResourceViewFromResourceA(ID3D11Device *device, HMODULE module,
+++        const char *resource, D3DX11_IMAGE_LOAD_INFO *load_info, ID3DX11ThreadPump *pump,
+++        ID3D11ShaderResourceView **view, HRESULT *hresult)
+++{
+++    ID3D11Resource *texture = NULL;
+++
+++    TRACE("device %p, module %p, resource %s, load_info %p, pump %p, view %p, hresult %p.\n",
+++            device, module, debugstr_a(resource), load_info, pump, view, hresult);
+++
+++    if (!device)
+++        return E_INVALIDARG;
+++    return view_from_texture(device, D3DX11CreateTextureFromResourceA(device, module, resource, load_info, pump,
+++            &texture, NULL), texture, view, hresult);
+++}
+++
+++HRESULT WINAPI D3DX11CreateShaderResourceViewFromResourceW(ID3D11Device *device, HMODULE module,
+++        const WCHAR *resource, D3DX11_IMAGE_LOAD_INFO *load_info, ID3DX11ThreadPump *pump,
+++        ID3D11ShaderResourceView **view, HRESULT *hresult)
+++{
+++    ID3D11Resource *texture = NULL;
+++
+++    TRACE("device %p, module %p, resource %s, load_info %p, pump %p, view %p, hresult %p.\n",
+++            device, module, debugstr_w(resource), load_info, pump, view, hresult);
+++
+++    if (!device)
+++        return E_INVALIDARG;
+++    return view_from_texture(device, D3DX11CreateTextureFromResourceW(device, module, resource, load_info, pump,
+++            &texture, NULL), texture, view, hresult);
++ }
++ 
++ HRESULT WINAPI D3DX11CreateTextureFromMemory(ID3D11Device *device, const void *data,
++-- 
++2.43.0
++
+-- 
+2.43.0
+

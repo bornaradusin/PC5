@@ -690,7 +690,11 @@ EOF_SOURCES
         --mono "$B/downloads/wine-mono-$MONO_VERSION-x86.msi" --mono-version "$MONO_VERSION" --out "$app"
     # The DXVK the template has, which PC5 gives games installed with an earlier one (pc5_game.c).
     # DXVK and VKD3D-Proton by name: a game installed before either changed gets both again.
-    printf '%s vkd3d-proton-%s\n' "$(cat "$B/dxvk/NAME")" "$(cat "$B/vkd3d/NAME")" > "$app/pc5/dxvk.txt"
+    # The name PC5 compares with a game's copy (pc5_prefix_dxvk), with a short hash of both
+    # patch series: a new patch there reaches games installed before it, without remembering
+    # to raise DXVK_NAME or VKD3D_NAME (2.1.4's DXVK patch 0006 didn't reach them).
+    printf '%s vkd3d-proton-%s patches-%s\n' "$(cat "$B/dxvk/NAME")" "$(cat "$B/vkd3d/NAME")" \
+        "$(printf '%s %s' "$(patches_id dxvk)" "$(patches_id vkd3d-proton)" | sha256sum | cut -c1-12)" > "$app/pc5/dxvk.txt"
     mkdir -p "$app/LICENSES/dxvk" "$app/LICENSES/wine-mono"
     cp "$B/dxvk/LICENSE" "$app/LICENSES/dxvk/LICENSE"
     cp "$B/downloads/wine-mono-$MONO_VERSION-COPYING" "$app/LICENSES/wine-mono/COPYING"
