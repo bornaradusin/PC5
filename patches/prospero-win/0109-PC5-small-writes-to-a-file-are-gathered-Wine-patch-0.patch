@@ -1,0 +1,317 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 16:30:00 +0000
+Subject: [PATCH 109/109] PC5: small writes to a file are gathered (Wine patch 0948)
+
+The console's kernel takes about a millisecond a write however small. Aggelos 2
+saved its config 4 bytes at a time on every picture of its menus, so they drew
+3 pictures a second. A synchronous write of 4 KiB or less to a regular file is
+now kept and written with the ones after it at once; anything else that uses a
+file writes them first.
+---
+ PUBLICATION_ALLOWLIST.txt                     |   1 +
+ docs/WINE_PS5_BUILD.md                        |   1 +
+ .../0948-ntdll-ps5-gather-small-writes.patch  | 267 ++++++++++++++++++
+ 3 files changed, 269 insertions(+)
+ create mode 100644 wine/patches/0948-ntdll-ps5-gather-small-writes.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index ef09ca9..f41ed87 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -610,6 +610,7 @@ wine/patches/0944-ntdll-ps5-emulate-the-instructions-umip-refuses.patch
+ wine/patches/0945-ntdll-ps5-read-ahead-for-small-reads.patch
+ wine/patches/0946-win32u-ps5-report-the-refresh-rate-asked-of-the-display.patch
+ wine/patches/0947-win32u-a-virtual-desktop-offers-the-display-s-rate.patch
++wine/patches/0948-ntdll-ps5-gather-small-writes.patch
+ wine/patches/0953-wow64-ps5-a-32-bit-allocation-stays-below-the-process-limit.patch
+ wine/patches/0954-server-ps5-resolve-an-opened-file-s-directory-once.patch
+ wine/patches/0955-ntdll-ps5-keep-the-directories-a-process-resolved.patch
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 592df69..017f817 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -155,6 +155,7 @@ before evaluating a candidate built from that cache.
+ | 0945 | `ntdll`: on PS5, a synchronous read of 64 KiB or less from a regular file is served from a 512 KiB piece read at once (four a process, by device and inode, checked with `fstat`; this process's writes and size changes forget them). The console's kernel reads exactly what is asked, so 4 KiB reads came at 88 MB/s. From PS5_MihawkOS (its 2082) |
+ | 0946 | `win32u` (Mihawk OS 0924): the PS5 driver's display mode reports the rate in `WINE_PS5_REFRESH` (120 when the title opens the display at 119.88 Hz, PC5's 120 Hz output) instead of always 60, so a game paces itself and shows its rate from it |
+ | 0947 | `win32u` (Mihawk OS 1188): in a virtual desktop, the virtual source starts at the display's own rate and keeps the modes it generated, so 120 Hz modes stay offered after a game's 60 Hz mode change |
++| 0948 | `ntdll`: on PS5, a synchronous write of 4 KiB or less to a regular file (no event, APC, write-through or unbuffered I/O) is kept and written with the ones after it at the same handle's next position, in one `pwrite` of up to 64 KiB; any other use of a file (`server_get_unix_fd`, a name opened or looked at, `NtClose`, `NtDuplicateObject`, the process's end) writes them first. The console's kernel takes about a millisecond a write: Aggelos 2 saved its config 4 bytes at a time on every menu picture |
+ | 0953 | `wow64`: a 32-bit caller's allocation with its own address requirements (an alignment) and no highest address is kept below the 32-bit process's limit, as on Windows; it landed above 4 GiB and the game faulted on the address's low half. From PS5_MihawkOS |
+ | 0954 | `server`: on PS5, an opened file's directory is resolved with `realpath` once and kept (64 entries, checked by device and inode), so an open costs two system calls instead of one a path component. From PS5_MihawkOS (its 2080) |
+ | 0955 | `ntdll`: on PS5, the directories a process resolved are kept by their upper-cased Windows path (1024 slots) and a lookup starts from the longest one, checked with one `fstatat`; a directory's case sensitivity is not asked (the console's disk is). From PS5_MihawkOS (its 2081) |
+diff --git a/wine/patches/0948-ntdll-ps5-gather-small-writes.patch b/wine/patches/0948-ntdll-ps5-gather-small-writes.patch
+new file mode 100644
+index 0000000..381420f
+--- /dev/null
++++ b/wine/patches/0948-ntdll-ps5-gather-small-writes.patch
+@@ -0,0 +1,267 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: bornaradusin <bornaradusin@users.noreply.github.com>
++Date: Mon, 2 Nov 2026 16:30:00 +0000
++Subject: [PATCH] ntdll: PS5: gather small writes.
++
++The console's kernel writes exactly what is asked, at about a millisecond
++a write however small. Aggelos 2 saves its 2 KB config 4 bytes at a time
++on every picture of its menus (+file: CreateFileW of AppData\Roaming\
++Aggelos 2\config with CREATE_ALWAYS, then 460 WriteFile calls of 4 bytes,
++each a millisecond), half a second a save, so its menus drew 3 pictures
++a second and its fades took seconds.
++
++A synchronous write of 4 KiB or less to a regular file, without an event
++or APC, write-through or unbuffered I/O, is now kept and written with the
++ones after it at the same handle's next position, in one pwrite of up to
++64 KiB. Anything else that uses a file first writes them: every
++server_get_unix_fd (reads, seeks, sizes, flushes, mappings, any other
++handle), a name opened or looked at (nt_to_unix_file_name), NtClose,
++NtDuplicateObject and NtTerminateProcess. Nothing can see the file
++without them, and the handle's file pointer is past them once they are
++written. One handle's writes are kept at a time.
++---
++ dlls/ntdll/unix/file.c         | 137 +++++++++++++++++++++++++++++++++
++ dlls/ntdll/unix/process.c      |   4 +
++ dlls/ntdll/unix/server.c       |   9 +++
++ dlls/ntdll/unix/unix_private.h |   3 +
++ 4 files changed, 153 insertions(+)
++
++diff --git a/dlls/ntdll/unix/file.c b/dlls/ntdll/unix/file.c
++index a791f0d..a303f03 100644
++--- a/dlls/ntdll/unix/file.c
+++++ b/dlls/ntdll/unix/file.c
++@@ -4048,6 +4048,10 @@ static NTSTATUS nt_to_unix_file_name( OBJECT_ATTRIBUTES *attr, UNICODE_STRING *n
++     int name_len, unix_len;
++     NTSTATUS status;
++ 
+++#ifdef __PROSPERO__
+++    write_gather_flush();   /* a file opened or looked at by name has what was written to it */
+++#endif
+++
++     if (!attr->RootDirectory)  /* without root dir fall back to normal lookup */
++         return nt_to_unix_file_name_no_root( attr, nt_name, name_ret, disposition, open_reparse, 0 );
++ 
++@@ -6380,6 +6384,108 @@ static void read_ahead_forget(void)
++     mutex_unlock( &read_ahead_mutex );
++ }
++ 
+++/* Small writes gathered. The console's kernel writes exactly what is asked, at about a millisecond a write
+++ * however small: Aggelos 2 saved its 2 KB config 4 bytes at a time on every picture of its menus, about half a
+++ * second a save, so the menus drew 3 pictures a second. A synchronous write of WRITE_GATHER_SMALL bytes or less to
+++ * a regular file, with no event or APC, is kept here and written with the ones after it at the same handle's
+++ * next position, at once. Anything else that uses a file first writes them (server_get_unix_fd: reads, seeks,
+++ * sizes, mappings and every other handle; a name opened or looked at; NtClose, NtDuplicateObject and the
+++ * process's end), so nothing can see the file without them. One handle's writes are kept at a time. */
+++#define WRITE_GATHER_SMALL 4096
+++#define WRITE_GATHER_SIZE  (64 * 1024)
+++static struct
+++{
+++    HANDLE  handle;     /* 0: nothing kept */
+++    int     fd;         /* a dup of the handle's, sharing its file pointer */
+++    off_t   start;      /* where data goes in the file */
+++    size_t  length;
+++    char    data[WRITE_GATHER_SIZE];
+++} write_gather = { 0, -1 };
+++static int write_gather_kept;
+++static pthread_mutex_t write_gather_mutex = PTHREAD_MUTEX_INITIALIZER;
+++
+++static void write_gather_flush_locked(void)
+++{
+++    size_t done = 0;
+++    ssize_t result;
+++
+++    if (!write_gather.handle) return;
+++    while (done < write_gather.length)
+++    {
+++        result = pwrite( write_gather.fd, write_gather.data + done, write_gather.length - done,
+++                         write_gather.start + done );
+++        if (result > 0) done += result;
+++        else if (result == -1 && errno == EINTR) continue;
+++        else
+++        {
+++            ERR( "gathered writes to %p: %zu of %zu bytes written (errno %d)\n", write_gather.handle, done,
+++                 write_gather.length, result == -1 ? errno : 0 );
+++            break;
+++        }
+++    }
+++    lseek( write_gather.fd, write_gather.start + done, SEEK_SET );   /* the handle's file pointer, past them */
+++    close( write_gather.fd );
+++    write_gather.handle = 0;
+++    write_gather.fd = -1;
+++    write_gather.length = 0;
+++    __atomic_store_n( &write_gather_kept, 0, __ATOMIC_RELEASE );
+++}
+++
+++void write_gather_flush(void)
+++{
+++    if (!__atomic_load_n( &write_gather_kept, __ATOMIC_ACQUIRE )) return;
+++    mutex_lock( &write_gather_mutex );
+++    write_gather_flush_locked();
+++    mutex_unlock( &write_gather_mutex );
+++}
+++
+++/* A write that can be gathered at all: small, synchronous, without an event or APC. */
+++static BOOL write_gather_fits( HANDLE event, PIO_APC_ROUTINE apc, void *apc_user, ULONG length )
+++{
+++    return !event && !apc && !apc_user && length && length <= WRITE_GATHER_SMALL;
+++}
+++
+++/* The write added to the handle's kept writes, when it follows them: TRUE when kept. */
+++static BOOL write_gather_add( HANDLE handle, const void *buffer, ULONG length, const LARGE_INTEGER *offset )
+++{
+++    BOOL kept = FALSE;
+++
+++    if (!__atomic_load_n( &write_gather_kept, __ATOMIC_ACQUIRE )) return FALSE;
+++    mutex_lock( &write_gather_mutex );
+++    if (write_gather.handle == handle && write_gather.length + length <= WRITE_GATHER_SIZE &&
+++        (!offset || offset->QuadPart == FILE_USE_FILE_POINTER_POSITION ||
+++         offset->QuadPart == write_gather.start + (off_t)write_gather.length))
+++    {
+++        memcpy( write_gather.data + write_gather.length, buffer, length );
+++        write_gather.length += length;
+++        kept = TRUE;
+++    }
+++    else write_gather_flush_locked();
+++    mutex_unlock( &write_gather_mutex );
+++    return kept;
+++}
+++
+++/* The handle's first write kept, at off (-1: its file pointer): TRUE when kept. */
+++static BOOL write_gather_start( HANDLE handle, int fd, const void *buffer, ULONG length, off_t off )
+++{
+++    struct stat st;
+++    int copy;
+++
+++    if (fstat( fd, &st ) == -1 || !S_ISREG( st.st_mode )) return FALSE;
+++    if (off < 0 && (off = lseek( fd, 0, SEEK_CUR )) == -1) return FALSE;
+++    if ((copy = dup( fd )) == -1) return FALSE;
+++    mutex_lock( &write_gather_mutex );
+++    write_gather_flush_locked();
+++    write_gather.handle = handle;
+++    write_gather.fd = copy;
+++    write_gather.start = off;
+++    write_gather.length = length;
+++    memcpy( write_gather.data, buffer, length );
+++    __atomic_store_n( &write_gather_kept, 1, __ATOMIC_RELEASE );
+++    mutex_unlock( &write_gather_mutex );
+++    return TRUE;
+++}
+++
++ /* length bytes at pos of fd into buffer through a piece: the bytes copied (0 at the end of the file), or -1 when the
++  * piece cannot serve it (the caller reads as before). */
++ static int read_ahead_read( int fd, void *buffer, ULONG length, off_t pos )
++@@ -6749,6 +6855,14 @@ NTSTATUS WINAPI NtWriteFile( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, v
++     if (!io) return STATUS_ACCESS_VIOLATION;
++ #ifdef __PROSPERO__
++     read_ahead_forget();   /* what this process writes is read again */
+++    if (write_gather_fits( event, apc, apc_user, length ) && virtual_check_buffer_for_read( buffer, length ) &&
+++        write_gather_add( handle, buffer, length, offset ))
+++    {
+++        io->Status = STATUS_SUCCESS;
+++        io->Information = length;
+++        TRACE("= SUCCESS (%u), gathered\n", length);
+++        return STATUS_SUCCESS;
+++    }
++ #endif
++ 
++     status = server_get_unix_fd( handle, FILE_WRITE_DATA, &unix_handle, &needs_close, &type, &options );
++@@ -6807,6 +6921,17 @@ NTSTATUS WINAPI NtWriteFile( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, v
++                 goto done;
++             }
++ 
+++#ifdef __PROSPERO__
+++            if (!async_write && !append_write && offset->QuadPart != FILE_WRITE_TO_END_OF_FILE &&
+++                !(options & (FILE_WRITE_THROUGH | FILE_NO_INTERMEDIATE_BUFFERING)) &&
+++                write_gather_fits( event, apc, apc_user, length ) &&
+++                write_gather_start( handle, unix_handle, buffer, length, off ))
+++            {
+++                total = length;
+++                status = STATUS_SUCCESS;
+++                goto done;
+++            }
+++#endif
++             /* async I/O doesn't make sense on regular files */
++             while ((result = pwrite( unix_handle, buffer, length, off )) == -1)
++             {
++@@ -6842,6 +6967,18 @@ NTSTATUS WINAPI NtWriteFile( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, v
++         return status;
++     }
++ 
+++#ifdef __PROSPERO__
+++    if (type == FD_TYPE_FILE && !async_write && !append_write &&
+++        !(options & (FILE_WRITE_THROUGH | FILE_NO_INTERMEDIATE_BUFFERING)) &&
+++        write_gather_fits( event, apc, apc_user, length ) &&
+++        write_gather_start( handle, unix_handle, buffer, length, -1 ))
+++    {
+++        total = length;
+++        status = STATUS_SUCCESS;
+++        goto done;
+++    }
+++#endif
+++
++     for (;;)
++     {
++         result = write( unix_handle, (const char *)buffer + total, length - total );
++diff --git a/dlls/ntdll/unix/process.c b/dlls/ntdll/unix/process.c
++index 3eee653..c801c52 100644
++--- a/dlls/ntdll/unix/process.c
+++++ b/dlls/ntdll/unix/process.c
++@@ -1052,6 +1052,10 @@ NTSTATUS WINAPI NtTerminateProcess( HANDLE handle, LONG exit_code )
++     unsigned int ret;
++     BOOL self;
++ 
+++#ifdef __PROSPERO__
+++    write_gather_flush();
+++#endif
+++
++     SERVER_START_REQ( terminate_process )
++     {
++         req->handle    = wine_server_obj_handle( handle );
++diff --git a/dlls/ntdll/unix/server.c b/dlls/ntdll/unix/server.c
++index 830564f..3a9ef8e 100644
++--- a/dlls/ntdll/unix/server.c
+++++ b/dlls/ntdll/unix/server.c
++@@ -1583,6 +1583,9 @@ int server_get_unix_fd( HANDLE handle, unsigned int wanted_access, int *unix_fd,
++     int ret, fd = -1;
++     unsigned int access = 0;
++ 
+++#ifdef __PROSPERO__
+++    write_gather_flush();   /* gathered writes reach the file before anything else looks at it */
+++#endif
++     *unix_fd = -1;
++     *needs_close = 0;
++     wanted_access &= FILE_READ_DATA | FILE_WRITE_DATA | FILE_APPEND_DATA;
++@@ -2439,6 +2442,9 @@ NTSTATUS WINAPI NtDuplicateObject( HANDLE source_process, HANDLE source, HANDLE
++     unsigned int ret;
++     int fd = -1;
++ 
+++#ifdef __PROSPERO__
+++    write_gather_flush();
+++#endif
++     /* Duplication can close a source, reuse a number or rewrite access. */
++     server_clear_fast_mutex_hints();
++     if (dest) *dest = 0;
++@@ -2538,6 +2544,9 @@ NTSTATUS WINAPI NtClose( HANDLE handle )
++     unsigned int ret;
++     int fd;
++ 
+++#ifdef __PROSPERO__
+++    write_gather_flush();   /* before the handle, and the number, go */
+++#endif
++     server_clear_fast_mutex_hint( handle );
++     if (HandleToLong( handle ) >= ~5 && HandleToLong( handle ) <= ~0)
++         return STATUS_SUCCESS;
++diff --git a/dlls/ntdll/unix/unix_private.h b/dlls/ntdll/unix/unix_private.h
++index a1fcb5b..4deaecb 100644
++--- a/dlls/ntdll/unix/unix_private.h
+++++ b/dlls/ntdll/unix/unix_private.h
++@@ -267,6 +267,9 @@ extern unsigned int server_queue_process_apc( HANDLE process, const union apc_ca
++                                               union apc_result *result );
++ extern int server_get_unix_fd( HANDLE handle, unsigned int wanted_access, int *unix_fd,
++                                int *needs_close, enum server_fd_type *type, unsigned int *options );
+++#ifdef __PROSPERO__
+++extern void write_gather_flush(void);
+++#endif
++ extern int wine_server_receive_fd( obj_handle_t *handle );
++ extern void process_exit_wrapper( int status ) DECLSPEC_NORETURN;
++ extern size_t server_init_process(void);
+-- 
+2.43.0
+
