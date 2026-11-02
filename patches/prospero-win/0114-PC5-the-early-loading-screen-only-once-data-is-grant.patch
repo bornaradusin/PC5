@@ -1,0 +1,128 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 18:55:00 +0000
+Subject: [PATCH 114/114] PC5: the early loading screen only once /data is granted, and
+ nothing of it kept
+
+Shown before the grant (patch 0111), the display was open when the helper asked
+for /data, which then failed (helper_errno=13, elevated_after=0): the process
+stayed without its rights, Wine stopped at server_init_process and every game
+went back to PC5 at once, and the logs it wrote were 0600. The loading screen
+is now shown right after the grant, where the display was opened before 0111,
+and the fonts, picture and texts it is drawn with are freed again at once
+(pc5_game_early_loading); the game's own loading screen comes in PC5's
+language without fading in (pc5_game_shown_before).
+---
+ native/wine64_main.c | 58 +++++++++++++++++++++++---------------------
+ 1 file changed, 30 insertions(+), 28 deletions(-)
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 73dc9d1..cc744bb 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -1263,38 +1263,41 @@ static void pc5_launcher(void)
+     pc5_console_run(&console);
+ }
+ 
+-/* The loading screen the game's process showed as it started (pc5_early_loading), and when. */
+-static Pc5Matrix *pc5_early_matrix;
+-static uint64_t pc5_early_ms;
+-
+-/* A game PC5 started (its lang= word): PC5's loading screen at once, before /data is granted and
+- * the game is made ready, which took 2 seconds and more. PC5 showed the same screen as it handed
+- * the game over, and the screen between them was black until the game's process drew its own
+- * (which then faded in, in English). The display stays open for the game: video_status is
+- * PW_OK when it is. */
++/* The language PC5 passed (lang=) when the game's process showed PC5's loading screen as it
++ * started (pc5_early_loading), or "". */
++static char pc5_early_language[16];
++
++static void pc5_early_show(const uint32_t *pixels, void *context)
++{
++    PwVideoOutPs5 *video = context;
++    const PwPresentFrame frame = { (const uint8_t *)pixels, PC5_MATRIX_WIDTH, PC5_MATRIX_HEIGHT,
++                                   PC5_MATRIX_WIDTH * 4, PW_PRESENT_BGRX8 };
++    int shown = pw_videoout_ps5_present_scaled(video, &frame, PW_PRESENT_SCALE_FIT, 0);
++    PS5LOG_LOG("PC5 early loading screen shown=%s", pw_result_name(shown));
++}
++
++/* A game PC5 started (its lang= word): PC5's loading screen as soon as /data is granted, before
++ * the game is made ready (its prefix's files, its DXVK: seconds at times). PC5 showed the same
++ * screen as it handed the game over, and the screen between them was black until the game's
++ * process drew its own once Wine ran (which then faded in, in English). The display is opened
++ * only after the grant, as before: opened earlier, it made the grant fail. Only the display stays open, for the game (video_status is
++ * PW_OK when it is): the frame's fonts, picture and texts are freed again before Wine starts, as
++ * the game's own loading screen took them only once Wine ran. */
+ static void pc5_early_loading(int argc, char **argv, PwVideoOutPs5 *video, int *video_status)
+ {
+     const char *code = NULL, *app;
+-    const uint32_t *pixels;
+ 
+     for (int i = 1; i < argc; i++)
+         if (argv[i] && !strncmp(argv[i], "lang=", 5)) code = argv[i] + 5;
+     if (!code || !(app = pc5_app_root())) return;
+-    if (!(pc5_early_matrix = pc5_game_early_loading(app, code))) {
+-        PS5LOG_LOG("PC5 early loading screen: not made (app=%s lang=%s)", app, code);
+-        return;
+-    }
+-    pc5_early_ms = now_ns() / 1000000u;
+     if ((*video_status = pw_videoout_ps5_open(video)) != PW_OK) {
+         PS5LOG_LOG("PC5 early loading screen: no display (%s)", pw_result_name(*video_status));
+         return;
+     }
+-    if ((pixels = pc5_matrix_step(pc5_early_matrix))) {
+-        const PwPresentFrame frame = { (const uint8_t *)pixels, PC5_MATRIX_WIDTH, PC5_MATRIX_HEIGHT,
+-                                       PC5_MATRIX_WIDTH * 4, PW_PRESENT_BGRX8 };
+-        int shown = pw_videoout_ps5_present_scaled(video, &frame, PW_PRESENT_SCALE_FIT, 0);
+-        PS5LOG_LOG("PC5 early loading screen lang=%s shown=%s", code, pw_result_name(shown));
+-    }
++    if (pc5_game_early_loading(app, code, pc5_early_show, video) == 0)
++        snprintf(pc5_early_language, sizeof(pc5_early_language), "%s", code);
++    else
++        PS5LOG_LOG("PC5 early loading screen: not drawn (app=%s lang=%s)", app, code);
+ }
+ 
+ /* In a game: PC5's settings, the game's colour, the loading screen. */
+@@ -1306,8 +1309,7 @@ static void pc5_game_start(const PwGameProfile *game, const char *executable)
+     pc5_game_ps5_ops(&ops, pc5_log);
+     pc5_game_begin(&pc5_game, &ops, library_root, app ? app : "", game ? game->app.prefix : "",
+                    game && game->app.name[0] ? game->app.name : executable);
+-    pc5_game_take_loading(&pc5_game, pc5_early_matrix, pc5_early_ms);   /* the same screen carries on */
+-    pc5_early_matrix = NULL;
++    if (pc5_early_language[0]) pc5_game_shown_before(&pc5_game, pc5_early_language);   /* the same screen carries on */
+     pc5_game_on = 1;
+ }
+ 
+@@ -1606,15 +1608,17 @@ int main(int argc, char **argv)
+                            &log_config, NULL) == 0)
+         ps5log_init(&log_config, title_id, PW_APP_NAME, now_ns());
+     PS5LOG_LOG("PW_WINE64 title id=%s from=%s built=%s", title_id, title_id_from, PW_TITLE_ID);
+-#ifdef PW_PC5
+-    pc5_early_loading(argc, argv, &video, &video_status);   /* while /app0 is still visible */
+-#endif
+     pw_hid_ps5_preload(hid_log);   /* before the /data grant changes the title's credentials */
+     if (open_library() != 0) {
+         PS5LOG_LOG("PW_WINE64 startup blocked reason=data-helper-incomplete");
+         ps5log_close("data-helper-incomplete");
+         return 1;
+     }
++#ifdef PW_PC5
++    /* Once /data is granted: opened before it, the display made the grant fail (errno 13), and
++     * the game's Wine couldn't start (2.2.2's first build). */
++    pc5_early_loading(argc, argv, &video, &video_status);
++#endif
+     (void)pw_wine_launch_parse(argc, argv, catalog, catalog_count, &launch);
+ #ifdef PW_PC5
+     pc5_tile_runtime();   /* a tile's Wine and PC5's files: PC5's folder */
+@@ -1631,8 +1635,6 @@ int main(int argc, char **argv)
+         /* A game PC5 asked for that isn't there any more: the launcher opens its own display. */
+         if (video_status == PW_OK) (void)pw_videoout_ps5_close(&video);
+         video_status = PW_ERR_STATE;
+-        pc5_matrix_destroy(pc5_early_matrix);
+-        pc5_early_matrix = NULL;
+         pc5_launcher();
+ #endif
+         run_launcher();
+-- 
+2.43.0
+
