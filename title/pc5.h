@@ -11,6 +11,7 @@
 #include <stdint.h>
 
 #define PC5_VERSION "2.1.5"
+#define PC5_CUSTOM_BUILD "Media + Compatibility 1 rev5"
 #ifndef PC5_TITLE_ID
 #define PC5_TITLE_ID "PPSA11018"
 #endif

@@ -39,6 +39,23 @@ void pc5_web_status(Pc5WebStatus *status);
 /* The username and password a browser must give ("" or NULL: none asked), from the next request on. */
 void pc5_web_login(const char *user, const char *password);
 
+enum { PC5_PHONE_COVER, PC5_PHONE_BACKGROUND, PC5_PHONE_ICON, PC5_PHONE_MUSIC, PC5_PHONE_VIDEO };
+typedef struct Pc5PhoneStatus {
+    int active, busy, ready;
+    uint64_t received, total;
+} Pc5PhoneStatus;
+void pc5_web_random_init(int (*random_bytes)(void *, size_t));
+void pc5_web_phone_only(int enabled);
+int pc5_web_phone_begin(int kind, const char *game, char *url, size_t size);
+void pc5_web_phone_status(Pc5PhoneStatus *status);
+/* Claims the received staging file; caller removes it after importing. */
+int pc5_web_phone_take(char *path, size_t size);
+void pc5_web_phone_end(void);
+/* Temporary library-wide appearance capability; no game launch, files or logs. */
+int pc5_web_appearance_begin(char *url, size_t size);
+int pc5_web_appearance_target(char *id, size_t size, int *kind);
+void pc5_web_appearance_finish(int success);
+
 /* For the tests: a path sent to the INSTALL folder ("Neon Drift/data/a.pak"), checked: 0 when
  * every part is a plain name (no "", ".", "..", backslash or control character), -1 otherwise. */
 int pc5_web_upload_path_ok(const char *path);

@@ -39,6 +39,12 @@ typedef struct Pc5Platform {
     int (*keyboard_open)(void *context, const char *title, const char *text);
     int (*keyboard_state)(void *context);
     int (*keyboard_close)(void *context, char *out, size_t size);
+    /* Loop a library music file through the main audio output; "" stops it.
+     * Called only when the desired path changes. NULL on hosts without audio. */
+    void (*music)(void *context, const char *path);
+    /* Optional extended provider, preferred for both start and stop when set.
+     * It may be supplied without music. An empty path stops its player. */
+    void (*music_options)(void *context, const char *path, int volume, int start_seconds);
 } Pc5Platform;
 
 enum {
