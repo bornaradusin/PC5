@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 18:00:00 +0000
+Subject: [PATCH] wsi/videoout: PC5's 120 Hz setting declares the
+ high-frame-rate output
+
+With 120 Hz output on, the display stayed at 59.94 Hz in every game
+(Batman: Arkham Origins on a TV that takes 120 Hz: PW_WINE64 found the
+output supported, Wine offered the game 3840x2160@120, and RADV logged
+nothing about 119.88 Hz). RADV asks for 119.88 Hz only where
+/app0/sce_sys/param.json declares it, and a game's process can't open
+that file: once /data is granted, the process sees the console's real
+root, where /app0 doesn't exist (prospero-win's wine64_main uses the
+sandbox's view of app0 for the same reason). The check failed silently.
+
+PW_PC5_HIGH_REFRESH=1, PC5's setting turned on, now declares it: PC5's
+own param.json does. Without the variable param.json still decides, and
+the log now says when 120 Hz output wasn't asked for.
+---
+ src/vulkan/wsi/wsi_common_videoout.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/src/vulkan/wsi/wsi_common_videoout.c b/src/vulkan/wsi/wsi_common_videoout.c
+index a56559d..42f9b80 100644
+--- a/src/vulkan/wsi/wsi_common_videoout.c
++++ b/src/vulkan/wsi/wsi_common_videoout.c
+@@ -369,6 +369,11 @@ videoout_title_declares_high_frame_rate(void)
+    const char *const wanted = getenv("PW_PC5_HIGH_REFRESH");
+    if (wanted && !strcmp(wanted, "0"))
+       return false;
++   /* PW_PC5_HIGH_REFRESH=1: PC5's setting is on, and PC5's param.json declares
++    * the output. A game's process can't read it: once /data is granted, the
++    * process sees the console's real root, where /app0 doesn't exist. */
++   if (wanted && !strcmp(wanted, "1"))
++      return true;
+    FILE *const file = fopen("/app0/sce_sys/param.json", "rb");
+    if (file == NULL)
+       return false;
+@@ -446,6 +451,8 @@ videoout_open_locked(void)
+          fprintf(stderr, "wsi/videoout: 119.88 Hz %s (%d); presenting at 59.94 Hz\n",
+                  supported > 0 ? "refused" : "not supported", configured);
+       }
++   } else {
++      fprintf(stderr, "wsi/videoout: 120 Hz output not asked for; presenting at 59.94 Hz\n");
+    }
+    return true;
+ }
+-- 
+2.56.0
+
