@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 00:45:00 +0000
+Subject: [PATCH] radv/ps5: A long run of timestamps is split too
+
+Marvel's Spider-Man Remastered stayed on a black screen after its launch
+window: its first frames lost the device ("a submission holds more words
+between two splits than one AGC submission can"). It makes a D3D12
+timestamp query heap of 1,048,576 queries, and VKD3D-Proton writes a
+timestamp into each one to initialize it, in one command buffer with no
+draw or dispatch in it: 8,388,616 words of RELEASE_MEM, eight times what
+one AGC submission holds, with nowhere to split.
+
+A timestamp write now splits the stream when a split is due, as a draw
+and a dispatch do. It depends on none of the state a split resets, and
+the deferrals (active queries, streamout, conditional rendering, an
+inherited render pass) still hold. The heap's initialization then goes
+as 17 AGC submissions of half a million words.
+---
+ src/amd/vulkan/radv_cmd_buffer.c | 13 +++++++------
+ src/amd/vulkan/radv_cmd_buffer.h |  2 ++
+ src/amd/vulkan/radv_query.c      |  5 +++++
+ 3 files changed, 14 insertions(+), 6 deletions(-)
+
+diff --git a/src/amd/vulkan/radv_cmd_buffer.c b/src/amd/vulkan/radv_cmd_buffer.c
+index 9bda3a8..e319cc6 100644
+--- a/src/amd/vulkan/radv_cmd_buffer.c
++++ b/src/amd/vulkan/radv_cmd_buffer.c
+@@ -13924,12 +13924,13 @@ radv_bind_graphics_shaders(struct radv_cmd_buffer *cmd_buffer)
+ 
+ /* A winsys whose submissions each start from reset GPU state and hold a
+  * limited number of words (the PlayStation 5's) asks for a long stream to be
+- * split. The split falls before a draw or dispatch, and from there the command
+- * buffer re-emits its state as if it had just begun, everything it has bound
+- * kept: the submission after the split starts with the same preamble. State
+- * that re-emission does not restore (streamout, conditional rendering, active
+- * queries, an inherited render pass) defers the split until it ends. */
+-static void
++ * split. The split falls before a draw, a dispatch or a timestamp, and from
++ * there the command buffer re-emits its state as if it had just begun,
++ * everything it has bound kept: the submission after the split starts with
++ * the same preamble. State that re-emission does not restore (streamout,
++ * conditional rendering, active queries, an inherited render pass) defers the
++ * split until it ends. */
++void
+ radv_split_cmd_stream_if_due(struct radv_cmd_buffer *cmd_buffer)
+ {
+    struct radv_device *device = radv_cmd_buffer_device(cmd_buffer);
+diff --git a/src/amd/vulkan/radv_cmd_buffer.h b/src/amd/vulkan/radv_cmd_buffer.h
+index 4521114..b0a4b18 100644
+--- a/src/amd/vulkan/radv_cmd_buffer.h
++++ b/src/amd/vulkan/radv_cmd_buffer.h
+@@ -850,6 +850,8 @@ uint32_t radv_init_dcc(struct radv_cmd_buffer *cmd_buffer, struct radv_image *im
+ 
+ void radv_emit_cache_flush(struct radv_cmd_buffer *cmd_buffer);
+ 
++void radv_split_cmd_stream_if_due(struct radv_cmd_buffer *cmd_buffer);
++
+ void radv_emit_set_predication_state(struct radv_cmd_buffer *cmd_buffer, bool draw_visible, unsigned pred_op,
+                                      uint64_t va);
+ 
+diff --git a/src/amd/vulkan/radv_query.c b/src/amd/vulkan/radv_query.c
+index b75ab82..bc8812d 100644
+--- a/src/amd/vulkan/radv_query.c
++++ b/src/amd/vulkan/radv_query.c
+@@ -2935,6 +2935,11 @@ radv_CmdWriteTimestamp2(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 sta
+       return;
+    }
+ 
++   /* A long run of timestamps with no draw or dispatch in it can be split too:
++    * VKD3D-Proton writes one into every query of a new D3D12 timestamp heap,
++    * and Marvel's Spider-Man Remastered's has 1,048,576 (8 million words). */
++   radv_split_cmd_stream_if_due(cmd_buffer);
++
+    if (instance->drirc.debug.flush_before_timestamp_write) {
+       /* Make sure previously launched waves have finished */
+       cmd_buffer->state.flush_bits |= RADV_CMD_FLAG_PS_PARTIAL_FLUSH | RADV_CMD_FLAG_CS_PARTIAL_FLUSH;
+-- 
+2.56.0
+

@@ -686,6 +686,13 @@ static void test_pe(void)
                   pc5_pe_unreal_d3d12("C:\\Games\\Miles\\MilesMorales.EXE", PC5_IMPORT_DXGI) &&
                   !pc5_pe_unreal_d3d12("Spider-Man.exe", PC5_IMPORT_D3D9) && !pc5_pe_unreal_d3d12("Other/Spider.exe", PC5_IMPORT_D3D11),
               "Nixxes' Direct3D 12 ports by their program's name, outside Unreal too");
+        /* Marvel's Spider-Man Remastered installed before 2.1.4: at Play, its program's own
+         * imports name only Vulkan (vulkan-1.dll), and Auto gave it Wine's d3d12 beside DXVK's
+         * dxgi ("D3D12 not supported"). */
+        CHECK(pc5_pe_unreal_d3d12("Marvels SpiderMan Remastered/Spider-Man.exe", PC5_IMPORT_VULKAN) &&
+                  pc5_pe_unreal_d3d12("C:\\Games\\Miles\\MilesMorales.exe", 0) &&
+                  !pc5_pe_unreal_d3d12("Other/Game.exe", PC5_IMPORT_VULKAN) && !pc5_pe_unreal_d3d12(ue, PC5_IMPORT_VULKAN),
+              "Spider-Man by its name whatever its own imports name, no other program without Direct3D");
         /* Another folder of Binaries (Gears Tactics' Steam), but not a 32-bit one's, Binaries
          * itself or a folder only ending in it. */
         char store[PC5_PATH];
