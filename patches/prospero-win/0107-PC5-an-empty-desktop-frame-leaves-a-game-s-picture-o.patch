@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 12:50:00 +0000
+Subject: [PATCH 107/107] PC5: an empty desktop frame leaves a game's picture on screen
+
+The display counts as idle 150 ms after a swapchain's last flip, and the
+title then shows the desktop's newest frame. A game that draws through
+its swapchain only when something changes (Warcraft III's loading screen,
+Age of Empires II HD's menus) left it idle, and each frame the desktop
+made as the pointer moved, black where the game's window is, took the
+game's picture's place: the screen flickered black. Once a swapchain has
+shown the game, an empty desktop frame is kept back (vk_kept in the alive
+line); one with something on it, a message box or a launcher, still shows.
+---
+ native/wine64_main.c | 19 +++++++++++++++++--
+ 1 file changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index d92880c..d17860a 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -504,10 +504,12 @@ static int wine_audio(void *context, const int16_t *frames)
+  */
+ typedef struct VulkanFrames {
+     int resolved;
++    int swapchain_seen;        /* a swapchain of the game's has presented (the display was busy) */
+     int (*idle)(void);
+     int (*show_tiled)(const void *, uint64_t, uint32_t, uint32_t);
+     uint32_t *tiled;
+     uint64_t shown, busy, failed;
++    uint64_t kept;             /* empty desktop frames that left a swapchain's picture on screen */
+ } VulkanFrames;
+ 
+ static void vulkan_frames_resolve(VulkanFrames *vf, const PwPrxDescriptor *ntdll)
+@@ -655,6 +657,7 @@ static int vulkan_frames_show(VulkanFrames *vf, uint64_t *sequence, int scaling,
+ 
+     if (!vf->tiled) return 0;
+     if (!vf->idle()) {
++        vf->swapchain_seen = 1;
+         if (!loading->presenting_since) loading->presenting_since = now;
+         else if (now - loading->presenting_since >= PW_WINE64_PRESENTING_MS * 1000000ull)
+             loading_done(loading, "vulkan");
+@@ -663,6 +666,17 @@ static int vulkan_frames_show(VulkanFrames *vf, uint64_t *sequence, int scaling,
+     loading->presenting_since = 0;
+     if (pw_wine_frame_box_take(&frames, sequence, frame_shown, PW_WINE64_MAX_FRAME, &view) == 1 &&
+         loading_admits(loading, &view)) {
++        /* The display counts as idle 150 ms after a swapchain's last flip, and a game that
++         * draws through its swapchain only when something changes (a loading screen's bar,
++         * a still menu: Warcraft III, Age of Empires II HD) leaves it so; the desktop's frame
++         * a moved pointer then makes is black where the game's window is, and it took the
++         * game's picture's place: the screen flickered black. Once a swapchain has shown the
++         * game, an empty desktop frame leaves its picture; one with something on it (a
++         * message box, a launcher) still shows. */
++        if (vf->swapchain_seen && pw_spinner_frame_blank(view.pixels, view.width, view.height, view.stride)) {
++            vf->kept++;
++            return 0;
++        }
+         const PwPresentFrame frame = { view.pixels, view.width, view.height, view.stride,
+                                        PW_PRESENT_BGRX8 };
+         return vulkan_frames_flip(vf, &frame, scaling);
+@@ -2163,13 +2177,14 @@ int main(int argc, char **argv)
+             uint64_t v[16] = { 0 };
+ 
+             PS5LOG_LOG("PW_WINE64 alive tick=%llu sink_calls=%lu frames_put=%llu shown=%llu "
+-                       "rejected=%llu last=%ux%u inputs=%llu refused=%llu vk_shown=%llu vk_busy=%llu "
++                       "rejected=%llu last=%ux%u inputs=%llu refused=%llu vk_shown=%llu vk_busy=%llu vk_kept=%llu "
+                        "cpu_ms=%llu audio=%lu audible=%lu peak=%d",
+                        (unsigned long long)tick, sink_calls, (unsigned long long)frames.sequence,
+                        (unsigned long long)shown, (unsigned long long)frames.rejected,
+                        frames.width, frames.height, (unsigned long long)posted,
+                        (unsigned long long)refused, (unsigned long long)vulkan_frames.shown,
+-                       (unsigned long long)vulkan_frames.busy, cpu_ms(), audio_grains, audio_audible, audio_peak);
++                       (unsigned long long)vulkan_frames.busy, (unsigned long long)vulkan_frames.kept, cpu_ms(),
++                       audio_grains, audio_audible, audio_peak);
+             audio_peak = 0;
+             if (start.virtual_stats && tick % 300 == 0) {
+                 static uint64_t faults_logged;
+-- 
+2.43.0
+

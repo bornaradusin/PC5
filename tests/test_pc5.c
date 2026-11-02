@@ -5965,7 +5965,7 @@ static void test_game(const char *fonts_path)
     /* The loading screen: a frame every 33 ms, the picture, "LAUNCHING GAME" and the bar filling; no name. */
     const uint32_t *frame = NULL;
     for (uint64_t t = 0; t < 2000; t += 33) {
-        const uint32_t *next = pc5_game_loading(&game, 20000 + t);
+        const uint32_t *next = pc5_game_loading(&game, 20000 + t, NULL);
         if (next) frame = next;
     }
     CHECK(frame != NULL && !game.matrix_failed, "loading frames");
@@ -5987,8 +5987,58 @@ static void test_game(const char *fonts_path)
         CHECK((bar & 0xff) > 180 && (track & 0xff) < 140, "the bar filled at its start (%06x), not at its end (%06x)",
               (unsigned)(bar & 0xffffff), (unsigned)(track & 0xffffff));
     }
-    pc5_game_loading_done(&game);
-    CHECK(pc5_game_loading(&game, 40000) == NULL, "none after the first picture");
+    pc5_game_loading_done(&game, 22000);
+    CHECK(pc5_game_loading(&game, 40000, NULL) == NULL, "none after the first picture");
+    /* The bar as Wine tells the start: PC5's part in steps, then the game's own loading. */
+    {
+        Pc5Start st = { 0, 0, 0 };
+        Pc5StartHistory none = { 0, 0 }, last = { 40, 8000 };
+        int phase;
+        float fill, before;
+        pc5_start_fill(&st, &none, 0, 0, &phase, &fill);
+        CHECK(phase == 0 && fill >= 0.09f && fill <= 0.11f, "made ready: 10 %% (%.2f)", fill);
+        pc5_start_fill(&st, &none, 60000, 0, &phase, &fill);
+        CHECK(phase == 0 && fill < 0.25f, "Windows starting stays in its step however long: %.2f", fill);
+        st = (Pc5Start){ 5, 5, 0 };
+        pc5_start_fill(&st, &last, 3000, 0, &phase, &fill);
+        CHECK(phase == 0 && fill > 0.24f && fill < 0.26f, "the program mapped: 25 %% (%.2f)", fill);
+        st.images = 25;
+        pc5_start_fill(&st, &last, 3000, 0, &phase, &fill);
+        CHECK(fill > 0.59f && fill < 0.61f, "half its DLLs, as many as last time: 60 %% (%.2f)", fill);
+        before = fill;
+        st.images = 400;
+        pc5_start_fill(&st, &last, 3000, 0, &phase, &fill);
+        CHECK(fill > before && fill <= 0.951f, "more DLLs than last time: at most 95 %% (%.2f)", fill);
+        st.windows = 1;
+        pc5_start_fill(&st, &last, 4000, 2000, &phase, &fill);
+        CHECK(phase == 1 && fill > 0.24f && fill < 0.26f, "its window: the game's part, 2 s of 8 (%.2f)", fill);
+        pc5_start_fill(&st, &last, 4000, 60000, &phase, &fill);
+        CHECK(fill <= 0.971f, "longer than last time: the first picture ends it (%.2f)", fill);
+        pc5_start_fill(&st, &none, 4000, 2000, &phase, &fill);
+        CHECK(phase == 1 && fill < 0.0f, "never started before: not known, a moving light");
+    }
+    /* What a start took is kept for the next one: its DLLs to its window, and the game's own part. */
+    {
+        Pc5GameSession timed;
+        char start_file[PC5_PATH];
+        const uint32_t *shown = NULL;
+        memset(&timed, 0, sizeof(timed));
+        timed.ops = game.ops;
+        path(start_file, sizeof(start_file), "%s/start.txt", work);
+        unlink(start_file);
+        pc5_copy(timed.start_file, sizeof(timed.start_file), start_file);
+        Pc5Start st = { 0, 0, 0 };
+        for (uint64_t t = 0; t < 1200; t += 33) shown = pc5_game_loading(&timed, 50000 + t, &st);
+        st = (Pc5Start){ 12, 3, 0 };
+        for (uint64_t t = 1200; t < 2400; t += 33) shown = pc5_game_loading(&timed, 50000 + t, &st);
+        st = (Pc5Start){ 50, 3, 1 };
+        for (uint64_t t = 2400; t < 3000; t += 33) shown = pc5_game_loading(&timed, 50000 + t, &st);
+        st.images = 70;   /* more after the window: the game's, not counted */
+        for (uint64_t t = 3000; t < 5400; t += 33) shown = pc5_game_loading(&timed, 50000 + t, &st);
+        CHECK(shown != NULL, "frames with a start Wine tells");
+        pc5_game_loading_done(&timed, 55400);
+        CHECK(file_is(start_file, "dlls=47\ngame_ms=3000\n"), "kept: 47 DLLs, the game's part 3 s");
+    }
     pc5_game_end(&game, 7);
     CHECK(pad_seen.resets == 1 && pad_seen.l2.mode == PC5_TRIGGER_OFF, "the controller as the console had it");
 

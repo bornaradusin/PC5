@@ -17,6 +17,15 @@ typedef struct Pc5Matrix Pc5Matrix;
  * any more. NULL when out of memory. */
 Pc5Matrix *pc5_matrix_create(Pc5Fonts *fonts, const char *title, uint32_t seed);
 void pc5_matrix_destroy(Pc5Matrix *matrix);
+/* The same with fonts the caller keeps (PC5's own, while it hands the game over), shown at once
+ * without fading in. NULL when out of memory. */
+Pc5Matrix *pc5_matrix_borrow(const Pc5Fonts *fonts);
+/* Where the start is, for the bar. Phase 0, "LAUNCHING GAME": PC5's part (the game made ready,
+ * its Windows starting, its program and DLLs loaded), fill from 0 to 1. Phase 1, "LOADING": the
+ * game's own loading once its program runs, fill from how long it took last time, or below 0
+ * when that isn't known (a light moving along the bar, which doesn't fill). Without a call the
+ * bar fills on time alone, as before 2.1.10. */
+void pc5_matrix_progress(Pc5Matrix *matrix, int phase, float fill);
 /* Draws the next step; the frame stays valid until the next call. */
 const uint32_t *pc5_matrix_step(Pc5Matrix *matrix);
 

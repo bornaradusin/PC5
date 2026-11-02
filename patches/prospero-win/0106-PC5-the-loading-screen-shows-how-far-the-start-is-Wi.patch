@@ -1,0 +1,213 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 12:40:00 +0000
+Subject: [PATCH 106/106] PC5: the loading screen shows how far the start is (Wine
+ patch 0908)
+
+Its bar filled on a timer, whatever the game was doing. Wine now counts
+the images it mapped when the game's program was and the windows the
+display driver showed; the loading screen fills through Windows starting,
+the program and its DLLs loading and its window, then the game's own
+loading over the time it took last time. PC5 shows the same picture as it
+hands the game over, so the screen comes back at once, without a wait.
+---
+ PUBLICATION_ALLOWLIST.txt                     |  1 +
+ docs/WINE_PS5_BUILD.md                        |  1 +
+ native/wine64_main.c                          | 31 +++++-
+ ...me-s-start-is-for-the-loading-screen.patch | 98 +++++++++++++++++++
+ 4 files changed, 128 insertions(+), 3 deletions(-)
+ create mode 100644 wine/patches/0908-ntdll-win32u-how-far-a-game-s-start-is-for-the-loading-screen.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index b566758..ef09ca9 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -513,6 +513,7 @@ wine/patches/0902-win32u-ps5-send-extended-keys-as-extended.patch
+ wine/patches/0903-ntdll-ps5-keep-the-fs-base-of-a-resumed-64-bit-thread.patch
+ wine/patches/0906-xlive-games-for-windows-live-offline-so-the-games-made-for-it-start.patch
+ wine/patches/0907-d3d9-a-2d-texture-keeps-its-width-height-and-level-0-data-where-microsofts-does.patch
++wine/patches/0908-ntdll-win32u-how-far-a-game-s-start-is-for-the-loading-screen.patch
+ wine/ps5/input/pw_key_shared.h
+ wine/ps5/input/pw_dualsense.h
+ tests/lab/pw_qpc_bridge.c
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index f73a1da..592df69 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -134,6 +134,7 @@ before evaluating a candidate built from that cache.
+ | 0903 | `ntdll`: a signal frame keeps the FS base it was taken with when the thread resumes where it was; the host's is set only where the handler sends a context to Wine's 64-bit code (the exception dispatcher, a different 64-bit context). The native WoW64 CPU sets the guest FS just before it switches to 32-bit code, and a signal in that window used to send the thread into its 32-bit code with the host FS (GTA San Andreas' DXVK workers crashing at startup in `RtlEnterCriticalSection`) |
+ | 0906 | `xlive`: Games for Windows - LIVE as a builtin, offline, with all 252 of xlive 3.5's ordinals (the numbers and names GFWL replacements publish; new code), so a game made for it starts instead of stopping at the loader ("Library xlive.dll ... not found", c0000135: Resident Evil 5's retail `RE5DX10.EXE`; GTA IV before the Complete Edition, Fallout 3, Batman: Arkham Asylum, Dark Souls: Prepare to Die Edition). User 0 is signed in locally as "Player" with a fixed offline XUID, so a game lets the profile save; its hooks succeed and leave the game its input; protected buffers are memory and protected data passes through unchanged; profile settings a game writes are kept under `HKCU\Software\Wine\xlive\<program>`; achievements are dropped, enumerations are empty and what needs Live fails with `ERROR_NOT_LOGGED_ON`; asynchronous calls complete at once. XSocket and XWSA are Winsock's (a VDP socket is UDP). A game's own `xlive.dll` (xliveless, XLiveLessNess) still loads first: the module prefers native |
+ | 0907 | `d3d9`: a 2D texture keeps its level 0 width at 0x20, its height at 0x24 and, while level 0 is locked from its top left corner, its data's address at 0x90 on i386, where Microsoft's d3d9 has them (`C_ASSERT`s check them). Resident Evil 3's "Seamless HD" mod (`bio3hd.asi`, with Classic REbirth) reads them straight from the object, got a list pointer and memory past it, skipped every HD picture and showed the menu small in a corner (WineHQ bugs 53775 and 57395). DXVK's d3d9 (PC5's Auto) keeps its own layout: the mod needs Wine's |
++| 0908 | `ntdll`, `win32u`: `__wine_virtual_stats` also gives how many images had been mapped when the first program (not a DLL) was, the game's, and how many top-level windows of a window's size the PS5 display driver has shown (`__wine_ps5_note_window`). PC5's loading screen fills its bar through Windows starting, the game's program and DLLs loading and its window showing, where it filled on a timer |
+ | 0928 | `ntdll`: a page fault in 32-bit code on the native WoW64 CPU whose `%fs:` operand missed the 32-bit TEB gets the TEB's base back in the signal frame and runs again. sysarch(AMD64_SET_FSBASE) sets the base the CPU uses but not the GDT descriptor of the kernel's user FS selector, which the kernel writes from the thread's saved base when it switches the thread in, often while it is on its 64-bit side with the host's FS; a program that loads FS again got the low half of the host thread pointer (Fallout 1 and 2 in `GetStdHandle`, reading `%fs:0x18` at FF81C098). Only an access violation `virtual_handle_fault` left alone, not an execute fault, and not one on the stack; the first repair, and every hundredfold after, is logged; 64 repairs in one state, each within a millisecond of the last, give the fault to the program |
+ | 0929 | `ntdll`, `krnl386`: `NtSetLdtEntries` returns `STATUS_NOT_IMPLEMENTED`, as for a 64-bit process: the console refuses I386_SET_LDT (EINVAL), and `ldt_set_entry` ended the process on that. krnl386.exe16 doesn't load without LDT entries, so a lookup of a forwarded 16-bit export (`kernel32.UTRegister`, Brian Lara International Cricket 2007) fails instead of ending the game |
+ | 0930 | `win32u`: where a frame shows less than the screen (one window, or a display mode smaller than the desktop), the PS5 pointer still stops at the shown edge, but each motion goes to the server whole as raw input (`SEND_HWMSG_RAWINPUT` with a `struct raw_mouse`), as a mouse held against the screen's edge keeps reporting its motion on Windows. A game that moves a pointer of its own by `WM_INPUT` (DirectInput) stopped short of its far side once the system's pointer reached the edge first (Sacred Underworld at 1024x768) |
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 86c43a8..d92880c 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -549,13 +549,33 @@ typedef struct Loading {
+     uint64_t presenting_since;  /* the Vulkan driver busy without a pause, or 0 */
+ } Loading;
+ 
++#ifdef PW_PC5
++/* Wine's counters (__wine_virtual_stats), for how far the game's start is: set once Wine runs. */
++static unsigned int (*start_stats)(uint64_t *out, unsigned int count);
++
++/* How far the start is, as Wine counts it (Wine patch 0908): images mapped, the count when the
++ * game's program was, top-level windows shown; zeros before Wine runs or from a Wine without them. */
++static Pc5Start start_progress(void)
++{
++    uint64_t v[16] = { 0 };
++    Pc5Start start = { 0, 0, 0 };
++    if (start_stats && start_stats(v, 16) >= 11)
++        start = (Pc5Start){ (unsigned)v[6], (unsigned)v[9], (unsigned)v[10] };
++    return start;
++}
++#endif
++
+ /* The game has shown something: no more spinner. */
+ static void loading_done(Loading *loading, const char *by)
+ {
+     if (loading->content) return;
+     loading->content = 1;
+ #ifdef PW_PC5
+-    if (pc5_game_on) pc5_game_loading_done(&pc5_game);
++    if (pc5_game_on) {
++        Pc5Start start = start_progress();
++        (void)pc5_game_loading(&pc5_game, now_ns() / 1000000u, &start);   /* the last counts, for what it took */
++        pc5_game_loading_done(&pc5_game, now_ns() / 1000000u);
++    }
+ #endif
+     PS5LOG_LOG("PW_WINE64 loading done by=%s spinner_steps=%u", by, loading->step);
+ }
+@@ -567,8 +587,10 @@ static const PwPresentFrame *loading_frame(Loading *loading, uint64_t now, uint6
+ #ifdef PW_PC5
+     /* PC5's loading screen in place of the spinner, unless it can't be drawn. */
+     if (pc5_game_on && !pc5_game.matrix_failed) {
+-        if (loading->content || now - started < PW_WINE64_SPINNER_DELAY_MS * 1000000ull) return NULL;
+-        const uint32_t *pixels = pc5_game_loading(&pc5_game, now / 1000000u);
++        /* PC5 showed this picture as it handed the game over: back at once, not after a wait. */
++        if (loading->content) return NULL;
++        Pc5Start start = start_progress();
++        const uint32_t *pixels = pc5_game_loading(&pc5_game, now / 1000000u, &start);
+         if (pixels) {
+             loading->step++;
+             *frame = (PwPresentFrame){ (const uint8_t *)pixels, PC5_MATRIX_WIDTH, PC5_MATRIX_HEIGHT,
+@@ -1724,6 +1746,9 @@ int main(int argc, char **argv)
+                "adopted=%d stats=%d", status, start.stage, (unsigned)start.module,
+                start.segment_count, start.module_start_result, start.adopted != NULL,
+                start.virtual_stats != NULL);
++#ifdef PW_PC5
++    if (status == PW_OK) start_stats = start.virtual_stats;
++#endif
+     install_early_fault_report(&start);
+     if (status == PW_OK)
+         wine_dlsym_fn = (void *(*)(void *, const char *))(uintptr_t)pw_prx_lookup(start.descriptor, "dlsym");
+diff --git a/wine/patches/0908-ntdll-win32u-how-far-a-game-s-start-is-for-the-loading-screen.patch b/wine/patches/0908-ntdll-win32u-how-far-a-game-s-start-is-for-the-loading-screen.patch
+new file mode 100644
+index 0000000..01844cf
+--- /dev/null
++++ b/wine/patches/0908-ntdll-win32u-how-far-a-game-s-start-is-for-the-loading-screen.patch
+@@ -0,0 +1,98 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Mon, 2 Nov 2026 12:30:00 +0000
++Subject: [PATCH] ntdll, win32u: How far a game's start is, for the title's
++ loading screen.
++
++The title's loading screen only knew the time since it began, so its bar
++filled on a timer whatever the game was doing. __wine_virtual_stats now
++also gives how many images had been mapped when the first program (not a
++DLL) was, the game's, and how many top-level windows of a window's size
++the PS5 display driver has shown (__wine_ps5_note_window): with the
++images counter, the screen fills through Windows starting, the game's
++program and DLLs loading and its window showing.
++---
++ dlls/ntdll/unix/virtual.c | 24 +++++++++++++++++++++---
++ dlls/win32u/ps5drv.c      | 10 ++++++++++
++ 2 files changed, 31 insertions(+), 3 deletions(-)
++
++diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
++index 92bc071..d595357 100644
++--- a/dlls/ntdll/unix/virtual.c
+++++ b/dlls/ntdll/unix/virtual.c
++@@ -105,7 +105,7 @@ WINE_DECLARE_DEBUG_CHANNEL(virtual_ranges);
++  * never skipped. Counters are readable through __wine_virtual_stats. */
++ enum { VM_STAT_MMAP, VM_STAT_MUNMAP, VM_STAT_MPROTECT, VM_STAT_MPROTECT_BYTES,
++        VM_STAT_MPROTECT_SKIPPED, VM_STAT_FAULTS, VM_STAT_IMAGES, VM_STAT_IMAGE_MMAP,
++-       VM_STAT_IMAGE_MPROTECT, VM_STAT_COUNT };
+++       VM_STAT_IMAGE_MPROTECT, VM_STAT_PROGRAM_AT, VM_STAT_WINDOWS, VM_STAT_COUNT };
++ static ULONG64 vm_stats[VM_STAT_COUNT];
++ 
++ static inline void vm_stat_add( unsigned int index, ULONG64 value )
++@@ -310,8 +310,10 @@ DECLSPEC_EXPORT unsigned int __wine_virtual_fault_top( ULONG64 *out, unsigned in
++  *           __wine_virtual_stats
++  *
++  * Copy up to count counters (mmap, munmap, mprotect, mprotect bytes, skipped
++- * mprotect, resolved faults, images, image mmap, image mprotect); returns how
++- * many counters exist.
+++ * mprotect, resolved faults, images, image mmap, image mprotect, the images
+++ * mapped when the first program was, top-level windows shown); returns how
+++ * many counters exist. The last two are how far a game's start is, for the
+++ * title's loading screen.
++  */
++ DECLSPEC_EXPORT unsigned int __wine_virtual_stats( ULONG64 *out, unsigned int count )
++ {
++@@ -322,6 +324,17 @@ DECLSPEC_EXPORT unsigned int __wine_virtual_stats( ULONG64 *out, unsigned int co
++     return VM_STAT_COUNT;
++ }
++ 
+++/***********************************************************************
+++ *           __wine_ps5_note_window
+++ *
+++ * The PS5 display driver showed a top-level window of a window's size: the
+++ * game's program is running (the title's loading screen moves on).
+++ */
+++DECLSPEC_EXPORT void __wine_ps5_note_window(void)
+++{
+++    vm_stat_add( VM_STAT_WINDOWS, 1 );
+++}
+++
++ struct preload_info
++ {
++     void  *addr;
++@@ -3679,6 +3692,11 @@ static NTSTATUS map_image_into_view( struct file_view *view, const UNICODE_STRIN
++     const ULONG64 image_protects = __atomic_load_n( &vm_stats[VM_STAT_MPROTECT], __ATOMIC_RELAXED ) - protects;
++ 
++     vm_stat_add( VM_STAT_IMAGES, 1 );
+++    /* The first program (not a DLL) mapped: the game's, the images before it Wine's own start. */
+++    if (!status && !(image_info->image_charact & IMAGE_FILE_DLL) &&
+++        !__atomic_load_n( &vm_stats[VM_STAT_PROGRAM_AT], __ATOMIC_RELAXED ))
+++        __atomic_store_n( &vm_stats[VM_STAT_PROGRAM_AT],
+++                          __atomic_load_n( &vm_stats[VM_STAT_IMAGES], __ATOMIC_RELAXED ), __ATOMIC_RELAXED );
++     vm_stat_add( VM_STAT_IMAGE_MMAP, image_mmaps );
++     vm_stat_add( VM_STAT_IMAGE_MPROTECT, image_protects );
++     TRACE_(module)( "mapped %s: status %#x, %s host mmap, %s mprotect\n", debugstr_us(nt_name),
++diff --git a/dlls/win32u/ps5drv.c b/dlls/win32u/ps5drv.c
++index c0a7cf0..3588c2a 100644
++--- a/dlls/win32u/ps5drv.c
+++++ b/dlls/win32u/ps5drv.c
++@@ -396,6 +396,16 @@ static void ps5_WindowPosChanged( HWND hwnd, HWND insert_after, HWND owner_hint,
++         window->shown = shown;
++     }
++     pthread_mutex_unlock( &screen_lock );
+++    /* A top-level window of a window's size shown (not a 10x10 probe or a strip): the game
+++     * runs. ntdll counts it for the title's loading screen (how far the start is). */
+++    if (repaint && new_rects->visible.right - new_rects->visible.left >= 320 &&
+++        new_rects->visible.bottom - new_rects->visible.top >= 200)
+++    {
+++        static void (*note_window)(void);
+++        static BOOL looked;
+++        if (!looked) note_window = dlsym( RTLD_DEFAULT, "__wine_ps5_note_window" ), looked = TRUE;
+++        if (note_window) note_window();
+++    }
++     if (repaint) NtUserRedrawWindow( hwnd, NULL, 0, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN );
++ }
++ 
++-- 
++2.43.0
++
+-- 
+2.43.0
+

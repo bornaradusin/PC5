@@ -370,6 +370,7 @@ struct Pc5Ui {
     /* Starting a .NET game the first time: the runtime's copy (pc5_game.h). 0: not looked
      * at yet, 1: copying, 2: nothing (more) to do. */
     Pc5Runtime runtime;
+    Pc5Matrix *launch_matrix;     /* the loading picture while PC5 hands a game over (S_LAUNCH) */
     int runtime_state;
     /* Starting a game: its redistributables the first time (pc5_msi.h). 0: not looked at yet,
      * 1: installing them (the busy line names them), 2: nothing (more) to do. */
@@ -658,6 +659,10 @@ static void say(Pc5Ui *ui, const char *format, ...)
 
 static void go(Pc5Ui *ui, Screen screen)
 {
+    if (screen != S_LAUNCH && ui->launch_matrix) {
+        pc5_matrix_destroy(ui->launch_matrix);
+        ui->launch_matrix = NULL;
+    }
     if (ui->runtime_state == 1) pc5_runtime_end(&ui->runtime);
     if (screen == S_LAUNCH || ui->runtime_state == 1) ui->runtime_state = 0;
     if (screen == S_LAUNCH) ui->redist_state = 0;
@@ -1017,6 +1022,8 @@ Pc5Ui *pc5_ui_create(const Pc5UiConfig *config, const Pc5Platform *platform)
 void pc5_ui_destroy(Pc5Ui *ui)
 {
     if (!ui) return;
+    pc5_matrix_destroy(ui->launch_matrix);
+    ui->launch_matrix = NULL;
     library_music_stop(ui);
     atomic_store(&ui->look.stop, 1); pc5_look_end(&ui->look);
     if (ui->compat_initialized) pc5_compat_end(&ui->compatibility);
@@ -8536,7 +8543,17 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
                      (unsigned)ui->runtime.total);
             busy_dialog(ui, c, line, count, 0);
         } else {
-            busy_dialog(ui, c, line, NULL, 0);
+            /* The loading picture the game's start goes on with, at once: no spinner first.
+             * The bar shows PC5 getting the game ready, the first of its steps. */
+            if (!ui->launch_matrix && (ui->launch_matrix = pc5_matrix_borrow(&ui->fonts)))
+                pc5_matrix_progress(ui->launch_matrix, 0, 0.06f);
+            const uint32_t *px = ui->launch_matrix ? pc5_matrix_step(ui->launch_matrix) : NULL;
+            if (px) {
+                Pc5Image frame = { PC5_MATRIX_WIDTH, PC5_MATRIX_HEIGHT, (uint32_t *)px };
+                pc5_draw_image(c, &frame, 0, 0, W, H, 256);
+            } else {
+                busy_dialog(ui, c, line, NULL, 0);
+            }
         }
         break;
     }

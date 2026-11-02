@@ -96,6 +96,25 @@ enum { PC5_KEYBOARD_TEXT = 256 };
 /* The most CPUs the overlay counts the console's time of. */
 enum { PC5_CPU_MOST = 32, PC5_THREADS_MOST = 256 };
 
+/* How far the game's start is, as Wine tells it (pw_wine_start_read): the PE images it mapped
+ * (programs and DLLs), how many it had when it mapped the game's program (0 not yet), and the
+ * top-level windows shown. */
+typedef struct Pc5Start {
+    unsigned images, program_at, windows;
+} Pc5Start;
+
+/* What a game's last start took (pc5/start.txt): the DLLs it loaded after its program until it
+ * showed a window, and the milliseconds from that window to its first picture; 0 when not known. */
+typedef struct Pc5StartHistory {
+    unsigned dlls, game_ms;
+} Pc5StartHistory;
+
+/* The loading screen's bar for start, since_ms after the screen began, window_ms after the
+ * game's window showed (when it has): phase 0 (PC5's part) or 1 (the game's own loading), and
+ * how full (pc5_matrix_progress: below 0 not known). */
+void pc5_start_fill(const Pc5Start *start, const Pc5StartHistory *last, uint64_t since_ms, uint64_t window_ms,
+                    int *phase, float *fill);
+
 typedef struct Pc5GameSession {
     Pc5GameOps ops;
     Pc5Settings settings;
@@ -110,6 +129,11 @@ typedef struct Pc5GameSession {
     Pc5Matrix *matrix;
     uint64_t matrix_at;
     int matrix_failed;
+    char start_file[PC5_PATH];    /* pc5/start.txt, what the last start took; "" none */
+    Pc5StartHistory start_last;   /* read from it at the start */
+    Pc5Start start;               /* what Wine said last */
+    uint64_t start_ms, window_ms; /* when the loading screen began, when the game's window showed (0 not yet) */
+    unsigned start_images_at_window; /* the images Wine had mapped when the window showed */
     int hud_shown;
     int hud_magnified;            /* the overlay's cursor at twice its size: 1, 0, -1 not asked yet */
     int hud_magnify_refused;      /* the console refused it once: not asked again */
@@ -213,9 +237,9 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
                     const char *prefix, const char *title);
 /* The loading screen's next frame (PC5_MATRIX_WIDTH x HEIGHT, B,G,R,X), or
  * NULL when none is due yet (or it can't be drawn). */
-const uint32_t *pc5_game_loading(Pc5GameSession *game, uint64_t now_ms);
-/* The game showed its first picture. */
-void pc5_game_loading_done(Pc5GameSession *game);
+const uint32_t *pc5_game_loading(Pc5GameSession *game, uint64_t now_ms, const Pc5Start *start);
+/* The game showed its first picture: what this start took is kept for the next one's bar. */
+void pc5_game_loading_done(Pc5GameSession *game, uint64_t now_ms);
 /* The game's rumble (XInput's 0-65535 a motor): what the motors get, at
  * Vibration's strength, and the triggers when they follow it. */
 void pc5_game_rumble(Pc5GameSession *game, int pad, uint32_t left, uint32_t right, uint8_t *large, uint8_t *small);
