@@ -485,15 +485,18 @@ int pc5_pe_unreal_d3d12(const char *path, uint32_t imports)
     char lower[PC5_PATH];
     size_t n = 0;
 
-    if ((imports & PC5_IMPORT_D3D12) || !(imports & (PC5_IMPORT_D3D11 | PC5_IMPORT_DXGI | PC5_IMPORT_D3D10))) return 0;
+    if (imports & PC5_IMPORT_D3D12) return 0;
     for (const char *p = path; *p && n + 1 < sizeof(lower); p++) lower[n++] = *p == '\\' ? '/' : (char)pc5_lower((unsigned char)*p);
     lower[n] = 0;
     /* Games that draw only with Direct3D 12 and load it themselves, outside Unreal: given
-     * Wine's own d3d12 beside DXVK's dxgi, they find no Direct3D 12 and say so. */
+     * Wine's own d3d12 beside DXVK's dxgi, they find no Direct3D 12 and say so. Their own
+     * imports may name no Direct3D at all (Spider-Man.exe imports only vulkan-1.dll), so
+     * the name is enough. */
     static const char *const d3d12_only[] = { "spider-man.exe", "milesmorales.exe", "riftapart.exe" };
     const char *name = strrchr(lower, '/') ? strrchr(lower, '/') + 1 : lower;
-    for (size_t i = 0; i < sizeof(d3d12_only) / sizeof(d3d12_only[0]); i++)
+    for (size_t i = 0; i < sizeof(d3d12_only) / sizeof(d3d12_only[0]) && !(imports & (PC5_IMPORT_D3D9 | PC5_IMPORT_D3D8)); i++)
         if (!strcmp(name, d3d12_only[i])) return 1;
+    if (!(imports & (PC5_IMPORT_D3D11 | PC5_IMPORT_DXGI | PC5_IMPORT_D3D10))) return 0;
     /* An Unreal game's program is in a folder of its Binaries: Win64, or the store's build's
      * (Gears Tactics' Binaries\Steam), but not a 32-bit one. */
     const char *folder = NULL;
