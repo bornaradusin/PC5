@@ -2581,6 +2581,78 @@ static void test_controls(void)
 
 /* api_keys.txt: made when there is none, read as NAME=value lines, never a key PC5 can't send. */
 /* Games PC5 knows by their program's name: GTA IV's options and DXVK settings. */
+/* Recipes: a game PC5 knows starts with its settings when it is installed; a game it doesn't
+ * know, and a game with settings of its own, keep theirs (pc5_recipe_apply). */
+static void test_recipes(void)
+{
+    char base[PC5_PATH], file[PC5_PATH], text[2048];
+    Pc5Info info;
+    struct { const char *id, *folder, *exe, *beside, *settings, *expect, *recipe; } games[] = {
+        { "heroes-iv", "Heroes of Might and Magic IV", "HEROES4.EXE", NULL, NULL, "graphics_api = wine_2d\n",
+          "Heroes of Might and Magic IV" },
+        { "heroes-lower", "Heroes", "bin/heroes4.exe", NULL, NULL, "graphics_api = wine_2d\n", "Heroes of Might and Magic IV" },
+        { "re3-hd", "Resident Evil 3", "ResidentEvil3.exe", "BIO3HD.ASI", NULL, "graphics_api = wine_vulkan\n",
+          "Resident Evil 3 with the Seamless HD mod" },
+        { "re3-plain", "Resident Evil 3 plain", "ResidentEvil3.exe", NULL, NULL, NULL, NULL },
+        { "heroes-own", "Heroes own", "HEROES4.EXE", NULL, "graphics_api = wine_vulkan\n", "graphics_api = wine_vulkan\n",
+          "Heroes of Might and Magic IV" },
+    };
+
+    path(base, sizeof(base), "%s/recipes", work);
+    for (size_t g = 0; g < sizeof(games) / sizeof(games[0]); g++) {
+        memset(&info, 0, sizeof(info));
+        pc5_copy(info.title, sizeof(info.title), games[g].folder);
+        pc5_copy(info.folder, sizeof(info.folder), games[g].folder);
+        pc5_copy(info.exe, sizeof(info.exe), games[g].exe);
+        info.bits = 32;
+        info.api = PC5_API_DDRAW;
+        CHECK(!pc5_info_text(&info, text, sizeof(text)), "%s: its notes", games[g].id);
+        path(file, sizeof(file), "%s/prefixes/%s/pc5/info.txt", base, games[g].id);
+        write_text(file, text);
+        path(file, sizeof(file), "%s/prefixes/%s/drive_c/Games/%s/%s", base, games[g].id, games[g].folder, games[g].exe);
+        write_text(file, "MZ");
+        if (games[g].beside) {
+            char *slash = strrchr(file, '/');
+            snprintf(slash + 1, sizeof(file) - (size_t)(slash + 1 - file), "%s", games[g].beside);
+            write_text(file, "asi");
+        }
+        path(file, sizeof(file), "%s/prefixes/%s/pc5/controls.txt", base, games[g].id);
+        if (games[g].settings) write_text(file, games[g].settings);
+        int applied = pc5_recipe_apply(base, games[g].id);
+        CHECK(applied == (games[g].recipe ? 1 : 0), "%s: a recipe or none (%d)", games[g].id, applied);
+        if (games[g].expect)
+            CHECK(file_holds_text(file, games[g].expect), "%s: started with %s", games[g].id, games[g].expect);
+        else
+            CHECK(!pc5_exists(file), "%s: no recipe, no settings written", games[g].id);
+        path(file, sizeof(file), "%s/prefixes/%s/pc5/recipe.txt", base, games[g].id);
+        CHECK(games[g].recipe ? file_holds_text(file, games[g].recipe) : !pc5_exists(file), "%s: recipe.txt", games[g].id);
+    }
+    CHECK(!pc5_recipe_name("Game.exe", NULL) && !pc5_recipe_name(NULL, NULL), "no recipe for another game");
+    /* A recipe's launch options: launch.txt beside the program, unless the game has one. */
+    {
+        const char *ids[] = { "stretcher", "stretcher-own" };
+        for (int k = 0; k < 2; k++) {
+            memset(&info, 0, sizeof(info));
+            pc5_copy(info.title, sizeof(info.title), "STRETCHER.MEN");
+            pc5_copy(info.folder, sizeof(info.folder), ids[k]);
+            pc5_copy(info.exe, sizeof(info.exe), "Stretcher/Binaries/Win64/StretcherMen.exe");
+            info.bits = 64;
+            info.api = PC5_API_D3D12;
+            pc5_info_text(&info, text, sizeof(text));
+            path(file, sizeof(file), "%s/prefixes/%s/pc5/info.txt", base, ids[k]);
+            write_text(file, text);
+            path(file, sizeof(file), "%s/prefixes/%s/drive_c/Games/%s/%s", base, ids[k], ids[k], info.exe);
+            write_text(file, "MZ");
+            path(file, sizeof(file), "%s/prefixes/%s/drive_c/Games/%s/Stretcher/Binaries/Win64/launch.txt", base, ids[k], ids[k]);
+            if (k) write_text(file, "-windowed\n");
+            CHECK(pc5_recipe_apply(base, ids[k]) == 1, "%s: its recipe", ids[k]);
+            CHECK(file_is(file, k ? "-windowed\n" : "-dx11\n"), "%s: launch.txt %s", ids[k], k ? "kept" : "from the recipe");
+            path(file, sizeof(file), "%s/prefixes/%s/pc5/controls.txt", base, ids[k]);
+            CHECK(!pc5_exists(file), "%s: no settings in its recipe, none written", ids[k]);
+        }
+    }
+}
+
 static void test_known_games(void)
 {
     char text[256];
@@ -8887,6 +8959,7 @@ int main(int argc, char **argv)
     test_play_speed();
     test_controls();
     test_known_games();
+    test_recipes();
     test_settings();
     test_api_keys();
     test_update();

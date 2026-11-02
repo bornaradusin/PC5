@@ -459,6 +459,88 @@ static void program_folder(const char *root, const char *id, const Pc5Info *info
         out[0] = 0;
 }
 
+/* ---- recipes ----------------------------------------------------------------------- */
+
+/* Recipes: the starting settings of a game PC5 knows, given once when it is installed and
+ * only when it has none of its own yet (a reinstall keeping its settings keeps them). They
+ * change nothing for any other game, and nothing for a game installed before its recipe:
+ * a fix for one game that is a choice, not a Windows behaviour every game should get, goes
+ * here. A recipe matches the program's file name, a file beside the program (a mod), or
+ * both, in any case; its settings are controls.txt's lines, and its launch options go in a
+ * launch.txt beside the program when the game has none. */
+static const struct {
+    const char *name;        /* for pc5/recipe.txt and the log */
+    const char *program;     /* the program's file name, or NULL for any */
+    const char *beside;      /* a file beside the program, or NULL */
+    const char *settings;    /* controls.txt's lines, or "" */
+    const char *launch;      /* launch.txt beside the program when it has none, or NULL */
+} recipes[] = {
+    /* #255: DirectDraw and plain Windows drawing on one window: Auto shows one at a time and
+     * the screen flickers between black and the game; 2D only shows both in one picture. */
+    { "Heroes of Might and Magic IV", "HEROES4.EXE", NULL, "graphics_api = wine_2d\n", NULL },
+    /* #162: the Seamless HD mod reads Direct3D 9 textures as Microsoft's d3d9 lays them out,
+     * which Wine's own d3d9 does (patch 0907) and DXVK's (Auto) doesn't. */
+    { "Resident Evil 3 with the Seamless HD mod", NULL, "bio3hd.asi", "graphics_api = wine_vulkan\n", NULL },
+    /* #120: the original GOG release draws right only with WineD3D on Vulkan. */
+    { "Baldur's Gate II", "BGMain.exe", NULL, "graphics_api = wine_vulkan\n", NULL },
+    /* #150: playable with 6 GB of video memory; Auto's 4 GB runs out. */
+    { "Gears of War: E-Day", "GoWEDay-Steam.exe", NULL, "video_memory = 6gb\n", NULL },
+    /* #131: its Direct3D 12 path doesn't start on the console; Direct3D 11 plays. */
+    { "STRETCHER.MEN", "stretchermen.exe", NULL, "", "-dx11\n" },
+};
+
+/* Whether dir has a file of that name, in any case. */
+static int has_file_any_case(const char *dir, const char *name)
+{
+    DIR *d = opendir(dir);
+    struct dirent *entry;
+    int found = 0;
+    if (!d) return 0;
+    while (!found && (entry = readdir(d))) found = !pc5_casecmp(entry->d_name, name);
+    closedir(d);
+    return found;
+}
+
+const char *pc5_recipe_name(const char *program, const char *program_dir)
+{
+    const char *slash = program ? strrchr(program, '/') : NULL, *name = slash ? slash + 1 : program;
+    for (size_t i = 0; i < sizeof(recipes) / sizeof(recipes[0]); i++) {
+        if (recipes[i].program && (!name || pc5_casecmp(name, recipes[i].program))) continue;
+        if (recipes[i].beside && (!program_dir || !has_file_any_case(program_dir, recipes[i].beside))) continue;
+        return recipes[i].name;
+    }
+    return NULL;
+}
+
+int pc5_recipe_apply(const char *root, const char *id)
+{
+    Pc5Info info;
+    Pc5Controls controls;
+    char dir[PC5_PATH], path[PC5_PATH];
+    const char *name;
+    size_t i;
+
+    if (pc5_info_read(root, id, &info)) return -1;
+    program_folder(root, id, &info, dir, sizeof(dir));
+    if (!(name = pc5_recipe_name(info.exe, dir[0] ? dir : NULL))) return 0;
+    for (i = 0; strcmp(recipes[i].name, name); i++) {}
+    if (pc5_format(path, sizeof(path), "%s/prefixes/%s/pc5/controls.txt", root, id)) return -1;
+    if (recipes[i].settings[0] && !pc5_exists(path)) {
+        pc5_controls_load(root, id, &controls);
+        pc5_controls_apply_text(recipes[i].settings, &controls);
+        if (pc5_controls_save(root, id, &controls)) return -1;
+    }
+    if (recipes[i].launch && dir[0] && !pc5_format(path, sizeof(path), "%s/launch.txt", dir) && !pc5_exists(path) &&
+        pc5_write_file(path, recipes[i].launch, strlen(recipes[i].launch)))
+        return -1;
+    if (!pc5_format(path, sizeof(path), "%s/prefixes/%s/pc5/recipe.txt", root, id)) {
+        char text[160];
+        snprintf(text, sizeof(text), "%s\n", name);
+        pc5_write_file(path, text, strlen(text));
+    }
+    return 1;
+}
+
 /* The first line of launch.txt that says something: launch options. */
 static void launch_options(const char *root, const char *id, const Pc5Info *info, char *out, size_t size)
 {
@@ -2528,6 +2610,8 @@ static int finish(Pc5Install *install)
     install->usb_moved = 0;
     if (!pc5_format(path, sizeof(path), "%s/" TAKEN_FILE, target)) unlink(path);
     if (!pc5_format(path, sizeof(path), "%s/" USB_FILE, target)) unlink(path);
+    /* A game PC5 has a recipe for starts with its settings, before its first profile. */
+    (void)pc5_recipe_apply(install->root, install->id);
     if (pc5_profile_refresh(install->root, install->id, error, sizeof(error))) {
         /* The folder is in place: the next start writes the profile again. */
         return fail(install, "%s", error);

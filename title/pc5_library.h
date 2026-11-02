@@ -100,6 +100,12 @@ int pc5_game_program(const char *root, const char *id, char *out, size_t size);
  * ("1920x1080"), into out ("" for a game PC5 doesn't know; launch.txt replaces them), and the
  * DXVK options they play better with (NULL for none), added to DXVK_CONFIG. */
 void pc5_known_arguments(const char *program, const char *desktop, char *out, size_t size);
+/* The recipe for a game whose program (its path inside its folder, with '/') is in program_dir
+ * on the console (NULL: not looked at), or NULL: see recipes in pc5_library.c. */
+const char *pc5_recipe_name(const char *program, const char *program_dir);
+/* Gives an installed game its recipe's settings when it has none of its own yet, and notes the
+ * recipe in pc5/recipe.txt: 1 when it has one, 0 when not, -1 when it can't. */
+int pc5_recipe_apply(const char *root, const char *id);
 const char *pc5_known_dxvk(const char *program);
 /* The folder PC5 copied a game into (prefixes/<id>/drive_c/Games/<folder>). */
 int pc5_game_folder(const char *root, const char *id, char *out, size_t size);

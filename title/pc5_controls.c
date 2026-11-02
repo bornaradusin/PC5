@@ -184,6 +184,16 @@ int pc5_controls_mapping_exists(const char *root)
     return !mapping_path(root, path, sizeof(path)) && pc5_is_file(path);
 }
 
+static void controls_parse(char *data, Pc5Controls *controls);
+
+/* controls.txt's lines (a recipe's) over controls, as a load reads them. */
+void pc5_controls_apply_text(const char *text, Pc5Controls *controls)
+{
+    char copy[1024];
+    if ((size_t)snprintf(copy, sizeof(copy), "%s", text) >= sizeof(copy)) return;
+    controls_parse(copy, controls);
+}
+
 int pc5_controls_load(const char *root, const char *id, Pc5Controls *controls)
 {
     char path[PC5_PATH];

@@ -124,6 +124,8 @@ int pc5_controls_mapping_load(const char *root, Pc5Controls *controls);
 int pc5_controls_mapping_save(const char *root, const Pc5Controls *controls);
 int pc5_controls_mapping_exists(const char *root);
 int pc5_controls_save(const char *root, const char *id, const Pc5Controls *controls);
+/* controls.txt's lines ("graphics_api = wine_2d\n", a recipe's) over controls, as a load reads them. */
+void pc5_controls_apply_text(const char *text, Pc5Controls *controls);
 /* The profile's [input] section, from its header on, and its [runtime] section
  * when CPU sharing is on. 0, or -1 when out is too small. */
 int pc5_controls_input(const Pc5Controls *controls, char *out, size_t size);
