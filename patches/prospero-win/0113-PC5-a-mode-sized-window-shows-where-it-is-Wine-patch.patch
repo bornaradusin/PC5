@@ -1,0 +1,106 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 17:55:00 +0000
+Subject: [PATCH 113/113] PC5: a mode-sized window shows where it is (Wine patch 0973)
+
+Heroes of Might and Magic IV in 2D only drew its picture from the desktop's top
+left at the mode's scaled size, while frames showed the centred part a display
+mode covers: its left side was cut off and the right was black.
+---
+ PUBLICATION_ALLOWLIST.txt                     |  1 +
+ docs/WINE_PS5_BUILD.md                        |  1 +
+ ...show-a-mode-sized-window-where-it-is.patch | 58 +++++++++++++++++++
+ 3 files changed, 60 insertions(+)
+ create mode 100644 wine/patches/0973-win32u-ps5-show-a-mode-sized-window-where-it-is.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index 66ffc05..c140929 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -685,6 +685,7 @@ wine/patches/0975-ntdll-keep-a-host-page-whole-when-accesses-beside-an-inaccessi
+ wine/patches/0976-ntdll-ps5-boolean-socket-options-read-back-as-one.patch
+ wine/patches/0977-win32u-the-cursor-clip-stays-inside-the-virtual-screen.patch
+ wine/patches/0978-amd-ags-x64-a-driver-version-for-amd-sponsored-games.patch
++wine/patches/0973-win32u-ps5-show-a-mode-sized-window-where-it-is.patch
+ wine/patches/0979-win32u-ps5-a-launch-window-takes-dialog-keys.patch
+ wine/patches/0980-win32u-ps5-the-hardware-cursor-follows-the-pointer-between-presents.patch
+ wine/patches/0983-ntdll-ps5-name-the-occupant-of-a-refused-reservation.patch
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 34e7c88..50a9f3d 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -188,6 +188,7 @@ before evaluating a candidate built from that cache.
+ | 0976 | `ntdll` (Mihawk OS 2085): on PS5, a boolean socket option (`SO_BROADCAST`, `SO_KEEPALIVE`, `SO_REUSEADDR` and the other boolean `SOL_SOCKET` ones, `TCP_NODELAY`) reads back as 0 or 1, as on Windows and Linux. The console's FreeBSD kernel answered with the option's flag bit (`SO_BROADCAST` as 0x20), so a program that compares the value with TRUE took a set option for unset |
+ | 0977 | `win32u` (Mihawk OS 2152): `GetClipCursor` keeps the clip inside the virtual screen. In an emulated display mode (a 640x480 mode drawn letterboxed on the 1920x1080 output) the unclipped raw rect is the whole physical screen, which mapped back into the mode reached past its sides |
+ | 0978 | `amd_ags_x64` (Proton's, ValveSoftware/wine, LGPL; `amd_ags.h` AMD's, MIT): AMD's GPU Services library as a builtin, answering from the Vulkan device with a current driver version, so AMD-sponsored games (Marvel's Spider-Man Remastered, The Last of Us Part II) don't take the PS5 for a missing or outdated driver; AGS's Direct3D 11 and 12 extensions go to DXVK and VKD3D-Proton. No Unix side (no libdrm on the PS5). A title overrides `amd_ags_x64` to builtin for a game's own copy to give way |
++| 0973 | `win32u`: on PS5, a shown window the size of the part a display mode covers (0932), but at another place on the desktop, is what frames show and where the pointer stops: DirectDraw drawing with GDI (Heroes of Might and Magic IV in 2D only) sized its window to the mode from the desktop's top left, and the centred part showed its picture cut off on the left |
+ | 0979 | `win32u`: on PS5, a launch window that reads only the keyboard takes the dialog keys of 0911 (Cross as Enter, the D-pad as the arrows) as a dialog box does: Nixxes' (Marvel's Spider-Man Remastered and its other ports), a 792x447 pop-up of the class `GameNxApp` with Play, Settings and Quit, while it is smaller than the display both ways. The game's own window, which may share the class, covers the display and never gets those keys beside its controller |
+ | 0980 | `win32u`: on PS5, each move, new image or hiding of the cursor also goes to `libvulkan.prx`'s `pw_videoout_cursor_follow`, so VideoOut's hardware cursor follows the pointer between presents, unless a desktop frame (the cursor drawn in) is what shows. A game that draws only when something changes (Age of Empires II HD's menus) had lost its pointer: it followed only at a present |
+ | 0983 | `ntdll`: a refused fixed reservation names what holds the range. `sceKernelReserveVirtualRange` answers ENOMEM both for a range another mapping holds and for one it cannot grant, and the callers need `EEXIST` for a collision either way, so the errno is unchanged and `sceKernelVirtualQuery` reports the cause: a record with a protection, flags and a name is a mapping, a cleared record past the end of the request is a hole. Tells a title image lying across a program's preferred base (0130) apart from an exhausted address space |
+diff --git a/wine/patches/0973-win32u-ps5-show-a-mode-sized-window-where-it-is.patch b/wine/patches/0973-win32u-ps5-show-a-mode-sized-window-where-it-is.patch
+new file mode 100644
+index 0000000..23ee1a3
+--- /dev/null
++++ b/wine/patches/0973-win32u-ps5-show-a-mode-sized-window-where-it-is.patch
+@@ -0,0 +1,58 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: bornaradusin <bornaradusin@users.noreply.github.com>
++Date: Mon, 2 Nov 2026 17:55:00 +0000
++Subject: [PATCH] win32u: PS5: show a mode-sized window where it is.
++
++Heroes of Might and Magic IV in 2D only (DirectDraw drawing with GDI) at
++1024x768 on a 1920x1080 desktop drew its picture scaled to 1440x1080 from
++the desktop's top left, while the driver showed the part win32u maps the
++mode to, 240,0 to 1680,1080 (patch 0932): the picture's left side was cut
++off and the right was black, more at 1280x1024. A shown window of that
++part's size (within 2 pixels) at another place on the desktop is now what
++frames show, and where the pointer stops. A window where the mode is, and a
++mode that covers the whole desktop, are shown as before.
++
++diff --git a/dlls/win32u/ps5drv.c b/dlls/win32u/ps5drv.c
++index 5d8b340..339865f 100644
++--- a/dlls/win32u/ps5drv.c
+++++ b/dlls/win32u/ps5drv.c
++@@ -160,11 +160,39 @@ static void draw_cursor( UINT32 *out, POINT origin, INT width, INT height )
++ }
++ 
++ /* screen_lock held: the part of the screen a frame shows */
+++/* screen_lock held: a shown window the size of the part a display mode covers, but not at it:
+++ * where it is, or NULL. DirectDraw drawing with GDI (Heroes of Might and Magic IV in 2D only)
+++ * sizes its window to the mode as win32u maps it, from the desktop's top left, while win32u maps
+++ * the mode about the desktop's centre: frames showed the centred part, the picture's left side
+++ * cut off and black on the right. */
+++static const RECT *mode_window(void)
+++{
+++    INT width = content.right - content.left, height = content.bottom - content.top;
+++    UINT i;
+++
+++    if (width == (INT)screen_width && height == (INT)screen_height) return NULL;
+++    for (i = 0; i < window_count; i++)
+++    {
+++        const RECT *rect = &windows[i].visible;
+++
+++        if (!windows[i].shown || abs( rect->right - rect->left - width ) > 2 ||
+++            abs( rect->bottom - rect->top - height ) > 2)
+++            continue;
+++        if (rect->left == content.left && rect->top == content.top) return NULL;   /* where the mode is */
+++        if (rect->left >= 0 && rect->top >= 0 && rect->right <= (INT)screen_width &&
+++            rect->bottom <= (INT)screen_height)
+++            return rect;
+++    }
+++    return NULL;
+++}
+++
++ static RECT view_rect(void)
++ {
++     RECT box = {0, 0, 0, 0};
+++    const RECT *window;
++     UINT i;
++ 
+++    if ((window = mode_window())) return *window;
++     if (!view_windows) return content;
++     for (i = 0; i < window_count; i++)
++         if (windows[i].shown) union_rect( &box, &box, &windows[i].visible );
+-- 
+2.43.0
+
