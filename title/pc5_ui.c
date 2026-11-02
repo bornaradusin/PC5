@@ -287,10 +287,10 @@ static int game_row_find(const Pc5Controls *controls, int kind, GameRow row, int
 
 /* Button mapping: the sticks (with their four keys while they send keys), the
  * pointer's speed while a stick moves it, the buttons, and the default layout. */
-typedef enum PadRowKind { PR_STICK, PR_DIRECTION, PR_SPEED, PR_SLOW, PR_SLOW_PERCENT, PR_BUTTON, PR_RESET, PR_SAVE_MAPPING,
-                          PR_USE_MAPPING } PadRowKind;
+typedef enum PadRowKind { PR_STICK, PR_DIRECTION, PR_SPEED, PR_SLOW, PR_SLOW_PERCENT, PR_BUTTON, PR_TOUCH_MODE, PR_RESET,
+                          PR_SAVE_MAPPING, PR_USE_MAPPING } PadRowKind;
 typedef struct PadRow { PadRowKind kind; int index; } PadRow;
-enum { PAD_ROWS = 32, PAD_VISIBLE = 10, PAD_PITCH = 74, KEY_COLS = 8 };
+enum { PAD_ROWS = 40, PAD_VISIBLE = 10, PAD_PITCH = 74, KEY_COLS = 8 };
 
 static int pad_rows(const Pc5Controls *controls, PadRow rows[PAD_ROWS], int has_mapping)
 {
@@ -305,7 +305,16 @@ static int pad_rows(const Pc5Controls *controls, PadRow rows[PAD_ROWS], int has_
         rows[n++] = (PadRow){ PR_SLOW, 0 };
         if (controls->slow_button >= 0) rows[n++] = (PadRow){ PR_SLOW_PERCENT, 0 };
     }
-    for (int button = 0; button < PC5_BUTTONS; button++) rows[n++] = (PadRow){ PR_BUTTON, button };
+    for (int button = 0; button < PC5_BUTTONS; button++)
+        if (button != PC5_TOUCHPAD) rows[n++] = (PadRow){ PR_BUTTON, button };
+    /* The touchpad: what it is, then its click (one button, or a mouse's), or its halves and swipes;
+     * and a two-finger click, PC5's on-screen keyboard unless it is a key. */
+    rows[n++] = (PadRow){ PR_TOUCH_MODE, 0 };
+    if (controls->touch_mode == 1)
+        for (int t = 0; t < PC5_TOUCH_ZONES; t++) rows[n++] = (PadRow){ PR_BUTTON, PC5_TOUCH_FIRST + t };
+    else
+        rows[n++] = (PadRow){ PR_BUTTON, PC5_TOUCHPAD };
+    rows[n++] = (PadRow){ PR_BUTTON, PC5_TWO_FINGER };
     rows[n++] = (PadRow){ PR_RESET, 0 };
     /* The player's own mapping, kept for every game (pc5/mapping.txt): saved from this one, and
      * put on this one when there is one. */
@@ -2807,6 +2816,7 @@ static int pad_change(Pc5Ui *ui, PadRow row, int step)
         return 1;
     }
     case PR_SLOW: pc5_controls_next_slow(k, step); return 1;
+    case PR_TOUCH_MODE: k->touch_mode = (k->touch_mode + 3 + (step < 0 ? -1 : 1)) % 3; return 1;
     case PR_SLOW_PERCENT: {
         int percent = k->slow_percent + (step < 0 ? -PC5_SLOW_STEP : PC5_SLOW_STEP);
         if (percent < PC5_SLOW_STEP || percent > PC5_SLOW_MAX) return 0;
@@ -6868,6 +6878,12 @@ static int setting_about(Pc5Ui *ui, GameRow row, const char *lines[6])
         lines[n++] = T("DualSense: a PS5 controller plugged into a PC, with PlayStation buttons in games that support it.");
         lines[n++] = T("Keyboard & mouse: for games with no controller support. The buttons press keys and the sticks move the mouse; Button mapping changes which key each one sends.");
         break;
+    case GR_BUTTONS:
+        lines[n++] = T("What each button, stick and the touchpad sends to the game with Keyboard & mouse.");
+        lines[n++] = T("Touchpad: One button (a click sends one key), Halves and swipes (a key for each half's click and each quick swipe up, down, left or right), or Mouse (a finger moves the pointer, like a laptop's).");
+        lines[n++] = T("Two-finger click: PC5's on-screen keyboard, or a key of its own.");
+        lines[n++] = T("Save as my mapping keeps your layout for every game set up after it.");
+        break;
     case GR_POINTER:
         lines[n++] = T("Whether the mouse pointer shows over the game.");
         lines[n++] = T("Normal: the game decides, as on a PC.");
@@ -7013,8 +7029,19 @@ static void buttons_screen(Pc5Ui *ui, Pc5Canvas *c)
     int count = pad_rows(&ui->controls, rows, pc5_controls_mapping_exists(ui->root));
     const Pc5Controls *k = &ui->controls;
 
-    pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 64, 210, C_DIM,
-             T("Touchpad + OPTIONS for 2 s still leaves the game"), 760 - 128, 0);
+    /* What the touchpad's rows do, over them while one is chosen; else how to leave the game. */
+    {
+        PadRow chosen = ui->pad_row < count ? rows[ui->pad_row] : rows[0];
+        const char *about = T("Touchpad + OPTIONS for 2 s still leaves the game");
+        if (chosen.kind == PR_BUTTON && chosen.index == PC5_TWO_FINGER)
+            about = T("Two fingers: PC5's on-screen keyboard, or a key of its own");
+        else if (chosen.kind == PR_TOUCH_MODE || (chosen.kind == PR_BUTTON && (chosen.index == PC5_TOUCHPAD ||
+                                                                               chosen.index >= PC5_TOUCH_FIRST)))
+            about = k->touch_mode == 1   ? T("A key for each half's click and each quick swipe")
+                    : k->touch_mode == 2 ? T("A finger moves the pointer; a click sends its key")
+                                         : T("The whole touchpad is one button");
+        pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 64, 210, C_DIM, about, 760 - 128, 0);
+    }
     for (int i = ui->pad_top; i < count && i < ui->pad_top + PAD_VISIBLE; i++) {
         float y = 214 + PAD_PITCH * (i - ui->pad_top);
         char label[64], value[64];
@@ -7042,9 +7069,18 @@ static void buttons_screen(Pc5Ui *ui, Pc5Canvas *c)
             pc5_tf(value, sizeof(value), "%d%%", k->slow_percent);
             break;
         case PR_BUTTON:
-            pc5_copy(label, sizeof(label), T(pc5_control_name(row.index)));
+            /* The touchpad's rows sit under Touchpad, indented. */
+            if (row.index == PC5_TOUCHPAD) snprintf(label, sizeof(label), "    %s", T("Click"));
+            else if (row.index >= PC5_TOUCH_FIRST) snprintf(label, sizeof(label), "    %s", T(pc5_control_name(row.index)));
+            else pc5_copy(label, sizeof(label), T(pc5_control_name(row.index)));
             pc5_copy(value, sizeof(value), row.index == k->slow_button ? T("Slows the pointer")
-                                                                       : pc5_key_text(k->key[row.index]));
+                                           : row.index == PC5_TWO_FINGER && !strcmp(pc5_keys[k->key[row.index] % pc5_key_count].name, "none")
+                                               ? T("On-screen keyboard")
+                                               : pc5_key_text(k->key[row.index]));
+            break;
+        case PR_TOUCH_MODE:
+            pc5_copy(label, sizeof(label), T("Touchpad"));
+            pc5_copy(value, sizeof(value), T(pc5_touch_mode_name(k->touch_mode)));
             break;
         case PR_RESET:
             pc5_copy(label, sizeof(label), T("Reset to default"));

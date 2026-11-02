@@ -728,6 +728,9 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         video_memory_full = controls.video_memory_full;
         video_memory_gb = controls.video_memory_gb == 5 || controls.video_memory_gb == 6 ? controls.video_memory_gb : 0;
         pointer_hide = controls.pointer_hide;
+        /* A two-finger click mapped to a key (Keyboard & mouse): the game's, not PC5's keyboard. */
+        game->two_finger_key = controls.mode == PC5_PAD_KEYBOARD &&
+                               strcmp(pc5_keys[controls.key[PC5_TWO_FINGER] % pc5_key_count].name, "none");
     }
     /* The mouse pointer as the game shows it, unless its Controller page says it hides when
      * unused (Wine patch 0999: 0 never hides). A game's env.txt, applied after, can say too. */
@@ -1268,7 +1271,7 @@ uint32_t pc5_game_keyboard(Pc5GameSession *game, uint32_t held, uint32_t pressed
         }
         return hidden;
     }
-    if ((pressed & PAD_TOUCHPAD) && fingers >= 2 && game->ops.keyboard_open) {
+    if ((pressed & PAD_TOUCHPAD) && fingers >= 2 && game->ops.keyboard_open && !game->two_finger_key) {
         /* Taken from the game even when the keyboard can't open, so the game never sees it. */
         game->keyboard_taken = PAD_TOUCHPAD;
         hidden |= PAD_TOUCHPAD;

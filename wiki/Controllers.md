@@ -66,6 +66,20 @@ While a stick is the pointer, **Pointer speed** sets how fast it moves, from 1 t
 
 **Slow pointer button** picks a button that slows the pointer while you hold it, for placing and aiming precisely (None by default). **Slower by** sets how much, from 10 % to 90 % (50 % by default). While a button is the slow button it does only that: its row says **Slows the pointer**.
 
+### The touchpad
+
+From 2.2.0, the **Touchpad** row sets what the touchpad does:
+
+| Touchpad | What it does |
+| --- | --- |
+| **One button** (the default) | A click anywhere sends one key: the **Click** row below it (Enter by default), as before 2.2.0. |
+| **Halves and swipes** | A click on the **left half** and on the **right half** each send a key of their own (Enter and Esc by default), and a quick **swipe** up, down, left or right sends a key too (Nothing by default). A swipe is a slide across about a quarter of the touchpad, quickly: a slow slide or a short one does nothing. |
+| **Mouse** | Sliding a finger moves the mouse pointer, like a laptop's touchpad. A click sends the **Click** row's key: set it to **Left click** to click with it. |
+
+**Two-finger click** opens the PS5's on-screen keyboard (see [Typing in a game](#typing-in-a-game)) unless you choose a key for it: then a click with two fingers sends that key instead, for a game that needs one more key.
+
+Holding the touchpad and **Options** for two seconds still leaves the game, whatever the touchpad does. **Save as my mapping** keeps the touchpad's rows with the rest.
+
 ### The default layout
 
 **Reset to default**, at the bottom of the list, brings back this layout:
@@ -125,7 +139,7 @@ This combo always leaves the game. Don't use it to close a pop-up.
 
 ## Typing in a game
 
-Click the **touchpad with two fingers** in a game, whichever mode is chosen, and the PS5's on-screen keyboard opens over the game. Type, then choose **Done**: the text is typed into the game, where its text box has the cursor (a name, a chat line, a server's address). **Cancel** closes the keyboard without typing anything.
+Click the **touchpad with two fingers** in a game, whichever mode is chosen, and the PS5's on-screen keyboard opens over the game (with Keyboard & mouse, unless **Button mapping › Two-finger click** has a key of its own). Type, then choose **Done**: the text is typed into the game, where its text box has the cursor (a name, a chat line, a server's address). **Cancel** closes the keyboard without typing anything.
 
 - Put the cursor in the game's text box first, with the controller or the pointer.
 - The game gets the text as characters typed on Windows. A game that reads the keyboard's keys rather than the characters typed doesn't see it.

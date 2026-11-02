@@ -51,11 +51,18 @@ typedef enum Pc5Graphics {
 } Pc5Graphics;
 
 /* What can be bound: the 17 buttons, then the sticks' directions (left stick up,
- * down, left, right, then the right stick's), in prospero-win's order. */
+ * down, left, right, then the right stick's), in prospero-win's order, then the
+ * touchpad's own (its left and right halves, swipes up, down, left and right,
+ * and a two-finger click). */
 enum {
     PC5_BUTTONS = 17,
-    PC5_CONTROLS = 25,
+    PC5_CONTROLS = 32,
     PC5_STICK_FIRST = 17,         /* the left stick's up; the right stick's is 21 */
+    PC5_STICK_CONTROLS = 8,
+    PC5_TOUCH_FIRST = 25,         /* the touchpad's left half, then its right, then the swipes */
+    PC5_TOUCH_ZONES = 6,          /* bound with Touchpad: Halves and swipes */
+    PC5_TWO_FINGER = 31,          /* a two-finger click: Nothing is PC5's on-screen keyboard */
+    PC5_TOUCHPAD = 16,            /* the touchpad's click, as one button */
     PC5_SPEEDS = 10,              /* pointer speed levels, 300 pixels a second each at full tilt */
     PC5_SLOW_STEP = 10, PC5_SLOW_MAX = 90, PC5_SLOW_DEFAULT = 50,
 };
@@ -73,6 +80,9 @@ typedef struct Pc5Controls {
      * stays as the game shows it, as before 2.0.8. */
     int pointer_hide;
     uint8_t key[PC5_CONTROLS];    /* an index into pc5_keys */
+    /* What the touchpad is with Keyboard & mouse (prospero-win's touchpad_mode): 0 one button
+     * (its click is Touchpad's), 1 its halves and swipes, 2 a mouse, a finger moving the pointer. */
+    int touch_mode;
     /* Frame generation (libvulkan.prx): 0 off; 1 PC5's own (FSR 3), the game held at half the
      * display's rate and shown at the whole, 30 -> 60 or, with 120 Hz output, 60 -> 120;
      * 2 MihawkGen, three pictures a frame, 40 -> 120 with 120 Hz output (30 -> 60 without).
@@ -132,6 +142,8 @@ int pc5_controls_input(const Pc5Controls *controls, char *out, size_t size);
 
 /* "Cross", "Left stick up": a control's name in PC5. */
 const char *pc5_control_name(int control);
+/* "One button", "Halves and swipes", "Mouse": a touch_mode's name in PC5. */
+const char *pc5_touch_mode_name(int mode);
 /* The choices of Graphics API a game drawing with api (Pc5Api, pc5_pe.h) has, in order:
  * their count, 0 for a game that draws no other way (OpenGL, Vulkan, Windows' own drawing). */
 int pc5_graphics_choices(int api, Pc5Graphics choices[PC5_GRAPHICS_COUNT]);

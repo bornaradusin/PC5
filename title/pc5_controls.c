@@ -37,19 +37,26 @@ static const char *const control_keys[PC5_CONTROLS] = {
     "options", "create", "touchpad",
     "left_stick_up", "left_stick_down", "left_stick_left", "left_stick_right",
     "right_stick_up", "right_stick_down", "right_stick_left", "right_stick_right",
+    "touch_left", "touch_right", "swipe_up", "swipe_down", "swipe_left", "swipe_right", "two_finger",
 };
 static const char *const control_names[PC5_CONTROLS] = {
     N_("Cross"), N_("Circle"), N_("Square"), N_("Triangle"), "L1", "R1", "L2", "R2", N_("L3 (left stick press)"), N_("R3 (right stick press)"),
     N_("D-pad up"), N_("D-pad down"), N_("D-pad left"), N_("D-pad right"), "OPTIONS", N_("Create"), N_("Touchpad"),
     N_("Left stick up"), N_("Left stick down"), N_("Left stick left"), N_("Left stick right"),
     N_("Right stick up"), N_("Right stick down"), N_("Right stick left"), N_("Right stick right"),
+    N_("Touchpad left half"), N_("Touchpad right half"), N_("Swipe up"), N_("Swipe down"), N_("Swipe left"),
+    N_("Swipe right"), N_("Two-finger click"),
 };
+/* prospero-win's touchpad_mode values, and PC5's names for them. */
+static const char *const touch_mode_keys[3] = { "button", "zones", "mouse" };
+static const char *const touch_mode_names[3] = { N_("One button"), N_("Halves and swipes"), N_("Mouse") };
 /* The default layout, by key name. */
 static const char *const default_keys[PC5_CONTROLS] = {
     "space", "ctrl", "r", "e", "q", "f", "mouse_right", "mouse_left", "shift", "v", "up", "down", "left", "right",
     "escape", "tab", "enter",
     "w", "s", "a", "d",
     "up", "down", "left", "right",
+    "enter", "escape", "none", "none", "none", "none", "none",
 };
 static const char *const mode_keys[PC5_PAD_MODES] = { "xinput", "dualsense", "keyboard" };
 static const char *const mode_names[PC5_PAD_MODES] = { N_("Xbox controller"), "DualSense", N_("Keyboard & mouse") };
@@ -135,6 +142,7 @@ static void mapping_copy(Pc5Controls *to, const Pc5Controls *from)
     to->speed = from->speed;
     to->slow_button = from->slow_button;
     to->slow_percent = from->slow_percent;
+    to->touch_mode = from->touch_mode;
     memcpy(to->key, from->key, sizeof(to->key));
 }
 
@@ -165,12 +173,14 @@ int pc5_controls_mapping_save(const char *root, const Pc5Controls *controls)
         return -1;
     status = pc5_buf_printf(&text, "# Your own button mapping in PC5 (a game's Button mapping, then Save as my mapping):\n"
                                    "# new games start with it, and Use my mapping puts it on a game.\n"
-                                   "left_stick = %s\nright_stick = %s\npointer_speed = %d\nslow_button = %s\nslow_percent = %d\n",
+                                   "left_stick = %s\nright_stick = %s\npointer_speed = %d\nslow_button = %s\nslow_percent = %d\n"
+                                   "touchpad_mode = %s\n",
                             stick_keys[controls->stick[0] % PC5_STICK_USES], stick_keys[controls->stick[1] % PC5_STICK_USES],
                             controls->speed,
                             controls->slow_button >= 0 && controls->slow_button < PC5_BUTTONS
                                 ? control_keys[controls->slow_button] : "none",
-                            controls->slow_percent);
+                            controls->slow_percent,
+                            touch_mode_keys[controls->touch_mode >= 0 && controls->touch_mode < 3 ? controls->touch_mode : 0]);
     for (int i = 0; i < PC5_CONTROLS && !status; i++)
         status = pc5_buf_printf(&text, "%s = %s\n", control_keys[i], pc5_keys[controls->key[i] % pc5_key_count].name);
     if (!status) status = pc5_write_file(path, text.data, text.len);
@@ -248,6 +258,9 @@ static void controls_parse(char *data, Pc5Controls *controls)
         } else if (!strcmp(name, "cpu_sharing")) {
             if (!strcmp(value, "on")) controls->cpu_sharing = 1;
             else if (!strcmp(value, "off")) controls->cpu_sharing = 0;
+        } else if (!strcmp(name, "touchpad_mode")) {
+            for (int i = 0; i < 3; i++)
+                if (!strcmp(value, touch_mode_keys[i])) controls->touch_mode = i;
         } else if (!strcmp(name, "mouse_pointer")) {
             if (!strcmp(value, "hides")) controls->pointer_hide = 1;
             else if (!strcmp(value, "shown")) controls->pointer_hide = 0;
@@ -296,6 +309,8 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                                    "mode = %s\nleft_stick = %s\nright_stick = %s\npointer_speed = %d\n"
                                    "# The button that slows the pointer while held, and by how much (%%)\n"
                                    "slow_button = %s\nslow_percent = %d\n"
+                                   "# Button mapping, then Touchpad: button (one button), zones (halves and swipes) or mouse\n"
+                                   "touchpad_mode = %s\n"
                                    "# Triangle on the game, then Frame generation: off, on (60 -> 120, or 30 -> 60 at 60 Hz) or mihawkgen (40 -> 120)\nframe_generation = %s\n"
                                    "# Triangle on a 32-bit game, then Game memory: auto (as Windows) or 4gb\nmemory = %s\n"
                                    "# Triangle on the game, then Graphics memory: auto, 5gb or 6gb (a 64-bit Direct3D 10 to 12 game), or full (Maximum)\n"
@@ -312,7 +327,7 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                             stick_keys[controls->stick[1] % PC5_STICK_USES], controls->speed,
                             controls->slow_button >= 0 && controls->slow_button < PC5_BUTTONS
                                 ? control_keys[controls->slow_button] : "none",
-                            controls->slow_percent,
+                            controls->slow_percent, touch_mode_keys[controls->touch_mode >= 0 && controls->touch_mode < 3 ? controls->touch_mode : 0],
                             controls->frame_generation == 2 ? "mihawkgen" : controls->frame_generation ? "on" : "off",
                             controls->memory_4gb ? "4gb" : "auto",
                             controls->video_memory_full      ? "full"
@@ -346,10 +361,20 @@ int pc5_controls_input(const Pc5Controls *controls, char *out, size_t size)
         if (!status && strcmp(mouse, "none") && controls->slow_button >= 0 && controls->slow_button < PC5_BUTTONS)
             status = pc5_buf_printf(&text, "mouse_slow = %s\nmouse_slow_percent = %d\n",
                                     control_keys[controls->slow_button], controls->slow_percent);
+        /* The touchpad: one button (prospero-win's default, so said only when it is something else). */
+        if (!status && controls->touch_mode > 0 && controls->touch_mode < 3)
+            status = pc5_buf_printf(&text, "touchpad_mode = %s\n", touch_mode_keys[controls->touch_mode]);
         for (int i = 0; i < PC5_CONTROLS && !status; i++) {
+            const char *key = pc5_keys[controls->key[i] % pc5_key_count].name;
             /* A stick's directions only while it sends keys. */
-            if (i >= PC5_STICK_FIRST && controls->stick[(i - PC5_STICK_FIRST) / 4] != PC5_STICK_KEYS) continue;
-            status = pc5_buf_printf(&text, "%s = %s\n", control_keys[i], pc5_keys[controls->key[i] % pc5_key_count].name);
+            if (i >= PC5_STICK_FIRST && i < PC5_STICK_FIRST + PC5_STICK_CONTROLS &&
+                controls->stick[(i - PC5_STICK_FIRST) / 4] != PC5_STICK_KEYS)
+                continue;
+            /* The halves and swipes only with Halves and swipes; a two-finger click only when it is a
+             * key (Nothing leaves it to PC5's on-screen keyboard). */
+            if (i >= PC5_TOUCH_FIRST && i < PC5_TOUCH_FIRST + PC5_TOUCH_ZONES && controls->touch_mode != 1) continue;
+            if (i == PC5_TWO_FINGER && !strcmp(key, "none")) continue;
+            status = pc5_buf_printf(&text, "%s = %s\n", control_keys[i], key);
         }
     }
     /* The console runs threads of one priority each on a CPU of its own until it waits, where Windows
@@ -367,6 +392,7 @@ const char *pc5_control_name(int control)
 }
 
 const char *pc5_pad_mode_name(Pc5PadMode mode) { return mode_names[mode % PC5_PAD_MODES]; }
+const char *pc5_touch_mode_name(int mode) { return touch_mode_names[mode >= 0 && mode < 3 ? mode : 0]; }
 const char *pc5_stick_use_name(Pc5StickUse use) { return stick_names[use % PC5_STICK_USES]; }
 const char *pc5_key_label(int key) { return key >= 0 && key < pc5_key_count ? pc5_keys[key].label : ""; }
 

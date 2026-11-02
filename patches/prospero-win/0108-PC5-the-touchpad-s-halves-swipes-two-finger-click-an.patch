@@ -1,0 +1,489 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 13:10:00 +0000
+Subject: [PATCH 108/108] PC5: the touchpad's halves, swipes, two-finger click and
+ pointer with keyboard and mouse
+
+With mode = keyboard the touchpad was one button. [input] touchpad_mode
+now makes it button (as before), zones (a click on its left or right half
+and a quick swipe up, down, left or right are buttons of their own, and
+the touchpad button sends nothing) or mouse (a finger moves the pointer
+by one and a half pixels for each of the touchpad's; the click is still
+the touchpad button's). two_finger binds a click with two fingers in any
+of them, and quiets the touchpad button for it; left unbound, the title
+may take it for its own (PC5's on-screen keyboard).
+---
+ native/pw_wine_display.c     | 104 ++++++++++++++++++++++++++++++++
+ native/pw_wine_display.h     |  31 ++++++++++
+ native/wine64_main.c         |  34 +++++++++--
+ src/pw_game_profile.c        |  30 ++++++++-
+ src/pw_game_profile.h        |  24 ++++++++
+ tests/test_pw_wine_display.c | 114 +++++++++++++++++++++++++++++++++++
+ 6 files changed, 331 insertions(+), 6 deletions(-)
+
+diff --git a/native/pw_wine_display.c b/native/pw_wine_display.c
+index 6881711..1d2d475 100644
+--- a/native/pw_wine_display.c
++++ b/native/pw_wine_display.c
+@@ -264,3 +264,107 @@ int pw_wine_pointer_step(PwWinePointer *pointer, uint8_t stick_x, uint8_t stick_
+     *out = (PwWineInput){ PW_WINE_INPUT_MOUSE_MOVE, 0, (int32_t)dx, (int32_t)dy, 0 };
+     return 1;
+ }
++
++/* ---- the touchpad's own buttons (pw_wine_display.h) ---- */
++
++static uint32_t swipe_of(const PwWineTouch *t, uint64_t now_us)
++{
++    int32_t dx = (int32_t)t->last_x - t->start_x, dy = (int32_t)t->last_y - t->start_y;
++    int32_t ax = dx < 0 ? -dx : dx, ay = dy < 0 ? -dy : dy;
++    if (t->clicked || now_us - t->start_us > (uint64_t)PW_WINE_SWIPE_MS * 1000u) return 0;
++    if (ax >= ay && ax >= PW_WINE_SWIPE_X) return dx < 0 ? PW_GAME_SWIPE_LEFT : PW_GAME_SWIPE_RIGHT;
++    if (ay > ax && ay >= PW_WINE_SWIPE_Y) return dy < 0 ? PW_GAME_SWIPE_UP : PW_GAME_SWIPE_DOWN;
++    return 0;
++}
++
++uint32_t pw_wine_touch_buttons(PwWineTouch *t, const PwPadPs5 *pad, PwGameTouchMode mode, int two_finger_bound,
++                               uint64_t now_us, int *quiet)
++{
++    uint32_t pressed, released;
++    int fingers;
++
++    if (quiet) *quiet = mode == PW_GAME_TOUCH_ZONES;
++    if (!t || !pad || !pad->core.connected) return 0;
++    pressed = pad->core.pressed_edges & PW_WINE_TOUCHPAD_BUTTON;
++    released = pad->core.released_edges & PW_WINE_TOUCHPAD_BUTTON;
++    fingers = pad->touch.fingers;
++    t->swipe = 0;
++    /* A finger down: where a swipe starts. */
++    if (fingers >= 1) {
++        const PwPadPs5Touch *f = &pad->touch.touch[0];
++        if (!t->touching) {
++            t->touching = 1;
++            t->clicked = 0;
++            t->finger = f->finger;
++            t->start_x = t->last_x = f->x;
++            t->start_y = t->last_y = f->y;
++            t->start_us = now_us;
++        } else if (f->finger == t->finger) {
++            t->last_x = f->x;
++            t->last_y = f->y;
++        }
++    }
++    /* The click: two fingers, or with zones the half the first finger is on. */
++    if (pressed) {
++        t->clicked = 1;
++        if (fingers >= 2) t->click = PW_GAME_TWO_FINGER;
++        else if (mode == PW_GAME_TOUCH_ZONES)
++            t->click = (fingers ? pad->touch.touch[0].x : t->last_x) < PW_WINE_TOUCH_WIDTH / 2 ? PW_GAME_TOUCH_LEFT
++                                                                                               : PW_GAME_TOUCH_RIGHT;
++        else t->click = 0;
++        if (!two_finger_bound) t->click &= ~PW_GAME_TWO_FINGER;
++    }
++    /* A two-finger click bound to a key of its own: the plain touchpad button sends nothing, at its
++     * press or its release. */
++    if (quiet && (t->click & PW_GAME_TWO_FINGER)) *quiet = 1;
++    if (released || !(pad->core.previous_buttons & PW_WINE_TOUCHPAD_BUTTON)) t->click = 0;
++    uint32_t held = t->click;
++    /* The finger lifted: a quick, long enough slide without a click is a swipe, down for this read. */
++    if (!fingers && t->touching) {
++        t->touching = 0;
++        if (mode == PW_GAME_TOUCH_ZONES) t->swipe = swipe_of(t, now_us);
++    }
++    return held | t->swipe;
++}
++
++size_t pw_wine_touch_inputs(const PwGameInput *input, uint32_t pressed, uint32_t released, PwWineInput *out,
++                            size_t max)
++{
++    size_t used = 0;
++
++    if (!input || !out) return 0;
++    for (uint32_t down = 0; down <= 1; down++) {
++        uint32_t edges = down ? pressed : released;
++        for (size_t i = 0; i < PW_GAME_TOUCH_COUNT && used < max; i++) {
++            const PwGameBinding *b = &input->touch[i];
++            if (!(edges & (1u << i))) continue;
++            if (b->kind == PW_GAME_BIND_WHEEL) {
++                if (down) out[used++] = (PwWineInput){ PW_WINE_INPUT_MOUSE_WHEEL, 0, b->code ? -1 : 1, 0, 0 };
++                continue;
++            }
++            if (b->kind != PW_GAME_BIND_KEY && b->kind != PW_GAME_BIND_MOUSE) continue;
++            out[used++] = (PwWineInput){ b->kind == PW_GAME_BIND_KEY ? PW_WINE_INPUT_KEY : PW_WINE_INPUT_MOUSE_BUTTON,
++                                         b->code, 0, 0, down };
++        }
++    }
++    return used;
++}
++
++int pw_wine_touch_pointer(PwWineTouch *t, const PwPadPs5 *pad, PwWineInput *out)
++{
++    int64_t dx, dy;
++    if (!t || !pad || !out || !pad->core.connected || pad->touch.fingers < 1) return 0;
++    const PwPadPs5Touch *f = &pad->touch.touch[0];
++    /* The first read of a finger only marks where it is: the pointer doesn't jump. */
++    if (!t->touching || f->finger != t->finger) return 0;
++    /* One and a half pixels for each of the touchpad's, so it crosses the desktop in about one swipe. */
++    t->move_x += ((int64_t)f->x - t->last_x) * 98304;
++    t->move_y += ((int64_t)f->y - t->last_y) * 98304;
++    dx = t->move_x / 65536;
++    dy = t->move_y / 65536;
++    if (!dx && !dy) return 0;
++    t->move_x -= dx * 65536;
++    t->move_y -= dy * 65536;
++    *out = (PwWineInput){ PW_WINE_INPUT_MOUSE_MOVE, 0, (int32_t)dx, (int32_t)dy, 0 };
++    return 1;
++}
+diff --git a/native/pw_wine_display.h b/native/pw_wine_display.h
+index f1a6ae9..5edbfe6 100644
+--- a/native/pw_wine_display.h
++++ b/native/pw_wine_display.h
+@@ -117,4 +117,35 @@ enum { PW_WINE_STICK_PRESS = 64, PW_WINE_STICK_RELEASE = 48 };
+  * The stick the pointer follows (mouse) gives none, nor does a pad that is
+  * not connected. */
+ uint32_t pw_wine_stick_buttons(const PwPadPs5 *pad, PwGameStick mouse, uint32_t previous);
++
++/* The touchpad's own buttons (pw_game_profile.h's PW_GAME_TOUCH_*): its
++ * click on the left or right half (touchpad_mode = zones), a quick swipe
++ * up, down, left or right (zones: down for one read, then up), and a click
++ * with two fingers (any mode); and the touchpad as a laptop's, moving the
++ * pointer (mouse). The DualSense's touchpad reports 0..1919 across and
++ * 0..1079 down. */
++enum { PW_WINE_TOUCH_WIDTH = 1920, PW_WINE_TOUCH_HEIGHT = 1080,
++       PW_WINE_SWIPE_X = 400, PW_WINE_SWIPE_Y = 250,   /* how far a swipe goes, at least */
++       PW_WINE_SWIPE_MS = 700,                          /* and how quickly, at most */
++       PW_WINE_TOUCHPAD_BUTTON = 0x100000u };            /* the click, as scePadRead has it */
++typedef struct PwWineTouch {
++    uint32_t click;            /* the touch buttons the click being held went to */
++    uint32_t swipe;            /* a swipe down this read, up at the next */
++    int touching, clicked;     /* a finger is down; it clicked (no swipe then) */
++    uint8_t finger;            /* the first finger's id */
++    uint16_t start_x, start_y, last_x, last_y;
++    uint64_t start_us;
++    int64_t move_x, move_y;    /* mouse: the pointer's travel, 1/65536 pixels */
++} PwWineTouch;
++/* The touch buttons down after this read of pad (its edges as the game gets
++ * them), and whether the plain touchpad button sends nothing this read
++ * (*quiet: zones, or a two-finger click bound to a key of its own). */
++uint32_t pw_wine_touch_buttons(PwWineTouch *touch, const PwPadPs5 *pad, PwGameTouchMode mode, int two_finger_bound,
++                               uint64_t now_us, int *quiet);
++/* The keys for touch buttons pressed and released, as pw_wine_game_inputs does. */
++size_t pw_wine_touch_inputs(const PwGameInput *input, uint32_t pressed, uint32_t released, PwWineInput *out,
++                            size_t max);
++/* touchpad_mode = mouse: the pointer's move for the first finger's travel since the last read; 1 when
++ * *out has one. */
++int pw_wine_touch_pointer(PwWineTouch *touch, const PwPadPs5 *pad, PwWineInput *out);
+ #endif
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index d17860a..c0ba8f6 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -1517,6 +1517,8 @@ int main(int argc, char **argv)
+     int scaling = PW_PRESENT_SCALE_FIT;
+     PwWinePointer pointer = { 0, 0 };
+     uint32_t stick_buttons = 0;     /* the sticks' directions held, for keyboard bindings */
++    PwWineTouch touch = { 0 };       /* the touchpad's own buttons and pointer (touchpad_mode) */
++    uint32_t touch_held = 0;
+     int (*post_input)(const PwWineInput *) = NULL;
+     void (*set_pad)(const PwWinePad *) = NULL;
+     int (*rumble)(uint32_t *, uint32_t *) = NULL;
+@@ -1899,7 +1901,7 @@ int main(int argc, char **argv)
+         uint64_t now = now_ns();
+         pw_diagnostics_tick(now);
+         PwPresentView view;
+-        PwWineInput events[2 * PW_GAME_BUTTON_COUNT + 1];
++        PwWineInput events[2 * PW_GAME_BUTTON_COUNT + 2 * PW_GAME_TOUCH_COUNT + 2];
+         int presented = 0;
+ 
+         /* The USB keyboard and mouse; one plugged in later is found by a
+@@ -2012,9 +2014,33 @@ int main(int argc, char **argv)
+             uint32_t sticks = pw_wine_stick_buttons(&pad, game_input.mouse, stick_buttons);
+             uint32_t stick_pressed = sticks & ~stick_buttons, stick_released = stick_buttons & ~sticks;
+             stick_buttons = sticks;
+-            size_t count = pw_wine_game_inputs(&game_input, pad.core.pressed_edges | stick_pressed,
+-                                               pad.core.released_edges | stick_released, events,
+-                                               sizeof(events) / sizeof(events[0]) - 1);
++            /* The touchpad with keyboard and mouse (touchpad_mode): its halves and swipes, a
++             * two-finger click bound to a key, or the pointer; the plain touchpad button then
++             * sends nothing where they take its place. The pointer's move first: it is measured
++             * from where the finger was at the last read. */
++            uint32_t touch_now = 0, pad_pressed = pad.core.pressed_edges, pad_released = pad.core.released_edges;
++            PwWineInput touch_move;
++            int touch_moved = 0, touch_quiet = 0;
++            if (game_input.mode == PW_GAME_INPUT_KEYBOARD) {
++                int two_bound = game_input.touch[6].kind == PW_GAME_BIND_KEY ||
++                                game_input.touch[6].kind == PW_GAME_BIND_MOUSE ||
++                                game_input.touch[6].kind == PW_GAME_BIND_WHEEL;
++                if (game_input.touch_mode == PW_GAME_TOUCH_MOUSE)
++                    touch_moved = pw_wine_touch_pointer(&touch, &pad, &touch_move);
++                touch_now = pw_wine_touch_buttons(&touch, &pad, game_input.touch_mode, two_bound, now / 1000u,
++                                                  &touch_quiet);
++                if (touch_quiet) {
++                    pad_pressed &= ~(uint32_t)PW_WINE_TOUCHPAD_BUTTON;
++                    pad_released &= ~(uint32_t)PW_WINE_TOUCHPAD_BUTTON;
++                }
++            }
++            size_t count = pw_wine_game_inputs(&game_input, pad_pressed | stick_pressed,
++                                               pad_released | stick_released, events,
++                                               sizeof(events) / sizeof(events[0]) - 2);
++            count += pw_wine_touch_inputs(&game_input, touch_now & ~touch_held, touch_held & ~touch_now, &events[count],
++                                          sizeof(events) / sizeof(events[0]) - 2 - count);
++            touch_held = touch_now;
++            if (touch_moved) events[count++] = touch_move;
+             if (game_input.mouse != PW_GAME_STICK_NONE) {
+                 const PwPadPs5Stick *stick = game_input.mouse == PW_GAME_STICK_LEFT ?
+                                              &pad.left_stick : &pad.right_stick;
+diff --git a/src/pw_game_profile.c b/src/pw_game_profile.c
+index 0679d11..a0ce12d 100644
+--- a/src/pw_game_profile.c
++++ b/src/pw_game_profile.c
+@@ -3,7 +3,12 @@
+ #include <string.h>
+ 
+ enum { SET_MODE = 1u << 0, SET_MOUSE = 1u << 1, SET_SPEED = 1u << 2, SET_PRESET = 1u << 3, SET_SLOW = 1u << 4,
+-       SET_SLOW_PERCENT = 1u << 5 };
++       SET_SLOW_PERCENT = 1u << 5, SET_TOUCH_MODE = 1u << 6 };
++
++/* The touchpad's own buttons, in PwGameInput.touch's order (bit i). */
++static const char *const touch_names[PW_GAME_TOUCH_COUNT] = {
++    "touch_left", "touch_right", "swipe_up", "swipe_down", "swipe_left", "swipe_right", "two_finger",
++};
+ 
+ /* DualSense buttons in PW_GAME_BUTTON order, with their scePadRead bits. */
+ static const struct { const char *name; uint32_t mask; } buttons[PW_GAME_BUTTON_COUNT] = {
+@@ -170,6 +175,15 @@ static int input_field(PwGameInput *input, const uint8_t *key, size_t key_length
+         input->set |= SET_SLOW_PERCENT;
+         return PW_OK;
+     }
++    if (is(key, key_length, "touchpad_mode")) {
++        if (input->set & SET_TOUCH_MODE) return PW_ERR_MALFORMED;
++        if (is(v, n, "button")) input->touch_mode = PW_GAME_TOUCH_BUTTON;
++        else if (is(v, n, "zones")) input->touch_mode = PW_GAME_TOUCH_ZONES;
++        else if (is(v, n, "mouse")) input->touch_mode = PW_GAME_TOUCH_MOUSE;
++        else return PW_ERR_UNSUPPORTED;
++        input->set |= SET_TOUCH_MODE;
++        return PW_OK;
++    }
+     for (size_t i = 0; i < PW_GAME_BUTTON_COUNT; i++) {
+         if (!is(key, key_length, buttons[i].name)) continue;
+         PwGameBinding parsed = { buttons[i].mask, 0, 0 };
+@@ -178,6 +192,14 @@ static int input_field(PwGameInput *input, const uint8_t *key, size_t key_length
+         if (status == PW_OK) input->bindings[i] = parsed;
+         return status;
+     }
++    for (size_t i = 0; i < PW_GAME_TOUCH_COUNT; i++) {
++        if (!is(key, key_length, touch_names[i])) continue;
++        PwGameBinding parsed = { 1u << i, 0, 0 };
++        if (input->touch[i].kind != PW_GAME_BIND_UNSET) return PW_ERR_MALFORMED;
++        int status = binding(v, n, &parsed);
++        if (status == PW_OK) input->touch[i] = parsed;
++        return status;
++    }
+     return PW_ERR_UNSUPPORTED;
+ }
+ 
+@@ -495,6 +517,7 @@ void pw_game_input_init(PwGameInput *input)
+     input->mouse_speed = PW_GAME_MOUSE_SPEED_DEFAULT;
+     input->slow_percent = PW_GAME_SLOW_PERCENT_DEFAULT;
+     for (size_t i = 0; i < PW_GAME_BUTTON_COUNT; i++) input->bindings[i].mask = buttons[i].mask;
++    for (size_t i = 0; i < PW_GAME_TOUCH_COUNT; i++) input->touch[i].mask = 1u << i;
+ }
+ 
+ int pw_game_profile_parse(const uint8_t *bytes, size_t length, PwGameProfile *profile)
+@@ -546,9 +569,12 @@ void pw_game_input_overlay(PwGameInput *base, const PwGameInput *overrides)
+     if (overrides->set & SET_SPEED) base->mouse_speed = overrides->mouse_speed;
+     if (overrides->set & SET_SLOW) base->slow_mask = overrides->slow_mask;
+     if (overrides->set & SET_SLOW_PERCENT) base->slow_percent = overrides->slow_percent;
+-    base->set |= overrides->set & (SET_MODE | SET_MOUSE | SET_SPEED | SET_SLOW | SET_SLOW_PERCENT);
++    if (overrides->set & SET_TOUCH_MODE) base->touch_mode = overrides->touch_mode;
++    base->set |= overrides->set & (SET_MODE | SET_MOUSE | SET_SPEED | SET_SLOW | SET_SLOW_PERCENT | SET_TOUCH_MODE);
+     for (size_t i = 0; i < PW_GAME_BUTTON_COUNT; i++)
+         if (overrides->bindings[i].kind != PW_GAME_BIND_UNSET) base->bindings[i] = overrides->bindings[i];
++    for (size_t i = 0; i < PW_GAME_TOUCH_COUNT; i++)
++        if (overrides->touch[i].kind != PW_GAME_BIND_UNSET) base->touch[i] = overrides->touch[i];
+ }
+ 
+ void pw_game_input_default_mode(PwGameInput *input)
+diff --git a/src/pw_game_profile.h b/src/pw_game_profile.h
+index c71634d..47315a6 100644
+--- a/src/pw_game_profile.h
++++ b/src/pw_game_profile.h
+@@ -31,6 +31,17 @@
+  *   left_stick_up = w      ; a stick's direction, bound like a button: down
+  *                          ; while the stick is pushed that way (the stick
+  *                          ; the pointer follows sends no keys)
++ *   touchpad_mode = zones  ; what the touchpad is with mode = keyboard:
++ *                          ; button (its click is touchpad's, the default),
++ *                          ; zones (its halves and swipes are buttons of their
++ *                          ; own and touchpad sends nothing) or mouse (a finger
++ *                          ; moves the pointer; its click is touchpad's)
++ *   touch_left = enter     ; with zones: the click on its left half, its right
++ *   touch_right = escape   ; half, and a quick swipe up, down, left or right
++ *   swipe_up = pageup      ; (a press and a release), bound like a button
++ *   two_finger = tab       ; a click with two fingers, in any touchpad mode:
++ *                          ; bound like a button (default: none, which the
++ *                          ; title may take for its own, PC5's keyboard)
+  *
+  *   [debug]
+  *   winedebug = +seh,+virtual   ; Wine's debug channels for this game (default:
+@@ -86,6 +97,17 @@ enum {
+     PW_GAME_LEFT_STICK_ALL = 0x01e00000, PW_GAME_RIGHT_STICK_ALL = 0x1e000000,
+ };
+ 
++/* The touchpad's own buttons (touchpad_mode = zones, and two_finger in any), in
++ * PwGameInput.touch's order: bits of their own word (pw_wine_touch_buttons). */
++enum {
++    PW_GAME_TOUCH_LEFT = 1u << 0, PW_GAME_TOUCH_RIGHT = 1u << 1,
++    PW_GAME_SWIPE_UP = 1u << 2, PW_GAME_SWIPE_DOWN = 1u << 3,
++    PW_GAME_SWIPE_LEFT = 1u << 4, PW_GAME_SWIPE_RIGHT = 1u << 5,
++    PW_GAME_TWO_FINGER = 1u << 6,
++    PW_GAME_TOUCH_COUNT = 7,
++};
++typedef enum PwGameTouchMode { PW_GAME_TOUCH_BUTTON = 0, PW_GAME_TOUCH_ZONES, PW_GAME_TOUCH_MOUSE } PwGameTouchMode;
++
+ enum {
+     PW_GAME_BUTTON_COUNT = 25,
+     PW_GAME_PAD_BUTTONS = 17,               /* the buttons, before the sticks' directions */
+@@ -120,6 +142,8 @@ typedef struct PwGameInput {
+     uint32_t slow_mask;     /* the button that slows the pointer while held (0: none) */
+     uint32_t slow_percent;  /* by how much, 1..95 */
+     PwGameBinding bindings[PW_GAME_BUTTON_COUNT];   /* in PW_GAME_BUTTON order */
++    PwGameTouchMode touch_mode;
++    PwGameBinding touch[PW_GAME_TOUCH_COUNT];       /* the touchpad's own, by PW_GAME_TOUCH_* bit */
+     char preset[PW_APP_ID_CAPACITY];
+     uint32_t set;       /* which of mode/mouse/mouse_speed a file set (overlay) */
+ } PwGameInput;
+diff --git a/tests/test_pw_wine_display.c b/tests/test_pw_wine_display.c
+index 6286fa6..a460afd 100644
+--- a/tests/test_pw_wine_display.c
++++ b/tests/test_pw_wine_display.c
+@@ -443,6 +443,119 @@ static void test_script_pad(void)
+     }
+ }
+ 
++/* The touchpad's own buttons: its halves, swipes and a two-finger click, and the pointer. */
++static void touch_read(PwPadPs5 *pad, int fingers, uint16_t x, uint16_t y, uint8_t id, int click, uint32_t *was)
++{
++    uint32_t now = click ? PW_WINE_TOUCHPAD_BUTTON : 0;
++    pad->touch.fingers = (uint8_t)fingers;
++    pad->touch.touch[0] = (PwPadPs5Touch){ x, y, id, { 0 } };
++    pad->touch.touch[1] = (PwPadPs5Touch){ (uint16_t)(x + 300), y, (uint8_t)(id + 1), { 0 } };
++    pad->core.pressed_edges = now & ~*was;
++    pad->core.released_edges = *was & ~now;
++    pad->core.previous_buttons = now;
++    *was = now;
++}
++
++static void test_touch(void)
++{
++    PwPadPs5 pad;
++    PwWineTouch t;
++    PwGameInput input;
++    PwWineInput events[8];
++    uint32_t was = 0, held;
++    int quiet;
++
++    memset(&pad, 0, sizeof(pad));
++    pad.core.connected = 1;
++    /* zones: a click on the left half, then on the right; the plain touchpad button sends nothing. */
++    memset(&t, 0, sizeof(t));
++    touch_read(&pad, 1, 300, 500, 1, 0, &was);
++    assert(pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 0, &quiet) == 0 && quiet);
++    touch_read(&pad, 1, 300, 500, 1, 1, &was);
++    assert(pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 10000, &quiet) == PW_GAME_TOUCH_LEFT);
++    touch_read(&pad, 1, 300, 500, 1, 1, &was);
++    assert(pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 20000, &quiet) == PW_GAME_TOUCH_LEFT);
++    touch_read(&pad, 1, 300, 500, 1, 0, &was);
++    assert(pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 30000, &quiet) == 0);
++    touch_read(&pad, 0, 0, 0, 0, 0, &was);
++    assert(pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 40000, &quiet) == 0);   /* clicked: no swipe */
++    touch_read(&pad, 1, 1500, 500, 2, 1, &was);
++    assert(pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 50000, &quiet) == PW_GAME_TOUCH_RIGHT);
++    touch_read(&pad, 0, 0, 0, 0, 0, &was);
++    assert(pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 60000, &quiet) == 0);
++    /* A quick swipe right: down for one read, then up; a slow one or a short one isn't. */
++    touch_read(&pad, 1, 400, 500, 3, 0, &was);
++    assert(pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 100000, &quiet) == 0);
++    touch_read(&pad, 1, 1000, 520, 3, 0, &was);
++    assert(pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 200000, &quiet) == 0);
++    touch_read(&pad, 0, 0, 0, 0, 0, &was);
++    assert(pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 300000, &quiet) == PW_GAME_SWIPE_RIGHT);
++    assert(pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 310000, &quiet) == 0);
++    touch_read(&pad, 1, 800, 900, 4, 0, &was);
++    pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 400000, &quiet);
++    touch_read(&pad, 1, 800, 300, 4, 0, &was);
++    pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 500000, &quiet);
++    touch_read(&pad, 0, 0, 0, 0, 0, &was);
++    assert(pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 600000, &quiet) == PW_GAME_SWIPE_UP);
++    touch_read(&pad, 1, 400, 500, 5, 0, &was);
++    pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 1000000, &quiet);
++    touch_read(&pad, 1, 1000, 500, 5, 0, &was);
++    pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 1900000, &quiet);
++    touch_read(&pad, 0, 0, 0, 0, 0, &was);
++    assert(pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 2000000, &quiet) == 0);   /* too slow */
++    touch_read(&pad, 1, 400, 500, 6, 0, &was);
++    pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 3000000, &quiet);
++    touch_read(&pad, 1, 600, 600, 6, 0, &was);
++    pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 3100000, &quiet);
++    touch_read(&pad, 0, 0, 0, 0, 0, &was);
++    assert(pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_ZONES, 0, 3200000, &quiet) == 0);   /* too short */
++    /* button mode: a click is the touchpad button's; swipes are nothing. */
++    touch_read(&pad, 1, 300, 500, 7, 1, &was);
++    assert(pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_BUTTON, 0, 4000000, &quiet) == 0 && !quiet);
++    touch_read(&pad, 0, 0, 0, 0, 0, &was);
++    pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_BUTTON, 0, 4100000, &quiet);
++    /* A two-finger click bound to a key: its own button, and the touchpad button quiet at its press
++     * and its release; not bound, it stays the touchpad button's (PC5's keyboard may take it). */
++    touch_read(&pad, 2, 300, 500, 8, 1, &was);
++    held = pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_BUTTON, 1, 5000000, &quiet);
++    assert(held == PW_GAME_TWO_FINGER && quiet);
++    touch_read(&pad, 2, 300, 500, 8, 0, &was);
++    assert(pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_BUTTON, 1, 5100000, &quiet) == 0 && quiet);
++    touch_read(&pad, 0, 0, 0, 0, 0, &was);
++    pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_BUTTON, 1, 5200000, &quiet);
++    touch_read(&pad, 2, 300, 500, 9, 1, &was);
++    assert(pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_BUTTON, 0, 6000000, &quiet) == 0 && !quiet);
++    touch_read(&pad, 0, 0, 0, 0, 0, &was);
++    pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_BUTTON, 0, 6100000, &quiet);
++    /* mouse: the first read marks the finger, the next ones move the pointer by 1.5 pixels each. */
++    memset(&t, 0, sizeof(t));
++    touch_read(&pad, 1, 1000, 500, 10, 0, &was);
++    assert(!pw_wine_touch_pointer(&t, &pad, &events[0]));
++    pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_MOUSE, 0, 7000000, &quiet);
++    touch_read(&pad, 1, 1010, 496, 10, 0, &was);
++    assert(pw_wine_touch_pointer(&t, &pad, &events[0]) && events[0].type == PW_WINE_INPUT_MOUSE_MOVE &&
++           events[0].x == 15 && events[0].y == -6);
++    pw_wine_touch_buttons(&t, &pad, PW_GAME_TOUCH_MOUSE, 0, 7010000, &quiet);
++    touch_read(&pad, 0, 0, 0, 0, 0, &was);
++    assert(!pw_wine_touch_pointer(&t, &pad, &events[0]));
++    /* Bound in a profile, a touch button is a key like a button's. */
++    static const char text[] = "[input]\nmode = keyboard\ntouchpad_mode = zones\ntouch_left = enter\n"
++                               "touch_right = mouse_right\nswipe_up = mouse_wheel_up\ntwo_finger = tab\n";
++    pw_game_input_init(&input);
++    assert(pw_game_input_parse((const uint8_t *)text, sizeof(text) - 1, &input) == PW_OK);
++    assert(input.touch_mode == PW_GAME_TOUCH_ZONES && input.touch[6].kind == PW_GAME_BIND_KEY);
++    assert(pw_wine_touch_inputs(&input, PW_GAME_TOUCH_LEFT | PW_GAME_TOUCH_RIGHT, 0, events, 8) == 2);
++    assert(events[0].type == PW_WINE_INPUT_KEY && events[0].code == 0x0d && events[0].down == 1);
++    assert(events[1].type == PW_WINE_INPUT_MOUSE_BUTTON && events[1].code == 1 && events[1].down == 1);
++    assert(pw_wine_touch_inputs(&input, PW_GAME_SWIPE_UP, PW_GAME_TOUCH_LEFT, events, 8) == 2);
++    assert(events[0].code == 0x0d && events[0].down == 0 && events[1].type == PW_WINE_INPUT_MOUSE_WHEEL);
++    assert(pw_wine_touch_inputs(&input, PW_GAME_SWIPE_DOWN, 0, events, 8) == 0);   /* unbound */
++    assert(pw_wine_touch_inputs(&input, PW_GAME_TWO_FINGER, 0, events, 8) == 1 && events[0].code == 0x09);
++    static const char bad[] = "[input]\ntouchpad_mode = trackball\n";
++    pw_game_input_init(&input);
++    assert(pw_game_input_parse((const uint8_t *)bad, sizeof(bad) - 1, &input) == PW_ERR_UNSUPPORTED);
++}
++
+ int main(void)
+ {
+     test_frames();
+@@ -455,6 +568,7 @@ int main(void)
+     test_pad();
+     test_dualsense_state();
+     test_stick_buttons();
++    test_touch();
+     test_script_pad();
+     printf("wine display passed: frame box copy, newest frame, refusals, concurrent put/take, "
+            "profile bindings to keys, mouse buttons and the wheel, the slow button, Cross and the D-pad as dialog keys, stick pointer, "
+-- 
+2.43.0
+

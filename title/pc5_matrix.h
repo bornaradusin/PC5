@@ -24,7 +24,7 @@ Pc5Matrix *pc5_matrix_borrow(const Pc5Fonts *fonts);
  * its Windows starting, its program and DLLs loaded), fill from 0 to 1. Phase 1, "LOADING": the
  * game's own loading once its program runs, fill from how long it took last time, or below 0
  * when that isn't known (a light moving along the bar, which doesn't fill). Without a call the
- * bar fills on time alone, as before 2.1.10. */
+ * bar fills on time alone, as before 2.2.0. */
 void pc5_matrix_progress(Pc5Matrix *matrix, int phase, float fill);
 /* Draws the next step; the frame stays valid until the next call. */
 const uint32_t *pc5_matrix_step(Pc5Matrix *matrix);
