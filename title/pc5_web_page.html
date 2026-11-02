@@ -5,10 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PC5</title>
 <style>
-:root { --bg: #f4f5f7; --card: #fff; --text: #16181d; --dim: #5d6370; --line: #dde0e6; --accent: #2a6df4; --bad: #c62828; --good: #2e7d32; }
-@media (prefers-color-scheme: dark) {
-  :root { --bg: #111318; --card: #1b1e25; --text: #e9ebf0; --dim: #9aa1ad; --line: #2c313b; --accent: #6a9bff; --bad: #ef6b6b; --good: #6fcf7a; }
-}
+/* Always dark, as PC5 and its phone pages are, whatever the browser's own theme. */
+:root { color-scheme: dark; --bg: #101b30; --card: #192941; --text: #edf4ff; --dim: #b8c9de; --line: #3b5575; --accent: #185f91; --link: #7ab8ff; --bad: #ef6b6b; --good: #6fcf7a; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
 header { padding: 18px 16px 6px; max-width: 860px; margin: auto; }
@@ -21,7 +19,7 @@ h2 { margin: 0 0 8px; font-size: 18px; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 button, .button { font: inherit; border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 8px; padding: 6px 12px; cursor: pointer; text-decoration: none; display: inline-block; }
 button.main, .button.main { background: var(--accent); border-color: var(--accent); color: #fff; }
-a { color: var(--accent); }
+a { color: var(--link); }
 button:disabled { opacity: .5; cursor: default; }
 input[type=text] { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); min-width: 160px; flex: 1; }
 textarea { width: 100%; min-height: 70px; font: 13px/1.4 ui-monospace, Consolas, monospace; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); }
@@ -34,7 +32,7 @@ textarea { width: 100%; min-height: 70px; font: 13px/1.4 ui-monospace, Consolas,
 .tag.bad { color: var(--bad); border-color: var(--bad); }
 #filter { margin: 4px 0 8px; width: 100%; }
 details { margin-top: 6px; }
-summary { cursor: pointer; color: var(--accent); }
+summary { cursor: pointer; color: var(--link); }
 progress { width: 100%; height: 10px; }
 .bad { color: var(--bad); }
 .good { color: var(--good); }

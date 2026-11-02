@@ -6096,7 +6096,7 @@ static void test_game(const char *fonts_path)
         const uint32_t *shown = NULL;
         path(dir, sizeof(dir), "%s/loading", game_root);
         mkdir(dir, 0755);
-        CHECK(pc5_loading_own(game_root, "Liberty", "Liberty Town", "liberty", found, sizeof(found)) == -1,
+        CHECK(pc5_loading_own(game_root, "", "Liberty", "Liberty Town", "liberty", found, sizeof(found)) == -1,
               "no picture of the player's: the built-in one");
         red.px = malloc((size_t)red.w * red.h * 4);
         for (int i = 0; red.px && i < red.w * red.h; i++) red.px[i] = 0xffd01010u;
@@ -6107,9 +6107,9 @@ static void test_game(const char *fonts_path)
         path(file, sizeof(file), "%s/loading/loading.png", game_root);
         pc5_write_file(file, png.data, png.len);
         pc5_buf_free(&png);
-        CHECK(!pc5_loading_own(game_root, "Liberty", "Liberty Town", "liberty", found, sizeof(found)) &&
+        CHECK(!pc5_loading_own(game_root, "", "Liberty", "Liberty Town", "liberty", found, sizeof(found)) &&
               strstr(found, "Liberty Town.png"), "the game's own before every game's: %s", found);
-        CHECK(!pc5_loading_own(game_root, "", "Vice", "vice", found, sizeof(found)) && strstr(found, "loading.png"),
+        CHECK(!pc5_loading_own(game_root, "", "", "Vice", "vice", found, sizeof(found)) && strstr(found, "loading.png"),
               "every game's for the others: %s", found);
         memset(&own, 0, sizeof(own));
         own.ops = game.ops;
@@ -6468,7 +6468,7 @@ static int same_bytes(const char *a, const char *b)
 }
 
 /* A game's cover and background chosen by hand (Appearance): what was found for its names, a
- * name typed on the keyboard, the card, and none. The game menu is on Appearance's last row. */
+ * name typed on the keyboard, the card, and none. The game menu is on Media settings and backup's first row, Cover. */
 static void test_picture_screens(Pc5Ui *ui, Pc5Canvas *canvas, FakeConsole *console)
 {
     char cover[PC5_PATH], background[PC5_PATH], note[PC5_PATH], jpg[PC5_PATH], png[PC5_PATH];
@@ -6492,8 +6492,6 @@ static void test_picture_screens(Pc5Ui *ui, Pc5Canvas *canvas, FakeConsole *cons
     key_refused_lines = key_shown_lines = 0;
 
     /* Cover: the one it has first; Back leaves it. */
-    press(ui, PC5_KEY_UP, canvas);
-    press(ui, PC5_KEY_UP, canvas);
     press(ui, PC5_KEY_ACCEPT, canvas);
     until_screen(ui, "picture", canvas);
     frames(ui, 0, 0, 8, canvas);
@@ -7169,7 +7167,9 @@ static void test_screens(const char *fonts)
     press(ui, PC5_KEY_DOWN, &canvas);       /* Play, Controller, Mouse pointer, Graphics, Sound output, Appearance */
     press(ui, PC5_KEY_ACCEPT, &canvas);
     save_shot(&canvas, "game-menu-appearance");
-    for (int i = 0; i < 5; ++i) press(ui, PC5_KEY_DOWN, &canvas);
+    press(ui, PC5_KEY_ACCEPT, &canvas);     /* Media settings and backup: Cover, Background, Loading screen, Music, video and backup */
+    save_shot(&canvas, "game-menu-media");
+    for (int i = 0; i < 3; ++i) press(ui, PC5_KEY_DOWN, &canvas);
     press(ui, PC5_KEY_ACCEPT, &canvas);
     CHECK(!strcmp(pc5_ui_screen(ui), "media-options"), "media settings opens from Appearance: %s", pc5_ui_screen(ui));
     press(ui, PC5_KEY_LEFT, &canvas);
@@ -7180,11 +7180,12 @@ static void test_screens(const char *fonts)
     }
     save_shot(&canvas, "media-options");
     press(ui, PC5_KEY_BACK, &canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "game-menu"), "back to Media settings and backup");
+    press(ui, PC5_KEY_BACK, &canvas);
     CHECK(!strcmp(pc5_ui_screen(ui), "game-menu"), "back to Appearance");
-    for (int i = 0; i < 5; ++i) press(ui, PC5_KEY_UP, &canvas);
 
     press(ui, PC5_KEY_DOWN, &canvas);
-    press(ui, PC5_KEY_DOWN, &canvas);       /* Cover, Background, Home screen tile */
+    press(ui, PC5_KEY_DOWN, &canvas);       /* Media settings and backup, Library music, Home screen tile */
     press(ui, PC5_KEY_ACCEPT, &canvas);
     CHECK(!strcmp(pc5_ui_screen(ui), "message") && pc5_home_find(tiles, "orbital-nine", tile), "tile made: %s %s",
           pc5_ui_screen(ui), tile);
@@ -7193,6 +7194,9 @@ static void test_screens(const char *fonts)
     press(ui, PC5_KEY_ACCEPT, &canvas);
     CHECK(!strcmp(pc5_ui_screen(ui), "message") && !pc5_home_find(tiles, "orbital-nine", tile), "taken away");
     press(ui, PC5_KEY_ACCEPT, &canvas);
+    press(ui, PC5_KEY_UP, &canvas);
+    press(ui, PC5_KEY_UP, &canvas);
+    press(ui, PC5_KEY_ACCEPT, &canvas);     /* Media settings and backup, on Cover */
     test_picture_screens(ui, &canvas, &console);
     press(ui, PC5_KEY_SQUARE, &canvas);
     CHECK(!strcmp(pc5_ui_screen(ui), "message"), "phone reception needs the network backend: %s", pc5_ui_screen(ui));

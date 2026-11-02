@@ -155,3 +155,12 @@ Make a folder `/data/prospero-win/loading/` and put your pictures in it, as `.jp
 - **For one game:** name it as for [your own cover](#for-a-game-already-installed): the game's folder name, its name in PC5 or its id. For example: `/data/prospero-win/loading/Neon Drift.jpg`. A game's own picture comes before the one for every game.
 
 The picture is used from the next start of a game; nothing needs to be restarted.
+
+### Choosing one on the console (from 2.2.3)
+
+For a game PC5 installed, press **△** on it, then **Appearance › Media settings and backup › Loading screen**:
+- **Choose image file**: a JPEG or PNG from a USB drive or the console. **□** receives one from your phone instead.
+- **Use its background**: the game's background picture as its loading picture.
+- **Use PC5's**: back to PC5's own picture (or your `loading` folder's).
+
+A picture chosen there comes before the ones in the `loading` folder.

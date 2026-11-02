@@ -865,7 +865,7 @@ int pc5_game_early_loading(const char *root, const char *app, const char *prefix
     use_language(app, language);
     if (loading_fonts(app, &fonts)) memset(&fonts, 0, sizeof(fonts));
     if ((matrix = pc5_matrix_create(&fonts, title, 0))) {
-        if (root && !pc5_loading_own(root, folder, title, prefix, own, sizeof(own)))
+        if (root && !pc5_loading_own(root, prefix, folder, title, prefix, own, sizeof(own)))
             (void)pc5_matrix_picture(matrix, own);
         /* from black: the matrix fades in over its first half second */
         for (uint32_t at = 0;; at += PC5_MATRIX_STEP_MS) {
@@ -909,7 +909,7 @@ const uint32_t *pc5_game_loading(Pc5GameSession *game, uint64_t now_ms)
             say(game, "PC5 loading screen: out of memory");
             return NULL;
         }
-        if (!pc5_loading_own(game->root, game->folder, game->title, game->prefix, own, sizeof(own)))
+        if (!pc5_loading_own(game->root, game->prefix, game->folder, game->title, game->prefix, own, sizeof(own)))
             say(game, "PC5 loading picture %s: %s", own, pc5_matrix_picture(game->matrix, own) ? "not readable" : "shown");
         if (game->shown_before) pc5_matrix_at_once(game->matrix);   /* it is already on the screen */
         game->matrix_at = 0;

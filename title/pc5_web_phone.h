@@ -50,7 +50,7 @@ int pc5_web_phone_begin(int kind, const char *game, char *url, size_t size)
 {
     uint8_t bytes[16];
     char dir[PC5_PATH];
-    if (kind < 0 || kind > PC5_PHONE_VIDEO || !web.running || !phone.random ||
+    if (kind < 0 || kind > PC5_PHONE_LOADING || kind == PC5_PHONE_LIBRARY || !web.running || !phone.random ||
         phone.random(bytes, sizeof(bytes)) || web.address[0] == ':' ||
         pc5_format(dir, sizeof(dir), "%s/.phone", web.root) || pc5_mkdirs(dir)) return -1;
     pc5_web_phone_end();
@@ -112,11 +112,12 @@ static void phone_answer(Conn *c, const char *rest)
     pc5_copy(game, sizeof(game), phone.game);
     pthread_mutex_unlock(&web.lock);
     if (!rest[32] && !strcmp(c->method, "GET")) {
-        static const char *const kinds[] = { "Cover", "Background image", "Tile picture", "Library music", "Background video" };
+        static const char *const kinds[] = { "Cover", "Background image", "Tile picture", "Library music", "Background video",
+                                             "Library appearance", "Loading screen" };
         Pc5Buf b = { 0 }, title = { 0 };
         /* Names are emitted as JSON and assigned with textContent, never HTML. */
         json_string(&title, game); pc5_buf_terminate(&title);
-        pc5_buf_puts(&b, "<!doctype html><html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>PC5 phone upload</title><style>body{font:18px system-ui;background:#131b2b;color:#fff;max-width:600px;margin:40px auto;padding:20px}button,input{font:inherit;margin:15px 0;max-width:100%}progress{width:100%}</style><h1>PC5</h1><h2 id=game></h2><p>");
+        pc5_buf_puts(&b, "<!doctype html><html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>PC5 phone upload</title><style>:root{color-scheme:dark}body{font:18px system-ui;background:#101b30;color:#edf4ff;max-width:600px;margin:40px auto;padding:20px}button,input{font:inherit;margin:15px 0;max-width:100%;padding:10px;border:1px solid #48698c;border-radius:10px;background:#102139;color:inherit}button{background:#185f91}button:disabled{opacity:.5}progress{width:100%}</style><h1>PC5</h1><h2 id=game></h2><p>");
         pc5_buf_puts(&b, kinds[kind]);
         pc5_buf_puts(&b, "</p><p>");
         pc5_buf_puts(&b, kind == PC5_PHONE_MUSIC ? "MP3 or PCM16 WAV, up to 512 MiB." : kind == PC5_PHONE_VIDEO ? "H.264 MP4/MOV, up to 1080p, 60 fps and 1 GiB. Audio is ignored. HEVC is not supported." : "JPEG or PNG, up to 20 MiB. HEIC is not supported.");

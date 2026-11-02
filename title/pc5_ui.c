@@ -197,16 +197,18 @@ typedef enum GameRow {
     GR_GRAPHICS_API, GR_FRAMEGEN, GR_RESOLUTION, GR_ASPECT, GR_MEMORY, GR_VIDEO_MEMORY, GR_CPU_SHARING,
     GR_COVER, GR_BACKGROUND, GR_HOME, GR_ICON, GR_MUSIC, GR_MUSIC_CLEAR,
     GR_BACKGROUND_IMAGE, GR_BACKGROUND_VIDEO, GR_VIDEO_CLEAR, GR_MEDIA_OPTIONS, GR_MUSIC_FILE, GR_VIDEO_FILE,
+    GR_MEDIA, GR_LOADING, GR_LOADING_FILE, GR_LOADING_BACKGROUND, GR_LOADING_CLEAR,
     GR_PROGRAM, GR_STEAM, GR_FILES, GR_UPDATE, GR_REPORT, GR_UNINSTALL
 } GameRow;
-enum { GAME_ROWS = 8, GAME_PAGES = 7, GP_MAIN = 0, GP_GRAPHICS = 1, GP_APPEARANCE = 2, GP_MANAGE = 3, GP_BACKGROUND = 4,
-       GP_MUSIC = 5, GP_VIDEO = 6 };
+enum { GAME_ROWS = 8, GAME_PAGES = 9, GP_MAIN = 0, GP_GRAPHICS = 1, GP_APPEARANCE = 2, GP_MANAGE = 3, GP_BACKGROUND = 4,
+       GP_MUSIC = 5, GP_VIDEO = 6, GP_MEDIA = 7, GP_LOADING = 8 };
 static const char *const game_page_titles[GAME_PAGES] = { "", N_("Graphics"), N_("Appearance"), N_("Manage"), N_("Background"),
-                                                        N_("Library music"), N_("Background video") };
+                                                        N_("Library music"), N_("Background video"),
+                                                        N_("Media settings and backup"), N_("Loading screen") };
 /* The parent row that opens each page; Back returns to that row. */
 static int setting_about(Pc5Ui *ui, GameRow row, const char *lines[6]);
 static const GameRow game_page_rows[GAME_PAGES] = { GR_PLAY, GR_GRAPHICS, GR_APPEARANCE, GR_MANAGE, GR_BACKGROUND,
-                                                  GR_MUSIC, GR_BACKGROUND_VIDEO };
+                                                  GR_MUSIC, GR_BACKGROUND_VIDEO, GR_MEDIA, GR_LOADING };
 /* What a game is, for its menu's rows. */
 enum { GAME_32BIT = 1, GAME_VULKAN = 2, GAME_PC5 = 4, GAME_API = 8, GAME_STEAM = 16, GAME_DXGI = 32, GAME_MEDIA = 64 };
 
@@ -239,14 +241,24 @@ static int game_rows(const Pc5Controls *controls, int kind, int page, GameRow ro
         rows[n++] = GR_CPU_SHARING;
         break;
     case GP_APPEARANCE:
-        rows[n++] = GR_COVER;
-        rows[n++] = GR_BACKGROUND;
-        rows[n++] = GR_HOME;
-        rows[n++] = GR_ICON;
+        rows[n++] = GR_MEDIA;
         /* Music, a video and their settings are kept in the game's own folder: only a game
          * PC5 installed in a prefix of its own has one (others may share the default one). */
         if (kind & GAME_MEDIA) rows[n++] = GR_MUSIC;
+        rows[n++] = GR_HOME;
+        rows[n++] = GR_ICON;
+        break;
+    case GP_MEDIA:
+        rows[n++] = GR_COVER;
+        rows[n++] = GR_BACKGROUND;
+        /* The loading picture is kept in the game's own folder too. */
+        if (kind & GAME_MEDIA) rows[n++] = GR_LOADING;
         if (kind & GAME_MEDIA) rows[n++] = GR_MEDIA_OPTIONS;
+        break;
+    case GP_LOADING:
+        rows[n++] = GR_LOADING_FILE;
+        rows[n++] = GR_LOADING_BACKGROUND;
+        rows[n++] = GR_LOADING_CLEAR;
         break;
     case GP_MANAGE:
         rows[n++] = GR_PROGRAM;
@@ -382,6 +394,7 @@ struct Pc5Ui {
     Pc5Runtime runtime;
     Pc5Matrix *launch_matrix;     /* the loading picture while PC5 hands a game over (S_LAUNCH) */
     int launch_ready;             /* the game made ready: the loading picture fades in, then it starts */
+    int loading_saved;            /* the last loading_import saved the picture */
     uint64_t launch_ready_at;
     int runtime_state;
     /* Starting a game: its redistributables the first time (pc5_msi.h). 0: not looked at yet,
@@ -575,6 +588,7 @@ struct Pc5Ui {
      * console's places, from Settings. */
     int files_game;                /* 1: the folder of the game in launch_id, and nothing above it */
     int files_music;               /* read-only file selection for library music */
+    int files_loading;             /* read-only file selection for a game's loading picture */
     char music_id[PC5_ID], music_want[PC5_PATH], music_playing[PC5_PATH];
     uint64_t music_since;
     Pc5MusicImport music_import;
@@ -3628,6 +3642,7 @@ static void files_open(Pc5Ui *ui, int game)
 {
     ui->files_music = 0;
     ui->files_video = 0;
+    ui->files_loading = 0;
     ui->files_look = 0;
     ui->files_game = game;
     ui->files_top[0] = ui->files_path[0] = 0;
@@ -3654,10 +3669,76 @@ static void files_open(Pc5Ui *ui, int game)
 
 #include "pc5_ui_enhancements_input.h"
 
+/* The game the menu is on, for its loading picture: its folder of its own (prefixes/<prefix>/pc5). */
+static int loading_path(Pc5Ui *ui, const Pc5Game *game, char *path, size_t size)
+{
+    char dir[PC5_PATH];
+    if (!game || !game->prefix[0] || !strcmp(game->prefix, "default") ||
+        pc5_format(dir, sizeof(dir), "%s/prefixes/%s/pc5", ui->root, game->prefix) || pc5_mkdirs(dir) ||
+        pc5_format(path, size, "%s/loading.png", dir))
+        return -1;
+    return 0;
+}
+
+static void files_close(Pc5Ui *ui);
+
+/* A picture file (a JPEG or PNG on a USB drive, the console or from the phone) as the loading
+ * picture of the game PC5 is on (ui->launch_id); then back to the loading screen's rows. */
+static void loading_import(Pc5Ui *ui, const char *source, Screen back)
+{
+    int index = pc5_library_find(&ui->library, ui->launch_id);
+    const Pc5Game *game = index >= 0 ? &ui->library.games[index] : NULL;
+    char path[PC5_PATH];
+    Pc5Buf data = { 0 };
+    Pc5Image image = { 0 };
+    int failed = !game || loading_path(ui, game, path, sizeof(path)) || pc5_read_file(source, &data, 20u << 20) ||
+                 pc5_image_decode(data.data, data.len, &image) || pc5_loading_save(&image, path);
+
+    pc5_buf_free(&data);
+    pc5_image_free(&image);
+    ui->loading_saved = !failed;
+    say(ui, "PC5 loading picture %s from %s: %s", game ? game->id : "-", source, failed ? "not saved" : "saved");
+    if (failed) {
+        message(ui, 0, T("Picture wasn't saved"), T("Choose a readable JPEG or PNG image, at most 20 MB. Your previous picture was kept."),
+                back);
+        return;
+    }
+    if (ui->screen == S_FILES) files_close(ui);
+    game_menu_at(ui, GR_LOADING);
+    message(ui, 1, T("Loading screen saved"), T("It shows the next time the game starts."), S_GAME_MENU);
+}
+
+/* The game's background picture as its loading picture. */
+static void loading_from_background(Pc5Ui *ui, const Pc5Game *game)
+{
+    char from[PC5_PATH], path[PC5_PATH];
+    Pc5Image image = { 0 };
+    int failed = pc5_format(from, sizeof(from), "%s/prefixes/%s/pc5/background.bin", ui->root, game->prefix) ||
+                 loading_path(ui, game, path, sizeof(path)) || pc5_cover_load(from, &image, NULL) ||
+                 pc5_loading_save(&image, path);
+
+    pc5_image_free(&image);
+    say(ui, "PC5 loading picture %s from its background: %s", game->id, failed ? "not saved" : "saved");
+    game_menu_at(ui, GR_LOADING);
+    if (failed) message(ui, 0, T("Picture wasn't saved"), T("It has no background picture yet: choose one in Background first."), S_GAME_MENU);
+    else message(ui, 1, T("Loading screen saved"), T("Its background shows the next time the game starts."), S_GAME_MENU);
+}
+
+/* Back to PC5's own loading picture for the game. */
+static void loading_clear(Pc5Ui *ui, const Pc5Game *game)
+{
+    char path[PC5_PATH];
+    if (!pc5_loading_chosen(ui->root, game->prefix, path, sizeof(path))) unlink(path);
+    say(ui, "PC5 loading picture %s: PC5's", game->id);
+    game_menu_at(ui, GR_LOADING);
+    message(ui, 1, T("Loading screen"), T("It shows PC5's own loading screen again."), S_GAME_MENU);
+}
+
 static int phone_row_kind(GameRow row)
 {
     return row == GR_COVER ? PC5_PHONE_COVER : row == GR_BACKGROUND_IMAGE ? PC5_PHONE_BACKGROUND :
            row == GR_ICON ? PC5_PHONE_ICON : (row == GR_MUSIC || row == GR_MUSIC_FILE) ? PC5_PHONE_MUSIC :
+           (row == GR_LOADING || row == GR_LOADING_FILE) ? PC5_PHONE_LOADING :
            (row == GR_BACKGROUND_VIDEO || row == GR_VIDEO_FILE) ? PC5_PHONE_VIDEO : -1;
 }
 
@@ -3677,8 +3758,8 @@ static void phone_source_remove(Pc5Ui *ui)
 static void phone_open(Pc5Ui *ui, const Pc5Game *game, int kind)
 {
     Pc5WebStatus status;
-    Screen return_to = kind == 5 ? S_SETTINGS : S_GAME_MENU;
-    if (kind == 5) settings_open(ui, PAGE_NETWORK, 4);
+    Screen return_to = kind == PC5_PHONE_LIBRARY ? S_SETTINGS : S_GAME_MENU;
+    if (kind == PC5_PHONE_LIBRARY) settings_open(ui, PAGE_NETWORK, 4);
     if (!game->pc5 || !game->prefix[0] || !strcmp(game->prefix, "default")) {
         message(ui, 0, T("PC5 didn't install this game"), T("Phone uploads need a game with its own PC5 folder."), return_to);
         return;
@@ -3696,8 +3777,8 @@ static void phone_open(Pc5Ui *ui, const Pc5Game *game, int kind)
     }
     phone_source_remove(ui);
     ui->phone_kind = kind;
-    ui->phone_library = kind == 5;
-    if ((kind == 5 ? pc5_web_appearance_begin(ui->web_url, sizeof(ui->web_url)) : pc5_web_phone_begin(kind, game->title, ui->web_url, sizeof(ui->web_url))) || pc5_qr_make(ui->web_url, &ui->web_qr)) {
+    ui->phone_library = kind == PC5_PHONE_LIBRARY;
+    if ((kind == PC5_PHONE_LIBRARY ? pc5_web_appearance_begin(ui->web_url, sizeof(ui->web_url)) : pc5_web_phone_begin(kind, game->title, ui->web_url, sizeof(ui->web_url))) || pc5_qr_make(ui->web_url, &ui->web_qr)) {
         phone_end(ui);
         message(ui, 0, T("Phone connection unavailable"), T("Check the network, then try again. The phone and PS5 must share a network or phone hotspot."), return_to);
         return;
@@ -3765,6 +3846,10 @@ static void phone_update(Pc5Ui *ui, uint32_t k, uint32_t back)
         if (ui->files_music) music_import_begin(ui, ui->phone_source);
         else video_import_begin(ui, ui->phone_source);
         if (ui->screen != S_MUSIC_IMPORT && ui->screen != S_VIDEO_IMPORT) phone_source_remove(ui);
+    } else if (ui->phone_kind == PC5_PHONE_LOADING) {
+        loading_import(ui, ui->phone_source, S_GAME_MENU);
+        phone_source_remove(ui);
+        ui->phone_import_ok = ui->loading_saved;
     } else {
         phone_picture_use(ui, &ui->library.games[index]);
         ui->phone_import_ok = ui->screen != S_MESSAGE;
@@ -3788,6 +3873,10 @@ static void files_close(Pc5Ui *ui)
     } else if (ui->files_music) {
         ui->files_music = 0;
         game_menu_at(ui, GR_MUSIC_FILE);
+        go(ui, S_GAME_MENU);
+    } else if (ui->files_loading) {
+        ui->files_loading = 0;
+        game_menu_at(ui, GR_LOADING_FILE);
         go(ui, S_GAME_MENU);
     } else if (ui->files_game) {
         game_menu_at(ui, GR_FILES);
@@ -3856,6 +3945,16 @@ static void files_enter(Pc5Ui *ui)
             }
             pc5_copy(ui->look_source, sizeof(ui->look_source), next);
             ui->button = 0; go(ui, S_LOOK_CONFIRM); return;
+        }
+        if (ui->files_loading) {
+            if (files_join(next, sizeof(next), ui->files_path, item->name) ||
+                (!pc5_ends_with_ci(item->name, ".jpg") && !pc5_ends_with_ci(item->name, ".jpeg") &&
+                 !pc5_ends_with_ci(item->name, ".png"))) {
+                message(ui, 0, T("Choose a picture"), T("Choose a JPEG or PNG picture."), S_FILES);
+                return;
+            }
+            loading_import(ui, next, S_FILES);
+            return;
         }
         if (ui->files_music) {
             if (files_join(next, sizeof(next), ui->files_path, item->name) ||
@@ -4742,7 +4841,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 break;
             case SR_PHONE_LIBRARY: {
                 const Pc5Game library = { .title = "Library appearance", .prefix = "library", .pc5 = 1 };
-                phone_open(ui, &library, 5); break;
+                phone_open(ui, &library, PC5_PHONE_LIBRARY); break;
             }
             case SR_GAMES: settings_open(ui, PAGE_GAMES, 0); break;
             case SR_OVERLAY: settings_open(ui, PAGE_OVERLAY, 0); break;
@@ -5152,10 +5251,11 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         } else if ((k & accept) && row == GR_BACKGROUND && !(ui_game_kind(ui) & GAME_MEDIA)) {
             picture_open(ui, game, PICK_BACKGROUND);   /* no video for it: the picture, as before */
         } else if ((k & accept) && (row == GR_GRAPHICS || row == GR_APPEARANCE || row == GR_MANAGE || row == GR_BACKGROUND ||
-                                  row == GR_MUSIC || row == GR_BACKGROUND_VIDEO)) {
+                                  row == GR_MUSIC || row == GR_BACKGROUND_VIDEO || row == GR_MEDIA || row == GR_LOADING)) {
             ui->game_page = row == GR_GRAPHICS ? GP_GRAPHICS : row == GR_APPEARANCE ? GP_APPEARANCE :
                             row == GR_BACKGROUND ? GP_BACKGROUND : row == GR_MUSIC ? GP_MUSIC :
-                            row == GR_BACKGROUND_VIDEO ? GP_VIDEO : GP_MANAGE;
+                            row == GR_BACKGROUND_VIDEO ? GP_VIDEO : row == GR_MEDIA ? GP_MEDIA :
+                            row == GR_LOADING ? GP_LOADING : GP_MANAGE;
             ui->menu = 0;
             ui->dirty = 1;
         } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_CONTROLLER) {
@@ -5242,6 +5342,13 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             } else if (row == GR_MUSIC_FILE) {
                 files_open(ui, 0);
                 ui->files_music = 1;
+            } else if (row == GR_LOADING_FILE) {
+                files_open(ui, 0);
+                ui->files_loading = 1;
+            } else if (row == GR_LOADING_BACKGROUND) {
+                loading_from_background(ui, game);
+            } else if (row == GR_LOADING_CLEAR) {
+                loading_clear(ui, game);
             } else if (row == GR_MEDIA_OPTIONS) {
                 if (!game->pc5 || !game->prefix[0] || !strcmp(game->prefix, "default")) {
                     message(ui, 0, T("PC5 didn't install this game"), T("Media settings need a game with its own PC5 folder."), S_GAME_MENU);
@@ -6849,10 +6956,37 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
         *text = T("Import MP3 or WAV to console storage: plays on this cover, even without USB");
         *value = more;
         break;
-    case GR_MEDIA_OPTIONS:
+    case GR_MEDIA:
         *label = T("Media settings and backup");
+        *text = T("Its cover, background and loading screen, and its music and video settings");
+        *value = more;
+        break;
+    case GR_MEDIA_OPTIONS:
+        *label = T("Music, video and backup");
         *text = T("Music volume and start, video loop, framing, darkness and appearance backup");
         *value = more;
+        break;
+    case GR_LOADING: {
+        char chosen[PC5_PATH];
+        *label = T("Loading screen");
+        *text = T("The picture shown while it starts: PC5's own, or one of yours");
+        *value = !pc5_loading_chosen(ui->root, game->prefix, chosen, sizeof(chosen)) ? T("Own") : T("PC5's");
+        break;
+    }
+    case GR_LOADING_FILE:
+        *label = T("Choose image file");
+        *text = T("A JPEG or PNG from a USB drive or the console; Square: from your phone");
+        *value = more;
+        break;
+    case GR_LOADING_BACKGROUND:
+        *label = T("Use its background");
+        *text = T("Its background picture, as its loading screen");
+        *value = "";
+        break;
+    case GR_LOADING_CLEAR:
+        *label = T("Use PC5's");
+        *text = T("Back to PC5's own loading screen for it");
+        *value = "";
         break;
     case GR_MUSIC_CLEAR:
         *label = T("Remove library music");
@@ -7781,7 +7915,8 @@ static void phone_screen(Pc5Ui *ui, Pc5Canvas *c)
     float w = 1600, h = 800, x = (W - w) / 2, y = (H - h) / 2;
     Pc5PhoneStatus status;
     char line[256];
-    static const char *const kinds[] = { N_("Cover"), N_("Background image"), N_("Tile picture"), N_("Library music"), N_("Background video") };
+    static const char *const kinds[] = { N_("Cover"), N_("Background image"), N_("Tile picture"), N_("Library music"), N_("Background video"),
+                                         N_("Library appearance from phone"), N_("Loading screen") };
     pc5_web_phone_status(&status);
     dim(c, 170); panel(c, x, y, w, h);
     int tx = (int)x + 60, tw = 760;

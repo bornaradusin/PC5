@@ -96,7 +96,7 @@ Choose a game in the library and press **△**. Its menu has what you change mos
 | Mouse pointer | **Normal** (the default): the pointer stays as the game shows it. **Auto-hide**: it hides when you haven't moved it or clicked for 5 seconds, for a game that leaves it in a corner. See [Controllers](Controllers). |
 | Graphics › | Graphics mode, frame generation, resolution, aspect ratio, game memory, graphics memory and stutter fix. See [Graphics](#graphics). |
 | Sound output | **Stereo** (the default), **5.1** or **7.1**: how many speakers the game is told the console has. With 5.1 or 7.1 the game plays each sound on its own speaker of a surround system, and the PS5 sends it on as it does its own games' sound. If the game is silent or sound only comes from the front, set it back to Stereo. Press **✕** or left / right to change it. From 2.2.2-test. |
-| Appearance › | The game's cover, its background (a picture or a video), its home screen tile, the tile's picture and its music. See [Appearance](#appearance). |
+| Appearance › | The game's cover, its background (a picture or a video), its loading picture, its home screen tile, the tile's picture and its music. See [Appearance](#appearance). |
 | Manage › | The program PC5 starts, its files, updating the game and uninstalling it. See [Manage](#manage). |
 
 **○** goes back from a group to the menu, and from the menu to the library. **△** closes the menu from anywhere in it.
@@ -125,14 +125,21 @@ From 2.1.9, **□ About** on a setting opens a window that says in plain words w
 
 | Row | What it does |
 | --- | --- |
-| Cover | Another of the covers found for the game, one found for a name you type, or the card made from its icon. See [Changing a cover or background](Covers#changing-a-cover-or-background). |
-| Background | Another of the backgrounds found, one found for a name you type, or none. See [Changing a cover or background](Covers#changing-a-cover-or-background). For a game PC5 installed, it opens **Background image** (that choice) and **Background video**: a silent H.264 video (MP4 or MOV, up to 1080p and 60 fps, at most 1 GB) copied to the console and played behind the cover, or **Remove background video** to go back to the picture. |
+| Media settings and backup › | The game's pictures and media settings: **Cover**, **Background**, **Loading screen** and **Music, video and backup**, below. From 2.2.3; before, they were on Appearance itself. |
+| Library music | For a game PC5 installed: an MP3 or WAV file (16-bit), copied to the console, that plays while the game's cover is chosen, fading in and out. **Remove library music** stops it. |
 | Home screen tile | **Off** or **On**: a tile on the PS5's home screen, an app of its own that starts this game. See [Home screen tiles](Home-screen-tiles). |
 | Tile picture | The tile's picture: a square one from SteamGridDB (with your key), or one made from its cover. See [The tile's picture](Home-screen-tiles#the-tiles-picture). |
-| Library music | For a game PC5 installed: an MP3 or WAV file (16-bit), copied to the console, that plays while the game's cover is chosen, fading in and out. **Remove library music** stops it. |
-| Media settings | For a game PC5 installed: the music's volume and where it starts, where the video starts and ends its loop, how it fills the screen (Stretch, Fit or Fill), how much it's darkened, and **Export appearance backup** / **Restore appearance backup**: the game's pictures, music, video and these settings in one `.pc5look` file, on the console or a USB drive. Restoring checks the whole file first and keeps the game's files and saves. |
 
-**□ on Cover, Background image, Tile picture, Library music or Background video: receive it from your phone.** PC5 shows a QR code: with the phone on the same network as the console (or the console on the phone's hotspot), scan it, choose one file and send it. Keep the QR code on screen until it's received; the link works for 10 minutes without use, and only on your network. A picture can be JPEG or PNG up to 20 MB, music up to 512 MB, a video up to 1 GB.
+**Media settings and backup:**
+
+| Row | What it does |
+| --- | --- |
+| Cover | Another of the covers found for the game, one found for a name you type, or the card made from its icon. See [Changing a cover or background](Covers#changing-a-cover-or-background). |
+| Background | Another of the backgrounds found, one found for a name you type, or none. See [Changing a cover or background](Covers#changing-a-cover-or-background). For a game PC5 installed, it opens **Background image** (that choice) and **Background video**: a silent H.264 video (MP4 or MOV, up to 1080p and 60 fps, at most 1 GB) copied to the console and played behind the cover, or **Remove background video** to go back to the picture. |
+| Loading screen | For a game PC5 installed: the picture shown while it starts. **Choose image file** takes a JPEG or PNG from a USB drive or the console, **Use its background** uses the game's background picture, and **Use PC5's** goes back to PC5's own. See [Loading screen](Covers#loading-screen). |
+| Music, video and backup | For a game PC5 installed: the music's volume and where it starts, where the video starts and ends its loop, how it fills the screen (Stretch, Fit or Fill), how much it's darkened, and **Export appearance backup** / **Restore appearance backup**: the game's pictures, music, video and these settings in one `.pc5look` file, on the console or a USB drive. Restoring checks the whole file first and keeps the game's files and saves. |
+
+**□ on Cover, Background image, Loading screen, Tile picture, Library music or Background video: receive it from your phone.** PC5 shows a QR code: with the phone on the same network as the console (or the console on the phone's hotspot), scan it, choose one file and send it. Keep the QR code on screen until it's received; the link works for 10 minutes without use, and only on your network. A picture can be JPEG or PNG up to 20 MB, music up to 512 MB, a video up to 1 GB.
 
 ### Manage
 

@@ -381,6 +381,10 @@ int main(int argc, char **argv)
     step(ui, PC5_KEY_ACCEPT, 1);           /* Appearance */
     settle(ui);
     save("15j-game-menu-appearance");
+    /* Media settings and backup: Cover, Background, Loading screen, Music, video and backup. */
+    step(ui, PC5_KEY_ACCEPT, 1);
+    settle(ui);
+    save("15n-game-menu-media");
     /* Its cover: what was found, then a name typed. */
     step(ui, PC5_KEY_ACCEPT, 1);
     until(ui, "picture");
@@ -402,8 +406,16 @@ int main(int argc, char **argv)
     settle(ui);
     save("15l-background-choose");
     step(ui, PC5_KEY_BACK, 1);
-    step(ui, PC5_KEY_BACK, 1);             /* Background submenu to Appearance */
+    step(ui, PC5_KEY_BACK, 1);             /* Background submenu to Media settings and backup */
     settle(ui);
+    step(ui, PC5_KEY_DOWN, 1);
+    step(ui, PC5_KEY_ACCEPT, 1);           /* Loading screen */
+    settle(ui);
+    save("15o-game-menu-loading");
+    step(ui, PC5_KEY_BACK, 1);
+    step(ui, PC5_KEY_BACK, 1);             /* to Appearance, on Media settings and backup */
+    settle(ui);
+    step(ui, PC5_KEY_DOWN, 1);             /* Library music */
     step(ui, PC5_KEY_DOWN, 1);
     step(ui, PC5_KEY_ACCEPT, 1);           /* Home screen tile on */
     settle(ui);

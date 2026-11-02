@@ -7,6 +7,8 @@
 #include "pc5_loading_art.h"
 
 #include <math.h>
+#include <stdio.h>
+#include <unistd.h>
 #include <string.h>
 
 /* Where the circle and the words sit, in the 1280x720 frame: the bottom right corner, the words
@@ -82,40 +84,73 @@ void pc5_matrix_at_once(Pc5Matrix *m)
     if (m) m->no_fade = 1;
 }
 
+/* image filled into the frame: cut to 16:9 about its middle, then to 1280x720, opaque. */
+static int fill_frame(const Pc5Image *image, Pc5Image *fitted)
+{
+    Pc5Image cut = { 0 };
+    int w = image->w, h = image->h, status = -1;
+
+    if (w <= 0 || h <= 0 || !image->px) return -1;
+    if ((int64_t)w * PC5_MATRIX_HEIGHT > (int64_t)h * PC5_MATRIX_WIDTH) w = (int)((int64_t)h * PC5_MATRIX_WIDTH / PC5_MATRIX_HEIGHT);
+    else h = (int)((int64_t)w * PC5_MATRIX_HEIGHT / PC5_MATRIX_WIDTH);
+    if (w <= 0 || h <= 0 || !(cut.px = pc5_alloc((size_t)w * h * 4))) return -1;
+    int x0 = (image->w - w) / 2, y0 = (image->h - h) / 2;
+    cut.w = w;
+    cut.h = h;
+    for (int y = 0; y < h; y++) memcpy(cut.px + (size_t)y * w, image->px + (size_t)(y0 + y) * image->w + x0, (size_t)w * 4);
+    if (!pc5_image_resize(&cut, PC5_MATRIX_WIDTH, PC5_MATRIX_HEIGHT, fitted)) {
+        for (size_t i = 0; i < (size_t)PC5_MATRIX_WIDTH * PC5_MATRIX_HEIGHT; i++) fitted->px[i] |= 0xff000000u;
+        status = 0;
+    }
+    pc5_image_free(&cut);
+    return status;
+}
+
 int pc5_matrix_picture(Pc5Matrix *m, const char *path)
 {
     Pc5Buf bytes = { 0 };
-    Pc5Image image = { 0 }, cut = { 0 }, fitted = { 0 };
+    Pc5Image image = { 0 }, fitted = { 0 };
     int status = -1;
 
     if (!m || !path || pc5_read_file(path, &bytes, 64u << 20)) return -1;
-    if (!pc5_image_decode(bytes.data, bytes.len, &image) && image.w > 0 && image.h > 0) {
-        /* cut to 16:9 about the middle, then to the frame's size */
-        int w = image.w, h = image.h;
-        if ((int64_t)w * PC5_MATRIX_HEIGHT > (int64_t)h * PC5_MATRIX_WIDTH) w = (int)((int64_t)h * PC5_MATRIX_WIDTH / PC5_MATRIX_HEIGHT);
-        else h = (int)((int64_t)w * PC5_MATRIX_HEIGHT / PC5_MATRIX_WIDTH);
-        if (w > 0 && h > 0 && (cut.px = pc5_alloc((size_t)w * h * 4))) {
-            int x0 = (image.w - w) / 2, y0 = (image.h - h) / 2;
-            cut.w = w;
-            cut.h = h;
-            for (int y = 0; y < h; y++) memcpy(cut.px + (size_t)y * w, image.px + (size_t)(y0 + y) * image.w + x0, (size_t)w * 4);
-            if (!pc5_image_resize(&cut, PC5_MATRIX_WIDTH, PC5_MATRIX_HEIGHT, &fitted)) {
-                for (size_t i = 0; i < (size_t)PC5_MATRIX_WIDTH * PC5_MATRIX_HEIGHT; i++) fitted.px[i] |= 0xff000000u;
-                pc5_free(m->picture);
-                m->picture = fitted.px;   /* kept */
-                status = 0;
-            }
-            pc5_image_free(&cut);
-        }
+    if (!pc5_image_decode(bytes.data, bytes.len, &image) && !fill_frame(&image, &fitted)) {
+        pc5_free(m->picture);
+        m->picture = fitted.px;   /* kept */
+        status = 0;
     }
     pc5_image_free(&image);
     pc5_buf_free(&bytes);
     return status;
 }
 
-int pc5_loading_own(const char *root, const char *folder, const char *title, const char *id, char *out, size_t size)
+int pc5_loading_save(const Pc5Image *image, const char *path)
+{
+    Pc5Image fitted = { 0 };
+    Pc5Buf png = { 0 };
+    char part[PC5_PATH];
+    int status = -1;
+
+    if (!image || !path || pc5_format(part, sizeof(part), "%s.part", path) || fill_frame(image, &fitted)) return -1;
+    if (!pc5_image_png(&fitted, &png) && !pc5_write_file(part, png.data, png.len) && !rename(part, path)) status = 0;
+    else unlink(part);
+    pc5_buf_free(&png);
+    pc5_image_free(&fitted);
+    return status;
+}
+
+int pc5_loading_chosen(const char *root, const char *prefix, char *out, size_t size)
+{
+    if (!root || !prefix || !prefix[0] || !strcmp(prefix, "default") ||
+        pc5_format(out, size, "%s/prefixes/%s/pc5/loading.png", root, prefix))
+        return -1;
+    return pc5_is_file(out) ? 0 : -1;
+}
+
+int pc5_loading_own(const char *root, const char *prefix, const char *folder, const char *title, const char *id, char *out,
+                    size_t size)
 {
     char dir[PC5_PATH];
+    if (!pc5_loading_chosen(root, prefix, out, size)) return 0;   /* chosen in its Appearance */
     const char *const names[] = { folder ? folder : "", title ? title : "", id ? id : "", NULL };
     const char *const every[] = { "loading", NULL };
 

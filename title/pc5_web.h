@@ -39,7 +39,10 @@ void pc5_web_status(Pc5WebStatus *status);
 /* The username and password a browser must give ("" or NULL: none asked), from the next request on. */
 void pc5_web_login(const char *user, const char *password);
 
-enum { PC5_PHONE_COVER, PC5_PHONE_BACKGROUND, PC5_PHONE_ICON, PC5_PHONE_MUSIC, PC5_PHONE_VIDEO };
+/* What a phone sends: one of a game's media, or (PC5_PHONE_LIBRARY) the library-wide appearance
+ * page, which picks the game and the media itself. */
+enum { PC5_PHONE_COVER, PC5_PHONE_BACKGROUND, PC5_PHONE_ICON, PC5_PHONE_MUSIC, PC5_PHONE_VIDEO, PC5_PHONE_LIBRARY,
+       PC5_PHONE_LOADING };
 typedef struct Pc5PhoneStatus {
     int active, busy, ready;
     uint64_t received, total;

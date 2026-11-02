@@ -28,11 +28,18 @@ void pc5_matrix_at_once(Pc5Matrix *matrix);
  * into the frame (cut to 16:9 about its middle). 0 when it is used; the built-in one stays
  * otherwise. */
 int pc5_matrix_picture(Pc5Matrix *matrix, const char *path);
-/* The player's own loading picture for a game, in root/loading/: named as an own cover is (the
- * game's folder name, its name or its id), or loading.jpg/.jpeg/.png for every game. folder is
- * the game's folder's name (or ""), title its name in PC5, id its id; any may be NULL. 0 with
- * its path in out, or -1 when there is none. */
-int pc5_loading_own(const char *root, const char *folder, const char *title, const char *id, char *out, size_t size);
+/* The player's own loading picture for a game: the one chosen in its Appearance
+ * (prefixes/<prefix>/pc5/loading.png, pc5_loading_chosen), else one in root/loading/ named as an
+ * own cover is (the game's folder name, its name or its id), else loading.jpg/.jpeg/.png there for
+ * every game. folder is the game's folder's name (or ""), title its name in PC5, id its id; any may
+ * be NULL. 0 with its path in out, or -1 when there is none (PC5's own is shown). */
+int pc5_loading_own(const char *root, const char *prefix, const char *folder, const char *title, const char *id, char *out,
+                    size_t size);
+/* The loading picture chosen for a game in its Appearance: 0 with its path in out when it has one. */
+int pc5_loading_chosen(const char *root, const char *prefix, char *out, size_t size);
+/* image as a loading picture, filled into the frame (cut to 16:9 about its middle), written to
+ * path as a 1280x720 PNG in one go. 0 when written. */
+int pc5_loading_save(const Pc5Image *image, const char *path);
 /* Draws the next step; the frame stays valid until the next call. */
 const uint32_t *pc5_matrix_step(Pc5Matrix *matrix);
 
