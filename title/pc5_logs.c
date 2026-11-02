@@ -65,7 +65,7 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
 {
     const char *end_of_text = text + length, *line = text;
     double first_t = -1, last_t = -1;
-    int ended = 0, launch_failed = 0, unhandled = 0, forced = 0, pc5_problem = 0, picture = 0, asked = 0;
+    int ended = 0, launch_failed = 0, unhandled = 0, forced = 0, pc5_problem = 0, picture = 0, asked = 0, handed_off = 0;
     char crash[200] = "", problem[200] = "";
 
     memset(issue, 0, sizeof(*issue));
@@ -100,6 +100,9 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
             line_text(found, end, problem, sizeof(problem));
         }
         if (after(line, end, "display released to vulkan")) picture = 1;
+        /* A game's own launcher that started the game itself (Warcraft III's Frozen Throne.exe
+         * starting war3.exe): PC5 starts that program in its place, so no picture is expected. */
+        if (after(line, end, "PW_WINE64 restart ") && after(line, end, " reason=handoff")) handed_off = 1;
         if (after(line, end, "PW_WINE64 alive ")) {
             const char *shown = after(line, end, " shown="), *vk = after(line, end, " vk_shown=");
             if ((shown && strtoull(shown, NULL, 10) > 0) || (vk && strtoull(vk, NULL, 10) > 0)) picture = 1;
@@ -124,8 +127,9 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
     } else if (unhandled) {
         issue->problem = PC5_LOG_GAME_CRASHED;
         pc5_copy(issue->detail, sizeof(issue->detail), crash);
-    } else if (asked) {
-        /* The player closed it, quickly or not, and a game that ignored Alt+F4 was ended as asked. */
+    } else if (asked || handed_off) {
+        /* The player closed it, quickly or not, and a game that ignored Alt+F4 was ended as asked;
+         * or the program handed off to the game it started. */
     } else if (forced) {
         issue->problem = PC5_LOG_FORCED;
     } else if (launch_failed) {

@@ -4143,6 +4143,9 @@ static void test_logs(void)
     CHECK(CLASSIFY("launcher", crash) == PC5_LOG_FINE, "PC5's own session isn't a game's");
     CHECK(CLASSIFY("blur", played) == PC5_LOG_FINE, "a game played");
     CHECK(CLASSIFY("quick", quick) == PC5_LOG_NO_PICTURE, "closed before any picture");
+    CHECK(CLASSIFY("wc3", "REC seq=1 t=2420.012 PW_WINE64 run status=0\nREC seq=2 t=2420.420 PW_WINE64 exit sink_calls=51\n"
+                          "REC seq=3 t=2420.449 PW_WINE64 restart to=wc3 cycle=1 reason=handoff eboot=/app0/eboot.bin\n") ==
+              PC5_LOG_FINE, "a launcher that handed off to the game it started");
     CHECK(CLASSIFY("launcher", pc5_fine) == PC5_LOG_FINE, "PC5 starting a game");
     CHECK(CLASSIFY("quick", "REC seq=1 t=1.0 PW_WINE64 close requested by=combo\nREC seq=2 t=7.0 PW_WINE64 close timeout: "
                             "leaving the game\n") == PC5_LOG_FINE, "closed by the player, ended when it didn't close");
