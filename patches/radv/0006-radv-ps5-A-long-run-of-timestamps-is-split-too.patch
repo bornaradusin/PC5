@@ -4,11 +4,12 @@ Date: Mon, 2 Nov 2026 00:45:00 +0000
 Subject: [PATCH] radv/ps5: A long run of timestamps is split too
 
 Marvel's Spider-Man Remastered stayed on a black screen after its launch
-window: its first frames lost the device. It makes a D3D12 timestamp
-query heap of 1,048,576 queries, and VKD3D-Proton writes a timestamp
-into each one to initialize it, in one command buffer with no draw or
-dispatch in it: 8,388,616 words of RELEASE_MEM (patch 0006 named them),
-eight times what one AGC submission holds, with nowhere to split.
+window: its first frames lost the device ("a submission holds more words
+between two splits than one AGC submission can"). It makes a D3D12
+timestamp query heap of 1,048,576 queries, and VKD3D-Proton writes a
+timestamp into each one to initialize it, in one command buffer with no
+draw or dispatch in it: 8,388,616 words of RELEASE_MEM, eight times what
+one AGC submission holds, with nowhere to split.
 
 A timestamp write now splits the stream when a split is due, as a draw
 and a dispatch do. It depends on none of the state a split resets, and
