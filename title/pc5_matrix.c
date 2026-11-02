@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
-/* PC5: the loading screen (pc5_matrix.h): its picture, "LAUNCHING GAME" and a bar filling. */
+/* PC5: the loading screen (pc5_matrix.h): its picture, "LAUNCHING GAME" and a circle spinning. */
 #include "pc5_matrix.h"
+#include "pc5_cover.h"
 #include "pc5_i18n.h"
 #include "pc5_image.h"
 #include "pc5_loading_art.h"
@@ -8,21 +9,19 @@
 #include <math.h>
 #include <string.h>
 
-/* Where the words and the bar sit, in the 1280x720 frame (under the picture's computer). */
-enum { WORDS_Y = 606, BAR_Y = 632, BAR_W = 272, BAR_H = 3, SPACING = 7 };
+/* Where the circle and the words sit, in the 1280x720 frame: the bottom right corner, the words
+ * just left of the circle, as games show their own loading. */
+enum { SPIN_X = 1280 - 52, SPIN_Y = 720 - 48, SPIN_R = 11, WORDS_RIGHT = SPIN_X - SPIN_R - 18, WORDS_Y = SPIN_Y + 9,
+       SPACING = 7 };
 
 struct Pc5Matrix {
     Pc5Fonts own;          /* the fonts it was given, freed with it */
     const Pc5Fonts *fonts; /* &own, or the caller's */
     uint32_t *px;          /* the frame */
     uint32_t *picture;     /* the picture, 1280x720, or NULL: a dark blue fade in its place */
-    char words[2][96];     /* "LAUNCHING GAME", "LOADING", in the player's language */
+    char words[96];        /* "LAUNCHING GAME", in the player's language */
     uint64_t steps;
     int no_fade;           /* shown at once: PC5 showed it before */
-    int told;              /* pc5_matrix_progress was called: the bar shows it */
-    int phase;
-    float fill, shown;     /* where the bar is going, and where it is drawn (it eases there) */
-    uint64_t phase_step;   /* the step its phase began at */
 };
 
 /* The picture as the frame's size; NULL when it can't be read. */
@@ -52,12 +51,9 @@ static Pc5Matrix *matrix_new(void)
     }
     m->fonts = &m->own;
     m->picture = load_picture();
-    /* TRANSLATORS: over the loading screen's bar while a game starts, shown in capitals where the
-     * language has them. */
-    pc5_upper(T("Launching game"), m->words[0], sizeof(m->words[0]));
-    /* TRANSLATORS: over the loading screen's bar once the game itself is loading (after
-     * "Launching game"), shown in capitals where the language has them. */
-    pc5_upper(T("Loading"), m->words[1], sizeof(m->words[1]));
+    /* TRANSLATORS: over the loading screen's spinning circle while a game starts, shown in capitals
+     * where the language has them. */
+    pc5_upper(T("Launching game"), m->words, sizeof(m->words));
     return m;
 }
 
@@ -86,18 +82,46 @@ void pc5_matrix_at_once(Pc5Matrix *m)
     if (m) m->no_fade = 1;
 }
 
-void pc5_matrix_progress(Pc5Matrix *m, int phase, float fill)
+int pc5_matrix_picture(Pc5Matrix *m, const char *path)
 {
-    if (!m) return;
-    if (fill > 1.0f) fill = 1.0f;
-    if (phase != m->phase || !m->told) {
-        if (phase != m->phase) m->shown = 0.0f;   /* the game's own part starts from empty */
-        m->phase = phase ? 1 : 0;
-        m->phase_step = m->steps;
+    Pc5Buf bytes = { 0 };
+    Pc5Image image = { 0 }, cut = { 0 }, fitted = { 0 };
+    int status = -1;
+
+    if (!m || !path || pc5_read_file(path, &bytes, 64u << 20)) return -1;
+    if (!pc5_image_decode(bytes.data, bytes.len, &image) && image.w > 0 && image.h > 0) {
+        /* cut to 16:9 about the middle, then to the frame's size */
+        int w = image.w, h = image.h;
+        if ((int64_t)w * PC5_MATRIX_HEIGHT > (int64_t)h * PC5_MATRIX_WIDTH) w = (int)((int64_t)h * PC5_MATRIX_WIDTH / PC5_MATRIX_HEIGHT);
+        else h = (int)((int64_t)w * PC5_MATRIX_HEIGHT / PC5_MATRIX_WIDTH);
+        if (w > 0 && h > 0 && (cut.px = pc5_alloc((size_t)w * h * 4))) {
+            int x0 = (image.w - w) / 2, y0 = (image.h - h) / 2;
+            cut.w = w;
+            cut.h = h;
+            for (int y = 0; y < h; y++) memcpy(cut.px + (size_t)y * w, image.px + (size_t)(y0 + y) * image.w + x0, (size_t)w * 4);
+            if (!pc5_image_resize(&cut, PC5_MATRIX_WIDTH, PC5_MATRIX_HEIGHT, &fitted)) {
+                for (size_t i = 0; i < (size_t)PC5_MATRIX_WIDTH * PC5_MATRIX_HEIGHT; i++) fitted.px[i] |= 0xff000000u;
+                pc5_free(m->picture);
+                m->picture = fitted.px;   /* kept */
+                status = 0;
+            }
+            pc5_image_free(&cut);
+        }
     }
-    m->told = 1;
-    /* Never backwards within a phase: a step that took longer than last time waits. */
-    if (fill < 0.0f || fill > m->fill || m->fill < 0.0f) m->fill = fill;
+    pc5_image_free(&image);
+    pc5_buf_free(&bytes);
+    return status;
+}
+
+int pc5_loading_own(const char *root, const char *folder, const char *title, const char *id, char *out, size_t size)
+{
+    char dir[PC5_PATH];
+    const char *const names[] = { folder ? folder : "", title ? title : "", id ? id : "", NULL };
+    const char *const every[] = { "loading", NULL };
+
+    if (!root || pc5_format(dir, sizeof(dir), "%s/loading", root) || !pc5_is_dir(dir)) return -1;
+    if (!pc5_cover_own(dir, names, out, size)) return 0;
+    return pc5_cover_own(dir, every, out, size);
 }
 
 void pc5_matrix_destroy(Pc5Matrix *m)
@@ -116,8 +140,8 @@ static size_t char_len(const char *text)
     return c < 0x80 ? 1 : c >= 0xf0 ? 4 : c >= 0xe0 ? 3 : c >= 0xc0 ? 2 : 1;
 }
 
-/* text a character at a time with room between them, centred on cx. */
-static void spaced(Pc5Canvas *c, const Pc5Fonts *fonts, int cx, int y, uint32_t color, const char *text)
+/* text a character at a time with room between them, ending at right. */
+static void spaced(Pc5Canvas *c, const Pc5Fonts *fonts, int right, int y, uint32_t color, const char *text)
 {
     char one[8];
     int width = 0, count = 0;
@@ -129,7 +153,7 @@ static void spaced(Pc5Canvas *c, const Pc5Fonts *fonts, int cx, int y, uint32_t 
         count++;
     }
     width += SPACING * (count > 1 ? count - 1 : 0);
-    int x = cx - width / 2;
+    int x = right - width;
     for (const char *p = text; *p; p += char_len(p)) {
         size_t n = char_len(p);
         memcpy(one, p, n);
@@ -161,45 +185,24 @@ const uint32_t *pc5_matrix_step(Pc5Matrix *m)
             m->px[i] = 0xff000000u | ((((p >> 16) & 255) * k) >> 8) << 16 | ((((p >> 8) & 255) * k) >> 8) << 8 | (((p & 255) * k) >> 8);
         }
     }
+    /* The bottom right corner a little darker, so the words and the circle read on any picture
+     * (a player's own bright one too): towards the corner, up to about half. */
+    for (int y = PC5_MATRIX_HEIGHT - 150; y < PC5_MATRIX_HEIGHT; y++)
+        for (int x = PC5_MATRIX_WIDTH - 620; x < PC5_MATRIX_WIDTH; x++) {
+            float fy = (float)(y - (PC5_MATRIX_HEIGHT - 150)) / 150.0f, fx = (float)(x - (PC5_MATRIX_WIDTH - 620)) / 620.0f;
+            float d = fy * fx;
+            uint32_t k = 256 - (uint32_t)(140.0f * (d < 1.0f ? d : 1.0f)), p = m->px[(size_t)y * PC5_MATRIX_WIDTH + x];
+            m->px[(size_t)y * PC5_MATRIX_WIDTH + x] = 0xff000000u | ((((p >> 16) & 255) * k) >> 8) << 16 |
+                                                      ((((p >> 8) & 255) * k) >> 8) << 8 | (((p & 255) * k) >> 8);
+        }
     int alpha = (int)(shown * 255.0f);
     if (m->fonts->atlas)
-        spaced(&c, m->fonts, PC5_MATRIX_WIDTH / 2, WORDS_Y, pc5_rgba(222, 230, 242, alpha), m->words[m->told ? m->phase : 0]);
+        spaced(&c, m->fonts, WORDS_RIGHT, WORDS_Y, pc5_rgba(222, 230, 242, alpha), m->words);
 
-    /* The bar: where the start is (pc5_matrix_progress), eased there so it moves smoothly. Not
-     * told, it fills on time alone: quickly at first and ever more slowly, nearly to the end. */
-    float fill;
-    if (!m->told) {
-        fill = 0.94f * (1.0f - expf(-seconds / 7.0f)) + 0.04f;
-    } else if (m->fill >= 0.0f) {
-        m->shown += (m->fill - m->shown) * 0.12f;
-        fill = m->shown;
-    } else {
-        fill = -1.0f;
-    }
-    float bx = (PC5_MATRIX_WIDTH - BAR_W) / 2.0f;
-    pc5_round_rect(&c, bx, BAR_Y, BAR_W, BAR_H, BAR_H / 2.0f, pc5_rgba(60, 72, 92, alpha * 150 / 255));
-    if (fill < 0.0f) {
-        /* Not known how long the game's own loading takes: a light moving along the bar, which
-         * doesn't fill, so it says "working" without saying how far. */
-        float part = (float)(m->steps - m->phase_step) * PC5_MATRIX_STEP_MS / 1000.0f;
-        float seg = BAR_W * 0.22f, pos = fmodf(part / 1.4f, 1.0f) * (BAR_W + seg) - seg;
-        float from = pos < 0 ? 0 : pos, to = pos + seg > BAR_W ? BAR_W : pos + seg;
-        if (to > from) {
-            pc5_shadow(&c, bx + from, BAR_Y, to - from, BAR_H, BAR_H / 2.0f, 8, pc5_rgba(40, 140, 255, alpha * 70 / 255));
-            pc5_round_rect(&c, bx + from, BAR_Y, to - from, BAR_H, BAR_H / 2.0f, pc5_rgba(38, 150, 255, alpha));
-        }
-        m->steps++;
-        return m->px;
-    }
-    float filled = BAR_W * fill;
-    pc5_shadow(&c, bx, BAR_Y, filled, BAR_H, BAR_H / 2.0f, 8, pc5_rgba(40, 140, 255, alpha * 70 / 255));
-    pc5_round_rect(&c, bx, BAR_Y, filled, BAR_H, BAR_H / 2.0f, pc5_rgba(38, 150, 255, alpha));
-    /* a light running along what is filled */
-    float sweep = fmodf(seconds / 1.6f, 1.0f) * (filled + 60.0f) - 30.0f;
-    if (sweep > 0 && sweep < filled) {
-        float w = sweep + 30.0f > filled ? filled - sweep : 30.0f;
-        pc5_round_rect(&c, bx + sweep, BAR_Y, w, BAR_H, BAR_H / 2.0f, pc5_rgba(160, 220, 255, alpha * 160 / 255));
-    }
+    /* A circle spinning: a faint ring, and a quarter of it going round once a second. */
+    const float pi = 3.14159265f, turn = fmodf(seconds, 1.0f) * 2.0f * pi;
+    pc5_ring(&c, SPIN_X, SPIN_Y, SPIN_R, 3.0f, pc5_rgba(60, 72, 92, alpha * 150 / 255));
+    pc5_arc(&c, SPIN_X, SPIN_Y, SPIN_R, 3.0f, turn, turn + pi / 2.0f, pc5_rgba(38, 150, 255, alpha));
     m->steps++;
     return m->px;
 }

@@ -96,31 +96,14 @@ enum { PC5_KEYBOARD_TEXT = 256 };
 /* The most CPUs the overlay counts the console's time of. */
 enum { PC5_CPU_MOST = 32, PC5_THREADS_MOST = 256 };
 
-/* How far the game's start is, as Wine tells it (pw_wine_start_read): the PE images it mapped
- * (programs and DLLs), how many it had when it mapped the game's program (0 not yet), and the
- * top-level windows shown. */
-typedef struct Pc5Start {
-    unsigned images, program_at, windows;
-} Pc5Start;
-
-/* What a game's last start took (pc5/start.txt): the DLLs it loaded after its program until it
- * showed a window, and the milliseconds from that window to its first picture; 0 when not known. */
-typedef struct Pc5StartHistory {
-    unsigned dlls, game_ms;
-} Pc5StartHistory;
-
-/* The loading screen's bar for start, since_ms after the screen began, window_ms after the
- * game's window showed (when it has): phase 0 (PC5's part) or 1 (the game's own loading), and
- * how full (pc5_matrix_progress: below 0 not known). */
-void pc5_start_fill(const Pc5Start *start, const Pc5StartHistory *last, uint64_t since_ms, uint64_t window_ms,
-                    int *phase, float *fill);
-
 typedef struct Pc5GameSession {
     Pc5GameOps ops;
     Pc5Settings settings;
     char app[PC5_PATH], title[PC5_NAME];
-    char language[16];          /* PC5's language, as PC5 passed it (pc5_game_shown_before), or "" */
-    int shown_before;           /* PC5 showed the loading screen a moment ago: it doesn't fade in */
+    char root[PC5_PATH];          /* /data/prospero-win */
+    char prefix[PC5_ID];          /* the game's id */
+    char language[16];            /* PC5's language, as PC5 passed it (pc5_game_loading_setup), or "" */
+    char folder[PC5_NAME];        /* the game's folder's name, for its own loading picture, or "" */
     uint32_t cover_tint;          /* the game's colour, 0 when it has no cover */
     uint32_t light, light_target; /* what the light bar shows and is going to */
     uint64_t light_at;
@@ -131,11 +114,6 @@ typedef struct Pc5GameSession {
     Pc5Matrix *matrix;
     uint64_t matrix_at;
     int matrix_failed;
-    char start_file[PC5_PATH];    /* pc5/start.txt, what the last start took; "" none */
-    Pc5StartHistory start_last;   /* read from it at the start */
-    Pc5Start start;               /* what Wine said last */
-    uint64_t start_ms, window_ms; /* when the loading screen began, when the game's window showed (0 not yet) */
-    unsigned start_images_at_window; /* the images Wine had mapped when the window showed */
     int hud_shown;
     int hud_magnified;            /* the overlay's cursor at twice its size: 1, 0, -1 not asked yet */
     int hud_magnify_refused;      /* the console refused it once: not asked again */
@@ -238,21 +216,14 @@ int pc5_game_env_name_ok(const char *name);
  * the game's prefix and the app's folder. */
 void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *root, const char *app,
                     const char *prefix, const char *title);
-/* The loading screen's first frame as the game's process starts, before /data is reachable: PC5
- * showed it a moment before, so it is drawn whole (no fade), in PC5's language (code, as PC5
- * passed it; NULL or "" for English) from the app's folder (app/pc5/lang, app/pc5/fonts.bin), and
- * handed to show. Everything it took is freed again before it returns, so nothing of it is in
- * the way of what Wine sets up next. 0 when shown. */
-int pc5_game_early_loading(const char *app, const char *code, void (*show)(const uint32_t *pixels, void *context),
-                           void *context);
-/* PC5 showed the loading screen as the game's process started, in that language: the game's own
- * comes in it too, at once. */
-void pc5_game_shown_before(Pc5GameSession *game, const char *code);
+/* For the loading screen: PC5's language as PC5 passed it (NULL or "" English), and the name
+ * of the game's folder (its own loading picture may be named after it; NULL or ""). */
+void pc5_game_loading_setup(Pc5GameSession *game, const char *language, const char *folder);
 /* The loading screen's next frame (PC5_MATRIX_WIDTH x HEIGHT, B,G,R,X), or
  * NULL when none is due yet (or it can't be drawn). */
-const uint32_t *pc5_game_loading(Pc5GameSession *game, uint64_t now_ms, const Pc5Start *start);
-/* The game showed its first picture: what this start took is kept for the next one's bar. */
-void pc5_game_loading_done(Pc5GameSession *game, uint64_t now_ms);
+const uint32_t *pc5_game_loading(Pc5GameSession *game, uint64_t now_ms);
+/* The game showed its first picture: the loading screen is freed, and not shown again. */
+void pc5_game_loading_done(Pc5GameSession *game);
 /* The game's rumble (XInput's 0-65535 a motor): what the motors get, at
  * Vibration's strength, and the triggers when they follow it. */
 void pc5_game_rumble(Pc5GameSession *game, int pad, uint32_t left, uint32_t right, uint8_t *large, uint8_t *small);

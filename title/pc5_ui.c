@@ -380,6 +380,8 @@ struct Pc5Ui {
      * at yet, 1: copying, 2: nothing (more) to do. */
     Pc5Runtime runtime;
     Pc5Matrix *launch_matrix;     /* the loading picture while PC5 hands a game over (S_LAUNCH) */
+    int launch_ready;             /* the game made ready: the loading picture fades in, then it starts */
+    uint64_t launch_ready_at;
     int runtime_state;
     /* Starting a game: its redistributables the first time (pc5_msi.h). 0: not looked at yet,
      * 1: installing them (the busy line names them), 2: nothing (more) to do. */
@@ -674,7 +676,7 @@ static void go(Pc5Ui *ui, Screen screen)
     }
     if (ui->runtime_state == 1) pc5_runtime_end(&ui->runtime);
     if (screen == S_LAUNCH || ui->runtime_state == 1) ui->runtime_state = 0;
-    if (screen == S_LAUNCH) ui->redist_state = 0;
+    if (screen == S_LAUNCH) ui->redist_state = 0, ui->launch_ready = 0;
     ui->screen = screen;
     ui->entered = ui->now;
     /* The backgrounds' worker waits while these screens use the network, so they don't wait for it. */
@@ -1328,6 +1330,8 @@ static int missing_cover_step(Pc5Ui *ui)
 /* ---- the games' backgrounds -------------------------------------------------------------------- */
 
 enum { BG_FADE_MS = 320, BG_SETTLE_MS = 160 };
+/* Play: the loading picture fades in over PC5's screen for this long before the game is handed over. */
+enum { LAUNCH_FADE_MS = 400 };
 
 /* The worker on the games that need a background, once for each load of the library
  * (when it is free: a library loaded again meanwhile is looked at after it). */
@@ -2410,7 +2414,7 @@ static void setting_text(Pc5Ui *ui, SettingRow row, const char **label, char *ab
     }
     case SR_HIGH_REFRESH:
         *label = T("120 Hz output");
-        pc5_copy(about, about_size, set->high_refresh ? T("Games show up to 120 fps on a TV that takes it; turn on the PS5's own 120 Hz output too")
+        pc5_copy(about, about_size, set->high_refresh ? T("Up to 120 fps on a TV that takes it; turn on the PS5's 120 Hz output and turn VRR off")
                                                       : T("Off: games show up to 60 fps"));
         pc5_copy(value, value_size, set->high_refresh ? T("On") : T("Off"));
         break;
@@ -4396,6 +4400,24 @@ static void play(Pc5Ui *ui, Screen back)
     go(ui, S_PLAY_WHICH);
 }
 
+/* The game made ready and the loading picture faded in: the console is asked to start it. Back
+ * here only when it refused. */
+static void launch_hand_over(Pc5Ui *ui)
+{
+    int index = pc5_library_find(&ui->library, ui->launch_id);
+    char title[200];
+
+    ui->launch_ready = 0;
+    pc5_video_stop(&ui->video);
+    library_music_stop(ui);
+    if (ui->compat_initialized) pc5_compat_wait(&ui->compatibility);
+    if (ui->platform.play) ui->platform.play(ui->platform.context, ui->launch_id);
+    pc5_tf(title, sizeof(title), "%s didn't start", index >= 0 ? ui->library.games[index].title : T("The game"));
+    say(ui, "PC5 problem play %s: the console refused to start it", ui->launch_id);
+    message(ui, 0, title, T("The console refused to start it. Try again, or restart PC5."), S_LIBRARY);
+}
+
+
 /* How long PC5's logo shows as it opens, and how long the screen under it takes to fade in. */
 enum { BOOT_SHOW_MS = 1700, BOOT_FADE_MS = 500 };
 
@@ -5685,6 +5707,16 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         break;
     case S_LAUNCH:
         if (!ui->drawn) break;
+        if (ui->launch_ready) {
+            /* Made ready: the loading picture fades in over PC5's screen (LAUNCH_FADE_MS), then
+             * the game is handed over. */
+            if (ui->now - ui->launch_ready_at < LAUNCH_FADE_MS) {
+                ui->dirty = 1;
+                break;
+            }
+            launch_hand_over(ui);
+            break;
+        }
         {
             int index = pc5_library_find(&ui->library, ui->launch_id);
             char error[PC5_ERROR] = "", title[200];
@@ -5804,13 +5836,9 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 char where[PC5_PATH];
                 if (!pc5_game_folder(ui->root, ui->launch_id, where, sizeof(where))) say(ui, "PC5 play from usb dir=%s", where);
             }
-            pc5_video_stop(&ui->video);
-            library_music_stop(ui);
-            if (ui->compat_initialized) pc5_compat_wait(&ui->compatibility);
-            if (ui->platform.play) ui->platform.play(ui->platform.context, ui->launch_id);
-            pc5_tf(title, sizeof(title), "%s didn't start", index >= 0 ? ui->library.games[index].title : T("The game"));
-            say(ui, "PC5 problem play %s: the console refused to start it", ui->launch_id);
-            message(ui, 0, title, T("The console refused to start it. Try again, or restart PC5."), S_LIBRARY);
+            ui->launch_ready = 1;   /* the fade, then launch_hand_over */
+            ui->launch_ready_at = ui->now;
+            ui->dirty = 1;
         }
         break;
     }
@@ -8579,14 +8607,23 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
                      (unsigned)ui->runtime.total);
             busy_dialog(ui, c, line, count, 0);
         } else {
-            /* The loading picture the game's start goes on with, at once: no spinner first.
-             * The bar shows PC5 getting the game ready, the first of its steps. */
-            if (!ui->launch_matrix && (ui->launch_matrix = pc5_matrix_borrow(&ui->fonts)))
-                pc5_matrix_progress(ui->launch_matrix, 0, 0.06f);
+            /* The loading picture the game's start goes on with, at once: no spinner first. The
+             * player's own one for the game, from the loading folder, when there is one. */
+            if (!ui->launch_matrix && (ui->launch_matrix = pc5_matrix_borrow(&ui->fonts)) && index >= 0) {
+                char folder[PC5_PATH], own[PC5_PATH];
+                const Pc5Game *game = &ui->library.games[index];
+                const char *base = !pc5_game_folder(ui->root, game->id, folder, sizeof(folder)) && strrchr(folder, '/')
+                                       ? strrchr(folder, '/') + 1 : "";
+                if (!pc5_loading_own(ui->root, base, game->title, game->id, own, sizeof(own)))
+                    say(ui, "PC5 loading picture %s: %s", own,
+                        pc5_matrix_picture(ui->launch_matrix, own) ? "not readable" : "shown");
+            }
             const uint32_t *px = ui->launch_matrix ? pc5_matrix_step(ui->launch_matrix) : NULL;
             if (px) {
                 Pc5Image frame = { PC5_MATRIX_WIDTH, PC5_MATRIX_HEIGHT, (uint32_t *)px };
-                pc5_draw_image(c, &frame, 0, 0, W, H, 256);
+                uint64_t since = ui->launch_ready ? ui->now - ui->launch_ready_at : 0;
+                int alpha = since >= LAUNCH_FADE_MS ? 256 : (int)(since * 256 / LAUNCH_FADE_MS);
+                pc5_draw_image(c, &frame, 0, 0, W, H, alpha);
             } else {
                 busy_dialog(ui, c, line, NULL, 0);
             }

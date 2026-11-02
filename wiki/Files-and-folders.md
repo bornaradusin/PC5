@@ -11,6 +11,7 @@ PC5 keeps everything where prospero-win keeps it, in `/data/prospero-win` on the
   prefixes/<game>/pc5-cache/radv/           its shader cache
   covers/<name>.jpg / .png                  your own covers (you make this folder)
   backgrounds/<name>.jpg / .png             your own backgrounds (you make this folder)
+  loading/<name>.jpg / .png                 your own loading pictures (you make this folder)
   sounds/<name>.wav                         your own startup sounds (you make this folder)
   saves/<game>/                             a game's saves, kept when it was uninstalled
   pc5/settings.txt                          PC5's settings
@@ -40,6 +41,7 @@ PPSA11018/                                  the app (where you installed it)
 | `PPSA11018/INSTALL/` | Games you put there over FTP, from the web page or with the file manager, for PC5 to install as it opens. | Yes. See [The INSTALL folder](Installing-games#the-install-folder). |
 | `covers/` | Your own covers for installed games. | Yes. See [Covers](Covers#for-a-game-already-installed). |
 | `backgrounds/` | Your own backgrounds for installed games. | Yes. See [Backgrounds](Covers#backgrounds). |
+| `loading/` | Your own loading pictures: `loading.jpg` or `.png` for every game, or one named after a game. | Yes. See [Loading screen](Covers#loading-screen). |
 | `sounds/` | Your own startup sounds. | Yes. See [Settings](Settings#startup-sound). |
 | `saves/<game>/` | A game's Windows (its saves, settings, registry and options) without the game or its pictures, kept by **Keep saves** when it was uninstalled. Installing the game again can put it back. | Delete it in **Options › Game maintenance › Uninstall game**. See [Keeping a game's saves](Installing-games#keeping-a-games-saves). |
 | `api_keys.txt` | Your API keys, as `NAME=value` lines: `STEAMGRIDDB_API_KEY` for [SteamGridDB](Covers#steamgriddb). PC5 makes it, with the keys empty, the first time it opens, and never deletes it. | Yes: put your key in it. PC5 never shows a key or logs it. |

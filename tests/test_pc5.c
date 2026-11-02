@@ -6024,82 +6024,74 @@ static void test_game(const char *fonts_path)
         CHECK(!pad_seen.cursors, "off");
         game.settings.fps = 1;
     }
-    /* The loading screen: a frame every 33 ms, the picture, "LAUNCHING GAME" and the bar filling; no name. */
+    /* The loading screen: a frame every 33 ms, the picture, "LAUNCHING GAME" and a circle spinning; no name. */
     const uint32_t *frame = NULL;
     for (uint64_t t = 0; t < 2000; t += 33) {
-        const uint32_t *next = pc5_game_loading(&game, 20000 + t, NULL);
+        const uint32_t *next = pc5_game_loading(&game, 20000 + t);
         if (next) frame = next;
     }
     CHECK(frame != NULL && !game.matrix_failed, "loading frames");
     if (frame) {
-        int blue = 0, words = 0, name = 0;
+        int blue = 0, words = 0, name = 0, arc = 0;
         for (int i = 0; i < PC5_MATRIX_WIDTH * PC5_MATRIX_HEIGHT; i++) {
             uint32_t p = frame[i], r = (p >> 16) & 255, b = p & 255;
             blue += b > 120 && b > r * 2;
         }
-        for (int y = 588; y < 612; y++)
-            for (int x = 440; x < 840; x++) words += (frame[y * PC5_MATRIX_WIDTH + x] >> 8 & 0xff) > 170;
+        for (int y = 655; y < 690; y++)   /* the words, left of the circle in the corner */
+            for (int x = 900; x < 1200; x++) words += (frame[y * PC5_MATRIX_WIDTH + x] >> 8 & 0xff) > 170;
         for (int y = 330; y < 380; y++)   /* where the matrix put the game's name: the picture's computer now */
             for (int x = 400; x < 880; x++) {
                 uint32_t p = frame[y * PC5_MATRIX_WIDTH + x];
                 name += (p >> 16 & 255) > 200 && (p >> 8 & 255) > 200 && (p & 255) > 200;
             }
-        uint32_t bar = frame[633 * PC5_MATRIX_WIDTH + 520], track = frame[633 * PC5_MATRIX_WIDTH + 760];
+        for (int y = 656; y < 688; y++)   /* the circle, in the bottom right corner */
+            for (int x = 1212; x < 1244; x++) {
+                uint32_t p = frame[y * PC5_MATRIX_WIDTH + x];
+                arc += (p & 255) > 200 && (p >> 16 & 255) < 90;
+            }
         CHECK(blue > 20000 && words > 100 && name < 50, "the picture %d, the words %d, no name %d", blue, words, name);
-        CHECK((bar & 0xff) > 180 && (track & 0xff) < 140, "the bar filled at its start (%06x), not at its end (%06x)",
-              (unsigned)(bar & 0xffffff), (unsigned)(track & 0xffffff));
+        CHECK(arc > 10, "the circle's turning part: %d", arc);
     }
-    pc5_game_loading_done(&game, 22000);
-    CHECK(pc5_game_loading(&game, 40000, NULL) == NULL, "none after the first picture");
-    /* The bar as Wine tells the start: PC5's part in steps, then the game's own loading. */
+    pc5_game_loading_done(&game);
+    CHECK(pc5_game_loading(&game, 40000) == NULL, "none after the first picture");
+    /* The player's own loading picture (loading/<the game's name>.png), filling the frame. */
     {
-        Pc5Start st = { 0, 0, 0 };
-        Pc5StartHistory none = { 0, 0 }, last = { 40, 8000 };
-        int phase;
-        float fill, before;
-        pc5_start_fill(&st, &none, 0, 0, &phase, &fill);
-        CHECK(phase == 0 && fill >= 0.09f && fill <= 0.11f, "made ready: 10 %% (%.2f)", fill);
-        pc5_start_fill(&st, &none, 60000, 0, &phase, &fill);
-        CHECK(phase == 0 && fill < 0.25f, "Windows starting stays in its step however long: %.2f", fill);
-        st = (Pc5Start){ 5, 5, 0 };
-        pc5_start_fill(&st, &last, 3000, 0, &phase, &fill);
-        CHECK(phase == 0 && fill > 0.24f && fill < 0.26f, "the program mapped: 25 %% (%.2f)", fill);
-        st.images = 25;
-        pc5_start_fill(&st, &last, 3000, 0, &phase, &fill);
-        CHECK(fill > 0.59f && fill < 0.61f, "half its DLLs, as many as last time: 60 %% (%.2f)", fill);
-        before = fill;
-        st.images = 400;
-        pc5_start_fill(&st, &last, 3000, 0, &phase, &fill);
-        CHECK(fill > before && fill <= 0.951f, "more DLLs than last time: at most 95 %% (%.2f)", fill);
-        st.windows = 1;
-        pc5_start_fill(&st, &last, 4000, 2000, &phase, &fill);
-        CHECK(phase == 1 && fill > 0.24f && fill < 0.26f, "its window: the game's part, 2 s of 8 (%.2f)", fill);
-        pc5_start_fill(&st, &last, 4000, 60000, &phase, &fill);
-        CHECK(fill <= 0.971f, "longer than last time: the first picture ends it (%.2f)", fill);
-        pc5_start_fill(&st, &none, 4000, 2000, &phase, &fill);
-        CHECK(phase == 1 && fill < 0.0f, "never started before: not known, a moving light");
-    }
-    /* What a start took is kept for the next one: its DLLs to its window, and the game's own part. */
-    {
-        Pc5GameSession timed;
-        char start_file[PC5_PATH];
+        Pc5GameSession own;
+        char dir[PC5_PATH], file[PC5_PATH], found[PC5_PATH];
+        Pc5Image red = { 320, 240, NULL };
+        Pc5Buf png = { 0 };
         const uint32_t *shown = NULL;
-        memset(&timed, 0, sizeof(timed));
-        timed.ops = game.ops;
-        path(start_file, sizeof(start_file), "%s/start.txt", work);
-        unlink(start_file);
-        pc5_copy(timed.start_file, sizeof(timed.start_file), start_file);
-        Pc5Start st = { 0, 0, 0 };
-        for (uint64_t t = 0; t < 1200; t += 33) shown = pc5_game_loading(&timed, 50000 + t, &st);
-        st = (Pc5Start){ 12, 3, 0 };
-        for (uint64_t t = 1200; t < 2400; t += 33) shown = pc5_game_loading(&timed, 50000 + t, &st);
-        st = (Pc5Start){ 50, 3, 1 };
-        for (uint64_t t = 2400; t < 3000; t += 33) shown = pc5_game_loading(&timed, 50000 + t, &st);
-        st.images = 70;   /* more after the window: the game's, not counted */
-        for (uint64_t t = 3000; t < 5400; t += 33) shown = pc5_game_loading(&timed, 50000 + t, &st);
-        CHECK(shown != NULL, "frames with a start Wine tells");
-        pc5_game_loading_done(&timed, 55400);
-        CHECK(file_is(start_file, "dlls=47\ngame_ms=3000\n"), "kept: 47 DLLs, the game's part 3 s");
+        path(dir, sizeof(dir), "%s/loading", game_root);
+        mkdir(dir, 0755);
+        CHECK(pc5_loading_own(game_root, "Liberty", "Liberty Town", "liberty", found, sizeof(found)) == -1,
+              "no picture of the player's: the built-in one");
+        red.px = malloc((size_t)red.w * red.h * 4);
+        for (int i = 0; red.px && i < red.w * red.h; i++) red.px[i] = 0xffd01010u;
+        CHECK(red.px && !pc5_image_png(&red, &png), "a picture to use");
+        free(red.px);
+        path(file, sizeof(file), "%s/loading/Liberty Town.png", game_root);
+        pc5_write_file(file, png.data, png.len);
+        path(file, sizeof(file), "%s/loading/loading.png", game_root);
+        pc5_write_file(file, png.data, png.len);
+        pc5_buf_free(&png);
+        CHECK(!pc5_loading_own(game_root, "Liberty", "Liberty Town", "liberty", found, sizeof(found)) &&
+              strstr(found, "Liberty Town.png"), "the game's own before every game's: %s", found);
+        CHECK(!pc5_loading_own(game_root, "", "Vice", "vice", found, sizeof(found)) && strstr(found, "loading.png"),
+              "every game's for the others: %s", found);
+        memset(&own, 0, sizeof(own));
+        own.ops = game.ops;
+        pc5_copy(own.app, sizeof(own.app), game.app);
+        pc5_copy(own.root, sizeof(own.root), game_root);
+        pc5_copy(own.title, sizeof(own.title), "Liberty Town");
+        for (uint64_t t = 0; t < 400; t += 33) {
+            const uint32_t *next = pc5_game_loading(&own, 30000 + t);
+            if (next) shown = next;
+        }
+        int reds = 0;
+        for (int i = 0; shown && i < PC5_MATRIX_WIDTH * PC5_MATRIX_HEIGHT; i += 97)
+            reds += (shown[i] >> 16 & 255) > 150 && (shown[i] & 255) < 60;
+        CHECK(shown && reds > 8500, "the player's picture fills the frame: %d", reds);
+        pc5_game_loading_done(&own);
     }
     pc5_game_end(&game, 7);
     CHECK(pad_seen.resets == 1 && pad_seen.l2.mode == PC5_TRIGGER_OFF, "the controller as the console had it");
@@ -6590,6 +6582,9 @@ static void test_screens(const char *fonts)
     /* Play: the profile is written again, then the console asked. */
     press(ui, PC5_KEY_ACCEPT, &canvas);
     frames(ui, 0, 0, 3, &canvas);
+    CHECK(console.plays == 0 && !strcmp(pc5_ui_screen(ui), "launch"), "the loading picture fading in first: %d",
+          console.plays);
+    frames(ui, 0, 0, 30, &canvas);
     CHECK(console.plays == 1 && !strcmp(console.played, "neondrift"), "played %s", console.played);
     until_screen(ui, "message", &canvas);   /* the fake console returns: "didn't start" */
     press(ui, PC5_KEY_ACCEPT, &canvas);
@@ -8732,7 +8727,7 @@ static void test_launch_extras(const char *fonts)
     CHECK(!strcmp(pc5_ui_screen(ui), "launch") && console.plays == plays, "PhysX first: %s", pc5_ui_screen(ui));
     save_shot(&canvas, "launch-redist");
     CHECK(!cuts_after(ui, 0, &canvas), "the busy line: no text cut short");
-    frames(ui, 0, 0, 4, &canvas);
+    frames(ui, 0, 0, 34, &canvas);
     CHECK(console.plays == plays + 1, "then started: %d", console.plays);
     path(file, sizeof(file), "%s/prefixes/neondrift/drive_c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/PhysXLoader.dll", root);
     CHECK(pc5_is_file(file), "PhysX installed the first time");
@@ -8753,7 +8748,7 @@ static void test_launch_extras(const char *fonts)
     CHECK(controls_has("neondrift", "steam_emulator = off\n"), "Off");
     press(ui, PC5_KEY_TRIANGLE, &canvas);
     press(ui, PC5_KEY_ACCEPT, &canvas);      /* Play: once, nothing to install now */
-    frames(ui, 0, 0, 4, &canvas);
+    frames(ui, 0, 0, 34, &canvas);
     CHECK(console.plays == plays + 2, "started again: %d", console.plays);
     path(file, sizeof(file), "%s.pc5-valve", dll);
     CHECK(!pc5_exists(file), "Valve's library back");

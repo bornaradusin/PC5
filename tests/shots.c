@@ -592,7 +592,7 @@ int main(int argc, char **argv)
         }
         pc5_game_begin(&game, &none, root, app, "", "Grand Theft Auto IV");
         for (uint64_t t = 0; t < 3000; t += 50) {
-            const uint32_t *next = pc5_game_loading(&game, 1000 + t, NULL);
+            const uint32_t *next = pc5_game_loading(&game, 1000 + t);
             if (next) frame = next;
         }
         if (frame) {

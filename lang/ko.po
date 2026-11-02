@@ -47,7 +47,7 @@ msgstr "왼쪽 화살표"
 msgid "Right arrow"
 msgstr "오른쪽 화살표"
 
-#: title/pc5_controls.c:30 title/pc5_controls.c:64 title/pc5_ui.c:7107
+#: title/pc5_controls.c:30 title/pc5_controls.c:64 title/pc5_ui.c:7135
 msgid "Nothing"
 msgstr "없음"
 
@@ -95,7 +95,7 @@ msgstr "방향 버튼 오른쪽"
 msgid "Create"
 msgstr "만들기"
 
-#: title/pc5_controls.c:44 title/pc5_ui.c:7082
+#: title/pc5_controls.c:44 title/pc5_ui.c:7110
 msgid "Touchpad"
 msgstr "터치패드"
 
@@ -184,13 +184,13 @@ msgid "Keys"
 msgstr "키"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_controls.c:64 title/pc5_ui.c:6683
+#: title/pc5_controls.c:64 title/pc5_ui.c:6711
 msgid "Mouse pointer"
 msgstr "마우스 포인터"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_controls.c:96 title/pc5_ui.c:2421 title/pc5_ui.c:6748
-#: title/pc5_ui.c:6763 title/pc5_ui.c:6844
+#: title/pc5_controls.c:96 title/pc5_ui.c:2425 title/pc5_ui.c:6776
+#: title/pc5_ui.c:6791 title/pc5_ui.c:6872
 msgid "Auto"
 msgstr "자동"
 
@@ -326,7 +326,7 @@ msgstr "%s을(를) 삭제하는 중에 메모리가 부족해졌습니다."
 msgid "There's no network here."
 msgstr "네트워크에 연결되어 있지 않습니다."
 
-#: title/pc5_ftp.c:628 title/pc5_ui.c:2635
+#: title/pc5_ftp.c:628 title/pc5_ui.c:2639
 msgid "PC5's INSTALL folder isn't there."
 msgstr "PC5의 INSTALL 폴더가 없습니다."
 
@@ -746,15 +746,10 @@ msgid ""
 msgstr ""
 "%s의 사본이 USB 드라이브의 원본과 일치하지 않습니다. 드라이브나 케이블에 문제가 있을 수 있습니다. 아무것도 보관하지 않았습니다."
 
-#. over the loading screen's bar while a game starts, shown in capitals where the language has them.
-#: title/pc5_matrix.c:57
+#. over the loading screen's spinning circle while a game starts, shown in capitals where the language has them.
+#: title/pc5_matrix.c:56
 msgid "Launching game"
 msgstr "게임 실행 중"
-
-#. over the loading screen's bar once the game itself is loading (after "Launching game"), shown in capitals where the language has them.
-#: title/pc5_matrix.c:60
-msgid "Loading"
-msgstr "로딩 중"
 
 #: title/pc5_settings.c:13
 msgid "Top left"
@@ -785,7 +780,7 @@ msgid "Console's colour"
 msgstr "본체 색상"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_settings.c:17 title/pc5_ui.c:6685
+#: title/pc5_settings.c:17 title/pc5_ui.c:6713
 msgid "Normal"
 msgstr "보통"
 
@@ -798,13 +793,13 @@ msgid "Extra large"
 msgstr "아주 크게"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_settings.c:19 title/pc5_ui.c:328 title/pc5_ui.c:2415
-#: title/pc5_ui.c:2427 title/pc5_ui.c:2440 title/pc5_ui.c:2453
-#: title/pc5_ui.c:2485 title/pc5_ui.c:2490 title/pc5_ui.c:2495
-#: title/pc5_ui.c:2500 title/pc5_ui.c:2505 title/pc5_ui.c:2510
-#: title/pc5_ui.c:2515 title/pc5_ui.c:2564 title/pc5_ui.c:2577
-#: title/pc5_ui.c:2616 title/pc5_ui.c:6731 title/pc5_ui.c:6768
-#: title/pc5_ui.c:6830 title/pc5_ui.c:6844
+#: title/pc5_settings.c:19 title/pc5_ui.c:328 title/pc5_ui.c:2419
+#: title/pc5_ui.c:2431 title/pc5_ui.c:2444 title/pc5_ui.c:2457
+#: title/pc5_ui.c:2489 title/pc5_ui.c:2494 title/pc5_ui.c:2499
+#: title/pc5_ui.c:2504 title/pc5_ui.c:2509 title/pc5_ui.c:2514
+#: title/pc5_ui.c:2519 title/pc5_ui.c:2568 title/pc5_ui.c:2581
+#: title/pc5_ui.c:2620 title/pc5_ui.c:6759 title/pc5_ui.c:6796
+#: title/pc5_ui.c:6858 title/pc5_ui.c:6872
 msgid "Off"
 msgstr "끔"
 
@@ -987,7 +982,7 @@ msgstr "타일을 교체할 수 없습니다: %s."
 msgid "PC5 can't put the tile in place: %s."
 msgstr "타일을 제자리에 놓을 수 없습니다: %s."
 
-#: title/pc5_tile.c:636 title/pc5_ui.c:4499
+#: title/pc5_tile.c:636 title/pc5_ui.c:4521
 msgid ""
 "It isn't in PC5 any more. Take the tile off the home screen, or install "
 "the game again."
@@ -1015,14 +1010,14 @@ msgstr "호환성"
 #. One of the tabs along the top of the screen: one short word.
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:62 title/pc5_ui.c:7456 title/pc5_ui.c:8550
+#: title/pc5_ui.c:62 title/pc5_ui.c:7484 title/pc5_ui.c:8578
 msgid "Install"
 msgstr "설치"
 
 #. One of the tabs along the top of the screen: one short word.
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:62 title/pc5_ui.c:129 title/pc5_ui.c:6549 title/pc5_ui.c:6563
+#: title/pc5_ui.c:62 title/pc5_ui.c:129 title/pc5_ui.c:6577 title/pc5_ui.c:6591
 msgid "Settings"
 msgstr "설정"
 
@@ -1042,7 +1037,7 @@ msgid "Favourites"
 msgstr "즐겨찾기"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:65 title/pc5_ui.c:6421 title/pc5_ui.c:8409
+#: title/pc5_ui.c:65 title/pc5_ui.c:6449 title/pc5_ui.c:8437
 msgid "USB drive"
 msgstr "USB 드라이브"
 
@@ -1053,331 +1048,331 @@ msgstr "확인 필요"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:129 title/pc5_ui.c:2388
+#: title/pc5_ui.c:129 title/pc5_ui.c:2392
 msgid "In games"
 msgstr "게임 중"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:129 title/pc5_ui.c:2398
+#: title/pc5_ui.c:129 title/pc5_ui.c:2402
 msgid "System"
 msgstr "시스템"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:129 title/pc5_ui.c:2393
+#: title/pc5_ui.c:129 title/pc5_ui.c:2397
 msgid "Overlay"
 msgstr "오버레이"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:129 title/pc5_ui.c:2406
+#: title/pc5_ui.c:129 title/pc5_ui.c:2410
 msgid "Picture sources"
 msgstr "이미지 출처"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:130 title/pc5_ui.c:2383
+#: title/pc5_ui.c:130 title/pc5_ui.c:2387
 msgid "Game maintenance"
 msgstr "게임 관리"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:130 title/pc5_ui.c:2457
+#: title/pc5_ui.c:130 title/pc5_ui.c:2461
 msgid "Network"
 msgstr "네트워크"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:204 title/pc5_ui.c:6688
+#: title/pc5_ui.c:204 title/pc5_ui.c:6716
 msgid "Graphics"
 msgstr "그래픽"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:204 title/pc5_ui.c:6693
+#: title/pc5_ui.c:204 title/pc5_ui.c:6721
 msgid "Appearance"
 msgstr "모양"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:204 title/pc5_ui.c:6698
+#: title/pc5_ui.c:204 title/pc5_ui.c:6726
 msgid "Manage"
 msgstr "관리"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:204 title/pc5_ui.c:6776
+#: title/pc5_ui.c:204 title/pc5_ui.c:6804
 msgid "Background"
 msgstr "배경"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:205 title/pc5_ui.c:6802 title/pc5_ui.c:7736
+#: title/pc5_ui.c:205 title/pc5_ui.c:6830 title/pc5_ui.c:7764
 msgid "Library music"
 msgstr "라이브러리 음악"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:205 title/pc5_ui.c:6787 title/pc5_ui.c:7736
+#: title/pc5_ui.c:205 title/pc5_ui.c:6815 title/pc5_ui.c:7764
 msgid "Background video"
 msgstr "배경 동영상"
 
 #. a percentage (Vibration 50%); put a space before % where your language does.
-#: title/pc5_ui.c:330 title/pc5_ui.c:7069
+#: title/pc5_ui.c:330 title/pc5_ui.c:7097
 #, c-format
 msgid "%d%%"
 msgstr "%d%%"
 
-#: title/pc5_ui.c:968
+#: title/pc5_ui.c:970
 #, c-format
 msgid ""
 "You have %s, the version before: PC5 downloads only what changed (%s)"
 msgstr "현재 버전은 바로 이전 버전인 %s입니다. 바뀐 부분만 다운로드합니다(%s)"
 
-#: title/pc5_ui.c:973
+#: title/pc5_ui.c:975
 #, c-format
 msgid ""
 "You have %s, more than one version behind: PC5 downloads the whole app (%s)"
 msgstr "현재 버전은 두 버전 이상 이전인 %s입니다. 앱 전체를 다운로드합니다(%s)"
 
-#: title/pc5_ui.c:976
+#: title/pc5_ui.c:978
 #, c-format
 msgid "You have %s: PC5 downloads the whole app (%s)"
 msgstr "현재 버전은 %s입니다. 앱 전체를 다운로드합니다(%s)"
 
-#: title/pc5_ui.c:1633 title/pc5_ui.c:3677 title/pc5_ui.c:5218
-#: title/pc5_ui.c:5227
+#: title/pc5_ui.c:1637 title/pc5_ui.c:3681 title/pc5_ui.c:5240
+#: title/pc5_ui.c:5249
 msgid "PC5 didn't install this game"
 msgstr "이 게임은 PC5로 설치하지 않았습니다"
 
-#: title/pc5_ui.c:1634
+#: title/pc5_ui.c:1638
 msgid ""
 "Its cover can only be changed as in Covers on the wiki: a picture of your "
 "own."
 msgstr "이 게임의 커버는 위키의 Covers에 나온 방법으로만 바꿀 수 있습니다. 직접 준비한 이미지를 씁니다."
 
-#: title/pc5_ui.c:1635
+#: title/pc5_ui.c:1639
 msgid "Only a game PC5 installed has a tile picture."
 msgstr "타일 이미지는 PC5로 설치한 게임에만 있습니다."
 
-#: title/pc5_ui.c:1636
+#: title/pc5_ui.c:1640
 msgid ""
 "Its background can only be changed as in Covers on the wiki: a picture of "
 "your own."
 msgstr "이 게임의 배경은 위키의 Covers에 나온 방법으로만 바꿀 수 있습니다. 직접 준비한 이미지를 씁니다."
 
-#: title/pc5_ui.c:1642
+#: title/pc5_ui.c:1646
 msgid "PC5 ran out of memory"
 msgstr "메모리가 부족합니다"
 
-#: title/pc5_ui.c:1642
+#: title/pc5_ui.c:1646
 msgid "Close PC5 and open it again."
 msgstr "PC5를 닫았다가 다시 여세요."
 
-#: title/pc5_ui.c:1816
+#: title/pc5_ui.c:1820
 msgid "The cover wasn't changed"
 msgstr "커버가 바뀌지 않았습니다"
 
-#: title/pc5_ui.c:1817
+#: title/pc5_ui.c:1821
 msgid "The tile picture wasn't changed"
 msgstr "타일 이미지가 바뀌지 않았습니다"
 
-#: title/pc5_ui.c:1817
+#: title/pc5_ui.c:1821
 msgid "The background wasn't changed"
 msgstr "배경이 바뀌지 않았습니다"
 
-#: title/pc5_ui.c:1819
+#: title/pc5_ui.c:1823
 msgid "PC5 can't write to the game's folder in /data/prospero-win/prefixes."
 msgstr "/data/prospero-win/prefixes에 있는 게임 폴더에 쓸 수 없습니다."
 
-#: title/pc5_ui.c:1820
+#: title/pc5_ui.c:1824
 msgid "PC5 couldn't make the card from the game's icon and name."
 msgstr "게임 아이콘과 이름으로 카드를 만들지 못했습니다."
 
-#: title/pc5_ui.c:1893 title/pc5_ui.c:7297
+#: title/pc5_ui.c:1897 title/pc5_ui.c:7325
 #, c-format
 msgid "USB drive %d"
 msgstr "USB 드라이브 %d"
 
-#: title/pc5_ui.c:1895
+#: title/pc5_ui.c:1899
 #, c-format
 msgid "Extended storage %d"
 msgstr "확장 저장 공간 %d"
 
-#: title/pc5_ui.c:1897
+#: title/pc5_ui.c:1901
 msgid "Console storage"
 msgstr "본체 저장 공간"
 
-#: title/pc5_ui.c:1915
+#: title/pc5_ui.c:1919
 #, c-format
 msgid "%s can't be installed"
 msgstr "%s을(를) 설치할 수 없습니다"
 
-#: title/pc5_ui.c:1963
+#: title/pc5_ui.c:1967
 #, c-format
 msgid "%s can't be updated"
 msgstr "%s을(를) 업데이트할 수 없습니다"
 
-#: title/pc5_ui.c:1963 title/pc5_ui.c:3048 title/pc5_ui.c:5071
-#: title/pc5_ui.c:5717 title/pc5_ui.c:5811 title/pc5_ui.c:7693
+#: title/pc5_ui.c:1967 title/pc5_ui.c:3052 title/pc5_ui.c:4415
+#: title/pc5_ui.c:5093 title/pc5_ui.c:5749 title/pc5_ui.c:7721
 msgid "The game"
 msgstr "게임"
 
-#: title/pc5_ui.c:2028
+#: title/pc5_ui.c:2032
 #, c-format
 msgid "Its Windows needs %s and the console has %s free."
 msgstr "Windows에 필요한 공간: %s, 본체 여유 공간: %s."
 
-#: title/pc5_ui.c:2028
+#: title/pc5_ui.c:2032
 #, c-format
 msgid "The game needs %s and the console has %s free."
 msgstr "게임에 필요한 공간: %s, 본체 여유 공간: %s."
 
-#: title/pc5_ui.c:2030 title/pc5_ui.c:5042
+#: title/pc5_ui.c:2034 title/pc5_ui.c:5064
 msgid "Not enough space"
 msgstr "공간이 부족합니다"
 
-#: title/pc5_ui.c:2050
+#: title/pc5_ui.c:2054
 msgid "It has no program to start."
 msgstr "시작할 프로그램이 없습니다."
 
-#: title/pc5_ui.c:2125
+#: title/pc5_ui.c:2129
 #, c-format
 msgid "%s is partly updated"
 msgstr "%s 업데이트가 일부만 완료되었습니다"
 
-#: title/pc5_ui.c:2126
+#: title/pc5_ui.c:2130
 #, c-format
 msgid ""
 "%u of its files couldn't be put in place. %s Update it again; its saves, "
 "settings and options are as they were."
 msgstr "파일 %u개를 제자리에 놓지 못했습니다. %s 다시 업데이트하세요. 저장 데이터, 설정, 옵션은 그대로입니다."
 
-#: title/pc5_ui.c:2130
+#: title/pc5_ui.c:2134
 #, c-format
 msgid "%s is updated"
 msgstr "%s 업데이트를 완료했습니다"
 
-#: title/pc5_ui.c:2131
+#: title/pc5_ui.c:2135
 msgid "Its saves, settings and options are as they were."
 msgstr "저장 데이터, 설정, 옵션은 그대로입니다."
 
-#: title/pc5_ui.c:2134
+#: title/pc5_ui.c:2138
 msgid "Update stopped"
 msgstr "업데이트 중지됨"
 
-#: title/pc5_ui.c:2135
+#: title/pc5_ui.c:2139
 msgid ""
 "The copy made so far was deleted: the game is as it was. The USB drive "
 "wasn't changed."
 msgstr "지금까지 복사한 것은 삭제했습니다. 게임은 그대로입니다. USB 드라이브는 바뀌지 않았습니다."
 
-#: title/pc5_ui.c:2138
+#: title/pc5_ui.c:2142
 #, c-format
 msgid "%s wasn't updated"
 msgstr "%s은(는) 업데이트되지 않았습니다"
 
-#: title/pc5_ui.c:2139
+#: title/pc5_ui.c:2143
 #, c-format
 msgid "%s PC5 finishes the update the next time it starts."
 msgstr "%s 다음에 PC5를 시작할 때 업데이트를 마칩니다."
 
-#: title/pc5_ui.c:2139
+#: title/pc5_ui.c:2143
 #, c-format
 msgid "%s The game is as it was."
 msgstr "%s 게임은 그대로입니다."
 
-#: title/pc5_ui.c:2155
+#: title/pc5_ui.c:2159
 #, c-format
 msgid "%s is installed"
 msgstr "%s 설치를 완료했습니다"
 
-#: title/pc5_ui.c:2160
+#: title/pc5_ui.c:2164
 msgid "It's in your library, with the saves and settings it had before."
 msgstr "이전의 저장 데이터와 설정 그대로 라이브러리에 있습니다."
 
-#: title/pc5_ui.c:2161
+#: title/pc5_ui.c:2165
 msgid "It's in your library. Press the button to play it from there."
 msgstr "라이브러리에 있습니다. 버튼을 누르면 거기서 플레이할 수 있습니다."
 
-#: title/pc5_ui.c:2165
+#: title/pc5_ui.c:2169
 msgid "Install stopped"
 msgstr "설치 중지됨"
 
-#: title/pc5_ui.c:2165
+#: title/pc5_ui.c:2169
 #, c-format
 msgid "%s wasn't installed"
 msgstr "%s은(는) 설치되지 않았습니다"
 
-#: title/pc5_ui.c:2166
+#: title/pc5_ui.c:2170
 msgid "Everything copied so far was deleted. The USB drive wasn't changed."
 msgstr "지금까지 복사한 것은 모두 삭제했습니다. USB 드라이브는 바뀌지 않았습니다."
 
-#: title/pc5_ui.c:2168
+#: title/pc5_ui.c:2172
 #, c-format
 msgid "%s Nothing was kept."
 msgstr "%s 아무것도 남기지 않았습니다."
 
-#: title/pc5_ui.c:2169
+#: title/pc5_ui.c:2173
 #, c-format
 msgid "%s PC5 tries again the next time it starts."
 msgstr "%s 다음에 PC5를 시작할 때 다시 시도합니다."
 
-#: title/pc5_ui.c:2223
+#: title/pc5_ui.c:2227
 msgid "PC5 can't read this folder."
 msgstr "이 폴더를 읽을 수 없습니다."
 
-#: title/pc5_ui.c:2307
+#: title/pc5_ui.c:2311
 msgid "stopped, nothing kept."
 msgstr "중지됨, 아무것도 남기지 않음."
 
-#: title/pc5_ui.c:2307
+#: title/pc5_ui.c:2311
 msgid "not installed."
 msgstr "설치되지 않음."
 
-#: title/pc5_ui.c:2313
+#: title/pc5_ui.c:2317
 msgid "1 game is installed"
 msgstr "게임 1개를 설치했습니다"
 
-#: title/pc5_ui.c:2313
+#: title/pc5_ui.c:2317
 #, c-format
 msgid "%d games are installed"
 msgstr "게임 %d개를 설치했습니다"
 
-#: title/pc5_ui.c:2315
+#: title/pc5_ui.c:2319
 #, c-format
 msgid "%d of %d games are installed"
 msgstr "게임 %2$d개 중 %1$d개를 설치했습니다"
 
-#: title/pc5_ui.c:2317
+#: title/pc5_ui.c:2321
 msgid "No game was installed"
 msgstr "설치된 게임이 없습니다"
 
-#: title/pc5_ui.c:2318
+#: title/pc5_ui.c:2322
 msgid "They're in your library. The USB drive wasn't changed."
 msgstr "라이브러리에 있습니다. USB 드라이브는 바뀌지 않았습니다."
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2366 title/pc5_ui.c:7486
+#: title/pc5_ui.c:2370 title/pc5_ui.c:7514
 msgid "Install games from USB"
 msgstr "USB에서 게임 설치"
 
-#: title/pc5_ui.c:2367
+#: title/pc5_ui.c:2371
 msgid "Copies one game, or several in a row, to the console"
 msgstr "게임을 하나 또는 여러 개 연달아 본체로 복사합니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2370 title/pc5_ui.c:8475 title/pc5_ui.c:8482
+#: title/pc5_ui.c:2374 title/pc5_ui.c:8503 title/pc5_ui.c:8510
 msgid "Uninstall game"
 msgstr "게임 제거"
 
-#: title/pc5_ui.c:2371
+#: title/pc5_ui.c:2375
 msgid "Deletes a game (its saves can be kept), or saves kept from before"
 msgstr "게임(저장 데이터는 보관 가능) 또는 이전에 보관한 저장 데이터를 삭제합니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2374 title/pc5_ui.c:7743
+#: title/pc5_ui.c:2378 title/pc5_ui.c:7771
 msgid "Library appearance from phone"
 msgstr "휴대폰에서 모양 받기"
 
-#: title/pc5_ui.c:2375
+#: title/pc5_ui.c:2379
 msgid ""
 "One QR code to choose any installed game and send its pictures, music or "
 "video"
@@ -1385,488 +1380,488 @@ msgstr "QR 코드 하나로 설치된 게임을 골라 이미지, 음악, 동영
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:2376 title/pc5_ui.c:7974 title/pc5_ui.c:7976
+#: title/pc5_ui.c:2380 title/pc5_ui.c:8002 title/pc5_ui.c:8004
 msgid "Open"
 msgstr "열기"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2379
+#: title/pc5_ui.c:2383
 msgid "Game compatibility list"
 msgstr "게임 호환성 목록"
 
-#: title/pc5_ui.c:2380
+#: title/pc5_ui.c:2384
 msgid "Browse community reports, settings and saved offline results"
 msgstr "커뮤니티 보고서, 설정, 저장된 오프라인 결과 보기"
 
-#: title/pc5_ui.c:2384
+#: title/pc5_ui.c:2388
 msgid "Installing, uninstalling and the compatibility list"
 msgstr "설치, 제거, 호환성 목록"
 
-#: title/pc5_ui.c:2389
+#: title/pc5_ui.c:2393
 msgid "Vibration, light bar, triggers and 120 Hz output"
 msgstr "진동, 라이트 바, 트리거, 120Hz 출력"
 
-#: title/pc5_ui.c:2394
+#: title/pc5_ui.c:2398
 msgid "FPS, frame time, CPU and GPU use, temperatures and memory"
 msgstr "FPS, 프레임 시간, CPU 및 GPU 사용률, 온도, 메모리"
 
-#: title/pc5_ui.c:2400
+#: title/pc5_ui.c:2404
 msgid "Startup sound, logs, picture sources, updates and language"
 msgstr "시작음, 로그, 이미지 출처, 업데이트, 언어"
 
-#: title/pc5_ui.c:2407
+#: title/pc5_ui.c:2411
 msgid "Where covers and backgrounds are looked for"
 msgstr "커버와 배경을 찾을 곳"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2408
+#: title/pc5_ui.c:2412
 #, c-format
 msgid "%d of %d ›"
 msgstr "%d/%d ›"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2412
+#: title/pc5_ui.c:2416
 msgid "120 Hz output"
 msgstr "120Hz 출력"
 
-#: title/pc5_ui.c:2413
+#: title/pc5_ui.c:2417
 msgid ""
-"Games show up to 120 fps on a TV that takes it; turn on the PS5's own 120 "
-"Hz output too"
-msgstr "지원하는 TV에서 게임이 최대 120fps로 보입니다. PS5 자체의 120Hz 출력도 켜세요"
+"Up to 120 fps on a TV that takes it; turn on the PS5's 120 Hz output and "
+"turn VRR off"
+msgstr "지원하는 TV에서 최대 120fps. PS5의 120Hz 출력을 켜고 VRR은 끄세요"
 
-#: title/pc5_ui.c:2414
+#: title/pc5_ui.c:2418
 msgid "Off: games show up to 60 fps"
 msgstr "끔: 게임이 최대 60fps로 보입니다"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2415 title/pc5_ui.c:2427 title/pc5_ui.c:2440
-#: title/pc5_ui.c:2453 title/pc5_ui.c:2485 title/pc5_ui.c:2490
-#: title/pc5_ui.c:2495 title/pc5_ui.c:2500 title/pc5_ui.c:2505
-#: title/pc5_ui.c:2510 title/pc5_ui.c:2515 title/pc5_ui.c:2564
-#: title/pc5_ui.c:2616 title/pc5_ui.c:6768 title/pc5_ui.c:6830
+#: title/pc5_ui.c:2419 title/pc5_ui.c:2431 title/pc5_ui.c:2444
+#: title/pc5_ui.c:2457 title/pc5_ui.c:2489 title/pc5_ui.c:2494
+#: title/pc5_ui.c:2499 title/pc5_ui.c:2504 title/pc5_ui.c:2509
+#: title/pc5_ui.c:2514 title/pc5_ui.c:2519 title/pc5_ui.c:2568
+#: title/pc5_ui.c:2620 title/pc5_ui.c:6796 title/pc5_ui.c:6858
 msgid "On"
 msgstr "켬"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2418
+#: title/pc5_ui.c:2422
 msgid "Keyboard layout"
 msgstr "키보드 배열"
 
-#: title/pc5_ui.c:2419
+#: title/pc5_ui.c:2423
 msgid "A USB keyboard types as a US one in games"
 msgstr "USB 키보드가 게임에서 미국 배열로 입력됩니다"
 
-#: title/pc5_ui.c:2420
+#: title/pc5_ui.c:2424
 msgid "A USB keyboard types as your language's in games"
 msgstr "USB 키보드가 게임에서 언어의 배열로 입력됩니다"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2421
+#: title/pc5_ui.c:2425
 msgid "US"
 msgstr "US"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2424
+#: title/pc5_ui.c:2428
 msgid "Keep all logs"
 msgstr "모든 로그 보관"
 
-#: title/pc5_ui.c:2425
+#: title/pc5_ui.c:2429
 msgid "Every session's log is kept for 7 days"
 msgstr "모든 세션의 로그를 7일 동안 보관합니다"
 
-#: title/pc5_ui.c:2426
+#: title/pc5_ui.c:2430
 msgid "Problem sessions and each game's newest; turn on when testing a game"
 msgstr "문제가 있었던 세션과 각 게임의 최신 로그만. 게임을 테스트할 때 켜세요"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2432
+#: title/pc5_ui.c:2436
 msgid "FTP server"
 msgstr "FTP 서버"
 
-#: title/pc5_ui.c:2434
+#: title/pc5_ui.c:2438
 #, c-format
 msgid ""
 "ftp://%s from a PC (FileZilla): the INSTALL folder, while PC5 is open"
 msgstr "PC에서 ftp://%s(FileZilla): PC5가 열려 있는 동안 INSTALL 폴더"
 
-#: title/pc5_ui.c:2437 title/pc5_ui.c:2450
+#: title/pc5_ui.c:2441 title/pc5_ui.c:2454
 #, c-format
 msgid "Not started: %.150s"
 msgstr "시작되지 않음: %.150s"
 
-#: title/pc5_ui.c:2439
+#: title/pc5_ui.c:2443
 msgid "Send games from a PC to PC5's INSTALL folder, then install them here"
 msgstr "PC에서 PC5의 INSTALL 폴더로 게임을 보낸 뒤 여기서 설치합니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2446
+#: title/pc5_ui.c:2450
 msgid "Web page"
 msgstr "웹 페이지"
 
-#: title/pc5_ui.c:2448
+#: title/pc5_ui.c:2452
 #, c-format
 msgid ""
 "http://%s in a browser on a phone or a PC; Triangle: a QR code for it"
 msgstr "휴대폰이나 PC 브라우저에서 http://%s, △ 버튼: QR 코드"
 
-#: title/pc5_ui.c:2452
+#: title/pc5_ui.c:2456
 msgid "PC5 from a browser: send games, launch options, logs"
 msgstr "브라우저에서 PC5 사용: 게임 보내기, 실행 옵션, 로그"
 
-#: title/pc5_ui.c:2458
+#: title/pc5_ui.c:2462
 msgid ""
 "From a PC or a phone: the FTP server, the web page, a username and password"
 msgstr "PC나 휴대폰에서: FTP 서버, 웹 페이지, 사용자 이름과 비밀번호"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2462
+#: title/pc5_ui.c:2466
 msgid "Username"
 msgstr "사용자 이름"
 
-#: title/pc5_ui.c:2463
+#: title/pc5_ui.c:2467
 msgid "The username the FTP server and the web page ask for"
 msgstr "FTP 서버와 웹 페이지에서 묻는 사용자 이름"
 
-#: title/pc5_ui.c:2464
+#: title/pc5_ui.c:2468
 msgid "None set: any username will do"
 msgstr "설정 안 됨: 아무 사용자 이름이나 됩니다"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2465
+#: title/pc5_ui.c:2469
 msgid "Any"
 msgstr "아무거나"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2468
+#: title/pc5_ui.c:2472
 msgid "Password"
 msgstr "비밀번호"
 
-#: title/pc5_ui.c:2469
+#: title/pc5_ui.c:2473
 msgid "The password the FTP server and the web page ask for"
 msgstr "FTP 서버와 웹 페이지에서 묻는 비밀번호"
 
-#: title/pc5_ui.c:2470
+#: title/pc5_ui.c:2474
 msgid "Optional: none set, no password is asked for"
 msgstr "선택 사항: 설정 안 됨, 비밀번호를 묻지 않습니다"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2471 title/pc5_ui.c:7065
+#: title/pc5_ui.c:2475 title/pc5_ui.c:7093
 msgid "None"
 msgstr "없음"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2474 title/pc5_ui.c:7958
+#: title/pc5_ui.c:2478 title/pc5_ui.c:7986
 msgid "File manager"
 msgstr "파일 관리자"
 
-#: title/pc5_ui.c:2475
+#: title/pc5_ui.c:2479
 msgid "Copy, move, rename and delete files on the console and its drives"
 msgstr "본체와 드라이브의 파일을 복사, 이동, 이름 변경, 삭제합니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2479
+#: title/pc5_ui.c:2483
 msgid "About PC5"
 msgstr "PC5 정보"
 
-#: title/pc5_ui.c:2480
+#: title/pc5_ui.c:2484
 msgid "Version, free space and credits"
 msgstr "버전, 여유 공간, 크레딧"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2483
+#: title/pc5_ui.c:2487
 msgid "Show FPS"
 msgstr "FPS 표시"
 
-#: title/pc5_ui.c:2484
+#: title/pc5_ui.c:2488
 msgid "Frames shown each second"
 msgstr "초당 표시되는 프레임 수"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2488
+#: title/pc5_ui.c:2492
 msgid "Frame time"
 msgstr "프레임 시간"
 
-#: title/pc5_ui.c:2489
+#: title/pc5_ui.c:2493
 msgid "How long a frame takes, on average, in milliseconds"
 msgstr "프레임 하나에 걸리는 평균 시간(밀리초)"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2493
+#: title/pc5_ui.c:2497
 msgid "CPU usage"
 msgstr "CPU 사용률"
 
-#: title/pc5_ui.c:2494
+#: title/pc5_ui.c:2498
 msgid "How busy the console's CPU is, with everything it runs"
 msgstr "실행 중인 모든 것을 포함한 본체 CPU 사용 정도"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2498
+#: title/pc5_ui.c:2502
 msgid "GPU usage"
 msgstr "GPU 사용률"
 
-#: title/pc5_ui.c:2499
+#: title/pc5_ui.c:2503
 msgid "How busy the console's GPU is"
 msgstr "본체 GPU 사용 정도"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2503
+#: title/pc5_ui.c:2507
 msgid "CPU temperature"
 msgstr "CPU 온도"
 
-#: title/pc5_ui.c:2504
+#: title/pc5_ui.c:2508
 msgid "In degrees Celsius"
 msgstr "섭씨 단위"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2508
+#: title/pc5_ui.c:2512
 msgid "Chip temperature"
 msgstr "칩 온도"
 
-#: title/pc5_ui.c:2509
+#: title/pc5_ui.c:2513
 msgid "The console chip's, in degrees Celsius"
 msgstr "본체 칩의 온도(섭씨)"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2513
+#: title/pc5_ui.c:2517
 msgid "Memory"
 msgstr "메모리"
 
-#: title/pc5_ui.c:2514
+#: title/pc5_ui.c:2518
 msgid "What the game uses, of what it has, in GB"
 msgstr "게임이 쓰는 양과 쓸 수 있는 양(GB)"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2518
+#: title/pc5_ui.c:2522
 msgid "Corner"
 msgstr "표시 위치"
 
-#: title/pc5_ui.c:2519
+#: title/pc5_ui.c:2523
 msgid "Where the overlay sits on the screen"
 msgstr "화면에서 오버레이가 표시되는 위치"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2523 title/pc5_ui.c:7428
+#: title/pc5_ui.c:2527 title/pc5_ui.c:7456
 msgid "Size"
 msgstr "크기"
 
-#: title/pc5_ui.c:2525
+#: title/pc5_ui.c:2529
 msgid "Every line at once, twice the size, by the console"
 msgstr "모든 줄을 한 번에 두 배 크기로 표시(본체 기능 사용)"
 
-#: title/pc5_ui.c:2526
+#: title/pc5_ui.c:2530
 msgid "Twice the size, two lines at a time, taking turns"
 msgstr "두 배 크기로 두 줄씩 번갈아 표시"
 
-#: title/pc5_ui.c:2527
+#: title/pc5_ui.c:2531
 msgid "Every line at once, in small text"
 msgstr "모든 줄을 한 번에 작은 글자로 표시"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2531
+#: title/pc5_ui.c:2535
 msgid "Vibration"
 msgstr "진동"
 
-#: title/pc5_ui.c:2532
+#: title/pc5_ui.c:2536
 msgid "How strongly the controller rumbles with the game"
 msgstr "게임에 맞춘 컨트롤러 진동 세기"
 
-#: title/pc5_ui.c:2533
+#: title/pc5_ui.c:2537
 msgid "The game's rumble on the controller"
 msgstr "게임의 진동을 컨트롤러로 전달"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2537
+#: title/pc5_ui.c:2541
 msgid "Light bar"
 msgstr "라이트 바"
 
-#: title/pc5_ui.c:2538
+#: title/pc5_ui.c:2542
 msgid "The colour of what is on screen"
 msgstr "화면에 표시된 색"
 
-#: title/pc5_ui.c:2539
+#: title/pc5_ui.c:2543
 msgid "The main colour of the game's cover"
 msgstr "게임 커버의 주요 색상"
 
-#: title/pc5_ui.c:2540
+#: title/pc5_ui.c:2544
 msgid "PC5 leaves the console's colour"
 msgstr "본체 색상을 그대로 둡니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2544
+#: title/pc5_ui.c:2548
 msgid "Adaptive triggers"
 msgstr "적응형 트리거"
 
-#: title/pc5_ui.c:2545
+#: title/pc5_ui.c:2549
 msgid "L2 and R2 vibrate with the game's rumble"
 msgstr "게임 진동에 맞춰 L2와 R2가 진동합니다"
 
-#: title/pc5_ui.c:2546
+#: title/pc5_ui.c:2550
 msgid "L2 and R2 push back as you press them"
 msgstr "L2와 R2를 누르면 저항이 느껴집니다"
 
-#: title/pc5_ui.c:2547
+#: title/pc5_ui.c:2551
 msgid "L2 and R2 push back, and buzz with the rumble"
 msgstr "L2와 R2에 저항이 걸리고 진동에 맞춰 떨립니다"
 
-#: title/pc5_ui.c:2548
+#: title/pc5_ui.c:2552
 msgid "Rumble, resistance or both on L2 and R2"
 msgstr "L2와 R2의 진동, 저항 또는 둘 다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2552
+#: title/pc5_ui.c:2556
 msgid "Trigger rumble"
 msgstr "트리거 진동"
 
-#: title/pc5_ui.c:2553
+#: title/pc5_ui.c:2557
 msgid "How strongly L2 and R2 vibrate"
 msgstr "L2와 R2의 진동 세기"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2557
+#: title/pc5_ui.c:2561
 msgid "Trigger resistance"
 msgstr "트리거 저항"
 
-#: title/pc5_ui.c:2558
+#: title/pc5_ui.c:2562
 msgid "How firmly L2 and R2 push back"
 msgstr "L2와 R2의 저항 세기"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2562
+#: title/pc5_ui.c:2566
 msgid "Check when PC5 opens"
 msgstr "PC5를 열 때 확인"
 
-#: title/pc5_ui.c:2563
+#: title/pc5_ui.c:2567
 msgid "Asks GitHub for a newer PC5 each time you open PC5, and offers it"
 msgstr "PC5를 열 때마다 GitHub에서 새 PC5가 있는지 확인하고 알려 줍니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2567
+#: title/pc5_ui.c:2571
 msgid "Check now"
 msgstr "지금 확인"
 
-#: title/pc5_ui.c:2569
+#: title/pc5_ui.c:2573
 #, c-format
 msgid ""
 "PC5 %s is out: copy it over this one from github.com/bornaradusin/PC5"
 msgstr "PC5 %s 버전이 나왔습니다. github.com/bornaradusin/PC5에서 받아 지금 PC5에 덮어 복사하세요"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2575
+#: title/pc5_ui.c:2579
 msgid "Startup sound"
 msgstr "시작음"
 
-#: title/pc5_ui.c:2576
+#: title/pc5_ui.c:2580
 msgid "On the controller's speaker when PC5 opens"
 msgstr "PC5를 열 때 컨트롤러 스피커에서 재생"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2580
+#: title/pc5_ui.c:2584
 msgid "Startup sound volume"
 msgstr "시작음 음량"
 
-#: title/pc5_ui.c:2581
+#: title/pc5_ui.c:2585
 msgid "How loud the startup sound plays"
 msgstr "시작음의 크기"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2587
+#: title/pc5_ui.c:2591
 msgid "Language"
 msgstr "언어"
 
-#: title/pc5_ui.c:2589
+#: title/pc5_ui.c:2593
 msgid "PC5's screens and web page; System default follows the console"
 msgstr "PC5 화면과 웹 페이지의 언어. 시스템 기본값은 본체를 따릅니다"
 
-#: title/pc5_ui.c:2592
+#: title/pc5_ui.c:2596
 #, c-format
 msgid "As the console: %s"
 msgstr "본체와 같음: %s"
 
 #. the Language setting's value when PC5 follows the console's language.
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2594
+#: title/pc5_ui.c:2598
 msgid "System default"
 msgstr "시스템 기본값"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:2599 title/pc5_ui.c:8308 title/pc5_ui.c:8566
+#: title/pc5_ui.c:2603 title/pc5_ui.c:8336 title/pc5_ui.c:8594
 msgid "Update now"
 msgstr "지금 업데이트"
 
-#: title/pc5_ui.c:2603
+#: title/pc5_ui.c:2607
 #, c-format
 msgid "%.160s, installs it and restarts PC5"
 msgstr "%.160s, 설치하고 PC5를 다시 시작합니다"
 
-#: title/pc5_ui.c:2609
+#: title/pc5_ui.c:2613
 msgid "Its store's covers and backgrounds"
 msgstr "스토어의 커버와 배경"
 
-#: title/pc5_ui.c:2609
+#: title/pc5_ui.c:2613
 msgid "Covers and backgrounds its members made, with your key"
 msgstr "회원들이 만든 커버와 배경(내 키 사용)"
 
-#: title/pc5_ui.c:2610
+#: title/pc5_ui.c:2614
 msgid "Its catalogue's covers and backgrounds"
 msgstr "카탈로그의 커버와 배경"
 
-#: title/pc5_ui.c:2610
+#: title/pc5_ui.c:2614
 msgid "The cover on the game's page, and its Steam background"
 msgstr "게임 페이지의 커버와 Steam 배경"
 
-#: title/pc5_ui.c:2611
+#: title/pc5_ui.c:2615
 msgid "Steam's pictures for a game Steam's search misses"
 msgstr "Steam 검색에서 찾지 못하는 게임의 Steam 이미지"
 
-#: title/pc5_ui.c:2619
+#: title/pc5_ui.c:2623
 #, c-format
 msgid "Needs your key, in %s"
 msgstr "%s에 키가 필요합니다"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2620
+#: title/pc5_ui.c:2624
 msgid "No key"
 msgstr "키 없음"
 
-#: title/pc5_ui.c:2622
+#: title/pc5_ui.c:2626
 #, c-format
 msgid "It refused the key in %s: check it there"
 msgstr "%s의 키를 거부했습니다. 거기서 확인하세요"
 
-#: title/pc5_ui.c:2869
+#: title/pc5_ui.c:2873
 msgid "Home screen tiles aren't available"
 msgstr "홈 화면 타일을 쓸 수 없습니다"
 
-#: title/pc5_ui.c:2869
+#: title/pc5_ui.c:2873
 msgid "This copy of PC5 has no tile program."
 msgstr "이 PC5에는 타일 프로그램이 없습니다."
 
-#: title/pc5_ui.c:2876
+#: title/pc5_ui.c:2880
 #, c-format
 msgid "PC5 can't delete its folder, %s/%s."
 msgstr "폴더(%s/%s)를 삭제할 수 없습니다."
 
-#: title/pc5_ui.c:2877
+#: title/pc5_ui.c:2881
 msgid "The tile wasn't taken away"
 msgstr "타일을 없애지 못했습니다"
 
-#: title/pc5_ui.c:2881
+#: title/pc5_ui.c:2885
 msgid "Taken off the home screen"
 msgstr "홈 화면에서 없앴습니다"
 
-#: title/pc5_ui.c:2882
+#: title/pc5_ui.c:2886
 msgid ""
 "The tile's folder is deleted. If the tile is still on the home screen, "
 "delete it there."
 msgstr "타일 폴더를 삭제했습니다. 홈 화면에 타일이 아직 있으면 거기서 삭제하세요."
 
-#: title/pc5_ui.c:2899 title/pc5_ui.c:2915
+#: title/pc5_ui.c:2903 title/pc5_ui.c:2919
 msgid "The tile wasn't made"
 msgstr "타일을 만들지 못했습니다"
 
-#: title/pc5_ui.c:2902
+#: title/pc5_ui.c:2906
 #, c-format
 msgid ""
 "Its tile, %s, appears on the home screen once you close PC5 and "
@@ -1877,11 +1872,11 @@ msgstr ""
 "타일(%s)은 PC5를 닫고 ShadowMountPlus가 %s에서 찾으면 홈 화면에 나타납니다. 게임 전용 앱으로, 게임이 바로 "
 "시작되고 게임을 끝내면 홈 화면으로 돌아갑니다. PC5 폴더(%s)에서 실행되므로 PC5를 그 자리에 두세요."
 
-#: title/pc5_ui.c:2907 title/pc5_ui.c:2922
+#: title/pc5_ui.c:2911 title/pc5_ui.c:2926
 msgid "Added to the home screen"
 msgstr "홈 화면에 추가했습니다"
 
-#: title/pc5_ui.c:2919
+#: title/pc5_ui.c:2923
 #, c-format
 msgid ""
 "Its tile, %s, appears on the home screen once ShadowMountPlus finds it in "
@@ -1891,27 +1886,27 @@ msgstr ""
 "타일(%s)은 ShadowMountPlus가 %s에서 찾으면 홈 화면에 나타납니다. 게임이 바로 시작되고 게임을 끝내면 홈 화면으로 "
 "돌아갑니다."
 
-#: title/pc5_ui.c:3021
+#: title/pc5_ui.c:3025
 #, c-format
 msgid "PC5 %s is available on GitHub (you have %s)."
 msgstr "GitHub에 PC5 %s 버전이 있습니다(현재 버전: %s)."
 
-#: title/pc5_ui.c:3055
+#: title/pc5_ui.c:3059
 #, c-format
 msgid "%s stopped with an error"
 msgstr "%s이(가) 오류로 멈췄습니다"
 
-#: title/pc5_ui.c:3056
+#: title/pc5_ui.c:3060
 #, c-format
 msgid "Wine reported a crash. Its log is kept as %.120s in %.120s."
 msgstr "Wine이 충돌을 보고했습니다. 로그는 %2$.120s 안에 %1$.120s 파일로 저장되어 있습니다."
 
-#: title/pc5_ui.c:3059
+#: title/pc5_ui.c:3063
 #, c-format
 msgid "%s closed before showing anything"
 msgstr "%s이(가) 아무것도 표시하지 않고 닫혔습니다"
 
-#: title/pc5_ui.c:3060
+#: title/pc5_ui.c:3064
 #, c-format
 msgid ""
 "If PC5 started the wrong program, choose Change program in the game's menu "
@@ -1920,12 +1915,12 @@ msgstr ""
 "PC5가 잘못된 프로그램을 시작했다면 게임 메뉴(△ 버튼)에서 [프로그램 변경]을 선택하세요. 로그는 %2$.120s 안에 "
 "%1$.120s 파일로 저장되어 있습니다."
 
-#: title/pc5_ui.c:3064
+#: title/pc5_ui.c:3068
 #, c-format
 msgid "%s had to be closed"
 msgstr "%s을(를) 강제로 닫았습니다"
 
-#: title/pc5_ui.c:3065
+#: title/pc5_ui.c:3069
 #, c-format
 msgid ""
 "It didn't close when asked, so PC5 ended it. Its log is kept as %.120s in "
@@ -1933,37 +1928,37 @@ msgid ""
 msgstr ""
 "닫으라는 요청에 응답하지 않아 PC5가 강제 종료했습니다. 로그는 %2$.120s 안에 %1$.120s 파일로 저장되어 있습니다."
 
-#: title/pc5_ui.c:3069
+#: title/pc5_ui.c:3073
 #, c-format
 msgid "%s ended unexpectedly"
 msgstr "%s이(가) 예기치 않게 종료되었습니다"
 
-#: title/pc5_ui.c:3070
+#: title/pc5_ui.c:3074
 msgid "PC5 ended unexpectedly last time"
 msgstr "지난번에 PC5가 예기치 않게 종료되었습니다"
 
-#: title/pc5_ui.c:3071
+#: title/pc5_ui.c:3075
 #, c-format
 msgid "Its log is kept as %.120s in %.120s."
 msgstr "로그는 %2$.120s 안에 %1$.120s 파일로 저장되어 있습니다."
 
-#: title/pc5_ui.c:3093
+#: title/pc5_ui.c:3097
 #, c-format
 msgid "No log of %s yet"
 msgstr "%s의 로그가 아직 없습니다"
 
-#: title/pc5_ui.c:3094
+#: title/pc5_ui.c:3098
 msgid ""
 "Play it once until the problem happens, then come back here: its log goes "
 "with the report."
 msgstr "문제가 생길 때까지 한 번 플레이한 뒤 여기로 돌아오세요. 그 로그가 보고에 함께 들어갑니다."
 
-#: title/pc5_ui.c:3108
+#: title/pc5_ui.c:3112
 #, c-format
 msgid "Report a problem with %s"
 msgstr "%s 문제 보고"
 
-#: title/pc5_ui.c:3109
+#: title/pc5_ui.c:3113
 #, c-format
 msgid ""
 "Its newest log, %.120s, is in %.120s/logs. Press Triangle for a QR code "
@@ -1973,494 +1968,503 @@ msgstr ""
 "최신 로그(%.120s)는 %.120s/logs에 있습니다. △ 버튼을 누르면 게임, PC5, 게임 설정이 채워진 GitHub 양식을 "
 "여는 QR 코드가 나옵니다. 거기에 그 zip 파일을 첨부하세요."
 
-#: title/pc5_ui.c:3375
+#: title/pc5_ui.c:3379
 msgid "Internal storage"
 msgstr "본체 저장 공간"
 
-#: title/pc5_ui.c:3388
+#: title/pc5_ui.c:3392
 msgid "PC5's INSTALL folder"
 msgstr "PC5의 INSTALL 폴더"
 
-#: title/pc5_ui.c:3394
+#: title/pc5_ui.c:3398
 msgid "PC5's app"
 msgstr "PC5 앱"
 
-#: title/pc5_ui.c:3399
+#: title/pc5_ui.c:3403
 msgid "Whole console"
 msgstr "본체 전체"
 
-#: title/pc5_ui.c:3477 title/pc5_ui.c:3484 title/pc5_ui.c:5587
-#: title/pc5_ui.c:5591 title/pc5_ui_enhancements_input.h:19
+#: title/pc5_ui.c:3481 title/pc5_ui.c:3488 title/pc5_ui.c:5609
+#: title/pc5_ui.c:5613 title/pc5_ui_enhancements_input.h:19
 msgid "Music wasn't saved"
 msgstr "음악을 저장하지 못했습니다"
 
-#: title/pc5_ui.c:3477
+#: title/pc5_ui.c:3481
 msgid "PC5 couldn't create the game's music folder. Check free space."
 msgstr "PC5가 게임의 음악 폴더를 만들지 못했습니다. 여유 공간을 확인하세요."
 
-#: title/pc5_ui.c:3484
+#: title/pc5_ui.c:3488
 msgid "PC5 couldn't start importing the music. Try again."
 msgstr "PC5가 음악 가져오기를 시작하지 못했습니다. 다시 시도하세요."
 
-#: title/pc5_ui.c:3521 title/pc5_ui.c:3528 title/pc5_ui.c:5614
-#: title/pc5_ui.c:5618 title/pc5_ui_enhancements_input.h:19
+#: title/pc5_ui.c:3525 title/pc5_ui.c:3532 title/pc5_ui.c:5636
+#: title/pc5_ui.c:5640 title/pc5_ui_enhancements_input.h:19
 msgid "Video wasn't saved"
 msgstr "동영상을 저장하지 못했습니다"
 
-#: title/pc5_ui.c:3521
+#: title/pc5_ui.c:3525
 msgid "PC5 couldn't create the game's video folder. Check free space."
 msgstr "PC5가 게임의 동영상 폴더를 만들지 못했습니다. 여유 공간을 확인하세요."
 
-#: title/pc5_ui.c:3528
+#: title/pc5_ui.c:3532
 msgid "This build couldn't start the video importer."
 msgstr "이 빌드에서 동영상 가져오기를 시작하지 못했습니다."
 
-#: title/pc5_ui.c:3634
+#: title/pc5_ui.c:3638
 msgid "Plug in the game's USB drive"
 msgstr "게임의 USB 드라이브를 연결하세요"
 
-#: title/pc5_ui.c:3634
+#: title/pc5_ui.c:3638
 msgid "Its files are on the USB drive it plays from."
 msgstr "이 게임의 파일은 플레이에 쓰는 USB 드라이브에 있습니다."
 
-#: title/pc5_ui.c:3636
+#: title/pc5_ui.c:3640
 msgid "PC5 can't find the game's folder"
 msgstr "게임 폴더를 찾을 수 없습니다"
 
-#: title/pc5_ui.c:3636 title/pc5_ui.c:5406
+#: title/pc5_ui.c:3640 title/pc5_ui.c:5428
 msgid "Its files may be missing: uninstall it and install it again."
 msgstr "파일이 없어졌을 수 있습니다. 제거한 뒤 다시 설치하세요."
 
-#: title/pc5_ui.c:3677
+#: title/pc5_ui.c:3681
 msgid "Phone uploads need a game with its own PC5 folder."
 msgstr "휴대폰 업로드에는 자체 PC5 폴더가 있는 게임이 필요합니다."
 
-#: title/pc5_ui.c:3687 title/pc5_ui.c:3696
+#: title/pc5_ui.c:3691 title/pc5_ui.c:3700
 msgid "Phone connection unavailable"
 msgstr "휴대폰에 연결할 수 없습니다"
 
-#: title/pc5_ui.c:3696
+#: title/pc5_ui.c:3700
 msgid ""
 "Check the network, then try again. The phone and PS5 must share a network "
 "or phone hotspot."
 msgstr "네트워크를 확인한 후 다시 시도하세요. 휴대폰과 PS5가 같은 네트워크나 휴대폰 핫스팟에 연결되어 있어야 합니다."
 
-#: title/pc5_ui.c:3720
+#: title/pc5_ui.c:3724
 msgid "Picture wasn't saved"
 msgstr "이미지를 저장하지 못했습니다"
 
-#: title/pc5_ui.c:3720
+#: title/pc5_ui.c:3724
 msgid ""
 "Choose a readable JPEG or PNG image, at most 20 MB. Your previous picture "
 "was kept."
 msgstr "읽을 수 있는 20 MB 이하의 JPEG 또는 PNG 이미지를 선택하세요. 이전 이미지는 그대로 유지됩니다."
 
-#: title/pc5_ui.c:3849 title/pc5_ui.c:7982
+#: title/pc5_ui.c:3853 title/pc5_ui.c:8010
 msgid "Choose an appearance backup"
 msgstr "모양 백업 선택"
 
-#: title/pc5_ui.c:3849
+#: title/pc5_ui.c:3853
 msgid "Choose a .pc5look backup made by PC5."
 msgstr "PC5로 만든 .pc5look 백업을 선택하세요."
 
-#: title/pc5_ui.c:3857 title/pc5_ui.c:7984
+#: title/pc5_ui.c:3861 title/pc5_ui.c:8012
 msgid "Choose a music file"
 msgstr "음악 파일 선택"
 
-#: title/pc5_ui.c:3857 title/pc5_ui.c:7985
+#: title/pc5_ui.c:3861 title/pc5_ui.c:8013
 msgid "Choose an MP3 or a 16-bit PCM WAV file."
 msgstr "MP3 또는 16비트 PCM WAV 파일을 선택하세요."
 
-#: title/pc5_ui.c:3867 title/pc5_ui.c:7994
+#: title/pc5_ui.c:3871 title/pc5_ui.c:8022
 msgid "PC5 can't open this folder"
 msgstr "이 폴더를 열 수 없습니다"
 
-#: title/pc5_ui.c:3867
+#: title/pc5_ui.c:3871
 msgid "Its path is too long."
 msgstr "경로가 너무 깁니다."
 
-#: title/pc5_ui.c:3923
+#: title/pc5_ui.c:3927
 msgid "Nothing was deleted"
 msgstr "아무것도 삭제되지 않았습니다"
 
-#: title/pc5_ui.c:3923
+#: title/pc5_ui.c:3927
 msgid "Nothing was moved"
 msgstr "아무것도 이동되지 않았습니다"
 
-#: title/pc5_ui.c:3923
+#: title/pc5_ui.c:3927
 msgid "Nothing was copied"
 msgstr "아무것도 복사되지 않았습니다"
 
-#: title/pc5_ui.c:3969
+#: title/pc5_ui.c:3973
 msgid "Nothing was pasted"
 msgstr "아무것도 붙여넣지 않았습니다"
 
-#: title/pc5_ui.c:3969
+#: title/pc5_ui.c:3973
 msgid "Those items are here already, and were left as they were."
 msgstr "그 항목들은 이미 여기 있어서 그대로 두었습니다."
 
-#: title/pc5_ui.c:3972
+#: title/pc5_ui.c:3976
 msgid "Stopped"
 msgstr "중지됨"
 
-#: title/pc5_ui.c:3973
+#: title/pc5_ui.c:3977
 msgid "What was deleted so far is gone; the rest is still here."
 msgstr "지금까지 삭제한 것은 사라졌고, 나머지는 아직 여기 있습니다."
 
-#: title/pc5_ui.c:3974
+#: title/pc5_ui.c:3978
 msgid ""
 "What was moved so far is here. Nothing was deleted from where it came from."
 msgstr "지금까지 이동한 것은 여기 있습니다. 원래 위치에서는 아무것도 삭제하지 않았습니다."
 
-#: title/pc5_ui.c:3975
+#: title/pc5_ui.c:3979
 msgid ""
 "What was copied so far is here; the file being copied when it stopped was "
 "deleted."
 msgstr "지금까지 복사한 것은 여기 있습니다. 중지할 때 복사 중이던 파일은 삭제했습니다."
 
-#: title/pc5_ui.c:3978
+#: title/pc5_ui.c:3982
 msgid "Not everything was deleted"
 msgstr "일부를 삭제하지 못했습니다"
 
-#: title/pc5_ui.c:3978
+#: title/pc5_ui.c:3982
 msgid "Not everything was moved"
 msgstr "일부를 이동하지 못했습니다"
 
-#: title/pc5_ui.c:3978
+#: title/pc5_ui.c:3982
 msgid "Not everything was copied"
 msgstr "일부를 복사하지 못했습니다"
 
-#: title/pc5_ui.c:3990 title/pc5_ui.c:3994
+#: title/pc5_ui.c:3994 title/pc5_ui.c:3998
 msgid "That name can't be used"
 msgstr "그 이름은 쓸 수 없습니다"
 
-#: title/pc5_ui.c:3994
+#: title/pc5_ui.c:3998
 msgid "The path would be too long."
 msgstr "경로가 너무 길어집니다."
 
-#: title/pc5_ui.c:4003 title/pc5_ui.c:4016
+#: title/pc5_ui.c:4007 title/pc5_ui.c:4020
 #, c-format
 msgid "This folder has %.200s already."
 msgstr "이 폴더에 이미 %.200s이(가) 있습니다."
 
-#: title/pc5_ui.c:4004 title/pc5_ui.c:4017
+#: title/pc5_ui.c:4008 title/pc5_ui.c:4021
 msgid "That name is taken"
 msgstr "그 이름은 이미 쓰이고 있습니다"
 
-#: title/pc5_ui.c:4008 title/pc5_ui.c:4021
+#: title/pc5_ui.c:4012 title/pc5_ui.c:4025
 #, c-format
 msgid "%s."
 msgstr "%s."
 
-#: title/pc5_ui.c:4010
+#: title/pc5_ui.c:4014
 msgid "PC5 can't rename it"
 msgstr "이름을 바꿀 수 없습니다"
 
-#: title/pc5_ui.c:4023
+#: title/pc5_ui.c:4027
 msgid "PC5 can't make the folder"
 msgstr "폴더를 만들 수 없습니다"
 
 #. The title of the console's on-screen keyboard.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:4057 title/pc5_ui.c:8017
+#: title/pc5_ui.c:4061 title/pc5_ui.c:8045
 msgid "Rename"
 msgstr "이름 변경"
 
 #. The title of the console's on-screen keyboard.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:4057 title/pc5_ui.c:4059 title/pc5_ui.c:8018
+#: title/pc5_ui.c:4061 title/pc5_ui.c:4063 title/pc5_ui.c:8046
 msgid "New folder"
 msgstr "새 폴더"
 
-#: title/pc5_ui.c:4062 title/pc5_ui.c:4163 title/pc5_ui.c:4713
-#: title/pc5_ui.c:5277 title/pc5_ui_enhancements_input.h:56
+#: title/pc5_ui.c:4066 title/pc5_ui.c:4167 title/pc5_ui.c:4735
+#: title/pc5_ui.c:5299 title/pc5_ui_enhancements_input.h:56
 msgid "The keyboard didn't open"
 msgstr "키보드가 열리지 않았습니다"
 
-#: title/pc5_ui.c:4062 title/pc5_ui.c:4163 title/pc5_ui.c:4713
-#: title/pc5_ui.c:5277 title/pc5_ui_enhancements_input.h:56
+#: title/pc5_ui.c:4066 title/pc5_ui.c:4167 title/pc5_ui.c:4735
+#: title/pc5_ui.c:5299 title/pc5_ui_enhancements_input.h:56
 msgid "The console's on-screen keyboard can't be used just now."
 msgstr "지금은 본체의 화상 키보드를 쓸 수 없습니다."
 
-#: title/pc5_ui.c:4102
+#: title/pc5_ui.c:4106
 msgid "PC5 can't open it as text"
 msgstr "PC5가 텍스트로 열 수 없습니다"
 
-#: title/pc5_ui.c:4132
+#: title/pc5_ui.c:4136
 msgid "PC5 couldn't save it"
 msgstr "PC5가 저장하지 못했습니다"
 
-#: title/pc5_ui.c:4149
+#: title/pc5_ui.c:4153
 msgid "This line is too long to change here"
 msgstr "이 줄은 너무 길어 여기서 바꿀 수 없습니다"
 
-#: title/pc5_ui.c:4150
+#: title/pc5_ui.c:4154
 msgid ""
 "The console's keyboard holds about 1000 characters. Change it from PC5's "
 "web page, or a computer over FTP."
 msgstr "콘솔 키보드에는 약 1000자까지 들어갑니다. PC5 웹 페이지나 FTP로 연결한 컴퓨터에서 바꾸세요."
 
-#: title/pc5_ui.c:4155 title/pc5_ui.c:8123
+#: title/pc5_ui.c:4159 title/pc5_ui.c:8151
 #, c-format
 msgid "Line %d"
 msgstr "%d번째 줄"
 
-#: title/pc5_ui.c:4157
+#: title/pc5_ui.c:4161
 msgid "New line"
 msgstr "새 줄"
 
-#: title/pc5_ui.c:4271
+#: title/pc5_ui.c:4275
 msgid "Choose a writable folder"
 msgstr "쓰기 가능한 폴더 선택"
 
-#: title/pc5_ui.c:4271
+#: title/pc5_ui.c:4275
 msgid ""
 "Open a folder on internal storage or a USB drive, then choose Save here."
 msgstr "본체 저장 공간이나 USB 드라이브의 폴더를 연 후 '여기에 저장'을 선택하세요."
 
-#: title/pc5_ui.c:4281
+#: title/pc5_ui.c:4285
 msgid "Backup wasn't saved"
 msgstr "백업을 저장하지 못했습니다"
 
-#: title/pc5_ui.c:4281
+#: title/pc5_ui.c:4285
 msgid ""
 "Choose another folder. The backup name is unavailable or its path is too "
 "long."
 msgstr "다른 폴더를 선택하세요. 백업 이름을 사용할 수 없거나 경로가 너무 깁니다."
 
-#: title/pc5_ui.c:4498
+#: title/pc5_ui.c:4415
+#, c-format
+msgid "%s didn't start"
+msgstr "%s이(가) 시작되지 않았습니다"
+
+#: title/pc5_ui.c:4417
+msgid "The console refused to start it. Try again, or restart PC5."
+msgstr "본체가 시작을 거부했습니다. 다시 시도하거나 PC5를 다시 시작하세요."
+
+#: title/pc5_ui.c:4520
 msgid "This tile's game can't start"
 msgstr "이 타일의 게임을 시작할 수 없습니다"
 
-#: title/pc5_ui.c:4544
+#: title/pc5_ui.c:4566
 msgid "PC5 couldn't restart"
 msgstr "PC5를 다시 시작하지 못했습니다"
 
-#: title/pc5_ui.c:4545
+#: title/pc5_ui.c:4567
 msgid ""
 "The new version is installed. Close PC5 from the PS button and open it "
 "again."
 msgstr "새 버전을 설치했습니다. PS 버튼으로 PC5를 닫았다가 다시 여세요."
 
-#: title/pc5_ui.c:4555
+#: title/pc5_ui.c:4577
 msgid "The update was stopped"
 msgstr "업데이트가 중지되었습니다"
 
-#: title/pc5_ui.c:4555
+#: title/pc5_ui.c:4577
 msgid "PC5 is as it was, and what was downloaded is deleted."
 msgstr "PC5는 그대로이고, 다운로드한 것은 삭제했습니다."
 
-#: title/pc5_ui.c:4558
+#: title/pc5_ui.c:4580
 msgid "PC5's update isn't finished"
 msgstr "PC5 업데이트가 끝나지 않았습니다"
 
-#: title/pc5_ui.c:4558
+#: title/pc5_ui.c:4580
 msgid "PC5 wasn't updated"
 msgstr "PC5가 업데이트되지 않았습니다"
 
-#: title/pc5_ui.c:4644 title/pc5_ui.c:5700 title/pc5_ui.c:5717
-#: title/pc5_ui.c:5787
+#: title/pc5_ui.c:4666 title/pc5_ui.c:5732 title/pc5_ui.c:5749
+#: title/pc5_ui.c:5819
 #, c-format
 msgid "%s can't start"
 msgstr "%s을(를) 시작할 수 없습니다"
 
-#: title/pc5_ui.c:4645
+#: title/pc5_ui.c:4667
 #, c-format
 msgid ""
 "%s You can uninstall it from its menu (Triangle) and install it again."
 msgstr "%s 게임 메뉴(△ 버튼)에서 제거한 뒤 다시 설치할 수 있습니다."
 
-#: title/pc5_ui.c:4646 title/pc5_ui.c:5201
+#: title/pc5_ui.c:4668 title/pc5_ui.c:5223
 msgid "Something it needs is missing."
 msgstr "필요한 것이 없습니다."
 
 #. The title of the console's on-screen keyboard.
-#: title/pc5_ui.c:4708
+#: title/pc5_ui.c:4730
 msgid "Username (empty: any)"
 msgstr "사용자 이름(비워 두면 아무거나)"
 
 #. The title of the console's on-screen keyboard.
-#: title/pc5_ui.c:4708
+#: title/pc5_ui.c:4730
 msgid "Password (empty: none)"
 msgstr "비밀번호(비워 두면 없음)"
 
-#: title/pc5_ui.c:4817
+#: title/pc5_ui.c:4839
 msgid "Appearance wasn't changed"
 msgstr "모양이 바뀌지 않았습니다"
 
-#: title/pc5_ui.c:4817
+#: title/pc5_ui.c:4839
 msgid "Appearance backup complete"
 msgstr "모양 백업 완료"
 
-#: title/pc5_ui.c:4818
+#: title/pc5_ui.c:4840
 msgid "The saved appearance was restored. Game files and saves were kept."
 msgstr "저장된 모양을 복원했습니다. 게임 파일과 저장 데이터는 그대로 유지됩니다."
 
-#: title/pc5_ui.c:4882 title/pc5_ui.c:5013
+#: title/pc5_ui.c:4904 title/pc5_ui.c:5035
 msgid "Out of memory"
 msgstr "메모리 부족"
 
-#: title/pc5_ui.c:4882 title/pc5_ui.c:5013
+#: title/pc5_ui.c:4904 title/pc5_ui.c:5035
 msgid "PC5 couldn't make room to read the folders."
 msgstr "폴더를 읽을 메모리를 확보하지 못했습니다."
 
-#: title/pc5_ui.c:4894
+#: title/pc5_ui.c:4916
 msgid "PC5 can't read that folder"
 msgstr "그 폴더를 읽을 수 없습니다"
 
-#: title/pc5_ui.c:4894
+#: title/pc5_ui.c:4916
 msgid "Check that the USB drive is still plugged in."
 msgstr "USB 드라이브가 아직 연결되어 있는지 확인하세요."
 
-#: title/pc5_ui.c:4945
+#: title/pc5_ui.c:4967
 msgid "Nothing to install"
 msgstr "설치할 것이 없습니다"
 
-#: title/pc5_ui.c:4945
+#: title/pc5_ui.c:4967
 msgid "None of these folders has a game PC5 can install."
 msgstr "이 폴더들에는 PC5로 설치할 수 있는 게임이 없습니다."
 
-#: title/pc5_ui.c:4950
+#: title/pc5_ui.c:4972
 #, c-format
 msgid ""
 "Together they need %s and the console has %s free. Go back and untick some."
 msgstr "필요한 공간은 모두 %s, 본체 여유 공간은 %s입니다. 돌아가서 몇 개를 선택 해제하세요."
 
-#: title/pc5_ui.c:4952
+#: title/pc5_ui.c:4974
 msgid "Not enough space for all of them"
 msgstr "모두 설치할 공간이 부족합니다"
 
-#: title/pc5_ui.c:4986
+#: title/pc5_ui.c:5008
 msgid "This folder can't be installed"
 msgstr "이 폴더는 설치할 수 없습니다"
 
-#: title/pc5_ui.c:5041
+#: title/pc5_ui.c:5063
 #, c-format
 msgid "The update needs %s and the console has %s free."
 msgstr "업데이트에 필요한 공간: %s, 본체 여유 공간: %s."
 
-#: title/pc5_ui.c:5074
+#: title/pc5_ui.c:5096
 #, c-format
 msgid "%s's program wasn't changed"
 msgstr "%s의 프로그램이 바뀌지 않았습니다"
 
-#: title/pc5_ui.c:5078
+#: title/pc5_ui.c:5100
 #, c-format
 msgid "%s starts %s now"
 msgstr "%s은(는) 이제 %s을(를) 시작합니다"
 
-#: title/pc5_ui.c:5079
+#: title/pc5_ui.c:5101
 #, c-format
 msgid "It runs as %d-bit %s."
 msgstr "%d비트 %s 환경에서 실행됩니다."
 
-#: title/pc5_ui.c:5098 title/pc5_ui.c:5201
+#: title/pc5_ui.c:5120 title/pc5_ui.c:5223
 msgid "This game can't start"
 msgstr "이 게임은 시작할 수 없습니다"
 
-#: title/pc5_ui.c:5218
+#: title/pc5_ui.c:5240
 msgid "Media settings need a game with its own PC5 folder."
 msgstr "미디어 설정에는 자체 PC5 폴더가 있는 게임이 필요합니다."
 
-#: title/pc5_ui.c:5228
+#: title/pc5_ui.c:5250
 msgid "PC5 didn't install it, so its program can't be changed here."
 msgstr "PC5로 설치하지 않았으므로 여기서 프로그램을 바꿀 수 없습니다."
 
-#: title/pc5_ui.c:5271
+#: title/pc5_ui.c:5293
 msgid "Search for covers by name"
 msgstr "이름으로 커버 검색"
 
-#: title/pc5_ui.c:5272
+#: title/pc5_ui.c:5294
 msgid "Search for tile pictures by name"
 msgstr "이름으로 타일 이미지 검색"
 
-#: title/pc5_ui.c:5273
+#: title/pc5_ui.c:5295
 msgid "Search for backgrounds by name"
 msgstr "이름으로 배경 검색"
 
-#: title/pc5_ui.c:5331
+#: title/pc5_ui.c:5353
 msgid "Your mapping wasn't saved"
 msgstr "내 할당이 저장되지 않았습니다"
 
-#: title/pc5_ui.c:5331
+#: title/pc5_ui.c:5353
 msgid "PC5 couldn't write it to the console's storage."
 msgstr "본체 저장 공간에 쓰지 못했습니다."
 
-#: title/pc5_ui.c:5334
+#: title/pc5_ui.c:5356
 msgid "Saved as your mapping"
 msgstr "내 할당으로 저장했습니다"
 
-#: title/pc5_ui.c:5335
+#: title/pc5_ui.c:5357
 msgid ""
 "Games set up from now on start with it, and Use my mapping puts it on any "
 "game."
 msgstr "앞으로 설정하는 게임은 이 할당으로 시작하며, 내 할당 사용으로 어떤 게임에도 적용할 수 있습니다."
 
-#: title/pc5_ui.c:5406
+#: title/pc5_ui.c:5428
 msgid "PC5 can't read the game's folder"
 msgstr "게임 폴더를 읽을 수 없습니다"
 
-#: title/pc5_ui.c:5411
+#: title/pc5_ui.c:5433
 msgid "This game has one program"
 msgstr "이 게임은 프로그램이 하나뿐입니다"
 
-#: title/pc5_ui.c:5411
+#: title/pc5_ui.c:5433
 msgid "There is no other program in its folder to start."
 msgstr "폴더에 시작할 다른 프로그램이 없습니다."
 
-#: title/pc5_ui.c:5505
+#: title/pc5_ui.c:5527
 #, c-format
 msgid "%s wasn't uninstalled"
 msgstr "%s은(는) 제거되지 않았습니다"
 
-#: title/pc5_ui.c:5506
+#: title/pc5_ui.c:5528
 #, c-format
 msgid "%s Nothing was changed."
 msgstr "%s 아무것도 바뀌지 않았습니다."
 
 #. added after the sentence before it, hence the space at its start.
 #. Keep the space at the start or end: the text is joined to another.
-#: title/pc5_ui.c:5529
+#: title/pc5_ui.c:5551
 msgid ""
 " Its home screen tile's folder was deleted: if the tile is still on the "
 "home screen, delete it there."
 msgstr " 홈 화면 타일 폴더를 삭제했습니다. 홈 화면에 타일이 아직 있으면 거기서 삭제하세요."
 
-#: title/pc5_ui.c:5532
+#: title/pc5_ui.c:5554
 #, c-format
 msgid "The saves of %s weren't fully deleted"
 msgstr "%s의 저장 데이터를 완전히 삭제하지 못했습니다"
 
-#: title/pc5_ui.c:5532
+#: title/pc5_ui.c:5554
 #, c-format
 msgid "The saves of %s are deleted"
 msgstr "%s의 저장 데이터를 삭제했습니다"
 
-#: title/pc5_ui.c:5534
+#: title/pc5_ui.c:5556
 #, c-format
 msgid "%s PC5 finishes deleting them the next time it starts."
 msgstr "%s 다음에 PC5를 시작할 때 삭제를 마칩니다."
 
-#: title/pc5_ui.c:5535
+#: title/pc5_ui.c:5557
 msgid "Its saves and settings, kept when it was uninstalled, are gone."
 msgstr "제거할 때 보관해 둔 저장 데이터와 설정이 삭제되었습니다."
 
-#: title/pc5_ui.c:5537
+#: title/pc5_ui.c:5559
 #, c-format
 msgid "%s wasn't fully uninstalled"
 msgstr "%s을(를) 완전히 제거하지 못했습니다"
 
-#: title/pc5_ui.c:5537
+#: title/pc5_ui.c:5559
 #, c-format
 msgid "%s is uninstalled"
 msgstr "%s을(를) 제거했습니다"
 
-#: title/pc5_ui.c:5538
+#: title/pc5_ui.c:5560
 #, c-format
 msgid "%s PC5 finishes it the next time it starts."
 msgstr "%s 다음에 PC5를 시작할 때 마칩니다."
 
-#: title/pc5_ui.c:5540
+#: title/pc5_ui.c:5562
 #, c-format
 msgid ""
 "Its saves and settings are kept: installing it again puts them back. "
@@ -2468,54 +2472,54 @@ msgid ""
 msgstr ""
 "저장 데이터와 설정은 보관되어 있습니다. 다시 설치하면 되돌아옵니다. 설정 › 게임 관리 › 게임 제거에서 삭제할 수 있습니다.%s"
 
-#: title/pc5_ui.c:5542
+#: title/pc5_ui.c:5564
 #, c-format
 msgid "The game, its saves and its settings were deleted.%s"
 msgstr "게임, 저장 데이터, 설정을 삭제했습니다.%s"
 
-#: title/pc5_ui.c:5583
+#: title/pc5_ui.c:5605
 msgid ""
 "Choose a readable MP3 or 16-bit PCM WAV file. Protected or damaged files "
 "may not work."
 msgstr "읽을 수 있는 MP3 또는 16비트 PCM WAV 파일을 선택하세요. 보호되거나 손상된 파일은 작동하지 않을 수 있습니다."
 
-#: title/pc5_ui.c:5585
+#: title/pc5_ui.c:5607
 msgid "The prepared music exceeds the 2 GB limit. Choose a shorter track."
 msgstr "준비된 음악이 2 GB 제한을 넘습니다. 더 짧은 곡을 선택하세요."
 
-#: title/pc5_ui.c:5586
+#: title/pc5_ui.c:5608
 msgid ""
 "Check free space and keep the source drive connected until importing "
 "finishes. Your previous music was kept."
 msgstr "여유 공간을 확인하고 가져오기가 끝날 때까지 원본 드라이브를 연결해 두세요. 이전 음악은 그대로 유지됩니다."
 
-#: title/pc5_ui.c:5591 title/pc5_ui_enhancements_input.h:21
+#: title/pc5_ui.c:5613 title/pc5_ui_enhancements_input.h:21
 msgid "PC5 couldn't save the music selection. Try again."
 msgstr "PC5가 음악 선택을 저장하지 못했습니다. 다시 시도하세요."
 
-#: title/pc5_ui.c:5611
+#: title/pc5_ui.c:5633
 msgid ""
 "Choose an H.264 video up to 1920x1080, 60 fps and 1 GB. MP4 is "
 "recommended. Audio is ignored."
 msgstr ""
 "1920x1080, 60 fps, 1 GB 이하의 H.264 동영상을 선택하세요. MP4를 권장합니다. 오디오는 무시됩니다."
 
-#: title/pc5_ui.c:5612
+#: title/pc5_ui.c:5634
 msgid ""
 "Check free space and keep the source drive connected until importing "
 "finishes. Your previous video was kept."
 msgstr "여유 공간을 확인하고 가져오기가 끝날 때까지 원본 드라이브를 연결해 두세요. 이전 동영상은 그대로 유지됩니다."
 
-#: title/pc5_ui.c:5618
+#: title/pc5_ui.c:5640
 msgid "PC5 couldn't save the video selection. Try again."
 msgstr "PC5가 동영상 선택을 저장하지 못했습니다. 다시 시도하세요."
 
-#: title/pc5_ui.c:5769
+#: title/pc5_ui.c:5801
 #, c-format
 msgid "%s needs Steam"
 msgstr "%s에는 Steam이 필요합니다"
 
-#: title/pc5_ui.c:5772
+#: title/pc5_ui.c:5804
 msgid ""
 "Its program is wrapped in Steam's DRM (SteamStub), which starts only with "
 "Steam running, and Steam doesn't run on the console. A copy of the game "
@@ -2524,64 +2528,55 @@ msgstr ""
 "이 게임의 프로그램은 Steam의 DRM(SteamStub)으로 감싸져 있어 Steam이 실행 중일 때만 시작되는데, Steam은 "
 "본체에서 실행되지 않습니다. DRM이 없는 게임 사본은 시작할 수 있습니다."
 
-#: title/pc5_ui.c:5811
-#, c-format
-msgid "%s didn't start"
-msgstr "%s이(가) 시작되지 않았습니다"
-
-#: title/pc5_ui.c:5813
-msgid "The console refused to start it. Try again, or restart PC5."
-msgstr "본체가 시작을 거부했습니다. 다시 시도하거나 PC5를 다시 시작하세요."
-
-#: title/pc5_ui.c:6392 title/pc5_ui.c:6402
+#: title/pc5_ui.c:6420 title/pc5_ui.c:6430
 msgid "Play Game"
 msgstr "게임 플레이"
 
 #. a chip under the game's name: 64-bit or 32-bit. Keep it short.
-#: title/pc5_ui.c:6413
+#: title/pc5_ui.c:6441
 #, c-format
 msgid "%d-bit"
 msgstr "%d비트"
 
-#: title/pc5_ui.c:6417
+#: title/pc5_ui.c:6445
 msgid "Frame gen"
 msgstr "프레임 생성"
 
-#: title/pc5_ui.c:6418
+#: title/pc5_ui.c:6446
 #, c-format
 msgid "Controller: %s"
 msgstr "컨트롤러: %s"
 
-#: title/pc5_ui.c:6507
+#: title/pc5_ui.c:6535
 msgid "No games yet."
 msgstr "아직 게임이 없습니다."
 
-#: title/pc5_ui.c:6507
+#: title/pc5_ui.c:6535
 msgid "Nothing played yet: games show here once you play them."
 msgstr "아직 플레이한 게임이 없습니다. 플레이하면 여기에 표시됩니다."
 
-#: title/pc5_ui.c:6508
+#: title/pc5_ui.c:6536
 msgid "No favourites yet: press Square on a game to add it."
 msgstr "아직 즐겨찾기가 없습니다. 게임에서 □ 버튼을 누르면 추가됩니다."
 
-#: title/pc5_ui.c:6509
+#: title/pc5_ui.c:6537
 msgid "No game is played from a USB drive."
 msgstr "USB 드라이브에서 플레이하는 게임이 없습니다."
 
-#: title/pc5_ui.c:6509
+#: title/pc5_ui.c:6537
 msgid "Every game can start."
 msgstr "모든 게임을 시작할 수 있습니다."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6533 title/pc5_ui.c:6578 title/pc5_ui.c:6654
-#: title/pc5_ui.c:6976 title/pc5_ui.c:7006 title/pc5_ui.c:7107
-#: title/pc5_ui.c:7136 title/pc5_ui.c:7190 title/pc5_ui.c:7237
-#: title/pc5_ui.c:7459 title/pc5_ui.c:7468 title/pc5_ui.c:7485
-#: title/pc5_ui.c:7706 title/pc5_ui.c:7915 title/pc5_ui.c:7974
-#: title/pc5_ui.c:7976 title/pc5_ui.c:7977 title/pc5_ui.c:7993
-#: title/pc5_ui.c:8058 title/pc5_ui.c:8089 title/pc5_ui.c:8091
-#: title/pc5_ui.c:8134 title/pc5_ui.c:8340 title/pc5_ui.c:8439
-#: title/pc5_ui.c:8450 title/pc5_ui.c:8474 title/pc5_ui.c:8480
+#: title/pc5_ui.c:6561 title/pc5_ui.c:6606 title/pc5_ui.c:6682
+#: title/pc5_ui.c:7004 title/pc5_ui.c:7034 title/pc5_ui.c:7135
+#: title/pc5_ui.c:7164 title/pc5_ui.c:7218 title/pc5_ui.c:7265
+#: title/pc5_ui.c:7487 title/pc5_ui.c:7496 title/pc5_ui.c:7513
+#: title/pc5_ui.c:7734 title/pc5_ui.c:7943 title/pc5_ui.c:8002
+#: title/pc5_ui.c:8004 title/pc5_ui.c:8005 title/pc5_ui.c:8021
+#: title/pc5_ui.c:8086 title/pc5_ui.c:8117 title/pc5_ui.c:8119
+#: title/pc5_ui.c:8162 title/pc5_ui.c:8368 title/pc5_ui.c:8467
+#: title/pc5_ui.c:8478 title/pc5_ui.c:8502 title/pc5_ui.c:8508
 #: title/pc5_ui_enhancements_draw.h:121 title/pc5_ui_enhancements_draw.h:133
 #: title/pc5_ui_enhancements_draw.h:159
 msgid "Back"
@@ -2589,523 +2584,523 @@ msgstr "뒤로"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6533 title/pc5_ui.c:6557 title/pc5_ui.c:6563
-#: title/pc5_ui.c:6668 title/pc5_ui.c:8450
+#: title/pc5_ui.c:6561 title/pc5_ui.c:6585 title/pc5_ui.c:6591
+#: title/pc5_ui.c:6696 title/pc5_ui.c:8478
 msgid "Play"
 msgstr "플레이"
 
-#: title/pc5_ui.c:6543
+#: title/pc5_ui.c:6571
 msgid "No games yet"
 msgstr "아직 게임이 없습니다"
 
-#: title/pc5_ui.c:6545
+#: title/pc5_ui.c:6573
 msgid ""
 "Put a game's folder in PC5/INSTALL on a USB drive, then open Install › "
 "Install games from USB."
 msgstr "USB 드라이브의 PC5/INSTALL에 게임 폴더를 넣은 뒤 설치 › USB에서 게임 설치를 여세요."
 
-#: title/pc5_ui.c:6548
+#: title/pc5_ui.c:6576
 msgid ""
 "Or send it from a phone or PC: Settings › Network › Web page or FTP server."
 msgstr "또는 휴대폰이나 PC에서 보내세요: 설정 › 네트워크 › 웹 페이지 또는 FTP 서버."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6549
+#: title/pc5_ui.c:6577
 msgid "Tabs"
 msgstr "탭"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6557 title/pc5_ui_enhancements_draw.h:57
+#: title/pc5_ui.c:6585 title/pc5_ui_enhancements_draw.h:57
 #: title/pc5_ui_enhancements_draw.h:102
 msgid "Filter"
 msgstr "필터"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6557 title/pc5_ui.c:6563
+#: title/pc5_ui.c:6585 title/pc5_ui.c:6591
 msgid "Game options"
 msgstr "게임 옵션"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6557 title/pc5_ui.c:6563
+#: title/pc5_ui.c:6585 title/pc5_ui.c:6591
 msgid "Favourite"
 msgstr "즐겨찾기"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6654 title/pc5_ui.c:7006 title/pc5_ui.c:7106
-#: title/pc5_ui.c:8090
+#: title/pc5_ui.c:6682 title/pc5_ui.c:7034 title/pc5_ui.c:7134
+#: title/pc5_ui.c:8118
 msgid "Change"
 msgstr "변경"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6654 title/pc5_ui.c:7006 title/pc5_ui.c:7136
-#: title/pc5_ui.c:7190 title/pc5_ui.c:7468 title/pc5_ui.c:7977
-#: title/pc5_ui.c:8058 title/pc5_ui.c:8134 title/pc5_ui.c:8439
+#: title/pc5_ui.c:6682 title/pc5_ui.c:7034 title/pc5_ui.c:7164
+#: title/pc5_ui.c:7218 title/pc5_ui.c:7496 title/pc5_ui.c:8005
+#: title/pc5_ui.c:8086 title/pc5_ui.c:8162 title/pc5_ui.c:8467
 msgid "Choose"
 msgstr "선택"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6654
+#: title/pc5_ui.c:6682
 msgid "QR code"
 msgstr "QR 코드"
 
-#: title/pc5_ui.c:6669
+#: title/pc5_ui.c:6697
 msgid "To leave it, hold the touchpad and OPTIONS for 2 s"
 msgstr "나가려면 터치패드와 OPTIONS를 2초 동안 누르세요"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6673 title/pc5_ui_enhancements_draw.h:111
+#: title/pc5_ui.c:6701 title/pc5_ui_enhancements_draw.h:111
 msgid "Controller"
 msgstr "컨트롤러"
 
-#: title/pc5_ui.c:6674
+#: title/pc5_ui.c:6702
 msgid "The game sees a DualSense, as one plugged into a PC"
 msgstr "PC에 연결한 것처럼 게임에서 DualSense로 인식됩니다"
 
-#: title/pc5_ui.c:6674
+#: title/pc5_ui.c:6702
 msgid "The buttons press keys, the sticks move the mouse"
 msgstr "버튼은 키를 누르고 스틱은 마우스를 움직입니다"
 
-#: title/pc5_ui.c:6674
+#: title/pc5_ui.c:6702
 msgid "Games with controller support see an Xbox controller"
 msgstr "컨트롤러를 지원하는 게임에서는 Xbox 컨트롤러로 인식됩니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6678 title/pc5_ui.c:7027
+#: title/pc5_ui.c:6706 title/pc5_ui.c:7055
 msgid "Button mapping"
 msgstr "버튼 할당"
 
-#: title/pc5_ui.c:6679
+#: title/pc5_ui.c:6707
 msgid "The key or mouse button each one sends"
 msgstr "각 버튼이 보내는 키나 마우스 버튼"
 
-#: title/pc5_ui.c:6684
+#: title/pc5_ui.c:6712
 msgid "Hides when not moved or clicked for 5 s"
 msgstr "5초 동안 움직이거나 클릭하지 않으면 숨김"
 
-#: title/pc5_ui.c:6684
+#: title/pc5_ui.c:6712
 msgid "Stays as the game shows it"
 msgstr "게임이 보여 주는 대로 유지"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6685
+#: title/pc5_ui.c:6713
 msgid "Auto-hide"
 msgstr "자동 숨김"
 
-#: title/pc5_ui.c:6689
+#: title/pc5_ui.c:6717
 msgid "Frames, resolution, aspect ratio, memory and CPU"
 msgstr "프레임, 해상도, 화면비, 메모리, CPU"
 
-#: title/pc5_ui.c:6689
+#: title/pc5_ui.c:6717
 msgid "Frame generation, resolution, aspect ratio and CPU"
 msgstr "프레임 생성, 해상도, 화면비, CPU"
 
-#: title/pc5_ui.c:6689
+#: title/pc5_ui.c:6717
 msgid "Frame generation, aspect ratio, memory and CPU"
 msgstr "프레임 생성, 화면비, 메모리, CPU"
 
-#: title/pc5_ui.c:6689
+#: title/pc5_ui.c:6717
 msgid "Frame generation, aspect ratio and CPU"
 msgstr "프레임 생성, 화면비, CPU"
 
-#: title/pc5_ui.c:6694
+#: title/pc5_ui.c:6722
 msgid "Its cover, its background and a home screen tile"
 msgstr "커버, 배경, 홈 화면 타일"
 
-#: title/pc5_ui.c:6699
+#: title/pc5_ui.c:6727
 msgid "Its program, updating it and uninstalling it"
 msgstr "프로그램, 업데이트, 제거"
 
-#: title/pc5_ui.c:6699
+#: title/pc5_ui.c:6727
 msgid "Its program and uninstalling it"
 msgstr "프로그램, 제거"
 
-#: title/pc5_ui.c:6706
+#: title/pc5_ui.c:6734
 msgid ""
 "The usual way for older games like this; change it only if the picture is "
 "wrong"
 msgstr "이런 오래된 게임에 쓰는 일반적인 방식입니다. 화면이 이상할 때만 바꾸세요"
 
-#: title/pc5_ui.c:6707
+#: title/pc5_ui.c:6735
 msgid ""
 "Best for most games; change it only if the picture is wrong or it won't "
 "start"
 msgstr "대부분의 게임에 가장 좋습니다. 화면이 이상하거나 시작되지 않을 때만 바꾸세요"
 
-#: title/pc5_ui.c:6708
+#: title/pc5_ui.c:6736
 msgid "A slower way to draw it; set it back to Auto if it doesn't help"
 msgstr "더 느린 그리기 방식입니다. 나아지지 않으면 자동으로 되돌리세요"
 
-#: title/pc5_ui.c:6709
+#: title/pc5_ui.c:6737
 msgid "Drawn in 2D only; set it back to Auto if it doesn't help"
 msgstr "2D로만 그립니다. 나아지지 않으면 자동으로 되돌리세요"
 
-#: title/pc5_ui.c:6710
+#: title/pc5_ui.c:6738
 msgid "Another way to draw it; set it back to Auto if it doesn't help"
 msgstr "다른 그리기 방식입니다. 나아지지 않으면 자동으로 되돌리세요"
 
-#: title/pc5_ui.c:6711
+#: title/pc5_ui.c:6739
 msgid ""
 "The slowest way, but it starts the most games; Auto if it doesn't help"
 msgstr "가장 느리지만 가장 많은 게임이 시작됩니다. 나아지지 않으면 자동으로"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6712 title/pc5_ui.c:7172
+#: title/pc5_ui.c:6740 title/pc5_ui.c:7200
 msgid "Graphics mode"
 msgstr "그래픽 모드"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6718
+#: title/pc5_ui.c:6746
 msgid "Frame generation"
 msgstr "프레임 생성"
 
-#: title/pc5_ui.c:6722
+#: title/pc5_ui.c:6750
 msgid ""
 "Held at 40 fps, two frames made between each two: for a game that can't "
 "hold 60"
 msgstr "40fps로 고정하고 두 프레임마다 사이에 두 프레임을 만듭니다: 60을 유지하지 못하는 게임용"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6723
+#: title/pc5_ui.c:6751
 msgid "40 → 120 fps"
 msgstr "40 → 120 fps"
 
-#: title/pc5_ui.c:6725
+#: title/pc5_ui.c:6753
 msgid ""
 "Held at 60 fps, a frame made between each two: smoother on a 120 Hz TV"
 msgstr "60fps로 고정하고 두 프레임마다 사이에 한 프레임을 만듭니다: 120Hz TV에서 더 부드럽게"
 
-#: title/pc5_ui.c:6726
+#: title/pc5_ui.c:6754
 msgid "Held at 30 fps and shown at 60: smoother where it runs below 60"
 msgstr "30fps로 고정하고 60으로 표시합니다. 60 아래로 돌아가는 곳에서 더 부드럽습니다"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6727
+#: title/pc5_ui.c:6755
 msgid "60 → 120 fps"
 msgstr "60 → 120 fps"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6727
+#: title/pc5_ui.c:6755
 msgid "30 → 60 fps"
 msgstr "30 → 60 fps"
 
-#: title/pc5_ui.c:6729
+#: title/pc5_ui.c:6757
 msgid "Off. Left and right: 60 → 120 or 40 → 120 fps"
 msgstr "끔. 왼쪽과 오른쪽: 60 → 120 또는 40 → 120 fps"
 
-#: title/pc5_ui.c:6730
+#: title/pc5_ui.c:6758
 msgid ""
 "Off. Left and right: 30 → 60 fps (with 120 Hz output on, 60 → 120 or 40 → "
 "120)"
 msgstr "끔. 왼쪽과 오른쪽: 30 → 60 fps (120Hz 출력을 켜면 60 → 120 또는 40 → 120)"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6735
+#: title/pc5_ui.c:6763
 msgid "Resolution"
 msgstr "해상도"
 
-#: title/pc5_ui.c:6736
+#: title/pc5_ui.c:6764
 msgid "Drawn at 4K, as the console shows it; four times the work of 1080p"
 msgstr "본체가 표시하는 대로 4K로 그립니다. 1080p의 네 배 작업량입니다"
 
-#: title/pc5_ui.c:6736
+#: title/pc5_ui.c:6764
 msgid "Drawn at 1440p and shown at 4K; sharper than 1080p, slower"
 msgstr "1440p로 그리고 4K로 표시합니다. 1080p보다 선명하지만 느립니다"
 
-#: title/pc5_ui.c:6736
+#: title/pc5_ui.c:6764
 msgid "Drawn at 1080p and shown at 4K by the console"
 msgstr "1080p로 그리고 본체가 4K로 표시합니다"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6737
+#: title/pc5_ui.c:6765
 msgid "4K"
 msgstr "4K"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6740
+#: title/pc5_ui.c:6768
 msgid "Aspect ratio"
 msgstr "화면비"
 
-#: title/pc5_ui.c:6741
+#: title/pc5_ui.c:6769
 msgid "Stretched to fill the screen: a 4:3 picture gets wider"
 msgstr "화면을 채우도록 늘립니다. 4:3 화면은 옆으로 넓어집니다"
 
-#: title/pc5_ui.c:6741
+#: title/pc5_ui.c:6769
 msgid "The picture's own shape, with bars beside a 4:3 one"
 msgstr "원래 비율대로 표시합니다. 4:3 화면은 양옆에 띠가 생깁니다"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6742 title/pc5_ui_enhancements_draw.h:146
+#: title/pc5_ui.c:6770 title/pc5_ui_enhancements_draw.h:146
 msgid "Stretch"
 msgstr "늘이기"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6742
+#: title/pc5_ui.c:6770
 msgid "Keep"
 msgstr "유지"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6745
+#: title/pc5_ui.c:6773
 msgid "Game memory"
 msgstr "게임 메모리"
 
-#: title/pc5_ui.c:6746
+#: title/pc5_ui.c:6774
 msgid ""
 "4 GB even for a game not made for it: room for mods; Auto if it misbehaves"
 msgstr "지원하지 않는 게임도 4GB: 모드를 쓸 여유가 생깁니다. 문제가 있으면 자동으로"
 
-#: title/pc5_ui.c:6747
+#: title/pc5_ui.c:6775
 msgid "2 GB, or 4 GB for a game made for it, as on Windows"
 msgstr "2 GB, 또는 이를 지원하는 게임은 4 GB(Windows와 같음)"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6748
+#: title/pc5_ui.c:6776
 msgid "4 GB"
 msgstr "4 GB"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6751
+#: title/pc5_ui.c:6779
 msgid "Graphics memory"
 msgstr "그래픽 메모리"
 
-#: title/pc5_ui.c:6753
+#: title/pc5_ui.c:6781
 msgid "All 8 GB: the game may take memory the rest of it needs"
 msgstr "8GB 전부: 게임이 나머지에 필요한 메모리까지 쓸 수 있습니다"
 
-#: title/pc5_ui.c:6754
+#: title/pc5_ui.c:6782
 msgid ""
 "More for the game's textures, less for the rest; Auto if it runs out of "
 "memory"
 msgstr "게임 텍스처에 더 많이, 나머지에 더 적게 씁니다. 메모리가 부족하면 자동으로"
 
-#: title/pc5_ui.c:6755
+#: title/pc5_ui.c:6783
 msgid ""
 "4 GB, so the game leaves room for the rest: the console's memory is shared"
 msgstr "4GB: 본체 메모리는 공유되므로 나머지를 위한 여유를 남깁니다"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6757
+#: title/pc5_ui.c:6785
 msgid "6 GB"
 msgstr "6 GB"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6757
+#: title/pc5_ui.c:6785
 msgid "5 GB"
 msgstr "5 GB"
 
-#: title/pc5_ui.c:6761
+#: title/pc5_ui.c:6789
 msgid "All the console's; Auto if the game says there is too little"
 msgstr "본체 메모리 전부. 게임이 부족하다고 하면 자동으로"
 
-#: title/pc5_ui.c:6762
+#: title/pc5_ui.c:6790
 msgid "2 GB at most, so older games don't get confused"
 msgstr "최대 2 GB. 오래된 게임이 헷갈리지 않게 합니다"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6763
+#: title/pc5_ui.c:6791
 msgid "Maximum"
 msgstr "최대"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6766
+#: title/pc5_ui.c:6794
 msgid "Stutter fix"
 msgstr "끊김 방지"
 
-#: title/pc5_ui.c:6767
+#: title/pc5_ui.c:6795
 msgid "The game's work takes turns, as on a PC: steadier for some games"
 msgstr "PC처럼 게임의 작업이 차례로 돌아갑니다: 일부 게임에서 더 안정적입니다"
 
-#: title/pc5_ui.c:6767
+#: title/pc5_ui.c:6795
 msgid "Fastest for most games; turn on if it freezes or stutters"
 msgstr "대부분의 게임에서 가장 빠릅니다. 멈추거나 끊기면 켜세요"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6771 title/pc5_ui.c:7736
+#: title/pc5_ui.c:6799 title/pc5_ui.c:7764
 msgid "Cover"
 msgstr "커버"
 
-#: title/pc5_ui.c:6772
+#: title/pc5_ui.c:6800
 msgid "Another of those found, or search by another name"
 msgstr "찾은 다른 이미지를 고르거나 다른 이름으로 검색합니다"
 
-#: title/pc5_ui.c:6777
+#: title/pc5_ui.c:6805
 msgid "Choose a background image or a silent video"
 msgstr "배경 이미지나 무음 동영상을 선택합니다"
 
-#: title/pc5_ui.c:6778
+#: title/pc5_ui.c:6806
 msgid "Another of those found, search by another name, or none"
 msgstr "찾은 다른 이미지, 다른 이름으로 검색, 또는 없음"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6782 title/pc5_ui.c:7736
+#: title/pc5_ui.c:6810 title/pc5_ui.c:7764
 msgid "Background image"
 msgstr "배경 이미지"
 
-#: title/pc5_ui.c:6783
+#: title/pc5_ui.c:6811
 msgid ""
 "Choose a still image; it also appears when video playback is unavailable"
 msgstr "정지 이미지를 선택합니다. 동영상을 재생할 수 없을 때도 표시됩니다"
 
-#: title/pc5_ui.c:6788
+#: title/pc5_ui.c:6816
 msgid "Choose or remove this game's silent background video"
 msgstr "이 게임의 무음 배경 동영상을 선택하거나 제거합니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6792
+#: title/pc5_ui.c:6820
 msgid "Choose video file"
 msgstr "동영상 파일 선택"
 
-#: title/pc5_ui.c:6793
+#: title/pc5_ui.c:6821
 msgid ""
 "Import H.264 video to console storage; experimental 1080p/60, without audio"
 msgstr "H.264 동영상을 본체 저장 공간으로 가져옵니다. 1080p/60은 실험적이며 오디오 없음"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6797
+#: title/pc5_ui.c:6825
 msgid "Remove background video"
 msgstr "배경 동영상 제거"
 
-#: title/pc5_ui.c:6798
+#: title/pc5_ui.c:6826
 msgid ""
 "Delete the imported video and return to the background image; keep the "
 "source file"
 msgstr "가져온 동영상을 삭제하고 배경 이미지로 돌아갑니다. 원본 파일은 유지됩니다"
 
-#: title/pc5_ui.c:6803
+#: title/pc5_ui.c:6831
 msgid "Choose or remove the music that plays on this game's cover"
 msgstr "이 게임의 커버에서 재생되는 음악을 선택하거나 제거합니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6807
+#: title/pc5_ui.c:6835
 msgid "Choose music file"
 msgstr "음악 파일 선택"
 
-#: title/pc5_ui.c:6808
+#: title/pc5_ui.c:6836
 msgid ""
 "Import MP3 or WAV to console storage: plays on this cover, even without USB"
 msgstr "MP3나 WAV를 본체 저장 공간으로 가져옵니다. USB 없이도 이 커버에서 재생됩니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6812
+#: title/pc5_ui.c:6840
 msgid "Media settings and backup"
 msgstr "미디어 설정 및 백업"
 
-#: title/pc5_ui.c:6813
+#: title/pc5_ui.c:6841
 msgid ""
 "Music volume and start, video loop, framing, darkness and appearance backup"
 msgstr "음악 음량과 시작 위치, 동영상 반복, 프레이밍, 어둡기, 모양 백업"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6817
+#: title/pc5_ui.c:6845
 msgid "Remove library music"
 msgstr "라이브러리 음악 제거"
 
-#: title/pc5_ui.c:6818
+#: title/pc5_ui.c:6846
 msgid "Delete this game's imported music; the original source file is kept"
 msgstr "이 게임에 가져온 음악을 삭제합니다. 원본 파일은 유지됩니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6822 title/pc5_ui.c:7736
+#: title/pc5_ui.c:6850 title/pc5_ui.c:7764
 msgid "Tile picture"
 msgstr "타일 이미지"
 
-#: title/pc5_ui.c:6823
+#: title/pc5_ui.c:6851
 msgid ""
 "Its home screen tile's picture: a square one found online, or one made "
 "from its cover"
 msgstr "홈 화면 타일 이미지: 온라인에서 찾은 정사각형 이미지나 커버로 만든 이미지"
 
-#: title/pc5_ui.c:6827
+#: title/pc5_ui.c:6855
 #, c-format
 msgid "Its tile, %.40s, starts the game"
 msgstr "타일(%.40s)로 게임을 시작합니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6828
+#: title/pc5_ui.c:6856
 msgid "Home screen tile"
 msgstr "홈 화면 타일"
 
-#: title/pc5_ui.c:6829
+#: title/pc5_ui.c:6857
 msgid "A tile on the PS5's home screen that starts it"
 msgstr "이 게임을 시작하는 PS5 홈 화면 타일"
 
-#: title/pc5_ui.c:6834
+#: title/pc5_ui.c:6862
 #, c-format
 msgid "Now: %.150s"
 msgstr "현재: %.150s"
 
 #. A menu row's name (about 30 characters fit).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6835 title/pc5_ui.c:7458
+#: title/pc5_ui.c:6863 title/pc5_ui.c:7486
 msgid "Change program"
 msgstr "프로그램 변경"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6841
+#: title/pc5_ui.c:6869
 msgid "Steam emulator"
 msgstr "Steam 에뮬레이터"
 
-#: title/pc5_ui.c:6842
+#: title/pc5_ui.c:6870
 msgid "Steam's own library: the game won't find Steam on the console"
 msgstr "Steam 원래 라이브러리: 본체에서는 게임이 Steam을 찾지 못합니다"
 
-#: title/pc5_ui.c:6843
+#: title/pc5_ui.c:6871
 msgid "Stands in for Steam, which the game asks for; Off if it misbehaves"
 msgstr "게임이 요구하는 Steam을 대신합니다. 문제가 있으면 끔으로"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6847 title/pc5_ui.c:7952
+#: title/pc5_ui.c:6875 title/pc5_ui.c:7980
 msgid "Game files"
 msgstr "게임 파일"
 
-#: title/pc5_ui.c:6848
+#: title/pc5_ui.c:6876
 msgid "Its folder: copy, move, rename and delete its files"
 msgstr "게임 폴더: 파일 복사, 이동, 이름 변경, 삭제"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:6852 title/pc5_ui.c:8377
+#: title/pc5_ui.c:6880 title/pc5_ui.c:8405
 msgid "Update"
 msgstr "업데이트"
 
-#: title/pc5_ui.c:6853
+#: title/pc5_ui.c:6881
 msgid "A newer copy from USB; its saves and settings stay"
 msgstr "USB의 새 사본으로 업데이트. 저장 데이터와 설정은 유지됩니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6857
+#: title/pc5_ui.c:6885
 msgid "Report a problem"
 msgstr "문제 보고"
 
-#: title/pc5_ui.c:6858
+#: title/pc5_ui.c:6886
 msgid "A QR code for GitHub's form, filled in from the game's newest log"
 msgstr "게임의 최신 로그로 채운 GitHub 양식의 QR 코드"
 
 #. A menu row's name (about 30 characters fit).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6862 title/pc5_ui.c:8474 title/pc5_ui.c:8502
+#: title/pc5_ui.c:6890 title/pc5_ui.c:8502 title/pc5_ui.c:8530
 msgid "Uninstall"
 msgstr "제거"
 
-#: title/pc5_ui.c:6863
+#: title/pc5_ui.c:6891
 msgid "Deletes the game, or keeps its saves for later"
 msgstr "게임을 삭제하거나 저장 데이터를 나중을 위해 보관합니다"
 
-#: title/pc5_ui.c:6876
+#: title/pc5_ui.c:6904
 msgid "What the game sees when you play with the controller."
 msgstr "컨트롤러로 플레이할 때 게임이 무엇으로 인식하는지입니다."
 
-#: title/pc5_ui.c:6877
+#: title/pc5_ui.c:6905
 msgid "Xbox controller: what most PC games expect. Try this first."
 msgstr "Xbox 컨트롤러: 대부분의 PC 게임이 기대하는 것입니다. 먼저 이것을 써 보세요."
 
-#: title/pc5_ui.c:6878
+#: title/pc5_ui.c:6906
 msgid ""
 "DualSense: a PS5 controller plugged into a PC, with PlayStation buttons in "
 "games that support it."
 msgstr ""
 "DualSense: PC에 연결한 PS5 컨트롤러로 인식되며, 지원하는 게임에서는 PlayStation 버튼으로 표시됩니다."
 
-#: title/pc5_ui.c:6879
+#: title/pc5_ui.c:6907
 msgid ""
 "Keyboard & mouse: for games with no controller support. The buttons press "
 "keys and the sticks move the mouse; Button mapping changes which key each "
@@ -3114,13 +3109,13 @@ msgstr ""
 "키보드와 마우스: 컨트롤러를 지원하지 않는 게임용입니다. 버튼은 키를 누르고 스틱은 마우스를 움직입니다. 각 버튼이 보내는 키는 버튼 "
 "할당에서 바꿉니다."
 
-#: title/pc5_ui.c:6882
+#: title/pc5_ui.c:6910
 msgid ""
 "What each button, stick and the touchpad sends to the game with Keyboard & "
 "mouse."
 msgstr "키보드와 마우스에서 각 버튼, 스틱, 터치패드가 게임에 보내는 것입니다."
 
-#: title/pc5_ui.c:6883
+#: title/pc5_ui.c:6911
 msgid ""
 "Touchpad: One button (a click sends one key), Halves and swipes (a key for "
 "each half's click and each quick swipe up, down, left or right), or Mouse "
@@ -3129,29 +3124,29 @@ msgstr ""
 "터치패드: 버튼 하나(클릭하면 키 하나를 보냄), 좌우 절반과 스와이프(각 절반의 클릭과 위, 아래, 왼쪽, 오른쪽으로의 빠른 "
 "스와이프마다 키 하나씩), 마우스(노트북처럼 손가락으로 포인터를 움직임) 중에서 고릅니다."
 
-#: title/pc5_ui.c:6884
+#: title/pc5_ui.c:6912
 msgid "Two-finger click: PC5's on-screen keyboard, or a key of its own."
 msgstr "두 손가락 클릭: PC5의 화상 키보드나 전용 키입니다."
 
-#: title/pc5_ui.c:6885
+#: title/pc5_ui.c:6913
 msgid "Save as my mapping keeps your layout for every game set up after it."
 msgstr "내 할당으로 저장을 쓰면 이후에 설정하는 모든 게임에 지금의 배치가 유지됩니다."
 
-#: title/pc5_ui.c:6888
+#: title/pc5_ui.c:6916
 msgid "Whether the mouse pointer shows over the game."
 msgstr "게임 위에 마우스 포인터를 표시할지 여부입니다."
 
-#: title/pc5_ui.c:6889
+#: title/pc5_ui.c:6917
 msgid "Normal: the game decides, as on a PC."
 msgstr "보통: PC처럼 게임이 정합니다."
 
-#: title/pc5_ui.c:6890
+#: title/pc5_ui.c:6918
 msgid ""
 "Auto-hide: hidden after 5 seconds without moving or clicking, for a game "
 "that leaves it on the screen."
 msgstr "자동 숨김: 5초 동안 움직이거나 클릭하지 않으면 숨겨집니다. 포인터를 화면에 그대로 두는 게임용입니다."
 
-#: title/pc5_ui.c:6893
+#: title/pc5_ui.c:6921
 msgid ""
 "How the game's pictures are made on the console. Auto is right for almost "
 "every game; the others are for a game that won't start or shows a wrong "
@@ -3159,48 +3154,48 @@ msgid ""
 msgstr ""
 "본체에서 게임 화면을 만드는 방식입니다. 자동이 거의 모든 게임에 맞으며, 나머지는 게임이 시작되지 않거나 화면이 이상할 때 씁니다."
 
-#: title/pc5_ui.c:6895
+#: title/pc5_ui.c:6923
 msgid ""
 "Alternative: another way to draw the game. Try it if the picture is wrong "
 "with Auto."
 msgstr "대체: 게임을 그리는 다른 방식입니다. 자동에서 화면이 이상하면 써 보세요."
 
-#: title/pc5_ui.c:6896
+#: title/pc5_ui.c:6924
 msgid ""
 "2D only: for a 2D game that flickers or shows only part of its screen."
 msgstr "2D 전용: 깜박이거나 화면의 일부만 보이는 2D 게임용입니다."
 
-#: title/pc5_ui.c:6898
+#: title/pc5_ui.c:6926
 msgid ""
 "Alternative: slower than Auto. Try it if the game won't start or its "
 "picture is wrong."
 msgstr "대체: 자동보다 느립니다. 게임이 시작되지 않거나 화면이 이상하면 써 보세요."
 
-#: title/pc5_ui.c:6900
+#: title/pc5_ui.c:6928
 msgid ""
 "Alternative: another way to draw the game. Try it if the picture is wrong "
 "with Auto. Some mods need it."
 msgstr "대체: 게임을 그리는 다른 방식입니다. 자동에서 화면이 이상하면 써 보세요. 일부 모드에는 이것이 필요합니다."
 
-#: title/pc5_ui.c:6901
+#: title/pc5_ui.c:6929
 msgid "Compatibility (slow): the slowest, but it starts the most games."
 msgstr "호환성 (느림): 가장 느리지만 가장 많은 게임이 시작됩니다."
 
-#: title/pc5_ui.c:6903
+#: title/pc5_ui.c:6931
 msgid "Choose the row to see each one with what it does."
 msgstr "이 줄을 선택하면 각 선택지와 그 효과를 볼 수 있습니다."
 
-#: title/pc5_ui.c:6906
+#: title/pc5_ui.c:6934
 msgid ""
 "Makes extra frames between the game's own, so movement looks smoother. It "
 "can add a little delay to the controls."
 msgstr "게임의 프레임 사이에 프레임을 더 만들어 움직임을 더 부드럽게 보이게 합니다. 조작이 조금 늦어질 수 있습니다."
 
-#: title/pc5_ui.c:6907
+#: title/pc5_ui.c:6935
 msgid "30 → 60 fps: the game is held at 30 fps and shown at 60."
 msgstr "30 → 60 fps: 게임을 30 fps로 고정하고 60으로 표시합니다."
 
-#: title/pc5_ui.c:6908
+#: title/pc5_ui.c:6936
 msgid ""
 "60 → 120 fps: held at 60 and shown at 120, on a 120 Hz TV with 120 Hz "
 "output on in Settings."
@@ -3208,61 +3203,61 @@ msgstr ""
 "60 → 120 fps: 60으로 고정하고 120으로 표시합니다. 120Hz TV에서 설정의 120Hz 출력을 켰을 때 쓸 수 "
 "있습니다."
 
-#: title/pc5_ui.c:6909
+#: title/pc5_ui.c:6937
 msgid ""
 "40 → 120 fps: held at 40, two frames made between each two, for a game "
 "that can't hold 60."
 msgstr ""
 "40 → 120 fps: 40으로 고정하고 두 프레임마다 사이에 두 프레임을 만듭니다. 60을 유지하지 못하는 게임용입니다."
 
-#: title/pc5_ui.c:6912
+#: title/pc5_ui.c:6940
 msgid ""
 "The size the game is drawn at. The console always shows 4K, so a smaller "
 "picture is scaled up."
 msgstr "게임을 그리는 크기입니다. 본체는 항상 4K로 표시하므로 더 작은 화면은 확대됩니다."
 
-#: title/pc5_ui.c:6913
+#: title/pc5_ui.c:6941
 msgid "1080p: the fastest, and right for most games."
 msgstr "1080p: 가장 빠르고 대부분의 게임에 알맞습니다."
 
-#: title/pc5_ui.c:6914
+#: title/pc5_ui.c:6942
 msgid "1440p: sharper, but slower."
 msgstr "1440p: 더 선명하지만 더 느립니다."
 
-#: title/pc5_ui.c:6915
+#: title/pc5_ui.c:6943
 msgid ""
 "4K: the sharpest, four times the work of 1080p: only for light games."
 msgstr "4K: 가장 선명하지만 1080p의 네 배 작업이 필요합니다. 가벼운 게임에만 쓰세요."
 
-#: title/pc5_ui.c:6918
+#: title/pc5_ui.c:6946
 msgid "The shape of the picture on the TV."
 msgstr "TV에 보이는 화면의 모양입니다."
 
-#: title/pc5_ui.c:6919
+#: title/pc5_ui.c:6947
 msgid ""
 "Keep: the picture's own shape. An older 4:3 game gets black bars at the "
 "sides."
 msgstr "유지: 화면 원래의 모양입니다. 오래된 4:3 게임은 양옆에 검은 띠가 생깁니다."
 
-#: title/pc5_ui.c:6920
+#: title/pc5_ui.c:6948
 msgid "Stretch: fills the whole screen, so a 4:3 picture gets wider."
 msgstr "늘이기: 화면 전체를 채우므로 4:3 화면은 옆으로 넓어집니다."
 
-#: title/pc5_ui.c:6923
+#: title/pc5_ui.c:6951
 msgid "How much memory an older 32-bit game may use."
 msgstr "오래된 32비트 게임이 쓸 수 있는 메모리 양입니다."
 
-#: title/pc5_ui.c:6924
+#: title/pc5_ui.c:6952
 msgid "Auto: as on Windows, 4 GB for a game made for it, otherwise 2 GB."
 msgstr "자동: Windows와 같이, 이를 지원하는 게임은 4 GB, 나머지는 2 GB입니다."
 
-#: title/pc5_ui.c:6925
+#: title/pc5_ui.c:6953
 msgid ""
 "4 GB: for a game that runs out of memory, often with big mods. Set it back "
 "to Auto if the game misbehaves."
 msgstr "4 GB: 메모리가 부족해지는 게임용이며, 큰 모드를 쓸 때 자주 필요합니다. 게임에 문제가 생기면 자동으로 되돌리세요."
 
-#: title/pc5_ui.c:6928
+#: title/pc5_ui.c:6956
 msgid ""
 "How much graphics memory the game is told the console has. The PS5's "
 "memory is shared by the game and its graphics, so more for graphics leaves "
@@ -3271,41 +3266,41 @@ msgstr ""
 "본체에 있다고 게임에 알려 주는 그래픽 메모리 양입니다. PS5의 메모리는 게임과 그래픽이 나눠 쓰므로 그래픽에 더 주면 게임에는 덜 "
 "남습니다."
 
-#: title/pc5_ui.c:6930
+#: title/pc5_ui.c:6958
 msgid ""
 "Auto: 2 GB at most, so older games don't get confused by a large number."
 msgstr "자동: 최대 2 GB입니다. 오래된 게임이 큰 숫자에 헷갈리지 않게 합니다."
 
-#: title/pc5_ui.c:6931
+#: title/pc5_ui.c:6959
 msgid "Maximum: all of it, for a game that says there is too little."
 msgstr "최대: 전부입니다. 메모리가 너무 적다고 하는 게임용입니다."
 
-#: title/pc5_ui.c:6933
+#: title/pc5_ui.c:6961
 msgid "Auto: 4 GB, room for both."
 msgstr "자동: 4 GB로, 양쪽 모두 여유가 있습니다."
 
-#: title/pc5_ui.c:6934
+#: title/pc5_ui.c:6962
 msgid ""
 "5 GB or 6 GB: more for textures. Set it back to Auto if the game runs out "
 "of memory."
 msgstr "5 GB 또는 6 GB: 텍스처용으로 더 줍니다. 게임의 메모리가 부족해지면 자동으로 되돌리세요."
 
-#: title/pc5_ui.c:6935
+#: title/pc5_ui.c:6963
 msgid ""
 "Maximum: all of it, only for a game that won't start because it sees too "
 "little."
 msgstr "최대: 전부입니다. 메모리가 너무 적게 보여 시작되지 않는 게임에만 쓰세요."
 
-#: title/pc5_ui.c:6939
+#: title/pc5_ui.c:6967
 msgid ""
 "Changes how the game's work is shared out on the console's processor."
 msgstr "본체 프로세서에서 게임의 작업을 나누는 방식을 바꿉니다."
 
-#: title/pc5_ui.c:6940
+#: title/pc5_ui.c:6968
 msgid "Off: the fastest for most games."
 msgstr "끔: 대부분의 게임에서 가장 빠릅니다."
 
-#: title/pc5_ui.c:6941
+#: title/pc5_ui.c:6969
 msgid ""
 "On: the game's work takes turns, as on a PC. Try it if the game freezes, "
 "stutters or hangs while loading; it can be a little slower."
@@ -3313,17 +3308,17 @@ msgstr ""
 "켬: PC처럼 게임의 작업이 차례로 돌아갑니다. 게임이 멈추거나, 끊기거나, 로딩 중에 멈춰 있으면 써 보세요. 조금 느려질 수 "
 "있습니다."
 
-#: title/pc5_ui.c:6944
+#: title/pc5_ui.c:6972
 msgid ""
 "Many PC games need Steam running to start. The console has no Steam, so "
 "PC5 stands in for it."
 msgstr "많은 PC 게임은 시작하려면 Steam이 실행 중이어야 합니다. 본체에는 Steam이 없으므로 PC5가 대신합니다."
 
-#: title/pc5_ui.c:6945
+#: title/pc5_ui.c:6973
 msgid "Auto: the game starts as if Steam were running, offline."
 msgstr "자동: Steam이 오프라인으로 실행 중인 것처럼 게임이 시작됩니다."
 
-#: title/pc5_ui.c:6946
+#: title/pc5_ui.c:6974
 msgid ""
 "Off: the game's own Steam files are used. It won't find Steam and may not "
 "start; only for a game that misbehaves with Auto."
@@ -3331,128 +3326,128 @@ msgstr ""
 "끔: 게임 자체의 Steam 파일을 씁니다. Steam을 찾지 못해 시작되지 않을 수 있습니다. 자동에서 문제가 생기는 게임에만 "
 "쓰세요."
 
-#: title/pc5_ui.c:7007
+#: title/pc5_ui.c:7035
 msgid "About"
 msgstr "설명"
 
-#: title/pc5_ui.c:7007 title/pc5_ui.c:7740
+#: title/pc5_ui.c:7035 title/pc5_ui.c:7768
 msgid "Receive from phone"
 msgstr "휴대폰에서 받기"
 
-#: title/pc5_ui.c:7035
+#: title/pc5_ui.c:7063
 msgid "Touchpad + OPTIONS for 2 s still leaves the game"
 msgstr "터치패드 + OPTIONS를 2초 누르면 언제든 게임에서 나갑니다"
 
-#: title/pc5_ui.c:7037
+#: title/pc5_ui.c:7065
 msgid "Two fingers: PC5's on-screen keyboard, or a key of its own"
 msgstr "두 손가락: PC5의 화상 키보드나 전용 키"
 
-#: title/pc5_ui.c:7040
+#: title/pc5_ui.c:7068
 msgid "A key for each half's click and each quick swipe"
 msgstr "각 절반의 클릭과 빠른 스와이프마다 키를 하나씩 할당합니다"
 
-#: title/pc5_ui.c:7041
+#: title/pc5_ui.c:7069
 msgid "A finger moves the pointer; a click sends its key"
 msgstr "손가락으로 포인터를 움직이고, 클릭하면 해당 키를 보냅니다"
 
-#: title/pc5_ui.c:7042
+#: title/pc5_ui.c:7070
 msgid "The whole touchpad is one button"
 msgstr "터치패드 전체가 버튼 하나가 됩니다"
 
-#: title/pc5_ui.c:7052
+#: title/pc5_ui.c:7080
 msgid "Right stick"
 msgstr "오른쪽 스틱"
 
-#: title/pc5_ui.c:7052
+#: title/pc5_ui.c:7080
 msgid "Left stick"
 msgstr "왼쪽 스틱"
 
-#: title/pc5_ui.c:7060
+#: title/pc5_ui.c:7088
 msgid "Pointer speed"
 msgstr "포인터 속도"
 
 #. which picture is shown: 3 of 12.
-#: title/pc5_ui.c:7061 title/pc5_ui.c:7269 title/pc5_ui.c:7879
+#: title/pc5_ui.c:7089 title/pc5_ui.c:7297 title/pc5_ui.c:7907
 #, c-format
 msgid "%d of %d"
 msgstr "%d/%d"
 
-#: title/pc5_ui.c:7064
+#: title/pc5_ui.c:7092
 msgid "Slow pointer button"
 msgstr "포인터 감속 버튼"
 
 #. Keep the space at the start or end: the text is joined to another.
-#: title/pc5_ui.c:7068
+#: title/pc5_ui.c:7096
 msgid "    Slower by"
 msgstr "    감속 정도"
 
-#: title/pc5_ui.c:7073
+#: title/pc5_ui.c:7101
 msgid "Click"
 msgstr "클릭"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7076
+#: title/pc5_ui.c:7104
 msgid "Slows the pointer"
 msgstr "포인터 감속"
 
-#: title/pc5_ui.c:7078
+#: title/pc5_ui.c:7106
 msgid "On-screen keyboard"
 msgstr "화상 키보드"
 
-#: title/pc5_ui.c:7086
+#: title/pc5_ui.c:7114
 msgid "Reset to default"
 msgstr "기본값으로 재설정"
 
-#: title/pc5_ui.c:7089
+#: title/pc5_ui.c:7117
 msgid "Save as my mapping"
 msgstr "내 할당으로 저장"
 
-#: title/pc5_ui.c:7092
+#: title/pc5_ui.c:7120
 msgid "Use my mapping"
 msgstr "내 할당 사용"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7104
+#: title/pc5_ui.c:7132
 msgid "Choose a key"
 msgstr "키 선택"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7104
+#: title/pc5_ui.c:7132
 msgid "Reset"
 msgstr "재설정"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7105 title/pc5_ui.c:8108 title/pc5_ui.c:8179
+#: title/pc5_ui.c:7133 title/pc5_ui.c:8136 title/pc5_ui.c:8207
 msgid "Save"
 msgstr "저장"
 
-#: title/pc5_ui.c:7105
+#: title/pc5_ui.c:7133
 msgid "Use"
 msgstr "사용"
 
-#: title/pc5_ui.c:7126
+#: title/pc5_ui.c:7154
 #, c-format
 msgid "What %s sends"
 msgstr "%s 입력"
 
-#: title/pc5_ui.c:7144
+#: title/pc5_ui.c:7172
 msgid "The usual way for older games like this one, with their 2D and 3D."
 msgstr "이런 오래된 게임에 쓰는 일반적인 방식으로, 2D와 3D를 모두 그립니다."
 
-#: title/pc5_ui.c:7145
+#: title/pc5_ui.c:7173
 msgid ""
 "The fastest, and what most games want. Leave it here unless the game won't "
 "start or its picture is wrong."
 msgstr "가장 빠르고 대부분의 게임에 맞습니다. 게임이 시작되지 않거나 화면이 이상한 경우가 아니면 그대로 두세요."
 
-#: title/pc5_ui.c:7147
+#: title/pc5_ui.c:7175
 msgid ""
 "Another way to draw the game, slower than Auto. Try it if the game won't "
 "start or its picture is wrong."
 msgstr "게임을 그리는 다른 방식으로, 자동보다 느립니다. 게임이 시작되지 않거나 화면이 이상하면 써 보세요."
 
-#: title/pc5_ui.c:7149
+#: title/pc5_ui.c:7177
 msgid ""
 "Draws everything in 2D, the way ordinary Windows programs are drawn. For a "
 "2D game that flickers or shows only part of its screen; a game with 3D "
@@ -3461,28 +3456,28 @@ msgstr ""
 "일반 Windows 프로그램처럼 모든 것을 2D로 그립니다. 깜박이거나 화면의 일부만 보이는 2D 게임용이며, 3D 장면이 있는 "
 "게임은 이것으로 시작되지 않습니다."
 
-#: title/pc5_ui.c:7151
+#: title/pc5_ui.c:7179
 msgid ""
 "Another way to draw the game. Try it if the picture is wrong with Auto; "
 "faster than Compatibility. Some mods need it."
 msgstr "게임을 그리는 다른 방식입니다. 자동에서 화면이 이상하면 써 보세요. 호환성보다 빠르며, 일부 모드에는 이것이 필요합니다."
 
-#: title/pc5_ui.c:7152
+#: title/pc5_ui.c:7180
 msgid ""
 "The slowest, but it starts the most games. Try it if the game won't start "
 "with the others."
 msgstr "가장 느리지만 가장 많은 게임이 시작됩니다. 다른 방식으로 게임이 시작되지 않을 때 써 보세요."
 
-#: title/pc5_ui.c:7173
+#: title/pc5_ui.c:7201
 #, c-format
 msgid "The game uses %s"
 msgstr "이 게임은 %s 사용"
 
-#: title/pc5_ui.c:7185
+#: title/pc5_ui.c:7213
 msgid "In use"
 msgstr "사용 중"
 
-#: title/pc5_ui.c:7205
+#: title/pc5_ui.c:7233
 msgid ""
 "PC5 runs your PC games with prospero-win: Wine, DXVK for Direct3D 8 to 11, "
 "VKD3D-Proton for Direct3D 12, and Mesa (RADV for Vulkan, Zink for OpenGL)."
@@ -3490,7 +3485,7 @@ msgstr ""
 "PC5는 prospero-win으로 PC 게임을 실행합니다: Wine, Direct3D 8~11용 DXVK, Direct3D 12용 "
 "VKD3D-Proton, 그리고 Mesa(Vulkan용 RADV, OpenGL용 Zink)."
 
-#: title/pc5_ui.c:7207
+#: title/pc5_ui.c:7235
 msgid ""
 "Covers come from Steam, GOG, PCGamingWiki and Wikidata, and SteamGridDB "
 "with your key. No game is part of PC5."
@@ -3498,212 +3493,212 @@ msgstr ""
 "커버는 Steam, GOG, PCGamingWiki, Wikidata, 그리고 내 키를 쓰는 SteamGridDB에서 가져옵니다. "
 "PC5에는 게임이 들어 있지 않습니다."
 
-#: title/pc5_ui.c:7208
+#: title/pc5_ui.c:7236
 msgid "Free software under the GNU LGPL 2.1 or later."
 msgstr "GNU LGPL 2.1 이상에 따른 자유 소프트웨어입니다."
 
 #. About PC5: the version (2.0.7 · PPSA11018).
-#: title/pc5_ui.c:7217
+#: title/pc5_ui.c:7245
 #, c-format
 msgid "version %s"
 msgstr "버전 %s"
 
-#: title/pc5_ui.c:7223
+#: title/pc5_ui.c:7251
 msgid "Like PC5?"
 msgstr "PC5가 마음에 드세요?"
 
-#: title/pc5_ui.c:7226
+#: title/pc5_ui.c:7254
 msgid "Buy me a coffee"
 msgstr "커피 한 잔 사 주세요"
 
-#: title/pc5_ui.c:7230
+#: title/pc5_ui.c:7258
 #, c-format
 msgid "Games are kept in %.150s"
 msgstr "게임 보관 위치: %.150s"
 
-#: title/pc5_ui.c:7234
+#: title/pc5_ui.c:7262
 #, c-format
 msgid "%s free on the console"
 msgstr "본체 여유 공간: %s"
 
-#: title/pc5_ui.c:7294
+#: title/pc5_ui.c:7322
 msgid "INSTALL folder"
 msgstr "INSTALL 폴더"
 
-#: title/pc5_ui.c:7296
+#: title/pc5_ui.c:7324
 #, c-format
 msgid "INSTALL folder, %.20s"
 msgstr "INSTALL 폴더(%.20s)"
 
-#: title/pc5_ui.c:7312
+#: title/pc5_ui.c:7340
 msgid "No program found: it will be skipped"
 msgstr "프로그램을 찾지 못해 건너뜁니다"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7316
+#: title/pc5_ui.c:7344
 #, c-format
 msgid "%s · %d-bit · %s · %s"
 msgstr "%s · %d비트 · %s · %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7329
+#: title/pc5_ui.c:7357
 #, c-format
 msgid "%d-bit · %s · %s%s"
 msgstr "%d비트 · %s · %s%s"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7330 title/pc5_ui.c:7348
+#: title/pc5_ui.c:7358 title/pc5_ui.c:7376
 msgid " · chosen"
 msgstr " · 선택됨"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7331
+#: title/pc5_ui.c:7359
 msgid " · offered at Play"
 msgstr " · 플레이할 때 선택 가능"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7347 title/pc5_ui.c:7425
+#: title/pc5_ui.c:7375 title/pc5_ui.c:7453
 #, c-format
 msgid "%d-bit · %s"
 msgstr "%d비트 · %s"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7362
+#: title/pc5_ui.c:7390
 msgid "Jan"
 msgstr "1월"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7362
+#: title/pc5_ui.c:7390
 msgid "Feb"
 msgstr "2월"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7362
+#: title/pc5_ui.c:7390
 msgid "Mar"
 msgstr "3월"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7362
+#: title/pc5_ui.c:7390
 msgid "Apr"
 msgstr "4월"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7362
+#: title/pc5_ui.c:7390
 msgid "May"
 msgstr "5월"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7362
+#: title/pc5_ui.c:7390
 msgid "Jun"
 msgstr "6월"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7363
+#: title/pc5_ui.c:7391
 msgid "Jul"
 msgstr "7월"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7363
+#: title/pc5_ui.c:7391
 msgid "Aug"
 msgstr "8월"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7363
+#: title/pc5_ui.c:7391
 msgid "Sep"
 msgstr "9월"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7363
+#: title/pc5_ui.c:7391
 msgid "Oct"
 msgstr "10월"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7363
+#: title/pc5_ui.c:7391
 msgid "Nov"
 msgstr "11월"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7363
+#: title/pc5_ui.c:7391
 msgid "Dec"
 msgstr "12월"
 
-#: title/pc5_ui.c:7365
+#: title/pc5_ui.c:7393
 #, c-format
 msgid "Saves of %s"
 msgstr "%s의 저장 데이터"
 
 #. the day, the month (Jan to Dec, translated on their own) and the year: put them in your order with %1$d, %2$s, %3$d.
-#: title/pc5_ui.c:7374
+#: title/pc5_ui.c:7402
 #, c-format
 msgid "Kept %d %s %d; installing it again puts them back"
 msgstr "%3$d년 %2$s %1$d일에 보관됨. 다시 설치하면 되돌아옵니다"
 
-#: title/pc5_ui.c:7377
+#: title/pc5_ui.c:7405
 msgid "Kept when it was uninstalled; installing it again puts them back"
 msgstr "제거할 때 보관됨. 다시 설치하면 되돌아옵니다"
 
-#: title/pc5_ui.c:7413
+#: title/pc5_ui.c:7441
 #, c-format
 msgid "Cover %d of %d"
 msgstr "커버 %d/%d"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7414
+#: title/pc5_ui.c:7442
 #, c-format
 msgid "Made from the game's icon · %d of %d"
 msgstr "게임 아이콘으로 만듦 · %d/%d"
 
-#: title/pc5_ui.c:7422
+#: title/pc5_ui.c:7450
 msgid "Program"
 msgstr "프로그램"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7423
+#: title/pc5_ui.c:7451
 msgid "none found"
 msgstr "찾지 못함"
 
-#: title/pc5_ui.c:7424
+#: title/pc5_ui.c:7452
 msgid "Runs as"
 msgstr "실행 형식"
 
-#: title/pc5_ui.c:7429
+#: title/pc5_ui.c:7457
 #, c-format
 msgid "%s in %u file"
 msgstr "%s(파일 %u개)"
 
-#: title/pc5_ui.c:7429
+#: title/pc5_ui.c:7457
 #, c-format
 msgid "%s in %u files"
 msgstr "%s(파일 %u개)"
 
-#: title/pc5_ui.c:7430
+#: title/pc5_ui.c:7458
 msgid "Space"
 msgstr "공간"
 
-#: title/pc5_ui.c:7434
+#: title/pc5_ui.c:7462
 #, c-format
 msgid "%s free after installing"
 msgstr "설치 후 여유 공간: %s"
 
-#: title/pc5_ui.c:7434
+#: title/pc5_ui.c:7462
 #, c-format
 msgid "not enough: %s free"
 msgstr "부족: 여유 공간 %s"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7436
+#: title/pc5_ui.c:7464
 msgid "unknown"
 msgstr "알 수 없음"
 
-#: title/pc5_ui.c:7448
+#: title/pc5_ui.c:7476
 msgid ""
 "A .NET program: PC5 sets up what it needs the first time a .NET game "
 "starts."
 msgstr ".NET 프로그램입니다. .NET 게임을 처음 시작할 때 PC5가 필요한 것을 준비합니다."
 
-#: title/pc5_ui.c:7452
+#: title/pc5_ui.c:7480
 msgid ""
 "The game is copied once and checked, to the console or, with a USB drive "
 "plugged in, to its PC5 folder. Whether a game runs is only known by trying "
@@ -3713,35 +3708,35 @@ msgstr ""
 "실행되는지는 해 봐야만 알 수 있습니다."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7456 title/pc5_ui.c:7727
+#: title/pc5_ui.c:7484 title/pc5_ui.c:7755
 msgid "Done"
 msgstr "완료"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7457 title/pc5_ui.c:7913
+#: title/pc5_ui.c:7485 title/pc5_ui.c:7941
 msgid "Other covers"
 msgstr "다른 커버"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7468 title/pc5_ui.c:7484
+#: title/pc5_ui.c:7496 title/pc5_ui.c:7512
 msgid "Look again"
 msgstr "다시 찾기"
 
-#: title/pc5_ui.c:7469
+#: title/pc5_ui.c:7497
 #, c-format
 msgid "Update %s from USB"
 msgstr "USB에서 %s 업데이트"
 
-#: title/pc5_ui.c:7469 title/pc5_ui.c:8319 title/pc5_ui.c:8371
-#: title/pc5_ui.c:8483 title/pc5_ui.c:8571
+#: title/pc5_ui.c:7497 title/pc5_ui.c:8347 title/pc5_ui.c:8399
+#: title/pc5_ui.c:8511 title/pc5_ui.c:8599
 msgid "the game"
 msgstr "이 게임"
 
-#: title/pc5_ui.c:7470 title/pc5_ui.c:7487
+#: title/pc5_ui.c:7498 title/pc5_ui.c:7515
 msgid "No game folders found"
 msgstr "게임 폴더를 찾지 못했습니다"
 
-#: title/pc5_ui.c:7471
+#: title/pc5_ui.c:7499
 msgid ""
 "Put the newer copy's folder (the one with the game's .exe in it) at the "
 "top of a USB drive formatted as exFAT, plug the drive into the PS5, then "
@@ -3750,26 +3745,26 @@ msgstr ""
 "새 사본의 폴더(게임의 .exe가 들어 있는 폴더)를 exFAT로 포맷한 USB 드라이브의 최상위에 넣고, 드라이브를 PS5에 연결한 "
 "뒤 다시 찾으세요."
 
-#: title/pc5_ui.c:7478
+#: title/pc5_ui.c:7506
 #, c-format
 msgid "Install ticked (%d)"
 msgstr "선택한 항목 설치(%d)"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7482
+#: title/pc5_ui.c:7510
 msgid "Install one"
 msgstr "하나 설치"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7483 title/pc5_ui.c:7976
+#: title/pc5_ui.c:7511 title/pc5_ui.c:8004
 msgid "Tick"
 msgstr "선택"
 
-#: title/pc5_ui.c:7486
+#: title/pc5_ui.c:7514
 msgid "Install games from the INSTALL folder"
 msgstr "INSTALL 폴더에서 게임 설치"
 
-#: title/pc5_ui.c:7488
+#: title/pc5_ui.c:7516
 msgid ""
 "Put each game's folder (the one with its .exe in it) at the top of a USB "
 "drive formatted as exFAT, plug the drive into the PS5, then look again."
@@ -3777,110 +3772,110 @@ msgstr ""
 "각 게임의 폴더(.exe가 들어 있는 폴더)를 exFAT로 포맷한 USB 드라이브의 최상위에 넣고, 드라이브를 PS5에 연결한 뒤 "
 "다시 찾으세요."
 
-#: title/pc5_ui.c:7502
+#: title/pc5_ui.c:7530
 msgid "Putting back its saves and settings"
 msgstr "저장 데이터와 설정을 되돌리는 중"
 
-#: title/pc5_ui.c:7502
+#: title/pc5_ui.c:7530
 msgid "Setting up the game's Windows"
 msgstr "게임의 Windows 설정 중"
 
-#: title/pc5_ui.c:7505
+#: title/pc5_ui.c:7533
 msgid "Copying the newer version"
 msgstr "새 버전 복사 중"
 
-#: title/pc5_ui.c:7505
+#: title/pc5_ui.c:7533
 msgid "Copying the game"
 msgstr "게임 복사 중"
 
-#: title/pc5_ui.c:7506
+#: title/pc5_ui.c:7534
 msgid "Checking the copy against the USB drive"
 msgstr "사본을 USB 드라이브와 대조하는 중"
 
-#: title/pc5_ui.c:7507 title/pc5_ui.c:7787
+#: title/pc5_ui.c:7535 title/pc5_ui.c:7815
 msgid "Putting the new files in place"
 msgstr "새 파일을 제자리에 놓는 중"
 
-#: title/pc5_ui.c:7507 title/pc5_ui.c:7509
+#: title/pc5_ui.c:7535 title/pc5_ui.c:7537
 msgid "Finishing"
 msgstr "마무리 중"
 
-#: title/pc5_ui.c:7510
+#: title/pc5_ui.c:7538
 msgid "Stopping: deleting what was copied"
 msgstr "중지 중: 복사한 것을 삭제하는 중"
 
-#: title/pc5_ui.c:7510
+#: title/pc5_ui.c:7538
 msgid "Deleting what was copied"
 msgstr "복사한 것을 삭제하는 중"
 
-#: title/pc5_ui.c:7515
+#: title/pc5_ui.c:7543
 #, c-format
 msgid "Game %d of %d"
 msgstr "게임 %d/%d"
 
-#: title/pc5_ui.c:7518
+#: title/pc5_ui.c:7546
 #, c-format
 msgid "Updating %s"
 msgstr "%s 업데이트 중"
 
-#: title/pc5_ui.c:7518
+#: title/pc5_ui.c:7546
 #, c-format
 msgid "Installing %s"
 msgstr "%s 설치 중"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7520 title/pc5_ui.c:7796
+#: title/pc5_ui.c:7548 title/pc5_ui.c:7824
 #, c-format
 msgid "Step %d of 3 · %s"
 msgstr "단계 %d/3 · %s"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7534 title/pc5_ui.c:7811
+#: title/pc5_ui.c:7562 title/pc5_ui.c:7839
 msgid " · under a minute left"
 msgstr " · 1분 미만 남음"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7535 title/pc5_ui.c:7812
+#: title/pc5_ui.c:7563 title/pc5_ui.c:7840
 #, c-format
 msgid " · about %d min left"
 msgstr " · 약 %d분 남음"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7537 title/pc5_ui.c:7814
+#: title/pc5_ui.c:7565 title/pc5_ui.c:7842
 #, c-format
 msgid "%s of %s · %s/s%s"
 msgstr "%s / %s · %s/s%s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7539 title/pc5_ui.c:7816
+#: title/pc5_ui.c:7567 title/pc5_ui.c:7844
 #, c-format
 msgid "%s of %s · measuring the speed"
 msgstr "%s / %s · 속도 측정 중"
 
-#: title/pc5_ui.c:7542
+#: title/pc5_ui.c:7570
 #, c-format
 msgid "%u of %u files"
 msgstr "파일 %u/%u개"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7546 title/pc5_ui.c:7827 title/pc5_ui.c:8164
-#: title/pc5_ui.c:8463 title/pc5_ui.c:8471
+#: title/pc5_ui.c:7574 title/pc5_ui.c:7855 title/pc5_ui.c:8192
+#: title/pc5_ui.c:8491 title/pc5_ui.c:8499
 msgid "Stop"
 msgstr "중지"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7651
+#: title/pc5_ui.c:7679
 msgid "OK"
 msgstr "확인"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7651 title/pc5_ui.c:7689
+#: title/pc5_ui.c:7679 title/pc5_ui.c:7717
 msgid "Report on GitHub"
 msgstr "GitHub에 보고"
 
-#: title/pc5_ui.c:7695
+#: title/pc5_ui.c:7723
 #, c-format
 msgid ""
 "1. Scan the code with your phone. GitHub's form for a new issue opens, "
@@ -3888,34 +3883,34 @@ msgid ""
 msgstr ""
 "1. 휴대폰으로 코드를 스캔하세요. %s, PC5 버전, PC5가 확인한 내용이 채워진 GitHub 새 이슈 양식이 열립니다."
 
-#: title/pc5_ui.c:7698
+#: title/pc5_ui.c:7726
 #, c-format
 msgid "1. On your phone or computer, open %s and choose New issue."
 msgstr "1. 휴대폰이나 컴퓨터에서 %s을(를) 열고 New issue를 선택하세요."
 
-#: title/pc5_ui.c:7701
+#: title/pc5_ui.c:7729
 #, c-format
 msgid "2. Copy %s off the console, from %s/logs, as you copy files to it."
 msgstr "2. 본체에 파일을 복사할 때와 같은 방법으로 %2$s/logs에서 %1$s을(를) 꺼내세요."
 
-#: title/pc5_ui.c:7705
+#: title/pc5_ui.c:7733
 msgid ""
 "3. Say what happened, attach the zip, and submit. You need a GitHub "
 "account."
 msgstr "3. 무슨 일이 있었는지 적고 zip 파일을 첨부해 제출하세요. GitHub 계정이 필요합니다."
 
-#: title/pc5_ui.c:7718
+#: title/pc5_ui.c:7746
 msgid "PC5's web page"
 msgstr "PC5 웹 페이지"
 
-#: title/pc5_ui.c:7722
+#: title/pc5_ui.c:7750
 #, c-format
 msgid ""
 "Scan the code with your phone, or open %s in a browser on a PC on the same "
 "network."
 msgstr "휴대폰으로 코드를 스캔하거나, 같은 네트워크의 PC 브라우저에서 %s을(를) 여세요."
 
-#: title/pc5_ui.c:7725
+#: title/pc5_ui.c:7753
 msgid ""
 "From there: send a game's folder to install, report a problem with a game "
 "(its log and settings go with it), edit launch options and download logs. "
@@ -3924,487 +3919,487 @@ msgstr ""
 "거기서 할 수 있는 것: 설치할 게임 폴더 보내기, 게임 문제 보고(로그와 설정도 함께 전송), 실행 옵션 편집, 로그 다운로드. "
 "PC5가 열려 있는 동안 작동합니다."
 
-#: title/pc5_ui.c:7745
+#: title/pc5_ui.c:7773
 msgid ""
 "Connect your phone and PS5 to the same network or phone hotspot. Scan this "
 "code and choose one file. Keep this screen open."
 msgstr ""
 "휴대폰과 PS5를 같은 네트워크나 휴대폰 핫스팟에 연결하세요. 이 코드를 스캔하고 파일 하나를 선택하세요. 이 화면은 열어 두세요."
 
-#: title/pc5_ui.c:7748
+#: title/pc5_ui.c:7776
 msgid ""
 "This link expires after 10 minutes or when you leave. Your previous "
 "selection stays until import succeeds."
 msgstr "이 링크는 10분이 지나거나 화면을 나가면 만료됩니다. 가져오기에 성공할 때까지 이전 선택은 그대로 유지됩니다."
 
-#: title/pc5_ui.c:7749
+#: title/pc5_ui.c:7777
 #, c-format
 msgid "Receiving: %u%%"
 msgstr "받는 중: %u%%"
 
-#: title/pc5_ui.c:7750
+#: title/pc5_ui.c:7778
 msgid "Waiting for a file"
 msgstr "파일을 기다리는 중"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7753 title/pc5_ui.c:8179 title/pc5_ui.c:8215
-#: title/pc5_ui.c:8355 title/pc5_ui.c:8358 title/pc5_ui.c:8377
-#: title/pc5_ui.c:8485 title/pc5_ui.c:8498 title/pc5_ui.c:8502
+#: title/pc5_ui.c:7781 title/pc5_ui.c:8207 title/pc5_ui.c:8243
+#: title/pc5_ui.c:8383 title/pc5_ui.c:8386 title/pc5_ui.c:8405
+#: title/pc5_ui.c:8513 title/pc5_ui.c:8526 title/pc5_ui.c:8530
 msgid "Cancel"
 msgstr "취소"
 
-#: title/pc5_ui.c:7776
+#: title/pc5_ui.c:7804
 #, c-format
 msgid "PC5 %s is installed"
 msgstr "PC5 %s 버전을 설치했습니다"
 
-#: title/pc5_ui.c:7779
+#: title/pc5_ui.c:7807
 msgid ""
 "PC5 restarts now with the new version. Your games, saves and settings are "
 "as they were."
 msgstr "새 버전으로 PC5를 다시 시작합니다. 게임, 저장 데이터, 설정은 그대로입니다."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7780
+#: title/pc5_ui.c:7808
 msgid "Restart PC5"
 msgstr "PC5 다시 시작"
 
-#: title/pc5_ui.c:7785
+#: title/pc5_ui.c:7813
 msgid "Downloading it from GitHub"
 msgstr "GitHub에서 다운로드하는 중"
 
-#: title/pc5_ui.c:7786
+#: title/pc5_ui.c:7814
 msgid "Unpacking it and checking every file"
 msgstr "압축을 풀고 모든 파일을 확인하는 중"
 
-#: title/pc5_ui.c:7788
+#: title/pc5_ui.c:7816
 msgid "Deleting the old files"
 msgstr "이전 파일을 삭제하는 중"
 
-#: title/pc5_ui.c:7789
+#: title/pc5_ui.c:7817
 msgid "Asking GitHub and finding PC5's folder"
 msgstr "GitHub에 확인하고 PC5 폴더를 찾는 중"
 
-#: title/pc5_ui.c:7792 title/pc5_ui.c:8147
+#: title/pc5_ui.c:7820 title/pc5_ui.c:8175
 msgid "Stopping"
 msgstr "중지하는 중"
 
-#: title/pc5_ui.c:7793
+#: title/pc5_ui.c:7821
 #, c-format
 msgid "Updating PC5 to %s"
 msgstr "PC5 %s 버전으로 업데이트 중"
 
-#: title/pc5_ui.c:7794
+#: title/pc5_ui.c:7822
 msgid "Updating PC5"
 msgstr "PC5 업데이트 중"
 
-#: title/pc5_ui.c:7801
+#: title/pc5_ui.c:7829
 #, c-format
 msgid "%llu of %llu files"
 msgstr "파일 %llu/%llu개"
 
-#: title/pc5_ui.c:7823
+#: title/pc5_ui.c:7851
 #, c-format
 msgid "Into %.280s"
 msgstr "대상: %.280s"
 
-#: title/pc5_ui.c:7831
+#: title/pc5_ui.c:7859
 msgid "Don't turn the console off now. This takes a moment."
 msgstr "지금 본체 전원을 끄지 마세요. 잠시 걸립니다."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7845 title/pc5_ui.c:8194
+#: title/pc5_ui.c:7873 title/pc5_ui.c:8222
 msgid "Skip"
 msgstr "건너뛰기"
 
-#: title/pc5_ui.c:7884
+#: title/pc5_ui.c:7912
 msgid "Its cover"
 msgstr "커버"
 
-#: title/pc5_ui.c:7884
+#: title/pc5_ui.c:7912
 msgid "Its tile picture"
 msgstr "타일 이미지"
 
-#: title/pc5_ui.c:7884
+#: title/pc5_ui.c:7912
 msgid "Its background"
 msgstr "배경"
 
-#: title/pc5_ui.c:7888
+#: title/pc5_ui.c:7916
 msgid "The cover it has now"
 msgstr "현재 커버"
 
-#: title/pc5_ui.c:7888
+#: title/pc5_ui.c:7916
 msgid "The tile picture it has now"
 msgstr "현재 타일 이미지"
 
-#: title/pc5_ui.c:7888
+#: title/pc5_ui.c:7916
 msgid "The background it has now"
 msgstr "현재 배경"
 
-#: title/pc5_ui.c:7890
+#: title/pc5_ui.c:7918
 msgid "A cover found online"
 msgstr "온라인에서 찾은 커버"
 
-#: title/pc5_ui.c:7890
+#: title/pc5_ui.c:7918
 msgid "A square picture found online"
 msgstr "온라인에서 찾은 정사각형 이미지"
 
-#: title/pc5_ui.c:7890
+#: title/pc5_ui.c:7918
 msgid "A background found online"
 msgstr "온라인에서 찾은 배경"
 
-#: title/pc5_ui.c:7892
+#: title/pc5_ui.c:7920
 msgid "Made from the game's icon and name"
 msgstr "게임 아이콘과 이름으로 만듦"
 
-#: title/pc5_ui.c:7893
+#: title/pc5_ui.c:7921
 msgid "Made from its cover"
 msgstr "커버로 만듦"
 
-#: title/pc5_ui.c:7893
+#: title/pc5_ui.c:7921
 msgid "None: a backdrop made from its cover"
 msgstr "없음: 커버로 만든 배경"
 
-#: title/pc5_ui.c:7900
+#: title/pc5_ui.c:7928
 #, c-format
 msgid "Nothing found for “%s”."
 msgstr "“%s”에 대한 결과가 없습니다."
 
-#: title/pc5_ui.c:7902
+#: title/pc5_ui.c:7930
 msgid ""
 "Square pictures come from SteamGridDB: put your key in api_keys.txt "
 "(Covers on the wiki)."
 msgstr "정사각형 이미지는 SteamGridDB에서 가져옵니다. api_keys.txt에 키를 넣으세요(위키의 Covers)."
 
-#: title/pc5_ui.c:7904
+#: title/pc5_ui.c:7932
 msgid "Nothing found for its name."
 msgstr "이름으로 찾은 결과가 없습니다."
 
-#: title/pc5_ui.c:7907
+#: title/pc5_ui.c:7935
 #, c-format
 msgid "Found for “%s”"
 msgstr "“%s” 검색 결과"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7912
+#: title/pc5_ui.c:7940
 msgid "Use this"
 msgstr "이것 사용"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7913
+#: title/pc5_ui.c:7941
 msgid "Other pictures"
 msgstr "다른 이미지"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7913
+#: title/pc5_ui.c:7941
 msgid "Other backgrounds"
 msgstr "다른 배경"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7914
+#: title/pc5_ui.c:7942
 msgid "Search by name"
 msgstr "이름으로 검색"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7928 title/pc5_ui.c:7968 title/pc5_ui.c:8087
+#: title/pc5_ui.c:7956 title/pc5_ui.c:7996 title/pc5_ui.c:8115
 msgid " · read-only"
 msgstr " · 읽기 전용"
 
-#: title/pc5_ui.c:7944
+#: title/pc5_ui.c:7972
 msgid "Folder"
 msgstr "폴더"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7969
+#: title/pc5_ui.c:7997
 #, c-format
 msgid " · %d ticked"
 msgstr " · %d개 선택됨"
 
-#: title/pc5_ui.c:7971
+#: title/pc5_ui.c:7999
 msgid "△ Paste or New folder puts something in it."
 msgstr "△ 버튼의 붙여넣기나 새 폴더로 여기에 넣을 수 있습니다."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7976 title/pc5_ui.c:8090
+#: title/pc5_ui.c:8004 title/pc5_ui.c:8118
 msgid "Actions"
 msgstr "작업"
 
-#: title/pc5_ui.c:7980
+#: title/pc5_ui.c:8008
 msgid "Choose backup destination"
 msgstr "백업 저장 위치 선택"
 
-#: title/pc5_ui.c:7981
+#: title/pc5_ui.c:8009
 msgid "Open a folder, then press OPTIONS to save the backup here."
 msgstr "폴더를 연 후 OPTIONS를 눌러 여기에 백업을 저장하세요."
 
-#: title/pc5_ui.c:7988
+#: title/pc5_ui.c:8016
 msgid "Choose a background video"
 msgstr "배경 동영상 선택"
 
-#: title/pc5_ui.c:7989
+#: title/pc5_ui.c:8017
 msgid "H.264 up to 1080p/60 and 1 GB; MP4 recommended. Playback is silent."
 msgstr "H.264, 최대 1080p/60 및 1 GB. MP4 권장. 소리 없이 재생됩니다."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7993
+#: title/pc5_ui.c:8021
 msgid "Open folder"
 msgstr "폴더 열기"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7993
+#: title/pc5_ui.c:8021
 msgid "Save here"
 msgstr "여기에 저장"
 
-#: title/pc5_ui.c:7994
+#: title/pc5_ui.c:8022
 msgid "This folder is empty"
 msgstr "이 폴더는 비어 있습니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8006
+#: title/pc5_ui.c:8034
 msgid "Copy"
 msgstr "복사"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8006
+#: title/pc5_ui.c:8034
 msgid "Then Paste puts a copy in another folder"
 msgstr "그런 다음 붙여넣기로 다른 폴더에 사본을 넣습니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8007
+#: title/pc5_ui.c:8035
 msgid "Cut"
 msgstr "잘라내기"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8007
+#: title/pc5_ui.c:8035
 msgid "Then Paste moves it to another folder"
 msgstr "그런 다음 붙여넣기로 다른 폴더로 옮깁니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8010
+#: title/pc5_ui.c:8038
 msgid "Paste"
 msgstr "붙여넣기"
 
-#: title/pc5_ui.c:8011
+#: title/pc5_ui.c:8039
 #, c-format
 msgid "Moves %d item from %.120s"
 msgstr "%2$.120s에서 항목 %1$d개를 이동합니다"
 
-#: title/pc5_ui.c:8011
+#: title/pc5_ui.c:8039
 #, c-format
 msgid "Moves %d items from %.120s"
 msgstr "%2$.120s에서 항목 %1$d개를 이동합니다"
 
-#: title/pc5_ui.c:8011
+#: title/pc5_ui.c:8039
 #, c-format
 msgid "Copies %d item from %.120s"
 msgstr "%2$.120s에서 항목 %1$d개를 복사합니다"
 
-#: title/pc5_ui.c:8011
+#: title/pc5_ui.c:8039
 #, c-format
 msgid "Copies %d items from %.120s"
 msgstr "%2$.120s에서 항목 %1$d개를 복사합니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8017
+#: title/pc5_ui.c:8045
 msgid "Type its new name"
 msgstr "새 이름 입력"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8018
+#: title/pc5_ui.c:8046
 msgid "An empty folder in this one"
 msgstr "이 폴더 안에 빈 폴더 만들기"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8019 title/pc5_ui.c:8215 title/pc5_ui.c:8355
-#: title/pc5_ui.c:8474 title/pc5_ui.c:8480 title/pc5_ui.c:8485
+#: title/pc5_ui.c:8047 title/pc5_ui.c:8243 title/pc5_ui.c:8383
+#: title/pc5_ui.c:8502 title/pc5_ui.c:8508 title/pc5_ui.c:8513
 msgid "Delete"
 msgstr "삭제"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8019
+#: title/pc5_ui.c:8047
 msgid "Deleted for good: there is no undo"
 msgstr "영구 삭제되며 되돌릴 수 없습니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8021
+#: title/pc5_ui.c:8049
 msgid "Untick all"
 msgstr "모두 선택 해제"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8021
+#: title/pc5_ui.c:8049
 msgid "Tick all"
 msgstr "모두 선택"
 
-#: title/pc5_ui.c:8022
+#: title/pc5_ui.c:8050
 msgid "Every item in this folder"
 msgstr "이 폴더의 모든 항목"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8026
+#: title/pc5_ui.c:8054
 msgid "Edit"
 msgstr "편집"
 
-#: title/pc5_ui.c:8027
+#: title/pc5_ui.c:8055
 msgid ""
 "A text file (.ini, .cfg, .txt and the like), changed a line at a time"
 msgstr "텍스트 파일(.ini, .cfg, .txt 등)을 한 줄씩 바꿉니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8029
+#: title/pc5_ui.c:8057
 msgid "View"
 msgstr "보기"
 
-#: title/pc5_ui.c:8030
+#: title/pc5_ui.c:8058
 msgid "A text file, shown: nothing here can be changed"
 msgstr "텍스트 파일을 보여 줍니다. 여기서는 아무것도 바꿀 수 없습니다"
 
-#: title/pc5_ui.c:8043
+#: title/pc5_ui.c:8071
 #, c-format
 msgid "%d items"
 msgstr "항목 %d개"
 
-#: title/pc5_ui.c:8045
+#: title/pc5_ui.c:8073
 msgid "This folder"
 msgstr "이 폴더"
 
-#: title/pc5_ui.c:8049
+#: title/pc5_ui.c:8077
 msgid "Read-only: PC5 changes nothing here"
 msgstr "읽기 전용: PC5는 여기서 아무것도 바꾸지 않습니다"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8088
+#: title/pc5_ui.c:8116
 msgid " · not saved"
 msgstr " · 저장 안 됨"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8089 title/pc5_ui.c:8091
+#: title/pc5_ui.c:8117 title/pc5_ui.c:8119
 msgid "Page"
 msgstr "페이지"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8090
+#: title/pc5_ui.c:8118
 msgid "Add a line"
 msgstr "줄 추가"
 
-#: title/pc5_ui.c:8094
+#: title/pc5_ui.c:8122
 msgid "This file is empty"
 msgstr "이 파일은 비어 있습니다"
 
-#: title/pc5_ui.c:8095
+#: title/pc5_ui.c:8123
 msgid "There's nothing in it."
 msgstr "아무것도 없습니다."
 
-#: title/pc5_ui.c:8095
+#: title/pc5_ui.c:8123
 msgid "✕ puts a first line in it."
 msgstr "✕로 첫 줄을 넣습니다."
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8104
+#: title/pc5_ui.c:8132
 msgid "Add a line below"
 msgstr "아래에 줄 추가"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8104
+#: title/pc5_ui.c:8132
 msgid "Typed with the keyboard, under the line chosen"
 msgstr "키보드로 입력해 고른 줄 아래에 넣습니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8105
+#: title/pc5_ui.c:8133
 msgid "Add a line above"
 msgstr "위에 줄 추가"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8105
+#: title/pc5_ui.c:8133
 msgid "Typed with the keyboard, over the line chosen"
 msgstr "키보드로 입력해 고른 줄 위에 넣습니다"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8106
+#: title/pc5_ui.c:8134
 msgid "Delete line"
 msgstr "줄 삭제"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8106
+#: title/pc5_ui.c:8134
 msgid "The line chosen goes; nothing is saved until Save"
 msgstr "고른 줄이 사라집니다. 저장할 때까지 아무것도 저장되지 않습니다"
 
-#: title/pc5_ui.c:8109
+#: title/pc5_ui.c:8137
 msgid "Written back as it was: UTF-16, with its line ends"
 msgstr "원래대로 다시 씁니다: UTF-16, 줄 끝도 그대로"
 
-#: title/pc5_ui.c:8110
+#: title/pc5_ui.c:8138
 msgid "Written back as it was: one byte a letter, with its line ends"
 msgstr "원래대로 다시 씁니다: 글자당 1바이트, 줄 끝도 그대로"
 
-#: title/pc5_ui.c:8111
+#: title/pc5_ui.c:8139
 msgid "Written back as it was: UTF-8, with its line ends"
 msgstr "원래대로 다시 씁니다: UTF-8, 줄 끝도 그대로"
 
-#: title/pc5_ui.c:8124
+#: title/pc5_ui.c:8152
 msgid "This file"
 msgstr "이 파일"
 
-#: title/pc5_ui.c:8148
+#: title/pc5_ui.c:8176
 msgid "Deleting"
 msgstr "삭제하는 중"
 
-#: title/pc5_ui.c:8149
+#: title/pc5_ui.c:8177
 msgid "Moving"
 msgstr "이동하는 중"
 
-#: title/pc5_ui.c:8149
+#: title/pc5_ui.c:8177
 msgid "Copying"
 msgstr "복사하는 중"
 
-#: title/pc5_ui.c:8151
+#: title/pc5_ui.c:8179
 msgid "Getting ready"
 msgstr "준비하는 중"
 
-#: title/pc5_ui.c:8158
+#: title/pc5_ui.c:8186
 #, c-format
 msgid "%s of %s"
 msgstr "%s / %s"
 
-#: title/pc5_ui.c:8160
+#: title/pc5_ui.c:8188
 #, c-format
 msgid "%u of %u"
 msgstr "%u/%u"
 
-#: title/pc5_ui.c:8178
+#: title/pc5_ui.c:8206
 #, c-format
 msgid "Save the changes to %.200s?"
 msgstr "%.200s의 변경 내용을 저장할까요?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8179
+#: title/pc5_ui.c:8207
 msgid "Don't save leaves the file as it was before."
 msgstr "저장 안 함을 고르면 파일이 원래대로 남습니다."
 
-#: title/pc5_ui.c:8180
+#: title/pc5_ui.c:8208
 msgid "Don't save"
 msgstr "저장 안 함"
 
-#: title/pc5_ui.c:8189
+#: title/pc5_ui.c:8217
 #, c-format
 msgid "This folder has %.200s already"
 msgstr "이 폴더에 이미 %.200s이(가) 있습니다"
 
-#: title/pc5_ui.c:8189 title/pc5_ui.c:8204
+#: title/pc5_ui.c:8217 title/pc5_ui.c:8232
 msgid "it"
 msgstr "그 항목"
 
-#: title/pc5_ui.c:8190
+#: title/pc5_ui.c:8218
 #, c-format
 msgid "This folder has %d of the %d items already"
 msgstr "이 폴더에 항목 %2$d개 중 %1$d개가 이미 있습니다"
 
-#: title/pc5_ui.c:8192
+#: title/pc5_ui.c:8220
 msgid ""
 "Skip leaves those as they are. Keep both gives the new ones a name like "
 "“name (2)”. Replace overwrites files and puts folders' contents together."
@@ -4412,50 +4407,50 @@ msgstr ""
 "건너뛰기는 그대로 둡니다. 둘 다 유지는 새 항목에 “이름 (2)” 같은 이름을 붙입니다. 바꾸기는 파일을 덮어쓰고 폴더 내용을 "
 "합칩니다."
 
-#: title/pc5_ui.c:8194
+#: title/pc5_ui.c:8222
 msgid "Keep both"
 msgstr "둘 다 유지"
 
-#: title/pc5_ui.c:8194
+#: title/pc5_ui.c:8222
 msgid "Replace"
 msgstr "바꾸기"
 
-#: title/pc5_ui.c:8199
+#: title/pc5_ui.c:8227
 #, c-format
 msgid "Delete %d items?"
 msgstr "항목 %d개를 삭제할까요?"
 
-#: title/pc5_ui.c:8204
+#: title/pc5_ui.c:8232
 #, c-format
 msgid "Delete %.200s?"
 msgstr "%.200s을(를) 삭제할까요?"
 
-#: title/pc5_ui.c:8205
+#: title/pc5_ui.c:8233
 msgid "Delete?"
 msgstr "삭제할까요?"
 
-#: title/pc5_ui.c:8207
+#: title/pc5_ui.c:8235
 #, c-format
 msgid "%u file"
 msgstr "파일 %u개"
 
-#: title/pc5_ui.c:8207
+#: title/pc5_ui.c:8235
 #, c-format
 msgid "%u files"
 msgstr "파일 %u개"
 
-#: title/pc5_ui.c:8208
+#: title/pc5_ui.c:8236
 #, c-format
 msgid "%u folder"
 msgstr "폴더 %u개"
 
-#: title/pc5_ui.c:8208
+#: title/pc5_ui.c:8236
 #, c-format
 msgid "%u folders"
 msgstr "폴더 %u개"
 
 #. the first %s is a count of files ("3 files"), the second of folders, the third a size ("2.1 GB").
-#: title/pc5_ui.c:8211
+#: title/pc5_ui.c:8239
 #, c-format
 msgid ""
 "At least %s and %s, %s. They're deleted for good: there is no backup and "
@@ -4463,36 +4458,36 @@ msgid ""
 msgstr "최소 %s와 %s(%s). 영구 삭제됩니다. 백업도 없고 되돌릴 수도 없습니다."
 
 #. the first %s is a count of files ("3 files"), the second of folders, the third a size ("2.1 GB").
-#: title/pc5_ui.c:8211
+#: title/pc5_ui.c:8239
 #, c-format
 msgid ""
 "%s and %s, %s. They're deleted for good: there is no backup and no undo."
 msgstr "%s와 %s(%s). 영구 삭제됩니다. 백업도 없고 되돌릴 수도 없습니다."
 
-#: title/pc5_ui.c:8278
+#: title/pc5_ui.c:8306
 msgid "Finishing an install or uninstall that was cut short"
 msgstr "중단된 설치 또는 제거를 마무리하는 중"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8281
+#: title/pc5_ui.c:8309
 #, c-format
 msgid "Getting covers · %d of %d"
 msgstr "커버 가져오는 중 · %d/%d"
 
-#: title/pc5_ui.c:8285 title/pc5_ui.c:8301 title/pc5_ui.c:8557
+#: title/pc5_ui.c:8313 title/pc5_ui.c:8329 title/pc5_ui.c:8585
 msgid "Checking for a newer PC5"
 msgstr "새 PC5 확인 중"
 
-#: title/pc5_ui.c:8301
+#: title/pc5_ui.c:8329
 msgid "Asking GitHub"
 msgstr "GitHub에 확인하는 중"
 
-#: title/pc5_ui.c:8305
+#: title/pc5_ui.c:8333
 #, c-format
 msgid "PC5 %s is available"
 msgstr "PC5 %s 버전을 사용할 수 있습니다"
 
-#: title/pc5_ui.c:8306
+#: title/pc5_ui.c:8334
 #, c-format
 msgid ""
 "%s, installs it and restarts. Your games, saves and settings stay. Later: "
@@ -4500,118 +4495,118 @@ msgid ""
 msgstr "%s, 설치하고 다시 시작합니다. 게임, 저장 데이터, 설정은 그대로 유지됩니다. 나중에: 설정 › 시스템."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8308 title/pc5_ui.c:8550
+#: title/pc5_ui.c:8336 title/pc5_ui.c:8578
 msgid "Later"
 msgstr "나중에"
 
-#: title/pc5_ui.c:8319 title/pc5_ui.c:8366
+#: title/pc5_ui.c:8347 title/pc5_ui.c:8394
 #, c-format
 msgid "Reading %s"
 msgstr "%s 읽는 중"
 
-#: title/pc5_ui.c:8320
+#: title/pc5_ui.c:8348
 msgid "Finding its programs"
 msgstr "프로그램 찾는 중"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8325
+#: title/pc5_ui.c:8353
 #, c-format
 msgid "Getting ready · %d of %d"
 msgstr "준비 중 · %d/%d"
 
-#: title/pc5_ui.c:8329
+#: title/pc5_ui.c:8357
 msgid "reading its files"
 msgstr "파일 읽는 중"
 
-#: title/pc5_ui.c:8329
+#: title/pc5_ui.c:8357
 msgid "looking for its cover"
 msgstr "커버 찾는 중"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8338
+#: title/pc5_ui.c:8366
 #, c-format
 msgid "Install %d game · %s"
 msgstr "게임 %d개 설치 · %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8338
+#: title/pc5_ui.c:8366
 #, c-format
 msgid "Install %d games · %s"
 msgstr "게임 %d개 설치 · %s"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8340
+#: title/pc5_ui.c:8368
 msgid "Install all"
 msgstr "모두 설치"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8340
+#: title/pc5_ui.c:8368
 msgid "Review"
 msgstr "검토"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8352
+#: title/pc5_ui.c:8380
 msgid "Remove background video?"
 msgstr "배경 동영상을 제거할까요?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8352
+#: title/pc5_ui.c:8380
 msgid "Remove library music?"
 msgstr "라이브러리 음악을 제거할까요?"
 
-#: title/pc5_ui.c:8353
+#: title/pc5_ui.c:8381
 msgid ""
 "Delete this game's imported video and return to the background image? The "
 "original source file is kept."
 msgstr "이 게임에 가져온 동영상을 삭제하고 배경 이미지로 돌아갈까요? 원본 파일은 유지됩니다."
 
-#: title/pc5_ui.c:8354
+#: title/pc5_ui.c:8382
 msgid "Delete this game's imported music? The original source file is kept."
 msgstr "이 게임에 가져온 음악을 삭제할까요? 원본 파일은 유지됩니다."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8358
+#: title/pc5_ui.c:8386
 msgid "Restore this appearance?"
 msgstr "이 모양을 복원할까요?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8358
+#: title/pc5_ui.c:8386
 msgid ""
 "This replaces this game's pictures, music, video and media settings. Game "
 "files and saves are kept."
 msgstr "이 게임의 이미지, 음악, 동영상, 미디어 설정이 바뀝니다. 게임 파일과 저장 데이터는 유지됩니다."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8358
+#: title/pc5_ui.c:8386
 msgid "Restore"
 msgstr "복원"
 
-#: title/pc5_ui.c:8360
+#: title/pc5_ui.c:8388
 msgid "Restoring appearance"
 msgstr "모양 복원 중"
 
-#: title/pc5_ui.c:8360
+#: title/pc5_ui.c:8388
 msgid "Exporting appearance"
 msgstr "모양 내보내는 중"
 
-#: title/pc5_ui.c:8360
+#: title/pc5_ui.c:8388
 msgid "Keep the drive connected. Back cancels."
 msgstr "드라이브를 연결해 두세요. 뒤로를 누르면 취소됩니다."
 
-#: title/pc5_ui.c:8363
+#: title/pc5_ui.c:8391
 msgid "Looking at the USB drives"
 msgstr "USB 드라이브 확인 중"
 
-#: title/pc5_ui.c:8367
+#: title/pc5_ui.c:8395
 msgid "Counting its files and finding its program"
 msgstr "파일을 세고 프로그램을 찾는 중"
 
-#: title/pc5_ui.c:8374
+#: title/pc5_ui.c:8402
 #, c-format
 msgid "Update %s?"
 msgstr "%s을(를) 업데이트할까요?"
 
-#: title/pc5_ui.c:8375
+#: title/pc5_ui.c:8403
 #, c-format
 msgid ""
 "PC5 copies %s (%s) from the USB drive over the game's folder: the files it "
@@ -4621,17 +4616,17 @@ msgstr ""
 "USB 드라이브의 %s(%s)을(를) 게임 폴더에 덮어 복사합니다. 들어 있는 파일은 게임 파일을 대체하고, 나머지는 그대로 "
 "남습니다. 저장 데이터, 설정, 옵션도 그대로입니다."
 
-#: title/pc5_ui.c:8387
+#: title/pc5_ui.c:8415
 #, c-format
 msgid "Where should the %d games go?"
 msgstr "게임 %d개를 어디에 설치할까요?"
 
-#: title/pc5_ui.c:8388
+#: title/pc5_ui.c:8416
 #, c-format
 msgid "Where should %s go?"
 msgstr "%s을(를) 어디에 설치할까요?"
 
-#: title/pc5_ui.c:8392
+#: title/pc5_ui.c:8420
 #, c-format
 msgid ""
 "The console has %s free. Extended storage (%.40s) has %s free: a game "
@@ -4640,7 +4635,7 @@ msgstr ""
 "본체의 여유 공간은 %s입니다. 확장 저장 공간(%.40s)의 여유 공간은 %s입니다. 그곳의 게임은 PC5 폴더에서 실행됩니다. "
 "세이브 데이터는 어느 쪽이든 본체에 남습니다."
 
-#: title/pc5_ui.c:8397
+#: title/pc5_ui.c:8425
 #, c-format
 msgid ""
 "The console has %s free. The USB drive (%.40s) has %s free: a game there "
@@ -4650,109 +4645,109 @@ msgstr ""
 "본체 여유 공간은 %s입니다. USB 드라이브(%.40s)의 여유 공간은 %s입니다. 드라이브에 넣은 게임은 그 PC5 폴더에서 "
 "플레이하므로 드라이브를 빠른 포트에 연결해 두세요. 어느 쪽이든 저장 데이터는 본체에 남습니다."
 
-#: title/pc5_ui.c:8407
+#: title/pc5_ui.c:8435
 #, c-format
 msgid "Left and right choose among the %d drives a game can go on."
 msgstr "왼쪽과 오른쪽으로 게임을 넣을 수 있는 드라이브 %d개 중에서 고릅니다."
 
-#: title/pc5_ui.c:8409
+#: title/pc5_ui.c:8437
 msgid "Extended storage"
 msgstr "확장 저장 공간"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8412
+#: title/pc5_ui.c:8440
 msgid "Console"
 msgstr "본체"
 
-#: title/pc5_ui.c:8417
+#: title/pc5_ui.c:8445
 #, c-format
 msgid "Put back the saves of %s?"
 msgstr "%s의 저장 데이터를 되돌릴까요?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8419
+#: title/pc5_ui.c:8447
 msgid ""
 "They were kept when it was uninstalled: its saves, settings and options "
 "come back with it. Start fresh: they stay kept, for later."
 msgstr ""
 "제거할 때 보관한 것입니다. 저장 데이터, 설정, 옵션이 게임과 함께 돌아옵니다. 새로 시작을 고르면 나중을 위해 계속 보관합니다."
 
-#: title/pc5_ui.c:8420
+#: title/pc5_ui.c:8448
 msgid "Start fresh"
 msgstr "새로 시작"
 
-#: title/pc5_ui.c:8420
+#: title/pc5_ui.c:8448
 msgid "Put them back"
 msgstr "되돌리기"
 
-#: title/pc5_ui.c:8424
+#: title/pc5_ui.c:8452
 msgid "Looking for the cover"
 msgstr "커버 찾는 중"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:8424 title/pc5_ui.c:8430
+#: title/pc5_ui.c:8452 title/pc5_ui.c:8458
 msgid "On Steam, GOG and others"
 msgstr "Steam, GOG 등에서"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:8429
+#: title/pc5_ui.c:8457
 #, c-format
 msgid "“%s”, %s"
 msgstr "“%s”, %s"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:8429
+#: title/pc5_ui.c:8457
 msgid "on Steam, GOG and others"
 msgstr "Steam, GOG 등에서"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:8431
+#: title/pc5_ui.c:8459
 msgid "Looking for covers"
 msgstr "커버 찾는 중"
 
-#: title/pc5_ui.c:8432
+#: title/pc5_ui.c:8460
 msgid "Looking for tile pictures"
 msgstr "타일 이미지 찾는 중"
 
-#: title/pc5_ui.c:8432
+#: title/pc5_ui.c:8460
 msgid "Looking for backgrounds"
 msgstr "배경 찾는 중"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8439
+#: title/pc5_ui.c:8467
 msgid "Offer at Play"
 msgstr "플레이할 때 선택지로"
 
-#: title/pc5_ui.c:8442 title/pc5_ui.c:8445
+#: title/pc5_ui.c:8470 title/pc5_ui.c:8473
 msgid "Which program is the game?"
 msgstr "어떤 프로그램이 게임인가요?"
 
-#: title/pc5_ui.c:8455
+#: title/pc5_ui.c:8483
 msgid "Which program?"
 msgstr "어떤 프로그램?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8462
+#: title/pc5_ui.c:8490
 msgid "Stop updating?"
 msgstr "업데이트를 중지할까요?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8462
+#: title/pc5_ui.c:8490
 msgid ""
 "The copy made so far is deleted and the game stays as it was. The USB "
 "drive isn't changed."
 msgstr "지금까지 복사한 것은 삭제되고 게임은 그대로입니다. USB 드라이브는 바뀌지 않습니다."
 
-#: title/pc5_ui.c:8463
+#: title/pc5_ui.c:8491
 msgid "Keep updating"
 msgstr "업데이트 계속"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8465 title/pc5_ui.c:8470
+#: title/pc5_ui.c:8493 title/pc5_ui.c:8498
 msgid "Stop installing?"
 msgstr "설치를 중지할까요?"
 
-#: title/pc5_ui.c:8466
+#: title/pc5_ui.c:8494
 msgid ""
 "What this game copied so far is deleted; games already installed stay. The "
 "USB drive isn't changed. Press the back button to keep installing."
@@ -4760,45 +4755,45 @@ msgstr ""
 "이 게임에서 지금까지 복사한 것은 삭제되고, 이미 설치한 게임은 그대로 남습니다. USB 드라이브는 바뀌지 않습니다. 설치를 "
 "계속하려면 뒤로 버튼을 누르세요."
 
-#: title/pc5_ui.c:8468
+#: title/pc5_ui.c:8496
 msgid "Stop this game"
 msgstr "이 게임 중지"
 
-#: title/pc5_ui.c:8468
+#: title/pc5_ui.c:8496
 msgid "Stop all"
 msgstr "모두 중지"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8470
+#: title/pc5_ui.c:8498
 msgid "Everything copied so far is deleted. The USB drive isn't changed."
 msgstr "지금까지 복사한 것은 모두 삭제됩니다. USB 드라이브는 바뀌지 않습니다."
 
-#: title/pc5_ui.c:8471
+#: title/pc5_ui.c:8499
 msgid "Keep installing"
 msgstr "설치 계속"
 
-#: title/pc5_ui.c:8475
+#: title/pc5_ui.c:8503
 msgid "There are no games to uninstall"
 msgstr "제거할 게임이 없습니다"
 
-#: title/pc5_ui.c:8483
+#: title/pc5_ui.c:8511
 #, c-format
 msgid "Delete the saves of %s?"
 msgstr "%s의 저장 데이터를 삭제할까요?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8484
+#: title/pc5_ui.c:8512
 msgid ""
 "Its saves and settings, kept when it was uninstalled, are deleted. There "
 "is no backup and no undo."
 msgstr "제거할 때 보관한 저장 데이터와 설정이 삭제됩니다. 백업도 없고 되돌릴 수도 없습니다."
 
-#: title/pc5_ui.c:8493
+#: title/pc5_ui.c:8521
 #, c-format
 msgid "Uninstall %s?"
 msgstr "%s을(를) 제거할까요?"
 
-#: title/pc5_ui.c:8496
+#: title/pc5_ui.c:8524
 msgid ""
 "Keep saves: the game goes, its saves and settings stay, and installing it "
 "again puts them back. Delete all: the game, its saves and settings go, "
@@ -4807,56 +4802,56 @@ msgstr ""
 "저장 데이터 보관: 게임은 없어지지만 저장 데이터와 설정은 남고, 다시 설치하면 되돌아옵니다. 모두 삭제: 게임, 저장 데이터, "
 "설정이 모두 없어지며 백업도 없고 되돌릴 수도 없습니다."
 
-#: title/pc5_ui.c:8498
+#: title/pc5_ui.c:8526
 msgid "Keep saves"
 msgstr "저장 데이터 보관"
 
-#: title/pc5_ui.c:8498
+#: title/pc5_ui.c:8526
 msgid "Delete all"
 msgstr "모두 삭제"
 
-#: title/pc5_ui.c:8501
+#: title/pc5_ui.c:8529
 msgid ""
 "This deletes the game and all its saves and settings. There is no backup "
 "and no undo."
 msgstr "게임과 모든 저장 데이터, 설정을 삭제합니다. 백업도 없고 되돌릴 수도 없습니다."
 
-#: title/pc5_ui.c:8506
+#: title/pc5_ui.c:8534
 #, c-format
 msgid "Deleting the saves of %s"
 msgstr "%s의 저장 데이터를 삭제하는 중"
 
-#: title/pc5_ui.c:8506
+#: title/pc5_ui.c:8534
 #, c-format
 msgid "Uninstalling %s"
 msgstr "%s 제거 중"
 
-#: title/pc5_ui.c:8509
+#: title/pc5_ui.c:8537
 #, c-format
 msgid "%u files and folders deleted"
 msgstr "파일 및 폴더 %u개 삭제됨"
 
-#: title/pc5_ui.c:8515
+#: title/pc5_ui.c:8543
 msgid "Importing library music"
 msgstr "라이브러리 음악 가져오는 중"
 
-#: title/pc5_ui.c:8516
+#: title/pc5_ui.c:8544
 msgid ""
 "Preparing a copy on the console. Keep the source drive connected until "
 "this finishes."
 msgstr "본체에 복사본을 준비하는 중입니다. 끝날 때까지 원본 드라이브를 연결해 두세요."
 
-#: title/pc5_ui.c:8519
+#: title/pc5_ui.c:8547
 msgid "Importing background video"
 msgstr "배경 동영상 가져오는 중"
 
-#: title/pc5_ui.c:8520
+#: title/pc5_ui.c:8548
 msgid ""
 "Copying video to the console. Keep the source drive connected until this "
 "finishes."
 msgstr "동영상을 본체로 복사하는 중입니다. 끝날 때까지 원본 드라이브를 연결해 두세요."
 
-#: title/pc5_ui.c:8538
+#: title/pc5_ui.c:8566
 #, c-format
 msgid ""
 "%d game is waiting in PC5's INSTALL folders (its own, and PC5/INSTALL on "
@@ -4866,7 +4861,7 @@ msgstr ""
 "PC5의 INSTALL 폴더(PC5 자체 폴더와 USB 드라이브의 PC5/INSTALL)에 게임 %d개가 기다리고 있습니다. 지금 "
 "설치할까요? 거기서 설치한 게임은 INSTALL 폴더에서 PC5 라이브러리로 옮겨집니다."
 
-#: title/pc5_ui.c:8538
+#: title/pc5_ui.c:8566
 #, c-format
 msgid ""
 "%d games are waiting in PC5's INSTALL folders (its own, and PC5/INSTALL on "
@@ -4876,7 +4871,7 @@ msgstr ""
 "PC5의 INSTALL 폴더(PC5 자체 폴더와 USB 드라이브의 PC5/INSTALL)에 게임 %d개가 기다리고 있습니다. 지금 "
 "설치할까요? 거기서 설치한 게임은 INSTALL 폴더에서 PC5 라이브러리로 옮겨집니다."
 
-#: title/pc5_ui.c:8538
+#: title/pc5_ui.c:8566
 #, c-format
 msgid ""
 "%d game is waiting in PC5's INSTALL folder. Install it now? A game "
@@ -4886,7 +4881,7 @@ msgstr ""
 "PC5의 INSTALL 폴더에 게임 %d개가 기다리고 있습니다. 지금 설치할까요? 거기서 설치한 게임은 INSTALL 폴더에서 PC5 "
 "라이브러리로 옮겨집니다."
 
-#: title/pc5_ui.c:8538
+#: title/pc5_ui.c:8566
 #, c-format
 msgid ""
 "%d games are waiting in PC5's INSTALL folder. Install them now? A game "
@@ -4897,33 +4892,33 @@ msgstr ""
 "라이브러리로 옮겨집니다."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8550
+#: title/pc5_ui.c:8578
 msgid "Games in PC5's INSTALL folder"
 msgstr "PC5의 INSTALL 폴더에 있는 게임"
 
-#: title/pc5_ui.c:8555
+#: title/pc5_ui.c:8583
 msgid "Updating the home screen tile"
 msgstr "홈 화면 타일 업데이트 중"
 
-#: title/pc5_ui.c:8555
+#: title/pc5_ui.c:8583
 msgid "Its picture and background"
 msgstr "이미지와 배경"
 
-#: title/pc5_ui.c:8557
+#: title/pc5_ui.c:8585
 msgid "A newer one may have fixed it"
 msgstr "새 버전에서 고쳐졌을 수 있습니다"
 
-#: title/pc5_ui.c:8560
+#: title/pc5_ui.c:8588
 #, c-format
 msgid "Update to PC5 %s first?"
 msgstr "먼저 PC5 %s 버전으로 업데이트할까요?"
 
-#: title/pc5_ui.c:8562
+#: title/pc5_ui.c:8590
 #, c-format
 msgid "You have %s"
 msgstr "현재 버전: %s"
 
-#: title/pc5_ui.c:8563
+#: title/pc5_ui.c:8591
 #, c-format
 msgid ""
 "This may already be fixed in it. Update, try the game again, and report it "
@@ -4931,21 +4926,21 @@ msgid ""
 msgstr "새 버전에서 이미 고쳐졌을 수 있습니다. 업데이트한 뒤 게임을 다시 해 보고, 그래도 문제가 생기면 보고하세요. %s."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8566
+#: title/pc5_ui.c:8594
 msgid "Report anyway"
 msgstr "그래도 보고"
 
-#: title/pc5_ui.c:8571
+#: title/pc5_ui.c:8599
 #, c-format
 msgid "Starting %s"
 msgstr "%s 시작하는 중"
 
-#: title/pc5_ui.c:8574
+#: title/pc5_ui.c:8602
 #, c-format
 msgid "Installing %.80s for it, once"
 msgstr "이 게임을 위해 %.80s 설치 중(처음 한 번만)"
 
-#: title/pc5_ui.c:8578
+#: title/pc5_ui.c:8606
 #, c-format
 msgid "Setting up .NET for your games, once: %u of %u"
 msgstr "게임용 .NET 설정 중(처음 한 번만): %u/%u"
@@ -5864,6 +5859,9 @@ msgstr "파일 %d개를 보냈습니다(%s). 잠시 후 PC5가 게임을 설치�
 msgctxt "web"
 msgid "Type the game's folder name first (no / or \\)."
 msgstr "먼저 게임 폴더 이름을 입력하세요(/나 \\ 없이)."
+
+#~ msgid "Loading"
+#~ msgstr "로딩 중"
 
 #~ msgid "Wine's VKD3D"
 #~ msgstr "Wine의 VKD3D"

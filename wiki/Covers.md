@@ -142,3 +142,16 @@ Your picture can be a `.jpg`, `.jpeg` or `.png` file. PC5 cuts it to the screen'
 - **For a game already installed:** make a folder `/data/prospero-win/backgrounds/` and put the picture in it, named as for [your own cover](#for-a-game-already-installed): the game's folder name, its name in PC5 or its id. For example: `/data/prospero-win/backgrounds/Neon Drift.jpg`.
 
 PC5 picks the picture up the next time it opens, when it is newer than the game's background. The background is kept in `/data/prospero-win/prefixes/<game>/pc5/background.bin`; uninstalling the game deletes it, also when you keep its saves.
+
+## Loading screen
+
+While a game starts, PC5 shows its loading screen: a picture with **LAUNCHING GAME** and a spinning circle in the bottom right corner, until the game shows its first picture. The picture is PC5's own, unless you give one of yours.
+
+### Using your own loading picture
+
+Make a folder `/data/prospero-win/loading/` and put your pictures in it, as `.jpg`, `.jpeg` or `.png` files of any size. PC5 fills the screen with them, cut to 16:9 about the middle, so a 16:9 picture (for example 1920 × 1080) shows whole.
+
+- **For every game:** name it `loading`, for example `/data/prospero-win/loading/loading.png`.
+- **For one game:** name it as for [your own cover](#for-a-game-already-installed): the game's folder name, its name in PC5 or its id. For example: `/data/prospero-win/loading/Neon Drift.jpg`. A game's own picture comes before the one for every game.
+
+The picture is used from the next start of a game; nothing needs to be restarted.

@@ -672,8 +672,6 @@ static void redist_path(const char *root, const char *prefix, char *path, size_t
     pc5_buf_free(&text);
 }
 
-static void start_history_read(Pc5GameSession *game);
-
 void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *root, const char *app,
                     const char *prefix, const char *title)
 {
@@ -683,11 +681,8 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
     pc5_copy(game->app, sizeof(game->app), app ? app : "");
     pc5_copy(game->title, sizeof(game->title), title ? title : "");
     game->cover_tint = cover_tint(root, prefix ? prefix : "");
-    /* What its last start took, for the loading screen's bar. */
-    if (prefix && prefix[0] && strcmp(prefix, "default") &&
-        pc5_format(game->start_file, sizeof(game->start_file), "%s/prefixes/%s/pc5/start.txt", root, prefix))
-        game->start_file[0] = 0;
-    start_history_read(game);
+    pc5_copy(game->root, sizeof(game->root), root ? root : "");
+    pc5_copy(game->prefix, sizeof(game->prefix), prefix ? prefix : "");
     game->light_target = bright(game->cover_tint);
     game->trigger_amplitude = 0;
     game->resistance = game->settings.triggers == PC5_TRIGGERS_RESISTANCE || game->settings.triggers == PC5_TRIGGERS_BOTH;
@@ -828,44 +823,6 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         stretch ? "stretch" : "keep", cpu_sharing, game->settings.high_refresh);
 }
 
-/* PC5's part fills the bar in steps it can see: up to 10 % the game made ready (the screen shows
- * once it is), to 25 % Windows started (the game's program mapped), to 100 % its DLLs loaded, as
- * many as last time, and its window shown. Then the game's own loading fills it again over the
- * time it took last time, or is a moving light when that isn't known. */
-void pc5_start_fill(const Pc5Start *start, const Pc5StartHistory *last, uint64_t since_ms, uint64_t window_ms,
-                    int *phase, float *fill)
-{
-    if (start->windows) {
-        *phase = 1;
-        *fill = last && last->game_ms ? (float)window_ms / (float)last->game_ms : -1.0f;
-        if (*fill > 0.97f) *fill = 0.97f;   /* the first picture ends it, not the clock */
-        return;
-    }
-    *phase = 0;
-    if (!start->program_at) {
-        /* Windows starting: within its step, filling on time (it takes a second or two). */
-        *fill = 0.10f + 0.14f * (1.0f - expf(-(float)since_ms / 1500.0f));
-        return;
-    }
-    unsigned expect = last && last->dlls ? last->dlls : 60;
-    unsigned done = start->images > start->program_at ? start->images - start->program_at : 0;
-    *fill = 0.25f + 0.70f * (float)(done < expect ? done : expect) / (float)expect;
-}
-
-static void start_history_read(Pc5GameSession *game)
-{
-    Pc5Buf text = { 0 };
-    unsigned dlls = 0, game_ms = 0;
-    if (game->start_file[0] && !pc5_read_file(game->start_file, &text, 4096) && !pc5_buf_terminate(&text)) {
-        const char *at = strstr((char *)text.data, "dlls=");
-        if (at) dlls = (unsigned)strtoul(at + 5, NULL, 10);
-        at = strstr((char *)text.data, "game_ms=");
-        if (at) game_ms = (unsigned)strtoul(at + 8, NULL, 10);
-    }
-    pc5_buf_free(&text);
-    game->start_last = (Pc5StartHistory){ dlls < 100000 ? dlls : 0, game_ms < 3600000 ? game_ms : 0 };
-}
-
 /* PC5's language from the app's folder: code as PC5 passed it. */
 static void use_language(const char *app, const char *code)
 {
@@ -888,46 +845,18 @@ static int loading_fonts(const char *app, Pc5Fonts *fonts)
     return 0;
 }
 
-int pc5_game_early_loading(const char *app, const char *code, void (*show)(const uint32_t *pixels, void *context),
-                           void *context)
+void pc5_game_loading_setup(Pc5GameSession *game, const char *language, const char *folder)
 {
-    Pc5Fonts fonts;
-    Pc5Matrix *matrix;
-    const uint32_t *pixels;
-    int shown = -1;
-
-    if (!app || !app[0] || !show) return -1;
-    use_language(app, code);
-    if (!loading_fonts(app, &fonts)) {
-        if ((matrix = pc5_matrix_create(&fonts, NULL, 0))) {
-            pc5_matrix_at_once(matrix);
-            if ((pixels = pc5_matrix_step(matrix))) {
-                show(pixels, context);
-                shown = 0;
-            }
-            pc5_matrix_destroy(matrix);
-        }
-        pc5_fonts_free(&fonts);
-    }
-    pc5_i18n_end();   /* read again with the game's own loading screen */
-    return shown;
+    pc5_copy(game->language, sizeof(game->language), language ? language : "");
+    pc5_copy(game->folder, sizeof(game->folder), folder ? folder : "");
 }
 
-void pc5_game_shown_before(Pc5GameSession *game, const char *code)
+const uint32_t *pc5_game_loading(Pc5GameSession *game, uint64_t now_ms)
 {
-    game->shown_before = 1;
-    pc5_copy(game->language, sizeof(game->language), code ? code : "");
-}
-
-const uint32_t *pc5_game_loading(Pc5GameSession *game, uint64_t now_ms, const Pc5Start *start)
-{
-    if (start) {
-        if (start->windows && !game->start.windows) game->window_ms = now_ms, game->start_images_at_window = start->images;
-        game->start = *start;
-    }
     if (game->matrix_failed) return NULL;
     if (!game->matrix) {
         Pc5Fonts fonts;
+        char own[PC5_PATH];
         if (game->language[0]) use_language(game->app, game->language);
         if (loading_fonts(game->app, &fonts)) say(game, "PC5 loading screen without its fonts: %s/pc5/fonts.bin", game->app);
         game->matrix = pc5_matrix_create(&fonts, game->title, (uint32_t)now_ms * 2654435761u);
@@ -937,35 +866,17 @@ const uint32_t *pc5_game_loading(Pc5GameSession *game, uint64_t now_ms, const Pc
             say(game, "PC5 loading screen: out of memory");
             return NULL;
         }
-        if (game->shown_before) pc5_matrix_at_once(game->matrix);
+        if (!pc5_loading_own(game->root, game->folder, game->title, game->prefix, own, sizeof(own)))
+            say(game, "PC5 loading picture %s: %s", own, pc5_matrix_picture(game->matrix, own) ? "not readable" : "shown");
         game->matrix_at = 0;
-        game->start_ms = now_ms;
     }
     if (game->matrix_at && now_ms < game->matrix_at) return NULL;
     game->matrix_at = now_ms + PC5_MATRIX_STEP_MS;
-    if (start) {
-        int phase;
-        float fill;
-        pc5_start_fill(&game->start, &game->start_last, now_ms - game->start_ms,
-                       game->window_ms ? now_ms - game->window_ms : 0, &phase, &fill);
-        pc5_matrix_progress(game->matrix, phase, fill);
-    }
     return pc5_matrix_step(game->matrix);
 }
 
-void pc5_game_loading_done(Pc5GameSession *game, uint64_t now_ms)
+void pc5_game_loading_done(Pc5GameSession *game)
 {
-    /* What this start took, for the next one's bar: only a start Wine told about. */
-    if (game->start_file[0] && game->start.program_at) {
-        char text[96];
-        unsigned at = game->start.windows ? game->start_images_at_window : game->start.images;
-        unsigned dlls = at > game->start.program_at ? at - game->start.program_at : 0;
-        unsigned game_ms = game->window_ms && now_ms > game->window_ms ? (unsigned)(now_ms - game->window_ms) : 0;
-        snprintf(text, sizeof(text), "dlls=%u\ngame_ms=%u\n", dlls, game_ms);
-        if (pc5_write_file(game->start_file, text, strlen(text))) say(game, "PC5 start times not kept: %s", game->start_file);
-        say(game, "PC5 start took dlls=%u game_ms=%u (last dlls=%u game_ms=%u)", dlls, game_ms, game->start_last.dlls,
-            game->start_last.game_ms);
-    }
     pc5_matrix_destroy(game->matrix);
     game->matrix = NULL;
     game->matrix_failed = 1;   /* not again */
