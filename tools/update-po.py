@@ -30,12 +30,14 @@ POT = LANG / "pc5.pot"
 
 # Each language's file, and the gettext code its header names (Poedit, Weblate and msgfmt read it).
 LANGUAGES = {
+    "ar": "ar",
     "cs": "cs", "da": "da", "de": "de", "el": "el", "es": "es", "es-419": "es_419", "fi": "fi", "fr": "fr",
     "fr-CA": "fr_CA", "hu": "hu", "id": "id", "it": "it", "ja": "ja", "ko": "ko", "nl": "nl", "no": "nb",
     "pl": "pl", "pt-BR": "pt_BR", "pt-PT": "pt_PT", "ro": "ro", "ru": "ru", "sv": "sv", "tr": "tr", "uk": "uk",
     "vi": "vi", "zh-Hans": "zh_Hans", "zh-Hant": "zh_Hant",
 }
 NAMES = {
+    "ar": "Arabic",
     "cs": "Czech", "da": "Danish", "de": "German", "el": "Greek", "es": "Spanish (Spain)",
     "es-419": "Spanish (Latin America)", "fi": "Finnish", "fr": "French (France)", "fr-CA": "French (Canada)",
     "hu": "Hungarian", "id": "Indonesian", "it": "Italian", "ja": "Japanese", "ko": "Korean", "nl": "Dutch",
@@ -196,7 +198,7 @@ def extract_c(path):
                     return [note]
         return []
 
-    for m in re.finditer(r"(?<![A-Za-z0-9_])(T|N_|pc5_tf)\s*\(", code):
+    for m in re.finditer(r"(?<![A-Za-z0-9_])(T|N_|NW_|pc5_tf)\s*\(", code):
         start = m.end() - 1
         try:
             args, _ = call_args(code, start)
@@ -220,7 +222,7 @@ def extract_c(path):
             if not msgid:
                 continue
             notes = translators(line) + hint_for(lines[line - 1], msgid)
-            found.append((None, msgid, f"{rel}:{line}", notes))
+            found.append(("web" if m.group(1) == "NW_" else None, msgid, f"{rel}:{line}", notes))
     return found
 
 
@@ -263,6 +265,7 @@ def collect():
     entries = {}   # (ctxt, id) -> [refs, notes]
     order = []
     sources = sorted((ROOT / "title").glob("pc5*.c")) + sorted((ROOT / "title").glob("pc5_ui_enhancements*.h"))
+    sources += [ROOT / "title" / "pc5_web_localize.h"]
     found = []
     for path in sources:
         found += extract_c(path)

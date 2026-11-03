@@ -40,6 +40,9 @@
 #include <unistd.h>
 
 enum { W = 1920, H = 1080, FLOOR_Y = 750, MARGIN = 72 };
+
+static int right_to_left(void) { return !strcmp(pc5_i18n_code(), "ar"); }
+
 /* Home's covers along the bottom, and the Games tab's grid. */
 enum { COVER_W = 200, COVER_H = 300, COVER_GAP = 18, ROW_TOP = 612, CHOSEN_W = 222, CHOSEN_H = 333, GRID_COLUMNS = 7 };
 
@@ -352,6 +355,7 @@ typedef struct BgJob {
     Pc5Image cover;                /* a copy of the cover's smallest picture */
     uint32_t *out;                 /* W x H, made there */
     int ok;
+    int rtl;                      /* layout snapshot, never read i18n state on the worker */
 } BgJob;
 
 /* The file manager's start: a place to open (Settings › File manager). */
@@ -925,7 +929,7 @@ static void load_art(Pc5Ui *ui, const char *fonts)
     }
 }
 
-static int background_prepare(const Pc5Image *small, uint32_t *out);
+static int background_prepare(const Pc5Image *small, uint32_t *out, int rtl);
 
 static void make_backdrop(Pc5Ui *ui)
 {
@@ -947,7 +951,7 @@ static void make_backdrop(Pc5Ui *ui)
         }
     }
     /* PC5's own picture behind a game without a background, shaded as one is. */
-    if (ui->art_hero.px && !background_prepare(&ui->art_hero, ui->composed)) {
+    if (ui->art_hero.px && !background_prepare(&ui->art_hero, ui->composed, right_to_left())) {
         ui->hero_backdrop = 1;
         ui->composed_ready = 1;
     }
@@ -1033,7 +1037,6 @@ Pc5Ui *pc5_ui_create(const Pc5UiConfig *config, const Pc5Platform *platform)
     if (pc5_fonts_load(&ui->fonts, config->fonts)) say(ui, "PC5 fonts missing: %s", config->fonts);
     load_art(ui, config->fonts);
     ui->hero_for = -1;
-    make_backdrop(ui);
     for (int k = 0; k < 3; k++) ui->glow[k] = ui->glow_target[k] = (float)((C_DEFAULT_TINT >> (16 - 8 * k)) & 255);
     ui->choice = -1;
     ui->queue_review = -1;
@@ -1041,6 +1044,7 @@ Pc5Ui *pc5_ui_create(const Pc5UiConfig *config, const Pc5Platform *platform)
     ui->dirty = 1;
     pc5_settings_load(ui->root, &ui->settings);
     language_apply(ui);
+    make_backdrop(ui);
     pc5_update_load(ui->root, &ui->update);
     return ui;
 }
@@ -1390,7 +1394,7 @@ static uint32_t from_hsv(float h, float s, float v, int alpha);
  * library: filling the screen, darker at the top where the clock is and at the sides; below
  * the floor, where the covers stand, its mirror image, stretched and blurred as on a wet
  * floor and darkening towards the hints. */
-static int background_prepare(const Pc5Image *small, uint32_t *out)
+static int background_prepare(const Pc5Image *small, uint32_t *out, int rtl)
 {
     /* its tables on the heap: it is made on a thread of its own as well */
     int *tables = pc5_alloc(sizeof(int) * (H + 4 * W));
@@ -1407,7 +1411,8 @@ static int background_prepare(const Pc5Image *small, uint32_t *out)
         vertical[y] = (int)(v * 256);
     }
     for (int x = 0; x < W; x++) {
-        float f = x < 1250 ? (float)x / 1250 : 1;
+        int edge = rtl ? W - 1 - x : x;
+        float f = edge < 1250 ? (float)edge / 1250 : 1;
         horizontal[x] = (int)((0.22f + 0.78f * f * f * (3 - 2 * f)) * 256);
     }
     for (int x = 0; x < W; x++) {
@@ -1441,7 +1446,7 @@ static int background_prepare(const Pc5Image *small, uint32_t *out)
 
 /* A backdrop for a game with no background of its own: its cover, filling the screen,
  * blurred to its colours, fuller and a little darker (then drawn as a background is). */
-static int cover_backdrop(const Pc5Image *cover, uint32_t *out)
+static int cover_backdrop(const Pc5Image *cover, uint32_t *out, int rtl)
 {
     Pc5Image wide = { 0 }, small = { 0 };
     int status;
@@ -1458,7 +1463,7 @@ static int cover_backdrop(const Pc5Image *cover, uint32_t *out)
         hsv_of(small.px[i], &h, &s, &v);
         small.px[i] = from_hsv(h, fminf(1, s * 1.5f), v * 0.8f, 255);
     }
-    status = background_prepare(&small, out);
+    status = background_prepare(&small, out, rtl);
     pc5_image_free(&small);
     return status;
 }
@@ -1472,9 +1477,9 @@ static void *bg_job_main(void *argument)
 
     if (job->path[0])
         job->ok = !pc5_cover_load(job->path, &small, NULL) && small.w == PC5_BACKGROUND_WIDTH &&
-                  small.h == PC5_BACKGROUND_HEIGHT && !background_prepare(&small, job->out);
+                  small.h == PC5_BACKGROUND_HEIGHT && !background_prepare(&small, job->out, job->rtl);
     else
-        job->ok = !cover_backdrop(&job->cover, job->out);
+        job->ok = !cover_backdrop(&job->cover, job->out, job->rtl);
     pc5_image_free(&small);
     atomic_store(&job->done, 1);
     return NULL;
@@ -1559,6 +1564,7 @@ static void background_follow(Pc5Ui *ui)
         pc5_copy(ui->bg_key, sizeof(ui->bg_key), ui->bg_want);   /* not again for it */
         return;
     }
+    job->rtl = right_to_left();
     pc5_copy(job->key, sizeof(job->key), ui->bg_want);
     pc5_copy(job->path, sizeof(job->path), from_file ? path : "");
     job->ok = 0;
@@ -1699,7 +1705,7 @@ static void none_preview(Pc5Ui *ui, const Pc5Game *game, Pc5Image *out)
     if (index < 0) return;
     if (!ui->covers[index].state) cover_load(ui, index);
     if (!ui->covers[index].state || !ui->covers[index].picture.levels || !(screen = pc5_alloc((size_t)W * H * 4))) return;
-    if (!cover_backdrop(&ui->covers[index].picture.level[ui->covers[index].picture.levels - 1], screen)) {
+    if (!cover_backdrop(&ui->covers[index].picture.level[ui->covers[index].picture.levels - 1], screen, 0)) {
         Pc5Image full = { .px = screen, .w = W, .h = H };
         pc5_image_resize(&full, PC5_BACKGROUND_WIDTH, PC5_BACKGROUND_HEIGHT, out);
     }
@@ -2361,7 +2367,16 @@ static void language_apply(Pc5Ui *ui)
     pc5_copy(dir, sizeof(dir), ui->config.fonts ? ui->config.fonts : "");
     if ((slash = strrchr(dir, '/'))) *slash = 0;
     else pc5_copy(dir, sizeof(dir), ".");
+    int was_rtl = right_to_left();
     int strings = pc5_format(path, sizeof(path), "%s/lang", dir) ? -1 : pc5_i18n_use(path, code, language_log, ui);
+    if (was_rtl != right_to_left()) {
+        ui->bg_id[0] = ui->bg_key[0] = ui->bg_want[0] = 0;
+        pc5_copy(ui->bg_job.key, sizeof(ui->bg_job.key), "layout-stale");
+        ui->bg_has = ui->bg_old_has = 0;
+        ui->hero_for = -1;
+        if (ui->composed && ui->art_hero.px)
+            (void)background_prepare(&ui->art_hero, ui->composed, right_to_left());
+    }
     int font = 0;
     if (!language->cjk) pc5_fonts_extra(&ui->fonts, NULL);
     else if (pc5_format(path, sizeof(path), "%s/fonts-%s.bin", dir, code) || (font = pc5_fonts_extra(&ui->fonts, path)))
@@ -3254,6 +3269,7 @@ static void compatibility_open(Pc5Ui *ui)
 
 static void tab_move(Pc5Ui *ui, int by)
 {
+    if (right_to_left()) by = -by;
     int shown = ui->screen == S_SETTINGS ? (ui->tab == TAB_INSTALL ? TAB_INSTALL : TAB_SETTINGS) : ui->tab;
     int next = (shown + by + TABS) % TABS;
     ui->tab = next;
@@ -3589,6 +3605,7 @@ static void video_follow(Pc5Ui *ui)
             ui->video_want[0] = 0;
         }
     }
+    pc5_video_layout(&ui->video, right_to_left());
     if (pc5_video_poll(&ui->video)) ui->dirty = 1;
     if (ui->video.running && ui->now - ui->video_report_at >= 5000) {
         unsigned shown = atomic_load(&ui->video.shown);
@@ -4536,6 +4553,18 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
     ui->last_frame = now_ms;
     ui->now = now_ms;
     k = keys(ui, input);
+    if (right_to_left()) {
+        uint32_t lr = k & (PC5_KEY_LEFT | PC5_KEY_RIGHT);
+        k = (k & ~(uint32_t)(PC5_KEY_LEFT | PC5_KEY_RIGHT)) |
+            (lr & PC5_KEY_LEFT ? PC5_KEY_RIGHT : 0) | (lr & PC5_KEY_RIGHT ? PC5_KEY_LEFT : 0);
+        /* L2/R2 are spatial filters/pages on Home/Library only. Their
+         * Search/Clear shortcuts on Compatibility keep their physical keys. */
+        if (ui->screen == S_LIBRARY) {
+            uint32_t pages = k & (PC5_KEY_L2 | PC5_KEY_R2);
+            k = (k & ~(uint32_t)(PC5_KEY_L2 | PC5_KEY_R2)) |
+                (pages & PC5_KEY_L2 ? PC5_KEY_R2 : 0) | (pages & PC5_KEY_R2 ? PC5_KEY_L2 : 0);
+        }
+    }
     /* While the logo shows as PC5 opens, the buttons do nothing: a ✕ pressed then would start
      * the game under it before the library is even seen. */
     if (ui->config.boot && !ui->boot_at) ui->boot_at = now_ms ? now_ms : 1;
@@ -6054,6 +6083,9 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
 
 /* ---- drawing: pieces ------------------------------------------------------------------------- */
 
+#include "pc5_bidi.h"
+#include "pc5_ui_rtl_draw.h"
+
 typedef enum Glyph { G_CROSS, G_CIRCLE, G_SQUARE, G_TRIANGLE, G_OPTIONS, G_L1, G_R1, G_L1R1, G_R3, G_L2R2, G_L2, G_R2,
                      G_OPTIONS_PAD, G_UP_PAD } Glyph;
 
@@ -6086,8 +6118,8 @@ static int button_glyph(Pc5Ui *ui, Pc5Canvas *c, Glyph glyph, int x, int y)
         return w;
     }
     if (glyph == G_L1R1) {
-        int w1 = button_glyph(ui, c, G_L1, x, y);
-        return w1 + 8 + button_glyph(ui, c, G_R1, x + w1 + 8, y);
+        int w1 = button_glyph(ui, c, right_to_left() ? G_R1 : G_L1, x, y);
+        return w1 + 8 + button_glyph(ui, c, right_to_left() ? G_L1 : G_R1, x + w1 + 8, y);
     }
     /* a white button with its symbol dark on it */
     const uint32_t ink = 0xff15171cu;
@@ -6167,8 +6199,7 @@ static void panel(Pc5Canvas *c, float x, float y, float w, float h)
 
 static void wordmark(Pc5Ui *ui, Pc5Canvas *c, int x, int y)
 {
-    int w = pc5_text(c, &ui->fonts, PC5_FACE_HEAD, x, y, C_TEXT, "PC", 0, 0);
-    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, x + w + 1, y, C_ACCENT, "5", 0, 0);
+    (void)rtl_wordmark(c, &ui->fonts, PC5_FACE_HEAD, x, y, C_TEXT, C_ACCENT);
 }
 
 static void progress_bar(Pc5Canvas *c, float x, float y, float w, double fraction, uint32_t color)
@@ -6322,6 +6353,14 @@ static int spaced_caps(Pc5Ui *ui, Pc5Canvas *c, Pc5Face face, int x, int y, uint
     int width = 0, count = 0;
 
     pc5_upper(text, caps, sizeof(caps));
+    char visual[PC5_BIDI_BYTES];
+    int arabic = 0;
+    (void)pc5_bidi_visual(caps, strlen(caps), visual, sizeof(visual), &arabic);
+    if (arabic) {
+        width = pc5_text_width(&ui->fonts, face, caps);
+        if (draw) pc5_text(c, &ui->fonts, face, x, y, color, caps, 0, 1);
+        return width;
+    }
     for (size_t at = 0; caps[at];) {
         size_t len = 1;
         while (len < 4 && caps[at + len] && ((unsigned char)caps[at + len] & 0xc0) == 0x80) len++;
@@ -6331,13 +6370,13 @@ static int spaced_caps(Pc5Ui *ui, Pc5Canvas *c, Pc5Face face, int x, int y, uint
         at += len;
     }
     if (!draw) return width;
-    int px = x - width / 2;
+    int px = (int)rtl_point(c, (float)x) - width / 2;
     for (size_t at = 0; caps[at];) {
         size_t len = 1;
         while (len < 4 && caps[at + len] && ((unsigned char)caps[at + len] & 0xc0) == 0x80) len++;
         memcpy(one, caps + at, len);
         one[len] = 0;
-        px += pc5_text(c, &ui->fonts, face, px, y, color, one, 0, 0) + spacing;
+        px += (pc5_text)(c, &ui->fonts, face, px, y, color, one, 0, 0) + spacing;
         at += len;
     }
     return width;
@@ -6395,8 +6434,7 @@ static void top_bar(Pc5Ui *ui, Pc5Canvas *c)
         pc5_draw_image(c, &ui->art_logo, MARGIN - 6, 49, w, h, 256);
         x = MARGIN - 6 + (int)w + 30;
     } else {
-        int w = pc5_text(c, &ui->fonts, PC5_FACE_HEAD, MARGIN, 86, C_TEXT, "PC", 0, 0);
-        x = MARGIN + w + 1 + pc5_text(c, &ui->fonts, PC5_FACE_HEAD, MARGIN + w + 1, 86, C_ACCENT, "5", 0, 0) + 34;
+        x = MARGIN + rtl_wordmark(c, &ui->fonts, PC5_FACE_HEAD, MARGIN, 86, C_TEXT, C_ACCENT) + 34;
     }
     pc5_line(c, x, 46, x, 96, 1.5f, 0x55ffffffu);
     x += 36;
@@ -6533,7 +6571,7 @@ static void hero(Pc5Ui *ui, Pc5Canvas *c)
     float tx = MARGIN + 62, ty = by + 36;
     for (int row = -12; row <= 12; row++) {
         float half = 12 - fabsf((float)row);
-        pc5_line(c, tx - 10, ty + row, tx - 10 + 20 * (1 - fabsf((float)row) / 12), ty + row, 1.2f, 0xff111318u);
+        (pc5_line)(c, rtl_point(c, tx) - 10, ty + row, rtl_point(c, tx) - 10 + 20 * (1 - fabsf((float)row) / 12), ty + row, 1.2f, 0xff111318u);
         (void)half;
     }
     pc5_text(c, &ui->fonts, PC5_FACE_LABEL, MARGIN + 100, by + 46, 0xff111318u, T("Play Game"), 0, 0);
@@ -7436,10 +7474,17 @@ static void list_panel(Pc5Ui *ui, Pc5Canvas *c, const char *title, int count, Ro
 {
     float w = 1180, h = 880, x = (W - w) / 2, y = (H - h) / 2;
     int visible = (int)((h - 230) / row_h);
+    char more[48] = "";
+    int title_width = (int)w - 128;
+    if (count > visible) {
+        pc5_tf(more, sizeof(more), "%d of %d", ui->menu + 1, count);
+        if (!strcmp(pc5_i18n_code(), "ar"))
+            title_width -= pc5_text_width(&ui->fonts, PC5_FACE_SMALL, more) + 32;
+    }
 
     dim(c, 150);
     panel(c, x, y, w, h);
-    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 64, (int)y + 100, C_TEXT, title, (int)w - 128, 0);
+    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 64, (int)y + 100, C_TEXT, title, title_width, 0);
     if (!count) {
         pc5_text(c, &ui->fonts, PC5_FACE_LABEL, (int)x + 64, (int)y + 220, C_TEXT, empty_title, (int)w - 128, 0);
         pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)x + 64, (int)y + 272, (int)w - 128, 4, 42, C_DIM, empty_body, 0);
@@ -7455,8 +7500,6 @@ static void list_panel(Pc5Ui *ui, Pc5Canvas *c, const char *title, int count, Ro
             row(ui, c, i, x + 64, ry, w - 128, i == ui->menu);
         }
         if (count > visible) {
-            char more[48];
-            pc5_tf(more, sizeof(more), "%d of %d", ui->menu + 1, count);
             pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)(x + w - 64), (int)y + 100, C_FAINT, more, 0, 2);
         }
     }
@@ -7856,6 +7899,7 @@ static int qr_draw(Pc5Canvas *c, const Pc5Qr *qr, int x, int y, int box)
     if (!qr->size) return 0;
     int modules = qr->size + 8, scale = box / modules, side = modules * scale;
     if (scale < 1) return 0;
+    x = (int)rtl_box(c, (float)x, (float)box);
     x += (box - side) / 2;
     y += (box - side) / 2;
     fill(c, x, y, side, side, 0xffffffffu);
@@ -8028,8 +8072,7 @@ static void start_screen(Pc5Ui *ui, Pc5Canvas *c, const char *line, int can_skip
     pc5_clear(c, 0xff07080au);
     int w = pc5_text_width(&ui->fonts, PC5_FACE_TITLE, "PC5");
     int x = 960 - w / 2;
-    int pw = pc5_text(c, &ui->fonts, PC5_FACE_TITLE, x, 500, C_TEXT, "PC", 0, 0);
-    pc5_text(c, &ui->fonts, PC5_FACE_TITLE, x + pw + 1, 500, C_ACCENT, "5", 0, 0);
+    (void)rtl_wordmark(c, &ui->fonts, PC5_FACE_TITLE, x, 500, C_TEXT, C_ACCENT);
     spinner(c, 960, 600, 22, ui->now, C_DIM);
     if (line) pc5_text(c, &ui->fonts, PC5_FACE_BODY, 960, 690, C_DIM, line, 1400, 1);
     if (can_skip) {
@@ -8265,8 +8308,9 @@ static void edit_row(Pc5Ui *ui, Pc5Canvas *c, int i, float x, float y, float w, 
     while (n && n < len && ((unsigned char)text[n] & 0xc0) == 0x80) n--;
     text[n] = 0;
     snprintf(number, sizeof(number), "%d", i + 1);
-    pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 72, (int)y + 34, C_FAINT, number, 0, 2);
-    pc5_text(c, &ui->fonts, PC5_FACE_BODY, (int)x + 96, (int)y + 34, C_TEXT, text, (int)w - 96, 0);
+    if (right_to_left()) x = rtl_box(c, x, w);
+    (pc5_text)(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 72, (int)y + 34, C_FAINT, number, 0, 2);
+    (pc5_text)(c, &ui->fonts, PC5_FACE_BODY, (int)x + 96, (int)y + 34, C_TEXT, text, (int)w - 96, right_to_left() ? 3 : 0);
 }
 
 static void files_edit_screen(Pc5Ui *ui, Pc5Canvas *c)
@@ -8784,6 +8828,20 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
     boot_overlay(ui, c);
     ui->drawn = 1;
 }
+
+#undef pc5_round_rect
+#undef pc5_round_frame
+#undef pc5_round_frame_graded
+#undef pc5_circle
+#undef pc5_ring
+#undef pc5_line
+#undef pc5_arc
+#undef pc5_shadow
+#undef pc5_draw_image
+#undef pc5_draw_cover
+#undef pc5_draw_card
+#undef pc5_text
+#undef pc5_text_wrap
 
 /* ---- cards ------------------------------------------------------------------------------------ */
 

@@ -138,11 +138,14 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef PC5_WEB_SERVE
+#include "pc5_i18n.h"
 int main(int argc, char **argv)
 {
     char error[PC5_ERROR];
     if (argc != 4 && argc != 6) return 2;
     signal(SIGPIPE, SIG_IGN);
+    const char *language_dir = getenv("PC5_TEST_LANG_DIR");
+    if (language_dir) pc5_i18n_use(language_dir, "ar", NULL, NULL);
     pc5_web_host_init();
     if (argc == 6) pc5_web_login(argv[4], argv[5]);
     Pc5WebConfig config = { argv[1], argv[2] };

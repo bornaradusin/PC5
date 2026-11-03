@@ -3,6 +3,7 @@
 #include "pc5_matrix.h"
 #include "pc5_cover.h"
 #include "pc5_i18n.h"
+#include "pc5_bidi.h"
 #include "pc5_image.h"
 #include "pc5_loading_art.h"
 
@@ -178,6 +179,12 @@ static size_t char_len(const char *text)
 /* text a character at a time with room between them, ending at right. */
 static void spaced(Pc5Canvas *c, const Pc5Fonts *fonts, int right, int y, uint32_t color, const char *text)
 {
+    char visual[PC5_BIDI_BYTES];
+    if (pc5_bidi_visual(text, strlen(text), visual, sizeof(visual), NULL) >= 0) {
+        /* Letter spacing breaks Arabic joining; measure and draw the complete line. */
+        pc5_text(c, fonts, PC5_FACE_SMALL, right, y, color, text, 0, 2);
+        return;
+    }
     char one[8];
     int width = 0, count = 0;
     for (const char *p = text; *p; p += char_len(p)) {

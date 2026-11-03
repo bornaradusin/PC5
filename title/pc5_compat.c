@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 #include "pc5_compat.h"
+#include "pc5_i18n.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -7,8 +8,8 @@
 #include <unistd.h>
 
 static const char *const statuses[] = {
-    "Unknown", "Works perfectly", "Playable with issues", "Fix out, needs testing",
-    "Being looked at", "Needs testing", "Copy needs its store's app", "Unresolved: doesn't run"
+    N_("Unknown"), N_("Works perfectly"), N_("Playable with issues"), N_("Fix out, needs testing"),
+    N_("Being looked at"), N_("Needs testing"), N_("Copy needs its store's app"), N_("Unresolved: doesn't run")
 };
 const char *pc5_compat_status(int status) { return statuses[status >= 0 && status < 8 ? status : 0]; }
 
@@ -160,7 +161,7 @@ static void *compat_worker(void *context)
     if (!l->http.get || l->http.get(l->http.context,
         "https://raw.githubusercontent.com/wiki/bornaradusin/PC5/Game-compatibility.md",
         &b, PC5_COMPAT_LIMIT, &status) || status != 200) {
-        pc5_copy(l->error, sizeof(l->error), "Couldn't refresh. Showing the last saved list.");
+        pc5_copy(l->error, sizeof(l->error), N_("Couldn't refresh. Showing the last saved list."));
     } else {
         l->incoming_count = pc5_compat_parse((const char *)b.data, b.len, &l->incoming);
         if (l->incoming_count > 0) {
@@ -172,8 +173,8 @@ static void *compat_worker(void *context)
             pc5_buf_free(&saved);
             l->result = 0;
             if (!same && pc5_write_file(l->cache, b.data, b.len))
-                pc5_copy(l->error, sizeof(l->error), "Updated, but the offline copy couldn't be saved.");
-        } else pc5_copy(l->error, sizeof(l->error), "The source format changed. Your saved list was kept.");
+                pc5_copy(l->error, sizeof(l->error), N_("Updated, but the offline copy couldn't be saved."));
+        } else pc5_copy(l->error, sizeof(l->error), N_("The source format changed. Your saved list was kept."));
     }
     pc5_buf_free(&b); atomic_store(&l->done, 1); return NULL;
 }

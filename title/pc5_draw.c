@@ -667,8 +667,10 @@ static const Pc5Glyph *glyph(const Pc5Fonts *fonts, Pc5Face face, uint32_t codep
     return codepoint != '?' ? find_glyph(fonts, face, '?') : NULL;
 }
 
-/* Width in 64ths of a pixel of text's first `bytes` bytes. */
-static int width_64(const Pc5Fonts *fonts, Pc5Face face, const char *text, size_t bytes)
+#include "pc5_bidi.h"
+
+/* Width in 64ths of a pixel of an already visual run. */
+static int raw_width_64(const Pc5Fonts *fonts, Pc5Face face, const char *text, size_t bytes)
 {
     const char *end = text + bytes;
     int width = 0;
@@ -681,12 +683,19 @@ static int width_64(const Pc5Fonts *fonts, Pc5Face face, const char *text, size_
     return width;
 }
 
+static int width_64(const Pc5Fonts *fonts, Pc5Face face, const char *text, size_t bytes)
+{
+    char visual[PC5_BIDI_BYTES];
+    int length = pc5_bidi_visual(text, bytes, visual, sizeof(visual), NULL);
+    return length >= 0 ? raw_width_64(fonts, face, visual, (size_t)length) : raw_width_64(fonts, face, text, bytes);
+}
+
 int pc5_text_width(const Pc5Fonts *fonts, Pc5Face face, const char *text)
 {
     return (width_64(fonts, face, text, strlen(text)) + 63) / 64;
 }
 
-static void draw_run(Pc5Canvas *c, const Pc5Fonts *fonts, Pc5Face face, int x, int y, uint32_t color, const char *text,
+static void raw_draw_run(Pc5Canvas *c, const Pc5Fonts *fonts, Pc5Face face, int x, int y, uint32_t color, const char *text,
                      size_t bytes)
 {
     const char *end = text + bytes;
@@ -712,6 +721,14 @@ static void draw_run(Pc5Canvas *c, const Pc5Fonts *fonts, Pc5Face face, int x, i
     }
 }
 
+static void draw_run(Pc5Canvas *c, const Pc5Fonts *fonts, Pc5Face face, int x, int y, uint32_t color, const char *text, size_t bytes)
+{
+    char visual[PC5_BIDI_BYTES];
+    int length = pc5_bidi_visual(text, bytes, visual, sizeof(visual), NULL);
+    if (length >= 0) raw_draw_run(c, fonts, face, x, y, color, visual, (size_t)length);
+    else raw_draw_run(c, fonts, face, x, y, color, text, bytes);
+}
+
 int pc5_text_cuts;
 
 int pc5_text(Pc5Canvas *c, const Pc5Fonts *fonts, Pc5Face face, int x, int y, uint32_t color, const char *text,
@@ -720,6 +737,9 @@ int pc5_text(Pc5Canvas *c, const Pc5Fonts *fonts, Pc5Face face, int x, int y, ui
     static const char ellipsis[] = "\xe2\x80\xa6";
     size_t bytes = strlen(text);
     int width = (width_64(fonts, face, text, bytes) + 63) / 64, cut = 0;
+    char visual[PC5_BIDI_BYTES];
+    int rtl = 0;
+    (void)pc5_bidi_visual(text, bytes, visual, sizeof(visual), &rtl);
 
     if (!fonts->atlas) return 0;
     if (max_width > 0 && width > max_width) {
@@ -735,8 +755,10 @@ int pc5_text(Pc5Canvas *c, const Pc5Fonts *fonts, Pc5Face face, int x, int y, ui
     }
     if (align == 1) x -= width / 2;
     else if (align == 2) x -= width;
-    draw_run(c, fonts, face, x, y, color, text, bytes);
-    if (cut) draw_run(c, fonts, face, x + (width_64(fonts, face, text, bytes) + 32) / 64, y, color, ellipsis, 3);
+    else if (align == 0 && rtl && max_width > 0) x += max_width - width;
+    int prefix = cut && rtl ? (width_64(fonts, face, ellipsis, 3) + 63) / 64 : 0;
+    draw_run(c, fonts, face, x + prefix, y, color, text, bytes);
+    if (cut) draw_run(c, fonts, face, rtl ? x : x + (width_64(fonts, face, text, bytes) + 32) / 64, y, color, ellipsis, 3);
     return width;
 }
 
@@ -805,17 +827,19 @@ int pc5_text_wrap(Pc5Canvas *c, const Pc5Fonts *fonts, Pc5Face face, int x, int 
     int lines = 0;
 
     while (*text && lines < max_lines) {
-        size_t length = strlen(text);
+        size_t length = strcspn(text, "\n");
         while (*text == ' ') { text++; length--; }
         size_t fit = line_fit(fonts, face, text, length, max_width);
         char line[512];
         size_t n = fit < sizeof(line) - 1 ? fit : sizeof(line) - 1;
         if (lines + 1 == max_lines && fit < length) n = length < sizeof(line) - 1 ? length : sizeof(line) - 1;
+        while (n && ((unsigned char)text[n] & 0xc0) == 0x80) --n;
         memcpy(line, text, n);
         line[n] = 0;
         int lx = align == 1 ? x + max_width / 2 : x;
         pc5_text(c, fonts, face, lx, y + lines * line_height, color, line, max_width, align);
         text += fit;
+        if (*text == '\n') ++text;
         lines++;
     }
     return lines;
@@ -829,7 +853,8 @@ int pc5_text_lines(const Pc5Fonts *fonts, Pc5Face face, int max_width, const cha
     while (*text) {
         while (*text == ' ') text++;
         if (!*text) break;
-        text += line_fit(fonts, face, text, strlen(text), max_width);
+        text += line_fit(fonts, face, text, strcspn(text, "\n"), max_width);
+        if (*text == '\n') ++text;
         lines++;
     }
     return lines;

@@ -104,9 +104,9 @@ static int phone_alive(const char *token)
 static void phone_answer(Conn *c, const char *rest)
 {
     char token[33], path[PC5_PATH], part[PC5_PATH + 16], game[PC5_NAME];
-    if (strlen(rest) < 32 || (rest[32] && rest[32] != '/')) { respond_text(c, 404, "Expired link"); return; }
+    if (strlen(rest) < 32 || (rest[32] && rest[32] != '/')) { phone_reply(c, 404, "Expired link"); return; }
     memcpy(token, rest, 32); token[32] = 0;
-    if (!phone_alive(token)) { respond_text(c, 404, "Expired link. Open a new QR code on PC5."); return; }
+    if (!phone_alive(token)) { phone_reply(c, 404, "Expired link. Open a new QR code on PC5."); return; }
     pthread_mutex_lock(&web.lock);
     int kind = phone.kind;
     pc5_copy(game, sizeof(game), phone.game);
@@ -129,23 +129,23 @@ static void phone_answer(Conn *c, const char *rest)
             if (title.data[i] == '<') pc5_buf_puts(&b, "\\u003c");
             else pc5_buf_put(&b, title.data + i, 1);
         }
-        pc5_buf_puts(&b, ";let xhr;const f=document.getElementById('file'),s=document.getElementById('status'),b=document.getElementById('send'),c=document.getElementById('cancel');b.onclick=()=>{const v=f.files[0];if(!v)return;s.textContent='Uploading…';b.disabled=true;c.disabled=false;xhr=new XMLHttpRequest();xhr.open('PUT',location.pathname+'/upload'+v.name.slice(v.name.lastIndexOf('.')));xhr.upload.onprogress=e=>{if(e.lengthComputable)document.getElementById('progress').value=e.loaded/e.total*100};const done=t=>{s.textContent=t;b.disabled=false;c.disabled=true};xhr.onload=()=>{done(xhr.status===201?'Received. PC5 is validating/importing. Check the TV for the final result.':xhr.responseText);if(xhr.status===201)b.disabled=true};xhr.onerror=()=>done('Connection failed. Check the network and QR screen.');xhr.onabort=()=>done('Cancelled. Your previous selection was kept.');xhr.send(v)};c.onclick=()=>xhr&&xhr.abort();</script></html>");
-        if (b.data) respond(c, 200, "text/html; charset=utf-8", b.data, b.len);
-        else respond_text(c, 500, "Out of memory");
+        pc5_buf_puts(&b, ";let xhr;const f=document.getElementById('file'),s=document.getElementById('status'),b=document.getElementById('send'),c=document.getElementById('cancel');b.onclick=()=>{const v=f.files[0];if(!v)return;s.textContent=t('Uploading…');b.disabled=true;c.disabled=false;xhr=new XMLHttpRequest();xhr.open('PUT',location.pathname+'/upload'+v.name.slice(v.name.lastIndexOf('.')));xhr.upload.onprogress=e=>{if(e.lengthComputable)document.getElementById('progress').value=e.loaded/e.total*100};const done=t=>{s.textContent=t;b.disabled=false;c.disabled=true};xhr.onload=()=>{done(xhr.status===201?t('Received. PC5 is validating/importing. Check the TV for the final result.'):xhr.responseText);if(xhr.status===201)b.disabled=true};xhr.onerror=()=>done(t('Connection failed. Check the network and QR screen.'));xhr.onabort=()=>done(t('Cancelled. Your previous selection was kept.'));xhr.send(v)};c.onclick=()=>xhr&&xhr.abort();</script></html>");
+        if (b.data) phone_respond_page(c, (const char *)b.data, b.len);
+        else phone_reply(c, 500, "Out of memory");
         pc5_buf_free(&title); pc5_buf_free(&b);
         return;
     }
-    if (strncmp(rest + 32, "/upload.", 8) || strcmp(c->method, "PUT")) { respond_text(c, 405, "Choose one file on the upload page"); return; }
+    if (strncmp(rest + 32, "/upload.", 8) || strcmp(c->method, "PUT")) { phone_reply(c, 405, "Choose one file on the upload page"); return; }
     const char *ext = phone_extension(kind, rest + 33);
     uint64_t max = kind == PC5_PHONE_VIDEO ? 1024ull * 1024 * 1024 : kind == PC5_PHONE_MUSIC ? 512ull * 1024 * 1024 : 20ull * 1024 * 1024;
-    if (!ext) { respond_text(c, 400, "Unsupported extension for this option"); return; }
-    if (!c->length || c->length == UINT64_MAX || c->length > max) { respond_text(c, 413, "File is empty or exceeds the upload limit"); return; }
-    if (pc5_format(path, sizeof(path), "%s/.phone/%s%s", web.root, token, ext) || pc5_format(part, sizeof(part), "%s.part", path)) { respond_text(c, 500, "Path too long"); return; }
+    if (!ext) { phone_reply(c, 400, "Unsupported extension for this option"); return; }
+    if (!c->length || c->length == UINT64_MAX || c->length > max) { phone_reply(c, 413, "File is empty or exceeds the upload limit"); return; }
+    if (pc5_format(path, sizeof(path), "%s/.phone/%s%s", web.root, token, ext) || pc5_format(part, sizeof(part), "%s.part", path)) { phone_reply(c, 500, "Path too long"); return; }
     pthread_mutex_lock(&web.lock);
     int allowed = phone.active && !strcmp(token, phone.token) && !phone.busy && !phone.ready;
     if (allowed) { phone.busy = 1; phone.received = 0; phone.total = c->length; }
     pthread_mutex_unlock(&web.lock);
-    if (!allowed) { respond_text(c, 409, "An upload is already in progress or has been received"); return; }
+    if (!allowed) { phone_reply(c, 409, "An upload is already in progress or has been received"); return; }
     pc5_copy(c->phone_token, sizeof(c->phone_token), token);
     FILE *file = fopen(part, "wb");
     int failed = !file;
@@ -173,5 +173,5 @@ static void phone_answer(Conn *c, const char *rest)
     pthread_mutex_unlock(&web.lock);
     if (!kept) unlink(part);
     count(&web.transfers, -1);
-    respond_text(c, kept ? 201 : 400, kept ? "Received; check PC5 for validation" : "Upload incomplete or cancelled; previous selection kept");
+    phone_reply(c, kept ? 201 : 400, kept ? "Received; check PC5 for validation" : "Upload incomplete or cancelled; previous selection kept");
 }

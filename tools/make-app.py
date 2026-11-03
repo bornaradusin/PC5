@@ -273,6 +273,9 @@ Built from <https://github.com/bornaradusin/PC5> at commit {repo_commit}:
   letters that text uses, drawn from Droid Sans Fallback and, for Korean, Noto Sans KR 2.004
   (<https://github.com/notofonts/noto-cjk>, SIL Open Font License 1.1,
   `LICENSES/noto-sans-kr/LICENSE`).
+- PC5 Arabic text uses Noto Naskh Arabic (SIL Open Font License 1.1,
+  `LICENSES/noto-naskh-arabic/LICENSE`) and FriBidi 1.0.18 (LGPL 2.1 or later,
+  `LICENSES/fribidi/COPYING`); their sources are in the PC5 source bundle.
 - `pc5/steam`: gbe_fork's Steamworks emulator (<https://github.com/Detanup01/gbe_fork>, LGPL
   3.0, `LICENSES/gbe_fork/LICENSE`), its release build's `steam_api.dll` and
   `steam_api64.dll`, unchanged. PC5 puts one in place of Valve's library in a game that has

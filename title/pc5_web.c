@@ -960,6 +960,7 @@ static void upload(Conn *c, const char *relative)
     else if (!failed) respond_text(c, 500, write_failed ? "The console couldn't write it (is it full?)" : "Couldn't keep it");
 }
 
+#include "pc5_web_localize.h"
 #include "pc5_web_phone.h"
 #include "pc5_web_library.h"
 

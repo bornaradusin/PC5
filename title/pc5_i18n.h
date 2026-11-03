@@ -66,7 +66,7 @@ const Pc5Language *pc5_language(int index);
 int pc5_language_find(const char *code);
 /* The console's language (sceSystemServiceParamGetInt's SCE_SYSTEM_SERVICE_PARAM_ID_LANG, as
  * the PS4 and PS5 SDKs number them) as one of PC5's codes: "en" for English (US and UK) and for
- * the languages PC5 has no file for yet (Arabic, Thai), NULL for a number it doesn't know. */
+ * the languages PC5 has no file for yet (Thai), NULL for a number it doesn't know. */
 const char *pc5_language_of_console(int ps5_language);
 /* The layout a USB keyboard types in a game (Wine patch 0992's WINE_PS5_KEYBOARD: "us", "fr",
  * "gb", ...): that of PC5's language (setting: Settings › System › Language, "" or "system" for

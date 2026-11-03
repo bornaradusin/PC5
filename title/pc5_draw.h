@@ -47,7 +47,8 @@ int pc5_text_width(const Pc5Fonts *fonts, Pc5Face face, const char *text);
 /* How many times pc5_text has cut a text short (with "…"): the tests check menus have none. */
 extern int pc5_text_cuts;
 /* Draws text with its baseline at y, cut with "…" to max_width (0: no
- * limit). align: 0 left of x, 1 centred on x, 2 right of x. Returns the
+ * limit). align: 0 language-aware left box, 1 centred on x, 2 right of x,
+ * 3 fixed left edge (for mirrored layout values). Returns the
  * width drawn. */
 int pc5_text(Pc5Canvas *c, const Pc5Fonts *fonts, Pc5Face face, int x, int y, uint32_t color, const char *text,
              int max_width, int align);

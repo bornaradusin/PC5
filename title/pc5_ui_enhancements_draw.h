@@ -3,8 +3,7 @@ static uint32_t compatibility_color(int status)
 {
     return status == 1 ? 0xff46d99au : status == 2 ? C_WARN : status == 7 ? C_BAD : C_ACCENT;
 }
-/* pc5_text_wrap treats a newline as a glyph. Reports need real paragraph
- * breaks and a scroll measured in visible lines, without changing other UI. */
+/* Reports have a scroll measured in visible lines and explicit paragraph breaks. */
 static int compatibility_body(Pc5Ui *ui, Pc5Canvas *c, const char *text, int skip)
 {
     char line[2048]; size_t length = 0; int row = 0;
@@ -43,7 +42,7 @@ static void compatibility_screen(Pc5Ui *ui, Pc5Canvas *c)
     dim(c, 210);
     top_bar(ui, c); /* This is now a tab: keep its navigation fully readable. */
     panel(c, 48, 120, 1824, 850);
-    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, 90, 182, C_TEXT, T("Game compatibility"), 1600, 0);
+    pc5_text(c, &ui->fonts, PC5_FACE_HEAD, 90, 182, C_TEXT, T("Game compatibility"), 800, 0);
     pc5_round_rect(c, 1010, 140, 480, 56, 14, C_ROW);
     pc5_round_frame(c, 1010, 140, 480, 56, 14, 2, C_ACCENT);
     Hint share[] = { { G_OPTIONS_PAD, T("Share your experience") } };
@@ -94,7 +93,7 @@ static void compatibility_screen(Pc5Ui *ui, Pc5Canvas *c)
         char date[64], stamp[128];
         snprintf(date, sizeof(date), "%04d-%02d-%02d %02d:%02d UTC", year, month, day, (int)(checked % 86400 / 3600), (int)(checked % 3600 / 60));
         snprintf(stamp, sizeof(stamp), "%s: %s", T("Last checked"), date);
-        pc5_text(c, &ui->fonts, PC5_FACE_SMALL, 90, 914, C_DIM, stamp, 1700, 0);
+        pc5_text(c, &ui->fonts, PC5_FACE_SMALL, 90, 914, C_DIM, stamp, 1000, 0);
     }
     pc5_text(c, &ui->fonts, PC5_FACE_SMALL, 90, 950, C_DIM, T("Community reports: results depend on the game build, settings and PC5 version."), 1700, 0);
     if (!ui->compat_detail)
@@ -107,7 +106,7 @@ static void compatibility_screen(Pc5Ui *ui, Pc5Canvas *c)
         dim(c, 225); panel(c, 160, 150, 1600, 790);
         pc5_text(c, &ui->fonts, PC5_FACE_HEAD, 220, 220, C_TEXT, e->title, 1470, 0);
         Pc5Buf b = { 0 };
-        pc5_buf_printf(&b, "%s\nPC5: %s\n%s: %s\n%s: %s\n\n%s\n%s\n\n%s\n%s\n\n%s",
+        pc5_buf_printf(&b, "%s\nPC5: %s\n%s: \xe2\x81\xa8%s\xe2\x81\xa9\n%s: \xe2\x81\xa8%s\xe2\x81\xa9\n\n%s\n%s\n\n%s\n%s\n\n%s",
             T(pc5_compat_status(e->status)), e->version, T("Store and version"), e->store, T("Controller"), e->controller,
             T("Settings that helped"), e->settings, T("Notes"), e->notes, e->author);
         pc5_buf_terminate(&b);
