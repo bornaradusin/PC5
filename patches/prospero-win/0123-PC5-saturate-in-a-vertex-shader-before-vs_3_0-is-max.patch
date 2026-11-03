@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Tue, 3 Nov 2026 13:00:00 +0000
+Subject: [PATCH 123/123] PC5: saturate in a vertex shader before vs_3_0 is max and min
+ (Wine patch 0952)
+
+Far Cry's own d3dx9 assembler refused the mov_sat vkd3d-shader wrote in a vs_2_0 listing, and drew the sun's glow without its shader.
+---
+ PUBLICATION_ALLOWLIST.txt                     |  1 +
+ docs/WINE_PS5_BUILD.md                        |  1 +
+ ...ate-in-a-vertex-shader-before-vs-3-0.patch | 70 +++++++++++++++++++
+ 3 files changed, 72 insertions(+)
+ create mode 100644 wine/patches/0952-vkd3d-shader-saturate-in-a-vertex-shader-before-vs-3-0.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index 84d5f17..06bc816 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -617,6 +617,7 @@ wine/patches/0947-win32u-a-virtual-desktop-offers-the-display-s-rate.patch
+ wine/patches/0948-ntdll-ps5-gather-small-writes.patch
+ wine/patches/0949-mmdevapi-ps5-the-speakers-follow-the-driver.patch
+ wine/patches/0951-kernelbase-a-console-without-a-window-takes-its-title.patch
++wine/patches/0952-vkd3d-shader-saturate-in-a-vertex-shader-before-vs-3-0.patch
+ wine/patches/0953-wow64-ps5-a-32-bit-allocation-stays-below-the-process-limit.patch
+ wine/patches/0954-server-ps5-resolve-an-opened-file-s-directory-once.patch
+ wine/patches/0955-ntdll-ps5-keep-the-directories-a-process-resolved.patch
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index ad8676d..62dfad2 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -158,6 +158,7 @@ before evaluating a candidate built from that cache.
+ | 0948 | `ntdll`: on PS5, a synchronous write of 4 KiB or less to a regular file (no event, APC, write-through or unbuffered I/O) is kept and written with the ones after it at the same handle's next position, in one `pwrite` of up to 64 KiB; any other use of a file (`server_get_unix_fd`, a name opened or looked at, `NtClose`, `NtDuplicateObject`, the process's end) writes them first. The console's kernel takes about a millisecond a write: Aggelos 2 saved its config 4 bytes at a time on every menu picture |
+ | 0949 | `mmdevapi`: on PS5, the audio driver's `PKEY_AudioEndpoint_PhysicalSpeakers` replaces the one kept in the registry each time the devices are listed. mmdevapi kept the first it stored, so a prefix that once ran in stereo told DirectSound games stereo after a game's Sound output in PC5 was set to 5.1 or 7.1 (`WINE_PS5_SPEAKERS`). A driver without an answer leaves what is kept |
+ | 0951 | `kernelbase`: `SetConsoleTitleW` succeeds without doing anything for a console program started without a console window (`CONSOLE_HANDLE_SHELL_NO_WINDOW`), as the title starts every game. It failed with `ERROR_INVALID_ACCESS`, and .NET's `Console.Title` threw `System.IO.IOException` before Streets of Rage 4 started; on Windows the program would have had a window to take the title |
++| 0952 | `vkd3d-shader`: `saturate()` in a vertex shader before vs_3_0, which has no saturate modifier, is `min(max(x, 0), 1)`, as native fxc writes it. It was `mov_sat`, which Far Cry's own d3dx9 assembler refused when it assembled the listing of the shader for the sun's glow again ("invalid instruction modifiers") |
+ | 0953 | `wow64`: a 32-bit caller's allocation with its own address requirements (an alignment) and no highest address is kept below the 32-bit process's limit, as on Windows; it landed above 4 GiB and the game faulted on the address's low half. From PS5_MihawkOS |
+ | 0954 | `server`: on PS5, an opened file's directory is resolved with `realpath` once and kept (64 entries, checked by device and inode), so an open costs two system calls instead of one a path component. From PS5_MihawkOS (its 2080) |
+ | 0955 | `ntdll`: on PS5, the directories a process resolved are kept by their upper-cased Windows path (1024 slots) and a lookup starts from the longest one, checked with one `fstatat`; a directory's case sensitivity is not asked (the console's disk is). From PS5_MihawkOS (its 2081) |
+diff --git a/wine/patches/0952-vkd3d-shader-saturate-in-a-vertex-shader-before-vs-3-0.patch b/wine/patches/0952-vkd3d-shader-saturate-in-a-vertex-shader-before-vs-3-0.patch
+new file mode 100644
+index 0000000..acef3ae
+--- /dev/null
++++ b/wine/patches/0952-vkd3d-shader-saturate-in-a-vertex-shader-before-vs-3-0.patch
+@@ -0,0 +1,70 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: bornaradusin <bornaradusin@users.noreply.github.com>
++Date: Tue, 3 Nov 2026 13:00:00 +0000
++Subject: [PATCH] vkd3d-shader/hlsl: Saturate with max and min in a vertex
++ shader before vs_3_0.
++
++A vertex shader has no saturate modifier before vs_3_0, but vkd3d-shader
++wrote saturate() as mov_sat in vs_1_x and vs_2_x shaders too. Far Cry
++assembles the listing of each shader it builds with fxc.exe again with
++its own d3dx9 assembler, which refused one ("error X2024: invalid
++instruction modifiers 'mov_sat'") and drew the sun's glow without it.
++saturate(x) is now min(max(x, 0), 1) there, as native fxc writes it.
++
++diff --git a/libs/vkd3d/libs/vkd3d-shader/hlsl_codegen.c b/libs/vkd3d/libs/vkd3d-shader/hlsl_codegen.c
++index a58f605..13289e6 100644
++--- a/libs/vkd3d/libs/vkd3d-shader/hlsl_codegen.c
+++++ b/libs/vkd3d/libs/vkd3d-shader/hlsl_codegen.c
++@@ -6203,6 +6203,41 @@ static struct hlsl_ir_node *lower_round(struct hlsl_ctx *ctx, struct hlsl_ir_nod
++     return hlsl_block_add_binary_expr(ctx, block, HLSL_OP2_ADD, sum, neg);
++ }
++ 
+++/* Lower SAT to MIN(MAX(x, 0), 1) in vertex shaders before vs_3_0, which have no
+++ * saturate modifier: native fxc writes max and min there too, and d3dx9's assembler
+++ * refuses mov_sat in a vs_2_0 listing ("invalid instruction modifiers"). */
+++static struct hlsl_ir_node *lower_sat_vs2(struct hlsl_ctx *ctx, struct hlsl_ir_node *instr, struct hlsl_block *block)
+++{
+++    struct hlsl_constant_value zero_value, one_value;
+++    struct hlsl_type *type = instr->data_type;
+++    struct hlsl_ir_node *arg, *zero, *one, *max;
+++    unsigned int i, component_count;
+++    struct hlsl_ir_expr *expr;
+++
+++    if (instr->type != HLSL_IR_EXPR)
+++        return NULL;
+++    expr = hlsl_ir_expr(instr);
+++    if (expr->op != HLSL_OP1_SAT)
+++        return NULL;
+++    if (ctx->profile->type != VKD3D_SHADER_TYPE_VERTEX || ctx->profile->major_version >= 3)
+++        return NULL;
+++    if (!hlsl_type_is_floating_point(type) || type->class > HLSL_CLASS_VECTOR)
+++        return NULL;
+++    arg = expr->operands[0].node;
+++
+++    component_count = hlsl_type_component_count(type);
+++    for (i = 0; i < component_count; ++i)
+++    {
+++        zero_value.u[i].f = 0.0f;
+++        one_value.u[i].f = 1.0f;
+++    }
+++    zero = hlsl_block_add_constant(ctx, block, type, &zero_value, &instr->loc);
+++    one = hlsl_block_add_constant(ctx, block, type, &one_value, &instr->loc);
+++
+++    max = hlsl_block_add_binary_expr(ctx, block, HLSL_OP2_MAX, arg, zero);
+++    return hlsl_block_add_binary_expr(ctx, block, HLSL_OP2_MIN, max, one);
+++}
+++
++ /* Lower SIN/COS to SINCOS for SM1.  */
++ static struct hlsl_ir_node *lower_trig(struct hlsl_ctx *ctx, struct hlsl_ir_node *instr, struct hlsl_block *block)
++ {
++@@ -16836,6 +16871,7 @@ static void process_entry_function(struct hlsl_ctx *ctx, struct vsir_program *pr
++         replace_ir(ctx, lower_sqrt, body);
++         replace_ir(ctx, lower_dot, body);
++         replace_ir(ctx, lower_round, body);
+++        replace_ir(ctx, lower_sat_vs2, body);
++         replace_ir(ctx, lower_trig, body);
++         replace_ir(ctx, lower_comparison_operators, body);
++         replace_ir(ctx, lower_logic_not, body);
++-- 
++2.43.0
++
+-- 
+2.43.0
+
