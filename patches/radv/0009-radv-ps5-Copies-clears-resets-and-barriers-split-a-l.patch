@@ -1,0 +1,168 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Tue, 3 Nov 2026 13:30:00 +0000
+Subject: [PATCH] radv/ps5: Copies, clears, resets and barriers split a long
+ stream too
+
+Order of the Sinking Star froze as its first chapter ended: the command
+list that loads the next level lost the device ("a submission holds more
+words between two splits than one AGC submission can"). Loading a level
+of 1,295 textures and 2,596 meshes records long runs of copies, fills,
+layout transitions and query resets with no draw or dispatch among them,
+so the stream had nowhere to split.
+
+A copy, blit, resolve, clear, fill, buffer update, query pool reset or
+pipeline barrier recorded on its own now splits the stream when a split
+is due, as a draw, a dispatch and a timestamp do. Each starts from the
+command buffer's state as it stands, which a split re-emits, and the
+deferrals (active queries, streamout, conditional rendering, an
+inherited render pass) still hold.
+---
+ src/amd/vulkan/meta/radv_meta_blit.c    | 2 ++
+ src/amd/vulkan/meta/radv_meta_buffer.c  | 6 ++++++
+ src/amd/vulkan/meta/radv_meta_clear.c   | 4 ++++
+ src/amd/vulkan/meta/radv_meta_copy.c    | 6 ++++++
+ src/amd/vulkan/meta/radv_meta_resolve.c | 2 ++
+ src/amd/vulkan/radv_cmd_buffer.c        | 2 ++
+ src/amd/vulkan/radv_query.c             | 2 ++
+ 7 files changed, 24 insertions(+)
+
+diff --git a/src/amd/vulkan/meta/radv_meta_blit.c b/src/amd/vulkan/meta/radv_meta_blit.c
+index 1119ef3..e67e9dd 100644
+--- a/src/amd/vulkan/meta/radv_meta_blit.c
++++ b/src/amd/vulkan/meta/radv_meta_blit.c
+@@ -526,6 +526,8 @@ radv_CmdBlitImage2(VkCommandBuffer commandBuffer, const VkBlitImageInfo2 *pBlitI
+    VK_FROM_HANDLE(radv_image, src_image, pBlitImageInfo->srcImage);
+    VK_FROM_HANDLE(radv_image, dst_image, pBlitImageInfo->dstImage);
+ 
++   radv_split_cmd_stream_if_due(cmd_buffer);
++
+    radv_suspend_conditional_rendering(cmd_buffer);
+ 
+    radv_meta_begin(cmd_buffer);
+diff --git a/src/amd/vulkan/meta/radv_meta_buffer.c b/src/amd/vulkan/meta/radv_meta_buffer.c
+index 559272a..ad3f95e 100644
+--- a/src/amd/vulkan/meta/radv_meta_buffer.c
++++ b/src/amd/vulkan/meta/radv_meta_buffer.c
+@@ -327,6 +327,8 @@ radv_CmdFillBuffer(VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSi
+    VK_FROM_HANDLE(radv_cmd_buffer, cmd_buffer, commandBuffer);
+    VK_FROM_HANDLE(radv_buffer, dst_buffer, dstBuffer);
+ 
++   radv_split_cmd_stream_if_due(cmd_buffer);
++
+    radv_suspend_conditional_rendering(cmd_buffer);
+ 
+    radv_meta_begin(cmd_buffer);
+@@ -389,6 +391,8 @@ radv_CmdCopyBuffer2(VkCommandBuffer commandBuffer, const VkCopyBufferInfo2 *pCop
+    const VkAddressCopyFlagsKHR src_copy_flags = radv_get_copy_flags_from_bo(src_buffer->bo);
+    const VkAddressCopyFlagsKHR dst_copy_flags = radv_get_copy_flags_from_bo(dst_buffer->bo);
+ 
++   radv_split_cmd_stream_if_due(cmd_buffer);
++
+    radv_suspend_conditional_rendering(cmd_buffer);
+ 
+    radv_meta_begin(cmd_buffer);
+@@ -488,6 +492,8 @@ radv_CmdUpdateBuffer(VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDevice
+ 
+    const VkAddressCopyFlagsKHR dst_copy_flags = radv_get_copy_flags_from_bo(dst_buffer->bo);
+ 
++   radv_split_cmd_stream_if_due(cmd_buffer);
++
+    radv_suspend_conditional_rendering(cmd_buffer);
+ 
+    radv_meta_begin(cmd_buffer);
+diff --git a/src/amd/vulkan/meta/radv_meta_clear.c b/src/amd/vulkan/meta/radv_meta_clear.c
+index 7f7651a..8ce1a2a 100644
+--- a/src/amd/vulkan/meta/radv_meta_clear.c
++++ b/src/amd/vulkan/meta/radv_meta_clear.c
+@@ -1870,6 +1870,8 @@ radv_CmdClearColorImage(VkCommandBuffer commandBuffer, VkImage image_h, VkImageL
+    VK_FROM_HANDLE(radv_image, image, image_h);
+    bool cs;
+ 
++   radv_split_cmd_stream_if_due(cmd_buffer);
++
+    radv_suspend_conditional_rendering(cmd_buffer);
+ 
+    cs = cmd_buffer->qf == RADV_QUEUE_COMPUTE || !radv_image_is_renderable(image);
+@@ -1891,6 +1893,8 @@ radv_CmdClearDepthStencilImage(VkCommandBuffer commandBuffer, VkImage image_h, V
+    VK_FROM_HANDLE(radv_cmd_buffer, cmd_buffer, commandBuffer);
+    VK_FROM_HANDLE(radv_image, image, image_h);
+ 
++   radv_split_cmd_stream_if_due(cmd_buffer);
++
+    radv_suspend_conditional_rendering(cmd_buffer);
+ 
+    radv_meta_begin(cmd_buffer);
+diff --git a/src/amd/vulkan/meta/radv_meta_copy.c b/src/amd/vulkan/meta/radv_meta_copy.c
+index b48ad04..1ad81c8 100644
+--- a/src/amd/vulkan/meta/radv_meta_copy.c
++++ b/src/amd/vulkan/meta/radv_meta_copy.c
+@@ -304,6 +304,8 @@ radv_CmdCopyBufferToImage2(VkCommandBuffer commandBuffer, const VkCopyBufferToIm
+ 
+    const VkAddressCopyFlagsKHR src_copy_flags = radv_get_copy_flags_from_bo(src_buffer->bo);
+ 
++   radv_split_cmd_stream_if_due(cmd_buffer);
++
+    radv_suspend_conditional_rendering(cmd_buffer);
+ 
+    radv_meta_begin(cmd_buffer);
+@@ -515,6 +517,8 @@ radv_CmdCopyImageToBuffer2(VkCommandBuffer commandBuffer, const VkCopyImageToBuf
+ 
+    const VkAddressCopyFlagsKHR dst_copy_flags = radv_get_copy_flags_from_bo(dst_buffer->bo);
+ 
++   radv_split_cmd_stream_if_due(cmd_buffer);
++
+    radv_suspend_conditional_rendering(cmd_buffer);
+ 
+    radv_meta_begin(cmd_buffer);
+@@ -807,6 +811,8 @@ radv_CmdCopyImage2(VkCommandBuffer commandBuffer, const VkCopyImageInfo2 *pCopyI
+    const struct radv_physical_device *pdev = radv_device_physical(device);
+    struct radv_cmd_stream *cs = cmd_buffer->cs;
+ 
++   radv_split_cmd_stream_if_due(cmd_buffer);
++
+    radv_suspend_conditional_rendering(cmd_buffer);
+ 
+    radv_meta_begin(cmd_buffer);
+diff --git a/src/amd/vulkan/meta/radv_meta_resolve.c b/src/amd/vulkan/meta/radv_meta_resolve.c
+index e3430c9..8ec40f4 100644
+--- a/src/amd/vulkan/meta/radv_meta_resolve.c
++++ b/src/amd/vulkan/meta/radv_meta_resolve.c
+@@ -217,6 +217,8 @@ radv_CmdResolveImage2(VkCommandBuffer commandBuffer, const VkResolveImageInfo2 *
+    const VkResolveImageModeInfoKHR *resolve_mode_info =
+       vk_find_struct_const(pResolveImageInfo->pNext, RESOLVE_IMAGE_MODE_INFO_KHR);
+ 
++   radv_split_cmd_stream_if_due(cmd_buffer);
++
+    radv_suspend_conditional_rendering(cmd_buffer);
+ 
+    radv_meta_begin(cmd_buffer);
+diff --git a/src/amd/vulkan/radv_cmd_buffer.c b/src/amd/vulkan/radv_cmd_buffer.c
+index e319cc6..081596d 100644
+--- a/src/amd/vulkan/radv_cmd_buffer.c
++++ b/src/amd/vulkan/radv_cmd_buffer.c
+@@ -17365,6 +17365,8 @@ radv_CmdPipelineBarrier2(VkCommandBuffer commandBuffer, const VkDependencyInfo *
+       barrier_reason = RGP_BARRIER_EXTERNAL_CMD_PIPELINE_BARRIER;
+    }
+ 
++   radv_split_cmd_stream_if_due(cmd_buffer);
++
+    radv_barrier(cmd_buffer, 1, pDependencyInfo, barrier_reason);
+ }
+ 
+diff --git a/src/amd/vulkan/radv_query.c b/src/amd/vulkan/radv_query.c
+index bc8812d..20d29df 100644
+--- a/src/amd/vulkan/radv_query.c
++++ b/src/amd/vulkan/radv_query.c
+@@ -2709,6 +2709,8 @@ radv_CmdResetQueryPool(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uin
+    uint32_t value = query_clear_value(pool->vk.query_type);
+    uint32_t flush_bits = 0;
+ 
++   radv_split_cmd_stream_if_due(cmd_buffer);
++
+    if (cmd_buffer->qf == RADV_QUEUE_VIDEO_DEC || cmd_buffer->qf == RADV_QUEUE_VIDEO_ENC)
+       /* video queries don't work like this */
+       return;
+-- 
+2.56.0
+
