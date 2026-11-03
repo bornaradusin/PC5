@@ -2818,7 +2818,7 @@ static void controls_changed(Pc5Ui *ui)
         "video_memory=%s resolution=%s aspect_ratio=%s cpu_sharing=%d graphics_api=%s", ui->launch_id,
         pc5_pad_mode_name(k->mode), pc5_stick_use_name(k->stick[0]), pc5_stick_use_name(k->stick[1]), k->speed,
         k->slow_button >= 0 ? pc5_control_name(k->slow_button) : "none", k->slow_percent, k->frame_generation,
-        k->memory_4gb ? "4gb" : "auto", k->video_memory_full ? "full" : k->video_memory_gb == 5 ? "5gb" : k->video_memory_gb == 6 ? "6gb" : "auto", k->resolution == 2 ? "2160p" : k->resolution == 1 ? "1440p" : "1080p",
+        k->memory_4gb ? "4gb" : "auto", pc5_video_memory_key(k), k->resolution == 2 ? "2160p" : k->resolution == 1 ? "1440p" : "1080p",
         k->stretch ? "stretch" : "keep", k->cpu_sharing, pc5_graphics_tech_name(k->graphics, ui_game_api(ui)));
 }
 
@@ -5292,17 +5292,12 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             controls_changed(ui);
             ui->dirty = 1;
         } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_VIDEO_MEMORY) {
-            if (ui_game_kind(ui) & GAME_32BIT) {
-                ui->controls.video_memory_full = !ui->controls.video_memory_full;
-                ui->controls.video_memory_gb = 0;
-            } else {
-                /* Auto (4 GB), 5 GB, 6 GB, Full: → and ✕ go on, ← back */
-                int level = ui->controls.video_memory_full ? 3 : ui->controls.video_memory_gb == 6 ? 2
-                          : ui->controls.video_memory_gb == 5 ? 1 : 0;
-                level = (level + ((k & PC5_KEY_LEFT) ? 3 : 1)) % 4;
-                ui->controls.video_memory_full = level == 3;
-                ui->controls.video_memory_gb = level == 1 ? 5 : level == 2 ? 6 : 0;
-            }
+            /* From least to Maximum (pc5_video_memory_sizes): → and ✕ go on, ← back, round */
+            const int bits32 = (ui_game_kind(ui) & GAME_32BIT) != 0;
+            const int *sizes;
+            int count = pc5_video_memory_sizes(bits32, &sizes);
+            int level = pc5_video_memory_level(&ui->controls, bits32);
+            pc5_video_memory_set(&ui->controls, bits32, (level + ((k & PC5_KEY_LEFT) ? count - 1 : 1)) % count);
             controls_changed(ui);
             ui->dirty = 1;
         } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_POINTER) {
@@ -6889,21 +6884,32 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
                                         : T("2 GB, or 4 GB for a game made for it, as on Windows");
         *value = ui->controls.memory_4gb ? T("4 GB") : T("Auto");
         break;
-    case GR_VIDEO_MEMORY:
+    case GR_VIDEO_MEMORY: {
+        const int bits32 = (kind & GAME_32BIT) != 0;
+        const int *sizes;
+        int level = pc5_video_memory_level(&ui->controls, bits32);
+        (void)pc5_video_memory_sizes(bits32, &sizes);
         *label = T("Graphics memory");
-        if (!(kind & GAME_32BIT)) {
-            *text = ui->controls.video_memory_full ? T("All 8 GB: the game may take memory the rest of it needs")
-                    : ui->controls.video_memory_gb ? T("More for the game's textures, less for the rest; Auto if it runs out of memory")
-                                                   : T("4 GB, so the game leaves room for the rest: the console's memory is shared");
-            if (!ui->controls.video_memory_full && ui->controls.video_memory_gb) {
-                *value = ui->controls.video_memory_gb == 6 ? T("6 GB") : T("5 GB");
-                break;
-            }
+        if (sizes[level] < 0)
+            *text = bits32 ? T("All the console's; Auto if the game says there is too little")
+                           : T("All 8 GB: the game may take memory the rest of it needs");
+        else if (!sizes[level])
+            *text = bits32 ? T("2 GB at most, so older games don't get confused")
+                           : T("4 GB, so the game leaves room for the rest: the console's memory is shared");
+        else if (sizes[level] < (bits32 ? 2048 : 4096))
+            *text = T("Less for textures, more for the game: for one that runs out of memory");
+        else
+            *text = bits32 ? T("More for a game that says there is too little; Auto if it misbehaves")
+                           : T("More for the game's textures, less for the rest; Auto if it runs out of memory");
+        if (sizes[level] < 0) *value = T("Maximum");
+        else if (!sizes[level]) {
+            pc5_tf(about, about_size, "%s (%s)", T("Auto"), bits32 ? T("2 GB") : T("4 GB"));
+            *value = about;
         } else
-            *text = ui->controls.video_memory_full ? T("All the console's; Auto if the game says there is too little")
-                                                   : T("2 GB at most, so older games don't get confused");
-        *value = ui->controls.video_memory_full ? T("Maximum") : T("Auto");
+            *value = sizes[level] == 512 ? T("512 MB") : sizes[level] == 1024 ? T("1 GB") : sizes[level] == 2048 ? T("2 GB")
+                   : sizes[level] == 3072 ? T("3 GB") : sizes[level] == 5120 ? T("5 GB") : T("6 GB");
         break;
+    }
     case GR_SOUND:
         *label = T("Sound output");
         *text = ui->controls.surround ? T("Each sound on its own speaker of a surround system; Stereo if it is silent")
@@ -7102,9 +7108,11 @@ static int setting_about(Pc5Ui *ui, GameRow row, const char *lines[6])
     case GR_VIDEO_MEMORY:
         lines[n++] = T("How much graphics memory the game is told the console has. The PS5's memory is shared by the game and its graphics, so more for graphics leaves less for the game.");
         if (bits32) {
+            lines[n++] = T("512 MB or 1 GB: less for textures, more for the game, for one that runs out of memory.");
             lines[n++] = T("Auto: 2 GB at most, so older games don't get confused by a large number.");
-            lines[n++] = T("Maximum: all of it, for a game that says there is too little.");
+            lines[n++] = T("3 GB or Maximum: for a game that says there is too little. Set it back to Auto if it misbehaves.");
         } else {
+            lines[n++] = T("2 GB or 3 GB: less for textures, more for the game, for one that runs out of memory.");
             lines[n++] = T("Auto: 4 GB, room for both.");
             lines[n++] = T("5 GB or 6 GB: more for textures. Set it back to Auto if the game runs out of memory.");
             lines[n++] = T("Maximum: all of it, only for a game that won't start because it sees too little.");

@@ -1651,14 +1651,34 @@ static void test_install(void)
         }
         /* 6 GB: kept, and Wine's own Direct3D is told nothing (it's DXVK's dxgi's). */
         k.video_memory_full = 0;
-        k.video_memory_gb = 6;
+        k.video_memory_mb = 6144;
         pc5_controls_save(root, "starfall", &k);
         {
             Pc5Controls back;
             pc5_controls_load(root, "starfall", &back);
-            CHECK(back.video_memory_gb == 6 && !back.video_memory_full, "6 GB kept in its controls");
+            CHECK(back.video_memory_mb == 6144 && !back.video_memory_full, "6 GB kept in its controls");
         }
-        k.video_memory_gb = 0;
+        /* A smaller size chosen: told that (a 32-bit game, 1 GB). */
+        k.video_memory_mb = 1024;
+        pc5_controls_save(root, "starfall", &k);
+        CHECK(!pc5_profile_refresh(root, "starfall", why, sizeof(why)), "refreshed: %s", why);
+        pw_wine_library_load(pw, root);
+        profile = pw_wine_library_find(pw, "starfall");
+        CHECK(profile && profile->debug_env_count && strstr(profile->debug_env[0].value, "VideoMemorySize=1024"),
+              "1 GB told: %s", profile && profile->debug_env_count ? profile->debug_env[0].value : "-");
+        {
+            Pc5Controls back;
+            pc5_controls_load(root, "starfall", &back);
+            CHECK(back.video_memory_mb == 1024 && !strcmp(pc5_video_memory_key(&back), "1gb"), "1 GB kept in its controls");
+            CHECK(pc5_video_memory_level(&back, 1) == 1, "the second of a 32-bit game's sizes");
+            pc5_video_memory_set(&back, 1, 3);
+            CHECK(back.video_memory_mb == 3072 && !back.video_memory_full, "then 3 GB");
+            pc5_video_memory_set(&back, 1, 4);
+            CHECK(back.video_memory_full && !back.video_memory_mb, "then Maximum");
+            pc5_video_memory_set(&back, 0, 0);
+            CHECK(back.video_memory_mb == 2048 && !back.video_memory_full, "a 64-bit game's least: 2 GB");
+        }
+        k.video_memory_mb = 0;
         k.video_memory_full = 0;
         pc5_controls_save(root, "starfall", &k);
         CHECK(!pc5_profile_refresh(root, "starfall", why, sizeof(why)), "refreshed: %s", why);
@@ -7061,7 +7081,7 @@ static void test_screens(const char *fonts)
     CHECK(controls_has("orbital-nine", "aspect_ratio = stretch\n"), "Aspect ratio: Stretch");
     press(ui, PC5_KEY_LEFT, &canvas);
     CHECK(controls_has("orbital-nine", "aspect_ratio = keep\n"), "then Keep");
-    press(ui, PC5_KEY_DOWN, &canvas);       /* Video memory (a 64-bit Direct3D game: no Memory): 5 GB, 6 GB, Full, Auto */
+    press(ui, PC5_KEY_DOWN, &canvas);       /* Video memory (a 64-bit Direct3D game: no Memory): 5 GB, 6 GB, Full, 2 GB, 3 GB, Auto */
     press(ui, PC5_KEY_ACCEPT, &canvas);
     CHECK(controls_has("orbital-nine", "video_memory = 5gb\n"), "Video memory: 5 GB");
     press(ui, PC5_KEY_RIGHT, &canvas);
@@ -7069,9 +7089,14 @@ static void test_screens(const char *fonts)
     press(ui, PC5_KEY_RIGHT, &canvas);
     CHECK(controls_has("orbital-nine", "video_memory = full\n"), "then Full");
     press(ui, PC5_KEY_RIGHT, &canvas);
+    CHECK(controls_has("orbital-nine", "video_memory = 2gb\n"), "round to the least, 2 GB");
+    press(ui, PC5_KEY_RIGHT, &canvas);
+    CHECK(controls_has("orbital-nine", "video_memory = 3gb\n"), "then 3 GB");
+    press(ui, PC5_KEY_RIGHT, &canvas);
     CHECK(controls_has("orbital-nine", "video_memory = auto\n"), "then Auto");
     press(ui, PC5_KEY_LEFT, &canvas);
-    CHECK(controls_has("orbital-nine", "video_memory = full\n"), "back to Full");
+    CHECK(controls_has("orbital-nine", "video_memory = 3gb\n"), "back to 3 GB");
+    save_shot(&canvas, "game-menu-graphics-memory");
     press(ui, PC5_KEY_RIGHT, &canvas);
     CHECK(controls_has("orbital-nine", "video_memory = auto\n"), "and Auto again");
     press(ui, PC5_KEY_DOWN, &canvas);       /* CPU sharing: on, then off again */

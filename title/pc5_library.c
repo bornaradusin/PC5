@@ -336,21 +336,27 @@ int pc5_profile_text_at(const char *id, const Pc5Info *info, const char *argumen
     /* Without OpenGL (graphics = dxvk), Wine's own Direct3D draws with Vulkan too: a DirectDraw
      * part of a DXVK game, or a hardware check asking Direct3D 9 or DirectDraw for the video
      * memory, otherwise finds no graphics at all ("Failed to get a GL context"). */
-    /* A 32-bit game is told at most 2 GB of video memory by Wine's own Direct3D (Video memory:
-     * Auto, pc5_controls.h): the console's 8 GB doesn't fit the 32-bit numbers an older game's
-     * check reads it into. In MB, as WINE_D3D_CONFIG takes it. */
+    /* A 32-bit game is told at most 2 GB of video memory by Wine's own Direct3D (Graphics memory:
+     * Auto, pc5_controls.h), or the size chosen (512 MB to 3 GB): the console's 8 GB doesn't fit
+     * the 32-bit numbers an older game's check reads it into. In MB, as WINE_D3D_CONFIG takes it. */
     int video_cap = info->bits == 32 && !(controls && controls->video_memory_full);
+    int video_mb = controls && controls->video_memory_mb >= 512 && controls->video_memory_mb <= 3072 ? controls->video_memory_mb : 2048;
+    char wine_d3d_text[128];
     /* 2D only (DirectDraw): no OpenGL or Vulkan at all. WineD3D makes every picture on the CPU and
      * puts it on the window as plain Windows drawing, where the game's own GDI drawing goes too. */
+    const char *renderer = NULL;
     if (chosen == PC5_GRAPHICS_WINE_2D) {
         graphics = "gdi";
-        wine_d3d = video_cap ? "\n[debug]\nenv = WINE_D3D_CONFIG=renderer=no3d,VideoMemorySize=2048\n"
-                             : "\n[debug]\nenv = WINE_D3D_CONFIG=renderer=no3d\n";
+        renderer = "no3d";
     } else if (chosen == PC5_GRAPHICS_WINE_VULKAN || !strcmp(graphics, "dxvk"))
-        wine_d3d = video_cap ? "\n[debug]\nenv = WINE_D3D_CONFIG=renderer=vulkan,VideoMemorySize=2048\n"
-                             : "\n[debug]\nenv = WINE_D3D_CONFIG=renderer=vulkan\n";
-    else if (video_cap)
-        wine_d3d = "\n[debug]\nenv = WINE_D3D_CONFIG=VideoMemorySize=2048\n";
+        renderer = "vulkan";
+    if (renderer || video_cap) {
+        char memory[32] = "";
+        if (video_cap) snprintf(memory, sizeof(memory), "%sVideoMemorySize=%d", renderer ? "," : "", video_mb);
+        snprintf(wine_d3d_text, sizeof(wine_d3d_text), "\n[debug]\nenv = WINE_D3D_CONFIG=%s%s%s\n",
+                 renderer ? "renderer=" : "", renderer ? renderer : "", memory);
+        wine_d3d = wine_d3d_text;
+    }
 
     windows_path(info->folder, info->exe, 1, exe, sizeof(exe));
     if (working_directory) pc5_copy(cwd, sizeof(cwd), working_directory);

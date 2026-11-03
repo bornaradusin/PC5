@@ -99,10 +99,11 @@ typedef struct Pc5Controls {
      * 1, Full: all of it. A 64-bit Direct3D 10 to 12 game is told 4 GB by DXVK's dxgi on Auto
      * (pc5_game.c), all 8 GB on Full. */
     int video_memory_full;
-    /* Between those for a 64-bit Direct3D 10 to 12 game: 5 or 6 (GB), what DXVK's dxgi tells it
-     * when video_memory_full is 0; 0, Auto's 4 GB. A game that warns there is too little video
-     * memory on Auto may have room for more (Gears of War: E-Day). */
-    int video_memory_gb;
+    /* A size between those when video_memory_full is 0, in MB (pc5_video_memory_sizes); 0, Auto:
+     * 2 GB for a 32-bit game, 4 GB for a 64-bit one. Less leaves more of the shared memory for the
+     * game itself, for one that runs out of it; more is for a game that warns there is too little
+     * video memory on Auto (Gears of War: E-Day). "video_memory = auto|full|512mb|1gb|2gb|3gb|5gb|6gb". */
+    int video_memory_mb;
     int resolution;               /* 0: 1920x1080, 1: 2560x1440, 2: 3840x2160 (games drawn through Vulkan) */
     int stretch;                  /* 1: the picture stretched to fill the 16:9 screen, 0: its own shape */
     int cpu_sharing;              /* 1: the game's threads take turns on the CPUs, as on a PC (prospero-win's
@@ -114,6 +115,16 @@ typedef struct Pc5Controls {
      * "speakers = 2|6|8". */
     int surround;
 } Pc5Controls;
+
+/* Graphics memory's choices, from least to most, for a 32-bit game (bits32) or a 64-bit one: each
+ * size in MB, 0 for Auto (2 or 4 GB), -1 for Maximum. Their count. */
+int pc5_video_memory_sizes(int bits32, const int **sizes);
+/* Where controls is in those choices (Auto when its size isn't one of them). */
+int pc5_video_memory_level(const Pc5Controls *controls, int bits32);
+/* Sets controls to choice level of those. */
+void pc5_video_memory_set(Pc5Controls *controls, int bits32, int level);
+/* The size as the file says it ("auto", "full", "512mb", "3gb"). */
+const char *pc5_video_memory_key(const Pc5Controls *controls);
 
 /* A key, mouse button or nothing, as prospero-win names it in a profile, and as
  * PC5 shows it. */

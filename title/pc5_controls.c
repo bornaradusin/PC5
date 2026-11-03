@@ -108,6 +108,48 @@ const char *pc5_graphics_tech_name(Pc5Graphics graphics, int api)
     return graphics == PC5_GRAPHICS_WINE_VULKAN ? "WineD3D on Vulkan" : "WineD3D";
 }
 
+/* Graphics memory's sizes as the file says them. */
+static const struct { const char *key; int mb; } memory_keys[] = {
+    { "512mb", 512 }, { "1gb", 1024 }, { "2gb", 2048 }, { "3gb", 3072 }, { "5gb", 5120 }, { "6gb", 6144 },
+};
+
+int pc5_video_memory_sizes(int bits32, const int **sizes)
+{
+    /* A 32-bit game: Auto's 2 GB is what an older game's check takes; 3 GB, past a signed 32-bit
+     * number, for one that wants more. A 64-bit one: Auto's 4 GB leaves room for both. */
+    static const int sizes32[] = { 512, 1024, 0, 3072, -1 }, sizes64[] = { 2048, 3072, 0, 5120, 6144, -1 };
+    *sizes = bits32 ? sizes32 : sizes64;
+    return bits32 ? (int)(sizeof(sizes32) / sizeof(sizes32[0])) : (int)(sizeof(sizes64) / sizeof(sizes64[0]));
+}
+
+int pc5_video_memory_level(const Pc5Controls *controls, int bits32)
+{
+    const int *sizes;
+    int count = pc5_video_memory_sizes(bits32, &sizes), want = controls->video_memory_full ? -1 : controls->video_memory_mb;
+    for (int i = 0; i < count; i++)
+        if (sizes[i] == want) return i;
+    for (int i = 0; i < count; i++)
+        if (!sizes[i]) return i;
+    return 0;
+}
+
+void pc5_video_memory_set(Pc5Controls *controls, int bits32, int level)
+{
+    const int *sizes;
+    int count = pc5_video_memory_sizes(bits32, &sizes);
+    level = level < 0 ? 0 : level >= count ? count - 1 : level;
+    controls->video_memory_full = sizes[level] < 0;
+    controls->video_memory_mb = sizes[level] > 0 ? sizes[level] : 0;
+}
+
+const char *pc5_video_memory_key(const Pc5Controls *controls)
+{
+    if (controls->video_memory_full) return "full";
+    for (size_t i = 0; i < sizeof(memory_keys) / sizeof(memory_keys[0]); i++)
+        if (memory_keys[i].mb == controls->video_memory_mb) return memory_keys[i].key;
+    return "auto";
+}
+
 void pc5_controls_default(Pc5Controls *controls)
 {
     memset(controls, 0, sizeof(*controls));
@@ -251,10 +293,12 @@ static void controls_parse(char *data, Pc5Controls *controls)
             if (!strcmp(value, "4gb")) controls->memory_4gb = 1;
             else if (!strcmp(value, "auto")) controls->memory_4gb = 0;
         } else if (!strcmp(name, "video_memory")) {
-            if (!strcmp(value, "full")) controls->video_memory_full = 1, controls->video_memory_gb = 0;
-            else if (!strcmp(value, "auto")) controls->video_memory_full = 0, controls->video_memory_gb = 0;
-            else if (!strcmp(value, "5gb")) controls->video_memory_full = 0, controls->video_memory_gb = 5;
-            else if (!strcmp(value, "6gb")) controls->video_memory_full = 0, controls->video_memory_gb = 6;
+            if (!strcmp(value, "full")) controls->video_memory_full = 1, controls->video_memory_mb = 0;
+            else if (!strcmp(value, "auto")) controls->video_memory_full = 0, controls->video_memory_mb = 0;
+            else
+                for (size_t i = 0; i < sizeof(memory_keys) / sizeof(memory_keys[0]); i++)
+                    if (!strcmp(value, memory_keys[i].key))
+                        controls->video_memory_full = 0, controls->video_memory_mb = memory_keys[i].mb;
         } else if (!strcmp(name, "cpu_sharing")) {
             if (!strcmp(value, "on")) controls->cpu_sharing = 1;
             else if (!strcmp(value, "off")) controls->cpu_sharing = 0;
@@ -317,7 +361,7 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                                    "touchpad_mode = %s\n"
                                    "# Triangle on the game, then Frame generation: off, on (60 -> 120, or 30 -> 60 at 60 Hz) or mihawkgen (40 -> 120)\nframe_generation = %s\n"
                                    "# Triangle on a 32-bit game, then Game memory: auto (as Windows) or 4gb\nmemory = %s\n"
-                                   "# Triangle on the game, then Graphics memory: auto, 5gb or 6gb (a 64-bit Direct3D 10 to 12 game), or full (Maximum)\n"
+                                   "# Triangle on the game, then Graphics memory: auto, full (Maximum), or 2gb, 3gb, 5gb, 6gb (a 64-bit game), 512mb, 1gb, 3gb (a 32-bit one)\n"
                                    "video_memory = %s\n"
                                    "# Triangle on the game, then Resolution\nresolution = %s\n"
                                    "# Triangle on the game, then Aspect ratio\naspect_ratio = %s\n"
@@ -335,10 +379,7 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                             controls->slow_percent, touch_mode_keys[controls->touch_mode >= 0 && controls->touch_mode < 3 ? controls->touch_mode : 0],
                             controls->frame_generation == 2 ? "mihawkgen" : controls->frame_generation ? "on" : "off",
                             controls->memory_4gb ? "4gb" : "auto",
-                            controls->video_memory_full      ? "full"
-                            : controls->video_memory_gb == 5 ? "5gb"
-                            : controls->video_memory_gb == 6 ? "6gb"
-                                                             : "auto",
+                            pc5_video_memory_key(controls),
                             controls->resolution == 2 ? "2160p" : controls->resolution == 1 ? "1440p" : "1080p",
                             controls->stretch ? "stretch" : "keep", controls->cpu_sharing ? "on" : "off",
                             graphics_keys[controls->graphics % PC5_GRAPHICS_COUNT], controls->steam_off ? "off" : "auto",
