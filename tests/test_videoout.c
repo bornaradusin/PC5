@@ -60,13 +60,18 @@ int main(void)
 
     /* Blade & Sword (#290): its movie plays through DirectShow in a framed window, a 634x448
      * picture inside the fullscreen game's 640x480. Before 2.0.9 it was refused and the game
-     * played on; taking the display stopped the game with no picture. */
-    CHECK(take(window(1, 640, 480, 1, 1000), window(2, 634, 448, 0, 0), 1000) == WSI_VIDEOOUT_REFUSED,
-          "Blade & Sword: the movie's window leaves the game's");
-    CHECK(take(window(1, 640, 480, 1, 1000), window(2, 634, 448, 0, 0), 5000) == WSI_VIDEOOUT_REFUSED,
+     * played on; taking the display stopped the game with no picture. Ys: The Oath in Felghana
+     * and Ys I draw their movies through DirectDraw in such a window, and Romance of the Three
+     * Kingdoms XI through OpenGL in a 1914x1048 one beside its 1680x1050: refused, they crashed.
+     * Such a window gets a swapchain that is never shown. */
+    CHECK(take(window(1, 640, 480, 1, 1000), window(2, 634, 448, 0, 0), 1000) == WSI_VIDEOOUT_HIDDEN,
+          "Blade & Sword, Ys: the movie's window leaves the display to the game's");
+    CHECK(take(window(1, 640, 480, 1, 1000), window(2, 634, 448, 0, 0), 5000) == WSI_VIDEOOUT_HIDDEN,
           "Blade & Sword: nor when the game waits for its movie");
+    CHECK(take(window(1, 1680, 1050, 1, 1000), window(2, 1914, 1048, 0, 0), 1000) == WSI_VIDEOOUT_HIDDEN,
+          "Romance of the Three Kingdoms XI: a movie's window shorter than the game's");
     /* nor one smaller in one direction only */
-    CHECK(take(window(1, 640, 480, 1, 1000), window(2, 640, 460, 0, 0), 1000) == WSI_VIDEOOUT_REFUSED,
+    CHECK(take(window(1, 640, 480, 1, 1000), window(2, 640, 460, 0, 0), 1000) == WSI_VIDEOOUT_HIDDEN,
           "a window shorter than the game's");
     /* a newer window larger than the owner's (a launcher's, then the game's) takes it */
     CHECK(take(window(1, 640, 480, 1, 1000), window(2, 1920, 1080, 0, 0), 1000) == WSI_VIDEOOUT_NEWER,
@@ -81,7 +86,7 @@ int main(void)
           "Ruined King: the game's own window, once the 4K one stopped");
     CHECK(take(window(2, 3840, 2160, 1, 1000), window(1, 1920, 1080, 0, 0), 3000) == WSI_VIDEOOUT_STALE,
           "Ruined King: at 1080p too");
-    /* still never a newer smaller window (Blade & Sword's movie, above), nor a helper's */
+    /* still never a newer smaller window (Blade & Sword's movie, above: hidden), nor a helper's */
     CHECK(take(window(2, 3840, 2160, 1, 1000), window(1, 113, 2, 0, 0), 9000) == WSI_VIDEOOUT_REFUSED,
           "an older helper's strip");
 

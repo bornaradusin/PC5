@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Wed, 4 Nov 2026 10:00:00 +0000
+Subject: [PATCH] zink: A destroyed context lets go of the image it was to
+ present
+
+A context destroyed before its end-of-frame flush kept its reference to
+the swapchain image waiting to be presented (needs_present), so the
+swapchain outlived its window. On the PS5, whose display only one
+swapchain has at a time, a game that closed a window and opened another
+was then refused a swapchain for the new one. The reference now goes
+with the context.
+
+The problem and the fix are Leonardo Lobato's (prospero-win, Playden:
+"fix(zink): drop a destroyed context's pending present"); this is the
+same change, written for PC5's Zink at prospero-win's pin.
+---
+ src/gallium/drivers/zink/zink_context.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/gallium/drivers/zink/zink_context.c b/src/gallium/drivers/zink/zink_context.c
+index e178150..f0a711e 100644
+--- a/src/gallium/drivers/zink/zink_context.c
++++ b/src/gallium/drivers/zink/zink_context.c
+@@ -133,6 +133,10 @@ zink_context_destroy(struct pipe_context *pctx)
+       }
+    }
+ 
++   /* A swapchain image still waiting for the end-of-frame flush: the context
++    * goes before it, so the swapchain must not be kept alive by it. */
++   zink_resource_reference(&ctx->needs_present, NULL);
++
+    for (unsigned i = 0; i < ARRAY_SIZE(ctx->program_cache); i++) {
+       simple_mtx_lock((&ctx->program_lock[i]));
+       hash_table_foreach(&ctx->program_cache[i], entry) {
+-- 
+2.43.0
+

@@ -28,7 +28,7 @@
 #             PS5 module (uses radv and tools)
 #   dxvk      DXVK 2.6.2-prospero3 with patches/dxvk, 64- and 32-bit, for the Windows template
 #   vkd3d     VKD3D-Proton 3.0.1 with patches/vkd3d-proton, 64- and 32-bit, for the Windows template
-#   zink      Mesa's WGL/Zink, OpenGL for the games that draw with it
+#   zink      Mesa's WGL/Zink with patches/zink, OpenGL for the games that draw with it
 #   package   prospero-win's tools/package_release.sh, with Zink (uses title and the pieces above)
 #   app       release/PPSA11018/ (art, fonts, the Windows template), release/PPSA11018.zip and
 #             Wine Mono's source archive beside it
@@ -605,7 +605,7 @@ step_zink() {
     # Its own memory note: the release link wants about 8 GiB a job.
     MESON=$B/venv/bin/meson PATH="$B/venv/bin:$PATH" bash tools/build_mesa_zink.sh --work "$B/mesa-zink" \
         --mesa "$B/mesa-zink-source" --llvm-mingw "$B/downloads/llvm-mingw-$llvm-ubuntu-22.04-x86_64.tar.xz" \
-        --jobs "${PC5_ZINK_JOBS:-2}"
+        --jobs "${PC5_ZINK_JOBS:-2}" --patches "$here/patches/zink"
     ls "$B/mesa-zink/artifacts"/*-windows
 }
 
@@ -837,7 +837,9 @@ key_of() { # piece
     local hash
     case $1 in
     # Zink as GitHub's build has kept it since 1.6: Mesa and llvm-mingw as prospero-win pins them.
-    zink) echo "zink-$(cat "$PW/tools/build_mesa_zink.sh" "$PW/tools/mesa_zink_manifest.py" | sha256sum | cut -c1-16)"; return ;;
+    # Since 2.2.6 with PC5's patches/zink on it.
+    zink) echo "zink-$(cat "$PW/tools/build_mesa_zink.sh" "$PW/tools/mesa_zink_manifest.py" "$here/patches/zink"/*.patch |
+                     sha256sum | cut -c1-16)"; return ;;
     title) hash=$(printf '%s\n' "$(git -C "$PW" rev-parse 'HEAD^{tree}')" "$BOILERPLATE_URL" "$LAPY_URL" "$LAPY_COMMIT" \
                   "$MBEDTLS_VERSION" "$(commands step_title need_sdk)" \
                   "$(find "$here/third_party/fribidi-1.0.18" -type f -print0 | sort -z | xargs -0 cat | sha256sum | cut -c1-64)" \

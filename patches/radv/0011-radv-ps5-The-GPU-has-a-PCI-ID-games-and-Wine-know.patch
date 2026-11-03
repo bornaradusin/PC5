@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Wed, 4 Nov 2026 10:00:00 +0000
+Subject: [PATCH] radv/ps5: The GPU has a PCI ID games and Wine know
+
+The device ID was 0. wined3d then found no card for vendor 1002 device 0
+("Failed to retrieve GPU description for device \"PS5\" 1002:0000") and
+fell back to a generic one, and a game that picks its settings or checks
+the GPU by its ID took it for nothing it knew.
+
+It is now Navi 22's, 0x73df, the PC GPU nearest the console's: RDNA 2,
+36 compute units at up to 2.23 GHz. After Mihawk OS (its 2408), which
+gives the same ID.
+---
+ src/amd/vulkan/winsys/ps5/radv_ps5_winsys.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/src/amd/vulkan/winsys/ps5/radv_ps5_winsys.c b/src/amd/vulkan/winsys/ps5/radv_ps5_winsys.c
+index 291f29e..1ecad93 100644
+--- a/src/amd/vulkan/winsys/ps5/radv_ps5_winsys.c
++++ b/src/amd/vulkan/winsys/ps5/radv_ps5_winsys.c
+@@ -176,7 +176,11 @@ radv_ps5_fill_info(struct radeon_info *info, bool compiler_compat_mode, uint32_t
+       .ip_discovery_version = ip_discovery_version,
+    };
+    struct drm_amdgpu_info_device dev = {
+-      .device_id = 0,
++      /* A PCI ID games and Wine know (Mihawk OS 2408): Navi 22's, the PC GPU nearest the
++       * console's (RDNA 2, 36 CUs, 2.23 GHz). With 0 wined3d found no card for it ("Failed to
++       * retrieve GPU description") and a game that picks its settings by GPU took it for
++       * nothing it knew. */
++      .device_id = 0x73df,
+       .chip_rev = 0,
+       .external_rev = external_rev,
+       .family = FAMILY_NV,
+-- 
+2.43.0
+

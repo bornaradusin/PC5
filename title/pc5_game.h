@@ -144,6 +144,9 @@ typedef struct Pc5GameSession {
  * ("" or "default" for root/prefix). 1 appended, 0 already there, -1 when it
  * couldn't be done. */
 int pc5_prefix_media(const char *root, const char *prefix, const char *app);
+/* The Visual C++ 2010-2013 runtimes recorded as installed in system.reg (once): 1 added, 0 already or
+ * no Windows yet, -1 failed. */
+int pc5_prefix_runtimes(const char *root, const char *prefix);
 /* A game's Windows made by an older PC5 lacks the system files later ones added to the
  * template (winegstreamer.dll for videos and music, among them): a 32-bit game then can't
  * load them at all. The DLLs in the app's template (pc5/prefix.list, system32 and

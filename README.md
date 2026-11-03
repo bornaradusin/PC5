@@ -114,7 +114,7 @@ makes a draft release.
 
 - `title/`: PC5's own code, plain C built into prospero-win's title.
 - `patches/prospero-win/`: PC5's patches to prospero-win v0.2.0 and its Wine.
-- `patches/dxvk/` and `patches/radv/`: PC5's patches to DXVK and RADV.
+- `patches/dxvk/`, `patches/radv/` and `patches/zink/`: PC5's patches to DXVK, RADV and Mesa's Zink (OpenGL games).
 - `tools/`: the build, the Windows template, the font atlas and the app.
 - `lang/`: PC5's text in other languages (`pc5.pot` and a `.po` a language; `tools/update-po.py`).
 - `wiki/`: the wiki's pages, copied to the wiki when they change.

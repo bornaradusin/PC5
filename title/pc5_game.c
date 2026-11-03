@@ -396,6 +396,44 @@ int pc5_prefix_versions(const char *root, const char *prefix)
     return added;
 }
 
+/* The Visual C++ 2010, 2012 and 2013 runtimes, as their redistributables record them, at the
+ * versions of Wine's own msvcr100, msvcr110 and msvcr120 (wine.inf records only 2015 and later).
+ * A launcher or setup that checks for them (and would start their installer, which can't run
+ * as a second program here) finds them installed. Both registry views get both, as a PC that
+ * has both redistributables has. */
+int pc5_prefix_runtimes(const char *root, const char *prefix)
+{
+    static const char *const keys[] = {
+        "VisualStudio\\\\12.0\\\\VC\\\\Runtimes\\\\%s]\n\"Bld\"=dword:00009ed8\n\"Installed\"=dword:00000001\n"
+        "\"Major\"=dword:0000000c\n\"Minor\"=dword:00000000\n\"Rbld\"=dword:00000000\n\"Version\"=\"v12.0.40664.00\"\n",
+        "VisualStudio\\\\11.0\\\\VC\\\\Runtimes\\\\%s]\n\"Installed\"=dword:00000001\n"
+        "\"Major\"=dword:0000000b\n\"Minor\"=dword:00000000\n",
+        "VisualStudio\\\\10.0\\\\VC\\\\VCRedist\\\\%s]\n\"Installed\"=dword:00000001\n\"Version\"=\"v10.0.30319\"\n",
+    };
+    char system[PC5_PATH], text[4096];
+    size_t used = 0;
+
+    if (!prefix || !prefix[0] || !strcmp(prefix, "default")
+            ? pc5_format(system, sizeof(system), "%s/prefix/system.reg", root)
+            : pc5_format(system, sizeof(system), "%s/prefixes/%s/system.reg", root, prefix))
+        return -1;
+    if (!pc5_is_file(system)) return 0;   /* no Windows yet: the next start adds them */
+    int held = file_holds(system, "[Software\\\\Microsoft\\\\VisualStudio\\\\12.0\\\\VC");
+    if (held) return held < 0 ? -1 : 0;
+    for (int wow = 0; wow < 2; wow++)
+        for (int arch = 0; arch < 2; arch++)
+            for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); i++) {
+                int n = snprintf(text + used, sizeof(text) - used, "\n[Software\\\\%sMicrosoft\\\\",
+                                 wow ? "Wow6432Node\\\\" : "");
+                if (n < 0 || (size_t)n >= sizeof(text) - used) return -1;
+                used += (size_t)n;
+                n = snprintf(text + used, sizeof(text) - used, keys[i], arch ? "x86" : "x64");
+                if (n < 0 || (size_t)n >= sizeof(text) - used) return -1;
+                used += (size_t)n;
+            }
+    return append_text(system, text) ? -1 : 1;
+}
+
 /* 1 when the folder dir has a file of that name, in any case. */
 static int folder_has(const char *dir, const char *name)
 {
@@ -734,6 +772,8 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         if (arial) say(game, "PC5 prefix Arial files %s %d", arial > 0 ? "added" : "failed", arial > 0 ? arial : 0);
         int versions = pc5_prefix_versions(root, prefix);
         if (versions) say(game, "PC5 prefix Windows versions %s", versions > 0 ? "added" : "failed");
+        int runtimes = pc5_prefix_runtimes(root, prefix);
+        if (runtimes) say(game, "PC5 prefix Visual C++ 2010-2013 runtimes %s", runtimes > 0 ? "recorded" : "failed");
         char started[PC5_PATH];
         if (!pc5_game_program(root, prefix, started, sizeof(started))) {
             int installs = pc5_prefix_installs(root, prefix, started);

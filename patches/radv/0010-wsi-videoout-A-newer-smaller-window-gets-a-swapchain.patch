@@ -1,0 +1,314 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Wed, 4 Nov 2026 10:00:00 +0000
+Subject: [PATCH] wsi/videoout: A newer, smaller window gets a swapchain never
+ shown
+
+A newer window's picture smaller than the owner's was refused with
+VK_ERROR_NATIVE_WINDOW_IN_USE_KHR, so a movie's window inside a game's
+doesn't take the display (Blade & Sword). Ys: The Oath in Felghana and
+Ys I play their movies through DirectDraw in a 634x448 window beside the
+game's 640x480, and Romance of the Three Kingdoms XI through OpenGL in a
+1914x1048 one beside its 1680x1050: without a swapchain, wined3d and Zink
+crashed.
+
+Such a window now gets a swapchain of its own whose images are the
+program's and whose presents are never shown; it takes no framebuffers.
+It is out of date once the display changes hands, so the program makes
+another, which may then take it. An older smaller window (Ruined King's
+own, while a larger picture presents) and helpers' strips are refused as
+before.
+---
+ src/vulkan/wsi/wsi_common_private.h           |   3 +
+ src/vulkan/wsi/wsi_common_videoout.c          | 101 ++++++++++++++++--
+ src/vulkan/wsi/wsi_common_videoout_takeover.h |  14 ++-
+ 3 files changed, 107 insertions(+), 11 deletions(-)
+
+diff --git a/src/vulkan/wsi/wsi_common_private.h b/src/vulkan/wsi/wsi_common_private.h
+index e807705..cf3e48a 100644
+--- a/src/vulkan/wsi/wsi_common_private.h
++++ b/src/vulkan/wsi/wsi_common_private.h
+@@ -615,6 +615,9 @@ struct wsi_videoout_image_params {
+    /* The images are the application's own, blitted at present into
+     * framebuffers of a size VideoOut takes, instead of being framebuffers. */
+    bool scaled;
++   /* The images are the application's own and never shown (a window that
++    * doesn't get the display, wsi_common_videoout_takeover.h). */
++   bool hidden;
+ };
+ 
+ VkResult
+diff --git a/src/vulkan/wsi/wsi_common_videoout.c b/src/vulkan/wsi/wsi_common_videoout.c
+index 42f9b80..25a8521 100644
+--- a/src/vulkan/wsi/wsi_common_videoout.c
++++ b/src/vulkan/wsi/wsi_common_videoout.c
+@@ -327,9 +327,20 @@ struct wsi_videoout_swapchain {
+    uint64_t surface_age;
+    VkExtent2D extent;
+    uint64_t present_ns;
++   /* A newer, smaller window's, which doesn't get the display
++    * (wsi_common_videoout_takeover.h): its images are its own and its presents
++    * are never shown. It is out of date once the display changes hands
++    * (videoout_current_serial moved from hidden_serial), so the program makes
++    * another, which may then take it. */
++   bool hidden;
++   uint64_t hidden_serial;
++   uint32_t hidden_next;
+    struct wsi_image images[];
+ };
+ 
++/* Moves each time the display changes hands (videoout_output.current). */
++static uint64_t videoout_current_serial;
++
+ /* The windows' surfaces seen, each with an age: a later one is a newer window.
+  * A surface not here (the oldest is forgotten first) is a new window. */
+ #define VIDEOOUT_SURFACES 32
+@@ -1322,6 +1333,15 @@ VkResult
+ wsi_videoout_configure_image(const struct wsi_swapchain *chain, const VkSwapchainCreateInfoKHR *pCreateInfo,
+                              const struct wsi_videoout_image_params *params, struct wsi_image_info *info)
+ {
++   if (params->hidden) {
++      /* The application's own images, never shown. */
++      VkResult result = wsi_configure_image(chain, pCreateInfo, 0, info);
++      if (result != VK_SUCCESS)
++         return result;
++      info->create_mem = videoout_create_scaled_image_mem;
++      return VK_SUCCESS;
++   }
++
+    if (params->scaled) {
+       /* The application's own images, read by the present's blit. */
+       VkResult result = wsi_configure_image(chain, pCreateInfo, 0, info);
+@@ -1394,6 +1414,25 @@ videoout_swapchain_acquire_next_image(struct wsi_swapchain *wsi_chain, const VkA
+    struct wsi_videoout_output *out = &videoout_output;
+    const uint64_t deadline = os_time_get_absolute_timeout(info->timeout);
+ 
++   if (chain->hidden) {
++      /* Any image the program doesn't hold: wsi_common_queue_present waits
++       * for an image's last present before it is drawn into again. */
++      mtx_lock(&out->lock);
++      const bool out_of_date = chain->retired || chain->hidden_serial != videoout_current_serial;
++      mtx_unlock(&out->lock);
++      if (out_of_date)
++         return VK_ERROR_OUT_OF_DATE_KHR;
++      for (uint32_t n = 0; n < chain->base.image_count; n++) {
++         const uint32_t index = (chain->hidden_next + n) % chain->base.image_count;
++         if (!chain->images[index].acquired) {
++            chain->hidden_next = index + 1;
++            *image_index = index;
++            return VK_SUCCESS;
++         }
++      }
++      return info->timeout == 0 ? VK_NOT_READY : VK_TIMEOUT;
++   }
++
+    mtx_lock(&out->lock);
+    for (;;) {
+       if (chain->retired) {
+@@ -1438,6 +1477,8 @@ videoout_swapchain_release_images(struct wsi_swapchain *wsi_chain, uint32_t coun
+ {
+    struct wsi_videoout_swapchain *chain = (struct wsi_videoout_swapchain *)wsi_chain;
+    struct wsi_videoout_output *out = &videoout_output;
++   if (chain->hidden)
++      return VK_SUCCESS;
+    mtx_lock(&out->lock);
+    for (uint32_t i = 0; i < count; i++)
+       out->buffer[chain->first + indices[i]].held = false;
+@@ -1453,6 +1494,15 @@ videoout_swapchain_queue_present(struct wsi_swapchain *wsi_chain, uint32_t image
+    struct wsi_videoout_swapchain *chain = (struct wsi_videoout_swapchain *)wsi_chain;
+    struct wsi_videoout_output *out = &videoout_output;
+ 
++   if (chain->hidden) {
++      mtx_lock(&out->lock);
++      const bool out_of_date = chain->retired || chain->hidden_serial != videoout_current_serial;
++      if (!out_of_date)
++         chain->present_ns = os_time_get_nano();
++      mtx_unlock(&out->lock);
++      return out_of_date ? VK_ERROR_OUT_OF_DATE_KHR : VK_SUCCESS;
++   }
++
+    const uint32_t buffer = chain->first + image_index;
+    mtx_lock(&out->lock);
+    out->buffer[buffer].held = false;
+@@ -1496,6 +1546,9 @@ videoout_swapchain_destroy(struct wsi_swapchain *wsi_chain, const VkAllocationCa
+    struct wsi_videoout_swapchain *chain = (struct wsi_videoout_swapchain *)wsi_chain;
+    struct wsi_videoout_output *out = &videoout_output;
+ 
++   /* A hidden one has no flips and no framebuffers. */
++   if (chain->hidden)
++      goto images;
+    /* Its flips use its fences: they go first. */
+    mtx_lock(&out->lock);
+    while (chain->in_flight)
+@@ -1503,11 +1556,14 @@ videoout_swapchain_destroy(struct wsi_swapchain *wsi_chain, const VkAllocationCa
+    for (uint32_t i = 0; i < chain->base.image_count; i++)
+       if (chain->images[i].acquired)
+          out->buffer[chain->first + i].held = false;
+-   if (out->current == chain)
++   if (out->current == chain) {
+       out->current = NULL;
++      videoout_current_serial++;
++   }
+    cnd_broadcast(&out->changed);
+    mtx_unlock(&out->lock);
+ 
++images:
+    for (uint32_t i = 0; i < chain->base.image_count; i++) {
+       if (chain->images[i].image != VK_NULL_HANDLE)
+          wsi_destroy_image(&chain->base, &chain->images[i]);
+@@ -1526,7 +1582,7 @@ static uint64_t videoout_refused_age;
+  * taking it from an owner that presented, for the log. */
+ static bool
+ videoout_display_free_locked(const struct wsi_videoout_swapchain *old, uint64_t age, VkExtent2D extent,
+-                             const char **why)
++                             const char **why, bool *hidden)
+ {
+    const struct wsi_videoout_swapchain *current = videoout_output.current;
+    struct wsi_videoout_window owner = { 0 }, chain = { age, extent.width, extent.height, false, 0 };
+@@ -1534,6 +1590,7 @@ videoout_display_free_locked(const struct wsi_videoout_swapchain *old, uint64_t
+       owner = (struct wsi_videoout_window){ current->surface_age, current->extent.width, current->extent.height,
+                                             current->presented, current->present_ns };
+    *why = NULL;
++   *hidden = false;
+    switch (wsi_videoout_takeover(current ? &owner : NULL, current && current == old, &chain, os_time_get_nano())) {
+    case WSI_VIDEOOUT_FREE:
+       return true;
+@@ -1543,6 +1600,14 @@ videoout_display_free_locked(const struct wsi_videoout_swapchain *old, uint64_t
+    case WSI_VIDEOOUT_STALE:
+       *why = "a window's";
+       return true;
++   case WSI_VIDEOOUT_HIDDEN:
++      *hidden = true;
++      if (age != videoout_refused_age) {
++         videoout_refused_age = age;
++         fprintf(stderr, "wsi/videoout: a newer, smaller window's %ux%u swapchain is never shown; a %ux%u one keeps the display\n",
++                 extent.width, extent.height, current->extent.width, current->extent.height);
++      }
++      return false;
+    case WSI_VIDEOOUT_REFUSED:
+       break;
+    }
+@@ -1583,13 +1648,18 @@ videoout_surface_create_swapchain(VkIcdSurfaceBase *icd_surface, VkDevice device
+ 
+    uint32_t set = 0;
+    const char *why;
++   bool hidden;
+    mtx_lock(&out->lock);
+    struct wsi_videoout_swapchain *old =
+       (struct wsi_videoout_swapchain *)wsi_swapchain_from_handle(pCreateInfo->oldSwapchain);
+    const uint64_t age = videoout_surface_age_locked(icd_surface);
+-   VkResult result = videoout_register_locked(target, &set);
+-   if (result == VK_SUCCESS && !videoout_display_free_locked(old, age, extent, &why))
++   VkResult result = VK_SUCCESS;
++   /* A newer, smaller window gets a swapchain never shown, and no framebuffers. */
++   if (videoout_display_free_locked(old, age, extent, &why, &hidden))
++      result = videoout_register_locked(target, &set);
++   else if (!hidden)
+       result = VK_ERROR_NATIVE_WINDOW_IN_USE_KHR;
++   const uint64_t serial = videoout_current_serial;
+    mtx_unlock(&out->lock);
+    if (result != VK_SUCCESS)
+       return result;
+@@ -1602,7 +1672,8 @@ videoout_surface_create_swapchain(VkIcdSurfaceBase *icd_surface, VkDevice device
+ 
+    struct wsi_videoout_image_params image_params = {
+       .base.image_type = WSI_IMAGE_TYPE_VIDEOOUT,
+-      .scaled = scaled,
++      .scaled = scaled && !hidden,
++      .hidden = hidden,
+    };
+    result = wsi_swapchain_init(wsi_device, &chain->base, device, pCreateInfo, &image_params.base, pAllocator);
+    if (result != VK_SUCCESS) {
+@@ -1622,7 +1693,9 @@ videoout_surface_create_swapchain(VkIcdSurfaceBase *icd_surface, VkDevice device
+    chain->first = set * VIDEOOUT_BUFFERS;
+    chain->surface_age = age;
+    chain->extent = extent;
+-   chain->scaled = scaled;
++   chain->scaled = scaled && !hidden;
++   chain->hidden = hidden;
++   chain->hidden_serial = serial;
+    chain->target = target;
+    /* PC5's Aspect ratio: PW_PC5_STRETCH=1 in the environment stretches a picture of
+     * another shape over the whole framebuffer, instead of fitting it with bars. */
+@@ -1631,7 +1704,7 @@ videoout_surface_create_swapchain(VkIcdSurfaceBase *icd_surface, VkDevice device
+    chain->rect = !scaled ? (VkRect2D){.extent = extent}
+                  : fill  ? (VkRect2D){.extent = target}
+                          : wsi_videoout_fit_rect(extent, target);
+-   if (scaled)
++   if (scaled && !hidden)
+       fprintf(stderr,
+               "wsi/videoout: a %ux%u swapchain presents %s to %ux%u at (%d, %d) of %ux%u framebuffers (set %u)\n",
+               extent.width, extent.height, fill ? "stretched" : "scaled", chain->rect.extent.width,
+@@ -1650,10 +1723,21 @@ videoout_surface_create_swapchain(VkIcdSurfaceBase *icd_surface, VkDevice device
+       }
+    }
+ 
++   /* A hidden one takes nothing: only its oldSwapchain is retired. */
++   if (hidden) {
++      mtx_lock(&out->lock);
++      if (old)
++         old->retired = true;
++      mtx_unlock(&out->lock);
++      *swapchain_out = &chain->base;
++      return VK_SUCCESS;
++   }
++
+    /* What had the display is retired: its acquires and presents are out of
+     * date. It may have presented since the check above. */
++   bool now_hidden;
+    mtx_lock(&out->lock);
+-   if (!videoout_display_free_locked(old, age, extent, &why)) {
++   if (!videoout_display_free_locked(old, age, extent, &why, &now_hidden)) {
+       mtx_unlock(&out->lock);
+       for (uint32_t i = 0; i < num_images; i++)
+          wsi_destroy_image(&chain->base, &chain->images[i]);
+@@ -1671,6 +1755,7 @@ videoout_surface_create_swapchain(VkIcdSurfaceBase *icd_surface, VkDevice device
+       out->current->retired = true;
+    }
+    out->current = chain;
++   videoout_current_serial++;
+    mtx_unlock(&out->lock);
+ 
+    *swapchain_out = &chain->base;
+diff --git a/src/vulkan/wsi/wsi_common_videoout_takeover.h b/src/vulkan/wsi/wsi_common_videoout_takeover.h
+index 48e14ee..1a068a2 100644
+--- a/src/vulkan/wsi/wsi_common_videoout_takeover.h
++++ b/src/vulkan/wsi/wsi_common_videoout_takeover.h
+@@ -24,6 +24,11 @@
+  * either rule: a DirectShow movie's video window, a framed window inside a
+  * fullscreen game's (Blade & Sword: its 634x448 movie window took the display
+  * from the game's 640x480 one, and the game stopped with no picture).
++ * Refused, a newer one left the program without a swapchain, and a movie
++ * drawn through DirectDraw or OpenGL in a window of its own (Ys: The Oath in
++ * Felghana's and Ys I's 634x448, Romance of the Three Kingdoms XI's 1914x1048)
++ * then crashed: such a window now gets a swapchain of its own that is never
++ * shown, out of date once the display changes hands.
+  *
+  * Except an older window's picture, of any window's size, once the owner on a
+  * newer window stopped presenting: that window was left behind and the game
+@@ -55,6 +60,7 @@ enum wsi_videoout_takeover {
+    WSI_VIDEOOUT_FREE,     /* nothing has it, the new one replaces the owner, or the owner never presented */
+    WSI_VIDEOOUT_NEWER,    /* a newer window's picture covering the owner's */
+    WSI_VIDEOOUT_STALE,    /* a picture covering the owner's, or an older window's, the owner stopped presenting */
++   WSI_VIDEOOUT_HIDDEN,   /* a newer window's smaller picture: a swapchain of its own, never shown */
+ };
+ 
+ /* A window's picture, not a helper window's (wined3d's 10x10 probe, a 113x2 strip). */
+@@ -73,9 +79,11 @@ wsi_videoout_takeover(const struct wsi_videoout_window *owner, bool replaces, co
+       return WSI_VIDEOOUT_FREE;
+    if (!wsi_videoout_window_sized(chain->width, chain->height))
+       return WSI_VIDEOOUT_REFUSED;
+-   if (chain->width < owner->width || chain->height < owner->height)
+-      return chain->age < owner->age && now_ns - owner->present_ns >= WSI_VIDEOOUT_STALE_NS ? WSI_VIDEOOUT_STALE
+-                                                                                              : WSI_VIDEOOUT_REFUSED;
++   if (chain->width < owner->width || chain->height < owner->height) {
++      if (chain->age < owner->age)
++         return now_ns - owner->present_ns >= WSI_VIDEOOUT_STALE_NS ? WSI_VIDEOOUT_STALE : WSI_VIDEOOUT_REFUSED;
++      return WSI_VIDEOOUT_HIDDEN;
++   }
+    if (chain->age > owner->age)
+       return WSI_VIDEOOUT_NEWER;
+    if (now_ns - owner->present_ns >= WSI_VIDEOOUT_STALE_NS)
+-- 
+2.43.0
+

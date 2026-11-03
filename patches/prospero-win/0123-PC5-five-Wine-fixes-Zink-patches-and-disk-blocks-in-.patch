@@ -1,0 +1,478 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Wed, 4 Nov 2026 10:00:00 +0000
+Subject: [PATCH 123/123] PC5: five Wine fixes, Zink patches and disk blocks in the
+ alive line (Wine patches 0957, 0966 to 0969)
+
+- 0957: every file is the player's, so a game can write the files it makes (Necesse's saves).
+- 0966: the video memory kept within 32 bits (Leo Lobato's 0998).
+- 0967: ProcessCommandLineInformation answered (after Mihawk OS 2427).
+- 0968: GetModuleHandle of an API set finds its host loaded from the game's folder (Company of Heroes 3).
+- 0969: a thread's own CPU time, and the processor it runs on (after Mihawk OS 2457).
+- tools/build_mesa_zink.sh --patches DIR builds Zink with patches on a copy of the pinned source.
+- The alive line gives the file system blocks read and written so far.
+---
+ PUBLICATION_ALLOWLIST.txt                     |  5 ++
+ docs/WINE_PS5_BUILD.md                        |  5 ++
+ native/wine64_main.c                          | 18 ++++-
+ tools/build_mesa_zink.md                      |  6 ++
+ tools/build_mesa_zink.sh                      | 30 +++++++-
+ ...erver-ps5-every-file-is-the-player-s.patch | 33 +++++++++
+ ...the-video-memory-size-within-32-bits.patch | 28 ++++++++
+ ...answer-processcommandlineinformation.patch | 69 ++++++++++++++++++
+ ...finds-its-host-loaded-from-elsewhere.patch | 42 +++++++++++
+ ...-thread-s-own-cpu-time-and-processor.patch | 72 +++++++++++++++++++
+ 10 files changed, 304 insertions(+), 4 deletions(-)
+ create mode 100644 wine/patches/0957-server-ps5-every-file-is-the-player-s.patch
+ create mode 100644 wine/patches/0966-win32u-keep-the-video-memory-size-within-32-bits.patch
+ create mode 100644 wine/patches/0967-ntdll-answer-processcommandlineinformation.patch
+ create mode 100644 wine/patches/0968-ntdll-getmodulehandle-of-an-api-set-finds-its-host-loaded-from-elsewhere.patch
+ create mode 100644 wine/patches/0969-ntdll-ps5-a-thread-s-own-cpu-time-and-processor.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index bc0ca61..e659850 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -618,6 +618,7 @@ wine/patches/0953-wow64-ps5-a-32-bit-allocation-stays-below-the-process-limit.pa
+ wine/patches/0954-server-ps5-resolve-an-opened-file-s-directory-once.patch
+ wine/patches/0955-ntdll-ps5-keep-the-directories-a-process-resolved.patch
+ wine/patches/0956-gdi32-keep-a-window-s-pixel-format-with-a-native-opengl32.patch
++wine/patches/0957-server-ps5-every-file-is-the-player-s.patch
+ wine/patches/0958-ntdll-honor-wine-cpu-topology-s-processor-count.patch
+ wine/patches/0959-vkd3d-shader-fx-implement-pass-assignment-for-fx-2-0.patch
+ wine/patches/0960-vkd3d-shader-fx-write-sampler-state-initializers-for-fx-2-0.patch
+@@ -681,6 +682,10 @@ wine/patches/0877-secur32-log-gnutls-errors-and-the-clock-on-handshake-failure.p
+ tests/test_build_tls_ps5.py
+ wine/patches/0964-kernelbase-a-console-without-a-window-has-an-empty-screen-buffer.patch
+ wine/patches/0965-win32u-ps5-no-pixel-format-message-loop-on-the-desktop.patch
++wine/patches/0966-win32u-keep-the-video-memory-size-within-32-bits.patch
++wine/patches/0967-ntdll-answer-processcommandlineinformation.patch
++wine/patches/0968-ntdll-getmodulehandle-of-an-api-set-finds-its-host-loaded-from-elsewhere.patch
++wine/patches/0969-ntdll-ps5-a-thread-s-own-cpu-time-and-processor.patch
+ wine/patches/0970-ntdll-ps5-trace-each-process-query-class-once.patch
+ wine/patches/0972-faudio-keep-resampling-taps-within-the-samples.patch
+ wine/patches/0973-ntdll-ps5-title-menu-snapshot.patch
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index ceda260..b902a28 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -163,6 +163,7 @@ before evaluating a candidate built from that cache.
+ | 0954 | `server`: on PS5, an opened file's directory is resolved with `realpath` once and kept (64 entries, checked by device and inode), so an open costs two system calls instead of one a path component. From PS5_MihawkOS (its 2080) |
+ | 0955 | `ntdll`: on PS5, the directories a process resolved are kept by their upper-cased Windows path (1024 slots) and a lookup starts from the longest one, checked with one `fstatat`; a directory's case sensitivity is not asked (the console's disk is). From PS5_MihawkOS (its 2081) |
+ | 0956 | `gdi32`: with a native `opengl32` (Mesa), setting a window's pixel format again to the one it has succeeds instead of failing: Godot 4 sets it twice and stopped with "Failed to create an OpenGL window". From Playden's prospero-win |
++| 0957 | `server`: on PS5 every file is the player's, the console's one user: a file owned by another id than `getuid()`'s, as one the game had just made could be, was Anonymous's, and its security descriptor gave the user no access. Java's `Files.isWritable`, which asks `AccessCheck`, took a new save for read-only, and Necesse's zip file system refused to write the world |
+ | 0958 | `ntdll`: `WINE_CPU_TOPOLOGY`'s processor count (as Proton reads it) is reported as `NumberOfProcessors` when it is between 1 and the CPUs the process has (0881); logged. From Playden's prospero-win |
+ | 0959-0963 | `vkd3d-shader`: fx_2_0 effects compile with pass assignments, sampler state initializers, `true`/`false` for any state, null shader and texture states, and ps_1_x shaders as ps_2_0, so D3DX9 effects from source build. From Playden's prospero-win |
+ | 0971 | `kernelbase`: in a title, an unhandled exception doesn't start a debugger (which can't start there) and ends the process after the game's own filter: reading AeDebug took the process heap's lock a faulting thread could hold, and the crash froze the game instead of ending it. From Playden's prospero-win |
+@@ -187,6 +188,10 @@ before evaluating a candidate built from that cache.
+ | 0999 | `win32u`: on PS5, the user driver hides the pointer once the player hasn't moved it or clicked for `WINE_PS5_CURSOR_IDLE_MS` milliseconds (unset or 0 never; PC5 sets 5000 for a game whose Mouse pointer option says so), both where it draws the cursor over the screen and where Vulkan frames get it from VideoOut's hardware cursor (0740); the next move, even against an edge, or click shows it again, as does the game moving it to another place itself (`SetCursorPos`; Grim Dawn moves its pointer by the controller). A game setting the same place or a new image doesn't count, and the cursor the application set is unchanged for `GetCursorInfo`. A game played with the controller that leaves the Windows cursor on showed it, still, in a corner (Valor Mortis). |
+ | 0964 | `kernelbase`: for a console program started without a console window (`CONSOLE_HANDLE_SHELL_NO_WINDOW`, as the title starts every game), a screen buffer query on one of its standard handles that fails answers an empty 80x25 buffer, and filling it or moving its cursor succeeds without doing anything. .NET's `Console.Clear()` threw "The handle is invalid" there and Streets of Rage 4 ended at start; a real console and other handles are answered as before |
+ | 0965 | `win32u`: setting a pixel format on the desktop window no longer posts `WM_WINE_SETPIXELFORMAT` to it. Nothing owns the server-created desktop on the PS5, so the message came back to the game's own queue and posted itself again forever. `vkCreateWin32SurfaceKHR` sets format -1 on every surface's window, so a Vulkan surface on the desktop (DXVK or Zink) kept the game on a black screen with one core busy (Syndicate) |
++| 0966 | `win32u` (prospero-win 0998, Leo Lobato): the adapter's 32-bit `HardwareInformation.MemorySize` is capped at 0xffffffff. On the Unix side of a 64-bit build `ULONG_MAX` is 64 bits wide, so the cap never applied and a GPU with an exact multiple of 4 GiB, as the PS5's 16 GiB, wrote 0 there, and WMI's `AdapterRAM` was 0: launchers took it for a machine below their minimum (Batman: Arkham City) |
++| 0967 | `ntdll` (Mihawk OS 2427): `NtQueryInformationProcess(ProcessCommandLineInformation)`, class 60, which Windows answers from 8.1 on, gives the command line: a `UNICODE_STRING` whose buffer follows it, from the process's parameters, its own or another process's through its PEB; `wow64` converts it as it does the image name. It was an unknown class, and a launcher that checks the command line of the game it started read nothing |
++| 0968 | `ntdll`: `GetModuleHandle` of an API set (`api-ms-win-crt-heap-l1-1-0.dll`) whose host in system32 isn't loaded answers with a loaded module of the host's name. A game that loads its own `ucrtbase.dll` from its folder got NULL, which Windows, with one module of that name, never answers, and Company of Heroes 3 then wrote to address 0 on purpose |
++| 0969 | `ntdll`: `GetThreadTimes` on the current thread reads the thread's own CPU clock where the platform has no per-thread times (the PS5), not the whole process's. On PS5 (Mihawk OS 2457), `GetCurrentProcessorNumber` is RDTSCP's processor id, the CPU the thread runs on, as on Windows, kept below the number of processors reported: the console has no `sched_getcpu`, and the fallback gave every thread processor 0, so a program keeping data per processor put every thread on one slot |
+ | 0974 | `ntdll`: outside images, a page made read-only or inaccessible takes writing, or all access, away from its whole 16 KiB host page, so touching it faults as on Windows; the host page used to get the union of its pages' protections, and a write to a protected page beside a writable one raised nothing (DuckStation then ran stale recompiled code). An access that faults only because of such a neighbour is single-stepped with the host page open for that one instruction, unseen by the program. On a PC, `WINE_HOST_PAGE_SIZE=16384` keeps 16 KiB host pages to run this scheme (`tests/test_wine_subpage_protect.py`) |
+ | 0975 (upstream 0986) | `ntdll`: accesses that 0974 steps over beside a protected page are counted, reads too. When a host page has had 256 of them, a write beside a read-only page is still reported there, and any other access gives the host page the union of its pages' protections, as before 0974, until a protection in it changes. Beside an inaccessible page nothing ended the stepping: Unity's Mono garbage collector (Darkwood) took about 13,000 steps a second and ran at 5 fps |
+ | 0976 | `ntdll` (Mihawk OS 2085): on PS5, a boolean socket option (`SO_BROADCAST`, `SO_KEEPALIVE`, `SO_REUSEADDR` and the other boolean `SOL_SOCKET` ones, `TCP_NODELAY`) reads back as 0 or 1, as on Windows and Linux. The console's FreeBSD kernel answered with the option's flag bit (`SO_BROADCAST` as 0x20), so a program that compares the value with TRUE took a set option for unset |
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 72be166..25ab5c5 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -968,6 +968,18 @@ static unsigned long long cpu_ms(void)
+            (unsigned long long)(usage.ru_utime.tv_usec + usage.ru_stime.tv_usec) / 1000u;
+ }
+ 
++/* The process's file system blocks read and written so far: a stall while a
++ * game saves shows whether the disk is busy (Postal 2's two seconds). */
++static void io_blocks(long *in, long *out)
++{
++    struct rusage usage;
++
++    *in = *out = 0;
++    if (getrusage(RUSAGE_SELF, &usage)) return;
++    *in = usage.ru_inblock;
++    *out = usage.ru_oublock;
++}
++
+ /* ---- launcher ----------------------------------------------------------- */
+ 
+ /* Shown until a game is chosen; Wine is not loaded. Does not return. */
+@@ -2296,17 +2308,19 @@ int main(int argc, char **argv)
+         }
+         if (tick % 60 == 0) {
+             uint64_t v[16] = { 0 };
++            long blocks_in, blocks_out;
+ 
++            io_blocks(&blocks_in, &blocks_out);
+             PS5LOG_LOG("PW_WINE64 alive tick=%llu sink_calls=%lu frames_put=%llu shown=%llu "
+                        "rejected=%llu last=%ux%u inputs=%llu refused=%llu vk_shown=%llu vk_busy=%llu vk_kept=%llu "
+-                       "vk_held=%llu cpu_ms=%llu audio=%lu audible=%lu peak=%d",
++                       "vk_held=%llu cpu_ms=%llu audio=%lu audible=%lu peak=%d blocks_in=%ld blocks_out=%ld",
+                        (unsigned long long)tick, sink_calls, (unsigned long long)frames.sequence,
+                        (unsigned long long)shown, (unsigned long long)frames.rejected,
+                        frames.width, frames.height, (unsigned long long)posted,
+                        (unsigned long long)refused, (unsigned long long)vulkan_frames.shown,
+                        (unsigned long long)vulkan_frames.busy, (unsigned long long)vulkan_frames.kept,
+                        (unsigned long long)vulkan_frames.held, cpu_ms(),
+-                       audio_grains, audio_audible, audio_peak);
++                       audio_grains, audio_audible, audio_peak, blocks_in, blocks_out);
+             audio_peak = 0;
+             if (start.virtual_stats && tick % 300 == 0) {
+                 static uint64_t faults_logged;
+diff --git a/tools/build_mesa_zink.md b/tools/build_mesa_zink.md
+index 688599e..307d6c3 100644
+--- a/tools/build_mesa_zink.md
++++ b/tools/build_mesa_zink.md
+@@ -32,6 +32,12 @@ bash tools/build_mesa_zink.sh --work build/mesa-zink \
+   --jobs 1
+ ```
+ 
++`--patches DIR` applies the `*.patch` files of DIR, in name order, to a copy
++of the exported source (`source-patched` in the work directory), which is built
++instead; the export itself stays as it is and is still validated. A different
++set of patches makes the copy and both builds again. PC5 keeps its Zink patches
++in `patches/zink` and passes them here.
++
+ Both architectures are built sequentially. Keep sufficient memory for the
+ release link; the first dual build was validated with one job and an 8 GiB
+ memory limit. Reuse the same work directory only for this pinned recipe.
+diff --git a/tools/build_mesa_zink.sh b/tools/build_mesa_zink.sh
+index fd031f0..841d6a1 100755
+--- a/tools/build_mesa_zink.sh
++++ b/tools/build_mesa_zink.sh
+@@ -6,7 +6,7 @@ root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+ MESA_COMMIT=e4607ef697fe3df8d1ebc329bf1917d041843306
+ LLVM_MINGW_VERSION=20260922-ucrt
+ LLVM_MINGW_SHA256=bb7bb7654b33d5aa8712acb837c963b2e0c56352560c76105270a3268c665c21
+-work= mesa= archive= jobs=1
++work= mesa= archive= patches= jobs=1
+ fail() { echo "build_mesa_zink: $*" >&2; exit 2; }
+ while [ $# -gt 0 ]; do
+  case $1 in
+@@ -14,6 +14,7 @@ while [ $# -gt 0 ]; do
+  --mesa) mesa=$2; shift 2;;
+  --llvm-mingw) archive=$2; shift 2;;
+  --jobs) jobs=$2; shift 2;;
++ --patches) patches=$2; shift 2;;
+  *) fail "unknown argument $1";;
+  esac
+ done
+@@ -33,6 +34,31 @@ fi
+ [ "$(cat "$work/source/.revision")" = "$MESA_COMMIT" ] || fail 'work source pin differs; use a new work directory'
+ python3 "$root/tools/mesa_zink_manifest.py" --verify-source "$work/source" "$mesa" "$MESA_COMMIT"
+ [ "$(cat "$work/source/VERSION")" = 26.2.0 ] || fail 'unexpected Mesa version'
++# --patches DIR: its *.patch, in name order, on a copy of the source; the pinned
++# export stays as it is, verified. A different set makes the copy and the builds again.
++src=$work/source
++if [ -n "$patches" ]; then
++ patches=$(realpath "$patches")
++ set -- "$patches"/*.patch
++ [ -f "$1" ] || fail "no patches in $patches"
++ id=$(cat "$@" | sha256sum | cut -c1-64)
++ src=$work/source-patched
++ if [ "$(cat "$src/.patches" 2>/dev/null)" != "$id" ]; then
++  rm -rf "$src" "$work/build-i686" "$work/build-x86_64"
++  staging=$(mktemp -d "$work/source-patched.XXXXXX")
++  cp -a "$work/source/." "$staging/"
++  for patch in "$@"; do
++   GIT_CEILING_DIRECTORIES=$work git -C "$staging" apply --whitespace=nowarn "$patch" || fail "patch does not apply: ${patch##*/}"
++  done
++  printf '%s\n' "$id" > "$staging/.patches"
++  mv "$staging" "$src"
++ fi
++fi
++# Builds stay with the source they were set up for.
++if [ "$(cat "$work/.source-used" 2>/dev/null)" != "$src" ]; then
++ rm -rf "$work/build-i686" "$work/build-x86_64"
++ printf '%s\n' "$src" > "$work/.source-used"
++fi
+ if [ ! -f "$work/toolchain/.archive-sha256" ]; then
+  staging=$(mktemp -d "$work/toolchain.XXXXXX")
+  tar -xJf "$archive" -C "$staging" --strip-components=1
+@@ -64,7 +90,7 @@ needs_exe_wrapper = true
+ CROSS
+  build=$work/build-$arch
+  reconfigure=(); [ ! -f "$build/build.ninja" ] || reconfigure=(--reconfigure)
+- "$meson" setup "${reconfigure[@]}" "$build" "$work/source" --cross-file "$cross" \
++ "$meson" setup "${reconfigure[@]}" "$build" "$src" --cross-file "$cross" \
+   --wrap-mode=nofallback --buildtype=release --default-library=static \
+   -Dplatforms=windows -Dgallium-drivers=zink -Dvulkan-drivers= -Dopengl=true \
+   -Degl=disabled -Dgbm=disabled -Dglx=disabled -Dgles1=disabled -Dgles2=disabled \
+diff --git a/wine/patches/0957-server-ps5-every-file-is-the-player-s.patch b/wine/patches/0957-server-ps5-every-file-is-the-player-s.patch
+new file mode 100644
+index 0000000..f412418
+--- /dev/null
++++ b/wine/patches/0957-server-ps5-every-file-is-the-player-s.patch
+@@ -0,0 +1,33 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: bornaradusin <bornaradusin@users.noreply.github.com>
++Date: Wed, 4 Nov 2026 10:00:00 +0000
++Subject: [PATCH] server: PS5: Every file is the player's.
++
++The console has one user. A file owned by another id than getuid()'s,
++as a file the game had just made could be, was Anonymous's, so the
++security descriptor gave its user no access: Java's Files.isWritable,
++which checks with AccessCheck, said a new save was read-only, and
++Necesse's zip file system refused to write the world.
++
++diff --git a/server/token.c b/server/token.c
++index 3f0662a..73cfe9a 100644
++--- a/server/token.c
+++++ b/server/token.c
++@@ -184,6 +184,14 @@ void security_set_thread_token( struct thread *thread, obj_handle_t handle )
++ 
++ const struct sid *security_unix_uid_to_sid( uid_t uid )
++ {
+++#ifdef __PROSPERO__
+++    /* The console has one user, the player, and a game's files are theirs whichever id
+++     * the kernel gave them: a file the game had just made, owned by another id than
+++     * getuid()'s, was Anonymous's, so its user could not write it (Necesse's saves:
+++     * Java's Files.isWritable, an AccessCheck, said no). */
+++    (void)uid;
+++    return &local_user_sid;
+++#endif
++     /* very simple mapping: either the current user or not the current user */
++     if (uid == getuid())
++         return &local_user_sid;
++-- 
++2.43.0
++
+diff --git a/wine/patches/0966-win32u-keep-the-video-memory-size-within-32-bits.patch b/wine/patches/0966-win32u-keep-the-video-memory-size-within-32-bits.patch
+new file mode 100644
+index 0000000..b74ec84
+--- /dev/null
++++ b/wine/patches/0966-win32u-keep-the-video-memory-size-within-32-bits.patch
+@@ -0,0 +1,28 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: bornaradusin <bornaradusin@users.noreply.github.com>
++Date: Wed, 4 Nov 2026 10:00:00 +0000
++Subject: [PATCH] win32u: Keep the video memory size within 32 bits.
++
++On the Unix side of a 64-bit build ULONG_MAX is 64 bits wide, so the
++limit never applied and the cast kept only the low 32 bits: a GPU with an
++exact multiple of 4 GiB wrote 0 to HardwareInformation.MemorySize, and WMI
++reported an AdapterRAM of 0, which launchers read as a machine below their
++minimum (Batman: Arkham City's). ULONG is 32 bits, so the limit is that.
++From Leo Lobato's prospero-win (its 0998).
++
++diff --git a/dlls/win32u/sysparams.c b/dlls/win32u/sysparams.c
++index b01cefd..499a1e7 100644
++--- a/dlls/win32u/sysparams.c
+++++ b/dlls/win32u/sysparams.c
++@@ -1649,7 +1649,7 @@ static BOOL write_gpu_to_registry( const struct gpu *gpu, const struct pci_id *p
++     set_reg_value( hkey, dac_typeW, REG_SZ, ramdacW, sizeof(ramdacW) );
++ 
++     set_reg_value( hkey, qw_memory_sizeW, REG_QWORD, &memory_size, sizeof(memory_size) );
++-    value = (ULONG)min( memory_size, (ULONGLONG)ULONG_MAX );
+++    value = (ULONG)min( memory_size, (ULONGLONG)0xffffffff );
++     set_reg_value( hkey, memory_sizeW, REG_DWORD, &value, sizeof(value) );
++ 
++     set_reg_ascii_value( hkey, "DriverVersion", driver_vendor_to_version( pci->vendor ) );
++-- 
++2.43.0
++
+diff --git a/wine/patches/0967-ntdll-answer-processcommandlineinformation.patch b/wine/patches/0967-ntdll-answer-processcommandlineinformation.patch
+new file mode 100644
+index 0000000..a68bc6e
+--- /dev/null
++++ b/wine/patches/0967-ntdll-answer-processcommandlineinformation.patch
+@@ -0,0 +1,69 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: bornaradusin <bornaradusin@users.noreply.github.com>
++Date: Wed, 4 Nov 2026 10:00:00 +0000
++Subject: [PATCH] ntdll: Answer ProcessCommandLineInformation.
++
++NtQueryInformationProcess(ProcessCommandLineInformation, class 60), which
++Windows answers from 8.1 on, was an unknown class: every caller got
++STATUS_INVALID_INFO_CLASS. A launcher that checks the command line of the
++game it started read nothing. The answer is a UNICODE_STRING whose Buffer
++points just past it, then the text, from the process's parameters: the
++caller's own, or another process's read through its PEB. wow64 converts it
++as it does the image name. After Mihawk OS (its 2427).
++
++diff --git a/dlls/ntdll/unix/process.c b/dlls/ntdll/unix/process.c
++index 5050317..552dc57 100644
++--- a/dlls/ntdll/unix/process.c
+++++ b/dlls/ntdll/unix/process.c
++@@ -1583,6 +1583,36 @@ NTSTATUS WINAPI NtQueryInformationProcess( HANDLE handle, PROCESSINFOCLASS class
++         else ret = STATUS_INFO_LENGTH_MISMATCH;
++         break;
++ 
+++    case ProcessCommandLineInformation:
+++    {
+++        /* As Windows answers it from 8.1 on: a UNICODE_STRING whose Buffer points just past it, then the
+++         * text, read from the process's parameters (PEB, ProcessParameters, CommandLine). */
+++        UNICODE_STRING command, *str = info;
+++        SIZE_T done;
+++
+++        if (handle == GetCurrentProcess())
+++            command = peb->ProcessParameters->CommandLine;
+++        else
+++        {
+++            PROCESS_BASIC_INFORMATION pbi;
+++            RTL_USER_PROCESS_PARAMETERS *params = NULL;
+++
+++            if ((ret = NtQueryInformationProcess( handle, ProcessBasicInformation, &pbi, sizeof(pbi), NULL ))) break;
+++            if ((ret = NtReadVirtualMemory( handle, &((PEB *)pbi.PebBaseAddress)->ProcessParameters,
+++                                            &params, sizeof(params), &done ))) break;
+++            if (!params) { ret = STATUS_UNSUCCESSFUL; break; }
+++            if ((ret = NtReadVirtualMemory( handle, &params->CommandLine, &command, sizeof(command), &done ))) break;
+++        }
+++        len = sizeof(UNICODE_STRING) + command.Length;
+++        if (size < len) { ret = STATUS_INFO_LENGTH_MISMATCH; break; }
+++        str->Length = str->MaximumLength = command.Length;
+++        str->Buffer = (WCHAR *)(str + 1);
+++        if (!command.Length) break;
+++        if (handle == GetCurrentProcess()) memcpy( str->Buffer, command.Buffer, command.Length );
+++        else ret = NtReadVirtualMemory( handle, command.Buffer, str->Buffer, command.Length, &done );
+++        break;
+++    }
+++
++     case ProcessWow64Information:
++         len = sizeof(ULONG_PTR);
++         if (size != len) return STATUS_INFO_LENGTH_MISMATCH;
++diff --git a/dlls/wow64/process.c b/dlls/wow64/process.c
++index 1aefd87..21e231f 100644
++--- a/dlls/wow64/process.c
+++++ b/dlls/wow64/process.c
++@@ -685,6 +685,7 @@ NTSTATUS WINAPI wow64_NtQueryInformationProcess( UINT *args )
++         }
++         return STATUS_INFO_LENGTH_MISMATCH;
++ 
+++    case ProcessCommandLineInformation:
++     case ProcessImageFileName:
++     case ProcessImageFileNameWin32:  /* UNICODE_STRING + string */
++         {
++-- 
++2.43.0
++
+diff --git a/wine/patches/0968-ntdll-getmodulehandle-of-an-api-set-finds-its-host-loaded-from-elsewhere.patch b/wine/patches/0968-ntdll-getmodulehandle-of-an-api-set-finds-its-host-loaded-from-elsewhere.patch
+new file mode 100644
+index 0000000..4b3ffe4
+--- /dev/null
++++ b/wine/patches/0968-ntdll-getmodulehandle-of-an-api-set-finds-its-host-loaded-from-elsewhere.patch
+@@ -0,0 +1,42 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: bornaradusin <bornaradusin@users.noreply.github.com>
++Date: Wed, 4 Nov 2026 10:00:00 +0000
++Subject: [PATCH] ntdll: GetModuleHandle of an API set finds its host loaded from elsewhere.
++
++An API set resolves to its host in system32, and only a module loaded
++from there was found. A game that loads its own ucrtbase.dll from its
++folder and then asks for GetModuleHandle("api-ms-win-crt-heap-l1-1-0.dll")
++got NULL, as Windows never answers: it has the one module of that name.
++Company of Heroes 3 then wrote to address 0 on purpose. When the full
++name isn't loaded, a loaded module with the host's base name answers.
++
++diff --git a/dlls/ntdll/loader.c b/dlls/ntdll/loader.c
++index 1cb22bf..fd03074 100644
++--- a/dlls/ntdll/loader.c
+++++ b/dlls/ntdll/loader.c
++@@ -3574,8 +3574,22 @@ NTSTATUS WINAPI LdrGetDllHandleEx( ULONG flags, LPCWSTR load_path, ULONG *dll_ch
++     if (wm) *base = wm->ldr.DllBase;
++     else
++     {
+++        const WCHAR *libname = dllname ? dllname : name->Buffer;
+++        WCHAR *host;
+++
++         if (status == STATUS_SUCCESS) NtClose( mapping );
++         status = STATUS_DLL_NOT_FOUND;
+++        /* An API set whose host the program loaded from its own folder (a game's own ucrtbase.dll):
+++         * Windows has the one module of that name, and answers with it. */
+++        if (!contains_path( libname ) && !find_apiset_dll( libname, &host ))
+++        {
+++            if ((wm = find_basename_module( wcsrchr( host, '\\' ) + 1 )))
+++            {
+++                *base = wm->ldr.DllBase;
+++                status = STATUS_SUCCESS;
+++            }
+++            RtlFreeHeap( GetProcessHeap(), 0, host );
+++        }
++     }
++     RtlFreeUnicodeString( &nt_name );
++ 
++-- 
++2.43.0
++
+diff --git a/wine/patches/0969-ntdll-ps5-a-thread-s-own-cpu-time-and-processor.patch b/wine/patches/0969-ntdll-ps5-a-thread-s-own-cpu-time-and-processor.patch
+new file mode 100644
+index 0000000..b209acf
+--- /dev/null
++++ b/wine/patches/0969-ntdll-ps5-a-thread-s-own-cpu-time-and-processor.patch
+@@ -0,0 +1,72 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: bornaradusin <bornaradusin@users.noreply.github.com>
++Date: Wed, 4 Nov 2026 10:00:00 +0000
++Subject: [PATCH] ntdll: PS5: A thread's own CPU time and the processor it runs on.
++
++The console has no per-thread times to read, so GetThreadTimes on the
++current thread gave the whole process's: it now reads the thread's CPU
++clock where the platform has one, and falls back as before.
++
++The console's libc has no sched_getcpu, and GetCurrentProcessorNumber's
++fallback gave every thread processor 0, so a program keeping data per
++processor put every thread on one slot. On PS5 it now reads RDTSCP's
++processor id, as Windows does, kept below the count Wine reports. After
++Mihawk OS (its 2457).
++
++diff --git a/dlls/ntdll/unix/thread.c b/dlls/ntdll/unix/thread.c
++index 0477c55..68ad921 100644
++--- a/dlls/ntdll/unix/thread.c
+++++ b/dlls/ntdll/unix/thread.c
++@@ -32,6 +32,7 @@
++ #include <stdio.h>
++ #include <stdlib.h>
++ #include <string.h>
+++#include <time.h>
++ #include <pthread.h>
++ #include <signal.h>
++ #include <sys/types.h>
++@@ -2292,6 +2293,20 @@ NTSTATUS WINAPI NtQueryInformationThread( HANDLE handle, THREADINFOCLASS class,
++             kusrt.KernelTime.QuadPart = kusrt.UserTime.QuadPart = 0;
++             if (unix_pid != -1 && unix_tid != -1)
++                 ret = get_thread_times( unix_pid, unix_tid, &kusrt.KernelTime, &kusrt.UserTime );
+++#ifdef CLOCK_THREAD_CPUTIME_ID
+++            if (!ret && handle == GetCurrentThread())
+++            {
+++                /* the thread's own CPU time, where the platform has no per-thread times to read
+++                 * (the PS5): the process's, below, counts every thread's */
+++                struct timespec now;
+++
+++                if (!clock_gettime( CLOCK_THREAD_CPUTIME_ID, &now ))
+++                {
+++                    kusrt.UserTime.QuadPart = (ULONGLONG)now.tv_sec * 10000000 + now.tv_nsec / 100;
+++                    ret = TRUE;
+++                }
+++            }
+++#endif
++             if (!ret && handle == GetCurrentThread())
++             {
++                 /* fall back to process times */
++@@ -2782,6 +2797,20 @@ ULONG WINAPI NtGetCurrentProcessorNumber(void)
++         return cpu_id;
++     }
++ #endif
+++#if defined(__PROSPERO__) && defined(__x86_64__)
+++    /* (Mihawk OS 2457) The console has no sched_getcpu, and the affinity fallback below gave
+++     * every thread processor 0, so a program keeping data per processor (allocators, job systems)
+++     * put every thread on one slot. RDTSCP's processor id is the CPU the thread runs on, as
+++     * Windows' own GetCurrentProcessorNumber reads it; Wine numbers the console's CPUs as it does
+++     * (init_cpu_info), and a number past the count reported would read past a game's table. */
+++    if (peb->NumberOfProcessors > 1)
+++    {
+++        unsigned int aux;
+++
+++        __asm__ __volatile__( "rdtscp" : "=c"(aux) : : "eax", "edx" );
+++        return (aux & 0xfff) % peb->NumberOfProcessors;
+++    }
+++#endif
++ #if defined(__APPLE__) && (defined(__x86_64__) || defined(__i386__))
++     {
++         struct {
++-- 
++2.43.0
++
+-- 
+2.43.0
+
