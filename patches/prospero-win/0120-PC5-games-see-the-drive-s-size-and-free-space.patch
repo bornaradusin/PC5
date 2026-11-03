@@ -1,0 +1,92 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Tue, 3 Nov 2026 08:35:00 +0000
+Subject: [PATCH 120/120] PC5: games see the drive's size and free space
+
+Every statfs failed in a title, so Wine's GetDiskFreeSpace(Ex) failed too, and
+a game that checks the free space before it saves got zeros: Dead Space 2
+divided by them and crashed after a few minutes, and games reported they
+couldn't save. fstatvfs, what Wine reads the size with, now answers from the
+statfs system call libkernel itself exports (_fstatfs), as PC5 reads its own
+free space. fstatfs, whose file system names change how Wine treats a drive,
+still fails as before.
+---
+ docs/WINE_PS5_BUILD.md         |  4 ++++
+ wine/ps5/pw_wine_compat_libc.c | 33 +++++++++++++++++++++++++++++++++
+ 2 files changed, 37 insertions(+)
+
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index f337e37..7c938c5 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -945,6 +945,10 @@ fault in the first console start of the in-process server.
+ 
+ The compat layer now provides these:
+ - `fstatfs` fails with `ENOSYS`;
++- `fstatvfs` answers from libkernel's own `_fstatfs` export, so a drive's size
++  and free space (`GetDiskFreeSpace(Ex)`) are the console's: failing, a game
++  that checks the space before it saves got zeros (Dead Space 2's division by
++  zero);
+ - `link` and `ptrace` fail with `EPERM`;
+ - `umask` is remembered.
+ 
+diff --git a/wine/ps5/pw_wine_compat_libc.c b/wine/ps5/pw_wine_compat_libc.c
+index 0de4656..701b3b7 100644
+--- a/wine/ps5/pw_wine_compat_libc.c
++++ b/wine/ps5/pw_wine_compat_libc.c
+@@ -8,12 +8,15 @@
+ #include <langinfo.h>
+ #include <net/if.h>
+ #include <pwd.h>
++#include <stdint.h>
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <string.h>
+ #include <sys/extattr.h>
+ #include <sys/mount.h>
+ #include <sys/ptrace.h>
+ #include <sys/stat.h>
++#include <sys/statvfs.h>
+ #include <sys/thr.h>
+ #include <sys/times.h>
+ #include <sys/utsname.h>
+@@ -45,6 +48,36 @@ int posix_fadvise(int fd,off_t offset,off_t length,int advice)
+ {return pw_compat_posix_fadvise(fd,offset,length,advice);}
+ unsigned int if_nametoindex(const char *name){return pw_compat_if_nametoindex(name);}
+ int fstatfs(int fd,struct statfs *buf){(void)fd;(void)buf;return pw_compat_no_fstatfs();}
++
++/* libkernel's own export of the statfs system call: the fstatfs only libkernel_sys exports isn't
++ * a title's (above), but this one is, as PC5 reads the free space (its pc5_free_bytes). Its answer
++ * goes into a buffer with room to spare, in case the kernel's statfs is larger than the SDK's. */
++int _fstatfs(int fd,struct statfs *buf);
++
++/* A drive's size and free space (Wine's get_full_size_info: GetDiskFreeSpace(Ex)): from that call.
++ * Failing, as every statfs did, a game that checks the space before it saves got nothing to go on,
++ * or zeros to divide by. Only this one answers: fstatfs, whose file system names change how Wine
++ * treats a drive, still fails. */
++int fstatvfs(int fd,struct statvfs *buf)
++{
++    union { struct statfs st; uint64_t room[512]; } answer;
++    if(!buf){errno=EFAULT;return -1;}
++    memset(&answer,0,sizeof(answer));
++    if(_fstatfs(fd,&answer.st))return -1;
++    if(!answer.st.f_bsize){errno=ENOSYS;return -1;}
++    memset(buf,0,sizeof(*buf));
++    buf->f_frsize=answer.st.f_bsize;
++    buf->f_bsize=answer.st.f_iosize?answer.st.f_iosize:answer.st.f_bsize;
++    buf->f_blocks=answer.st.f_blocks;
++    buf->f_bfree=answer.st.f_bfree;
++    buf->f_bavail=answer.st.f_bavail>0?(fsblkcnt_t)answer.st.f_bavail:0;
++    buf->f_files=answer.st.f_files;
++    buf->f_ffree=answer.st.f_ffree>0?(fsfilcnt_t)answer.st.f_ffree:0;
++    buf->f_favail=buf->f_ffree;
++    buf->f_fsid=(unsigned long)(uint32_t)answer.st.f_fsid.val[0];
++    buf->f_namemax=answer.st.f_namemax;
++    return 0;
++}
+ int link(const char *from,const char *to){(void)from;(void)to;return pw_compat_no_link();}
+ int ptrace(int request,pid_t pid,caddr_t address,int data)
+ {(void)request;(void)pid;(void)address;(void)data;return (int)pw_compat_no_ptrace();}
+-- 
+2.43.0
+
