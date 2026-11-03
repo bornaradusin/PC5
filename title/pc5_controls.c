@@ -58,8 +58,8 @@ static const char *const default_keys[PC5_CONTROLS] = {
     "up", "down", "left", "right",
     "enter", "escape", "none", "none", "none", "none", "none",
 };
-static const char *const mode_keys[PC5_PAD_MODES] = { "xinput", "dualsense", "keyboard" };
-static const char *const mode_names[PC5_PAD_MODES] = { N_("Xbox controller"), "DualSense", N_("Keyboard & mouse") };
+static const char *const mode_keys[PC5_PAD_MODES] = { "xinput", "dualsense", "wheel", "keyboard" };
+static const char *const mode_names[PC5_PAD_MODES] = { N_("Xbox controller"), "DualSense", N_("G29 wheel"), N_("Keyboard & mouse") };
 static const char *const stick_keys[PC5_STICK_USES] = { "keys", "pointer", "nothing" };
 static const char *const stick_names[PC5_STICK_USES] = { N_("Keys"), N_("Mouse pointer"), N_("Nothing") };
 
@@ -400,7 +400,8 @@ int pc5_controls_input(const Pc5Controls *controls, char *out, size_t size)
                         : controls->stick[0] == PC5_STICK_POINTER ? "left_stick" : "none";
 
     if (controls->mode != PC5_PAD_KEYBOARD) {
-        status = pc5_buf_printf(&text, "[input]\nmode = %s\n", controls->mode == PC5_PAD_DUALSENSE ? "dualsense" : "xinput");
+        status = pc5_buf_printf(&text, "[input]\nmode = %s\n", controls->mode == PC5_PAD_DUALSENSE ? "dualsense" :
+                                controls->mode == PC5_PAD_WHEEL ? "wheel" : "xinput");
     } else {
         status = pc5_buf_printf(&text, "[input]\nmode = keyboard\nmouse = %s\nmouse_speed = %d\n", mouse,
                                 pc5_controls_pixels(controls));

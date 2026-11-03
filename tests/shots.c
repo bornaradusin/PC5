@@ -349,9 +349,13 @@ int main(int argc, char **argv)
     step(ui, PC5_KEY_TRIANGLE, 1);
     settle(ui);
     save("15-game-menu");
-    /* Its controller: Keyboard & mouse, its buttons, and the key picker. */
+    /* Its controller: the G29 wheel, then Keyboard & mouse, its buttons, and the key picker. */
     step(ui, PC5_KEY_DOWN, 1);
-    step(ui, PC5_KEY_LEFT, 1);
+    step(ui, PC5_KEY_RIGHT, 1);
+    step(ui, PC5_KEY_RIGHT, 1);
+    settle(ui);
+    save("15a-game-menu-wheel");
+    step(ui, PC5_KEY_RIGHT, 1);
     settle(ui);
     save("15b-game-menu-keyboard");
     step(ui, PC5_KEY_DOWN, 1);

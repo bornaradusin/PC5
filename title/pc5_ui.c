@@ -6808,7 +6808,7 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
         break;
     case GR_CONTROLLER:
         *label = T("Controller");
-        *text = ui->controls.mode == PC5_PAD_DUALSENSE ? T("The game sees a DualSense, as one plugged into a PC") : ui->controls.mode == PC5_PAD_KEYBOARD ? T("The buttons press keys, the sticks move the mouse") : T("Games with controller support see an Xbox controller");
+        *text = ui->controls.mode == PC5_PAD_DUALSENSE ? T("The game sees a DualSense, as one plugged into a PC") : ui->controls.mode == PC5_PAD_WHEEL ? T("The game sees a Logitech G29 steering wheel") : ui->controls.mode == PC5_PAD_KEYBOARD ? T("The buttons press keys, the sticks move the mouse") : T("Games with controller support see an Xbox controller");
         *value = T(pc5_pad_mode_name(ui->controls.mode));
         break;
     case GR_BUTTONS:

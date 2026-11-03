@@ -1,0 +1,225 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Tue, 3 Nov 2026 12:30:00 +0000
+Subject: [PATCH 122/122] PC5: the steering wheel is its own input mode
+
+A profile's [input] mode = wheel makes the console's wheel the game's G29,
+and the game gets no controller, so it never reads the wheel twice. In the
+other modes the game doesn't see the wheel. Without a wheel, wheel mode is
+xinput mode, so the game can still be played.
+---
+ docs/CONTROLS.md             | 17 +++++++++++
+ docs/WINE_PS5_BUILD.md       | 12 ++++----
+ native/wine64_main.c         | 58 +++++++++++-------------------------
+ src/pw_game_profile.c        |  1 +
+ src/pw_game_profile.h        |  7 +++--
+ tests/test_pw_game_profile.c |  2 ++
+ 6 files changed, 48 insertions(+), 49 deletions(-)
+
+diff --git a/docs/CONTROLS.md b/docs/CONTROLS.md
+index e9f362e..989cd68 100644
+--- a/docs/CONTROLS.md
++++ b/docs/CONTROLS.md
+@@ -131,6 +131,23 @@ DualSense. Button lines still add keys, as in an XInput preset.
+ mode = dualsense
+ ```
+ 
++### Steering wheel games
++
++With `mode = wheel` the game finds the console's steering wheel (a Logitech
++G29, plugged into the PS5 with its mode switch on PS4) the way Windows finds
++one plugged in by USB (Logitech's `046d:c24f`, "G29 Driving Force Racing
++Wheel"): steering, accelerator, brake and clutch, the D-pad and 24 buttons,
++which DirectInput reads as a driving device. The game sees no controller in
++this mode; button lines still add keys, and Cross and the D-pad still answer
++a pop-up. The wheel must be plugged in before the game starts; without one,
++the controller is the game's Xbox controller, as in `mode = xinput`. No force
++feedback yet. See [Steering wheel](WINE_PS5_BUILD.md#steering-wheel).
++
++```ini
++[input]
++mode = wheel
++```
++
+ ### DirectInput
+ 
+ Games that read a controller through DirectInput (many games from before
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 93dcef2..ad8676d 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -162,7 +162,7 @@ before evaluating a candidate built from that cache.
+ | 0954 | `server`: on PS5, an opened file's directory is resolved with `realpath` once and kept (64 entries, checked by device and inode), so an open costs two system calls instead of one a path component. From PS5_MihawkOS (its 2080) |
+ | 0955 | `ntdll`: on PS5, the directories a process resolved are kept by their upper-cased Windows path (1024 slots) and a lookup starts from the longest one, checked with one `fstatat`; a directory's case sensitivity is not asked (the console's disk is). From PS5_MihawkOS (its 2081) |
+ | 0956 | `gdi32`: with a native `opengl32` (Mesa), setting a window's pixel format again to the one it has succeeds instead of failing: Godot 4 sets it twice and stopped with "Failed to create an OpenGL window". From Playden's prospero-win |
+-| 0957 | `xinput1_3`: a steering wheel on the console (`PW_WHEEL=1`) as the Logitech G29 a PC finds plugged in by USB (`046d:c24f`), made in the game's process as the DualSense is; `ntdll` loads xinput1_3 at the start for it too; see [Steering wheel](#steering-wheel) |
++| 0957 | `xinput1_3`: in wheel mode, a steering wheel on the console (`PW_WHEEL=1`) as the Logitech G29 a PC finds plugged in by USB (`046d:c24f`), made in the game's process as the DualSense is; `ntdll` loads xinput1_3 at the start for it too; see [Steering wheel](#steering-wheel) |
+ | 0958 | `ntdll`: `WINE_CPU_TOPOLOGY`'s processor count (as Proton reads it) is reported as `NumberOfProcessors` when it is between 1 and the CPUs the process has (0881); logged. From Playden's prospero-win |
+ | 0959-0963 | `vkd3d-shader`: fx_2_0 effects compile with pass assignments, sampler state initializers, `true`/`false` for any state, null shader and texture states, and ps_1_x shaders as ps_2_0, so D3DX9 effects from source build. From Playden's prospero-win |
+ | 0971 | `kernelbase`: in a title, an unhandled exception doesn't start a debugger (which can't start there) and ends the process after the game's own filter: reading AeDebug took the process heap's lock a faulting thread could hold, and the crash froze the game instead of ending it. From Playden's prospero-win |
+@@ -729,17 +729,17 @@ To use it on the console:
+ ## Steering wheel
+ 
+ A steering wheel on the console (a Logitech G29, as PS4 and PS5 racing
+-games take it) is the G29 a PC finds plugged in by USB (`046d:c24f`), in
+-any input mode. The title looks for it once the controller is open
++games take it) is the G29 a PC finds plugged in by USB (`046d:c24f`), with
++a profile's `[input] mode = wheel`. The title looks for it once the controller is open
+ (`native/pw_wheel_ps5.c`): the user's controller when libScePad says its
+ device class is a wheel's, else the special port's first controller
+ (`scePadOpen` type 2). It logs what the console answers (`PW_WHEEL` lines:
+ the controller and device class information, the first parsed reads, and
+ every ten seconds the ranges seen), reads it each frame
+ (`scePadReadState`, `scePadDeviceClassParseData`), sets `PW_WHEEL=1` and
+-publishes it to its sink (`pw_wine_set_wheel`). In xinput mode the wheel
+-is also on XInput controller 0: steering the left stick, the accelerator
+-the right trigger, the brake the left.
++publishes it to its sink (`pw_wine_set_wheel`). The game gets no
++controller in this mode, so it never reads the wheel twice; without a
++wheel, the controller is the game's XInput controller, as in xinput mode.
+ 
+ Patch 0957 makes the device in xinput1_3 (`wheel.c`) as 0475 makes the
+ DualSense (`\Device\PwWheel`, `Enum\HID\VID_046D&PID_C24F`), and ntdll loads
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index bb9cc70..cca22ed 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -964,32 +964,6 @@ static void wheel_log(const char *line)
+     PS5LOG_LOG("%s", line);
+ }
+ 
+-/* XInput controller 0 with the wheel on it too, for games that only read
+- * a controller: steering the left stick (when turned further than the
+- * stick), the accelerator the right trigger, the brake the left, and the
+- * wheel's buttons as the controller's. */
+-static void wheel_on_pad(const PwWheelState *wheel, PwWinePad *pad)
+-{
+-    static const struct { uint32_t wheel; uint16_t pad; } buttons[] = {
+-        { 1u << 0, 0x1000 }, { 1u << 1, 0x4000 }, { 1u << 2, 0x2000 }, { 1u << 3, 0x8000 },   /* A X B Y */
+-        { 1u << 4, 0x0200 }, { 1u << 5, 0x0100 },                                         /* RB LB */
+-        { 1u << 8, 0x0020 }, { 1u << 9, 0x0010 }, { 1u << 10, 0x0080 }, { 1u << 11, 0x0040 },/* back start RS LS */
+-    };
+-    static const uint16_t hat[8] = { 0x1, 0x1 | 0x8, 0x8, 0x2 | 0x8, 0x2, 0x2 | 0x4, 0x4, 0x1 | 0x4 };
+-    const uint8_t accelerator = (uint8_t)(wheel->accelerator >> 8), brake = (uint8_t)(wheel->brake >> 8);
+-    const int steering = wheel->steering < 0 ? -(int)wheel->steering : wheel->steering;
+-    const int stick = pad->thumb_lx < 0 ? -(int)pad->thumb_lx : pad->thumb_lx;
+-
+-    if (!wheel->connected) return;
+-    pad->connected = 1;
+-    if (steering > stick) pad->thumb_lx = wheel->steering;
+-    if (accelerator > pad->right_trigger) pad->right_trigger = accelerator;
+-    if (brake > pad->left_trigger) pad->left_trigger = brake;
+-    for (unsigned i = 0; i < sizeof(buttons) / sizeof(buttons[0]); i++)
+-        if (wheel->buttons & buttons[i].wheel) pad->buttons |= buttons[i].pad;
+-    if (wheel->hat < 8) pad->buttons |= hat[wheel->hat];
+-}
+-
+ /* The process's CPU time, user and system, in milliseconds: a stall that
+  * waits shows no growth, one that spins grows by a core a second. */
+ static unsigned long long cpu_ms(void)
+@@ -1839,7 +1813,8 @@ int main(int argc, char **argv)
+                    desktop[0] ? desktop : "default",
+                    scaling, view, game->display.show_fps, pw_result_name(input_status),
+                    game->input.preset[0] ? game->input.preset : "-",
+-                   game_input.mode == PW_GAME_INPUT_XINPUT ? "xinput" : game_input.mode == PW_GAME_INPUT_DUALSENSE ? "dualsense" : "keyboard", (int)game_input.mouse,
++                   game_input.mode == PW_GAME_INPUT_XINPUT ? "xinput" : game_input.mode == PW_GAME_INPUT_DUALSENSE ? "dualsense" :
++                   game_input.mode == PW_GAME_INPUT_WHEEL ? "wheel" : "keyboard", (int)game_input.mouse,
+                    effective_dll_overrides[0] ? effective_dll_overrides : "-");
+         /* What Wine gives the game as NumberOfProcessors. */
+         PS5LOG_LOG("PW_WINE64 cpus online=%ld", sysconf(_SC_NPROCESSORS_ONLN));
+@@ -1934,10 +1909,11 @@ int main(int argc, char **argv)
+             PS5LOG_LOG("PW_WINE64 dualsense output=%d motion=%s rc=%d", dualsense_output != NULL,
+                        pw_result_name(motion), pad.motion_rc);
+         }
+-        /* A steering wheel, the foreground user's: the game finds a G29
+-         * (Wine's xinput makes it, which ntdll loads at the start for
+-         * PW_WHEEL, patch 0957) whatever the input mode. */
+-        {
++        /* wheel mode: the foreground user's steering wheel, as the G29 the
++         * game finds (Wine's xinput makes it, which ntdll loads at the start
++         * for PW_WHEEL, patch 0957), and no controller. Without a wheel the
++         * game gets the controller as in xinput mode, so it can be played. */
++        if (game_input.mode == PW_GAME_INPUT_WHEEL) {
+             PwWheelPs5Ops wheel_ops;
+             int32_t user = pad_status == PW_OK ? pad.user_id : -1;
+             int wheel_status = pw_wheel_ps5_platform_ops(&wheel_ops);
+@@ -1954,10 +1930,15 @@ int main(int argc, char **argv)
+                 set_wheel = (void (*)(const PwWheelState *))(uintptr_t)pw_prx_lookup(start.descriptor,
+                                                                                       "pw_wine_set_wheel");
+             if (set_wheel) setenv("PW_WHEEL", "1", 1);
+-            else unsetenv("PW_WHEEL");
+-            PS5LOG_LOG("PW_WINE64 wheel=%s user=%d sink=%d", pw_result_name(wheel_status), (int)user,
+-                       set_wheel != NULL);
+-        }
++            else {
++                unsetenv("PW_WHEEL");
++                setenv("SDL_JOYSTICK_RAWINPUT", "0", 1);   /* as xinput mode's */
++                set_pad = (void (*)(const PwWinePad *))(uintptr_t)pw_prx_lookup(start.descriptor, "pw_wine_set_pad");
++                rumble = (int (*)(uint32_t *, uint32_t *))(uintptr_t)pw_prx_lookup(start.descriptor, "pw_wine_rumble");
++            }
++            PS5LOG_LOG("PW_WINE64 wheel=%s user=%d sink=%d%s", pw_result_name(wheel_status), (int)user,
++                       set_wheel != NULL, set_wheel ? "" : ": no wheel, the controller is the game's Xbox controller");
++        } else unsetenv("PW_WHEEL");
+         if (set_pad_at && rumble_at && pad_status == PW_OK)
+             players_on = pw_players_ps5_start(&players, &pad_ops, pad_open_map,
+                                               sizeof(pad_open_map) / sizeof(pad_open_map[0]), pad.user_id,
+@@ -2158,12 +2139,7 @@ int main(int argc, char **argv)
+             scripted = script_input.pad_events != 0;
+             connected = pw_wine_script_pad(&state, connected, &script_pad, scripted);
+ #endif
+-            if (!connected) memset(&state, 0, sizeof(state));
+-            if (wheel_read) {
+-                wheel_on_pad(&wheel.state, &state);
+-                connected = 1;
+-            }
+-            if (pad_read || scripted || wheel_read) set_pad(connected ? &state : NULL);
++            if (pad_read || scripted) set_pad(connected ? &state : NULL);
+         }
+         /* dualsense mode: the controller as the game's DualSense, and what
+          * the game sent it back. */
+diff --git a/src/pw_game_profile.c b/src/pw_game_profile.c
+index a0ce12d..5223053 100644
+--- a/src/pw_game_profile.c
++++ b/src/pw_game_profile.c
+@@ -133,6 +133,7 @@ static int input_field(PwGameInput *input, const uint8_t *key, size_t key_length
+         if (is(v, n, "keyboard")) input->mode = PW_GAME_INPUT_KEYBOARD;
+         else if (is(v, n, "xinput")) input->mode = PW_GAME_INPUT_XINPUT;
+         else if (is(v, n, "dualsense")) input->mode = PW_GAME_INPUT_DUALSENSE;
++        else if (is(v, n, "wheel")) input->mode = PW_GAME_INPUT_WHEEL;
+         else return PW_ERR_UNSUPPORTED;
+         input->set |= SET_MODE;
+         return PW_OK;
+diff --git a/src/pw_game_profile.h b/src/pw_game_profile.h
+index 47315a6..04e063c 100644
+--- a/src/pw_game_profile.h
++++ b/src/pw_game_profile.h
+@@ -123,8 +123,11 @@ typedef enum PwGameScaling { PW_GAME_SCALING_FIT = 0, PW_GAME_SCALING_INTEGER,
+                              PW_GAME_SCALING_STRETCH } PwGameScaling;
+ typedef enum PwGameView { PW_GAME_VIEW_WINDOW = 0, PW_GAME_VIEW_DESKTOP } PwGameView;
+ /* dualsense: the game sees the DualSense as Windows does a plugged-in one (a HID
+- * device), and no XInput controller; bindings still apply. */
+-typedef enum PwGameInputMode { PW_GAME_INPUT_KEYBOARD = 0, PW_GAME_INPUT_XINPUT, PW_GAME_INPUT_DUALSENSE } PwGameInputMode;
++ * device), and no XInput controller; bindings still apply. wheel: the game sees
++ * the console's steering wheel as a Logitech G29 (a HID driving device), and no
++ * controller; without a wheel, it is xinput. */
++typedef enum PwGameInputMode { PW_GAME_INPUT_KEYBOARD = 0, PW_GAME_INPUT_XINPUT, PW_GAME_INPUT_DUALSENSE,
++                               PW_GAME_INPUT_WHEEL } PwGameInputMode;
+ typedef enum PwGameStick { PW_GAME_STICK_NONE = 0, PW_GAME_STICK_LEFT, PW_GAME_STICK_RIGHT } PwGameStick;
+ typedef enum PwGameBindKind { PW_GAME_BIND_UNSET = 0, PW_GAME_BIND_NONE, PW_GAME_BIND_KEY,
+                               PW_GAME_BIND_MOUSE, PW_GAME_BIND_WHEEL } PwGameBindKind;
+diff --git a/tests/test_pw_game_profile.c b/tests/test_pw_game_profile.c
+index f08ba07..92f506d 100644
+--- a/tests/test_pw_game_profile.c
++++ b/tests/test_pw_game_profile.c
+@@ -352,6 +352,8 @@ static void test_presets(void)
+     pw_game_input_init(&input);
+     assert(preset("[input]\nmode = dualsense\n", &input) == PW_OK && input.mode == PW_GAME_INPUT_DUALSENSE);
+     assert(preset("[input]\nmode = dualshock\n", &input) == PW_ERR_UNSUPPORTED);
++    pw_game_input_init(&input);
++    assert(preset("[input]\nmode = wheel\n", &input) == PW_OK && input.mode == PW_GAME_INPUT_WHEEL);
+     assert(pw_game_button_mask(TOUCHPAD + 1) == PW_GAME_LEFT_STICK_UP);
+     assert(pw_game_button_mask(PW_GAME_BUTTON_COUNT - 1) == PW_GAME_RIGHT_STICK_RIGHT);
+     assert(pw_game_button_mask(PW_GAME_BUTTON_COUNT) == 0);
+-- 
+2.43.0
+
