@@ -3202,7 +3202,7 @@ static void report_open(Pc5Ui *ui)
         Pc5Controls k;
         pc5_controls_load(ui->root, game->prefix, &k);
         snprintf(settings, sizeof(settings),
-                 "%d-bit, draws with %s; Graphics API %s; Controller %s; Frame generation %s; Memory %s; CPU sharing %s%s%s",
+                 "%d-bit, draws with %s; Graphics mode %s; Controller %s; Frame generation %s; Memory %s; CPU sharing %s%s%s",
                  game->bits, pc5_api_name((Pc5Api)game->api), pc5_graphics_tech_name(k.graphics, game->api),
                  pc5_pad_mode_name(k.mode), k.frame_generation == 2 ? "40 -> 120 (MihawkGen)" : k.frame_generation ? "on" : "off", k.memory_4gb ? "4 GB" : "Auto",
                  k.cpu_sharing ? "on" : "off", k.steam_off ? "; Steam emulator off" : "",

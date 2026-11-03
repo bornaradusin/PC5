@@ -143,7 +143,7 @@ def main():
         assert status == 200 and open(debug).read() == "err+all,+seh\n", status
         status, body, _ = request(server.base, "api/games")
         listed = [g for g in json.loads(body) if g["id"] == game["id"]][0]
-        assert listed["debug"] == "err+all,+seh\n" and "Graphics API" in listed["settings"], listed
+        assert listed["debug"] == "err+all,+seh\n" and "Graphics mode" in listed["settings"], listed
         assert listed["report"] == "" or listed["report"].startswith("https://github.com/bornaradusin/PC5/issues/new?"), listed
         # Report it works: the compatibility form, its fields filled in by their ids.
         works = urllib.parse.urlsplit(listed["works"])

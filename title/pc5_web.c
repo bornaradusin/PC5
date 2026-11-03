@@ -479,7 +479,7 @@ static void game_settings(const Pc5Game *g, Pc5Controls *controls, char *out, si
     Pc5Controls k;
     pc5_controls_load(web.root, g->prefix, &k);
     *controls = k;
-    snprintf(out, size, "%d-bit, draws with %s; Graphics API %s; Controller %s; Frame generation %s; Memory %s; CPU sharing %s%s%s",
+    snprintf(out, size, "%d-bit, draws with %s; Graphics mode %s; Controller %s; Frame generation %s; Memory %s; CPU sharing %s%s%s",
              g->bits, pc5_api_name((Pc5Api)g->api), pc5_graphics_tech_name(k.graphics, g->api), pc5_pad_mode_name(k.mode),
              k.frame_generation == 2 ? "40 -> 120" : k.frame_generation ? "on" : "off", k.memory_4gb ? "4 GB" : "Auto", k.cpu_sharing ? "on" : "off",
              k.steam_off ? "; Steam emulator off" : "", k.surround == 2 ? "; Sound 7.1" : k.surround == 1 ? "; Sound 5.1" : "");
