@@ -1,0 +1,185 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Tue, 3 Nov 2026 14:00:00 +0000
+Subject: [PATCH 124/124] PC5: a console without a window has an empty screen buffer
+ (Wine patch 0964)
+
+.NET's Console.Clear() threw "The handle is invalid" in a console program started without a console window, as the title starts every game.
+---
+ PUBLICATION_ALLOWLIST.txt                     |   1 +
+ docs/WINE_PS5_BUILD.md                        |   1 +
+ ...-a-window-has-an-empty-screen-buffer.patch | 138 ++++++++++++++++++
+ 3 files changed, 140 insertions(+)
+ create mode 100644 wine/patches/0964-kernelbase-a-console-without-a-window-has-an-empty-screen-buffer.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index 06bc816..0c6ba46 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -684,6 +684,7 @@ wine/ps5/pw_mihawkgen_vk.h
+ wine/ps5/pw_pc5_hud.h
+ wine/patches/0877-secur32-log-gnutls-errors-and-the-clock-on-handshake-failure.patch
+ tests/test_build_tls_ps5.py
++wine/patches/0964-kernelbase-a-console-without-a-window-has-an-empty-screen-buffer.patch
+ wine/patches/0965-win32u-ps5-no-pixel-format-message-loop-on-the-desktop.patch
+ wine/patches/0970-ntdll-ps5-trace-each-process-query-class-once.patch
+ wine/patches/0972-faudio-keep-resampling-taps-within-the-samples.patch
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 62dfad2..7e07dc2 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -186,6 +186,7 @@ before evaluating a candidate built from that cache.
+ | 0997 | `kernelbase`: on PS5, the listing 0988 writes for `fxc.exe` gives a `def` line's values as plain decimals (`1.0`, `-0.5`, `0.333333343`; vkd3d-shader writes `1.00000000e+00`, and `D3DXAssembleShader` takes no exponent), and a `vs_1_x` shader that fails to compile (vkd3d-shader's `E7002` for `sincos`) is compiled for `vs_2_0` instead, as Far Cry only assembles the listing again on a device that takes `vs_3_0` |
+ | 0998 | `ntdll`: on PS5, a non-alertable `NtWaitForSingleObject` on an event or semaphore whose one try on the shared word (0885, 0887) fails spins up to `WINE_PS5_SYNC_SPIN_US` microseconds (100 by default, 0 off, 1000 at most; never longer than a relative timeout, none for a poll or an absolute time) re-trying the word before it blocks in the server, and stops at once when the server holds the word. While it spins the word stays the client's, so `SetEvent`/`ReleaseSemaphore` need no server call either. Blur sets six events about 2000 times a frame, each waking a worker that waits again, and each of those waits and sets cost several microseconds through the server (5 to 10 ms a frame). The log says `wine-ps5: waits spin up to N us before blocking` at the first such wait, and every 65536 spins how many took the object (`wine-ps5: wait spins: …`); `tests/test_wine_sync_spin.py` runs the spin on the actual word header |
+ | 0999 | `win32u`: on PS5, the user driver hides the pointer once the player hasn't moved it or clicked for `WINE_PS5_CURSOR_IDLE_MS` milliseconds (unset or 0 never; PC5 sets 5000 for a game whose Mouse pointer option says so), both where it draws the cursor over the screen and where Vulkan frames get it from VideoOut's hardware cursor (0740); the next move, even against an edge, or click shows it again, as does the game moving it to another place itself (`SetCursorPos`; Grim Dawn moves its pointer by the controller). A game setting the same place or a new image doesn't count, and the cursor the application set is unchanged for `GetCursorInfo`. A game played with the controller that leaves the Windows cursor on showed it, still, in a corner (Valor Mortis). |
++| 0964 | `kernelbase`: for a console program started without a console window (`CONSOLE_HANDLE_SHELL_NO_WINDOW`, as the title starts every game), a screen buffer query on one of its standard handles that fails answers an empty 80x25 buffer, and filling it or moving its cursor succeeds without doing anything. .NET's `Console.Clear()` threw "The handle is invalid" there and Streets of Rage 4 ended at start; a real console and other handles are answered as before |
+ | 0965 | `win32u`: setting a pixel format on the desktop window no longer posts `WM_WINE_SETPIXELFORMAT` to it. Nothing owns the server-created desktop on the PS5, so the message came back to the game's own queue and posted itself again forever. `vkCreateWin32SurfaceKHR` sets format -1 on every surface's window, so a Vulkan surface on the desktop (DXVK or Zink) kept the game on a black screen with one core busy (Syndicate) |
+ | 0974 | `ntdll`: outside images, a page made read-only or inaccessible takes writing, or all access, away from its whole 16 KiB host page, so touching it faults as on Windows; the host page used to get the union of its pages' protections, and a write to a protected page beside a writable one raised nothing (DuckStation then ran stale recompiled code). An access that faults only because of such a neighbour is single-stepped with the host page open for that one instruction, unseen by the program. On a PC, `WINE_HOST_PAGE_SIZE=16384` keeps 16 KiB host pages to run this scheme (`tests/test_wine_subpage_protect.py`) |
+ | 0975 (upstream 0986) | `ntdll`: accesses that 0974 steps over beside a protected page are counted, reads too. When a host page has had 256 of them, a write beside a read-only page is still reported there, and any other access gives the host page the union of its pages' protections, as before 0974, until a protection in it changes. Beside an inaccessible page nothing ended the stepping: Unity's Mono garbage collector (Darkwood) took about 13,000 steps a second and ran at 5 fps |
+diff --git a/wine/patches/0964-kernelbase-a-console-without-a-window-has-an-empty-screen-buffer.patch b/wine/patches/0964-kernelbase-a-console-without-a-window-has-an-empty-screen-buffer.patch
+new file mode 100644
+index 0000000..0106500
+--- /dev/null
++++ b/wine/patches/0964-kernelbase-a-console-without-a-window-has-an-empty-screen-buffer.patch
+@@ -0,0 +1,138 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: bornaradusin <bornaradusin@users.noreply.github.com>
++Date: Tue, 3 Nov 2026 14:00:00 +0000
++Subject: [PATCH] kernelbase: A console without a window has an empty screen
++ buffer.
++
++Streets of Rage 4 (.NET, a console program) clears its console right
++after setting its title (0951). Started without a console window, as the
++PS5's title starts every game, its standard handles have no screen
++buffer behind them, and .NET's Console.Clear() threw "The handle is
++invalid" when GetConsoleScreenBufferInfo failed: the game ended before
++it started. On Windows the program would have had a console window.
++
++For a process started without a window (CONSOLE_HANDLE_SHELL_NO_WINDOW),
++a screen buffer query on one of its standard handles that fails now
++answers an empty 80x25 buffer, and filling it (FillConsoleOutputCharacter,
++FillConsoleOutputAttribute) or moving its cursor succeeds without doing
++anything. A real console, and any other handle, is answered as before.
++
++diff --git a/dlls/kernelbase/console.c b/dlls/kernelbase/console.c
++index b2ad149..4b0afc6 100644
++--- a/dlls/kernelbase/console.c
+++++ b/dlls/kernelbase/console.c
++@@ -110,6 +110,30 @@ static BOOL console_ioctl( HANDLE handle, DWORD code, void *in_buff, DWORD in_co
++     return set_ntstatus( status );
++ }
++ 
+++/* A console program started without a console window (CONSOLE_HANDLE_SHELL_NO_WINDOW, as a
+++ * PS5 title starts every game) has no screen buffer behind its standard handles, where Windows
+++ * would have opened a console window for it. .NET's Console.Clear() reads the buffer, fills it
+++ * and moves the cursor, and threw "The handle is invalid" when they failed (Streets of Rage 4,
+++ * at start). For such a process's standard handles, a screen buffer query that fails answers
+++ * an empty 80x25 buffer, and filling it or moving its cursor succeeds without doing anything. */
+++static BOOL no_window_std_handle( HANDLE handle )
+++{
+++    RTL_USER_PROCESS_PARAMETERS *params = RtlGetCurrentPeb()->ProcessParameters;
+++
+++    if (params->ConsoleHandle != CONSOLE_HANDLE_SHELL_NO_WINDOW) return FALSE;
+++    return handle == params->hStdOutput || handle == params->hStdError || handle == params->hStdInput;
+++}
+++
+++static void no_window_buffer_info( CONSOLE_SCREEN_BUFFER_INFO *info )
+++{
+++    memset( info, 0, sizeof(*info) );
+++    info->dwSize.X = info->dwMaximumWindowSize.X = 80;
+++    info->dwSize.Y = info->dwMaximumWindowSize.Y = 25;
+++    info->wAttributes = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+++    info->srWindow.Right = 79;
+++    info->srWindow.Bottom = 24;
+++}
+++
++ BOOL is_console_handle( HANDLE handle )
++ {
++     IO_STATUS_BLOCK io;
++@@ -621,8 +645,12 @@ BOOL WINAPI DECLSPEC_HOTPATCH FillConsoleOutputAttribute( HANDLE handle, WORD at
++     params.wrap  = TRUE;
++     params.ch    = 0;
++     params.attr  = attr;
++-    return console_ioctl( handle, IOCTL_CONDRV_FILL_OUTPUT, &params, sizeof(params),
++-                          written, sizeof(*written), NULL );
+++    if (console_ioctl( handle, IOCTL_CONDRV_FILL_OUTPUT, &params, sizeof(params),
+++                       written, sizeof(*written), NULL ))
+++        return TRUE;
+++    if (!no_window_std_handle( handle )) return FALSE;
+++    *written = length;
+++    return TRUE;
++ }
++ 
++ 
++@@ -664,8 +692,12 @@ BOOL WINAPI DECLSPEC_HOTPATCH FillConsoleOutputCharacterW( HANDLE handle, WCHAR
++     params.wrap  = TRUE;
++     params.ch    = ch;
++     params.attr  = 0;
++-    return console_ioctl( handle, IOCTL_CONDRV_FILL_OUTPUT, &params, sizeof(params),
++-                          written, sizeof(*written), NULL );
+++    if (console_ioctl( handle, IOCTL_CONDRV_FILL_OUTPUT, &params, sizeof(params),
+++                       written, sizeof(*written), NULL ))
+++        return TRUE;
+++    if (!no_window_std_handle( handle )) return FALSE;
+++    *written = length;
+++    return TRUE;
++ }
++ 
++ 
++@@ -1022,7 +1054,12 @@ BOOL WINAPI DECLSPEC_HOTPATCH GetConsoleScreenBufferInfo( HANDLE handle, CONSOLE
++ 
++     if (!console_ioctl( handle , IOCTL_CONDRV_GET_OUTPUT_INFO, NULL, 0,
++                         &condrv_info, sizeof(condrv_info), NULL ))
++-        return FALSE;
+++    {
+++        if (!no_window_std_handle( handle )) return FALSE;
+++        no_window_buffer_info( info );
+++        SetLastError( ERROR_SUCCESS );
+++        return TRUE;
+++    }
++ 
++     info->dwSize.X              = condrv_info.width;
++     info->dwSize.Y              = condrv_info.height;
++@@ -1060,7 +1097,22 @@ BOOL WINAPI DECLSPEC_HOTPATCH GetConsoleScreenBufferInfoEx( HANDLE handle,
++ 
++     if (!console_ioctl( handle, IOCTL_CONDRV_GET_OUTPUT_INFO, NULL, 0, &condrv_info,
++                         sizeof(condrv_info), NULL ))
++-        return FALSE;
+++    {
+++        CONSOLE_SCREEN_BUFFER_INFO plain;
+++
+++        if (!no_window_std_handle( handle )) return FALSE;
+++        no_window_buffer_info( &plain );
+++        info->dwSize              = plain.dwSize;
+++        info->dwCursorPosition    = plain.dwCursorPosition;
+++        info->wAttributes         = plain.wAttributes;
+++        info->srWindow            = plain.srWindow;
+++        info->dwMaximumWindowSize = plain.dwMaximumWindowSize;
+++        info->wPopupAttributes    = plain.wAttributes;
+++        info->bFullscreenSupported = FALSE;
+++        memset( info->ColorTable, 0, sizeof(info->ColorTable) );
+++        SetLastError( ERROR_SUCCESS );
+++        return TRUE;
+++    }
++ 
++     info->dwSize.X              = condrv_info.width;
++     info->dwSize.Y              = condrv_info.height;
++@@ -1565,7 +1617,11 @@ BOOL WINAPI DECLSPEC_HOTPATCH SetConsoleCursorPosition( HANDLE handle, COORD pos
++ 
++     params.info.cursor_x = pos.X;
++     params.info.cursor_y = pos.Y;
++-    return console_ioctl( handle, IOCTL_CONDRV_SET_OUTPUT_INFO, &params, sizeof(params), NULL, 0, NULL );
+++    if (console_ioctl( handle, IOCTL_CONDRV_SET_OUTPUT_INFO, &params, sizeof(params), NULL, 0, NULL ))
+++        return TRUE;
+++    if (!no_window_std_handle( handle )) return FALSE;
+++    SetLastError( ERROR_SUCCESS );
+++    return TRUE;
++ }
++ 
++ 
++-- 
++2.43.0
++
+-- 
+2.43.0
+
