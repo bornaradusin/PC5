@@ -1,0 +1,132 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Tue, 3 Nov 2026 08:10:00 +0000
+Subject: [PATCH 118/118] PC5: a game without its own AMD library goes on without AGS
+ (Wine patch 0978)
+
+Avatar Legends: The Fighting Game called agsInit on the amd_ags_x64.dll in the
+system directory, which only Wine has, and the builtin, to learn the game's AGS
+version, loaded itself and asked its own agsGetVersionNumber until the stack ran
+out: the game closed before showing anything from 2.2.2 on. The version is now
+read from the game's own copy only, and without one agsInit fails, as on a PC
+without AMD's library.
+---
+ docs/WINE_PS5_BUILD.md                        |  2 +-
+ ...iver-version-for-amd-sponsored-games.patch | 45 ++++++++++++++++++-
+ 2 files changed, 44 insertions(+), 3 deletions(-)
+
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 1918750..736c606 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -188,7 +188,7 @@ before evaluating a candidate built from that cache.
+ | 0975 (upstream 0986) | `ntdll`: accesses that 0974 steps over beside a protected page are counted, reads too. When a host page has had 256 of them, a write beside a read-only page is still reported there, and any other access gives the host page the union of its pages' protections, as before 0974, until a protection in it changes. Beside an inaccessible page nothing ended the stepping: Unity's Mono garbage collector (Darkwood) took about 13,000 steps a second and ran at 5 fps |
+ | 0976 | `ntdll` (Mihawk OS 2085): on PS5, a boolean socket option (`SO_BROADCAST`, `SO_KEEPALIVE`, `SO_REUSEADDR` and the other boolean `SOL_SOCKET` ones, `TCP_NODELAY`) reads back as 0 or 1, as on Windows and Linux. The console's FreeBSD kernel answered with the option's flag bit (`SO_BROADCAST` as 0x20), so a program that compares the value with TRUE took a set option for unset |
+ | 0977 | `win32u` (Mihawk OS 2152): `GetClipCursor` keeps the clip inside the virtual screen. In an emulated display mode (a 640x480 mode drawn letterboxed on the 1920x1080 output) the unclipped raw rect is the whole physical screen, which mapped back into the mode reached past its sides |
+-| 0978 | `amd_ags_x64` (Proton's, ValveSoftware/wine, LGPL; `amd_ags.h` AMD's, MIT): AMD's GPU Services library as a builtin, answering from the Vulkan device with a current driver version, so AMD-sponsored games (Marvel's Spider-Man Remastered, The Last of Us Part II) don't take the PS5 for a missing or outdated driver; AGS's Direct3D 11 and 12 extensions go to DXVK and VKD3D-Proton. No Unix side (no libdrm on the PS5). A title overrides `amd_ags_x64` to builtin for a game's own copy to give way |
++| 0978 | `amd_ags_x64` (Proton's, ValveSoftware/wine, LGPL; `amd_ags.h` AMD's, MIT): AMD's GPU Services library as a builtin, answering from the Vulkan device with a current driver version, so AMD-sponsored games (Marvel's Spider-Man Remastered, The Last of Us Part II) don't take the PS5 for a missing or outdated driver; AGS's Direct3D 11 and 12 extensions go to DXVK and VKD3D-Proton. No Unix side (no libdrm on the PS5). A title overrides `amd_ags_x64` to builtin for a game's own copy to give way. The version the game was made for is read from the game's own copy only: a game that calls `agsInit` on the system directory's copy, which only Wine has (Avatar Legends: The Fighting Game), gets `AGS_FAILURE` and goes on without AGS, where the builtin had asked itself for its version until the stack ran out |
+ | 0973 | `win32u`: on PS5, a shown window the size of the part a display mode covers (0932), but at another place on the desktop, is what frames show and where the pointer stops: DirectDraw drawing with GDI (Heroes of Might and Magic IV in 2D only) sized its window to the mode from the desktop's top left, and the centred part showed its picture cut off on the left |
+ | 0979 | `win32u`: on PS5, a launch window that reads only the keyboard takes the dialog keys of 0911 (Cross as Enter, the D-pad as the arrows) as a dialog box does: Nixxes' (Marvel's Spider-Man Remastered and its other ports), a 792x447 pop-up of the class `GameNxApp` with Play, Settings and Quit, while it is smaller than the display both ways. The game's own window, which may share the class, covers the display and never gets those keys beside its controller |
+ | 0980 | `win32u`: on PS5, each move, new image or hiding of the cursor also goes to `libvulkan.prx`'s `pw_videoout_cursor_follow`, so VideoOut's hardware cursor follows the pointer between presents, unless a desktop frame (the cursor drawn in) is what shows. A game that draws only when something changes (Age of Empires II HD's menus) had lost its pointer: it followed only at a present |
+diff --git a/wine/patches/0978-amd-ags-x64-a-driver-version-for-amd-sponsored-games.patch b/wine/patches/0978-amd-ags-x64-a-driver-version-for-amd-sponsored-games.patch
+index c2b2625..4eb8c86 100644
+--- a/wine/patches/0978-amd-ags-x64-a-driver-version-for-amd-sponsored-games.patch
++++ b/wine/patches/0978-amd-ags-x64-a-driver-version-for-amd-sponsored-games.patch
+@@ -19,6 +19,13 @@ libdrm, so the GPU's units and clocks stay AGS's defaults.
+ 
+ A game's own amd_ags_x64.dll still loads unless the title overrides it to
+ builtin (PC5 does: its profiles' DLL overrides).
++
++The builtin reads which AGS version the game was made for from the game's
++own copy only. A game that calls agsInit on the copy in the system
++directory, which only Wine has (Avatar Legends: The Fighting Game), gets
++AGS_FAILURE and goes on without AGS, as on a PC without AMD's library:
++before, the builtin loaded itself to ask its own agsGetVersionNumber, which
++asked again until the thread's stack ran out.
+ ---
+ diff --git a/configure b/configure
+ index 50b8006..845ff91 100755
+@@ -2217,16 +2224,17 @@ index 0000000..32b47f2
+ +@ stdcall agsGetGPUInfo(ptr ptr)
+ diff --git a/dlls/amd_ags_x64/amd_ags_x64_main.c b/dlls/amd_ags_x64/amd_ags_x64_main.c
+ new file mode 100644
+-index 0000000..383d212
++index 0000000..3becf4f
+ --- /dev/null
+ +++ b/dlls/amd_ags_x64/amd_ags_x64_main.c
+-@@ -0,0 +1,2040 @@
++@@ -0,0 +1,2074 @@
+ +#if 0
+ +#pragma makedep arm64ec_x64
+ +#endif
+ +
+ +#include <stdarg.h>
+ +#include <stdbool.h>
+++#include <string.h>
+ +#include <assert.h>
+ +
+ +#include "ntstatus.h"
+@@ -2645,6 +2653,20 @@ index 0000000..383d212
+ +    return AMD_AGS_VERSION_5_4_1;
+ +}
+ +
+++/* Whether this library is the game's own amd_ags_x64.dll (overridden to builtin) rather than
+++ * the copy in the system directory, which Windows doesn't have: a game that only looks for AMD's
+++ * library there (Avatar Legends: The Fighting Game's agsInit) would otherwise be checked against
+++ * this same library, whose agsGetVersionNumber asks again, until its stack ran out. */
+++static BOOL from_system_directory(void)
+++{
+++    WCHAR path[MAX_PATH], system[MAX_PATH];
+++    DWORD size = GetModuleFileNameW(GetModuleHandleW(L"amd_ags_x64.dll"), path, ARRAY_SIZE(path));
+++    UINT length = GetSystemDirectoryW(system, ARRAY_SIZE(system));
+++
+++    return size && size < ARRAY_SIZE(path) && length && length < ARRAY_SIZE(system) &&
+++           !wcsnicmp(path, system, length) && path[length] == '\\' && !wcschr(path + length + 1, '\\');
+++}
+++
+ +static enum amd_ags_version determine_ags_version(int *ags_version)
+ +{
+ +    /* AMD AGS is not binary compatible between versions (even minor versions), and the game
+@@ -2664,6 +2686,11 @@ index 0000000..383d212
+ +        return get_version_number(*ags_version);
+ +
+ +    *temp_name = 0;
+++    if (from_system_directory())
+++    {
+++        TRACE("Not the game's own amd_ags_x64.dll: nothing to read its version from.\n");
+++        goto done;
+++    }
+ +    if (!(size = GetModuleFileNameW(GetModuleHandleW(L"amd_ags_x64.dll"), dllname, ARRAY_SIZE(dllname)))
+ +            || size == ARRAY_SIZE(dllname))
+ +    {
+@@ -2689,6 +2716,12 @@ index 0000000..383d212
+ +        ERR("LoadLibraryW failed for %s.\n", debugstr_w(temp_name));
+ +        goto done;
+ +    }
+++    if (hnative == GetModuleHandleW(L"amd_ags_x64.dll"))
+++    {
+++        /* the copy is this library itself: its agsGetVersionNumber would ask again */
+++        WARN("%s is this builtin.\n", debugstr_w(dllname));
+++        goto done;
+++    }
+ +
+ +    if ((pagsGetVersionNumber = (void *)GetProcAddress(hnative, "agsGetVersionNumber")))
+ +    {
+@@ -2973,6 +3006,14 @@ index 0000000..383d212
+ +
+ +    memset(context, 0, sizeof(*context));
+ +
+++    /* Without the game's own library, as on Windows, where only games ship AMD's library: the game
+++     * goes on without AGS, as on a PC without it, rather than with a version it wasn't made for. */
+++    if (!ags_version && from_system_directory())
+++    {
+++        WARN("No amd_ags_x64.dll of the game's: AGS unavailable.\n");
+++        return AGS_FAILURE;
+++    }
+++
+ +    context->version = determine_ags_version(&ags_version);
+ +    context->public_version = ags_version;
+ +
+-- 
+2.43.0
+

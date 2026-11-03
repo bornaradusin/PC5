@@ -170,6 +170,12 @@ int pc5_prefix_dotnet(const char *root, const char *prefix, const char *app);
  * pc5/prefix-fonts.reg, appended to user.reg). 1 when it added them, 0 when it had them or
  * the app has none, -1 on a failure (tried again next time). */
 int pc5_prefix_fonts(const char *root, const char *prefix, const char *app);
+/* Arial's files in the prefix's C:\Windows\Fonts (arial.ttf, arialbd.ttf, ariali.ttf,
+ * arialbi.ttf), made from Liberation Sans in the app's Wine fonts: a Unity game opens them there
+ * by name and drew no text without them (Magicraft, Flashing Lights), where the names above only
+ * reach programs that ask Windows for a font. A file already there (the player's own Arial)
+ * stays. The number added, 0 when none was missing (or there's no Windows yet), -1 on a failure. */
+int pc5_prefix_arial(const char *root, const char *prefix, const char *app);
 /* Windows versions for the programs that refuse the one Wine reports (Windows 10): each one's
  * HKCU\Software\Wine\AppDefaults\<program> "Version", appended to user.reg once (the
  * template's for the default prefix). 1 when it added some, 0 when it had them all, -1 on a

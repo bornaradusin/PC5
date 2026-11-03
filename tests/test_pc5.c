@@ -4781,6 +4781,33 @@ static void test_dotnet(void)
         pc5_buf_free(&text);
     }
     CHECK(pc5_prefix_fonts(root, "missing", app) == -1, "no prefix: nothing done");
+    /* Arial's files: Liberation Sans in C:\Windows\Fonts under Arial's names, once; the
+     * player's own Arial stays. */
+    {
+        char font[PC5_PATH];
+        CHECK(pc5_prefix_arial(root, "game", app) == 0, "no Windows yet: nothing done");
+        path(file, sizeof(file), "%s/prefixes/game/drive_c/windows", root);
+        pc5_mkdirs(file);
+        CHECK(pc5_prefix_arial(root, "game", app) == 0, "an app without Liberation: nothing done");
+        path(file, sizeof(file), "%s/win/wine/share/wine/fonts", app);
+        pc5_mkdirs(file);
+        static const char *const liberation[] = { "Regular", "Bold", "Italic", "BoldItalic" };
+        for (int i = 0; i < 4; i++) {
+            path(font, sizeof(font), "%s/win/wine/share/wine/fonts/LiberationSans-%s.ttf", app, liberation[i]);
+            write_text(font, liberation[i]);
+        }
+        path(font, sizeof(font), "%s/prefixes/game/drive_c/windows/Fonts", root);
+        pc5_mkdirs(font);
+        path(font, sizeof(font), "%s/prefixes/game/drive_c/windows/Fonts/arialbd.ttf", root);
+        write_text(font, "the player's own");
+        CHECK(pc5_prefix_arial(root, "game", app) == 3, "three added beside the player's own");
+        CHECK(pc5_prefix_arial(root, "game", app) == 0, "only once");
+        CHECK(file_is(font, "the player's own"), "the player's own Arial Bold stays");
+        path(font, sizeof(font), "%s/prefixes/game/drive_c/windows/Fonts/arial.ttf", root);
+        CHECK(file_is(font, "Regular"), "arial.ttf is Liberation Sans");
+        path(font, sizeof(font), "%s/prefixes/game/drive_c/windows/Fonts/arialbi.ttf", root);
+        CHECK(file_is(font, "BoldItalic"), "arialbi.ttf is Liberation Sans Bold Italic");
+    }
 
     /* Windows versions: Splinter Cell: Conviction's program told it runs on Windows 7, once. */
     CHECK(pc5_prefix_versions(root, "game") == 1, "an older game's prefix gets the Windows versions");

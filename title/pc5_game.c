@@ -335,6 +335,39 @@ int pc5_prefix_fonts(const char *root, const char *prefix, const char *app)
     return append_file(from, user) ? -1 : 1;
 }
 
+/* Arial's files, as games open them in C:\Windows\Fonts by name, and Liberation Sans's, which has
+ * Arial's metrics: (Arial's file, Liberation's) pairs. */
+static const char *const arial_files[][2] = {
+    { "arial.ttf", "LiberationSans-Regular.ttf" }, { "arialbd.ttf", "LiberationSans-Bold.ttf" },
+    { "ariali.ttf", "LiberationSans-Italic.ttf" }, { "arialbi.ttf", "LiberationSans-BoldItalic.ttf" },
+};
+
+int pc5_prefix_arial(const char *root, const char *prefix, const char *app)
+{
+    char windows[PC5_PATH], fonts[PC5_PATH], to[PC5_PATH], from[PC5_PATH];
+    int added = 0;
+
+    if (!app || !app[0]) return 0;
+    if (!prefix || !prefix[0] || !strcmp(prefix, "default")
+            ? pc5_format(windows, sizeof(windows), "%s/prefix/drive_c/windows", root)
+            : pc5_format(windows, sizeof(windows), "%s/prefixes/%s/drive_c/windows", root, prefix))
+        return -1;
+    if (!pc5_exists(windows)) return 0;   /* no Windows yet: the next start adds them */
+    if (pc5_format(fonts, sizeof(fonts), "%s/Fonts", windows) || pc5_mkdirs(fonts)) return -1;
+    for (size_t i = 0; i < sizeof(arial_files) / sizeof(arial_files[0]); i++) {
+        Pc5Buf data = { 0 };
+        if (pc5_format(to, sizeof(to), "%s/%s", fonts, arial_files[i][0]) ||
+            pc5_format(from, sizeof(from), "%s/win/wine/share/wine/fonts/%s", app, arial_files[i][1]))
+            return -1;
+        if (pc5_exists(to) || !pc5_is_file(from)) continue;   /* the player's own Arial stays */
+        int failed = pc5_read_file(from, &data, 4u << 20) || pc5_write_file(to, data.data, data.len);
+        pc5_buf_free(&data);
+        if (failed) return -1;
+        added++;
+    }
+    return added;
+}
+
 /* Programs whose own check refuses Windows 10, by name, and the Windows they were made for. */
 static const struct { const char *program, *version; } program_versions[] = {
     { "Conviction_game.exe", "win7" },   /* Splinter Cell: Conviction's system check: "Operating System not supported" */
@@ -697,6 +730,8 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         if (dotnet) say(game, "PC5 prefix .NET %s", dotnet > 0 ? "updated" : "update failed");
         int fonts = pc5_prefix_fonts(root, prefix, app);
         if (fonts) say(game, "PC5 prefix fonts %s", fonts > 0 ? "named" : "naming failed");
+        int arial = pc5_prefix_arial(root, prefix, app);
+        if (arial) say(game, "PC5 prefix Arial files %s %d", arial > 0 ? "added" : "failed", arial > 0 ? arial : 0);
         int versions = pc5_prefix_versions(root, prefix);
         if (versions) say(game, "PC5 prefix Windows versions %s", versions > 0 ? "added" : "failed");
         char started[PC5_PATH];
