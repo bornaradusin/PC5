@@ -17,7 +17,6 @@
 typedef enum Pc5PadMode {
     PC5_PAD_XBOX,         /* the game's Xbox controller */
     PC5_PAD_DUALSENSE,    /* a DualSense, as on a PC */
-    PC5_PAD_WHEEL,        /* the console's steering wheel, as a Logitech G29 on a PC */
     PC5_PAD_KEYBOARD,     /* keys and the mouse */
     PC5_PAD_MODES
 } Pc5PadMode;

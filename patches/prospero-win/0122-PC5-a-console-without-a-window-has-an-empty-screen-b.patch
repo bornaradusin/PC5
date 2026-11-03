@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: bornaradusin <bornaradusin@users.noreply.github.com>
 Date: Tue, 3 Nov 2026 14:00:00 +0000
-Subject: [PATCH 124/124] PC5: a console without a window has an empty screen buffer
- (Wine patch 0964)
+Subject: [PATCH 122/122] PC5: a console without a window has an empty screen
+ buffer (Wine patch 0964)
 
 .NET's Console.Clear() threw "The handle is invalid" in a console program started without a console window, as the title starts every game.
 ---
@@ -13,10 +13,10 @@ Subject: [PATCH 124/124] PC5: a console without a window has an empty screen buf
  create mode 100644 wine/patches/0964-kernelbase-a-console-without-a-window-has-an-empty-screen-buffer.patch
 
 diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
-index 06bc816..0c6ba46 100644
+index f503740..bc0ca61 100644
 --- a/PUBLICATION_ALLOWLIST.txt
 +++ b/PUBLICATION_ALLOWLIST.txt
-@@ -684,6 +684,7 @@ wine/ps5/pw_mihawkgen_vk.h
+@@ -679,6 +679,7 @@ wine/ps5/pw_mihawkgen_vk.h
  wine/ps5/pw_pc5_hud.h
  wine/patches/0877-secur32-log-gnutls-errors-and-the-clock-on-handshake-failure.patch
  tests/test_build_tls_ps5.py
@@ -25,10 +25,10 @@ index 06bc816..0c6ba46 100644
  wine/patches/0970-ntdll-ps5-trace-each-process-query-class-once.patch
  wine/patches/0972-faudio-keep-resampling-taps-within-the-samples.patch
 diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
-index 62dfad2..7e07dc2 100644
+index 769ca87..ceda260 100644
 --- a/docs/WINE_PS5_BUILD.md
 +++ b/docs/WINE_PS5_BUILD.md
-@@ -186,6 +186,7 @@ before evaluating a candidate built from that cache.
+@@ -185,6 +185,7 @@ before evaluating a candidate built from that cache.
  | 0997 | `kernelbase`: on PS5, the listing 0988 writes for `fxc.exe` gives a `def` line's values as plain decimals (`1.0`, `-0.5`, `0.333333343`; vkd3d-shader writes `1.00000000e+00`, and `D3DXAssembleShader` takes no exponent), and a `vs_1_x` shader that fails to compile (vkd3d-shader's `E7002` for `sincos`) is compiled for `vs_2_0` instead, as Far Cry only assembles the listing again on a device that takes `vs_3_0` |
  | 0998 | `ntdll`: on PS5, a non-alertable `NtWaitForSingleObject` on an event or semaphore whose one try on the shared word (0885, 0887) fails spins up to `WINE_PS5_SYNC_SPIN_US` microseconds (100 by default, 0 off, 1000 at most; never longer than a relative timeout, none for a poll or an absolute time) re-trying the word before it blocks in the server, and stops at once when the server holds the word. While it spins the word stays the client's, so `SetEvent`/`ReleaseSemaphore` need no server call either. Blur sets six events about 2000 times a frame, each waking a worker that waits again, and each of those waits and sets cost several microseconds through the server (5 to 10 ms a frame). The log says `wine-ps5: waits spin up to N us before blocking` at the first such wait, and every 65536 spins how many took the object (`wine-ps5: wait spins: …`); `tests/test_wine_sync_spin.py` runs the spin on the actual word header |
  | 0999 | `win32u`: on PS5, the user driver hides the pointer once the player hasn't moved it or clicked for `WINE_PS5_CURSOR_IDLE_MS` milliseconds (unset or 0 never; PC5 sets 5000 for a game whose Mouse pointer option says so), both where it draws the cursor over the screen and where Vulkan frames get it from VideoOut's hardware cursor (0740); the next move, even against an edge, or click shows it again, as does the game moving it to another place itself (`SetCursorPos`; Grim Dawn moves its pointer by the controller). A game setting the same place or a new image doesn't count, and the cursor the application set is unchanged for `GetCursorInfo`. A game played with the controller that leaves the Windows cursor on showed it, still, in a corner (Valor Mortis). |

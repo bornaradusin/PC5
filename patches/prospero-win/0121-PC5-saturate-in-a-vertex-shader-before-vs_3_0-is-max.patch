@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: bornaradusin <bornaradusin@users.noreply.github.com>
 Date: Tue, 3 Nov 2026 13:00:00 +0000
-Subject: [PATCH 123/123] PC5: saturate in a vertex shader before vs_3_0 is max and min
- (Wine patch 0952)
+Subject: [PATCH 121/121] PC5: saturate in a vertex shader before vs_3_0 is max
+ and min (Wine patch 0952)
 
 Far Cry's own d3dx9 assembler refused the mov_sat vkd3d-shader wrote in a vs_2_0 listing, and drew the sun's glow without its shader.
 ---
@@ -13,10 +13,10 @@ Far Cry's own d3dx9 assembler refused the mov_sat vkd3d-shader wrote in a vs_2_0
  create mode 100644 wine/patches/0952-vkd3d-shader-saturate-in-a-vertex-shader-before-vs-3-0.patch
 
 diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
-index 84d5f17..06bc816 100644
+index fd2cbdf..f503740 100644
 --- a/PUBLICATION_ALLOWLIST.txt
 +++ b/PUBLICATION_ALLOWLIST.txt
-@@ -617,6 +617,7 @@ wine/patches/0947-win32u-a-virtual-desktop-offers-the-display-s-rate.patch
+@@ -613,6 +613,7 @@ wine/patches/0947-win32u-a-virtual-desktop-offers-the-display-s-rate.patch
  wine/patches/0948-ntdll-ps5-gather-small-writes.patch
  wine/patches/0949-mmdevapi-ps5-the-speakers-follow-the-driver.patch
  wine/patches/0951-kernelbase-a-console-without-a-window-takes-its-title.patch
@@ -25,7 +25,7 @@ index 84d5f17..06bc816 100644
  wine/patches/0954-server-ps5-resolve-an-opened-file-s-directory-once.patch
  wine/patches/0955-ntdll-ps5-keep-the-directories-a-process-resolved.patch
 diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
-index ad8676d..62dfad2 100644
+index 7c938c5..769ca87 100644
 --- a/docs/WINE_PS5_BUILD.md
 +++ b/docs/WINE_PS5_BUILD.md
 @@ -158,6 +158,7 @@ before evaluating a candidate built from that cache.

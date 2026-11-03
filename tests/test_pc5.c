@@ -2552,10 +2552,6 @@ static void test_controls(void)
     CHECK(!pc5_controls_input(&k, text, sizeof(text)) && !strcmp(text, "[input]\nmode = xinput\n"), "xbox: %s", text);
     k.mode = PC5_PAD_DUALSENSE;
     CHECK(!pc5_controls_input(&k, text, sizeof(text)) && !strcmp(text, "[input]\nmode = dualsense\n"), "dualsense: %s", text);
-    k.mode = PC5_PAD_WHEEL;
-    CHECK(!pc5_controls_input(&k, text, sizeof(text)) && !strcmp(text, "[input]\nmode = wheel\n"), "wheel: %s", text);
-    CHECK(!pc5_controls_save(dir, "wheel", &k) && !pc5_controls_load(dir, "wheel", &back) && back.mode == PC5_PAD_WHEEL,
-          "the wheel kept and read back");
     k.mode = PC5_PAD_KEYBOARD;
     CHECK(!pc5_controls_input(&k, text, sizeof(text)) && strstr(text, "mode = keyboard\nmouse = right_stick\nmouse_speed = 1200\n") &&
               strstr(text, "cross = space\n") && strstr(text, "left_stick_up = w\n") && !strstr(text, "right_stick_up"),
@@ -6316,7 +6312,7 @@ static int controls_has(const char *id, const char *line)
     return found;
 }
 
-/* A game's controller from its menu: the four modes, Button mapping and the key picker. The
+/* A game's controller from its menu: the three modes, Button mapping and the key picker. The
  * library shows the engine game (orbital-nine). */
 static void test_controller_screens(Pc5Ui *ui, Pc5Canvas *canvas)
 {
@@ -6326,11 +6322,11 @@ static void test_controller_screens(Pc5Ui *ui, Pc5Canvas *canvas)
     press(ui, PC5_KEY_RIGHT, canvas);
     CHECK(controls_has("orbital-nine", "mode = dualsense\n"), "Controller: DualSense");
     press(ui, PC5_KEY_ACCEPT, canvas);
-    CHECK(controls_has("orbital-nine", "mode = wheel\n"), "then the G29 wheel");
-    press(ui, PC5_KEY_ACCEPT, canvas);
     CHECK(controls_has("orbital-nine", "mode = keyboard\n"), "then Keyboard & mouse");
-    for (int i = 0; i < 4; i++) press(ui, PC5_KEY_LEFT, canvas);
-    CHECK(controls_has("orbital-nine", "mode = keyboard\n"), "round the four, both ways");
+    press(ui, PC5_KEY_LEFT, canvas);
+    press(ui, PC5_KEY_LEFT, canvas);
+    press(ui, PC5_KEY_LEFT, canvas);
+    CHECK(controls_has("orbital-nine", "mode = keyboard\n"), "round the three, both ways");
     /* Button mapping, which only Keyboard & mouse has. */
     press(ui, PC5_KEY_DOWN, canvas);
     press(ui, PC5_KEY_ACCEPT, canvas);

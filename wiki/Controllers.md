@@ -1,4 +1,4 @@
-PC5 lets each game see your controller in one of four ways: as an Xbox controller, as a DualSense plugged into a PC, as a Logitech G29 steering wheel, or as a keyboard and mouse with a button mapping you choose. The choice is made in the game's menu and kept for that game. This page explains the four modes, the button mapping, playing with more than one player, leaving a game, and answering a game's Windows pop-ups.
+PC5 lets each game see your controller in one of three ways: as an Xbox controller, as a DualSense plugged into a PC, or as a keyboard and mouse with a button mapping you choose. The choice is made in the game's menu and kept for that game. This page explains the three modes, the button mapping, playing with more than one player, leaving a game, and answering a game's Windows pop-ups.
 
 ## Choosing a controller mode
 
@@ -10,7 +10,6 @@ PC5 lets each game see your controller in one of four ways: as an Xbox controlle
 | --- | --- | --- |
 | Xbox controller | An Xbox controller (XInput). **The default.** | Most games from the last twenty years, which look for an Xbox controller. Games that read controllers through Windows.Gaming.Input, DirectInput or Windows' joystick API find it too, as Windows shows an Xbox 360 controller. |
 | DualSense | A DualSense plugged in by USB, as on a PC. The game gets the touchpad and the motion sensors, and its own rumble, light bar and adaptive trigger effects reach the controller. | Games that know the DualSense, or look for controllers another way (DirectInput, raw input, SDL). |
-| G29 wheel | A Logitech G29 Driving Force wheel plugged in by USB, as on a PC: steering, accelerator, brake and clutch, the D-pad and 24 buttons (from 2.2.5). Plug the G29 into the PS5 with its mode switch on **PS4** before starting the game. Without a wheel, the game gets the Xbox controller. No force feedback yet. | Racing games with wheel support. |
 | Keyboard & mouse | A keyboard and a mouse. Each button and stick direction sends the key or mouse button you choose in **Button mapping**. | Games without controller support. |
 
 Which one to try: start with **Xbox controller**. If the game doesn't react to the controller, try **DualSense**. If the game has no controller support at all, use **Keyboard & mouse**.
