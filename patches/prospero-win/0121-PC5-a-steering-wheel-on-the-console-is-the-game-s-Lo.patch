@@ -1,0 +1,2083 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Tue, 3 Nov 2026 12:00:00 +0000
+Subject: [PATCH 121/121] PC5: a steering wheel on the console is the game's Logitech
+ G29
+
+A G29 (as PS4 and PS5 racing games take it) is found once the controller
+is open: the user's controller when libScePad says its device class is a
+wheel's, else the special port's first controller. The title logs what
+the console answers (PW_WHEEL lines), reads it each frame, sets
+PW_WHEEL=1 and publishes it to its sink (pw_wine_set_wheel). Wine patch
+0957 makes the game a G29 Driving Force (046d:c24f) as a PC finds one by
+USB, which DirectInput reads as a driving device: steering, accelerator,
+brake and clutch, a hat and 24 buttons. In xinput mode the wheel is also
+on controller 0: steering the left stick, the pedals the triggers. No
+force feedback yet.
+---
+ Makefile                                      |    3 +-
+ PUBLICATION_ALLOWLIST.txt                     |    5 +
+ docs/WINE_PS5_BUILD.md                        |   28 +
+ native/pw_wheel_ps5.c                         |  245 ++++
+ native/pw_wheel_ps5.h                         |   96 ++
+ native/wine64_main.c                          |   73 +-
+ tests/test_pw_wheel_ps5.c                     |  131 +++
+ tests/test_pw_wine_sink.c                     |   23 +
+ tools/build_host_wine.sh                      |    2 +
+ tools/build_native.sh                         |    2 +-
+ tools/build_wine_ps5.sh                       |    4 +
+ ...xinput-ps5-a-steering-wheel-as-a-g29.patch | 1037 +++++++++++++++++
+ wine/ps5/input/pw_wheel.h                     |  104 ++
+ wine/ps5/pw_wine_sink.c                       |   37 +
+ wine/ps5/pw_wine_sink.h                       |    7 +
+ 15 files changed, 1794 insertions(+), 3 deletions(-)
+ create mode 100644 native/pw_wheel_ps5.c
+ create mode 100644 native/pw_wheel_ps5.h
+ create mode 100644 tests/test_pw_wheel_ps5.c
+ create mode 100644 wine/patches/0957-xinput-ps5-a-steering-wheel-as-a-g29.patch
+ create mode 100644 wine/ps5/input/pw_wheel.h
+
+diff --git a/Makefile b/Makefile
+index 2013927..8cfd069 100644
+--- a/Makefile
++++ b/Makefile
+@@ -120,6 +120,7 @@ $(eval $(call test_rule,test_pw_videoout_layout,tests/test_pw_videoout_layout.c,
+ $(eval $(call test_rule,test_pw_videoout_tile,tests/test_pw_videoout_tile.c src/pw_present.c,))
+ $(eval $(call test_rule,test_pw_pad_ps5,tests/test_pw_pad_ps5.c native/pw_pad_ps5.c src/pw_pad.c,-DPW_PAD_PS5_HOST_TEST))
+ $(eval $(call test_rule,test_pw_players_ps5,tests/test_pw_players_ps5.c native/pw_players_ps5.c native/pw_pad_ps5.c src/pw_pad.c,-DPW_PAD_PS5_HOST_TEST))
++$(eval $(call test_rule,test_pw_wheel_ps5,tests/test_pw_wheel_ps5.c native/pw_wheel_ps5.c,-DPW_WHEEL_PS5_HOST_TEST))
+ $(eval $(call test_rule,test_pw_data_mount,tests/test_pw_data_mount.c native/pw_data_mount.c,-DPW_DATA_MOUNT_HOST_TEST))
+ $(eval $(call test_rule,test_pw_title_id,tests/test_pw_title_id.c,-D_DEFAULT_SOURCE))
+ PW_DATA_MOUNT_TEST_FLAGS := -DPW_DATA_MOUNT_HOST_TEST -DPW_DATA_MOUNT_PATH='"/tmp/pw_dm_data"' -DPW_DATA_MOUNT_WAIT_MS=200 -DPW_DATA_MOUNT_POLL_MS=50
+@@ -152,7 +153,7 @@ TESTS := test_pw_qpc_clock test_pw_key_shared test_pw_diagnostics test_pw_x86_ho
+ 	test_pw_guest_fp test_pw_vm test_pw_x86_block test_pw_x86_flat test_pw_x86_cache test_pw_x86_code_pages test_pw_wow_smc_pages test_pw_wow_thread_budget test_pw_wow_tsc_clock test_pw_wow_call_top \
+ 	test_pw_x86_engine test_pw_x86_chaining test_pw_x86_residency test_pw_x86_global_residency test_pw_x86_reencode test_pw_x86_smc test_pw_x86_fault_markers test_pw_x86_lazyflags \
+ 	test_pw_guest_call test_pw_x87 test_pw_x87_native test_pw_audio_ps5 test_pw_audio_mix test_pw_agc_submit_lifecycle \
+-	test_pw_videoout_layout test_pw_videoout_tile test_pw_pad_ps5 test_pw_players_ps5 test_pw_data_mount \
++	test_pw_videoout_layout test_pw_videoout_tile test_pw_pad_ps5 test_pw_players_ps5 test_pw_wheel_ps5 test_pw_data_mount \
+ 	test_pw_data_mount_native test_pw_lapy_elevation test_pw_title_id \
+ 	test_vk_present_interval test_vk_radv_profile
+ 
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index fd2cbdf..84d5f17 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -34,6 +34,8 @@ native/pw_lapy_elevation.h
+ native/pw_title_id.h
+ native/pw_pad_ps5.c
+ native/pw_pad_ps5.h
++native/pw_wheel_ps5.c
++native/pw_wheel_ps5.h
+ native/pw_players_ps5.c
+ native/pw_players_ps5.h
+ native/pw_videoout_layout.h
+@@ -86,6 +88,7 @@ tests/test_pw_app_profile.c
+ tests/test_pw_pad.c
+ tests/test_pw_pad_ps5.c
+ tests/test_pw_players_ps5.c
++tests/test_pw_wheel_ps5.c
+ tests/test_status_vocabulary.py
+ tests/test_classify_x86.py
+ tests/test_startup_x87_contract.py
+@@ -516,6 +519,7 @@ wine/patches/0907-d3d9-a-2d-texture-keeps-its-width-height-and-level-0-data-wher
+ wine/patches/0908-ntdll-win32u-how-far-a-game-s-start-is-for-the-loading-screen.patch
+ wine/ps5/input/pw_key_shared.h
+ wine/ps5/input/pw_dualsense.h
++wine/ps5/input/pw_wheel.h
+ tests/lab/pw_qpc_bridge.c
+ tests/lab/pw_key_bridge.c
+ tools/test_wine_qpc_bridge.py
+@@ -617,6 +621,7 @@ wine/patches/0953-wow64-ps5-a-32-bit-allocation-stays-below-the-process-limit.pa
+ wine/patches/0954-server-ps5-resolve-an-opened-file-s-directory-once.patch
+ wine/patches/0955-ntdll-ps5-keep-the-directories-a-process-resolved.patch
+ wine/patches/0956-gdi32-keep-a-window-s-pixel-format-with-a-native-opengl32.patch
++wine/patches/0957-xinput-ps5-a-steering-wheel-as-a-g29.patch
+ wine/patches/0958-ntdll-honor-wine-cpu-topology-s-processor-count.patch
+ wine/patches/0959-vkd3d-shader-fx-implement-pass-assignment-for-fx-2-0.patch
+ wine/patches/0960-vkd3d-shader-fx-write-sampler-state-initializers-for-fx-2-0.patch
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 7c938c5..93dcef2 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -162,6 +162,7 @@ before evaluating a candidate built from that cache.
+ | 0954 | `server`: on PS5, an opened file's directory is resolved with `realpath` once and kept (64 entries, checked by device and inode), so an open costs two system calls instead of one a path component. From PS5_MihawkOS (its 2080) |
+ | 0955 | `ntdll`: on PS5, the directories a process resolved are kept by their upper-cased Windows path (1024 slots) and a lookup starts from the longest one, checked with one `fstatat`; a directory's case sensitivity is not asked (the console's disk is). From PS5_MihawkOS (its 2081) |
+ | 0956 | `gdi32`: with a native `opengl32` (Mesa), setting a window's pixel format again to the one it has succeeds instead of failing: Godot 4 sets it twice and stopped with "Failed to create an OpenGL window". From Playden's prospero-win |
++| 0957 | `xinput1_3`: a steering wheel on the console (`PW_WHEEL=1`) as the Logitech G29 a PC finds plugged in by USB (`046d:c24f`), made in the game's process as the DualSense is; `ntdll` loads xinput1_3 at the start for it too; see [Steering wheel](#steering-wheel) |
+ | 0958 | `ntdll`: `WINE_CPU_TOPOLOGY`'s processor count (as Proton reads it) is reported as `NumberOfProcessors` when it is between 1 and the CPUs the process has (0881); logged. From Playden's prospero-win |
+ | 0959-0963 | `vkd3d-shader`: fx_2_0 effects compile with pass assignments, sampler state initializers, `true`/`false` for any state, null shader and texture states, and ps_1_x shaders as ps_2_0, so D3DX9 effects from source build. From Playden's prospero-win |
+ | 0971 | `kernelbase`: in a title, an unhandled exception doesn't start a debugger (which can't start there) and ends the process after the game's own filter: reading AeDebug took the process heap's lock a faulting thread could hold, and the crash froze the game instead of ending it. From Playden's prospero-win |
+@@ -725,6 +726,33 @@ To use it on the console:
+ - give the game's profile `[input] mode = xinput` (see
+   [Starting Wine in the title](#starting-wine-in-the-title)).
+ 
++## Steering wheel
++
++A steering wheel on the console (a Logitech G29, as PS4 and PS5 racing
++games take it) is the G29 a PC finds plugged in by USB (`046d:c24f`), in
++any input mode. The title looks for it once the controller is open
++(`native/pw_wheel_ps5.c`): the user's controller when libScePad says its
++device class is a wheel's, else the special port's first controller
++(`scePadOpen` type 2). It logs what the console answers (`PW_WHEEL` lines:
++the controller and device class information, the first parsed reads, and
++every ten seconds the ranges seen), reads it each frame
++(`scePadReadState`, `scePadDeviceClassParseData`), sets `PW_WHEEL=1` and
++publishes it to its sink (`pw_wine_set_wheel`). In xinput mode the wheel
++is also on XInput controller 0: steering the left stick, the accelerator
++the right trigger, the brake the left.
++
++Patch 0957 makes the device in xinput1_3 (`wheel.c`) as 0475 makes the
++DualSense (`\Device\PwWheel`, `Enum\HID\VID_046D&PID_C24F`), and ntdll loads
++xinput1_3 at the start for it. Its input report is
++`wine/ps5/input/pw_wheel.h`'s, staged beside `unixlib.c` by both Wine
++builds: steering on the simulation page, accelerator and brake, the clutch
++a slider, a hat and 24 buttons, numbered as Logitech numbers a G29's on a
++PC (cross 1, square 2, circle 3, triangle 4, the paddles 5 and 6, R2 7,
++L2 8, share 9, options 10, R3 11, L3 12, the shifter's gears 13 to 19);
++the pedals are released at the top of their range, as a G29's are without
++Logitech's software. DirectInput reads it as a driving device. It takes no
++output or feature reports yet: no force feedback.
++
+ ## WoW64 CPU backend
+ 
+ The PRX stage also links `wowprospero.prx`, the Unix side of the WoW64 CPU
+diff --git a/native/pw_wheel_ps5.c b/native/pw_wheel_ps5.c
+new file mode 100644
+index 0000000..f72cd07
+--- /dev/null
++++ b/native/pw_wheel_ps5.c
+@@ -0,0 +1,245 @@
++/* SPDX-License-Identifier: LGPL-2.1-or-later */
++#include "pw_wheel_ps5.h"
++#include <stdarg.h>
++#include <stdio.h>
++#include <string.h>
++
++#ifndef PW_WHEEL_PS5_HOST_TEST
++extern int scePadOpen(int32_t, int32_t, int32_t, const void *);
++extern int scePadReadState(int32_t, PwPadPs5Data *);
++extern int scePadClose(int32_t);
++extern int scePadGetControllerInformation(int32_t, void *);
++extern int scePadDeviceClassGetExtendedInformation(int32_t, void *);
++extern int scePadDeviceClassParseData(int32_t, const PwPadPs5Data *, void *);
++static int platform_open(int32_t u, int32_t t, int32_t i, const void *p) { return scePadOpen(u, t, i, p); }
++static int platform_read_state(int32_t h, PwPadPs5Data *d) { return scePadReadState(h, d); }
++static int platform_close(int32_t h) { return scePadClose(h); }
++static int platform_info(int32_t h, void *o) { return scePadGetControllerInformation(h, o); }
++static int platform_ext_info(int32_t h, void *o) { return scePadDeviceClassGetExtendedInformation(h, o); }
++static int platform_parse(int32_t h, const PwPadPs5Data *d, void *o) { return scePadDeviceClassParseData(h, d, o); }
++#endif
++
++int pw_wheel_ps5_platform_ops(PwWheelPs5Ops *ops)
++{
++    if (!ops) return PW_ERR_PRECONDITION;
++#ifdef PW_WHEEL_PS5_HOST_TEST
++    memset(ops, 0, sizeof(*ops));
++    return PW_ERR_UNSUPPORTED;
++#else
++    *ops = (PwWheelPs5Ops){ platform_open, platform_read_state, platform_close, platform_info,
++                            platform_ext_info, platform_parse };
++    return PW_OK;
++#endif
++}
++
++static void say(PwWheelPs5 *wheel, const char *format, ...) __attribute__((format(printf, 2, 3)));
++static void say(PwWheelPs5 *wheel, const char *format, ...)
++{
++    char line[512];
++    va_list args;
++
++    if (!wheel->log) return;
++    va_start(args, format);
++    vsnprintf(line, sizeof(line), format, args);
++    va_end(args);
++    wheel->log(line);
++}
++
++/* The first bytes of an answer in hex, for the logs. */
++static const char *hex(const uint8_t *data, size_t size, char *out, size_t out_size)
++{
++    size_t at = 0;
++
++    out[0] = 0;
++    for (size_t i = 0; i < size && at + 3 < out_size; i++) at += (size_t)snprintf(out + at, out_size - at, "%02x", data[i]);
++    return out;
++}
++
++static int32_t read_i32(const uint8_t *at) { int32_t v; memcpy(&v, at, sizeof(v)); return v; }
++static uint16_t read_u16(const uint8_t *at) { uint16_t v; memcpy(&v, at, sizeof(v)); return v; }
++static float read_f32(const uint8_t *at) { float v; memcpy(&v, at, sizeof(v)); return v; }
++
++uint32_t pw_wheel_ps5_buttons(uint32_t pad, uint8_t gear)
++{
++    static const uint32_t order[] = {
++        0x4000u, 0x8000u, 0x2000u, 0x1000u,   /* 1 cross, 2 square, 3 circle, 4 triangle */
++        0x800u, 0x400u, 0x200u, 0x100u,       /* 5 right paddle (R1), 6 left (L1), 7 R2, 8 L2 */
++        0x1u | 0x100000u, 0x8u, 0x4u, 0x2u,   /* 9 share (or the touchpad), 10 options, 11 R3, 12 L3 */
++    };
++    uint32_t buttons = 0;
++
++    for (unsigned i = 0; i < sizeof(order) / sizeof(order[0]); i++)
++        if (pad & order[i]) buttons |= 1u << i;
++    if (gear >= 1 && gear <= 7) buttons |= 1u << (11 + gear);   /* 13 first gear to 19 reverse */
++    return buttons;
++}
++
++uint8_t pw_wheel_ps5_hat(uint32_t pad)
++{
++    const int up = (pad & 0x10u) != 0, right = (pad & 0x20u) != 0, down = (pad & 0x40u) != 0, left = (pad & 0x80u) != 0;
++
++    if (up && right) return 1;
++    if (down && right) return 3;
++    if (down && left) return 5;
++    if (up && left) return 7;
++    if (up) return 0;
++    if (right) return 2;
++    if (down) return 4;
++    if (left) return 6;
++    return PW_WHEEL_HAT_NONE;
++}
++
++static void released(PwWheelPs5 *wheel)
++{
++    memset(&wheel->state, 0, sizeof(wheel->state));
++    wheel->state.hat = PW_WHEEL_HAT_NONE;
++}
++
++/* Whether the controller on handle is a steering wheel, by its information. */
++static int is_wheel(PwWheelPs5 *wheel, int32_t handle, const char *where)
++{
++    char text[2 * 32 + 1];
++
++    memset(wheel->info_raw, 0, sizeof(wheel->info_raw));
++    wheel->info_rc = wheel->ops.info ? wheel->ops.info(handle, wheel->info_raw) : -1;
++    wheel->device_class = wheel->info_rc < 0 ? -1 : read_i32(wheel->info_raw + PW_WHEEL_PS5_INFO_CLASS);
++    say(wheel, "PW_WHEEL %s handle=%d info_rc=%#x class=%d connected=%u info=%s", where, (int)handle,
++        (unsigned)wheel->info_rc, (int)wheel->device_class, wheel->info_raw[PW_WHEEL_PS5_INFO_CONNECTED],
++        hex(wheel->info_raw, 32, text, sizeof(text)));
++    return wheel->info_rc >= 0 && wheel->device_class == PW_WHEEL_PS5_CLASS_STEERING_WHEEL;
++}
++
++int pw_wheel_ps5_find(PwWheelPs5 *wheel, const PwWheelPs5Ops *ops, int32_t user, int32_t standard,
++                      PwWheelPs5Log log)
++{
++    char text[2 * 32 + 1];
++
++    if (!wheel || !ops || !ops->open || !ops->read_state || !ops->close || !ops->info || !ops->parse)
++        return PW_ERR_PRECONDITION;
++    memset(wheel, 0, sizeof(*wheel));
++    wheel->ops = *ops;
++    wheel->log = log;
++    wheel->handle = -1;
++    wheel->port = -1;
++    released(wheel);
++    for (unsigned i = 0; i < 4; i++) wheel->low[i] = 0xffff;
++
++    if (standard >= 0 && is_wheel(wheel, standard, "standard")) {
++        wheel->handle = standard;
++        wheel->port = PW_WHEEL_PS5_PORT_STANDARD;
++    } else if (user >= 0) {
++        wheel->open_rc = ops->open(user, PW_WHEEL_PS5_PORT_SPECIAL, 0, NULL);
++        say(wheel, "PW_WHEEL special user=%d open_rc=%#x", (int)user, (unsigned)wheel->open_rc);
++        if (wheel->open_rc >= 0) {
++            if (is_wheel(wheel, wheel->open_rc, "special")) {
++                wheel->handle = wheel->open_rc;
++                wheel->owned = 1;
++                wheel->port = PW_WHEEL_PS5_PORT_SPECIAL;
++            } else {
++                ops->close(wheel->open_rc);
++            }
++        }
++    }
++    if (wheel->handle < 0) {
++        say(wheel, "PW_WHEEL none");
++        return PW_ERR_NOT_FOUND;
++    }
++    wheel->found = 1;
++    if (ops->ext_info) {
++        wheel->ext_rc = ops->ext_info(wheel->handle, wheel->ext_raw);
++        if (wheel->ext_rc >= 0) wheel->max_angle = read_u16(wheel->ext_raw + PW_WHEEL_PS5_EXT_MAX_ANGLE);
++    }
++    say(wheel, "PW_WHEEL found port=%d handle=%d ext_rc=%#x max_angle=%u ext=%s", (int)wheel->port, (int)wheel->handle,
++        (unsigned)wheel->ext_rc, wheel->max_angle, hex(wheel->ext_raw, 24, text, sizeof(text)));
++    return PW_OK;
++}
++
++static void seen(PwWheelPs5 *wheel, unsigned axis, uint16_t value)
++{
++    if (value < wheel->low[axis]) wheel->low[axis] = value;
++    if (value > wheel->high[axis]) wheel->high[axis] = value;
++}
++
++int pw_wheel_ps5_read(PwWheelPs5 *wheel)
++{
++    PwPadPs5Data data;
++    char text[2 * 32 + 1], unique[2 * 12 + 1];
++
++    if (!wheel || !wheel->found) return PW_ERR_PRECONDITION;
++    memset(&data, 0, sizeof(data));
++    wheel->reads++;
++    wheel->read_rc = wheel->ops.read_state(wheel->handle, &data);
++    if (wheel->read_rc < 0 || !data.connected) {
++        wheel->failures++;
++        released(wheel);
++        return PW_ERR_STATE;
++    }
++    memset(wheel->class_raw, 0, sizeof(wheel->class_raw));
++    wheel->parse_rc = wheel->ops.parse(wheel->handle, &data, wheel->class_raw);
++    if (wheel->logged < 5) {
++        wheel->logged++;
++        say(wheel, "PW_WHEEL data %u parse_rc=%#x buttons=%#x unique=%u:%s class=%s", (unsigned)wheel->logged,
++            (unsigned)wheel->parse_rc, (unsigned)data.buttons, data.device_unique_data_length,
++            hex(data.device_unique_data, sizeof(data.device_unique_data), unique, sizeof(unique)),
++            hex(wheel->class_raw, 32, text, sizeof(text)));
++    }
++    if (wheel->parse_rc < 0 ||
++        read_i32(wheel->class_raw + PW_WHEEL_PS5_DATA_CLASS) != PW_WHEEL_PS5_CLASS_STEERING_WHEEL ||
++        !wheel->class_raw[PW_WHEEL_PS5_DATA_VALID]) {
++        wheel->failures++;
++        released(wheel);
++        return PW_ERR_STATE;
++    }
++    wheel->parsed++;
++    {
++        const uint16_t steering = read_u16(wheel->class_raw + PW_WHEEL_PS5_DATA_STEERING);
++        const uint16_t accelerator = read_u16(wheel->class_raw + PW_WHEEL_PS5_DATA_ACCELERATOR);
++        const uint16_t brake = read_u16(wheel->class_raw + PW_WHEEL_PS5_DATA_BRAKE);
++        const uint16_t clutch = read_u16(wheel->class_raw + PW_WHEEL_PS5_DATA_CLUTCH);
++        const uint8_t gear = wheel->class_raw[PW_WHEEL_PS5_DATA_GEAR];
++
++        seen(wheel, 0, steering);
++        seen(wheel, 1, accelerator);
++        seen(wheel, 2, brake);
++        seen(wheel, 3, clutch);
++        wheel->buttons_seen |= data.buttons;
++        /* centred at 0x8000, as libScePad's 16-bit axes are */
++        wheel->state.connected = 1;
++        wheel->state.steering = (int16_t)((int32_t)steering - 0x8000);
++        wheel->state.accelerator = accelerator;
++        wheel->state.brake = brake;
++        wheel->state.clutch = clutch;
++        wheel->state.gear = gear <= 7 ? gear : 0;
++        wheel->state.buttons = pw_wheel_ps5_buttons(data.buttons & ~0x80000000u, wheel->state.gear);
++        wheel->state.hat = pw_wheel_ps5_hat(data.buttons);
++    }
++    return PW_OK;
++}
++
++void pw_wheel_ps5_report(PwWheelPs5 *wheel)
++{
++    float angle;
++
++    if (!wheel || !wheel->found) return;
++    angle = read_f32(wheel->class_raw + PW_WHEEL_PS5_DATA_ANGLE);
++    say(wheel, "PW_WHEEL reads=%llu parsed=%llu failures=%llu read_rc=%#x parse_rc=%#x angle=%.1f "
++        "steering=%u-%u accelerator=%u-%u brake=%u-%u clutch=%u-%u buttons_seen=%#x gear=%u",
++        (unsigned long long)wheel->reads, (unsigned long long)wheel->parsed, (unsigned long long)wheel->failures,
++        (unsigned)wheel->read_rc, (unsigned)wheel->parse_rc, (double)angle, wheel->low[0], wheel->high[0],
++        wheel->low[1], wheel->high[1], wheel->low[2], wheel->high[2], wheel->low[3], wheel->high[3],
++        (unsigned)wheel->buttons_seen, wheel->state.gear);
++    for (unsigned i = 0; i < 4; i++) {
++        wheel->low[i] = 0xffff;
++        wheel->high[i] = 0;
++    }
++    wheel->buttons_seen = 0;
++}
++
++void pw_wheel_ps5_close(PwWheelPs5 *wheel)
++{
++    if (!wheel) return;
++    if (wheel->owned && wheel->handle >= 0) wheel->ops.close(wheel->handle);
++    wheel->handle = -1;
++    wheel->owned = wheel->found = 0;
++    released(wheel);
++}
+diff --git a/native/pw_wheel_ps5.h b/native/pw_wheel_ps5.h
+new file mode 100644
+index 0000000..ed540e8
+--- /dev/null
++++ b/native/pw_wheel_ps5.h
+@@ -0,0 +1,96 @@
++/* SPDX-License-Identifier: LGPL-2.1-or-later */
++#ifndef PW_WHEEL_PS5_H
++#define PW_WHEEL_PS5_H
++/*
++ * A steering wheel on the console (a Logitech G29, as PS4 and PS5 games
++ * read it): libScePad's special controllers. The wheel is found either as the
++ * user's own controller (its device class says so) or on the special port,
++ * and each read's data is parsed as a steering wheel's
++ * (scePadDeviceClassParseData) into a PwWheelState for the game's G29
++ * (wine/ps5/input/pw_wheel.h).
++ *
++ * The layouts below are libScePad's as PS4 software used them; the first
++ * test builds log what the console actually answers (the raw bytes of the
++ * controller and device class information and of the parsed data), so they
++ * can be checked against a wheel.
++ */
++#include "../include/prospero_win.h"
++#include "pw_pad_ps5.h"
++#include "../wine/ps5/input/pw_wheel.h"
++#include <stdint.h>
++
++enum {
++    PW_WHEEL_PS5_PORT_STANDARD = 0, PW_WHEEL_PS5_PORT_SPECIAL = 2,
++    PW_WHEEL_PS5_CLASS_STEERING_WHEEL = 6,
++    PW_WHEEL_PS5_RAW = 64,           /* room for each answer, larger than libScePad's */
++};
++
++typedef struct PwWheelPs5Ops {
++    int (*open)(int32_t user, int32_t type, int32_t index, const void *param);   /* scePadOpen */
++    int (*read_state)(int32_t handle, PwPadPs5Data *data);                       /* scePadReadState */
++    int (*close)(int32_t handle);
++    int (*info)(int32_t handle, void *out);       /* scePadGetControllerInformation */
++    int (*ext_info)(int32_t handle, void *out);   /* scePadDeviceClassGetExtendedInformation, or NULL */
++    int (*parse)(int32_t handle, const PwPadPs5Data *data, void *out);           /* scePadDeviceClassParseData */
++} PwWheelPs5Ops;
++
++typedef void (*PwWheelPs5Log)(const char *line);
++
++typedef struct PwWheelPs5 {
++    PwWheelPs5Ops ops;
++    int32_t handle;                  /* -1: none */
++    int owned;                       /* opened here (the special port): closed here */
++    int found;                       /* a steering wheel */
++    int32_t device_class;            /* the controller's, as the console reported it */
++    int32_t port;                    /* where it was found */
++    int open_rc, info_rc, ext_rc, parse_rc, read_rc;
++    uint16_t max_angle;              /* degrees lock to lock, 0 when not reported */
++    uint8_t info_raw[PW_WHEEL_PS5_RAW], ext_raw[PW_WHEEL_PS5_RAW], class_raw[PW_WHEEL_PS5_RAW];
++    PwWheelState state;
++    uint64_t reads, parsed, failures, logged;
++    /* the ranges seen, for the logs: steering, accelerator, brake, clutch */
++    uint16_t low[4], high[4];
++    uint32_t buttons_seen;
++    PwWheelPs5Log log;
++} PwWheelPs5;
++
++int pw_wheel_ps5_platform_ops(PwWheelPs5Ops *ops);
++/* Looks for a steering wheel: the user's controller (standard, its handle,
++ * or -1) when its device class is a wheel's, else the special port's first
++ * controller. PW_OK when found, PW_ERR_NOT_FOUND when there is none,
++ * PW_ERR_PRECONDITION for missing arguments. What the console answered is
++ * logged either way. */
++int pw_wheel_ps5_find(PwWheelPs5 *wheel, const PwWheelPs5Ops *ops, int32_t user, int32_t standard,
++                      PwWheelPs5Log log);
++/* Reads the wheel once into wheel->state. PW_OK, or PW_ERR_STATE when the
++ * read or the parse failed (the state is then a released wheel). */
++int pw_wheel_ps5_read(PwWheelPs5 *wheel);
++/* Every ten seconds or so: what was seen since, for the logs. */
++void pw_wheel_ps5_report(PwWheelPs5 *wheel);
++void pw_wheel_ps5_close(PwWheelPs5 *wheel);
++
++/* The parts of libScePad's answers this module reads, at their offsets
++ * (for the host tests, which make such answers). */
++enum {
++    PW_WHEEL_PS5_INFO_CLASS = 0x10,       /* ScePadControllerInformation.deviceClass */
++    PW_WHEEL_PS5_INFO_CONNECTED = 0x0c,
++    PW_WHEEL_PS5_EXT_MAX_ANGLE = 0x0a,    /* ScePadDeviceClassExtendedInformation: maxPhysicalWheelAngle */
++    PW_WHEEL_PS5_DATA_CLASS = 0x00,       /* ScePadDeviceClassData.deviceClass */
++    PW_WHEEL_PS5_DATA_VALID = 0x04,
++    PW_WHEEL_PS5_DATA_ANGLE = 0x08,       /* float: degrees */
++    PW_WHEEL_PS5_DATA_STEERING = 0x0c,    /* uint16 */
++    PW_WHEEL_PS5_DATA_ACCELERATOR = 0x0e,
++    PW_WHEEL_PS5_DATA_BRAKE = 0x10,
++    PW_WHEEL_PS5_DATA_CLUTCH = 0x12,
++    PW_WHEEL_PS5_DATA_HANDBRAKE = 0x14,
++    PW_WHEEL_PS5_DATA_GEAR = 0x16,
++};
++
++/* The game's buttons from libScePad's (cross, square, circle, triangle, the
++ * paddles, R2, L2, share, options, R3, L3) and the shifter's gear (13 to
++ * 19), as Logitech numbers a G29's on a PC. */
++uint32_t pw_wheel_ps5_buttons(uint32_t pad_buttons, uint8_t gear);
++/* The D-pad as a hat (PW_WHEEL_HAT_NONE when centred). */
++uint8_t pw_wheel_ps5_hat(uint32_t pad_buttons);
++
++#endif
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 72be166..bb9cc70 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -36,6 +36,7 @@
+ #include "pw_audio_ps5.h"
+ #include "pw_pad_ps5.h"
+ #include "pw_players_ps5.h"
++#include "pw_wheel_ps5.h"
+ #include "pw_hid_ps5.h"
+ #include "pw_videoout_ps5.h"
+ #include "pw_wine_library.h"
+@@ -957,6 +958,38 @@ static void players_log(const char *line)
+     PS5LOG_LOG("%s", line);
+ }
+ 
++/* The steering wheel's log lines (pw_wheel_ps5.c writes them whole). */
++static void wheel_log(const char *line)
++{
++    PS5LOG_LOG("%s", line);
++}
++
++/* XInput controller 0 with the wheel on it too, for games that only read
++ * a controller: steering the left stick (when turned further than the
++ * stick), the accelerator the right trigger, the brake the left, and the
++ * wheel's buttons as the controller's. */
++static void wheel_on_pad(const PwWheelState *wheel, PwWinePad *pad)
++{
++    static const struct { uint32_t wheel; uint16_t pad; } buttons[] = {
++        { 1u << 0, 0x1000 }, { 1u << 1, 0x4000 }, { 1u << 2, 0x2000 }, { 1u << 3, 0x8000 },   /* A X B Y */
++        { 1u << 4, 0x0200 }, { 1u << 5, 0x0100 },                                         /* RB LB */
++        { 1u << 8, 0x0020 }, { 1u << 9, 0x0010 }, { 1u << 10, 0x0080 }, { 1u << 11, 0x0040 },/* back start RS LS */
++    };
++    static const uint16_t hat[8] = { 0x1, 0x1 | 0x8, 0x8, 0x2 | 0x8, 0x2, 0x2 | 0x4, 0x4, 0x1 | 0x4 };
++    const uint8_t accelerator = (uint8_t)(wheel->accelerator >> 8), brake = (uint8_t)(wheel->brake >> 8);
++    const int steering = wheel->steering < 0 ? -(int)wheel->steering : wheel->steering;
++    const int stick = pad->thumb_lx < 0 ? -(int)pad->thumb_lx : pad->thumb_lx;
++
++    if (!wheel->connected) return;
++    pad->connected = 1;
++    if (steering > stick) pad->thumb_lx = wheel->steering;
++    if (accelerator > pad->right_trigger) pad->right_trigger = accelerator;
++    if (brake > pad->left_trigger) pad->left_trigger = brake;
++    for (unsigned i = 0; i < sizeof(buttons) / sizeof(buttons[0]); i++)
++        if (wheel->buttons & buttons[i].wheel) pad->buttons |= buttons[i].pad;
++    if (wheel->hat < 8) pad->buttons |= hat[wheel->hat];
++}
++
+ /* The process's CPU time, user and system, in milliseconds: a stall that
+  * waits shows no growth, one that spins grows by a core a second. */
+ static unsigned long long cpu_ms(void)
+@@ -1607,6 +1640,9 @@ int main(int argc, char **argv)
+     void (*set_pad_at)(uint32_t, const PwWinePad *) = NULL;
+     int (*rumble_at)(uint32_t, uint32_t *, uint32_t *) = NULL;
+     uint64_t player_vibrations[PW_PLAYERS_PS5_MAX] = { 0 };
++    /* A steering wheel (a G29): the game's G29 through Wine's xinput (patch 0957). */
++    static PwWheelPs5 wheel;
++    void (*set_wheel)(const PwWheelState *) = NULL;
+     int players_on = 0;
+     uint64_t shown_sequence = 0, shown = 0, posted = 0, refused = 0;
+     VulkanFrames vulkan_frames = { 0 };
+@@ -1898,6 +1934,30 @@ int main(int argc, char **argv)
+             PS5LOG_LOG("PW_WINE64 dualsense output=%d motion=%s rc=%d", dualsense_output != NULL,
+                        pw_result_name(motion), pad.motion_rc);
+         }
++        /* A steering wheel, the foreground user's: the game finds a G29
++         * (Wine's xinput makes it, which ntdll loads at the start for
++         * PW_WHEEL, patch 0957) whatever the input mode. */
++        {
++            PwWheelPs5Ops wheel_ops;
++            int32_t user = pad_status == PW_OK ? pad.user_id : -1;
++            int wheel_status = pw_wheel_ps5_platform_ops(&wheel_ops);
++
++            if (wheel_status == PW_OK && user < 0 && pw_pad_ps5_platform_ops(&pad_ops) == PW_OK) {
++                (void)pad_ops.user_initialize(NULL);
++                (void)pad_ops.pad_init();
++                (void)pad_ops.foreground_user(&user);
++            }
++            if (wheel_status == PW_OK)
++                wheel_status = pw_wheel_ps5_find(&wheel, &wheel_ops, user, pad_status == PW_OK ? pad.pad_handle : -1,
++                                                 wheel_log);
++            if (wheel_status == PW_OK)
++                set_wheel = (void (*)(const PwWheelState *))(uintptr_t)pw_prx_lookup(start.descriptor,
++                                                                                      "pw_wine_set_wheel");
++            if (set_wheel) setenv("PW_WHEEL", "1", 1);
++            else unsetenv("PW_WHEEL");
++            PS5LOG_LOG("PW_WINE64 wheel=%s user=%d sink=%d", pw_result_name(wheel_status), (int)user,
++                       set_wheel != NULL);
++        }
+         if (set_pad_at && rumble_at && pad_status == PW_OK)
+             players_on = pw_players_ps5_start(&players, &pad_ops, pad_open_map,
+                                               sizeof(pad_open_map) / sizeof(pad_open_map[0]), pad.user_id,
+@@ -2085,6 +2145,12 @@ int main(int argc, char **argv)
+         /* XInput controller 0: the DualSense, and in a script build the
+          * macro's controller added to it, every frame, so a scripted press
+          * stays down until its release. */
++        /* The steering wheel: the game's G29, every frame. */
++        int wheel_read = set_wheel && pw_wheel_ps5_read(&wheel) == PW_OK;
++        if (set_wheel) {
++            set_wheel(wheel_read ? &wheel.state : NULL);
++            if (tick % 600 == 0) pw_wheel_ps5_report(&wheel);
++        }
+         if (set_pad) {
+             PwWinePad state;
+             int connected = pw_wine_game_pad(pad_read ? &pad : NULL, &state), scripted = 0;
+@@ -2092,7 +2158,12 @@ int main(int argc, char **argv)
+             scripted = script_input.pad_events != 0;
+             connected = pw_wine_script_pad(&state, connected, &script_pad, scripted);
+ #endif
+-            if (pad_read || scripted) set_pad(connected ? &state : NULL);
++            if (!connected) memset(&state, 0, sizeof(state));
++            if (wheel_read) {
++                wheel_on_pad(&wheel.state, &state);
++                connected = 1;
++            }
++            if (pad_read || scripted || wheel_read) set_pad(connected ? &state : NULL);
+         }
+         /* dualsense mode: the controller as the game's DualSense, and what
+          * the game sent it back. */
+diff --git a/tests/test_pw_wheel_ps5.c b/tests/test_pw_wheel_ps5.c
+new file mode 100644
+index 0000000..61b084c
+--- /dev/null
++++ b/tests/test_pw_wheel_ps5.c
+@@ -0,0 +1,131 @@
++/* SPDX-License-Identifier: LGPL-2.1-or-later */
++#include "../native/pw_wheel_ps5.h"
++#include <assert.h>
++#include <stdio.h>
++#include <string.h>
++
++/* A console with a wheel on the special port (or as the user's controller). */
++static int wheel_class = PW_WHEEL_PS5_CLASS_STEERING_WHEEL, standard_is_wheel, open_rc = 21, parse_rc, read_rc;
++static int open_calls, close_calls, closed_handle = -1, lines;
++static uint16_t steering = 0x8000, accelerator, brake, clutch;
++static uint8_t gear;
++static uint32_t buttons;
++
++static int pad_open(int32_t user, int32_t type, int32_t index, const void *param)
++{
++    assert(user == 42 && type == PW_WHEEL_PS5_PORT_SPECIAL && index == 0 && !param);
++    open_calls++;
++    return open_rc;
++}
++static int read_state(int32_t handle, PwPadPs5Data *data)
++{
++    assert(handle == 21 || handle == 7);
++    if (read_rc < 0) return read_rc;
++    data->buttons = buttons;
++    data->connected = 1;
++    return 0;
++}
++static int pad_close(int32_t handle) { close_calls++; closed_handle = handle; return 0; }
++static int info(int32_t handle, void *out)
++{
++    uint8_t *answer = out;
++    int32_t device_class = handle == 7 ? (standard_is_wheel ? wheel_class : 0) : wheel_class;
++
++    memcpy(answer + PW_WHEEL_PS5_INFO_CLASS, &device_class, sizeof(device_class));
++    answer[PW_WHEEL_PS5_INFO_CONNECTED] = 1;
++    return 0;
++}
++static int ext_info(int32_t handle, void *out)
++{
++    const uint16_t angle = 900;
++
++    (void)handle;
++    memcpy((uint8_t *)out + PW_WHEEL_PS5_EXT_MAX_ANGLE, &angle, sizeof(angle));
++    return 0;
++}
++static int parse(int32_t handle, const PwPadPs5Data *data, void *out)
++{
++    uint8_t *answer = out;
++    int32_t device_class = PW_WHEEL_PS5_CLASS_STEERING_WHEEL;
++
++    (void)handle; (void)data;
++    if (parse_rc < 0) return parse_rc;
++    memcpy(answer + PW_WHEEL_PS5_DATA_CLASS, &device_class, sizeof(device_class));
++    answer[PW_WHEEL_PS5_DATA_VALID] = 1;
++    memcpy(answer + PW_WHEEL_PS5_DATA_STEERING, &steering, 2);
++    memcpy(answer + PW_WHEEL_PS5_DATA_ACCELERATOR, &accelerator, 2);
++    memcpy(answer + PW_WHEEL_PS5_DATA_BRAKE, &brake, 2);
++    memcpy(answer + PW_WHEEL_PS5_DATA_CLUTCH, &clutch, 2);
++    answer[PW_WHEEL_PS5_DATA_GEAR] = gear;
++    return 0;
++}
++static void log_line(const char *line) { assert(!strncmp(line, "PW_WHEEL ", 9)); lines++; }
++static const PwWheelPs5Ops ops = { pad_open, read_state, pad_close, info, ext_info, parse };
++
++int main(void)
++{
++    PwWheelPs5 wheel;
++    PwWheelPs5Ops none;
++    uint8_t report[PW_WHEEL_INPUT_SIZE];
++
++    assert(pw_wheel_ps5_platform_ops(&none) == PW_ERR_UNSUPPORTED);
++    assert(pw_wheel_ps5_find(NULL, &ops, 42, 7, NULL) == PW_ERR_PRECONDITION);
++
++    /* On the special port: opened, read, closed here. */
++    assert(pw_wheel_ps5_find(&wheel, &ops, 42, 7, log_line) == PW_OK);
++    assert(wheel.found && wheel.owned && wheel.handle == 21 && wheel.port == PW_WHEEL_PS5_PORT_SPECIAL);
++    assert(wheel.max_angle == 900 && open_calls == 1 && lines >= 2);
++    assert(pw_wheel_ps5_read(&wheel) == PW_OK);
++    assert(wheel.state.connected && wheel.state.steering == 0 && !wheel.state.accelerator);
++    assert(wheel.state.hat == PW_WHEEL_HAT_NONE && !wheel.state.buttons);
++
++    steering = 0xffff; accelerator = 65535; brake = 1000; clutch = 2; gear = 7;
++    buttons = 0x4000u | 0x400u | 0x10u | 0x20u | 0x8u;   /* cross, L1, up and right, options */
++    assert(pw_wheel_ps5_read(&wheel) == PW_OK);
++    assert(wheel.state.steering == 32767 && wheel.state.accelerator == 65535 && wheel.state.brake == 1000);
++    assert(wheel.state.gear == 7 && wheel.state.hat == 1);
++    assert(wheel.state.buttons == ((1u << 0) | (1u << 5) | (1u << 9) | (1u << 18)));
++    pw_wheel_input(&wheel.state, report);
++    assert(report[0] == PW_WHEEL_INPUT_ID && report[1] == 0xff && report[2] == 0x7f);
++    assert(report[3] == 0 && report[4] == 0);                 /* accelerator fully pressed: the bottom */
++    assert(report[9] == 1 && report[10] == 0x21 && report[11] == 0x02 && report[12] == 0x04);
++
++    steering = 0;
++    assert(pw_wheel_ps5_read(&wheel) == PW_OK && wheel.state.steering == -32768);
++    lines = 0;
++    pw_wheel_ps5_report(&wheel);
++    assert(lines == 1 && wheel.low[0] == 0xffff && !wheel.high[0]);
++
++    /* A failed parse is a released, centred wheel. */
++    parse_rc = -1;
++    assert(pw_wheel_ps5_read(&wheel) == PW_ERR_STATE && !wheel.state.connected);
++    assert(wheel.state.hat == PW_WHEEL_HAT_NONE && wheel.failures == 1);
++    parse_rc = 0;
++    read_rc = -5;
++    assert(pw_wheel_ps5_read(&wheel) == PW_ERR_STATE && wheel.failures == 2);
++    read_rc = 0;
++    pw_wheel_ps5_close(&wheel);
++    assert(close_calls == 1 && closed_handle == 21 && !wheel.found);
++    assert(pw_wheel_ps5_read(&wheel) == PW_ERR_PRECONDITION);
++
++    /* The user's own controller is the wheel: used, never closed here. */
++    standard_is_wheel = 1; open_calls = close_calls = 0;
++    assert(pw_wheel_ps5_find(&wheel, &ops, 42, 7, log_line) == PW_OK);
++    assert(wheel.handle == 7 && !wheel.owned && wheel.port == PW_WHEEL_PS5_PORT_STANDARD && !open_calls);
++    pw_wheel_ps5_close(&wheel);
++    assert(!close_calls);
++
++    /* No wheel: the special port's controller is something else, closed again. */
++    standard_is_wheel = 0; wheel_class = 0;
++    assert(pw_wheel_ps5_find(&wheel, &ops, 42, 7, log_line) == PW_ERR_NOT_FOUND);
++    assert(!wheel.found && close_calls == 1 && closed_handle == 21);
++    open_rc = -0x7fffffff; close_calls = 0;
++    assert(pw_wheel_ps5_find(&wheel, &ops, 42, 7, NULL) == PW_ERR_NOT_FOUND && !close_calls);
++
++    /* The buttons and the hat alone. */
++    assert(pw_wheel_ps5_buttons(0x100000u, 0) == (1u << 8) && pw_wheel_ps5_buttons(0x1u, 0) == (1u << 8));
++    assert(pw_wheel_ps5_buttons(0, 1) == (1u << 12) && pw_wheel_ps5_buttons(0, 8) == 0);
++    assert(pw_wheel_ps5_hat(0x40u | 0x80u) == 5 && pw_wheel_ps5_hat(0x80u) == 6 && pw_wheel_ps5_hat(0) == PW_WHEEL_HAT_NONE);
++    puts("test_pw_wheel_ps5: ok");
++    return 0;
++}
+diff --git a/tests/test_pw_wine_sink.c b/tests/test_pw_wine_sink.c
+index d08f7fc..e1cf8d2 100644
+--- a/tests/test_pw_wine_sink.c
++++ b/tests/test_pw_wine_sink.c
+@@ -313,6 +313,28 @@ static void test_dualsense(void)
+     pw_wine_set_present_sink(sink,&tag);
+ }
+ 
++/* The steering wheel: released and centred until set, a packet for each change. */
++static void test_wheel(void)
++{
++    PwWheelState state, read;
++    uint32_t packet;
++
++    assert(!pw_wine_wheel(NULL));
++    assert(!pw_wine_wheel(&read) && read.hat==PW_WHEEL_HAT_NONE && !read.steering && !read.buttons);
++    memset(&state,0,sizeof(state));
++    state.steering=-1200;state.accelerator=40000;state.buttons=1u<<4;state.hat=2;state.gear=3;
++    pw_wine_set_wheel(&state);
++    assert(pw_wine_wheel(&read)==1 && read.connected && read.steering==-1200 && read.accelerator==40000);
++    assert(read.buttons==(1u<<4) && read.hat==2 && read.gear==3 && read.packet);
++    packet=read.packet;
++    pw_wine_set_wheel(&state);
++    assert(pw_wine_wheel(&read)==1 && read.packet==packet);        /* unchanged */
++    state.brake=9;pw_wine_set_wheel(&state);
++    assert(pw_wine_wheel(&read)==1 && read.packet!=packet && read.brake==9);
++    pw_wine_set_wheel(NULL);
++    assert(!pw_wine_wheel(&read) && !read.connected && read.hat==PW_WHEEL_HAT_NONE && !read.accelerator);
++}
++
+ int main(void)
+ {
+     uint32_t frame[4*3];
+@@ -422,5 +444,6 @@ int main(void)
+     test_display_release();
+     test_players();
+     test_pad_changes();
++    test_wheel();
+     return 0;
+ }
+diff --git a/tools/build_host_wine.sh b/tools/build_host_wine.sh
+index cb168fc..1d44109 100755
+--- a/tools/build_host_wine.sh
++++ b/tools/build_host_wine.sh
+@@ -79,6 +79,8 @@ cp "$root/wine/ps5/input/pw_key_shared.h" "$prepared/dlls/win32u/pw_key_shared.h
+     fail "cannot stage shared-input ABI"
+ cp "$root/wine/ps5/input/pw_dualsense.h" "$prepared/dlls/xinput1_3/pw_dualsense.h" ||
+     fail "cannot stage the DualSense's reports"
++cp "$root/wine/ps5/input/pw_wheel.h" "$prepared/dlls/xinput1_3/pw_wheel.h" ||
++    fail "cannot stage the wheel's report"
+ mkdir -p "$tree"
+ rsync -rlc --delete --exclude=/.git "$prepared/" "$tree/" || fail "cannot update $tree"
+ rm -rf "$prepared"
+diff --git a/tools/build_native.sh b/tools/build_native.sh
+index 96f0aa1..9424b1e 100755
+--- a/tools/build_native.sh
++++ b/tools/build_native.sh
+@@ -176,7 +176,7 @@ common=(-DPW_BUILD_ID=\""$build_id"\" -O2 -Wall -Wextra -Werror -ffunction-secti
+         -DPW_TITLE_ID=\""$title_id"\" ${extra_cflags[@]+"${extra_cflags[@]}"})
+ 
+ sources=(
+-    native/wine64_main.c native/pw_diagnostics.c native/pw_audio_ps5.c native/pw_pad_ps5.c native/pw_players_ps5.c native/pw_agc_ps5.c
++    native/wine64_main.c native/pw_diagnostics.c native/pw_audio_ps5.c native/pw_pad_ps5.c native/pw_players_ps5.c native/pw_wheel_ps5.c native/pw_agc_ps5.c
+     native/pw_agc_submit_lifecycle.c native/pw_videoout_ps5.c native/pw_data_mount.c
+     native/pw_lapy_elevation.c
+     native/pw_wine_display.c native/pw_wine_library.c native/pw_hid_ps5.c native/pw_wine_prefix.c
+diff --git a/tools/build_wine_ps5.sh b/tools/build_wine_ps5.sh
+index bf2c4ff..f5e5552 100755
+--- a/tools/build_wine_ps5.sh
++++ b/tools/build_wine_ps5.sh
+@@ -294,6 +294,9 @@ cp "$root/wine/ps5/input/pw_key_shared.h" "$prepared/dlls/win32u/pw_key_shared.h
+ # The DualSense's reports, which xinput's Unix library makes (patch 0475).
+ cp "$root/wine/ps5/input/pw_dualsense.h" "$prepared/dlls/xinput1_3/pw_dualsense.h" ||
+     fail "cannot stage the DualSense's reports"
++# The steering wheel's report, which xinput's Unix library makes too.
++cp "$root/wine/ps5/input/pw_wheel.h" "$prepared/dlls/xinput1_3/pw_wheel.h" ||
++    fail "cannot stage the wheel's report"
+ mkdir -p "$tree"
+ rsync -rlc --delete --exclude=/.git "$prepared/" "$tree/" || fail "cannot update $tree"
+ rm -rf "$prepared"
+@@ -457,6 +460,7 @@ if [ "$prx_status" = 0 ]; then
+         pw_wine_set_pad pw_wine_rumble pw_wine_pad pw_wine_set_rumble \
+         pw_wine_set_pad_at pw_wine_rumble_at pw_wine_pad_at pw_wine_set_rumble_at \
+         pw_wine_set_dualsense pw_wine_dualsense_output pw_wine_dualsense pw_wine_dualsense_report pw_wine_pad_changes \
++        pw_wine_set_wheel pw_wine_wheel \
+         pw_wine_set_audio_sink pw_wine_audio_available pw_wine_audio_output \
+         __wine_virtual_stats __wine_virtual_fault_top __wine_ps5_set_output_sink __wine_ps5_memory_stats pw_cwd_set \
+         __wine_ps5_set_segv_hook __wine_ps5_set_segv_unresolved_hook pw_wine_set_display_release pw_wine_release_display \
+diff --git a/wine/patches/0957-xinput-ps5-a-steering-wheel-as-a-g29.patch b/wine/patches/0957-xinput-ps5-a-steering-wheel-as-a-g29.patch
+new file mode 100644
+index 0000000..3b9545e
+--- /dev/null
++++ b/wine/patches/0957-xinput-ps5-a-steering-wheel-as-a-g29.patch
+@@ -0,0 +1,1037 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: bornaradusin <bornaradusin@users.noreply.github.com>
++Date: Tue, 3 Nov 2026 12:00:00 +0000
++Subject: [PATCH] xinput1_3: A PS5 title's steering wheel as a Logitech G29.
++
++A PS5 title that finds a steering wheel on the console (a G29, which PS4
++and PS5 racing games take) sets PW_WHEEL=1 and keeps the wheel's state in
++its sink (pw_wine_wheel). xinput1_3 then makes the game a G29 Driving
++Force as a PC finds one plugged in by USB, 046d:c24f, the way dualsense.c
++makes the DualSense: a device in the server answered on a thread of the
++game's process as hidclass.sys answers a HID collection, with the
++registry keys plug and play leaves. Its input report is the Unix
++library's (pw_wheel.h, staged beside it): steering, accelerator, brake
++and clutch, a hat and 24 buttons, which DirectInput reads as a driving
++device. ntdll loads xinput1_3 at the start for it, as for the DualSense.
++There is no force feedback yet: the device takes no output or feature
++reports.
++
++diff --git a/dlls/ntdll/loader.c b/dlls/ntdll/loader.c
++index 1cb22bf..a06e9f0 100644
++--- a/dlls/ntdll/loader.c
+++++ b/dlls/ntdll/loader.c
++@@ -4433,26 +4433,34 @@ static void init_wow64( CONTEXT *context )
++  * the title's controller a DualSense (its dualsense.c), which must be there
++  * before the game looks for controllers. It comes from the system
++  * directory: a game's own xinput1_3.dll has no DualSense. */
+++static BOOL pw_switch_on( const WCHAR *variable )
+++{
+++    WCHAR value[2];
+++    SIZE_T len;
+++
+++    return !RtlQueryEnvironmentVariable( NULL, variable, wcslen( variable ), value, ARRAY_SIZE(value), &len ) &&
+++           len == 1 && value[0] == '1';
+++}
+++
+++/* A steering wheel on the console (PW_WHEEL=1) is made by xinput1_3 too
+++ * (its wheel.c), as the game's G29, and is loaded for alike. */
++ static void load_dualsense(void)
++ {
++-    static const WCHAR variable[] = L"PW_DUALSENSE";
++-    WCHAR value[2], path[MAX_PATH];
+++    WCHAR path[MAX_PATH];
++     UNICODE_STRING name;
++     HMODULE module;
++     NTSTATUS status;
++-    SIZE_T len;
++ 
++ #ifdef _WIN64
++     if (NtCurrentTeb()->WowTebOffset) return;  /* the 32-bit side does it */
++ #endif
++-    if (RtlQueryEnvironmentVariable( NULL, variable, wcslen( variable ), value, ARRAY_SIZE(value), &len ) ||
++-        len != 1 || value[0] != '1')
+++    if (!pw_switch_on( L"PW_DUALSENSE" ) && !pw_switch_on( L"PW_WHEEL" ))
++         return;
++     wcscpy( path, system_dir );
++     wcscat( path, L"xinput1_3.dll" );
++     RtlInitUnicodeString( &name, path );
++     if ((status = LdrLoadDll( NULL, 0, &name, &module )))
++-        ERR( "cannot load %s for the DualSense, status %lx\n", debugstr_w(path), status );
+++        ERR( "cannot load %s for the DualSense or the wheel, status %lx\n", debugstr_w(path), status );
++ }
++ 
++ /* release some address space once dlls are loaded*/
++diff --git a/dlls/xinput1_3/Makefile.in b/dlls/xinput1_3/Makefile.in
++index 17bec9c..acd0d08 100644
++--- a/dlls/xinput1_3/Makefile.in
+++++ b/dlls/xinput1_3/Makefile.in
++@@ -11,4 +11,5 @@ SOURCES = \
++ 	dualsense.c \
++ 	dualsense_hid.c \
++ 	main.c \
++-	unixlib.c
+++	unixlib.c \
+++	wheel.c
++diff --git a/dlls/xinput1_3/main.c b/dlls/xinput1_3/main.c
++index 33ff04f..2a06c6a 100644
++--- a/dlls/xinput1_3/main.c
+++++ b/dlls/xinput1_3/main.c
++@@ -47,6 +47,7 @@
++ #include "unixlib.h"
++ #ifdef PW_DUALSENSE_HOST
++ #include "dualsense.h"
+++#include "wheel.h"
++ #endif
++ 
++ DEFINE_GUID(GUID_DEVINTERFACE_WINEXINPUT,0x6c53d5fd,0x6480,0x440f,0xb6,0x18,0x47,0x67,0x50,0xc5,0xe1,0xa6);
++@@ -885,11 +886,14 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved)
++         /* dualsense mode in a PS5 title: the controller is a DualSense,
++          * which this xinput makes for the game (dualsense.c) */
++         dualsense_start();
+++        /* a steering wheel on the console: the game's G29 (wheel.c) */
+++        wheel_start();
++ #endif
++         break;
++ #ifdef PW_DUALSENSE_HOST
++     case DLL_PROCESS_DETACH:
++         dualsense_stop();
+++        wheel_stop();
++         break;
++ #endif
++     }
++diff --git a/dlls/xinput1_3/unixlib.c b/dlls/xinput1_3/unixlib.c
++index c362495..23a84cd 100644
++--- a/dlls/xinput1_3/unixlib.c
+++++ b/dlls/xinput1_3/unixlib.c
++@@ -33,6 +33,7 @@
++ 
++ #include "unixlib.h"
++ #include "pw_dualsense.h"
+++#include "pw_wheel.h"
++ 
++ /* A PS5 title runs Wine in its own process, with no winedevice to carry a
++  * HID stack. The title keeps its controller's state in its sink
++@@ -152,6 +153,38 @@ static NTSTATUS dualsense_output( void *args )
++     return STATUS_SUCCESS;
++ }
++ 
+++/* A steering wheel: the title's (pw_wine_wheel), as a G29's reports. */
+++static int (*title_wheel)( PwWheelState *state );
+++
+++static NTSTATUS wheel_init( void *args )
+++{
+++    title_wheel = dlsym( RTLD_DEFAULT, "pw_wine_wheel" );
+++    return title_wheel ? STATUS_SUCCESS : STATUS_NOT_SUPPORTED;
+++}
+++
+++static NTSTATUS wheel_descriptor( void *args )
+++{
+++    struct xinput_dualsense_descriptor *params = args;
+++
+++    C_ASSERT( sizeof(pw_wheel_descriptor) <= sizeof(params->data) );
+++    params->size = sizeof(pw_wheel_descriptor);
+++    memcpy( params->data, pw_wheel_descriptor, sizeof(pw_wheel_descriptor) );
+++    return STATUS_SUCCESS;
+++}
+++
+++static NTSTATUS wheel_input( void *args )
+++{
+++    struct xinput_wheel_input *params = args;
+++    PwWheelState state;
+++
+++    C_ASSERT( PW_WHEEL_INPUT_SIZE <= sizeof(params->data) );
+++    if (!title_wheel) return STATUS_NOT_SUPPORTED;
+++    params->connected = title_wheel( &state ) != 0;
+++    params->packet = state.packet;
+++    pw_wheel_input( params->connected ? &state : NULL, params->data );
+++    return STATUS_SUCCESS;
+++}
+++
++ const unixlib_entry_t __wine_unix_call_funcs[] =
++ {
++     pad_init,
++@@ -164,6 +197,9 @@ const unixlib_entry_t __wine_unix_call_funcs[] =
++     dualsense_output,
++     pad_state_at,
++     pad_rumble_at,
+++    wheel_init,
+++    wheel_descriptor,
+++    wheel_input,
++ };
++ 
++ C_ASSERT( ARRAYSIZE(__wine_unix_call_funcs) == unix_funcs_count );
++@@ -182,6 +218,9 @@ const unixlib_entry_t __wine_unix_call_wow64_funcs[] =
++     dualsense_output,
++     pad_state_at,
++     pad_rumble_at,
+++    wheel_init,
+++    wheel_descriptor,
+++    wheel_input,
++ };
++ 
++ C_ASSERT( ARRAYSIZE(__wine_unix_call_wow64_funcs) == unix_funcs_count );
++diff --git a/dlls/xinput1_3/unixlib.h b/dlls/xinput1_3/unixlib.h
++index 9499e21..61b8f3c 100644
++--- a/dlls/xinput1_3/unixlib.h
+++++ b/dlls/xinput1_3/unixlib.h
++@@ -90,6 +90,16 @@ struct xinput_dualsense_output
++     BYTE data[64];                /* in: output report 2 */
++ };
++ 
+++/* A steering wheel (PW_WHEEL=1): the title's wheel as a G29 (wheel.c), its
+++ * reports the Unix library's (pw_wheel.h). The descriptor comes as the
+++ * DualSense's does. */
+++struct xinput_wheel_input
+++{
+++    UINT32 connected;             /* out */
+++    UINT32 packet;                /* out: changes whenever the wheel's state does */
+++    BYTE data[16];                /* out: input report 1 */
+++};
+++
++ enum xinput_unix_funcs
++ {
++     unix_pad_init,
++@@ -102,6 +112,9 @@ enum xinput_unix_funcs
++     unix_dualsense_output,
++     unix_pad_state_at,
++     unix_pad_rumble_at,
+++    unix_wheel_init,
+++    unix_wheel_descriptor,
+++    unix_wheel_input,
++     unix_funcs_count,
++ };
++ 
++diff --git a/dlls/xinput1_3/wheel.c b/dlls/xinput1_3/wheel.c
++new file mode 100644
++index 0000000..36d02b7
++--- /dev/null
+++++ b/dlls/xinput1_3/wheel.c
++@@ -0,0 +1,788 @@
+++/*
+++ * The PS5 title's steering wheel as a G29
+++ *
+++ * Copyright 2026 prospero-win
+++ *
+++ * This library is free software; you can redistribute it and/or
+++ * modify it under the terms of the GNU Lesser General Public
+++ * License as published by the Free Software Foundation; either
+++ * version 2.1 of the License, or (at your option) any later version.
+++ *
+++ * This library is distributed in the hope that it will be useful,
+++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+++ * Lesser General Public License for more details.
+++ *
+++ * You should have received a copy of the GNU Lesser General Public
+++ * License along with this library; if not, write to the Free Software
+++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+++ */
+++
+++/* A steering wheel on the console (PW_WHEEL=1, which a PS5 title sets
+++ * when it finds one): the game finds a Logitech G29 Driving Force as a PC
+++ * finds one plugged in by USB, through SetupAPI and HID, DirectInput or raw
+++ * input. It is made as dualsense.c makes the DualSense: a device in the
+++ * server answered on a thread of the game's process as hidclass.sys answers
+++ * a HID collection, input reports 250 times a second, from the title's
+++ * wheel. The report and its descriptor are the Unix library's
+++ * (pw_wheel.h): steering, accelerator, brake and clutch, a hat and 24
+++ * buttons, which DirectInput reads as a driving device. No force feedback
+++ * yet: the device takes no output or feature reports. */
+++
+++#include <stdarg.h>
+++#include <stdlib.h>
+++#include <string.h>
+++
+++#include "ntstatus.h"
+++#define WIN32_NO_STATUS
+++#include "windef.h"
+++#include "winbase.h"
+++#include "winternl.h"
+++#include "winioctl.h"
+++#include "winreg.h"
+++#include "ddk/wdm.h"
+++#include "hidusage.h"
+++#include "ddk/hidclass.h"
+++#include "ddk/hidpi.h"
+++#include "ddk/hidpddi.h"
+++#include "ntuser.h"
+++
+++#include "wine/hid.h"
+++#include "wine/list.h"
+++#include "wine/server.h"
+++#include "wine/debug.h"
+++
+++#include "unixlib.h"
+++#include "wheel.h"
+++
+++WINE_DEFAULT_DEBUG_CHANNEL(xinput);
+++
+++#define WHL_HID_GUID     L"{4d1e55b2-f16f-11cf-88cb-001111000030}"
+++#define WHL_HIDCLASS     L"{745a17a0-74d3-11d0-b6fe-00a0c90f57da}"
+++#define WHL_HARDWARE     L"VID_046D&PID_C24F"
+++#define WHL_SERIAL       L"1&2d595ca7&0&0000"
+++#define WHL_INSTANCE     L"HID\\" WHL_HARDWARE L"\\" WHL_SERIAL
+++#define WHL_LINK         L"HID#" WHL_HARDWARE L"#" WHL_SERIAL L"#" WHL_HID_GUID
+++#define WHL_DEVICE       L"\\Device\\PwWheel"
+++#define WHL_ENUM_KEY     L"System\\CurrentControlSet\\Enum\\" WHL_INSTANCE
+++#define WHL_CLASS_KEY    L"System\\CurrentControlSet\\Control\\DeviceClasses\\" WHL_HID_GUID L"\\##?#" WHL_LINK
+++
+++enum
+++{
+++    WHL_INPUT_SIZE = 13,         /* pw_wheel.h's report 1, with its id */
+++    WHL_INPUT_ID = 1,
+++    WHL_QUEUE_DEFAULT = 32,      /* hidclass's, and Windows' */
+++    WHL_QUEUE_MIN = 2,
+++    WHL_QUEUE_MAX = 512,
+++    WHL_TICK_US = 4000,          /* 250 reports a second */
+++    WHL_RAWINPUT_HANDLE = 0x5c0f1, /* any but 1 and 2 (the mouse's and the keyboard's) and the DualSense's */
+++    WHL_VERSION = 0x0100,
+++};
+++
+++struct wh_read
+++{
+++    struct list entry;
+++    HANDLE irp;                 /* until it is answered */
+++    UINT64 id;                  /* the server's name for it, which a cancel gives: never reused */
+++};
+++
+++struct wh_file
+++{
+++    struct list entry;
+++    struct list reads;          /* wh_read: waiting for a report */
+++    BOOL closed;
+++    ULONG length;               /* the input reports kept, as IOCTL_SET_NUM_DEVICE_INPUT_BUFFERS sets */
+++    ULONG first, count;
+++    BYTE (*reports)[WHL_INPUT_SIZE];
+++};
+++
+++/* What the next get_next_device_request answers the current call with. */
+++struct wh_result
+++{
+++    HANDLE handle;              /* the call's, which the server then closes; 0 when it is pending */
+++    client_ptr_t user_ptr;
+++    NTSTATUS status;
+++    int pending;
+++    ULONG_PTR info;
+++    BYTE *data;
+++    ULONG size;
+++};
+++
+++static struct
+++{
+++    unixlib_handle_t unix;
+++    HANDLE manager, link;
+++    HIDP_DEVICE_DESC desc;
+++    const HIDP_COLLECTION_DESC *collection;
+++    HID_COLLECTION_INFORMATION information;
+++    struct list files;
+++    BYTE report[WHL_INPUT_SIZE]; /* the newest input report */
+++    BYTE *in;
+++    ULONG in_capacity;
+++    UINT64 next_read;
+++    BOOL keys;
+++} wh = { .files = LIST_INIT( wh.files ) };
+++
+++static NTSTATUS wh_call( unsigned int code, void *params )
+++{
+++    return __wine_unix_call( wh.unix, code, params );
+++}
+++
+++/* The registry, as plug and play leaves it for a HID collection: the
+++ * device's instance, and its interface, enabled. */
+++static BOOL set_value( HKEY key, const WCHAR *name, DWORD type, const void *data, DWORD size )
+++{
+++    return !RegSetValueExW( key, name, 0, type, data, size );
+++}
+++
+++static BOOL set_string( HKEY key, const WCHAR *name, const WCHAR *value )
+++{
+++    return set_value( key, name, REG_SZ, value, (wcslen( value ) + 1) * sizeof(WCHAR) );
+++}
+++
+++static HKEY create_key( HKEY root, const WCHAR *path )
+++{
+++    HKEY key;
+++
+++    if (RegCreateKeyExW( root, path, 0, NULL, REG_OPTION_VOLATILE, KEY_ALL_ACCESS, NULL, &key, NULL )) return NULL;
+++    return key;
+++}
+++
+++static BOOL create_keys(void)
+++{
+++    static const WCHAR hardware_ids[] =
+++        L"HID\\VID_046D&PID_C24F&REV_0100\0HID\\" WHL_HARDWARE L"\0"
+++        L"HID\\VID_046D&UP:0001_U:0004\0HID_DEVICE_SYSTEM_GAME\0HID_DEVICE_UP:0001_U:0004\0HID_DEVICE\0";
+++    static const WCHAR compatible_ids[] = L"HID_DEVICE_SYSTEM_GAME\0HID_DEVICE_UP:0001_U:0004\0HID_DEVICE\0";
+++    static const WCHAR link[] = L"\\\\?\\" WHL_LINK;
+++    const DWORD one = 1;
+++    HKEY key, refstr, control;
+++    BOOL ok;
+++
+++    if (!(key = create_key( HKEY_LOCAL_MACHINE, WHL_ENUM_KEY ))) return FALSE;
+++    ok = set_string( key, L"ClassGUID", WHL_HIDCLASS ) && set_string( key, L"Class", L"HIDClass" ) &&
+++         set_string( key, L"DeviceDesc", L"HID-compliant game controller" ) &&
+++         set_string( key, L"Mfg", L"(Standard system devices)" ) &&
+++         set_value( key, L"HardwareID", REG_MULTI_SZ, hardware_ids, sizeof(hardware_ids) ) &&
+++         set_value( key, L"CompatibleIDs", REG_MULTI_SZ, compatible_ids, sizeof(compatible_ids) );
+++    RegCloseKey( key );
+++    if (!ok) return FALSE;
+++
+++    if (!(key = create_key( HKEY_LOCAL_MACHINE, WHL_CLASS_KEY ))) return FALSE;
+++    ok = set_string( key, L"DeviceInstance", WHL_INSTANCE );
+++    if (ok && (ok = (refstr = create_key( key, L"#" )) != NULL))
+++    {
+++        ok = set_string( refstr, L"SymbolicLink", link );
+++        if (ok && (ok = (control = create_key( refstr, L"Control" )) != NULL))
+++        {
+++            ok = set_value( control, L"Linked", REG_DWORD, &one, sizeof(one) );
+++            RegCloseKey( control );
+++        }
+++        RegCloseKey( refstr );
+++    }
+++    RegCloseKey( key );
+++    return ok;
+++}
+++
+++static void delete_keys(void)
+++{
+++    RegDeleteTreeW( HKEY_LOCAL_MACHINE, WHL_CLASS_KEY );
+++    RegDeleteTreeW( HKEY_LOCAL_MACHINE, WHL_ENUM_KEY );
+++}
+++
+++/* The device in the server, and the link the interface's path opens. */
+++static NTSTATUS create_device(void)
+++{
+++    static const WCHAR device[] = WHL_DEVICE;
+++    UNICODE_STRING name = RTL_CONSTANT_STRING( L"\\??\\" WHL_LINK ), target = RTL_CONSTANT_STRING( WHL_DEVICE );
+++    OBJECT_ATTRIBUTES attr;
+++    NTSTATUS status;
+++
+++    SERVER_START_REQ( create_device_manager )
+++    {
+++        req->access     = SYNCHRONIZE;
+++        req->attributes = 0;
+++        if (!(status = wine_server_call( req ))) wh.manager = wine_server_ptr_handle( reply->handle );
+++    }
+++    SERVER_END_REQ;
+++    if (status) return status;
+++
+++    SERVER_START_REQ( create_device )
+++    {
+++        req->rootdir  = 0;
+++        req->manager  = wine_server_obj_handle( wh.manager );
+++        req->user_ptr = wine_server_client_ptr( &wh );
+++        wine_server_add_data( req, device, sizeof(device) - sizeof(WCHAR) );
+++        status = wine_server_call( req );
+++    }
+++    SERVER_END_REQ;
+++    if (status) return status;
+++
+++    InitializeObjectAttributes( &attr, &name, OBJ_CASE_INSENSITIVE, NULL, NULL );
+++    return NtCreateSymbolicLinkObject( &wh.link, SYMBOLIC_LINK_ALL_ACCESS, &attr, &target );
+++}
+++
+++/* Each open file's queue of input reports: the oldest goes first, and a
+++ * full queue drops it, as hidclass's does. */
+++static BOOL queue_resize( struct wh_file *file, ULONG length )
+++{
+++    BYTE (*reports)[WHL_INPUT_SIZE];
+++
+++    if (!(reports = calloc( length, WHL_INPUT_SIZE ))) return FALSE;
+++    free( file->reports );
+++    file->reports = reports;
+++    file->length = length;
+++    file->first = file->count = 0;
+++    return TRUE;
+++}
+++
+++static void queue_push( struct wh_file *file, const BYTE *report )
+++{
+++    if (file->count == file->length)
+++    {
+++        file->first = (file->first + 1) % file->length;
+++        file->count--;
+++    }
+++    memcpy( file->reports[(file->first + file->count++) % file->length], report, WHL_INPUT_SIZE );
+++}
+++
+++static BOOL queue_pop( struct wh_file *file, BYTE *report )
+++{
+++    if (!file->count) return FALSE;
+++    memcpy( report, file->reports[file->first], WHL_INPUT_SIZE );
+++    file->first = (file->first + 1) % file->length;
+++    file->count--;
+++    return TRUE;
+++}
+++
+++static void complete_irp( HANDLE irp, NTSTATUS status, const void *data, ULONG size )
+++{
+++    SERVER_START_REQ( set_irp_result )
+++    {
+++        req->handle = wine_server_obj_handle( irp );
+++        req->status = status;
+++        req->size   = size;
+++        if (size) wine_server_add_data( req, data, size );
+++        wine_server_call( req );
+++    }
+++    SERVER_END_REQ;
+++}
+++
+++static void complete_reads( struct wh_file *file, NTSTATUS status )
+++{
+++    struct wh_read *read, *next;
+++
+++    LIST_FOR_EACH_ENTRY_SAFE( read, next, &file->reads, struct wh_read, entry )
+++    {
+++        complete_irp( read->irp, status, NULL, 0 );
+++        list_remove( &read->entry );
+++        free( read );
+++    }
+++}
+++
+++static struct wh_file *find_file( client_ptr_t ptr )
+++{
+++    struct wh_file *file;
+++
+++    LIST_FOR_EACH_ENTRY( file, &wh.files, struct wh_file, entry )
+++        if (wine_server_client_ptr( file ) == ptr) return file;
+++    return NULL;
+++}
+++
+++/* A report the thread makes: it goes to each open file, to the oldest read
+++ * waiting there or else into the queue, and to raw input. */
+++static void send_report(void)
+++{
+++    struct xinput_wheel_input params = {0};
+++    UINT buffer[(sizeof(struct hid_packet) + WHL_INPUT_SIZE + sizeof(UINT) - 1) / sizeof(UINT)];
+++    struct hid_packet *hid = (struct hid_packet *)buffer;
+++    INPUT input = {.type = INPUT_HARDWARE};
+++    struct wh_file *file;
+++
+++    if (wh_call( unix_wheel_input, &params )) return;
+++    memcpy( wh.report, params.data, WHL_INPUT_SIZE );
+++
+++    LIST_FOR_EACH_ENTRY( file, &wh.files, struct wh_file, entry )
+++    {
+++        struct list *head;
+++
+++        if (file->closed) continue;
+++        if ((head = list_head( &file->reads )))
+++        {
+++            struct wh_read *read = LIST_ENTRY( head, struct wh_read, entry );
+++            complete_irp( read->irp, STATUS_SUCCESS, wh.report, WHL_INPUT_SIZE );
+++            list_remove( &read->entry );
+++            free( read );
+++        }
+++        else queue_push( file, wh.report );
+++    }
+++
+++    input.hi.uMsg = WM_INPUT;
+++    input.hi.wParamH = HIWORD(RIM_INPUT);
+++    input.hi.wParamL = LOWORD(RIM_INPUT);
+++    hid->head.device = WHL_RAWINPUT_HANDLE;
+++    hid->head.usage = MAKELONG(wh.collection->Usage, wh.collection->UsagePage);
+++    hid->head.count = 1;
+++    hid->head.length = WHL_INPUT_SIZE;
+++    memcpy( hid->data, wh.report, WHL_INPUT_SIZE );
+++    NtUserSendHardwareInput( 0, 0, &input, (LPARAM)hid );
+++}
+++
+++static NTSTATUS dispatch_create( obj_handle_t handle )
+++{
+++    struct wh_file *file;
+++    NTSTATUS status;
+++
+++    if (!(file = calloc( 1, sizeof(*file) ))) return STATUS_NO_MEMORY;
+++    list_init( &file->reads );
+++    if (!queue_resize( file, WHL_QUEUE_DEFAULT ))
+++    {
+++        free( file );
+++        return STATUS_NO_MEMORY;
+++    }
+++    SERVER_START_REQ( set_kernel_object_ptr )
+++    {
+++        req->manager  = wine_server_obj_handle( wh.manager );
+++        req->handle   = handle;
+++        req->user_ptr = wine_server_client_ptr( file );
+++        status = wine_server_call( req );
+++    }
+++    SERVER_END_REQ;
+++    if (status)
+++    {
+++        free( file->reports );
+++        free( file );
+++        return status;
+++    }
+++    list_add_tail( &wh.files, &file->entry );
+++    TRACE( "file %p opened\n", file );
+++    return STATUS_SUCCESS;
+++}
+++
+++static void dispatch_close( struct wh_file *file )
+++{
+++    if (!file) return;
+++    TRACE( "file %p closed\n", file );
+++    file->closed = TRUE;
+++    complete_reads( file, STATUS_DEVICE_NOT_CONNECTED );
+++    free( file->reports );
+++    file->reports = NULL;
+++    file->count = 0;
+++}
+++
+++static void dispatch_free( client_ptr_t ptr )
+++{
+++    struct wh_file *file;
+++
+++    if (!(file = find_file( ptr ))) return;  /* the device's, or unknown */
+++    complete_reads( file, STATUS_DEVICE_NOT_CONNECTED );
+++    list_remove( &file->entry );
+++    free( file->reports );
+++    free( file );
+++}
+++
+++static void dispatch_cancel( client_ptr_t ptr )
+++{
+++    struct wh_file *file;
+++    struct wh_read *read;
+++
+++    LIST_FOR_EACH_ENTRY( file, &wh.files, struct wh_file, entry )
+++    {
+++        LIST_FOR_EACH_ENTRY( read, &file->reads, struct wh_read, entry )
+++        {
+++            if (read->id != ptr) continue;
+++            complete_irp( read->irp, STATUS_CANCELLED, NULL, 0 );
+++            list_remove( &read->entry );
+++            free( read );
+++            return;
+++        }
+++    }
+++}
+++
+++static BYTE *result_data( struct wh_result *result, const void *data, ULONG size )
+++{
+++    if (!(result->data = malloc( size ? size : 1 ))) return NULL;
+++    if (data) memcpy( result->data, data, size );
+++    else memset( result->data, 0, size );
+++    result->size = size;
+++    return result->data;
+++}
+++
+++static void dispatch_read( struct wh_file *file, ULONG size, HANDLE irp, struct wh_result *result )
+++{
+++    struct wh_read *read;
+++    BYTE report[WHL_INPUT_SIZE];
+++
+++    if (!file || file->closed) result->status = STATUS_INVALID_HANDLE;
+++    else if (size < wh.collection->InputLength) result->status = STATUS_INVALID_BUFFER_SIZE;
+++    else if (queue_pop( file, report ))
+++    {
+++        if (!result_data( result, report, WHL_INPUT_SIZE )) result->status = STATUS_NO_MEMORY;
+++        else result->info = WHL_INPUT_SIZE;
+++    }
+++    else if (!(read = malloc( sizeof(*read) ))) result->status = STATUS_NO_MEMORY;
+++    else
+++    {
+++        read->irp = irp;
+++        read->id = ++wh.next_read;
+++        list_add_tail( &file->reads, &read->entry );
+++        result->handle = 0;     /* kept until a report answers it */
+++        result->user_ptr = read->id;
+++        result->status = STATUS_PENDING;
+++        result->pending = 1;
+++    }
+++}
+++
+++/* No output reports yet (a G29's force feedback is the next step). */
+++static NTSTATUS write_report( const BYTE *report, ULONG size, ULONG_PTR *info )
+++{
+++    if (!size) return STATUS_INVALID_USER_BUFFER;
+++    TRACE( "output report %#x of %lu bytes refused\n", report[0], size );
+++    return STATUS_INVALID_PARAMETER;
+++}
+++
+++static NTSTATUS get_string( ULONG code, BYTE *out, ULONG out_size, ULONG_PTR *info )
+++{
+++    const WCHAR *string = code == IOCTL_HID_GET_PRODUCT_STRING ? L"G29 Driving Force Racing Wheel" :
+++                          code == IOCTL_HID_GET_MANUFACTURER_STRING ? L"Logitech" : L"";
+++
+++    *info = (wcslen( string ) + 1) * sizeof(WCHAR);
+++    if (*info > out_size) return STATUS_BUFFER_TOO_SMALL;
+++    memcpy( out, string, *info );
+++    return STATUS_SUCCESS;
+++}
+++
+++static NTSTATUS hid_ioctl( struct wh_file *file, ULONG code, const BYTE *in, ULONG in_size, BYTE *out,
+++                           ULONG out_size, ULONG_PTR *info )
+++{
+++    switch (code)
+++    {
+++    case IOCTL_HID_GET_POLL_FREQUENCY_MSEC:
+++        if (out_size < sizeof(ULONG)) return STATUS_BUFFER_OVERFLOW;
+++        *(ULONG *)out = 0;      /* not polled: it sends reports itself */
+++        *info = sizeof(ULONG);
+++        return STATUS_SUCCESS;
+++    case IOCTL_HID_SET_POLL_FREQUENCY_MSEC:
+++        if (in_size < sizeof(ULONG)) return STATUS_BUFFER_TOO_SMALL;
+++        return STATUS_SUCCESS;
+++    case IOCTL_HID_GET_PRODUCT_STRING:
+++    case IOCTL_HID_GET_MANUFACTURER_STRING:
+++    case IOCTL_HID_GET_SERIALNUMBER_STRING:
+++        return get_string( code, out, out_size, info );
+++    case IOCTL_HID_GET_COLLECTION_INFORMATION:
+++        *info = sizeof(wh.information);
+++        if (out_size < sizeof(wh.information)) return STATUS_BUFFER_OVERFLOW;
+++        memcpy( out, &wh.information, sizeof(wh.information) );
+++        return STATUS_SUCCESS;
+++    case IOCTL_HID_GET_COLLECTION_DESCRIPTOR:
+++        *info = wh.collection->PreparsedDataLength;
+++        if (out_size < wh.collection->PreparsedDataLength) return STATUS_INVALID_BUFFER_SIZE;
+++        memcpy( out, wh.collection->PreparsedData, wh.collection->PreparsedDataLength );
+++        return STATUS_SUCCESS;
+++    case IOCTL_SET_NUM_DEVICE_INPUT_BUFFERS:
+++    {
+++        ULONG length;
+++
+++        if (in_size != sizeof(ULONG)) return STATUS_BUFFER_OVERFLOW;
+++        length = *(const ULONG *)in;
+++        if (length < WHL_QUEUE_MIN || length > WHL_QUEUE_MAX) return STATUS_INVALID_PARAMETER;
+++        if (length == file->length) return STATUS_SUCCESS;
+++        return queue_resize( file, length ) ? STATUS_SUCCESS : STATUS_NO_MEMORY;
+++    }
+++    case IOCTL_GET_NUM_DEVICE_INPUT_BUFFERS:
+++        if (out_size < sizeof(ULONG)) return STATUS_BUFFER_TOO_SMALL;
+++        *(ULONG *)out = file->length;
+++        *info = sizeof(ULONG);
+++        return STATUS_SUCCESS;
+++    case IOCTL_HID_FLUSH_QUEUE:
+++        file->first = file->count = 0;
+++        return STATUS_SUCCESS;
+++    case IOCTL_HID_GET_INPUT_REPORT:
+++        if (!out_size) return STATUS_INVALID_USER_BUFFER;
+++        if (out[0] != WHL_INPUT_ID || out_size < wh.collection->InputLength) return STATUS_INVALID_PARAMETER;
+++        memcpy( out, wh.report, WHL_INPUT_SIZE );
+++        *info = WHL_INPUT_SIZE;
+++        return STATUS_SUCCESS;
+++    case IOCTL_HID_GET_FEATURE:
+++    case IOCTL_HID_SET_FEATURE:
+++        return STATUS_INVALID_PARAMETER;   /* no feature reports */
+++    case IOCTL_HID_SET_OUTPUT_REPORT:
+++        return write_report( in, in_size, info );
+++    case IOCTL_HID_GET_WINE_RAWINPUT_HANDLE:
+++        if (out_size < sizeof(ULONG)) return STATUS_BUFFER_OVERFLOW;
+++        *(ULONG *)out = WHL_RAWINPUT_HANDLE;
+++        *info = sizeof(ULONG);
+++        return STATUS_SUCCESS;
+++    default:
+++        FIXME( "unsupported ioctl %#lx\n", code );
+++        return STATUS_NOT_SUPPORTED;
+++    }
+++}
+++
+++/* As ntoskrnl hands an ioctl to a driver, and returns what it wrote: a
+++ * buffered ioctl's output is what it reports writing, a direct one's is
+++ * the whole buffer, which arrives after the input. */
+++static void dispatch_ioctl( struct wh_file *file, ULONG code, ULONG in_size, ULONG out_size,
+++                            struct wh_result *result )
+++{
+++    BOOL direct = (code & 3) != METHOD_BUFFERED;
+++    BYTE *out;
+++
+++    if (!file || file->closed)
+++    {
+++        result->status = STATUS_INVALID_HANDLE;
+++        return;
+++    }
+++    if (direct && out_size)
+++    {
+++        if (in_size < out_size)
+++        {
+++            result->status = STATUS_INVALID_DEVICE_REQUEST;
+++            return;
+++        }
+++        in_size -= out_size;
+++    }
+++    if (!(out = result_data( result, direct && out_size ? wh.in + in_size : NULL, out_size )))
+++    {
+++        result->status = STATUS_NO_MEMORY;
+++        return;
+++    }
+++    result->status = hid_ioctl( file, code, wh.in, in_size, out, out_size, &result->info );
+++    if (!direct) result->size = NT_ERROR(result->status) ? 0 : min( result->info, out_size );
+++}
+++
+++static void dispatch_volume( ULONG info_class, ULONG out_size, struct wh_result *result )
+++{
+++    FILE_FS_DEVICE_INFORMATION info = {.DeviceType = FILE_DEVICE_UNKNOWN};
+++
+++    if (info_class != FileFsDeviceInformation) result->status = STATUS_NOT_SUPPORTED;
+++    else if (out_size < sizeof(info)) result->status = STATUS_INFO_LENGTH_MISMATCH;
+++    else if (!result_data( result, &info, sizeof(info) )) result->status = STATUS_NO_MEMORY;
+++    else result->info = sizeof(info);
+++}
+++
+++static void dispatch( const union irp_params *params, HANDLE irp, ULONG in_size, struct wh_result *result )
+++{
+++    result->handle = irp;
+++    result->status = STATUS_SUCCESS;
+++
+++    switch (params->type)
+++    {
+++    case IRP_CALL_CREATE:
+++        result->status = dispatch_create( params->create.file );
+++        break;
+++    case IRP_CALL_CLOSE:
+++        dispatch_close( find_file( params->close.file ) );
+++        break;
+++    case IRP_CALL_READ:
+++        dispatch_read( find_file( params->read.file ), params->read.out_size, irp, result );
+++        break;
+++    case IRP_CALL_WRITE:
+++    {
+++        struct wh_file *file = find_file( params->write.file );
+++        if (!file || file->closed) result->status = STATUS_INVALID_HANDLE;
+++        else result->status = write_report( wh.in, in_size, &result->info );
+++        break;
+++    }
+++    case IRP_CALL_FLUSH:
+++        break;
+++    case IRP_CALL_IOCTL:
+++        dispatch_ioctl( find_file( params->ioctl.file ), params->ioctl.code, in_size, params->ioctl.out_size, result );
+++        break;
+++    case IRP_CALL_VOLUME:
+++        dispatch_volume( params->volume.info_class, params->volume.out_size, result );
+++        break;
+++    case IRP_CALL_FREE:
+++        dispatch_free( params->free.obj );
+++        break;
+++    case IRP_CALL_CANCEL:
+++        dispatch_cancel( params->cancel.irp );
+++        break;
+++    default:
+++        result->status = STATUS_NOT_SUPPORTED;
+++        break;
+++    }
+++}
+++
+++/* Answers the current call and takes the next one, as ntoskrnl's loop does. */
+++static NTSTATUS next_request( struct wh_result *result, union irp_params *params, HANDLE *irp, ULONG *in_size )
+++{
+++    NTSTATUS status;
+++
+++    SERVER_START_REQ( get_next_device_request )
+++    {
+++        req->manager     = wine_server_obj_handle( wh.manager );
+++        req->prev        = wine_server_obj_handle( result->handle );
+++        req->user_ptr    = result->user_ptr;
+++        req->status      = result->status;
+++        req->pending     = result->pending;
+++        req->iosb_status = result->status;
+++        req->result      = result->info;
+++        if (result->size) wine_server_add_data( req, result->data, result->size );
+++        wine_server_set_reply( req, wh.in, wh.in_capacity );
+++        if (!(status = wine_server_call( req )))
+++        {
+++            *irp     = wine_server_ptr_handle( reply->next );
+++            *params  = reply->params;
+++            *in_size = reply->in_size;
+++        }
+++        else if (status == STATUS_BUFFER_OVERFLOW) *in_size = reply->in_size;
+++    }
+++    SERVER_END_REQ;
+++
+++    free( result->data );
+++    memset( result, 0, sizeof(*result) );
+++    return status;
+++}
+++
+++/* The device goes: the server deletes it with the manager, and fails what
+++ * waits on it, so a game is not left waiting for good. */
+++static void stop_device(void)
+++{
+++    delete_keys();
+++    wh.keys = FALSE;
+++    if (wh.link) NtClose( wh.link );
+++    NtClose( wh.manager );
+++    wh.link = wh.manager = 0;
+++}
+++
+++static DWORD WINAPI wheel_thread( void *arg )
+++{
+++    struct wh_result result = {0};
+++    LARGE_INTEGER frequency, now, next;
+++    unsigned int failures = 0;
+++    LONGLONG tick;
+++
+++    SetThreadDescription( GetCurrentThread(), L"wine_xinput_wheel" );
+++    QueryPerformanceFrequency( &frequency );
+++    tick = frequency.QuadPart * WHL_TICK_US / 1000000;
+++    if (tick < 1) tick = 1;
+++    QueryPerformanceCounter( &next );
+++
+++    for (;;)
+++    {
+++        union irp_params params;
+++        HANDLE irp = 0;
+++        ULONG in_size = 0;
+++        NTSTATUS status = next_request( &result, &params, &irp, &in_size );
+++
+++        if (status == STATUS_BUFFER_OVERFLOW)
+++        {
+++            BYTE *in = realloc( wh.in, in_size );
+++
+++            if (in)
+++            {
+++                wh.in = in;
+++                wh.in_capacity = in_size;
+++                continue;
+++            }
+++            status = STATUS_NO_MEMORY;
+++        }
+++        if (status == STATUS_SUCCESS)
+++        {
+++            failures = 0;
+++            dispatch( &params, irp, in_size, &result );
+++        }
+++        else if (status != STATUS_PENDING)
+++        {
+++            /* as ntoskrnl's loop, go on; but not forever */
+++            LARGE_INTEGER pause = {.QuadPart = -10 * 10000};
+++
+++            if (!failures++) ERR( "the server refused the next request: status %#lx\n", status );
+++            if (failures == 500)
+++            {
+++                ERR( "the wheel stops: status %#lx\n", status );
+++                stop_device();
+++                return 1;
+++            }
+++            NtDelayExecution( FALSE, &pause );
+++        }
+++
+++        QueryPerformanceCounter( &now );
+++        if (now.QuadPart >= next.QuadPart)
+++        {
+++            send_report();
+++            next.QuadPart += tick;
+++            if (next.QuadPart <= now.QuadPart) next.QuadPart = now.QuadPart + tick;  /* late: no burst */
+++        }
+++        if (status == STATUS_PENDING)
+++        {
+++            LARGE_INTEGER timeout;
+++
+++            QueryPerformanceCounter( &now );
+++            if (next.QuadPart > now.QuadPart)
+++            {
+++                timeout.QuadPart = -((next.QuadPart - now.QuadPart) * 10000000 / frequency.QuadPart) - 1;
+++                NtWaitForSingleObject( wh.manager, FALSE, &timeout );
+++            }
+++        }
+++    }
+++}
+++
+++void wheel_start(void)
+++{
+++    UNICODE_STRING name = RTL_CONSTANT_STRING( L"xinput1_3" );
+++    struct xinput_dualsense_descriptor descriptor = {0};
+++    struct xinput_wheel_input input = {0};
+++    unixlib_module_t module;
+++    WCHAR value[4];
+++    NTSTATUS status;
+++    HANDLE thread;
+++
+++    if (GetEnvironmentVariableW( L"PW_WHEEL", value, ARRAY_SIZE(value) ) != 1 || value[0] != '1') return;
+++
+++    if ((status = __wine_load_unix_lib( &name, &module, &wh.unix )))
+++    {
+++        ERR( "no Unix library, status %#lx: no wheel\n", status );
+++        return;
+++    }
+++    if ((status = wh_call( unix_wheel_init, NULL )))
+++    {
+++        ERR( "no title, status %#lx: no wheel\n", status );
+++        return;
+++    }
+++    if (wh_call( unix_wheel_descriptor, &descriptor ) ||
+++        (status = HidP_GetCollectionDescription( descriptor.data, descriptor.size, PagedPool, &wh.desc )) !=
+++        HIDP_STATUS_SUCCESS || wh.desc.CollectionDescLength != 1)
+++    {
+++        ERR( "the report descriptor does not parse, status %#lx: no wheel\n", status );
+++        return;
+++    }
+++    wh.collection = wh.desc.CollectionDesc;
+++    wh.information.DescriptorSize = wh.collection->PreparsedDataLength;
+++    wh.information.Polled = FALSE;
+++    wh.information.VendorID = 0x046d;
+++    wh.information.ProductID = 0xc24f;
+++    wh.information.VersionNumber = WHL_VERSION;
+++    if (!wh_call( unix_wheel_input, &input )) memcpy( wh.report, input.data, WHL_INPUT_SIZE );
+++    if (!(wh.in = malloc( 4096 ))) return;
+++    wh.in_capacity = 4096;
+++
+++    if ((status = create_device()))
+++    {
+++        ERR( "cannot make the device, status %#lx: no wheel\n", status );
+++        return;
+++    }
+++    if (!(wh.keys = create_keys()))
+++    {
+++        ERR( "cannot register the device: no wheel\n" );
+++        delete_keys();
+++        return;
+++    }
+++    if (!(thread = CreateThread( NULL, 0, wheel_thread, NULL, 0, NULL )))
+++    {
+++        ERR( "cannot start the device's thread, error %lu: no wheel\n", GetLastError() );
+++        delete_keys();
+++        wh.keys = FALSE;
+++        return;
+++    }
+++    CloseHandle( thread );
+++    MESSAGE( "xinput: the wheel is a G29 (046d:c24f, %u-byte reports, %u bytes of preparsed data)\n",
+++             wh.collection->InputLength, wh.collection->PreparsedDataLength );
+++}
+++
+++void wheel_stop(void)
+++{
+++    if (wh.keys) delete_keys();
+++    wh.keys = FALSE;
+++}
++diff --git a/dlls/xinput1_3/wheel.h b/dlls/xinput1_3/wheel.h
++new file mode 100644
++index 0000000..133dcda
++--- /dev/null
+++++ b/dlls/xinput1_3/wheel.h
++@@ -0,0 +1,31 @@
+++/*
+++ * The PS5 title's steering wheel as a G29
+++ *
+++ * Copyright 2026 prospero-win
+++ *
+++ * This library is free software; you can redistribute it and/or
+++ * modify it under the terms of the GNU Lesser General Public
+++ * License as published by the Free Software Foundation; either
+++ * version 2.1 of the License, or (at your option) any later version.
+++ *
+++ * This library is distributed in the hope that it will be useful,
+++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+++ * Lesser General Public License for more details.
+++ *
+++ * You should have received a copy of the GNU Lesser General Public
+++ * License along with this library; if not, write to the Free Software
+++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+++ */
+++
+++#ifndef __WINE_XINPUT_WHEEL_H
+++#define __WINE_XINPUT_WHEEL_H
+++
+++/* At process attach: with a steering wheel on the console (PW_WHEEL=1, in
+++ * a PS5 title) the G29 appears, and stays until the process ends; anywhere
+++ * else nothing happens. */
+++extern void wheel_start(void);
+++/* At process detach: the wheel's registry keys go. */
+++extern void wheel_stop(void);
+++
+++#endif /* __WINE_XINPUT_WHEEL_H */
++-- 
++2.43.0
++
+diff --git a/wine/ps5/input/pw_wheel.h b/wine/ps5/input/pw_wheel.h
+new file mode 100644
+index 0000000..d497dcc
+--- /dev/null
++++ b/wine/ps5/input/pw_wheel.h
+@@ -0,0 +1,104 @@
++/* SPDX-License-Identifier: LGPL-2.1-or-later */
++#ifndef PW_WHEEL_H
++#define PW_WHEEL_H
++/*
++ * A steering wheel as a PC sees a Logitech G29 plugged in by USB: a HID
++ * driving device, Logitech's 046d:c24f, steering, accelerator, brake and
++ * clutch, a hat and 24 buttons. A game finds the title's wheel this way
++ * (xinput1_3's wheel.c answers as Windows' HID class driver would): the
++ * title gives the wheel's state (PwWheelState), this file makes the input
++ * report. Wine's DirectInput reads it as a driving device with three pedals:
++ * steering the X axis, the accelerator Y, the brake Rz, the clutch a slider.
++ *
++ * Header only, with no Windows or console headers: Wine's xinput Unix
++ * library includes it (staged beside it by both Wine builds), and so do the
++ * host tests and the title.
++ *
++ * The report is this file's own, not the G29's (whose own layout only
++ * Logitech's driver reads); the pedals go as the G29's do on a PC without
++ * Logitech's software, released at the top of their range and pressed at the
++ * bottom, which the games with a G29 preset take.
++ */
++#include <stddef.h>
++#include <stdint.h>
++#include <string.h>
++
++enum {
++    PW_WHEEL_VENDOR = 0x046d, PW_WHEEL_PRODUCT = 0xc24f, PW_WHEEL_VERSION = 0x0100,
++    PW_WHEEL_INPUT_ID = 1,
++    PW_WHEEL_INPUT_SIZE = 13,        /* report 1, with its id */
++    PW_WHEEL_BUTTONS = 24,
++    PW_WHEEL_HAT_NONE = 8,
++};
++
++/* The title's wheel, laid out alike for 32- and 64-bit code (no pointers,
++ * fixed sizes): what the sink keeps (wine/ps5/pw_wine_sink.h). */
++typedef struct PwWheelState {
++    uint32_t connected;              /* 0: no wheel */
++    uint32_t packet;                 /* the sink's: changes whenever the state does */
++    int16_t steering;                /* -32768 full left to 32767 full right */
++    uint16_t accelerator;            /* 0 released to 65535 fully pressed */
++    uint16_t brake;
++    uint16_t clutch;
++    uint32_t buttons;                /* bit n: HID button n + 1 (pw_wheel_buttons) */
++    uint8_t hat;                     /* 0 up, clockwise to 7 up-left; PW_WHEEL_HAT_NONE */
++    uint8_t gear;                    /* the shifter: 0 neutral, 1-6, 7 reverse */
++    uint8_t reserved[2];
++} PwWheelState;
++
++/* Report 1: steering, accelerator and brake on the simulation page, the
++ * clutch a slider, the hat, the buttons. */
++static const uint8_t pw_wheel_descriptor[] = {
++    0x05, 0x01, 0x09, 0x04, 0xa1, 0x01,             /* Generic Desktop, Joystick, Application */
++    0x85, PW_WHEEL_INPUT_ID,
++    0x05, 0x02, 0x09, 0xc8,                         /* Simulation Controls: Steering */
++    0x16, 0x00, 0x80, 0x26, 0xff, 0x7f,             /* -32768 to 32767 */
++    0x75, 0x10, 0x95, 0x01, 0x81, 0x02,
++    0x09, 0xc4, 0x09, 0xc5,                         /* Accelerator, Brake */
++    0x15, 0x00, 0x27, 0xff, 0xff, 0x00, 0x00,       /* 0 to 65535 */
++    0x75, 0x10, 0x95, 0x02, 0x81, 0x02,
++    0x05, 0x01, 0x09, 0x36,                         /* Generic Desktop: Slider (the clutch) */
++    0x75, 0x10, 0x95, 0x01, 0x81, 0x02,
++    0x09, 0x39,                                     /* Hat switch, 0 to 7, null state */
++    0x15, 0x00, 0x25, 0x07, 0x35, 0x00, 0x46, 0x3b, 0x01, 0x65, 0x14,
++    0x75, 0x04, 0x95, 0x01, 0x81, 0x42,
++    0x65, 0x00, 0x45, 0x00,
++    0x75, 0x04, 0x95, 0x01, 0x81, 0x03,             /* padding */
++    0x05, 0x09, 0x19, 0x01, 0x29, PW_WHEEL_BUTTONS, /* Buttons 1 to 24 */
++    0x15, 0x00, 0x25, 0x01, 0x75, 0x01, 0x95, PW_WHEEL_BUTTONS, 0x81, 0x02,
++    0xc0,
++};
++
++/* The pedals as a G29's are on a PC: released at the top of the range. */
++static inline uint16_t pw_wheel_pedal_report(uint16_t pressed)
++{
++    return (uint16_t)(65535u - pressed);
++}
++
++/* Input report 1 from the state; a disconnected wheel is centred, released. */
++static inline void pw_wheel_input(const PwWheelState *state, uint8_t out[PW_WHEEL_INPUT_SIZE])
++{
++    PwWheelState idle;
++    uint16_t accelerator, brake, clutch, steering;
++
++    if (!state || !state->connected) {
++        memset(&idle, 0, sizeof(idle));
++        idle.hat = PW_WHEEL_HAT_NONE;
++        state = &idle;
++    }
++    steering = (uint16_t)state->steering;
++    accelerator = pw_wheel_pedal_report(state->accelerator);
++    brake = pw_wheel_pedal_report(state->brake);
++    clutch = pw_wheel_pedal_report(state->clutch);
++    out[0] = PW_WHEEL_INPUT_ID;
++    out[1] = (uint8_t)steering; out[2] = (uint8_t)(steering >> 8);
++    out[3] = (uint8_t)accelerator; out[4] = (uint8_t)(accelerator >> 8);
++    out[5] = (uint8_t)brake; out[6] = (uint8_t)(brake >> 8);
++    out[7] = (uint8_t)clutch; out[8] = (uint8_t)(clutch >> 8);
++    out[9] = state->hat < PW_WHEEL_HAT_NONE ? state->hat : 0x0f;   /* outside 0-7: no direction */
++    out[10] = (uint8_t)state->buttons;
++    out[11] = (uint8_t)(state->buttons >> 8);
++    out[12] = (uint8_t)(state->buttons >> 16);
++}
++
++#endif
+diff --git a/wine/ps5/pw_wine_sink.c b/wine/ps5/pw_wine_sink.c
+index 6371d0b..e3b2ed2 100644
+--- a/wine/ps5/pw_wine_sink.c
++++ b/wine/ps5/pw_wine_sink.c
+@@ -28,6 +28,9 @@ static pthread_mutex_t dualsense_lock=PTHREAD_MUTEX_INITIALIZER;
+ static PwDualSenseState dualsense_state;
+ static PwDualSenseOutput dualsense_out;
+ static uint32_t dualsense_out_seen;
++/* The wheel likewise: Wine's thread for it reads the state 250 times a second. */
++static pthread_mutex_t wheel_lock=PTHREAD_MUTEX_INITIALIZER;
++static PwWheelState wheel_state;
+ /* How many times a controller connected or disconnected (pw_wine_pad_changes). */
+ static uint32_t pad_changes;
+ /* Audio has its own lock: its sink blocks for a grain, which must not hold
+@@ -262,6 +265,40 @@ void pw_wine_set_dualsense(const PwDualSenseState *state)
+     pthread_mutex_unlock(&dualsense_lock);
+     if(changed)pad_changed();
+ }
++static int same_wheel(const PwWheelState *a,const PwWheelState *b)
++{
++    return a->steering==b->steering && a->accelerator==b->accelerator && a->brake==b->brake &&
++           a->clutch==b->clutch && a->buttons==b->buttons && a->hat==b->hat && a->gear==b->gear;
++}
++void pw_wine_set_wheel(const PwWheelState *state)
++{
++    pthread_mutex_lock(&wheel_lock);
++    int changed=(state!=NULL)!=(wheel_state.connected!=0);
++    if(!state)wheel_state.connected=0;
++    else {
++        uint32_t packet=wheel_state.packet;
++        if(!wheel_state.connected || !same_wheel(state,&wheel_state))
++            packet=packet+1?packet+1:1;   /* 0 is never a packet */
++        wheel_state=*state;wheel_state.connected=1;wheel_state.packet=packet;
++    }
++    pthread_mutex_unlock(&wheel_lock);
++    if(changed)pad_changed();
++}
++int pw_wine_wheel(PwWheelState *state)
++{
++    int connected;
++    if(!state)return 0;
++    pthread_mutex_lock(&wheel_lock);
++    connected=wheel_state.connected!=0;
++    if(connected)*state=wheel_state;
++    else {
++        uint32_t packet=wheel_state.packet;
++        memset(state,0,sizeof(*state));
++        state->packet=packet;state->hat=PW_WHEEL_HAT_NONE;
++    }
++    pthread_mutex_unlock(&wheel_lock);
++    return connected;
++}
+ int pw_wine_dualsense(PwDualSenseState *state)
+ {
+     int connected;
+diff --git a/wine/ps5/pw_wine_sink.h b/wine/ps5/pw_wine_sink.h
+index 38e4bfa..3e903e0 100644
+--- a/wine/ps5/pw_wine_sink.h
++++ b/wine/ps5/pw_wine_sink.h
+@@ -3,6 +3,7 @@
+ #define PW_WINE_SINK_H
+ #include <stdint.h>
+ #include "input/pw_dualsense.h"
++#include "input/pw_wheel.h"
+ 
+ /* The meeting point between the title and Wine's PS5 user driver. ntdll
+  * links it: the title reaches the set/post calls through ntdll.prx's
+@@ -102,6 +103,10 @@ void pw_wine_set_dualsense(const PwDualSenseState *state);
+ /* 1 and what the game's output reports asked (motors, light bar, the
+  * triggers' effects) when it changed since the last call, else 0. */
+ int pw_wine_dualsense_output(PwDualSenseOutput *output);
++/* A steering wheel (PW_WHEEL=1): its state, for the Logitech G29 a game
++ * finds as on a PC (xinput1_3's wheel.c), or NULL when it is disconnected.
++ * The sink numbers the states; the state's own packet field is ignored. */
++void pw_wine_set_wheel(const PwWheelState *state);
+ 
+ /* Driver side. -1 when no sink is set or the arguments are invalid. */
+ int pw_wine_present(const void *bgra,uint32_t width,uint32_t height,uint32_t stride);
+@@ -134,6 +139,8 @@ int pw_wine_dualsense(PwDualSenseState *state);
+ /* An output report a game sent the DualSense (report 2): 1 when it asked
+  * anything, which the title then reads. */
+ int pw_wine_dualsense_report(const uint8_t *report,uint32_t size);
++/* 1 and the wheel's state while one is connected, else 0 and a neutral one. */
++int pw_wine_wheel(PwWheelState *state);
+ /* 1 when the title set an audio sink: the audio driver offers its device
+  * only then. */
+ int pw_wine_audio_available(void);
+-- 
+2.43.0
+
