@@ -34,7 +34,17 @@ mkdir -p "$out/ui" && cp art/ui/* "$out/ui/"
 upstream=("$PW/src/pw_game_profile.c" "$PW/src/pw_app_profile.c" "$PW/src/pw_profile_catalog.c"
           "$PW/native/pw_wine_library.c" "$PW/src/pw_result.c")
 common=(-std=c11 -Wall -Wextra -Wpedantic -Werror -D_DEFAULT_SOURCE -Ititle -I"$PW/src" -I"$PW/native" -I"$PW/include"
-        -I"$PW/wine/ps5")
+        -I"$PW/wine/ps5" -DFRIBIDI_LIB_STATIC -Ithird_party/fribidi-1.0.18/lib -Ithird_party/fribidi-1.0.18/pc5-config)
+bash tools/build-fribidi.sh "$out/fribidi" cc ar
+# All programs that draw text use the exact same joining and bidi implementation.
+text_sources=(title/pc5_bidi.c "$out/fribidi/libfribidi-pc5.a")
+cc "${common[@]}" -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all -DPC5_HEAP_ONLY \
+    tests/test_bidi.c title/pc5_base.c "${text_sources[@]}" -lm -lpthread -o "$out/test_bidi"
+
+cc "${common[@]}" -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all \
+    tests/test_ui_rtl.c title/pc5_base.c title/pc5_draw.c title/pc5_image.c title/pc5_stb.c "${text_sources[@]}" -lm -lpthread -o "$out/test_ui_rtl"
+"$out/test_ui_rtl" "$out/fonts.bin"
+"$out/test_bidi"
 
 # PC5's code, with every buffer on the heap so the sanitizers see it, against
 # prospero-win's own profile parser and library loader.
@@ -42,7 +52,7 @@ cc "${common[@]}" -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all 
     tests/test_pc5.c title/pc5_base.c title/pc5_controls.c title/pc5_cover.c title/pc5_draw.c title/pc5_game.c title/pc5_image.c title/pc5_json.c \
     title/pc5_library.c title/pc5_logs.c title/pc5_matrix.c title/pc5_pe.c title/pc5_settings.c title/pc5_source.c \
     title/pc5_stb.c title/pc5_ui.c title/pc5_update.c title/pc5_home.c title/pc5_psfwd.c title/pc5_zip.c title/pc5_qr.c title/pc5_report.c \
-    title/pc5_upgrade.c title/pc5_sound.c title/pc5_video.c title/pc5_appearance.c title/pc5_compat.c title/pc5_look.c title/pc5_backgrounds.c title/pc5_tile.c title/pc5_dds.c title/pc5_files.c title/pc5_textdoc.c title/pc5_ftp.c title/pc5_web.c title/pc5_cab.c title/pc5_msi.c title/pc5_steam.c title/pc5_identity.c title/pc5_i18n.c tests/pc5_ftp_host.c "${upstream[@]}" -lm -lpthread \
+    title/pc5_upgrade.c title/pc5_sound.c title/pc5_video.c title/pc5_appearance.c title/pc5_compat.c title/pc5_look.c title/pc5_backgrounds.c title/pc5_tile.c title/pc5_dds.c title/pc5_files.c title/pc5_textdoc.c title/pc5_ftp.c title/pc5_web.c title/pc5_cab.c title/pc5_msi.c title/pc5_steam.c title/pc5_identity.c title/pc5_i18n.c tests/pc5_ftp_host.c "${upstream[@]}" "${text_sources[@]}" -lm -lpthread \
     -o "$out/test_pc5"
 "$out/test_pc5" "$out/work" tests/fixtures "$out/programs" "$out/covers" "$out/fonts.bin"
 
@@ -60,8 +70,9 @@ cc "${common[@]}" -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all 
     title/pc5_image.c title/pc5_json.c title/pc5_library.c title/pc5_logs.c title/pc5_matrix.c title/pc5_pe.c title/pc5_settings.c \
     title/pc5_source.c title/pc5_stb.c title/pc5_update.c title/pc5_home.c title/pc5_psfwd.c title/pc5_zip.c title/pc5_qr.c \
     title/pc5_report.c title/pc5_upgrade.c title/pc5_sound.c title/pc5_video.c title/pc5_appearance.c title/pc5_compat.c title/pc5_look.c title/pc5_backgrounds.c title/pc5_tile.c title/pc5_dds.c \
-    title/pc5_files.c title/pc5_textdoc.c title/pc5_identity.c title/pc5_i18n.c "${upstream[@]}" -lm -lpthread -o "$out/web-serve"
+    title/pc5_files.c title/pc5_textdoc.c title/pc5_identity.c title/pc5_i18n.c "${upstream[@]}" "${text_sources[@]}" -lm -lpthread -o "$out/web-serve"
 timeout 300 python3 -I tests/test_web.py "$out/web-serve" "$out" "$out/work/data/prospero-win"
+python3 tests/test_arabic_web.py "$out/web-serve" "$out" "$out/work/data/prospero-win" "$out/arabic-web"
 # The zip PC5 wrote (pc5_zip.c) opens as any zip does, with what was put in it.
 python3 -c "import sys, zipfile
 z = zipfile.ZipFile(sys.argv[1]); assert z.testzip() is None
@@ -212,7 +223,7 @@ if [[ ${1:-} == --shots ]]; then
         title/pc5_image.c title/pc5_json.c title/pc5_library.c title/pc5_logs.c title/pc5_matrix.c title/pc5_pe.c \
         title/pc5_settings.c title/pc5_source.c title/pc5_stb.c title/pc5_ui.c title/pc5_update.c title/pc5_home.c \
         title/pc5_psfwd.c title/pc5_zip.c title/pc5_qr.c title/pc5_report.c title/pc5_upgrade.c title/pc5_sound.c title/pc5_video.c title/pc5_appearance.c title/pc5_compat.c title/pc5_look.c title/pc5_backgrounds.c \
-        title/pc5_tile.c title/pc5_dds.c title/pc5_files.c title/pc5_textdoc.c title/pc5_ftp.c title/pc5_web.c title/pc5_cab.c title/pc5_msi.c title/pc5_steam.c title/pc5_identity.c title/pc5_i18n.c "${upstream[@]}" -lm -lpthread -o "$out/draw-shots"
+        title/pc5_tile.c title/pc5_dds.c title/pc5_files.c title/pc5_textdoc.c title/pc5_ftp.c title/pc5_web.c title/pc5_cab.c title/pc5_msi.c title/pc5_steam.c title/pc5_identity.c title/pc5_i18n.c "${upstream[@]}" "${text_sources[@]}" -lm -lpthread -o "$out/draw-shots"
     mkdir -p "$out/shots" "$out/shotwork"
     "$out/draw-shots" "$out/shots" "$out/shotwork" "$out/covers" "$out/programs" "$out/fonts.bin"
     python3 -c "import sys, pathlib; from PIL import Image

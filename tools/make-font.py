@@ -14,7 +14,9 @@ and, for Japanese, the kana; with --korean (Noto Sans KR, SIL OFL 1.1: Droid San
 Hangul) fonts-ko.bin. Those have no glyphs for the game-title faces (hero, card), which show
 game names, not PC5's text: the console takes them from the title face.
 
-The console draws text from these files (title/pc5_draw.c), so it needs no font engine.
+Arabic uses the bundled Noto Naskh Arabic (SIL OFL 1.1), including the presentation
+forms selected by title/pc5_bidi.c. The console draws these atlas glyphs directly;
+FriBidi joins and reorders each logical line after wrapping, before measurement/drawing.
 Layout, little-endian:
 
     "PC5F" u32 version (1) u32 faces u32 atlas_width u32 atlas_height
@@ -49,11 +51,13 @@ FACES = [
 # The faces that show game titles only: English's letters, nothing a translation adds.
 TITLE_FACES = {"card", "hero"}
 CODEPOINTS = sorted(set(range(0x20, 0x7F)) | set(range(0xA0, 0x180)) |
-                    {0x2013, 0x2014, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2026, 0x2122, 0x2190, 0x2192, 0x203A,
+                    {0x2013, 0x2014, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2026, 0x2122, 0x2190, 0x2192, 0x2039, 0x203A,
                      0x20AC, 0x0218, 0x0219, 0x021A, 0x021B})
 BASE = set(CODEPOINTS)
 ATLAS_WIDTH = 2048
 CJK = {"ja", "ko", "zh-Hans", "zh-Hant"}
+ARABIC = set(range(0x600, 0x700)) | set(range(0x750, 0x780)) | set(range(0x8a0, 0x900)) | \
+         set(range(0xfb50, 0xfe00)) | set(range(0xfe70, 0xff00))
 # Where a language's missing text comes from (title/pc5_i18n.c's fallbacks): its letters too.
 FALLBACK = {"es-419": "es", "fr-CA": "fr", "pt-BR": "pt-PT", "pt-PT": "pt-BR", "zh-Hans": "zh-Hant", "zh-Hant": "zh-Hans"}
 # The languages' names in their own letters (pc5_i18n.c), for the Language setting in any language.
@@ -204,6 +208,7 @@ def main() -> int:
     def main_sources(name):
         fonts = [font(inter[name], sizes[name])]
         if name not in TITLE_FACES:
+            fonts.append(font(FONTS / "arabic" / ("NotoNaskhArabic-Bold.ttf" if bold[name] else "NotoNaskhArabic-Regular.ttf"), sizes[name]))
             if args.cjk:
                 fonts.append(font(args.cjk, sizes[name]))
             if korean:
@@ -213,7 +218,7 @@ def main() -> int:
     def main_wanted(name):
         if name in TITLE_FACES:
             return set(CODEPOINTS)
-        return set(CODEPOINTS) | {c for c in extra if c not in autonyms and c < 0x2E80} | \
+        return set(CODEPOINTS) | ARABIC | {c for c in extra if c not in autonyms and c < 0x2E80} | \
             (autonyms if args.cjk or korean else set())
 
     faces = [(name, sizes[name], font(inter[name], sizes[name])[0]) for name, _, _, _ in FACES]

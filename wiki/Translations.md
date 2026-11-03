@@ -1,4 +1,4 @@
-PC5's screens and its [web page](Web-page) can show in every language the PS5 has, but Arabic and Thai. PC5 follows the console's language; **Settings › System › Language** chooses another, or **System default** to follow the console again. The change shows at once.
+PC5's screens and its [web page](Web-page) can show in every language the PS5 has, but Thai. PC5 follows the console's language; **Settings › System › Language** chooses another, or **System default** to follow the console again. The change shows at once.
 
 Each language's text is one file in the repository's [`lang`](https://github.com/bornaradusin/PC5/tree/main/lang) folder: `de.po` for German, `ja.po` for Japanese, `pt-BR.po` for Brazilian Portuguese and so on. A text that isn't translated yet shows in English.
 

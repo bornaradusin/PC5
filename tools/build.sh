@@ -369,6 +369,9 @@ step_title() {
     local foundation=$PW/.deps/ps5-native-app-boilerplate sources
     make -C "$foundation" libc
     local sdk=$foundation/.deps/native/ps5-payload-sdk
+    local bidi=$B/fribidi-pc5 bidi_source=$here/third_party/fribidi-1.0.18
+    env PS5_PAYLOAD_SDK="$sdk" PC5_FRIBIDI_PC5_ALLOC=1 bash "$here/tools/build-fribidi.sh" \
+        "$bidi" "$foundation/tooling/prospero-clang18" "$sdk/bin/llvm-ar"
     # A game's background video: H.264 in MP4 or MOV, silent, read through PC5's own file IO.
     # The title is also the program every game runs in, so its FFmpeg is the pinned source
     # built with only what that needs (the MP4/MOV demuxer, the H.264 parser and decoder,
@@ -439,8 +442,8 @@ step_title() {
     /usr/lib/llvm-18/bin/llvm-ar rcs "$tls/libmbedtls-pc5.a" "$tls"/*.o
     sources=$(cd "$PW" && ls native/pc5*.c | tr '\n' ' ')
     (cd "$PW" && PW_TITLE_ID=$TITLE PW_LAPY_DIR=$helper PW_EXTRA_SOURCES="$sources" \
-        PW_EXTRA_CFLAGS="-DPW_PC5=1 -DPC5_VIDEO_FFMPEG=1 -DPC5_FFMPEG_EAGAIN=$video_eagain -I$video_ffmpeg/include -I$PW/wine/ps5 -I$mbedtls/include $config" \
-        PW_EXTRA_LIBS="$tls/libmbedtls-pc5.a $B/video_ffmpeg_shim.o $video_ffmpeg/lib/libavformat.a $video_ffmpeg/lib/libavcodec.a $video_ffmpeg/lib/libswscale.a $B/video-avutil.a --wrap=pthread_create --version-script=$B/video-local.map" \
+        PW_EXTRA_CFLAGS="-DPW_PC5=1 -DFRIBIDI_LIB_STATIC -I$bidi_source/lib -I$bidi_source/pc5-config -DPC5_VIDEO_FFMPEG=1 -DPC5_FFMPEG_EAGAIN=$video_eagain -I$video_ffmpeg/include -I$PW/wine/ps5 -I$mbedtls/include $config" \
+        PW_EXTRA_LIBS="$bidi/libfribidi-pc5.a $tls/libmbedtls-pc5.a $B/video_ffmpeg_shim.o $video_ffmpeg/lib/libavformat.a $video_ffmpeg/lib/libavcodec.a $video_ffmpeg/lib/libswscale.a $B/video-avutil.a --wrap=pthread_create --version-script=$B/video-local.map" \
         PS5_NATIVE_FOUNDATION="$foundation" PW_FOUNDATION_READY=1 tools/build_native.sh)
     # The eboot's imports, each from a library a title gets. A title's imports from
     # libkernel_sys, libkernel_web and libScePosixForWebKit stay empty, and a call to one
@@ -664,6 +667,11 @@ EOF_SOURCES
     mkdir -p "$app/LICENSES/dr_mp3"
     cp "$here/title/third_party/dr_mp3.LICENSE" "$app/LICENSES/dr_mp3/LICENSE"
     cp "$here/title/third_party/dr_mp3.NOTICE" "$app/LICENSES/dr_mp3/NOTICE"
+    mkdir -p "$app/LICENSES/fribidi" "$app/LICENSES/noto-naskh-arabic"
+    cp "$here/third_party/fribidi-1.0.18/COPYING" "$app/LICENSES/fribidi/COPYING"
+    cp "$here/third_party/fribidi-1.0.18/PC5-NOTICE" "$app/LICENSES/fribidi/NOTICE"
+    cp "$here/fonts/arabic/LICENSE" "$app/LICENSES/noto-naskh-arabic/LICENSE"
+    cp "$here/fonts/arabic/NOTICE" "$app/LICENSES/noto-naskh-arabic/NOTICE"
     # PC5's text faces, with the letters of every language in lang/, and Chinese, Japanese and
     # Korean's own (fonts-<code>.bin, only the language in use is loaded); the languages' text,
     # which players may edit (pc5_i18n.h).
@@ -831,7 +839,9 @@ key_of() { # piece
     # Zink as GitHub's build has kept it since 1.6: Mesa and llvm-mingw as prospero-win pins them.
     zink) echo "zink-$(cat "$PW/tools/build_mesa_zink.sh" "$PW/tools/mesa_zink_manifest.py" | sha256sum | cut -c1-16)"; return ;;
     title) hash=$(printf '%s\n' "$(git -C "$PW" rev-parse 'HEAD^{tree}')" "$BOILERPLATE_URL" "$LAPY_URL" "$LAPY_COMMIT" \
-                  "$MBEDTLS_VERSION" "$(commands step_title need_sdk)") ;;
+                  "$MBEDTLS_VERSION" "$(commands step_title need_sdk)" \
+                  "$(find "$here/third_party/fribidi-1.0.18" -type f -print0 | sort -z | xargs -0 cat | sha256sum | cut -c1-64)" \
+                  "$(sha256sum "$here/tools/build-fribidi.sh" | cut -c1-64)") ;;
     radv) hash=$(printf '%s\n' "$VULKAN_COMMIT" "$(patches_id radv)" "$(pwid tools/mesa_zink_requirements.txt)" \
                  "$(commands step_radv)") ;;
     tools) hash=$(printf '%s\n' "$WINE_URL" "$(pwid wine)" "$(pwid tools)" "$(commands step_tools)") ;;

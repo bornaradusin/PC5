@@ -9,10 +9,10 @@
 
 /* ---- the languages ------------------------------------------------------------------- */
 
-/* English first, then by name. Arabic and Thai, which the console has, aren't offered until
- * there is a file for them (and fonts.bin has their letters): they stay English. */
+/* English first. Arabic uses the native bidi/shaping renderer and Noto Naskh. */
 static const Pc5Language languages[] = {
     { "en", "English", NULL, 0 },
+    { "ar", "\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9", NULL, 0 },
     { "id", "Bahasa Indonesia", NULL, 0 },
     { "cs", "\xc4\x8c" "e\xc5\xa1tina", NULL, 0 },
     { "da", "Dansk", NULL, 0 },
@@ -64,7 +64,7 @@ const char *pc5_language_of_console(int ps5_language)
     static const char *const codes[] = {
         "ja", "en", "fr", "es", "de", "it", "nl", "pt-PT", "ru", "ko",
         "zh-Hant", "zh-Hans", "fi", "sv", "da", "no", "pl", "pt-BR", "en", "tr",
-        "es-419", "en", "fr-CA", "cs", "hu", "el", "ro", "en", "vi", "id",
+        "es-419", "ar", "fr-CA", "cs", "hu", "el", "ro", "en", "vi", "id",
         "uk",
     };
     if (ps5_language < 0 || ps5_language >= (int)(sizeof(codes) / sizeof(codes[0]))) return NULL;

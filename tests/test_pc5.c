@@ -8970,7 +8970,7 @@ static void test_language(const char *fonts_path)
         static const struct { int id; const char *code; } table[] = {
             { 0, "ja" }, { 1, "en" }, { 2, "fr" }, { 3, "es" }, { 4, "de" }, { 5, "it" }, { 6, "nl" }, { 7, "pt-PT" }, { 8, "ru" },
             { 9, "ko" }, { 10, "zh-Hant" }, { 11, "zh-Hans" }, { 12, "fi" }, { 13, "sv" }, { 14, "da" }, { 15, "no" }, { 16, "pl" },
-            { 17, "pt-BR" }, { 18, "en" }, { 19, "tr" }, { 20, "es-419" }, { 21, "en" }, { 22, "fr-CA" }, { 23, "cs" }, { 24, "hu" },
+            { 17, "pt-BR" }, { 18, "en" }, { 19, "tr" }, { 20, "es-419" }, { 21, "ar" }, { 22, "fr-CA" }, { 23, "cs" }, { 24, "hu" },
             { 25, "el" }, { 26, "ro" }, { 27, "en" }, { 28, "vi" }, { 29, "id" }, { 30, "uk" },
         };
         int right = 0;
@@ -8979,11 +8979,11 @@ static void test_language(const char *fonts_path)
             right += code && !strcmp(code, table[i].code) && pc5_language_find(code) >= 0;
         }
         CHECK(right == 31 && !pc5_language_of_console(-1) && !pc5_language_of_console(31), "the console's languages: %d right", right);
-        CHECK(pc5_language_count() == 28 && !strcmp(pc5_language(0)->code, "en") && pc5_language_find("ar") < 0 &&
+        CHECK(pc5_language_count() == 29 && !strcmp(pc5_language(0)->code, "en") && pc5_language_find("ar") > 0 &&
               pc5_language_find("th") < 0 && pc5_language_find("PT-br") == pc5_language_find("pt-BR"), "PC5's languages");
         CHECK(!strcmp(pc5_language_choose("", "de"), "de") && !strcmp(pc5_language_choose("system", "ja"), "ja") &&
               !strcmp(pc5_language_choose("fr", "de"), "fr") && !strcmp(pc5_language_choose("xx", "de"), "de") &&
-              !strcmp(pc5_language_choose("", NULL), "en") && !strcmp(pc5_language_choose(NULL, "ar"), "en"),
+              !strcmp(pc5_language_choose("", NULL), "en") && !strcmp(pc5_language_choose(NULL, "ar"), "ar"),
               "the setting over the console's");
         /* A USB keyboard's layout: the console's (English (UK) gb, French fr, Ukrainian ua, Japanese
            and unknown us); PC5's own language over it, with the console's variant of the same one. */
@@ -9117,6 +9117,8 @@ static void test_language_screens(const char *fonts)
                      "msgid \"System default\"\nmsgstr \"Systemstandard\"\n");
     path(file, sizeof(file), "%s/lang/da.po", dir);
     write_text(file, "msgid \"Settings\"\nmsgstr \"Indstillinger\"\n");
+    path(file, sizeof(file), "%s/lang/ar.po", dir);
+    write_text(file, "msgid \"Settings\"\nmsgstr \"الإعدادات\"\n");
     path(settings_file, sizeof(settings_file), "%s/pc5/settings.txt", root);
     {
         Pc5UpdateMemory memory;
@@ -9138,12 +9140,29 @@ static void test_language_screens(const char *fonts)
     pc5_ui_draw(ui, &canvas);
     save_shot(&canvas, "settings-language");
     rows_uncut(ui, &canvas, "System with Language", 0);
-    for (int i = 0; i < 4; i++) press(ui, PC5_KEY_RIGHT, &canvas);   /* English, Bahasa Indonesia, Čeština, Dansk */
+    for (int i = 0; i <= pc5_language_find("da"); i++) {
+        /* Advance in reading order: Arabic's physical Left advances, not Right. */
+        press(ui, !strcmp(pc5_i18n_code(), "ar") ? PC5_KEY_LEFT : PC5_KEY_RIGHT, &canvas);
+        if (i == pc5_language_find("ar")) {
+            CHECK(!strcmp(pc5_i18n_code(), "ar") && !strcmp(T("Settings"), "الإعدادات"),
+                  "Arabic, selected and used immediately");
+            press(ui, PC5_KEY_L1, &canvas);
+            CHECK(!strcmp(pc5_ui_screen(ui), "library"), "Arabic physical L1 leaves Settings toward Home on its visual left");
+            press(ui, PC5_KEY_R1, &canvas);
+            CHECK(!strcmp(pc5_ui_screen(ui), "settings"), "Arabic physical R1 returns to Settings on its visual right");
+            for (int row = 0; row < 4; row++) press(ui, PC5_KEY_DOWN, &canvas);
+            press(ui, PC5_KEY_ACCEPT, &canvas);
+            for (int row = 0; row < 12; row++) press(ui, PC5_KEY_DOWN, &canvas);
+            press(ui, PC5_KEY_RIGHT, &canvas);
+            CHECK(!strcmp(pc5_i18n_code(), "en"), "Arabic physical Right moves back toward English");
+            press(ui, PC5_KEY_RIGHT, &canvas);
+            CHECK(!strcmp(pc5_i18n_code(), "ar"), "English physical Right selects Arabic again");
+        }
+    }
     CHECK(!strcmp(pc5_i18n_code(), "da") && !strcmp(T("Settings"), "Indstillinger") && file_holds_text(settings_file, "language = da\n"),
           "Dansk, used at once and kept: %s", pc5_i18n_code());
-    press(ui, PC5_KEY_LEFT, &canvas);
-    press(ui, PC5_KEY_LEFT, &canvas);
-    press(ui, PC5_KEY_LEFT, &canvas);
+    for (int i = 0; i < pc5_language_find("da"); ++i)
+        press(ui, !strcmp(pc5_i18n_code(), "ar") ? PC5_KEY_RIGHT : PC5_KEY_LEFT, &canvas);
     CHECK(!strcmp(pc5_i18n_code(), "en") && !strcmp(T("Settings"), "Settings") && file_holds_text(settings_file, "language = en\n"),
           "English, chosen over the console's German: %s", pc5_i18n_code());
     press(ui, PC5_KEY_LEFT, &canvas);

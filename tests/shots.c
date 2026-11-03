@@ -13,6 +13,7 @@
 #include "pc5_ui.h"
 #include "pc5_game.h"
 #include "pc5_backgrounds.h"
+#include "pc5_i18n.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -125,6 +126,12 @@ static int sample_net(void *context, const char *url, Pc5Buf *out, size_t max, i
     (void)context;
     *status = 200;
     out->len = 0;
+    if (strstr(url, "Game-compatibility.md"))
+        return pc5_buf_puts(out,
+            "| Game | How it runs | PC5 | Store and version | Controller | Settings that helped | Notes | Report or issue |\n"
+            "| --- | --- | --- | --- | --- | --- | --- | --- |\n"
+            "| Neon Drift | Works perfectly | 2.2.2 | Sample report (rendering fixture) | Xbox controller | Default settings (sample) | Rendering fixture only | Sample author |\n"
+            "| Iron Tide | Playable with issues | 2.2.2 | Sample report (rendering fixture) | Keyboard and mouse | Sample settings | Rendering fixture only | Sample author |\n");
     if (strstr(url, "storesearch"))
         return pc5_buf_puts(out, "{\"total\":1,\"items\":[{\"type\":\"app\",\"name\":\"Neon Drift\",\"id\":901001}]}");
     if (strstr(url, "catalog.gog.com"))
@@ -145,6 +152,12 @@ static int sample_net(void *context, const char *url, Pc5Buf *out, size_t max, i
 
 static void step(Pc5Ui *ui, uint32_t pressed, int count)
 {
+    if (!strcmp(pc5_i18n_code(), "ar")) {
+        uint32_t old = pressed;
+        pressed &= ~(uint32_t)(PC5_KEY_LEFT | PC5_KEY_RIGHT | PC5_KEY_L1 | PC5_KEY_R1);
+        pressed |= (old & PC5_KEY_LEFT ? PC5_KEY_RIGHT : 0) | (old & PC5_KEY_RIGHT ? PC5_KEY_LEFT : 0) |
+                   (old & PC5_KEY_L1 ? PC5_KEY_R1 : 0) | (old & PC5_KEY_R1 ? PC5_KEY_L1 : 0);
+    }
     for (int i = 0; i < count; i++) {
         Pc5Input input = { pressed, i == 0 ? pressed : 0 };
         now += 16;
@@ -335,6 +348,10 @@ int main(int argc, char **argv)
     step(ui, PC5_KEY_R1, 1);
     settle(ui);
     save("06bb-compatibility-tab");
+    step(ui, PC5_KEY_ACCEPT, 1);
+    settle(ui);
+    save("06bc-compatibility-details");
+    step(ui, PC5_KEY_BACK, 1);
     step(ui, PC5_KEY_R1, 1);
     settle(ui);
     save("06c-install-tab");
@@ -458,6 +475,7 @@ int main(int argc, char **argv)
     settle(ui);
     save("07e-settings-overlay");
     step(ui, PC5_KEY_BACK, 1);
+    step(ui, PC5_KEY_DOWN, 1);             /* File manager */
     step(ui, PC5_KEY_DOWN, 1);             /* System */
     step(ui, PC5_KEY_ACCEPT, 1);
     settle(ui);
@@ -470,23 +488,26 @@ int main(int argc, char **argv)
     save("07f-settings-picture-sources");
     step(ui, PC5_KEY_BACK, 1);
     step(ui, PC5_KEY_BACK, 1);
+    step(ui, PC5_KEY_DOWN, 1);             /* Network */
     step(ui, PC5_KEY_DOWN, 1);             /* About */
     step(ui, PC5_KEY_ACCEPT, 1);
     settle(ui);
     save("08-about");
     step(ui, PC5_KEY_BACK, 1);
-    for (int i = 0; i < 4; i++) step(ui, PC5_KEY_UP, 1);
+    for (int i = 0; i < 6; i++) step(ui, PC5_KEY_UP, 1);
     step(ui, PC5_KEY_ACCEPT, 1);           /* Game maintenance */
     settle(ui);
     save("07g-settings-maintenance");
-    step(ui, PC5_KEY_DOWN, 1);
-    step(ui, PC5_KEY_DOWN, 1);
-    step(ui, PC5_KEY_ACCEPT, 1);           /* Game compatibility list */
+    /* Compatibility is a top-level tab; the old Settings shortcut is gone. */
+    step(ui, PC5_KEY_L1, 1);             /* Install */
+    step(ui, PC5_KEY_L1, 1);             /* Compatibility */
     settle(ui);
     save("07h-compatibility-list");
-    step(ui, PC5_KEY_BACK, 1);
-    step(ui, PC5_KEY_UP, 1);
-    step(ui, PC5_KEY_ACCEPT, 1);           /* Uninstall game */
+    step(ui, PC5_KEY_R1, 1);             /* Install */
+    step(ui, PC5_KEY_R1, 1);             /* Settings */
+    step(ui, PC5_KEY_ACCEPT, 1);         /* Game maintenance */
+    step(ui, PC5_KEY_DOWN, 1);
+    step(ui, PC5_KEY_ACCEPT, 1);         /* Uninstall game */
     settle(ui);
     for (int i = 0; i < 3; i++) { step(ui, PC5_KEY_DOWN, 1); step(ui, 0, 2); }
     settle(ui);
@@ -604,6 +625,19 @@ int main(int argc, char **argv)
             pc5_buf_free(&atlas);
         }
         pc5_game_begin(&game, &none, root, app, "", "Grand Theft Auto IV");
+        const char *language = getenv("PC5_SHOTS_LANG");
+        if (language && pc5_language_find(language) >= 0) {
+            char source[PC5_PATH], directory[PC5_PATH]; Pc5Buf translation = { 0 };
+            pc5_copy(directory, sizeof(directory), fonts);
+            char *slash = strrchr(directory, '/');
+            if (slash) *slash = 0;
+            fmt(source, sizeof(source), "%s/lang/%s.po", directory, language);
+            fmt(file, sizeof(file), "%s/pc5/lang/%s.po", app, language);
+            if (!pc5_read_file(source, &translation, 2u << 20)) put(file, "");
+            if (translation.data) pc5_write_file(file, translation.data, translation.len);
+            pc5_buf_free(&translation);
+            pc5_game_loading_setup(&game, language, "Grand Theft Auto IV");
+        }
         for (uint64_t t = 0; t < 3000; t += 50) {
             const uint32_t *next = pc5_game_loading(&game, 1000 + t);
             if (next) frame = next;

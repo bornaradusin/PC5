@@ -1,5 +1,8 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 #include "pc5_video.h"
+
+void pc5_video_layout(Pc5Video *video, int rtl) { atomic_store(&video->rtl, rtl != 0); }
+
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -206,11 +209,12 @@ static uint64_t video_clock(void)
     return (uint64_t)now.tv_sec * 1000 + (uint64_t)now.tv_nsec / 1000000;
 }
 
-static void video_shade(uint32_t *pixels, int darkness)
+static void video_shade(uint32_t *pixels, int darkness, int rtl)
 {
     int horizontal[VW];
     for (int x = 0; x < VW; x++) {
-        float t = x < 1250 ? (float)x / 1250 : 1;
+        int edge = rtl ? VW - 1 - x : x;
+        float t = edge < 1250 ? (float)edge / 1250 : 1;
         horizontal[x] = (int)((0.22f + 0.78f * t * t * (3 - 2 * t)) * 256);
     }
     for (int y = 0; y < VH; y++) {
@@ -316,7 +320,7 @@ static void *video_worker(void *context)
         int lines[4] = { VW * 4, 0, 0, 0 };
         if (!d->scale || sws_scale(d->scale, (const uint8_t *const *)d->frame->data, d->frame->linesize,
                                    0, d->frame->height, planes, lines) != out_h) goto done;
-        video_shade(video->back, video->options.darkness);
+        video_shade(video->back, video->options.darkness, atomic_load(&video->rtl));
         atomic_store(&video->pending, 1);
     }
 done:

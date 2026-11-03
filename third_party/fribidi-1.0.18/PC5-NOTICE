@@ -1,0 +1,10 @@
+FriBidi 1.0.18, GNU LGPL 2.1 or later (COPYING).
+Source: https://github.com/fribidi/fribidi/releases/tag/v1.0.18
+Release archive fribidi-1.0.18.tar.xz SHA-256:
+1de5e8073d035388b71d0b2d452b1da1f8caeea8a7702997b401fe1b6250727f
+
+Upstream files are unchanged. PC5 adds pc5-config/fribidi-config.h for its
+static C11 build. tools/build-fribidi.sh selects the library sources and,
+on PS5, redirects the documented allocator hooks to PC5's title-safe heap.
+Only the library (lib/), its licence and its authors' files are kept here;
+the release archive above has the rest (tests, documentation, build files).

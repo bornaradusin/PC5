@@ -9,7 +9,7 @@
  * poll/draw/stop run on the UI thread, decoding runs on its worker. */
 typedef struct Pc5Video {
     pthread_t thread;
-    atomic_int stop, pending, done;
+    atomic_int stop, pending, done, rtl;
     atomic_uint decoded, dropped, shown;
     int running, have, failed;
     uint32_t *front, *back;
@@ -19,6 +19,8 @@ typedef struct Pc5Video {
 } Pc5Video;
 int pc5_video_start(Pc5Video *video, const char *path);
 int pc5_video_start_options(Pc5Video *video, const char *path, const Pc5Appearance *options);
+/* Layout affects the readability gradient only, never the video pixels' order. */
+void pc5_video_layout(Pc5Video *video, int rtl);
 int pc5_video_poll(Pc5Video *video);
 void pc5_video_stop(Pc5Video *video);
 
