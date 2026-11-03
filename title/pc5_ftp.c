@@ -20,6 +20,7 @@ enum {
     DATA_ACCEPT_MS = 20000,         /* a passive connection must come within this */
     DATA_WAIT_MS = 60000,           /* and send or take something this often */
     BUFFER = 512 * 1024,
+    GATHER_ROOM = 64 * 1024,        /* an upload's data is gathered until less than this is left of the buffer */
     LINE = 1024,
 };
 
@@ -358,24 +359,37 @@ static void store(Session *s, const char *arg, int append)
     }
     count(&ftp.transfers, 1);
     reply(s, "150 Receiving %s", seen);
-    int failed = 0, write_failed = 0;
-    for (;;) {
+    int failed = 0, write_failed = 0, ended = 0;
+    while (!ended && !failed) {
         int got = ftp.ops.recv(data, s->buffer, BUFFER, DATA_WAIT_MS);
         if (got == 0) break;
         if (got < 0 || stopping()) {
             failed = 1;
             break;
         }
-        for (int done = 0; done < got;) {
-            ssize_t put = write(fd, s->buffer + done, (size_t)(got - done));
+        /* What has come already is gathered (nothing waited for) until the buffer is nearly
+         * full, so the disk gets a few large writes instead of one for each piece the network
+         * hands over. What was gathered is written even when the connection then fails or
+         * ends, as it would have been a piece at a time. */
+        size_t have = (size_t)got;
+        while (BUFFER - have >= GATHER_ROOM) {
+            int more = ftp.ops.recv(data, s->buffer + have, BUFFER - have, 0);
+            if (more == -2) break;
+            if (more == 0) ended = 1;
+            if (more < 0) failed = 1;
+            if (more <= 0) break;
+            have += (size_t)more;
+        }
+        for (size_t done = 0; done < have;) {
+            ssize_t put = write(fd, s->buffer + done, have - done);
             if (put <= 0) {
                 write_failed = 1;
                 break;
             }
-            done += (int)put;
+            done += (size_t)put;
         }
         if (write_failed) break;
-        bytes += (uint64_t)got;
+        bytes += (uint64_t)have;
     }
     if (close(fd)) write_failed = 1;
     ftp.ops.close(data);

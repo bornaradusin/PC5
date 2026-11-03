@@ -498,6 +498,17 @@ int main(int argc, char **argv)
     step(ui, PC5_KEY_ACCEPT, 1);           /* Game maintenance */
     settle(ui);
     save("07g-settings-maintenance");
+    step(ui, PC5_KEY_DOWN, 1);
+    step(ui, PC5_KEY_DOWN, 1);             /* Check copied games: Off */
+    settle(ui);
+    save("07g1-settings-check-copies");
+    step(ui, PC5_KEY_RIGHT, 1);            /* Big games only */
+    settle(ui);
+    save("07g2-settings-check-copies-big");
+    step(ui, PC5_KEY_RIGHT, 1);            /* Always */
+    settle(ui);
+    save("07g3-settings-check-copies-always");
+    step(ui, PC5_KEY_RIGHT, 1);            /* Off again */
     /* Compatibility is a top-level tab; the old Settings shortcut is gone. */
     step(ui, PC5_KEY_L1, 1);             /* Install */
     step(ui, PC5_KEY_L1, 1);             /* Compatibility */

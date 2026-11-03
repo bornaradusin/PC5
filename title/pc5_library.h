@@ -157,7 +157,7 @@ typedef enum Pc5InstallPhase {
     PC5_INSTALL_PREFIX,     /* the game's own Windows, from the app's template */
     PC5_INSTALL_LIST,       /* the game's files, listed */
     PC5_INSTALL_COPY,       /* copied, each file's SHA-256 taken as it is read */
-    PC5_INSTALL_VERIFY,     /* each copy read back and its SHA-256 compared */
+    PC5_INSTALL_VERIFY,     /* each copy read back and its SHA-256 compared (skipped: no_check) */
     PC5_INSTALL_FINISH,     /* notes, cover, renamed into place, profile */
     PC5_INSTALL_CLEANUP,    /* cancelled or failed: what was copied is deleted */
     PC5_INSTALL_DONE,
@@ -166,6 +166,7 @@ typedef enum Pc5InstallPhase {
 } Pc5InstallPhase;
 
 typedef struct Pc5Remove Pc5Remove;
+typedef struct Pc5Copier Pc5Copier;
 
 typedef struct Pc5Install {
     Pc5InstallPhase phase;
@@ -178,6 +179,9 @@ typedef struct Pc5Install {
      * for pc5_backgrounds.h: set after begin, "" and 0 for none. */
     char background[PC5_PATH];
     uint32_t background_appid;
+    /* Set after begin: the copy isn't read back (Settings › Check copied games, pc5_settings.h):
+     * no VERIFY, and no SHA-256 taken while copying, which only VERIFY uses. 0: checked. */
+    int no_check;
     /* progress */
     uint64_t bytes_total, bytes_done;
     uint32_t files_total, files_done;
@@ -193,6 +197,8 @@ typedef struct Pc5Install {
     Pc5Sha256 sha;
     uint8_t *chunk;
     Pc5Remove *cleanup;
+    /* COPY's and VERIFY's work, on threads of their own (pc5_install_step only looks at it). */
+    Pc5Copier *copier;
     int cancelled;
     int tidying;                  /* done: deleting what is left over (CLEANUP, then DONE) */
     /* pc5_install_use_saves: the kept saves the game's Windows is made from, or "" */
@@ -249,7 +255,9 @@ uint64_t pc5_install_needs_usb(const Pc5Folder *folder);
  * not copied, when they are on the same drive: no second copy, and done at once. */
 void pc5_install_take_from(const char *dir);
 #define PC5_INSTALL_FOLDER "INSTALL"
-/* Works for about budget_ms. Returns the phase reached. */
+/* Works for about budget_ms. Returns the phase reached. The copy and its check go on threads of
+ * their own (a reader and a writer, two buffers between them, so the USB drive, the console's
+ * storage and the SHA-256 work at once): then it only takes their progress and returns. */
 Pc5InstallPhase pc5_install_step(Pc5Install *install, int budget_ms);
 void pc5_install_cancel(Pc5Install *install);
 void pc5_install_end(Pc5Install *install);

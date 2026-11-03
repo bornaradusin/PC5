@@ -12,7 +12,7 @@
 #include <sys/stat.h>
 #include <time.h>
 
-enum { PC5_FTP_PORT = 2125, PC5_FTP_SESSIONS = 8, PC5_FTP_LOGIN = 64 };
+enum { PC5_FTP_PORT = 2125, PC5_FTP_SESSIONS = 12, PC5_FTP_LOGIN = 64 };
 
 typedef struct Pc5FtpOps {
     /* A TCP socket listening on every address at port (0: any free one), or -1. */

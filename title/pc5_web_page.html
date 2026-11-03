@@ -310,6 +310,11 @@ async function games() {
         report.onclick = () => { const a = el("a", { href: logUrl, download: "" }); document.body.append(a); a.click(); a.remove(); };
         row.append(report);
       }
+      if (g.works) {
+        const works = el("a", { class: "button", href: g.works, target: "_blank", rel: "noopener", text: t("Report it works") });
+        works.title = t("Opens GitHub's game compatibility form, filled in: say how well it runs there, then post it.");
+        row.append(works);
+      }
       if (row.childNodes.length) item.append(row);
       if (g.editable) {
         item.append(editor(g, "launch", t("Launch options (launch.txt)"),
@@ -347,39 +352,58 @@ async function logs() {
   } catch (e) { box.textContent = tf("The logs didn't load: %s", e.message); }
 }
 
-function put(url, file, progress) {
+/* One file sent; the request is in requests while it goes, so it can be stopped. */
+function put(url, file, progress, requests) {
   return new Promise((resolve, reject) => {
     const x = new XMLHttpRequest();
     x.open("PUT", url);
     x.upload.onprogress = e => progress(e.loaded);
     x.onload = () => x.status < 300 ? resolve() : reject(new Error(x.responseText || x.status));
     x.onerror = () => reject(new Error(t("the connection was lost")));
+    x.onabort = () => reject(new Error(t("the connection was lost")));
+    x.onloadend = () => requests.delete(x);
+    requests.add(x);
     x.send(file);
   });
 }
 
+/* A few files at a time (one connection alone doesn't fill a fast network), the bar showing
+ * all of them together. PC5 makes each file's folders as it comes, so the order doesn't matter.
+ * The first file that fails stops the others: what of them had come is deleted (its .pc5part). */
+const SENDING_AT_ONCE = 4;
 async function send(files, named) {
   const list = Array.from(files);
   if (!list.length) return;
   const total = list.reduce((n, f) => n + f.size, 0) || 1;
-  let done = 0;
+  const sent = new Array(list.length).fill(0), requests = new Set();
+  let done = 0, next = 0, stopped = null;
   const bar = $("progress"), said = $("sending");
   bar.hidden = false;
   bar.value = 0;
   said.className = "dim";
-  for (let i = 0; i < list.length; i++) {
-    const f = list[i];
-    const relative = named ? named + "/" + f.name : (f.webkitRelativePath || f.name);
-    said.textContent = tf("Sending %d of %d: %s", i + 1, list.length, relative);
-    try {
-      await put("upload/" + path(relative.split("/")), f, n => { bar.value = (done + n) / total; });
-    } catch (e) {
-      said.textContent = tf("Stopped at %s: %s", relative, e.message);
-      said.className = "bad";
-      return;
+  const progress = (i, n) => { done += n - sent[i]; sent[i] = n; bar.value = done / total; };
+  async function sender() {
+    while (!stopped && next < list.length) {
+      const i = next++, f = list[i];
+      const relative = named ? named + "/" + f.name : (f.webkitRelativePath || f.name);
+      said.textContent = tf("Sending %d of %d: %s", i + 1, list.length, relative);
+      try {
+        await put("upload/" + path(relative.split("/")), f, n => progress(i, n), requests);
+      } catch (e) {
+        if (!stopped) {
+          stopped = tf("Stopped at %s: %s", relative, e.message);
+          for (const x of [...requests]) x.abort();
+        }
+        return;
+      }
+      progress(i, f.size);
     }
-    done += f.size;
-    bar.value = done / total;
+  }
+  await Promise.all(Array.from({ length: Math.min(SENDING_AT_ONCE, list.length) }, sender));
+  if (stopped) {
+    said.textContent = stopped;
+    said.className = "bad";
+    return;
   }
   said.textContent = tf("Sent %d files (%s). PC5 asks to install the game in a moment.", list.length, size(done));
   said.className = "good";

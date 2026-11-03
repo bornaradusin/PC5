@@ -30,6 +30,7 @@ enum {
     BODY_MS = 60000,                /* and its body send something this often; an answer the same */
     HEAD = 16 * 1024,
     BUFFER = 256 * 1024,
+    GATHER_ROOM = 32 * 1024,        /* an upload's body is gathered until less than this is left of the buffer */
     LAUNCH_MAX = 4096,              /* launch.txt: what PC5 reads of it */
     ENV_MAX = 64 * 1024,            /* env.txt: the same */
     LOGS_MAX = 200,
@@ -334,6 +335,20 @@ static int read_body(Conn *c, uint64_t *left, void *out, size_t size)
     }
 }
 
+/* More of the body, only what has come already: bytes, -2 when nothing has yet, -1 when the
+ * connection failed or closed. */
+static int read_body_ready(Conn *c, uint64_t *left, void *out, size_t size)
+{
+    if (!*left) return 0;
+    if (size > *left) size = (size_t)*left;
+    if (c->head_end < c->have) return read_body(c, left, out, size);
+    int got = web.ops.recv(c->sock, out, size, 0);
+    if (got == -2) return -2;
+    if (got <= 0) return -1;
+    *left -= (uint64_t)got;
+    return got;
+}
+
 /* A small body (at most max bytes) in buf, terminated. 0, or -1 (answered). */
 static int read_small_body(Conn *c, size_t max, Pc5Buf *buf)
 {
@@ -457,11 +472,13 @@ static int debug_path(const Pc5Game *game, char *out, size_t size)
     return pc5_format(out, size, "%s/prefixes/%s/pc5/winedebug.txt", web.root, game->prefix);
 }
 
-/* A game's settings in a line, as Report a problem gives them (pc5_ui.c's report_open). */
-static void game_settings(const Pc5Game *g, char *out, size_t size)
+/* A game's settings in a line, as Report a problem gives them (pc5_ui.c's report_open); its
+ * controls into k. */
+static void game_settings(const Pc5Game *g, Pc5Controls *controls, char *out, size_t size)
 {
     Pc5Controls k;
     pc5_controls_load(web.root, g->prefix, &k);
+    *controls = k;
     snprintf(out, size, "%d-bit, draws with %s; Graphics API %s; Controller %s; Frame generation %s; Memory %s; CPU sharing %s%s%s",
              g->bits, pc5_api_name((Pc5Api)g->api), pc5_graphics_tech_name(k.graphics, g->api), pc5_pad_mode_name(k.mode),
              k.frame_generation == 2 ? "40 -> 120" : k.frame_generation ? "on" : "off", k.memory_4gb ? "4 GB" : "Auto", k.cpu_sharing ? "on" : "off",
@@ -542,9 +559,11 @@ static void api_games(Conn *c)
         json_file(&buf, env_path(g, path, sizeof(path)) ? NULL : path, ENV_MAX);
         pc5_buf_puts(&buf, ",\"debug\":");
         json_file(&buf, debug_path(g, path, sizeof(path)) ? NULL : path, ENV_MAX);
+        Pc5Controls controls;
+        char settings[300];
         {
-            char settings[300], report[PC5_REPORT_URL];
-            game_settings(g, settings, sizeof(settings));
+            char report[PC5_REPORT_URL];
+            game_settings(g, &controls, settings, sizeof(settings));
             game_report(g, settings, report, sizeof(report));
             pc5_buf_puts(&buf, ",\"settings\":");
             json_string(&buf, settings);
@@ -567,6 +586,14 @@ static void api_games(Conn *c)
             json_string(&buf, identity.source);
             pc5_buf_puts(&buf, ",\"store_name\":");
             json_string(&buf, identity.name);
+            /* Report it works: the compatibility form for the game, filled in as Report a problem's
+             * is; GOG's id only comes with GOG's copy, a Steam app id with copies from elsewhere too. */
+            char works[PC5_REPORT_URL];
+            if (pc5_report_works_url(g->title, identity.gog_id ? "GOG" : NULL, pc5_pad_mode_name(controls.mode), settings,
+                                     works, sizeof(works)))
+                works[0] = 0;
+            pc5_buf_puts(&buf, ",\"works\":");
+            json_string(&buf, works);
         }
         pc5_buf_puts(&buf, "}");
     }
@@ -935,16 +962,29 @@ static void upload(Conn *c, const char *relative)
             failed = 1;
             break;
         }
-        for (int done = 0; done < got;) {
-            ssize_t put = write(fd, c->buffer + done, (size_t)(got - done));
+        /* What has come already is gathered (nothing waited for) until the buffer is nearly
+         * full: a few large writes instead of one for each piece the network hands over. */
+        size_t have = (size_t)got;
+        while (left && BUFFER - have >= GATHER_ROOM) {
+            int more = read_body_ready(c, &left, c->buffer + have, BUFFER - have);
+            if (more == -2) break;
+            if (more <= 0) {
+                failed = 1;
+                break;
+            }
+            have += (size_t)more;
+        }
+        if (failed) break;   /* the part file is deleted: nothing more to write */
+        for (size_t done = 0; done < have;) {
+            ssize_t put = write(fd, c->buffer + done, have - done);
             if (put <= 0) {
                 write_failed = 1;
                 break;
             }
-            done += (int)put;
+            done += (size_t)put;
         }
         if (write_failed) break;
-        bytes += (uint64_t)got;
+        bytes += (uint64_t)have;
     }
     if (close(fd)) write_failed = 1;
     int kept = !failed && !write_failed && !rename(part, path);

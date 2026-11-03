@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define PC5_VERSION "2.2.5"
+#define PC5_VERSION "2.2.6"
 #ifndef PC5_TITLE_ID
 #define PC5_TITLE_ID "PPSA11018"
 #endif
@@ -97,6 +97,11 @@ typedef struct Pc5Sha256 {
 void pc5_sha256_init(Pc5Sha256 *sha);
 void pc5_sha256_update(Pc5Sha256 *sha, const void *data, size_t size);
 void pc5_sha256_final(Pc5Sha256 *sha, uint8_t digest[32]);
+/* SHA-256 is taken with the CPU's SHA instructions (SHA-NI: the console's CPU has them) where
+ * the CPU says it has them, else with portable C. For the tests: way 0 always the C; 1 (or -1,
+ * as PC5 chooses) the instructions when the CPU has them, else the C. The way now used: 0 the
+ * C, 1 the instructions. */
+int pc5_sha256_way(int way);
 
 /* ---- text ---------------------------------------------------------------------- */
 /* text copied into out, cut to fit (always 0-terminated). */

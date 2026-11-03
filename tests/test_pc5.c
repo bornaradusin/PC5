@@ -139,6 +139,26 @@ static void test_sha256(void)
     pc5_sha256_final(&sha, digest);
     hex(digest, text);
     CHECK(!strcmp(text, "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0"), "million a: %s", text);
+    /* The CPU's SHA instructions (where this CPU has them) give what the C gives, for any length
+     * and any way of handing the data over. */
+    {
+        int ni = pc5_sha256_way(1), same = 1;
+        uint32_t seed = 12345;
+        for (int i = 0; i < (int)sizeof(million); i++) million[i] = (char)((seed = seed * 1103515245u + 12345u) >> 16);
+        for (int round = 0; round < 40 && same; round++) {
+            size_t length = (size_t)(round * 25013) % sizeof(million), step = 1 + (size_t)(round * 37) % 300;
+            uint8_t ways[2][32];
+            for (int way = 0; way < 2; way++) {
+                pc5_sha256_way(way);
+                pc5_sha256_init(&sha);
+                for (size_t at = 0; at < length; at += step) pc5_sha256_update(&sha, million + at, length - at < step ? length - at : step);
+                pc5_sha256_final(&sha, ways[way]);
+            }
+            same = !memcmp(ways[0], ways[1], 32);
+        }
+        pc5_sha256_way(-1);
+        CHECK(same, "SHA-256 with the CPU's instructions (%s here) as with the C", ni ? "used" : "not there, so the C");
+    }
 }
 
 /* ---- JSON ------------------------------------------------------------------------------------- */
@@ -1057,6 +1077,8 @@ static void make_template(void)
 
 /* Kept saves the next install_folder makes the game's Windows from (pc5_install_use_saves), or NULL. */
 static const char *install_saves;
+/* install_folder's install not checked (Check copied games off); whether it read the copy back. */
+static int install_unchecked, install_verified;
 
 static Pc5InstallPhase install_folder(const char *name, int cancel_after_copy_steps, int corrupt, char *id, size_t id_size)
 {
@@ -1089,10 +1111,13 @@ static Pc5InstallPhase install_folder(const char *name, int cancel_after_copy_st
     else CHECK(install.files_total == 7 && install.bytes_total > 0, "step 1's progress: %u files", (unsigned)install.files_total);
     pc5_copy(install.background, sizeof(install.background), "https://images.gog-statics.com/background.jpg");
     install.background_appid = 901001;
+    install.no_check = install_unchecked;
+    install_verified = 0;
     if (id) pc5_copy(id, id_size, install.id);
     do {
         phase = pc5_install_step(&install, 1);
         steps++;
+        install_verified |= phase == PC5_INSTALL_VERIFY;
         /* Copying and checking, a step after another: on a fast machine all of it may take only a step or two. */
         if (cancel_after_copy_steps && (phase == PC5_INSTALL_COPY || phase == PC5_INSTALL_VERIFY) && --cancel_after_copy_steps == 0)
             pc5_install_cancel(&install);
@@ -1740,6 +1765,22 @@ static void test_install(void)
     CHECK(install_folder("NeonDrift", 0, 1, id, sizeof(id)) == PC5_INSTALL_FAILED, "verify catches a bad copy");
     path(file, sizeof(file), "%s/%s", prefixes, id);
     CHECK(!pc5_exists(file) && count_entries(prefixes, ".installing-") == 0, "nothing kept after a bad copy");
+    CHECK(install_verified, "read back as it is checked");
+    /* Check copied games off: copied, never read back; then uninstalled, so the library is as it was. */
+    install_unchecked = 1;
+    CHECK(install_folder("NeonDrift", 0, 0, id, sizeof(id)) == PC5_INSTALL_DONE && !install_verified, "not checked: %s", id);
+    install_unchecked = 0;
+    {
+        char copy[PC5_PATH], from[PC5_PATH];
+        path(copy, sizeof(copy), "%s/%s/drive_c/Games/NeonDrift/data/level1.pak", prefixes, id);
+        path(from, sizeof(from), "%s/NeonDrift/data/level1.pak", usb);
+        CHECK(same_files(copy, from), "copied whole all the same");
+        Pc5Remove remove = { 0 };
+        int at = !pc5_library_load(root, &library) ? pc5_library_find(&library, id) : -1, steps = 0;
+        CHECK(at >= 0 && !pc5_remove_begin(&remove, root, &library.games[at], &library), "unchecked game uninstalled");
+        while (at >= 0 && pc5_remove_step(&remove, 50) && steps++ < 1000) {}
+        pc5_remove_end(&remove);
+    }
 
     /* The library as PC5 shows it. */
     CHECK(!pc5_library_load(root, &library), "library");
@@ -2812,6 +2853,8 @@ static void test_settings(void)
     set.startup_volume = 40;
     CHECK(!set.pictures_off, "every picture source on by default");
     set.pictures_off = PC5_PICTURES_GOG | PC5_PICTURES_WIKIDATA;
+    CHECK(set.copy_check == PC5_CHECK_OFF, "copies not checked by default");
+    set.copy_check = PC5_CHECK_BIG;
     CHECK(!pc5_settings_save(dir, &set), "saved");
     CHECK(!pc5_settings_load(dir, &back) && !memcmp(&set, &back, sizeof(set)), "read back the same");
     path(file, sizeof(file), "%s/pc5/settings.txt", dir);
@@ -2824,6 +2867,13 @@ static void test_settings(void)
     write_text(file, "pictures_steam = maybe\npictures_steamgriddb = off\npictures_wikipedia = off\npictures_bing = off\n");
     CHECK(!pc5_settings_load(dir, &back) && back.pictures_off == PC5_PICTURES_STEAMGRIDDB, "picture sources: %#x",
           (unsigned)back.pictures_off);
+    write_text(file, "check_copies = always\n");
+    CHECK(!pc5_settings_load(dir, &back) && back.copy_check == PC5_CHECK_ALWAYS, "copies checked always");
+    write_text(file, "check_copies = sometimes\n");
+    CHECK(!pc5_settings_load(dir, &back) && back.copy_check == PC5_CHECK_OFF, "an unknown check is the default");
+    CHECK(!pc5_copy_checked(PC5_CHECK_OFF, 1ull << 40) && pc5_copy_checked(PC5_CHECK_ALWAYS, 1) &&
+          !pc5_copy_checked(PC5_CHECK_BIG, (uint64_t)PC5_CHECK_BIG_GB << 30) &&
+          pc5_copy_checked(PC5_CHECK_BIG, ((uint64_t)PC5_CHECK_BIG_GB << 30) + 1), "big games only: over %d GB", PC5_CHECK_BIG_GB);
     write_text(file, "startup_volume = 70\n");
     CHECK(!pc5_settings_load(dir, &back) && back.startup_volume == 70, "startup volume read: %d", back.startup_volume);
     write_text(file, "startup_volume = 0\nstartup_volume = 105\nstartup_volume = 55\nstartup_volume = 7x\n");

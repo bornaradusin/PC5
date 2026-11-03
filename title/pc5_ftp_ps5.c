@@ -49,6 +49,13 @@ static int ps5_listen(uint16_t port, int backlog)
 
     if (sock < 0) return -1;
     sceNetSetsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+    /* Large windows, which the connections it takes get too, so a game sent from a PC isn't
+     * held back by the console's small default ones: 4 MB, or when the console refuses that,
+     * half as much each time, down to 256 KB (the default kept when it takes none). */
+    for (int size = 4 << 20; size >= 256 << 10; size /= 2)
+        if (sceNetSetsockopt(sock, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size)) >= 0) break;
+    for (int size = 4 << 20; size >= 256 << 10; size /= 2)
+        if (sceNetSetsockopt(sock, SOL_SOCKET, SO_SNDBUF, &size, sizeof(size)) >= 0) break;
     memset(&at, 0, sizeof(at));
     at.sin_len = sizeof(at);
     at.sin_family = AF_INET;

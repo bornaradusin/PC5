@@ -2517,31 +2517,327 @@ static int game_target(Pc5Install *install, const char *relative, char *out, siz
                       relative[0] ? "/" : "", relative);
 }
 
-/* Copies (or, verifying, reads back) a piece of the current file. 1 when the
- * file is finished. */
-static int copy_piece(Pc5Install *install, int verify, const char *relative)
-{
-    ssize_t got = read(install->in_fd, install->chunk, CHUNK);
+/* ---- the copy, on threads of its own ------------------------------------------------------
+ * COPY (and VERIFY, reading the copy back) is done by two threads: a reader, which reads each
+ * file a CHUNK at a time into one of two pieces, and a writer, which takes each piece in turn
+ * and writes it (or, verifying, only takes its SHA-256), so the USB drive, the console's storage
+ * and the hashing work at once. pc5_install_step only takes their progress; a cancel or a
+ * cleanup stops them, and waits for them, before anything is deleted. */
 
-    if (got < 0)
-        return fail(install, verify ? N_("PC5 can't read back %s: %s.") : N_("The USB drive stopped answering while PC5 copied %s (%s)."),
-                    relative, strerror(errno));
-    if (got == 0) return 1;
-    pc5_sha256_update(&install->sha, install->chunk, (size_t)got);
-    if (!verify)
-        for (ssize_t done = 0; done < got;) {
-            ssize_t put = write(install->out_fd, install->chunk + done, (size_t)(got - done));
-            if (put <= 0)
-                return fail(install, N_("PC5 can't write %s: %s."), relative,
-                            errno == ENOSPC ? "the console's storage is full" : strerror(errno));
-            done += put;
+/* A piece of a file on its way from the reader to the writer: the file's first piece opens it,
+ * its last (empty when the file ended on a whole CHUNK) closes it. */
+typedef struct CopyPiece {
+    uint8_t *data;
+    size_t size;
+    const char *relative;         /* in the install's list, which doesn't change while they work */
+    uint32_t file;                /* its place among the files, for its SHA-256 */
+    int first, last;
+} CopyPiece;
+
+struct Pc5Copier {
+    Pc5Install *install;
+    int verify, hash;             /* reading the copy back; taking SHA-256s (always when verifying) */
+    pthread_t reader, writer;
+    int started;                  /* 1 the reader, 2 the writer */
+    uint8_t *spare;               /* the second piece's data (the first's is install->chunk) */
+    /* under lock: */
+    pthread_mutex_t lock;
+    pthread_cond_t changed;
+    CopyPiece pieces[2];
+    int full[2];                  /* read, and not yet written */
+    int read_all, written;        /* the reader, the writer done */
+    int stop, failed;
+    char error[PC5_ERROR];
+    uint64_t bytes_done;
+    uint32_t files_done;
+};
+
+static void copier_fail(Pc5Copier *cp, const char *format, ...) __attribute__((format(printf, 2, 3)));
+static void copier_fail(Pc5Copier *cp, const char *format, ...)
+{
+    va_list args;
+    pthread_mutex_lock(&cp->lock);
+    if (!cp->failed) {   /* the first why is the one said */
+        va_start(args, format);
+        vsnprintf(cp->error, sizeof(cp->error), format, args);
+        va_end(args);
+        cp->failed = 1;
+    }
+    cp->stop = 1;
+    pthread_cond_broadcast(&cp->changed);
+    pthread_mutex_unlock(&cp->lock);
+}
+
+static int copier_stopped(Pc5Copier *cp)
+{
+    pthread_mutex_lock(&cp->lock);
+    int stop = cp->stop;
+    pthread_mutex_unlock(&cp->lock);
+    return stop;
+}
+
+/* The reader's piece at, once the writer is done with it; NULL when they stop. */
+static CopyPiece *piece_to_fill(Pc5Copier *cp, int at)
+{
+    pthread_mutex_lock(&cp->lock);
+    while (cp->full[at] && !cp->stop) pthread_cond_wait(&cp->changed, &cp->lock);
+    CopyPiece *piece = cp->stop ? NULL : &cp->pieces[at];
+    pthread_mutex_unlock(&cp->lock);
+    return piece;
+}
+
+static void piece_filled(Pc5Copier *cp, int at)
+{
+    pthread_mutex_lock(&cp->lock);
+    cp->full[at] = 1;
+    pthread_cond_broadcast(&cp->changed);
+    pthread_mutex_unlock(&cp->lock);
+}
+
+/* The writer's piece at, once it is read; NULL when they stop, or when everything is written. */
+static CopyPiece *piece_to_write(Pc5Copier *cp, int at)
+{
+    pthread_mutex_lock(&cp->lock);
+    while (!cp->full[at] && !cp->read_all && !cp->stop) pthread_cond_wait(&cp->changed, &cp->lock);
+    CopyPiece *piece = cp->full[at] && !cp->stop ? &cp->pieces[at] : NULL;
+    pthread_mutex_unlock(&cp->lock);
+    return piece;
+}
+
+/* The writer is done with the piece at: the reader may fill it again, and it is counted. */
+static void piece_written(Pc5Copier *cp, int at, size_t bytes, int file_done)
+{
+    pthread_mutex_lock(&cp->lock);
+    cp->full[at] = 0;
+    cp->bytes_done += bytes;
+    cp->files_done += (uint32_t)file_done;
+    pthread_cond_broadcast(&cp->changed);
+    pthread_mutex_unlock(&cp->lock);
+}
+
+/* The reader: the list from install->at, each folder made (copying) and each file read into the
+ * pieces, the source's (copying) or the copy's (verifying). */
+static void *copy_reader(void *arg)
+{
+    Pc5Copier *cp = arg;
+    Pc5Install *install = cp->install;
+    uint32_t file = install->file_index;
+    int at = 0;
+
+    for (size_t next = install->at; next < install->list.len && !copier_stopped(cp);) {
+        const char *relative = (const char *)install->list.data + next;
+        size_t length = strlen(relative);
+        char source[PC5_PATH], target[PC5_PATH];
+        struct stat st;
+        next += length + 1;
+        if (game_target(install, relative, target, sizeof(target)) ||
+            pc5_join(source, sizeof(source), install->source, relative)) {
+            copier_fail(cp, N_("A path in the game is too long: %s."), relative);
+            break;
         }
-    install->bytes_done += (uint64_t)got;
+        if (relative[length - 1] == '/') {
+            /* A folder comes before what is in it (game_paths), so it is there before the writer
+             * opens a file in it. */
+            target[strlen(target) - 1] = 0;
+            if (!cp->verify && pc5_mkdirs(target)) {
+                copier_fail(cp, N_("PC5 can't make %s: %s."), relative, strerror(errno));
+                break;
+            }
+            continue;
+        }
+        int fd = open(cp->verify ? target : source, O_RDONLY);
+        if (fd < 0) {
+            copier_fail(cp, cp->verify ? N_("PC5 can't read back %s: %s.") : N_("PC5 can't open %s on the USB drive: %s."),
+                        relative, strerror(errno));
+            break;
+        }
+        /* Its size, so a file ends with the piece that has its last byte, without one more read
+         * finding nothing (one whose size isn't known still does). */
+        uint64_t size = !fstat(fd, &st) && S_ISREG(st.st_mode) ? (uint64_t)st.st_size : UINT64_MAX, read_so_far = 0;
+        for (int first = 1;; first = 0) {
+            CopyPiece *piece = piece_to_fill(cp, at);
+            if (!piece) break;
+            ssize_t got = read(fd, piece->data, CHUNK);
+            if (got < 0) {
+                copier_fail(cp, cp->verify ? N_("PC5 can't read back %s: %s.")
+                                           : N_("The USB drive stopped answering while PC5 copied %s (%s)."),
+                            relative, strerror(errno));
+                break;
+            }
+            read_so_far += (uint64_t)got;
+            piece->size = (size_t)got;
+            piece->relative = relative;
+            piece->file = file;
+            piece->first = first;
+            piece->last = !got || read_so_far >= size;
+            int last = piece->last;
+            piece_filled(cp, at);
+            at ^= 1;
+            if (last) break;
+        }
+        close(fd);
+        file++;
+    }
+    pthread_mutex_lock(&cp->lock);
+    cp->read_all = 1;
+    pthread_cond_broadcast(&cp->changed);
+    pthread_mutex_unlock(&cp->lock);
+    return NULL;
+}
+
+/* Copies (or, verifying, reads back) a piece of the current file: the writer's part, the file
+ * opened at its first piece and closed at its last. 0, or -1 (the why given to copier_fail). */
+static int copy_piece(Pc5Copier *cp, const CopyPiece *piece, int *out, Pc5Sha256 *sha)
+{
+    Pc5Install *install = cp->install;
+    const char *relative = piece->relative;
+
+    if (piece->first) {
+        char target[PC5_PATH];
+        if (!cp->verify && (game_target(install, relative, target, sizeof(target)) ||
+                            (*out = open(target, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0)) {
+            copier_fail(cp, N_("PC5 can't write %s: %s."), relative, strerror(errno));
+            return -1;
+        }
+        if (cp->hash) pc5_sha256_init(sha);
+    }
+    if (cp->hash) pc5_sha256_update(sha, piece->data, piece->size);
+    if (!cp->verify)
+        for (size_t done = 0; done < piece->size;) {
+            ssize_t put = write(*out, piece->data + done, piece->size - done);
+            if (put <= 0) {
+                copier_fail(cp, N_("PC5 can't write %s: %s."), relative,
+                            errno == ENOSPC ? "the console's storage is full" : strerror(errno));
+                return -1;
+            }
+            done += (size_t)put;
+        }
+    if (!piece->last) return 0;
+    if (!cp->verify) {
+        /* An update's copy goes over the game's files: on the disk before it does. */
+        int failed = install->update && fsync(*out);
+        if (close(*out)) failed = 1;
+        *out = -1;
+        if (failed) {
+            copier_fail(cp, N_("PC5 can't write %s: %s."), relative, strerror(errno));
+            return -1;
+        }
+    }
+    if (cp->hash && piece->file < install->files_total) {
+        uint8_t digest[32];
+        pc5_sha256_final(sha, digest);
+        if (!cp->verify) {
+            memcpy(install->hashes[piece->file], digest, 32);
+        } else if (memcmp(install->hashes[piece->file], digest, 32)) {
+            copier_fail(cp, N_("The copy of %s doesn't match the USB drive. The drive or its cable may be "
+                               "failing; nothing was kept."), relative);
+            return -1;
+        }
+    }
     return 0;
+}
+
+static void *copy_writer(void *arg)
+{
+    Pc5Copier *cp = arg;
+    Pc5Sha256 sha;
+    int out = -1, at = 0;
+
+    for (CopyPiece *piece; (piece = piece_to_write(cp, at)); at ^= 1) {
+        int failed = copy_piece(cp, piece, &out, &sha);
+        piece_written(cp, at, failed ? 0 : piece->size, !failed && piece->last);
+        if (failed) break;
+    }
+    if (out >= 0) close(out);
+    pthread_mutex_lock(&cp->lock);
+    cp->written = 1;
+    pthread_cond_broadcast(&cp->changed);
+    pthread_mutex_unlock(&cp->lock);
+    return NULL;
+}
+
+/* The copy's threads stopped, if they haven't finished, and waited for: nothing of theirs is
+ * left running or open once this returns. */
+static void copier_end(Pc5Install *install)
+{
+    Pc5Copier *cp = install->copier;
+    if (!cp) return;
+    pthread_mutex_lock(&cp->lock);
+    cp->stop = 1;
+    pthread_cond_broadcast(&cp->changed);
+    pthread_mutex_unlock(&cp->lock);
+    if (cp->started & 1) pthread_join(cp->reader, NULL);
+    if (cp->started & 2) pthread_join(cp->writer, NULL);
+    pthread_cond_destroy(&cp->changed);
+    pthread_mutex_destroy(&cp->lock);
+    pc5_free(cp->spare);
+    pc5_free(cp);
+    install->copier = NULL;
+}
+
+static int copier_start(Pc5Install *install, int verify)
+{
+    Pc5Copier *cp = pc5_alloc(sizeof(*cp));
+    int rc;
+
+    if (!cp || !(cp->spare = pc5_alloc(CHUNK))) {
+        pc5_free(cp);
+        return fail(install, N_("Out of memory."));
+    }
+    cp->install = install;
+    cp->verify = verify;
+    cp->hash = verify || !install->no_check;
+    cp->bytes_done = install->bytes_done;
+    cp->files_done = install->files_done;
+    cp->pieces[0].data = install->chunk;
+    cp->pieces[1].data = cp->spare;
+    pthread_mutex_init(&cp->lock, NULL);
+    pthread_cond_init(&cp->changed, NULL);
+    install->copier = cp;
+    if ((rc = pc5_thread_start(&cp->reader, copy_reader, cp, 0)) == 0) cp->started |= 1;
+    if (!rc && (rc = pc5_thread_start(&cp->writer, copy_writer, cp, 0)) == 0) cp->started |= 2;
+    if (rc) {
+        copier_end(install);
+        return fail(install, N_("PC5 can't start the install: %s."), strerror(rc));
+    }
+    return 0;
+}
+
+/* The copy's progress into install: 0 while it goes on, 1 when it is all done, -1 when it failed
+ * (why in install->error). */
+static int copier_poll(Pc5Install *install)
+{
+    Pc5Copier *cp = install->copier;
+    pthread_mutex_lock(&cp->lock);
+    install->bytes_done = cp->bytes_done;
+    install->files_done = cp->files_done;
+    int state = cp->failed ? -1 : cp->read_all && cp->written ? 1 : 0;
+    if (cp->failed) pc5_copy(install->error, sizeof(install->error), cp->error);
+    pthread_mutex_unlock(&cp->lock);
+    return state;
+}
+
+/* Waits until about until (pc5_now_ms's time) for the copy to be done, or to fail. */
+static void copier_wait(Pc5Install *install, uint64_t until)
+{
+    Pc5Copier *cp = install->copier;
+    uint64_t now = pc5_now_ms();
+    struct timespec at;
+
+    if (now >= until) return;
+    clock_gettime(CLOCK_REALTIME, &at);
+    uint64_t ns = (uint64_t)at.tv_nsec + (until - now) * 1000000u;
+    at.tv_sec += (time_t)(ns / 1000000000u);
+    at.tv_nsec = (long)(ns % 1000000000u);
+    pthread_mutex_lock(&cp->lock);
+    while (!cp->failed && !(cp->read_all && cp->written) && !pthread_cond_timedwait(&cp->changed, &cp->lock, &at)) {
+    }
+    pthread_mutex_unlock(&cp->lock);
 }
 
 static void start_cleanup(Pc5Install *install, int cancelled)
 {
+    copier_end(install);   /* the copy's threads first: nothing is deleted under them */
     close_files(install);
     /* A game moved from the INSTALL folder goes back there before anything is deleted; one that
      * can't is kept where it is, and said. */
@@ -2914,89 +3210,34 @@ Pc5InstallPhase pc5_install_step(Pc5Install *install, int budget_ms)
         case PC5_INSTALL_COPY:
         case PC5_INSTALL_VERIFY: {
             int verify = install->phase == PC5_INSTALL_VERIFY;
-            if (install->at >= install->list.len) {
-                close_files(install);
-                if (verify) {
-                    install->phase = PC5_INSTALL_FINISH;
-                } else {
-                    install->phase = PC5_INSTALL_VERIFY;
-                    install->at = 0;
-                    install->file_index = 0;
-                    install->bytes_done = 0;
-                    install->bytes_total = install->info.bytes;
-                    install->files_done = 0;
-                }
-                break;
+            /* The copy's threads do the work (copy_reader, copy_writer): started, then only
+             * waited for, up to the budget, and their progress taken. */
+            if (!install->copier) {
+                if (copier_start(install, verify)) start_cleanup(install, 0);
+                return install->phase;
             }
-            const char *relative = (const char *)install->list.data + install->at;
-            size_t length = strlen(relative);
-            char source[PC5_PATH], target[PC5_PATH];
-            if (game_target(install, relative, target, sizeof(target)) ||
-                pc5_join(source, sizeof(source), install->source, relative)) {
-                fail(install, N_("A path in the game is too long: %s."), relative);
+            int state = copier_poll(install);
+            if (!state) {
+                copier_wait(install, until);
+                state = copier_poll(install);
+            }
+            if (!state) return install->phase;
+            copier_end(install);
+            if (state < 0) {
                 start_cleanup(install, 0);
                 break;
             }
-            if (relative[length - 1] == '/') {
-                target[strlen(target) - 1] = 0;
-                if (!verify && pc5_mkdirs(target)) {
-                    fail(install, N_("PC5 can't make %s: %s."), relative, strerror(errno));
-                    start_cleanup(install, 0);
-                    break;
-                }
-                install->at += length + 1;
-                break;
-            }
-            if (install->in_fd < 0) {
-                install->in_fd = open(verify ? target : source, O_RDONLY);
-                if (install->in_fd < 0) {
-                    fail(install, verify ? N_("PC5 can't read back %s: %s.") : N_("PC5 can't open %s on the USB drive: %s."),
-                         relative, strerror(errno));
-                    start_cleanup(install, 0);
-                    break;
-                }
-                if (!verify && (install->out_fd = open(target, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0) {
-                    fail(install, N_("PC5 can't write %s: %s."), relative, strerror(errno));
-                    start_cleanup(install, 0);
-                    break;
-                }
-                pc5_sha256_init(&install->sha);
-            }
-            int ended = copy_piece(install, verify, relative);
-            if (ended < 0) { start_cleanup(install, 0); break; }
-            if (ended) {
-                uint8_t digest[32];
-                pc5_sha256_final(&install->sha, digest);
-                /* An update's copy goes over the game's files: on the disk before it does. */
-                if (!verify && install->out_fd >= 0 && install->update && fsync(install->out_fd)) {
-                    close(install->out_fd);
-                    install->out_fd = -1;
-                    fail(install, N_("PC5 can't write %s: %s."), relative, strerror(errno));
-                    start_cleanup(install, 0);
-                    break;
-                }
-                if (!verify && install->out_fd >= 0 && close(install->out_fd)) {
-                    install->out_fd = -1;
-                    fail(install, N_("PC5 can't write %s: %s."), relative, strerror(errno));
-                    start_cleanup(install, 0);
-                    break;
-                }
-                install->out_fd = -1;
-                close(install->in_fd);
-                install->in_fd = -1;
-                if (install->file_index < install->files_total) {
-                    if (!verify) {
-                        memcpy(install->hashes[install->file_index], digest, 32);
-                    } else if (memcmp(install->hashes[install->file_index], digest, 32)) {
-                        fail(install, N_("The copy of %s doesn't match the USB drive. The drive or its cable may be "
-                                      "failing; nothing was kept."), relative);
-                        start_cleanup(install, 0);
-                        break;
-                    }
-                }
-                install->file_index++;
-                install->files_done++;
-                install->at += length + 1;
+            close_files(install);
+            if (verify || install->no_check) {
+                install->phase = PC5_INSTALL_FINISH;
+            } else {
+                install->phase = PC5_INSTALL_VERIFY;
+                install->at = 0;
+                install->file_index = 0;
+                install->bytes_done = 0;
+                install->bytes_total = install->info.bytes;
+                install->files_done = 0;
+                return install->phase;   /* shown before the copy is read back */
             }
             break;
         }
@@ -3048,6 +3289,7 @@ void pc5_install_cancel(Pc5Install *install)
 
 void pc5_install_end(Pc5Install *install)
 {
+    copier_end(install);   /* before the pieces' memory goes */
     close_files(install);
     pc5_buf_free(&install->template_list);
     pc5_buf_free(&install->list);

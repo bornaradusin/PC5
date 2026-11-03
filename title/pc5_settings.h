@@ -35,6 +35,13 @@ typedef enum Pc5Triggers {
     PC5_TRIGGERS_COUNT
 } Pc5Triggers;
 
+/* An install's copy read back and compared with the USB drive's (Settings › Game maintenance ›
+ * Check copied games): never, for games over PC5_CHECK_BIG_GB only, or always. The check
+ * catches a drive or cable that gives wrong data without an error, and takes as long again as
+ * the copy. An update's copy is always checked: it goes over the game's own files. */
+typedef enum Pc5CopyCheck { PC5_CHECK_OFF, PC5_CHECK_BIG, PC5_CHECK_ALWAYS, PC5_CHECKS } Pc5CopyCheck;
+enum { PC5_CHECK_BIG_GB = 20 };
+
 typedef struct Pc5Settings {
     /* The overlay in games (Settings › Overlay), a line each: the frame
      * counter, the frames' average time, how busy the console's CPU and GPU are,
@@ -75,6 +82,8 @@ typedef struct Pc5Settings {
     /* 120 Hz output (Settings › In games): 1 asks for 119.88 Hz where the TV takes it (the console's
      * own 120 Hz setting on), for every game; 0 (the default) 60 Hz. "high_refresh = on|off". */
     int high_refresh;
+    /* Installs' copies checked (Pc5CopyCheck): "check_copies = off|big|always", off by default. */
+    Pc5CopyCheck copy_check;
 } Pc5Settings;
 
 void pc5_settings_default(Pc5Settings *settings);
@@ -88,6 +97,10 @@ const char *pc5_light_name(Pc5Light light);         /* "Game's colour" */
 const char *pc5_triggers_name(Pc5Triggers triggers);
 const char *pc5_overlay_size_name(Pc5OverlaySize size);   /* "Extra large" */
 const char *pc5_overlay_size_key(Pc5OverlaySize size);    /* "extra-large", as in the settings file */
+const char *pc5_copy_check_name(Pc5CopyCheck check);      /* "Big games only" */
+const char *pc5_copy_check_key(Pc5CopyCheck check);       /* "big", as in the settings file */
+/* 1 when an install of a game of this many bytes has its copy checked, as the setting says. */
+int pc5_copy_checked(Pc5CopyCheck check, uint64_t bytes);
 /* The next step of a strength in percent: up (step 1) or down (-1), from
  * lowest (0 for Vibration's Off, else 25) to 100, round. */
 int pc5_strength_next(int percent, int lowest, int step);

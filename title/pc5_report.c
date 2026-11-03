@@ -92,3 +92,20 @@ int pc5_report_url_settings(const Pc5LogIssue *issue, const char *game, const ch
     pc5_buf_free(&url);
     return failed ? -1 : 0;
 }
+
+int pc5_report_works_url(const char *game, const char *edition, const char *controller, const char *settings, char *out,
+                         size_t size)
+{
+    Pc5Buf url = { 0 };
+    const char *name = game && game[0] ? game : "PC5";
+    /* The form's fields by their ids; the result is its first choice, as written there. */
+    int failed = pc5_buf_puts(&url, PC5_WORKS_NEW) || put_field(&url, "title", name) || put_field(&url, "game", name) ||
+                 (edition && edition[0] && put_field(&url, "edition", edition)) ||
+                 put_field(&url, "result", "Works perfectly") || put_field(&url, "pc5", PC5_VERSION) ||
+                 (controller && controller[0] && put_field(&url, "controller", controller)) ||
+                 (settings && settings[0] && put_field(&url, "settings", settings)) || pc5_buf_terminate(&url) ||
+                 url.len >= size;
+    if (!failed) memcpy(out, url.data, url.len + 1);
+    pc5_buf_free(&url);
+    return failed ? -1 : 0;
+}

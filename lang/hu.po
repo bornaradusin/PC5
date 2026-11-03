@@ -92,7 +92,7 @@ msgstr "Balra nyíl"
 msgid "Right arrow"
 msgstr "Jobbra nyíl"
 
-#: title/pc5_controls.c:30 title/pc5_controls.c:64 title/pc5_ui.c:7335
+#: title/pc5_controls.c:30 title/pc5_controls.c:64 title/pc5_ui.c:7380
 msgid "Nothing"
 msgstr "Semmi"
 
@@ -140,7 +140,7 @@ msgstr "Iránygomb jobbra"
 msgid "Create"
 msgstr "Create"
 
-#: title/pc5_controls.c:44 title/pc5_ui.c:7310
+#: title/pc5_controls.c:44 title/pc5_ui.c:7355
 msgid "Touchpad"
 msgstr "Érintőpad"
 
@@ -229,13 +229,13 @@ msgid "Keys"
 msgstr "Billentyűk"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_controls.c:64 title/pc5_ui.c:6858
+#: title/pc5_controls.c:64 title/pc5_ui.c:6903
 msgid "Mouse pointer"
 msgstr "Egérmutató"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_controls.c:96 title/pc5_ui.c:2455 title/pc5_ui.c:6923
-#: title/pc5_ui.c:6944 title/pc5_ui.c:7063
+#: title/pc5_controls.c:96 title/pc5_ui.c:2485 title/pc5_ui.c:6968
+#: title/pc5_ui.c:6989 title/pc5_ui.c:7108
 msgid "Auto"
 msgstr "Automatikus"
 
@@ -336,8 +336,8 @@ msgid "PC5 ran out of memory planning the work."
 msgstr "A PC5-nek elfogyott a memóriája a művelet tervezése közben."
 
 #: title/pc5_files.c:385 title/pc5_files.c:406 title/pc5_files.c:419
-#: title/pc5_library.c:2446 title/pc5_library.c:2535 title/pc5_library.c:2959
-#: title/pc5_library.c:2974 title/pc5_library.c:2980
+#: title/pc5_library.c:2446 title/pc5_library.c:2699 title/pc5_library.c:2709
+#: title/pc5_library.c:2722
 #, c-format
 msgid "PC5 can't write %s: %s."
 msgstr "A PC5 nem tudja írni: %s (%s)."
@@ -367,42 +367,42 @@ msgstr "A PC5 nem tudja áthelyezni: %s (%s)."
 msgid "PC5 ran out of memory deleting %s."
 msgstr "A PC5-nek elfogyott a memóriája törlés közben: %s."
 
-#: title/pc5_ftp.c:626 title/pc5_web.c:1062
+#: title/pc5_ftp.c:640 title/pc5_web.c:1102
 msgid "There's no network here."
 msgstr "Itt nincs hálózat."
 
-#: title/pc5_ftp.c:628 title/pc5_ui.c:2669
+#: title/pc5_ftp.c:642 title/pc5_ui.c:2710
 msgid "PC5's INSTALL folder isn't there."
 msgstr "A PC5 INSTALL mappája nem létezik."
 
-#: title/pc5_ftp.c:633 title/pc5_web.c:1068
+#: title/pc5_ftp.c:647 title/pc5_web.c:1108
 #, c-format
 msgid "Port %u is taken, or there's no network."
 msgstr "A port foglalt (%u), vagy nincs hálózat."
 
-#: title/pc5_ftp.c:647 title/pc5_web.c:1082
+#: title/pc5_ftp.c:661 title/pc5_web.c:1122
 msgid "PC5 can't start it."
 msgstr "A PC5 nem tudja elindítani."
 
-#: title/pc5_game.c:544
+#: title/pc5_game.c:582
 msgid "The app's path is too long."
 msgstr "Az alkalmazás elérési útja túl hosszú."
 
-#: title/pc5_game.c:550
+#: title/pc5_game.c:588
 msgid "PC5 can't read the app's .NET runtime."
 msgstr "A PC5 nem tudja olvasni az alkalmazás .NET-futtatókörnyezetét."
 
-#: title/pc5_game.c:575
+#: title/pc5_game.c:613
 msgid "A path of the .NET runtime is too long."
 msgstr "A .NET-futtatókörnyezet egyik elérési útja túl hosszú."
 
-#: title/pc5_game.c:580
+#: title/pc5_game.c:618
 msgid "PC5 can't make the .NET runtime's folders: is the console full?"
 msgstr ""
 "A PC5 nem tudja létrehozni a .NET-futtatókörnyezet mappáit: megtelt a "
 "konzol?"
 
-#: title/pc5_game.c:591
+#: title/pc5_game.c:629
 #, c-format
 msgid ""
 "The app's .NET runtime has no %.80s. Copy the PPSA11018 folder to the "
@@ -411,12 +411,12 @@ msgstr ""
 "Az alkalmazás .NET-futtatókörnyezetéből hiányzik: %.80s. Másold újra a "
 "PPSA11018 mappát a konzolra."
 
-#: title/pc5_game.c:597
+#: title/pc5_game.c:635
 msgid "PC5 can't copy the .NET runtime: is the console full?"
 msgstr ""
 "A PC5 nem tudja átmásolni a .NET-futtatókörnyezetet: megtelt a konzol?"
 
-#: title/pc5_game.c:605
+#: title/pc5_game.c:643
 msgid "PC5 can't finish the .NET runtime's copy."
 msgstr "A PC5 nem tudja befejezni a .NET-futtatókörnyezet másolását."
 
@@ -446,7 +446,7 @@ msgstr ""
 "Csatlakoztasd az USB-meghajtót, amelyen ez van: %.100s. A játék a meghajtó "
 "%.200s mappájából fut."
 
-#: title/pc5_library.c:175 title/pc5_library.c:2855 title/pc5_library.c:2906
+#: title/pc5_library.c:175 title/pc5_library.c:3151 title/pc5_library.c:3202
 #, c-format
 msgid "PC5 can't make the game's folder: %s."
 msgstr "A PC5 nem tudja létrehozni a játék mappáját: %s."
@@ -469,9 +469,9 @@ msgstr "Hiányoznak a PC5 jegyzetei erről a játékról."
 msgid "That program is too deep in the game's folder for Windows."
 msgstr "Ez a program a Windowsnak túl mélyen van a játék mappájában."
 
-#: title/pc5_library.c:625 title/pc5_library.c:1877 title/pc5_library.c:2590
-#: title/pc5_library.c:2593 title/pc5_library.c:2602 title/pc5_library.c:2676
-#: title/pc5_library.c:2868
+#: title/pc5_library.c:625 title/pc5_library.c:1877 title/pc5_library.c:2886
+#: title/pc5_library.c:2889 title/pc5_library.c:2898 title/pc5_library.c:2972
+#: title/pc5_library.c:3164
 #, c-format
 msgid "PC5 can't write its notes: %s."
 msgstr "A PC5 nem tudja írni a jegyzeteit: %s."
@@ -541,8 +541,8 @@ msgstr "A PC5 nem tudja áthelyezni a játék mappáját: %s."
 msgid "PC5 can't delete the game's profile: %s."
 msgstr "A PC5 nem tudja törölni a játék profilját: %s."
 
-#: title/pc5_library.c:1395 title/pc5_library.c:1639 title/pc5_library.c:2741
-#: title/pc5_library.c:2749
+#: title/pc5_library.c:1395 title/pc5_library.c:1639 title/pc5_library.c:3037
+#: title/pc5_library.c:3045
 msgid "A path is too long."
 msgstr "Egy elérési út túl hosszú."
 
@@ -550,7 +550,7 @@ msgstr "Egy elérési út túl hosszú."
 msgid "PC5 can't read the game's folder."
 msgstr "A PC5 nem tudja olvasni a játék mappáját."
 
-#: title/pc5_library.c:1606 title/pc5_library.c:1857 title/pc5_library.c:2936
+#: title/pc5_library.c:1606 title/pc5_library.c:1857 title/pc5_library.c:2635
 #, c-format
 msgid "A path in the game is too long: %s."
 msgstr "A játék egyik elérési útja túl hosszú: %s."
@@ -672,13 +672,13 @@ msgstr "Nincs elég hely: a játéknak %s kell, a konzolon %s szabad."
 msgid "PC5 can't name the game."
 msgstr "A PC5 nem tud nevet adni a játéknak."
 
-#: title/pc5_library.c:2392
+#: title/pc5_library.c:2392 title/pc5_library.c:2801
 #, c-format
 msgid "PC5 can't start the install: %s."
 msgstr "A PC5 nem tudja elindítani a telepítést: %s."
 
 #: title/pc5_library.c:2399 title/pc5_library.c:2472 title/pc5_library.c:2508
-#: title/pc5_library.c:2757
+#: title/pc5_library.c:2785 title/pc5_library.c:3053
 msgid "Out of memory."
 msgstr "Elfogyott a memória."
 
@@ -686,7 +686,7 @@ msgstr "Elfogyott a memória."
 msgid "A path in the Windows template is too long."
 msgstr "A Windows-sablon egyik elérési útja túl hosszú."
 
-#: title/pc5_library.c:2435 title/pc5_library.c:2440 title/pc5_library.c:2943
+#: title/pc5_library.c:2435 title/pc5_library.c:2440 title/pc5_library.c:2643
 #: title/pc5_tile.c:519
 #, c-format
 msgid "PC5 can't make %s: %s."
@@ -707,38 +707,52 @@ msgstr "A PC5 nem tudja másolni: %s (%s)."
 msgid "PC5 can't read %s on the USB drive: %s."
 msgstr "A PC5 nem tudja olvasni az USB-meghajtón: %s (%s)."
 
-#: title/pc5_library.c:2527 title/pc5_library.c:2953
+#: title/pc5_library.c:2650 title/pc5_library.c:2662
 #, c-format
 msgid "PC5 can't read back %s: %s."
 msgstr "A PC5 nem tudja visszaolvasni: %s (%s)."
 
-#: title/pc5_library.c:2527
+#: title/pc5_library.c:2650
+#, c-format
+msgid "PC5 can't open %s on the USB drive: %s."
+msgstr "A PC5 nem tudja megnyitni az USB-meghajtón: %s (%s)."
+
+#: title/pc5_library.c:2663
 #, c-format
 msgid "The USB drive stopped answering while PC5 copied %s (%s)."
 msgstr "Az USB-meghajtó nem válaszolt, miközben a PC5 ezt másolta: %s (%s)."
 
-#: title/pc5_library.c:2555 title/pc5_library.c:2567
+#: title/pc5_library.c:2732
+#, c-format
+msgid ""
+"The copy of %s doesn't match the USB drive. The drive or its cable may be "
+"failing; nothing was kept."
+msgstr ""
+"A másolat nem egyezik az USB-meghajtón lévővel: %s. Lehet, hogy a meghajtó "
+"vagy a kábele hibás; semmi sem maradt meg."
+
+#: title/pc5_library.c:2851 title/pc5_library.c:2863
 #, c-format
 msgid ""
 "The game couldn't be put back in the INSTALL folder: it is in %.180s."
 msgstr ""
 "A játékot nem sikerült visszatenni az INSTALL mappába: itt van: %.180s."
 
-#: title/pc5_library.c:2606
+#: title/pc5_library.c:2902
 #, c-format
 msgid "PC5 can't save the cover: %s."
 msgstr "A PC5 nem tudja menteni a borítót: %s."
 
-#: title/pc5_library.c:2613
+#: title/pc5_library.c:2909
 #, c-format
 msgid "PC5 can't put the game in place: %s."
 msgstr "A PC5 nem tudja a helyére tenni a játékot: %s."
 
-#: title/pc5_library.c:2722
+#: title/pc5_library.c:3018
 msgid "PC5 didn't install this game, so it can't update it."
 msgstr "Ezt a játékot nem a PC5 telepítette, így nem is tudja frissíteni."
 
-#: title/pc5_library.c:2724
+#: title/pc5_library.c:3020
 #, c-format
 msgid ""
 "%s plays from its USB drive: copy the newer version over its folder %s "
@@ -747,11 +761,11 @@ msgstr ""
 "%s az USB-meghajtójáról fut: másold az újabb verziót a meghajtón lévő "
 "mappája (%s) fölé."
 
-#: title/pc5_library.c:2729
+#: title/pc5_library.c:3025
 msgid "The game's folder is missing: uninstall it and install it again."
 msgstr "A játék mappája hiányzik: távolítsd el, és telepítsd újra."
 
-#: title/pc5_library.c:2732
+#: title/pc5_library.c:3028
 #, c-format
 msgid ""
 "This folder doesn't have %s, the program %s starts. Choose the folder of a "
@@ -760,12 +774,12 @@ msgstr ""
 "Ebben a mappában nincs meg a(z) %s program, amelyet a(z) %s indít. Válaszd "
 "ki a(z) %s egy újabb példányának a mappáját."
 
-#: title/pc5_library.c:2746
+#: title/pc5_library.c:3042
 #, c-format
 msgid "Not enough space: the update needs %s and the console has %s free."
 msgstr "Nincs elég hely: a frissítésnek %s kell, a konzolon %s szabad."
 
-#: title/pc5_library.c:2752
+#: title/pc5_library.c:3048
 msgid ""
 "An earlier update of this game isn't finished: close PC5 and open it again "
 "to finish it."
@@ -773,48 +787,34 @@ msgstr ""
 "A játék egy korábbi frissítése nem fejeződött be: a befejezéshez zárd be a "
 "PC5-öt, és nyisd meg újra."
 
-#: title/pc5_library.c:2754
+#: title/pc5_library.c:3050
 #, c-format
 msgid "PC5 can't start the update: %s."
 msgstr "A PC5 nem tudja elindítani a frissítést: %s."
 
-#: title/pc5_library.c:2783
+#: title/pc5_library.c:3079
 msgid ""
 "Kept saves can't be put back for a game that plays from its USB drive."
 msgstr ""
 "A megtartott mentések nem tehetők vissza olyan játékhoz, amely az "
 "USB-meghajtójáról fut."
 
-#: title/pc5_library.c:2787
+#: title/pc5_library.c:3083
 msgid "The install has begun already."
 msgstr "A telepítés már elkezdődött."
 
-#: title/pc5_library.c:2803
+#: title/pc5_library.c:3099
 msgid "PC5 can't read the kept saves."
 msgstr "A PC5 nem tudja olvasni a megtartott mentéseket."
 
-#: title/pc5_library.c:2803
+#: title/pc5_library.c:3099
 msgid "The kept saves are damaged: they have no registry."
 msgstr "A megtartott mentések sérültek: nincs beállításjegyzékük."
 
-#: title/pc5_library.c:2880
+#: title/pc5_library.c:3176
 #, c-format
 msgid "PC5 can't make the game's folder on the USB drive: %s."
 msgstr "A PC5 nem tudja létrehozni a játék mappáját az USB-meghajtón: %s."
-
-#: title/pc5_library.c:2953
-#, c-format
-msgid "PC5 can't open %s on the USB drive: %s."
-msgstr "A PC5 nem tudja megnyitni az USB-meghajtón: %s (%s)."
-
-#: title/pc5_library.c:2991
-#, c-format
-msgid ""
-"The copy of %s doesn't match the USB drive. The drive or its cable may be "
-"failing; nothing was kept."
-msgstr ""
-"A másolat nem egyezik az USB-meghajtón lévővel: %s. Lehet, hogy a meghajtó "
-"vagy a kábele hibás; semmi sem maradt meg."
 
 #. over the loading screen's spinning circle while a game starts, shown in capitals where the language has them.
 #: title/pc5_matrix.c:59
@@ -850,7 +850,7 @@ msgid "Console's colour"
 msgstr "A konzol színe"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_settings.c:17 title/pc5_ui.c:6860
+#: title/pc5_settings.c:17 title/pc5_ui.c:6905
 msgid "Normal"
 msgstr "Normál"
 
@@ -863,13 +863,13 @@ msgid "Extra large"
 msgstr "Extra nagy"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_settings.c:19 title/pc5_ui.c:344 title/pc5_ui.c:2449
-#: title/pc5_ui.c:2461 title/pc5_ui.c:2474 title/pc5_ui.c:2487
-#: title/pc5_ui.c:2519 title/pc5_ui.c:2524 title/pc5_ui.c:2529
-#: title/pc5_ui.c:2534 title/pc5_ui.c:2539 title/pc5_ui.c:2544
-#: title/pc5_ui.c:2549 title/pc5_ui.c:2598 title/pc5_ui.c:2611
-#: title/pc5_ui.c:2650 title/pc5_ui.c:6906 title/pc5_ui.c:6960
-#: title/pc5_ui.c:7049 title/pc5_ui.c:7063
+#: title/pc5_settings.c:19 title/pc5_settings.c:21 title/pc5_ui.c:345
+#: title/pc5_ui.c:2479 title/pc5_ui.c:2502 title/pc5_ui.c:2515
+#: title/pc5_ui.c:2528 title/pc5_ui.c:2560 title/pc5_ui.c:2565
+#: title/pc5_ui.c:2570 title/pc5_ui.c:2575 title/pc5_ui.c:2580
+#: title/pc5_ui.c:2585 title/pc5_ui.c:2590 title/pc5_ui.c:2639
+#: title/pc5_ui.c:2652 title/pc5_ui.c:2691 title/pc5_ui.c:6951
+#: title/pc5_ui.c:7005 title/pc5_ui.c:7094 title/pc5_ui.c:7108
 msgid "Off"
 msgstr "Ki"
 
@@ -884,6 +884,14 @@ msgstr "Ellenállás"
 #: title/pc5_settings.c:19
 msgid "Rumble + resistance"
 msgstr "Rezgés + ellenállás"
+
+#: title/pc5_settings.c:21
+msgid "Big games only"
+msgstr ""
+
+#: title/pc5_settings.c:21
+msgid "Always"
+msgstr ""
 
 #: title/pc5_source.c:303 title/pc5_source.c:316
 msgid "A path in the folder is too long."
@@ -1062,7 +1070,7 @@ msgstr "A PC5 nem tudja lecserélni a csempét: %s."
 msgid "PC5 can't put the tile in place: %s."
 msgstr "A PC5 nem tudja a helyére tenni a csempét: %s."
 
-#: title/pc5_tile.c:636 title/pc5_ui.c:4651
+#: title/pc5_tile.c:636 title/pc5_ui.c:4696
 msgid ""
 "It isn't in PC5 any more. Take the tile off the home screen, or install "
 "the game again."
@@ -1092,14 +1100,14 @@ msgstr "Kompatibilitás"
 #. One of the tabs along the top of the screen: one short word.
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:65 title/pc5_ui.c:7689 title/pc5_ui.c:8785
+#: title/pc5_ui.c:65 title/pc5_ui.c:7734 title/pc5_ui.c:8830
 msgid "Install"
 msgstr "Telepítés"
 
 #. One of the tabs along the top of the screen: one short word.
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:65 title/pc5_ui.c:132 title/pc5_ui.c:6724 title/pc5_ui.c:6738
+#: title/pc5_ui.c:65 title/pc5_ui.c:132 title/pc5_ui.c:6769 title/pc5_ui.c:6783
 msgid "Settings"
 msgstr "Beállítások"
 
@@ -1119,7 +1127,7 @@ msgid "Favourites"
 msgstr "Kedvencek"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:68 title/pc5_ui.c:6596 title/pc5_ui.c:8644
+#: title/pc5_ui.c:68 title/pc5_ui.c:6641 title/pc5_ui.c:8689
 msgid "USB drive"
 msgstr "USB-meghajtó"
 
@@ -1130,97 +1138,97 @@ msgstr "Figyelmet igényel"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:132 title/pc5_ui.c:2422
+#: title/pc5_ui.c:132 title/pc5_ui.c:2452
 msgid "In games"
 msgstr "Játék közben"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:132 title/pc5_ui.c:2432
+#: title/pc5_ui.c:132 title/pc5_ui.c:2462
 msgid "System"
 msgstr "Rendszer"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:132 title/pc5_ui.c:2427
+#: title/pc5_ui.c:132 title/pc5_ui.c:2457
 msgid "Overlay"
 msgstr "Átfedés"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:132 title/pc5_ui.c:2440
+#: title/pc5_ui.c:132 title/pc5_ui.c:2470
 msgid "Picture sources"
 msgstr "Képforrások"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:133 title/pc5_ui.c:2417
+#: title/pc5_ui.c:133 title/pc5_ui.c:2447
 msgid "Game maintenance"
 msgstr "Játékok karbantartása"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:133 title/pc5_ui.c:2491
+#: title/pc5_ui.c:133 title/pc5_ui.c:2532
 msgid "Network"
 msgstr "Hálózat"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:208 title/pc5_ui.c:6863
+#: title/pc5_ui.c:209 title/pc5_ui.c:6908
 msgid "Graphics"
 msgstr "Grafika"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:208 title/pc5_ui.c:6868
+#: title/pc5_ui.c:209 title/pc5_ui.c:6913
 msgid "Appearance"
 msgstr "Megjelenés"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:208 title/pc5_ui.c:6873
+#: title/pc5_ui.c:209 title/pc5_ui.c:6918
 msgid "Manage"
 msgstr "Kezelés"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:208 title/pc5_ui.c:6968
+#: title/pc5_ui.c:209 title/pc5_ui.c:7013
 msgid "Background"
 msgstr "Háttér"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:209 title/pc5_ui.c:6994 title/pc5_ui.c:7970
+#: title/pc5_ui.c:210 title/pc5_ui.c:7039 title/pc5_ui.c:8015
 msgid "Library music"
 msgstr "Könyvtárzene"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:209 title/pc5_ui.c:6979 title/pc5_ui.c:7970
+#: title/pc5_ui.c:210 title/pc5_ui.c:7024 title/pc5_ui.c:8015
 msgid "Background video"
 msgstr "Háttérvideó"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:210 title/pc5_ui.c:7004
+#: title/pc5_ui.c:211 title/pc5_ui.c:7049
 msgid "Media settings and backup"
 msgstr "Média és biztonsági mentés"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:210 title/pc5_ui.c:3751 title/pc5_ui.c:7015
-#: title/pc5_ui.c:7971
+#: title/pc5_ui.c:211 title/pc5_ui.c:3793 title/pc5_ui.c:7060
+#: title/pc5_ui.c:8016
 msgid "Loading screen"
 msgstr "Betöltőképernyő"
 
 #. a percentage (Vibration 50%); put a space before % where your language does.
-#: title/pc5_ui.c:346 title/pc5_ui.c:7297
+#: title/pc5_ui.c:347 title/pc5_ui.c:7342
 #, c-format
 msgid "%d%%"
 msgstr "%d%%"
 
-#: title/pc5_ui.c:989
+#: title/pc5_ui.c:994
 #, c-format
 msgid ""
 "You have %s, the version before: PC5 downloads only what changed (%s)"
 msgstr ""
 "A(z) %s verzió van meg, az előző: a PC5 csak a változásokat tölti le (%s)"
 
-#: title/pc5_ui.c:994
+#: title/pc5_ui.c:999
 #, c-format
 msgid ""
 "You have %s, more than one version behind: PC5 downloads the whole app (%s)"
@@ -1228,17 +1236,17 @@ msgstr ""
 "A(z) %s verzió van meg, egynél több verzióval régebbi: a PC5 a teljes "
 "alkalmazást letölti (%s)"
 
-#: title/pc5_ui.c:997
+#: title/pc5_ui.c:1002
 #, c-format
 msgid "You have %s: PC5 downloads the whole app (%s)"
 msgstr "A(z) %s verzió van meg: a PC5 a teljes alkalmazást letölti (%s)"
 
-#: title/pc5_ui.c:1658 title/pc5_ui.c:3781 title/pc5_ui.c:5378
-#: title/pc5_ui.c:5387
+#: title/pc5_ui.c:1663 title/pc5_ui.c:3823 title/pc5_ui.c:5423
+#: title/pc5_ui.c:5432
 msgid "PC5 didn't install this game"
 msgstr "Ezt a játékot nem a PC5 telepítette"
 
-#: title/pc5_ui.c:1659
+#: title/pc5_ui.c:1664
 msgid ""
 "Its cover can only be changed as in Covers on the wiki: a picture of your "
 "own."
@@ -1246,11 +1254,11 @@ msgstr ""
 "A borítója csak úgy cserélhető, ahogy a wiki Covers oldala leírja: saját "
 "képpel."
 
-#: title/pc5_ui.c:1660
+#: title/pc5_ui.c:1665
 msgid "Only a game PC5 installed has a tile picture."
 msgstr "Csempeképe csak a PC5 által telepített játéknak van."
 
-#: title/pc5_ui.c:1661
+#: title/pc5_ui.c:1666
 msgid ""
 "Its background can only be changed as in Covers on the wiki: a picture of "
 "your own."
@@ -1258,88 +1266,88 @@ msgstr ""
 "A háttere csak úgy cserélhető, ahogy a wiki Covers oldala leírja: saját "
 "képpel."
 
-#: title/pc5_ui.c:1667
+#: title/pc5_ui.c:1672
 msgid "PC5 ran out of memory"
 msgstr "A PC5-nek elfogyott a memóriája"
 
-#: title/pc5_ui.c:1667
+#: title/pc5_ui.c:1672
 msgid "Close PC5 and open it again."
 msgstr "Zárd be a PC5-öt, és nyisd meg újra."
 
-#: title/pc5_ui.c:1841
+#: title/pc5_ui.c:1846
 msgid "The cover wasn't changed"
 msgstr "A borító nem változott"
 
-#: title/pc5_ui.c:1842
+#: title/pc5_ui.c:1847
 msgid "The tile picture wasn't changed"
 msgstr "A csempekép nem változott"
 
-#: title/pc5_ui.c:1842
+#: title/pc5_ui.c:1847
 msgid "The background wasn't changed"
 msgstr "A háttér nem változott"
 
-#: title/pc5_ui.c:1844
+#: title/pc5_ui.c:1849
 msgid "PC5 can't write to the game's folder in /data/prospero-win/prefixes."
 msgstr ""
 "A PC5 nem tud írni a játék mappájába itt: /data/prospero-win/prefixes."
 
-#: title/pc5_ui.c:1845
+#: title/pc5_ui.c:1850
 msgid "PC5 couldn't make the card from the game's icon and name."
 msgstr "A PC5 nem tudta elkészíteni a kártyát a játék ikonjából és nevéből."
 
-#: title/pc5_ui.c:1918 title/pc5_ui.c:7530
+#: title/pc5_ui.c:1923 title/pc5_ui.c:7575
 #, c-format
 msgid "USB drive %d"
 msgstr "USB-meghajtó %d"
 
-#: title/pc5_ui.c:1920
+#: title/pc5_ui.c:1925
 #, c-format
 msgid "Extended storage %d"
 msgstr "Bővített tárhely %d"
 
-#: title/pc5_ui.c:1922
+#: title/pc5_ui.c:1927
 msgid "Console storage"
 msgstr "Konzol tárhelye"
 
-#: title/pc5_ui.c:1940
+#: title/pc5_ui.c:1952
 #, c-format
 msgid "%s can't be installed"
 msgstr "%s nem telepíthető"
 
-#: title/pc5_ui.c:1988
+#: title/pc5_ui.c:2002
 #, c-format
 msgid "%s can't be updated"
 msgstr "%s nem frissíthető"
 
-#: title/pc5_ui.c:1988 title/pc5_ui.c:3082 title/pc5_ui.c:4533
-#: title/pc5_ui.c:5223 title/pc5_ui.c:5887 title/pc5_ui.c:7927
+#: title/pc5_ui.c:2002 title/pc5_ui.c:3124 title/pc5_ui.c:4578
+#: title/pc5_ui.c:5268 title/pc5_ui.c:5932 title/pc5_ui.c:7972
 msgid "The game"
 msgstr "A játék"
 
-#: title/pc5_ui.c:2053
+#: title/pc5_ui.c:2067
 #, c-format
 msgid "Its Windows needs %s and the console has %s free."
 msgstr "A Windowsának %s kell, a konzolon %s szabad."
 
-#: title/pc5_ui.c:2053
+#: title/pc5_ui.c:2067
 #, c-format
 msgid "The game needs %s and the console has %s free."
 msgstr "A játéknak %s kell, a konzolon %s szabad."
 
-#: title/pc5_ui.c:2055 title/pc5_ui.c:5194
+#: title/pc5_ui.c:2069 title/pc5_ui.c:5239
 msgid "Not enough space"
 msgstr "Nincs elég hely"
 
-#: title/pc5_ui.c:2075
+#: title/pc5_ui.c:2089
 msgid "It has no program to start."
 msgstr "Nincs elindítható programja."
 
-#: title/pc5_ui.c:2150
+#: title/pc5_ui.c:2180
 #, c-format
 msgid "%s is partly updated"
 msgstr "%s részben frissült"
 
-#: title/pc5_ui.c:2151
+#: title/pc5_ui.c:2181
 #, c-format
 msgid ""
 "%u of its files couldn't be put in place. %s Update it again; its saves, "
@@ -1348,20 +1356,20 @@ msgstr ""
 "%u fájlja nem került a helyére. %s Frissítsd újra; a mentései, beállításai "
 "és opciói változatlanok."
 
-#: title/pc5_ui.c:2155
+#: title/pc5_ui.c:2185
 #, c-format
 msgid "%s is updated"
 msgstr "%s frissült"
 
-#: title/pc5_ui.c:2156
+#: title/pc5_ui.c:2186
 msgid "Its saves, settings and options are as they were."
 msgstr "A mentései, beállításai és opciói változatlanok."
 
-#: title/pc5_ui.c:2159
+#: title/pc5_ui.c:2189
 msgid "Update stopped"
 msgstr "A frissítés leállt"
 
-#: title/pc5_ui.c:2160
+#: title/pc5_ui.c:2190
 msgid ""
 "The copy made so far was deleted: the game is as it was. The USB drive "
 "wasn't changed."
@@ -1369,117 +1377,117 @@ msgstr ""
 "Az eddig elkészült másolat törlődött: a játék a régi. Az USB-meghajtó nem "
 "változott."
 
-#: title/pc5_ui.c:2163
+#: title/pc5_ui.c:2193
 #, c-format
 msgid "%s wasn't updated"
 msgstr "%s nem frissült"
 
-#: title/pc5_ui.c:2164
+#: title/pc5_ui.c:2194
 #, c-format
 msgid "%s PC5 finishes the update the next time it starts."
 msgstr "%s A PC5 a következő indításkor befejezi a frissítést."
 
-#: title/pc5_ui.c:2164
+#: title/pc5_ui.c:2194
 #, c-format
 msgid "%s The game is as it was."
 msgstr "%s A játék változatlan."
 
-#: title/pc5_ui.c:2180
+#: title/pc5_ui.c:2210
 #, c-format
 msgid "%s is installed"
 msgstr "%s telepítve"
 
-#: title/pc5_ui.c:2185
+#: title/pc5_ui.c:2215
 msgid "It's in your library, with the saves and settings it had before."
 msgstr "A könyvtáradban van, a korábbi mentéseivel és beállításaival."
 
-#: title/pc5_ui.c:2186
+#: title/pc5_ui.c:2216
 msgid "It's in your library. Press the button to play it from there."
 msgstr "A könyvtáradban van. Nyomd meg a gombot, és onnan játszhatsz vele."
 
-#: title/pc5_ui.c:2190
+#: title/pc5_ui.c:2220
 msgid "Install stopped"
 msgstr "A telepítés leállt"
 
-#: title/pc5_ui.c:2190
+#: title/pc5_ui.c:2220
 #, c-format
 msgid "%s wasn't installed"
 msgstr "%s nem települt"
 
-#: title/pc5_ui.c:2191
+#: title/pc5_ui.c:2221
 msgid "Everything copied so far was deleted. The USB drive wasn't changed."
 msgstr "Minden eddig átmásolt adat törlődött. Az USB-meghajtó nem változott."
 
-#: title/pc5_ui.c:2193
+#: title/pc5_ui.c:2223
 #, c-format
 msgid "%s Nothing was kept."
 msgstr "%s Semmi sem maradt meg."
 
-#: title/pc5_ui.c:2194
+#: title/pc5_ui.c:2224
 #, c-format
 msgid "%s PC5 tries again the next time it starts."
 msgstr "%s A PC5 a következő indításkor újra megpróbálja."
 
-#: title/pc5_ui.c:2248
+#: title/pc5_ui.c:2278
 msgid "PC5 can't read this folder."
 msgstr "A PC5 nem tudja olvasni ezt a mappát."
 
-#: title/pc5_ui.c:2332
+#: title/pc5_ui.c:2362
 msgid "stopped, nothing kept."
 msgstr "leállt, semmi sem maradt meg."
 
-#: title/pc5_ui.c:2332
+#: title/pc5_ui.c:2362
 msgid "not installed."
 msgstr "nem települt."
 
-#: title/pc5_ui.c:2338
+#: title/pc5_ui.c:2368
 msgid "1 game is installed"
 msgstr "1 játék települt"
 
-#: title/pc5_ui.c:2338
+#: title/pc5_ui.c:2368
 #, c-format
 msgid "%d games are installed"
 msgstr "%d játék települt"
 
-#: title/pc5_ui.c:2340
+#: title/pc5_ui.c:2370
 #, c-format
 msgid "%d of %d games are installed"
 msgstr "%d/%d játék települt"
 
-#: title/pc5_ui.c:2342
+#: title/pc5_ui.c:2372
 msgid "No game was installed"
 msgstr "Egy játék sem települt"
 
-#: title/pc5_ui.c:2343
+#: title/pc5_ui.c:2373
 msgid "They're in your library. The USB drive wasn't changed."
 msgstr "A könyvtáradban vannak. Az USB-meghajtó nem változott."
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2400 title/pc5_ui.c:7719
+#: title/pc5_ui.c:2430 title/pc5_ui.c:7764
 msgid "Install games from USB"
 msgstr "Játékok telepítése USB-ről"
 
-#: title/pc5_ui.c:2401
+#: title/pc5_ui.c:2431
 msgid "Copies one game, or several in a row, to the console"
 msgstr "Egy vagy több játékot másol egymás után a konzolra"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2404 title/pc5_ui.c:8710 title/pc5_ui.c:8717
+#: title/pc5_ui.c:2434 title/pc5_ui.c:8755 title/pc5_ui.c:8762
 msgid "Uninstall game"
 msgstr "Játék eltávolítása"
 
-#: title/pc5_ui.c:2405
+#: title/pc5_ui.c:2435
 msgid "Deletes a game (its saves can be kept), or saves kept from before"
 msgstr ""
 "Töröl egy játékot (a mentései megtarthatók), vagy korábban megtartott "
 "mentéseket"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2408 title/pc5_ui.c:7971 title/pc5_ui.c:7978
+#: title/pc5_ui.c:2438 title/pc5_ui.c:8016 title/pc5_ui.c:8023
 msgid "Library appearance from phone"
 msgstr "Könyvtár-megjelenés telefonról"
 
-#: title/pc5_ui.c:2409
+#: title/pc5_ui.c:2439
 msgid ""
 "One QR code to choose any installed game and send its pictures, music or "
 "video"
@@ -1489,53 +1497,53 @@ msgstr ""
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:2410 title/pc5_ui.c:8208 title/pc5_ui.c:8210
+#: title/pc5_ui.c:2440 title/pc5_ui.c:8253 title/pc5_ui.c:8255
 msgid "Open"
 msgstr "Megnyitás"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2413
+#: title/pc5_ui.c:2443
 msgid "Game compatibility list"
 msgstr "Játékkompatibilitási lista"
 
-#: title/pc5_ui.c:2414
+#: title/pc5_ui.c:2444
 msgid "Browse community reports, settings and saved offline results"
 msgstr ""
 "Böngészd a közösségi jelentéseket, beállításokat és mentett offline "
 "eredményeket"
 
-#: title/pc5_ui.c:2418
+#: title/pc5_ui.c:2448
 msgid "Installing, uninstalling and the compatibility list"
 msgstr "Telepítés, eltávolítás és a kompatibilitási lista"
 
-#: title/pc5_ui.c:2423
+#: title/pc5_ui.c:2453
 msgid "Vibration, light bar, triggers and 120 Hz output"
 msgstr "Rezgés, fénysáv, ravaszok és 120 Hz-es kimenet"
 
-#: title/pc5_ui.c:2428
+#: title/pc5_ui.c:2458
 msgid "FPS, frame time, CPU and GPU use, temperatures and memory"
 msgstr "FPS, képkockaidő, CPU- és GPU-terhelés, hőmérsékletek és memória"
 
-#: title/pc5_ui.c:2434
+#: title/pc5_ui.c:2464
 msgid "Startup sound, logs, picture sources, updates and language"
 msgstr "Indítási hang, naplók, képforrások, frissítések és nyelv"
 
-#: title/pc5_ui.c:2441
+#: title/pc5_ui.c:2471
 msgid "Where covers and backgrounds are looked for"
 msgstr "Hol keresse a borítókat és hátereket"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2442
+#: title/pc5_ui.c:2472
 #, c-format
 msgid "%d of %d ›"
 msgstr "%d/%d ›"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2446
+#: title/pc5_ui.c:2476
 msgid "120 Hz output"
 msgstr "120 Hz-es kimenet"
 
-#: title/pc5_ui.c:2447
+#: title/pc5_ui.c:2477
 msgid ""
 "Up to 120 fps on a TV that takes it; turn on the PS5's 120 Hz output and "
 "turn VRR off"
@@ -1543,90 +1551,114 @@ msgstr ""
 "Akár 120 fps az ezt támogató tévén; kapcsold be a PS5 120 Hz-es kimenetét, "
 "és kapcsold ki a VRR-t"
 
-#: title/pc5_ui.c:2448
+#: title/pc5_ui.c:2478
 msgid "Off: games show up to 60 fps"
 msgstr "Ki: a játékok legfeljebb 60 fps-sel jelennek meg"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2449 title/pc5_ui.c:2461 title/pc5_ui.c:2474
-#: title/pc5_ui.c:2487 title/pc5_ui.c:2519 title/pc5_ui.c:2524
-#: title/pc5_ui.c:2529 title/pc5_ui.c:2534 title/pc5_ui.c:2539
-#: title/pc5_ui.c:2544 title/pc5_ui.c:2549 title/pc5_ui.c:2598
-#: title/pc5_ui.c:2650 title/pc5_ui.c:6960 title/pc5_ui.c:7049
+#: title/pc5_ui.c:2479 title/pc5_ui.c:2502 title/pc5_ui.c:2515
+#: title/pc5_ui.c:2528 title/pc5_ui.c:2560 title/pc5_ui.c:2565
+#: title/pc5_ui.c:2570 title/pc5_ui.c:2575 title/pc5_ui.c:2580
+#: title/pc5_ui.c:2585 title/pc5_ui.c:2590 title/pc5_ui.c:2639
+#: title/pc5_ui.c:2691 title/pc5_ui.c:7005 title/pc5_ui.c:7094
 msgid "On"
 msgstr "Be"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2452
+#: title/pc5_ui.c:2482
 msgid "Keyboard layout"
 msgstr "Billentyűzetkiosztás"
 
-#: title/pc5_ui.c:2453
+#: title/pc5_ui.c:2483
 msgid "A USB keyboard types as a US one in games"
 msgstr "Az USB-billentyűzet a játékokban amerikaiként ír"
 
-#: title/pc5_ui.c:2454
+#: title/pc5_ui.c:2484
 msgid "A USB keyboard types as your language's in games"
 msgstr "Az USB-billentyűzet a játékokban a nyelved szerint ír"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2455
+#: title/pc5_ui.c:2485
 msgid "US"
 msgstr "US"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2458
+#: title/pc5_ui.c:2488
+msgid "Check copied games"
+msgstr ""
+
+#: title/pc5_ui.c:2490
+msgid ""
+"Every install is read back and compared with the USB drive: it takes about "
+"twice as long"
+msgstr ""
+
+#: title/pc5_ui.c:2492
+#, c-format
+msgid ""
+"Installs over %d GB are read back and compared with the USB drive, "
+"catching a bad drive or cable"
+msgstr ""
+
+#: title/pc5_ui.c:2495
+msgid ""
+"Installs aren't read back: fastest. Turn on for a drive or cable you don't "
+"trust"
+msgstr ""
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:2499
 msgid "Keep all logs"
 msgstr "Minden napló megtartása"
 
-#: title/pc5_ui.c:2459
+#: title/pc5_ui.c:2500
 msgid "Every session's log is kept for 7 days"
 msgstr "Minden munkamenet naplója 7 napig megmarad"
 
-#: title/pc5_ui.c:2460
+#: title/pc5_ui.c:2501
 msgid "Problem sessions and each game's newest; turn on when testing a game"
 msgstr ""
 "A hibás munkamenetek és minden játék legújabbja; játék tesztelésekor "
 "kapcsold be"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2466
+#: title/pc5_ui.c:2507
 msgid "FTP server"
 msgstr "FTP-szerver"
 
-#: title/pc5_ui.c:2468
+#: title/pc5_ui.c:2509
 #, c-format
 msgid ""
 "ftp://%s from a PC (FileZilla): the INSTALL folder, while PC5 is open"
 msgstr ""
 "ftp://%s egy PC-ről (FileZilla): az INSTALL mappa, amíg a PC5 nyitva van"
 
-#: title/pc5_ui.c:2471 title/pc5_ui.c:2484
+#: title/pc5_ui.c:2512 title/pc5_ui.c:2525
 #, c-format
 msgid "Not started: %.150s"
 msgstr "Nem indult el: %.150s"
 
-#: title/pc5_ui.c:2473
+#: title/pc5_ui.c:2514
 msgid "Send games from a PC to PC5's INSTALL folder, then install them here"
 msgstr ""
 "Küldj játékokat egy PC-ről a PC5 INSTALL mappájába, majd telepítsd őket itt"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2480
+#: title/pc5_ui.c:2521
 msgid "Web page"
 msgstr "Weboldal"
 
-#: title/pc5_ui.c:2482
+#: title/pc5_ui.c:2523
 #, c-format
 msgid ""
 "http://%s in a browser on a phone or a PC; Triangle: a QR code for it"
 msgstr "http://%s egy telefon vagy PC böngészőjében; Háromszög: QR-kód hozzá"
 
-#: title/pc5_ui.c:2486
+#: title/pc5_ui.c:2527
 msgid "PC5 from a browser: send games, launch options, logs"
 msgstr "A PC5 böngészőből: játékok küldése, indítási beállítások, naplók"
 
-#: title/pc5_ui.c:2492
+#: title/pc5_ui.c:2533
 msgid ""
 "From a PC or a phone: the FTP server, the web page, a username and password"
 msgstr ""
@@ -1634,235 +1666,235 @@ msgstr ""
 "jelszó"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2496
+#: title/pc5_ui.c:2537
 msgid "Username"
 msgstr "Felhasználónév"
 
-#: title/pc5_ui.c:2497
+#: title/pc5_ui.c:2538
 msgid "The username the FTP server and the web page ask for"
 msgstr "A felhasználónév, amelyet az FTP-szerver és a weboldal kér"
 
-#: title/pc5_ui.c:2498
+#: title/pc5_ui.c:2539
 msgid "None set: any username will do"
 msgstr "Nincs megadva: bármilyen felhasználónév jó"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2499
+#: title/pc5_ui.c:2540
 msgid "Any"
 msgstr "Bármi"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2502
+#: title/pc5_ui.c:2543
 msgid "Password"
 msgstr "Jelszó"
 
-#: title/pc5_ui.c:2503
+#: title/pc5_ui.c:2544
 msgid "The password the FTP server and the web page ask for"
 msgstr "A jelszó, amelyet az FTP-szerver és a weboldal kér"
 
-#: title/pc5_ui.c:2504
+#: title/pc5_ui.c:2545
 msgid "Optional: none set, no password is asked for"
 msgstr "Nem kötelező: ha nincs megadva, nem kér jelszót"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2505 title/pc5_ui.c:7293
+#: title/pc5_ui.c:2546 title/pc5_ui.c:7338
 msgid "None"
 msgstr "Nincs"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2508 title/pc5_ui.c:8192
+#: title/pc5_ui.c:2549 title/pc5_ui.c:8237
 msgid "File manager"
 msgstr "Fájlkezelő"
 
-#: title/pc5_ui.c:2509
+#: title/pc5_ui.c:2550
 msgid "Copy, move, rename and delete files on the console and its drives"
 msgstr ""
 "Fájlok másolása, áthelyezése, átnevezése és törlése a konzolon és a "
 "meghajtóin"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2513
+#: title/pc5_ui.c:2554
 msgid "About PC5"
 msgstr "A PC5 névjegye"
 
-#: title/pc5_ui.c:2514
+#: title/pc5_ui.c:2555
 msgid "Version, free space and credits"
 msgstr "Verzió, szabad hely és közreműködők"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2517
+#: title/pc5_ui.c:2558
 msgid "Show FPS"
 msgstr "FPS megjelenítése"
 
-#: title/pc5_ui.c:2518
+#: title/pc5_ui.c:2559
 msgid "Frames shown each second"
 msgstr "Másodpercenként megjelenített képkockák"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2522
+#: title/pc5_ui.c:2563
 msgid "Frame time"
 msgstr "Képkockaidő"
 
-#: title/pc5_ui.c:2523
+#: title/pc5_ui.c:2564
 msgid "How long a frame takes, on average, in milliseconds"
 msgstr "Egy képkocka átlagos ideje ezredmásodpercben"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2527
+#: title/pc5_ui.c:2568
 msgid "CPU usage"
 msgstr "CPU-terhelés"
 
-#: title/pc5_ui.c:2528
+#: title/pc5_ui.c:2569
 msgid "How busy the console's CPU is, with everything it runs"
 msgstr "Mennyire terhelt a konzol CPU-ja mindazzal, amit futtat"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2532
+#: title/pc5_ui.c:2573
 msgid "GPU usage"
 msgstr "GPU-terhelés"
 
-#: title/pc5_ui.c:2533
+#: title/pc5_ui.c:2574
 msgid "How busy the console's GPU is"
 msgstr "Mennyire terhelt a konzol GPU-ja"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2537
+#: title/pc5_ui.c:2578
 msgid "CPU temperature"
 msgstr "CPU-hőmérséklet"
 
-#: title/pc5_ui.c:2538
+#: title/pc5_ui.c:2579
 msgid "In degrees Celsius"
 msgstr "Celsius-fokban"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2542
+#: title/pc5_ui.c:2583
 msgid "Chip temperature"
 msgstr "Chip hőmérséklete"
 
-#: title/pc5_ui.c:2543
+#: title/pc5_ui.c:2584
 msgid "The console chip's, in degrees Celsius"
 msgstr "A konzol chipjéé, Celsius-fokban"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2547
+#: title/pc5_ui.c:2588
 msgid "Memory"
 msgstr "Memória"
 
-#: title/pc5_ui.c:2548
+#: title/pc5_ui.c:2589
 msgid "What the game uses, of what it has, in GB"
 msgstr "Mennyit használ a játék abból, ami rendelkezésére áll, GB-ban"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2552
+#: title/pc5_ui.c:2593
 msgid "Corner"
 msgstr "Sarok"
 
-#: title/pc5_ui.c:2553
+#: title/pc5_ui.c:2594
 msgid "Where the overlay sits on the screen"
 msgstr "Hol legyen az átfedés a képernyőn"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2557 title/pc5_ui.c:7661
+#: title/pc5_ui.c:2598 title/pc5_ui.c:7706
 msgid "Size"
 msgstr "Méret"
 
-#: title/pc5_ui.c:2559
+#: title/pc5_ui.c:2600
 msgid "Every line at once, twice the size, by the console"
 msgstr "Minden sor egyszerre, dupla méretben, a konzoltól"
 
-#: title/pc5_ui.c:2560
+#: title/pc5_ui.c:2601
 msgid "Twice the size, two lines at a time, taking turns"
 msgstr "Dupla méretben, egyszerre két sor, váltakozva"
 
-#: title/pc5_ui.c:2561
+#: title/pc5_ui.c:2602
 msgid "Every line at once, in small text"
 msgstr "Minden sor egyszerre, kis betűvel"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2565
+#: title/pc5_ui.c:2606
 msgid "Vibration"
 msgstr "Rezgés"
 
-#: title/pc5_ui.c:2566
+#: title/pc5_ui.c:2607
 msgid "How strongly the controller rumbles with the game"
 msgstr "Milyen erősen rezeg a kontroller a játékkal"
 
-#: title/pc5_ui.c:2567
+#: title/pc5_ui.c:2608
 msgid "The game's rumble on the controller"
 msgstr "A játék rezgése a kontrolleren"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2571
+#: title/pc5_ui.c:2612
 msgid "Light bar"
 msgstr "Fénysáv"
 
-#: title/pc5_ui.c:2572
+#: title/pc5_ui.c:2613
 msgid "The colour of what is on screen"
 msgstr "A képernyőn látható tartalom színe"
 
-#: title/pc5_ui.c:2573
+#: title/pc5_ui.c:2614
 msgid "The main colour of the game's cover"
 msgstr "A játék borítójának fő színe"
 
-#: title/pc5_ui.c:2574
+#: title/pc5_ui.c:2615
 msgid "PC5 leaves the console's colour"
 msgstr "A PC5 meghagyja a konzol színét"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2578
+#: title/pc5_ui.c:2619
 msgid "Adaptive triggers"
 msgstr "Adaptív ravaszok"
 
-#: title/pc5_ui.c:2579
+#: title/pc5_ui.c:2620
 msgid "L2 and R2 vibrate with the game's rumble"
 msgstr "Az L2 és az R2 a játék rezgésével együtt rezeg"
 
-#: title/pc5_ui.c:2580
+#: title/pc5_ui.c:2621
 msgid "L2 and R2 push back as you press them"
 msgstr "Az L2 és az R2 ellenáll, amikor lenyomod"
 
-#: title/pc5_ui.c:2581
+#: title/pc5_ui.c:2622
 msgid "L2 and R2 push back, and buzz with the rumble"
 msgstr "Az L2 és az R2 ellenáll, és a rezgéssel együtt zümmög"
 
-#: title/pc5_ui.c:2582
+#: title/pc5_ui.c:2623
 msgid "Rumble, resistance or both on L2 and R2"
 msgstr "Rezgés, ellenállás vagy mindkettő az L2-n és az R2-n"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2586
+#: title/pc5_ui.c:2627
 msgid "Trigger rumble"
 msgstr "Ravaszok rezgése"
 
-#: title/pc5_ui.c:2587
+#: title/pc5_ui.c:2628
 msgid "How strongly L2 and R2 vibrate"
 msgstr "Milyen erősen rezeg az L2 és az R2"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2591
+#: title/pc5_ui.c:2632
 msgid "Trigger resistance"
 msgstr "Ravaszok ellenállása"
 
-#: title/pc5_ui.c:2592
+#: title/pc5_ui.c:2633
 msgid "How firmly L2 and R2 push back"
 msgstr "Milyen erősen áll ellen az L2 és az R2"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2596
+#: title/pc5_ui.c:2637
 msgid "Check when PC5 opens"
 msgstr "Ellenőrzés a PC5 megnyitásakor"
 
-#: title/pc5_ui.c:2597
+#: title/pc5_ui.c:2638
 msgid "Asks GitHub for a newer PC5 each time you open PC5, and offers it"
 msgstr ""
 "A PC5 minden megnyitásakor újabb verziót keres a GitHubon, és felajánlja"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2601
+#: title/pc5_ui.c:2642
 msgid "Check now"
 msgstr "Ellenőrzés most"
 
-#: title/pc5_ui.c:2603
+#: title/pc5_ui.c:2644
 #, c-format
 msgid ""
 "PC5 %s is out: copy it over this one from github.com/bornaradusin/PC5"
@@ -1870,122 +1902,122 @@ msgstr ""
 "Megjelent a PC5 %s: másold rá erre a github.com/bornaradusin/PC5 oldalról"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2609
+#: title/pc5_ui.c:2650
 msgid "Startup sound"
 msgstr "Indítási hang"
 
-#: title/pc5_ui.c:2610
+#: title/pc5_ui.c:2651
 msgid "On the controller's speaker when PC5 opens"
 msgstr "A kontroller hangszóróján, amikor a PC5 megnyílik"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2614
+#: title/pc5_ui.c:2655
 msgid "Startup sound volume"
 msgstr "Indítási hang hangereje"
 
-#: title/pc5_ui.c:2615
+#: title/pc5_ui.c:2656
 msgid "How loud the startup sound plays"
 msgstr "Milyen hangosan szól az indítási hang"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2621
+#: title/pc5_ui.c:2662
 msgid "Language"
 msgstr "Nyelv"
 
-#: title/pc5_ui.c:2623
+#: title/pc5_ui.c:2664
 msgid "PC5's screens and web page; System default follows the console"
 msgstr "A PC5 képernyői és weboldala; az Alapértelmezett a konzolt követi"
 
-#: title/pc5_ui.c:2626
+#: title/pc5_ui.c:2667
 #, c-format
 msgid "As the console: %s"
 msgstr "A konzol szerint: %s"
 
 #. the Language setting's value when PC5 follows the console's language.
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2628
+#: title/pc5_ui.c:2669
 msgid "System default"
 msgstr "Alapértelmezett"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:2633 title/pc5_ui.c:8543 title/pc5_ui.c:8801
+#: title/pc5_ui.c:2674 title/pc5_ui.c:8588 title/pc5_ui.c:8846
 msgid "Update now"
 msgstr "Frissítés most"
 
-#: title/pc5_ui.c:2637
+#: title/pc5_ui.c:2678
 #, c-format
 msgid "%.160s, installs it and restarts PC5"
 msgstr "%.160s, telepíti, és újraindítja a PC5-öt"
 
-#: title/pc5_ui.c:2643
+#: title/pc5_ui.c:2684
 msgid "Its store's covers and backgrounds"
 msgstr "Az áruházának borítói és hátterei"
 
-#: title/pc5_ui.c:2643
+#: title/pc5_ui.c:2684
 msgid "Covers and backgrounds its members made, with your key"
 msgstr "A tagjai által készített borítók és hátterek, a kulcsoddal"
 
-#: title/pc5_ui.c:2644
+#: title/pc5_ui.c:2685
 msgid "Its catalogue's covers and backgrounds"
 msgstr "A katalógusának borítói és hátterei"
 
-#: title/pc5_ui.c:2644
+#: title/pc5_ui.c:2685
 msgid "The cover on the game's page, and its Steam background"
 msgstr "A játék oldalán lévő borító és a Steames háttere"
 
-#: title/pc5_ui.c:2645
+#: title/pc5_ui.c:2686
 msgid "Steam's pictures for a game Steam's search misses"
 msgstr "Steam-képek olyan játékhoz, amelyet a Steam keresője nem talál"
 
-#: title/pc5_ui.c:2653
+#: title/pc5_ui.c:2694
 #, c-format
 msgid "Needs your key, in %s"
 msgstr "Kell a kulcsod, itt: %s"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2654
+#: title/pc5_ui.c:2695
 msgid "No key"
 msgstr "Nincs kulcs"
 
-#: title/pc5_ui.c:2656
+#: title/pc5_ui.c:2697
 #, c-format
 msgid "It refused the key in %s: check it there"
 msgstr "Elutasította a kulcsot, itt: %s – ellenőrizd ott"
 
-#: title/pc5_ui.c:2903
+#: title/pc5_ui.c:2945
 msgid "Home screen tiles aren't available"
 msgstr "A kezdőképernyő-csempék nem érhetők el"
 
-#: title/pc5_ui.c:2903
+#: title/pc5_ui.c:2945
 msgid "This copy of PC5 has no tile program."
 msgstr "A PC5 ezen példányában nincs csempeprogram."
 
-#: title/pc5_ui.c:2910
+#: title/pc5_ui.c:2952
 #, c-format
 msgid "PC5 can't delete its folder, %s/%s."
 msgstr "A PC5 nem tudja törölni a mappáját: %s/%s."
 
-#: title/pc5_ui.c:2911
+#: title/pc5_ui.c:2953
 msgid "The tile wasn't taken away"
 msgstr "A csempe nem lett eltávolítva"
 
-#: title/pc5_ui.c:2915
+#: title/pc5_ui.c:2957
 msgid "Taken off the home screen"
 msgstr "Levéve a kezdőképernyőről"
 
-#: title/pc5_ui.c:2916
+#: title/pc5_ui.c:2958
 msgid ""
 "The tile's folder is deleted. If the tile is still on the home screen, "
 "delete it there."
 msgstr ""
 "A csempe mappája törölve. Ha a csempe még a kezdőképernyőn van, ott töröld."
 
-#: title/pc5_ui.c:2933 title/pc5_ui.c:2949
+#: title/pc5_ui.c:2975 title/pc5_ui.c:2991
 msgid "The tile wasn't made"
 msgstr "A csempe nem készült el"
 
-#: title/pc5_ui.c:2936
+#: title/pc5_ui.c:2978
 #, c-format
 msgid ""
 "Its tile, %s, appears on the home screen once you close PC5 and "
@@ -1998,11 +2030,11 @@ msgstr ""
 "elindítja a játékot, a játékból kilépve pedig a kezdőképernyőre jutsz. A "
 "PC5 mappájából fut (%s): hagyd ott a PC5-öt."
 
-#: title/pc5_ui.c:2941 title/pc5_ui.c:2956
+#: title/pc5_ui.c:2983 title/pc5_ui.c:2998
 msgid "Added to the home screen"
 msgstr "Hozzáadva a kezdőképernyőhöz"
 
-#: title/pc5_ui.c:2953
+#: title/pc5_ui.c:2995
 #, c-format
 msgid ""
 "Its tile, %s, appears on the home screen once ShadowMountPlus finds it in "
@@ -2013,28 +2045,28 @@ msgstr ""
 "megtalálja itt: %s. Azonnal elindítja a játékot, a játékból kilépve pedig "
 "a kezdőképernyőre jutsz."
 
-#: title/pc5_ui.c:3055
+#: title/pc5_ui.c:3097
 #, c-format
 msgid "PC5 %s is available on GitHub (you have %s)."
 msgstr "A PC5 %s elérhető a GitHubon (neked ez van: %s)."
 
-#: title/pc5_ui.c:3089
+#: title/pc5_ui.c:3131
 #, c-format
 msgid "%s stopped with an error"
 msgstr "%s hibával leállt"
 
-#: title/pc5_ui.c:3090
+#: title/pc5_ui.c:3132
 #, c-format
 msgid "Wine reported a crash. Its log is kept as %.120s in %.120s."
 msgstr ""
 "A Wine összeomlást jelzett. A naplója %.120s néven megmaradt itt: %.120s."
 
-#: title/pc5_ui.c:3093
+#: title/pc5_ui.c:3135
 #, c-format
 msgid "%s closed before showing anything"
 msgstr "%s bezárult, mielőtt bármit megjelenített volna"
 
-#: title/pc5_ui.c:3094
+#: title/pc5_ui.c:3136
 #, c-format
 msgid ""
 "If PC5 started the wrong program, choose Change program in the game's menu "
@@ -2044,12 +2076,12 @@ msgstr ""
 "lehetőséget a játék menüjében (Háromszög). A naplója %.120s néven "
 "megmaradt itt: %.120s."
 
-#: title/pc5_ui.c:3098
+#: title/pc5_ui.c:3140
 #, c-format
 msgid "%s had to be closed"
 msgstr "%s bezárására volt szükség"
 
-#: title/pc5_ui.c:3099
+#: title/pc5_ui.c:3141
 #, c-format
 msgid ""
 "It didn't close when asked, so PC5 ended it. Its log is kept as %.120s in "
@@ -2058,26 +2090,26 @@ msgstr ""
 "Nem záródott be kérésre, ezért a PC5 leállította. A naplója %.120s néven "
 "megmaradt itt: %.120s."
 
-#: title/pc5_ui.c:3103
+#: title/pc5_ui.c:3145
 #, c-format
 msgid "%s ended unexpectedly"
 msgstr "%s váratlanul leállt"
 
-#: title/pc5_ui.c:3104
+#: title/pc5_ui.c:3146
 msgid "PC5 ended unexpectedly last time"
 msgstr "A PC5 legutóbb váratlanul leállt"
 
-#: title/pc5_ui.c:3105
+#: title/pc5_ui.c:3147
 #, c-format
 msgid "Its log is kept as %.120s in %.120s."
 msgstr "A naplója %.120s néven megmaradt itt: %.120s."
 
-#: title/pc5_ui.c:3127
+#: title/pc5_ui.c:3169
 #, c-format
 msgid "No log of %s yet"
 msgstr "Még nincs napló: %s"
 
-#: title/pc5_ui.c:3128
+#: title/pc5_ui.c:3170
 msgid ""
 "Play it once until the problem happens, then come back here: its log goes "
 "with the report."
@@ -2085,12 +2117,12 @@ msgstr ""
 "Játssz vele egyszer, amíg a hiba elő nem jön, aztán gyere vissza ide: a "
 "naplója a jelentéssel együtt megy."
 
-#: title/pc5_ui.c:3142
+#: title/pc5_ui.c:3184
 #, c-format
 msgid "Report a problem with %s"
 msgstr "Hiba jelentése: %s"
 
-#: title/pc5_ui.c:3143
+#: title/pc5_ui.c:3185
 #, c-format
 msgid ""
 "Its newest log, %.120s, is in %.120s/logs. Press Triangle for a QR code "
@@ -2101,73 +2133,73 @@ msgstr ""
 "egy QR-kódért, amely megnyitja a GitHub űrlapját a játékkal, a PC5-tel és "
 "a játék beállításaival kitöltve; ott csatold azt a zipet."
 
-#: title/pc5_ui.c:3411
+#: title/pc5_ui.c:3453
 msgid "Internal storage"
 msgstr "Belső tárhely"
 
-#: title/pc5_ui.c:3424
+#: title/pc5_ui.c:3466
 msgid "PC5's INSTALL folder"
 msgstr "A PC5 INSTALL mappája"
 
-#: title/pc5_ui.c:3430
+#: title/pc5_ui.c:3472
 msgid "PC5's app"
 msgstr "A PC5 alkalmazás"
 
-#: title/pc5_ui.c:3435
+#: title/pc5_ui.c:3477
 msgid "Whole console"
 msgstr "Teljes konzol"
 
-#: title/pc5_ui.c:3513 title/pc5_ui.c:3520 title/pc5_ui.c:5747
-#: title/pc5_ui.c:5751 title/pc5_ui_enhancements_input.h:19
+#: title/pc5_ui.c:3555 title/pc5_ui.c:3562 title/pc5_ui.c:5792
+#: title/pc5_ui.c:5796 title/pc5_ui_enhancements_input.h:19
 msgid "Music wasn't saved"
 msgstr "A zene nem lett mentve"
 
-#: title/pc5_ui.c:3513
+#: title/pc5_ui.c:3555
 msgid "PC5 couldn't create the game's music folder. Check free space."
 msgstr ""
 "A PC5 nem tudta létrehozni a játék zenemappáját. Ellenőrizd a szabad "
 "helyet."
 
-#: title/pc5_ui.c:3520
+#: title/pc5_ui.c:3562
 msgid "PC5 couldn't start importing the music. Try again."
 msgstr "A PC5 nem tudta elindítani a zene importálását. Próbáld újra."
 
-#: title/pc5_ui.c:3557 title/pc5_ui.c:3564 title/pc5_ui.c:5774
-#: title/pc5_ui.c:5778 title/pc5_ui_enhancements_input.h:19
+#: title/pc5_ui.c:3599 title/pc5_ui.c:3606 title/pc5_ui.c:5819
+#: title/pc5_ui.c:5823 title/pc5_ui_enhancements_input.h:19
 msgid "Video wasn't saved"
 msgstr "A videó nem lett mentve"
 
-#: title/pc5_ui.c:3557
+#: title/pc5_ui.c:3599
 msgid "PC5 couldn't create the game's video folder. Check free space."
 msgstr ""
 "A PC5 nem tudta létrehozni a játék videómappáját. Ellenőrizd a szabad "
 "helyet."
 
-#: title/pc5_ui.c:3564
+#: title/pc5_ui.c:3606
 msgid "This build couldn't start the video importer."
 msgstr "Ez a verzió nem tudta elindítani a videó importálását."
 
-#: title/pc5_ui.c:3672
+#: title/pc5_ui.c:3714
 msgid "Plug in the game's USB drive"
 msgstr "Csatlakoztasd a játék USB-meghajtóját"
 
-#: title/pc5_ui.c:3672
+#: title/pc5_ui.c:3714
 msgid "Its files are on the USB drive it plays from."
 msgstr "A fájljai azon az USB-meghajtón vannak, amelyről fut."
 
-#: title/pc5_ui.c:3674
+#: title/pc5_ui.c:3716
 msgid "PC5 can't find the game's folder"
 msgstr "A PC5 nem találja a játék mappáját"
 
-#: title/pc5_ui.c:3674 title/pc5_ui.c:5566
+#: title/pc5_ui.c:3716 title/pc5_ui.c:5611
 msgid "Its files may be missing: uninstall it and install it again."
 msgstr "Lehet, hogy hiányoznak a fájljai: távolítsd el, és telepítsd újra."
 
-#: title/pc5_ui.c:3719 title/pc5_ui.c:3740 title/pc5_ui.c:3824
+#: title/pc5_ui.c:3761 title/pc5_ui.c:3782 title/pc5_ui.c:3866
 msgid "Picture wasn't saved"
 msgstr "A kép nem lett mentve"
 
-#: title/pc5_ui.c:3719 title/pc5_ui.c:3824
+#: title/pc5_ui.c:3761 title/pc5_ui.c:3866
 msgid ""
 "Choose a readable JPEG or PNG image, at most 20 MB. Your previous picture "
 "was kept."
@@ -2175,35 +2207,35 @@ msgstr ""
 "Válassz egy olvasható, legfeljebb 20 MB-os JPEG vagy PNG képet. Az előző "
 "képed megmaradt."
 
-#: title/pc5_ui.c:3725 title/pc5_ui.c:3741
+#: title/pc5_ui.c:3767 title/pc5_ui.c:3783
 msgid "Loading screen saved"
 msgstr "Betöltőképernyő mentve"
 
-#: title/pc5_ui.c:3725
+#: title/pc5_ui.c:3767
 msgid "It shows the next time the game starts."
 msgstr "A játék következő indításakor jelenik meg."
 
-#: title/pc5_ui.c:3740
+#: title/pc5_ui.c:3782
 msgid "It has no background picture yet: choose one in Background first."
 msgstr "Még nincs háttérképe: előbb válassz egyet a Háttérben."
 
-#: title/pc5_ui.c:3741
+#: title/pc5_ui.c:3783
 msgid "Its background shows the next time the game starts."
 msgstr "A háttere a játék következő indításakor jelenik meg."
 
-#: title/pc5_ui.c:3751
+#: title/pc5_ui.c:3793
 msgid "It shows PC5's own loading screen again."
 msgstr "Újra a PC5 saját betöltőképernyőjét mutatja."
 
-#: title/pc5_ui.c:3781
+#: title/pc5_ui.c:3823
 msgid "Phone uploads need a game with its own PC5 folder."
 msgstr "A telefonos feltöltéshez saját PC5-mappával rendelkező játék kell."
 
-#: title/pc5_ui.c:3791 title/pc5_ui.c:3800
+#: title/pc5_ui.c:3833 title/pc5_ui.c:3842
 msgid "Phone connection unavailable"
 msgstr "A telefonos kapcsolat nem érhető el"
 
-#: title/pc5_ui.c:3800
+#: title/pc5_ui.c:3842
 msgid ""
 "Check the network, then try again. The phone and PS5 must share a network "
 "or phone hotspot."
@@ -2211,74 +2243,74 @@ msgstr ""
 "Ellenőrizd a hálózatot, majd próbáld újra. A telefonnak és a PS5-nek "
 "ugyanazon a hálózaton vagy telefonos hotspoton kell lennie."
 
-#: title/pc5_ui.c:3961 title/pc5_ui.c:8216
+#: title/pc5_ui.c:4003 title/pc5_ui.c:8261
 msgid "Choose an appearance backup"
 msgstr "Válassz egy biztonsági mentést a megjelenésről"
 
-#: title/pc5_ui.c:3961
+#: title/pc5_ui.c:4003
 msgid "Choose a .pc5look backup made by PC5."
 msgstr "Válassz egy PC5 által készített .pc5look biztonsági mentést."
 
-#: title/pc5_ui.c:3970
+#: title/pc5_ui.c:4012
 msgid "Choose a picture"
 msgstr "Kép választása"
 
-#: title/pc5_ui.c:3970
+#: title/pc5_ui.c:4012
 msgid "Choose a JPEG or PNG picture."
 msgstr "Válassz JPEG vagy PNG képet."
 
-#: title/pc5_ui.c:3979 title/pc5_ui.c:8218
+#: title/pc5_ui.c:4021 title/pc5_ui.c:8263
 msgid "Choose a music file"
 msgstr "Válassz egy zenefájlt"
 
-#: title/pc5_ui.c:3979 title/pc5_ui.c:8219
+#: title/pc5_ui.c:4021 title/pc5_ui.c:8264
 msgid "Choose an MP3 or a 16-bit PCM WAV file."
 msgstr "Válassz egy MP3 vagy 16 bites PCM WAV fájlt."
 
-#: title/pc5_ui.c:3989 title/pc5_ui.c:8228
+#: title/pc5_ui.c:4031 title/pc5_ui.c:8273
 msgid "PC5 can't open this folder"
 msgstr "A PC5 nem tudja megnyitni ezt a mappát"
 
-#: title/pc5_ui.c:3989
+#: title/pc5_ui.c:4031
 msgid "Its path is too long."
 msgstr "Az elérési útja túl hosszú."
 
-#: title/pc5_ui.c:4045
+#: title/pc5_ui.c:4087
 msgid "Nothing was deleted"
 msgstr "Semmi sem törlődött"
 
-#: title/pc5_ui.c:4045
+#: title/pc5_ui.c:4087
 msgid "Nothing was moved"
 msgstr "Semmi sem lett áthelyezve"
 
-#: title/pc5_ui.c:4045
+#: title/pc5_ui.c:4087
 msgid "Nothing was copied"
 msgstr "Semmi sem lett másolva"
 
-#: title/pc5_ui.c:4091
+#: title/pc5_ui.c:4133
 msgid "Nothing was pasted"
 msgstr "Semmi sem lett beillesztve"
 
-#: title/pc5_ui.c:4091
+#: title/pc5_ui.c:4133
 msgid "Those items are here already, and were left as they were."
 msgstr "Ezek az elemek már itt vannak, és változatlanok maradtak."
 
-#: title/pc5_ui.c:4094
+#: title/pc5_ui.c:4136
 msgid "Stopped"
 msgstr "Leállítva"
 
-#: title/pc5_ui.c:4095
+#: title/pc5_ui.c:4137
 msgid "What was deleted so far is gone; the rest is still here."
 msgstr "Ami eddig törlődött, az eltűnt; a többi még itt van."
 
-#: title/pc5_ui.c:4096
+#: title/pc5_ui.c:4138
 msgid ""
 "What was moved so far is here. Nothing was deleted from where it came from."
 msgstr ""
 "Ami eddig át lett helyezve, az itt van. Az eredeti helyéről semmi sem "
 "törlődött."
 
-#: title/pc5_ui.c:4097
+#: title/pc5_ui.c:4139
 msgid ""
 "What was copied so far is here; the file being copied when it stopped was "
 "deleted."
@@ -2286,83 +2318,83 @@ msgstr ""
 "Ami eddig át lett másolva, az itt van; a leállításkor éppen másolt fájl "
 "törlődött."
 
-#: title/pc5_ui.c:4100
+#: title/pc5_ui.c:4142
 msgid "Not everything was deleted"
 msgstr "Nem minden törlődött"
 
-#: title/pc5_ui.c:4100
+#: title/pc5_ui.c:4142
 msgid "Not everything was moved"
 msgstr "Nem minden lett áthelyezve"
 
-#: title/pc5_ui.c:4100
+#: title/pc5_ui.c:4142
 msgid "Not everything was copied"
 msgstr "Nem minden lett másolva"
 
-#: title/pc5_ui.c:4112 title/pc5_ui.c:4116
+#: title/pc5_ui.c:4154 title/pc5_ui.c:4158
 msgid "That name can't be used"
 msgstr "Ez a név nem használható"
 
-#: title/pc5_ui.c:4116
+#: title/pc5_ui.c:4158
 msgid "The path would be too long."
 msgstr "Az elérési út túl hosszú lenne."
 
-#: title/pc5_ui.c:4125 title/pc5_ui.c:4138
+#: title/pc5_ui.c:4167 title/pc5_ui.c:4180
 #, c-format
 msgid "This folder has %.200s already."
 msgstr "Ebben a mappában már van ilyen: %.200s."
 
-#: title/pc5_ui.c:4126 title/pc5_ui.c:4139
+#: title/pc5_ui.c:4168 title/pc5_ui.c:4181
 msgid "That name is taken"
 msgstr "Ez a név foglalt"
 
-#: title/pc5_ui.c:4130 title/pc5_ui.c:4143
+#: title/pc5_ui.c:4172 title/pc5_ui.c:4185
 #, c-format
 msgid "%s."
 msgstr "%s."
 
-#: title/pc5_ui.c:4132
+#: title/pc5_ui.c:4174
 msgid "PC5 can't rename it"
 msgstr "A PC5 nem tudja átnevezni"
 
-#: title/pc5_ui.c:4145
+#: title/pc5_ui.c:4187
 msgid "PC5 can't make the folder"
 msgstr "A PC5 nem tudja létrehozni a mappát"
 
 #. The title of the console's on-screen keyboard.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:4179 title/pc5_ui.c:8251
+#: title/pc5_ui.c:4221 title/pc5_ui.c:8296
 msgid "Rename"
 msgstr "Átnevezés"
 
 #. The title of the console's on-screen keyboard.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:4179 title/pc5_ui.c:4181 title/pc5_ui.c:8252
+#: title/pc5_ui.c:4221 title/pc5_ui.c:4223 title/pc5_ui.c:8297
 msgid "New folder"
 msgstr "Új mappa"
 
-#: title/pc5_ui.c:4184 title/pc5_ui.c:4285 title/pc5_ui.c:4865
-#: title/pc5_ui.c:5437 title/pc5_ui_enhancements_input.h:56
+#: title/pc5_ui.c:4226 title/pc5_ui.c:4327 title/pc5_ui.c:4910
+#: title/pc5_ui.c:5482 title/pc5_ui_enhancements_input.h:56
 msgid "The keyboard didn't open"
 msgstr "A billentyűzet nem nyílt meg"
 
-#: title/pc5_ui.c:4184 title/pc5_ui.c:4285 title/pc5_ui.c:4865
-#: title/pc5_ui.c:5437 title/pc5_ui_enhancements_input.h:56
+#: title/pc5_ui.c:4226 title/pc5_ui.c:4327 title/pc5_ui.c:4910
+#: title/pc5_ui.c:5482 title/pc5_ui_enhancements_input.h:56
 msgid "The console's on-screen keyboard can't be used just now."
 msgstr "A konzol képernyő-billentyűzete most nem használható."
 
-#: title/pc5_ui.c:4224
+#: title/pc5_ui.c:4266
 msgid "PC5 can't open it as text"
 msgstr "A PC5 nem tudja szövegként megnyitni"
 
-#: title/pc5_ui.c:4254
+#: title/pc5_ui.c:4296
 msgid "PC5 couldn't save it"
 msgstr "A PC5 nem tudta menteni"
 
-#: title/pc5_ui.c:4271
+#: title/pc5_ui.c:4313
 msgid "This line is too long to change here"
 msgstr "Ez a sor túl hosszú ahhoz, hogy itt módosítsd"
 
-#: title/pc5_ui.c:4272
+#: title/pc5_ui.c:4314
 msgid ""
 "The console's keyboard holds about 1000 characters. Change it from PC5's "
 "web page, or a computer over FTP."
@@ -2370,31 +2402,31 @@ msgstr ""
 "A konzol billentyűzete kb. 1000 karaktert fogad. Módosítsd a PC5 "
 "weboldaláról vagy számítógépről FTP-n."
 
-#: title/pc5_ui.c:4277 title/pc5_ui.c:8358
+#: title/pc5_ui.c:4319 title/pc5_ui.c:8403
 #, c-format
 msgid "Line %d"
 msgstr "%d. sor"
 
-#: title/pc5_ui.c:4279
+#: title/pc5_ui.c:4321
 msgid "New line"
 msgstr "Új sor"
 
-#: title/pc5_ui.c:4393
+#: title/pc5_ui.c:4435
 msgid "Choose a writable folder"
 msgstr "Válassz egy írható mappát"
 
-#: title/pc5_ui.c:4393
+#: title/pc5_ui.c:4435
 msgid ""
 "Open a folder on internal storage or a USB drive, then choose Save here."
 msgstr ""
 "Nyiss meg egy mappát a belső tárhelyen vagy egy USB-meghajtón, majd "
 "válaszd a Mentés ide lehetőséget."
 
-#: title/pc5_ui.c:4403
+#: title/pc5_ui.c:4445
 msgid "Backup wasn't saved"
 msgstr "A biztonsági mentés nem készült el"
 
-#: title/pc5_ui.c:4403
+#: title/pc5_ui.c:4445
 msgid ""
 "Choose another folder. The backup name is unavailable or its path is too "
 "long."
@@ -2402,112 +2434,112 @@ msgstr ""
 "Válassz másik mappát. A biztonsági mentés neve nem érhető el, vagy az "
 "elérési útja túl hosszú."
 
-#: title/pc5_ui.c:4533
+#: title/pc5_ui.c:4578
 #, c-format
 msgid "%s didn't start"
 msgstr "%s nem indult el"
 
-#: title/pc5_ui.c:4535
+#: title/pc5_ui.c:4580
 msgid "The console refused to start it. Try again, or restart PC5."
 msgstr ""
 "A konzol nem engedte elindítani. Próbáld újra, vagy indítsd újra a PC5-öt."
 
-#: title/pc5_ui.c:4650
+#: title/pc5_ui.c:4695
 msgid "This tile's game can't start"
 msgstr "Ennek a csempének a játéka nem indítható"
 
-#: title/pc5_ui.c:4696
+#: title/pc5_ui.c:4741
 msgid "PC5 couldn't restart"
 msgstr "A PC5 nem tudott újraindulni"
 
-#: title/pc5_ui.c:4697
+#: title/pc5_ui.c:4742
 msgid ""
 "The new version is installed. Close PC5 from the PS button and open it "
 "again."
 msgstr ""
 "Az új verzió települt. Zárd be a PC5-öt a PS gombbal, és nyisd meg újra."
 
-#: title/pc5_ui.c:4707
+#: title/pc5_ui.c:4752
 msgid "The update was stopped"
 msgstr "A frissítés leállt"
 
-#: title/pc5_ui.c:4707
+#: title/pc5_ui.c:4752
 msgid "PC5 is as it was, and what was downloaded is deleted."
 msgstr "A PC5 változatlan, a letöltött adatok törlődtek."
 
-#: title/pc5_ui.c:4710
+#: title/pc5_ui.c:4755
 msgid "PC5's update isn't finished"
 msgstr "A PC5 frissítése nem fejeződött be"
 
-#: title/pc5_ui.c:4710
+#: title/pc5_ui.c:4755
 msgid "PC5 wasn't updated"
 msgstr "A PC5 nem frissült"
 
-#: title/pc5_ui.c:4796 title/pc5_ui.c:5870 title/pc5_ui.c:5887
-#: title/pc5_ui.c:5957
+#: title/pc5_ui.c:4841 title/pc5_ui.c:5915 title/pc5_ui.c:5932
+#: title/pc5_ui.c:6002
 #, c-format
 msgid "%s can't start"
 msgstr "%s nem indítható"
 
-#: title/pc5_ui.c:4797
+#: title/pc5_ui.c:4842
 #, c-format
 msgid ""
 "%s You can uninstall it from its menu (Triangle) and install it again."
 msgstr "%s Eltávolíthatod a menüjéből (Háromszög), majd telepítheted újra."
 
-#: title/pc5_ui.c:4798 title/pc5_ui.c:5354
+#: title/pc5_ui.c:4843 title/pc5_ui.c:5399
 msgid "Something it needs is missing."
 msgstr "Hiányzik valami, amire szüksége van."
 
 #. The title of the console's on-screen keyboard.
-#: title/pc5_ui.c:4860
+#: title/pc5_ui.c:4905
 msgid "Username (empty: any)"
 msgstr "Felhasználónév (üres: bármi)"
 
 #. The title of the console's on-screen keyboard.
-#: title/pc5_ui.c:4860
+#: title/pc5_ui.c:4905
 msgid "Password (empty: none)"
 msgstr "Jelszó (üres: nincs)"
 
-#: title/pc5_ui.c:4969
+#: title/pc5_ui.c:5014
 msgid "Appearance wasn't changed"
 msgstr "A megjelenés nem változott"
 
-#: title/pc5_ui.c:4969
+#: title/pc5_ui.c:5014
 msgid "Appearance backup complete"
 msgstr "A megjelenés biztonsági mentése kész"
 
-#: title/pc5_ui.c:4970
+#: title/pc5_ui.c:5015
 msgid "The saved appearance was restored. Game files and saves were kept."
 msgstr ""
 "A mentett megjelenés vissza lett állítva. A játékfájlok és a mentések "
 "megmaradtak."
 
-#: title/pc5_ui.c:5034 title/pc5_ui.c:5165
+#: title/pc5_ui.c:5079 title/pc5_ui.c:5210
 msgid "Out of memory"
 msgstr "Elfogyott a memória"
 
-#: title/pc5_ui.c:5034 title/pc5_ui.c:5165
+#: title/pc5_ui.c:5079 title/pc5_ui.c:5210
 msgid "PC5 couldn't make room to read the folders."
 msgstr "A PC5 nem tudott helyet csinálni a mappák olvasásához."
 
-#: title/pc5_ui.c:5046
+#: title/pc5_ui.c:5091
 msgid "PC5 can't read that folder"
 msgstr "A PC5 nem tudja olvasni azt a mappát"
 
-#: title/pc5_ui.c:5046
+#: title/pc5_ui.c:5091
 msgid "Check that the USB drive is still plugged in."
 msgstr "Ellenőrizd, hogy az USB-meghajtó még csatlakoztatva van-e."
 
-#: title/pc5_ui.c:5097
+#: title/pc5_ui.c:5142
 msgid "Nothing to install"
 msgstr "Nincs mit telepíteni"
 
-#: title/pc5_ui.c:5097
+#: title/pc5_ui.c:5142
 msgid "None of these folders has a game PC5 can install."
 msgstr "Egyik mappában sincs olyan játék, amelyet a PC5 telepíteni tud."
 
-#: title/pc5_ui.c:5102
+#: title/pc5_ui.c:5147
 #, c-format
 msgid ""
 "Together they need %s and the console has %s free. Go back and untick some."
@@ -2515,71 +2547,71 @@ msgstr ""
 "Együtt %s kell nekik, a konzolon %s szabad. Menj vissza, és vedd ki a "
 "pipát néhányból."
 
-#: title/pc5_ui.c:5104
+#: title/pc5_ui.c:5149
 msgid "Not enough space for all of them"
 msgstr "Nincs elég hely mindegyiknek"
 
-#: title/pc5_ui.c:5138
+#: title/pc5_ui.c:5183
 msgid "This folder can't be installed"
 msgstr "Ez a mappa nem telepíthető"
 
-#: title/pc5_ui.c:5193
+#: title/pc5_ui.c:5238
 #, c-format
 msgid "The update needs %s and the console has %s free."
 msgstr "A frissítésnek %s kell, a konzolon %s szabad."
 
-#: title/pc5_ui.c:5226
+#: title/pc5_ui.c:5271
 #, c-format
 msgid "%s's program wasn't changed"
 msgstr "A program nem változott: %s"
 
-#: title/pc5_ui.c:5230
+#: title/pc5_ui.c:5275
 #, c-format
 msgid "%s starts %s now"
 msgstr "%s mostantól ezt indítja: %s"
 
-#: title/pc5_ui.c:5231
+#: title/pc5_ui.c:5276
 #, c-format
 msgid "It runs as %d-bit %s."
 msgstr "%d bites programként fut (%s)."
 
-#: title/pc5_ui.c:5250 title/pc5_ui.c:5354
+#: title/pc5_ui.c:5295 title/pc5_ui.c:5399
 msgid "This game can't start"
 msgstr "Ez a játék nem indítható"
 
-#: title/pc5_ui.c:5378
+#: title/pc5_ui.c:5423
 msgid "Media settings need a game with its own PC5 folder."
 msgstr "A médiabeállításokhoz saját PC5-mappával rendelkező játék kell."
 
-#: title/pc5_ui.c:5388
+#: title/pc5_ui.c:5433
 msgid "PC5 didn't install it, so its program can't be changed here."
 msgstr "Nem a PC5 telepítette, ezért a programja itt nem módosítható."
 
-#: title/pc5_ui.c:5431
+#: title/pc5_ui.c:5476
 msgid "Search for covers by name"
 msgstr "Borítók keresése név szerint"
 
-#: title/pc5_ui.c:5432
+#: title/pc5_ui.c:5477
 msgid "Search for tile pictures by name"
 msgstr "Csempeképek keresése név szerint"
 
-#: title/pc5_ui.c:5433
+#: title/pc5_ui.c:5478
 msgid "Search for backgrounds by name"
 msgstr "Hátterek keresése név szerint"
 
-#: title/pc5_ui.c:5491
+#: title/pc5_ui.c:5536
 msgid "Your mapping wasn't saved"
 msgstr "A kiosztásod nem lett mentve"
 
-#: title/pc5_ui.c:5491
+#: title/pc5_ui.c:5536
 msgid "PC5 couldn't write it to the console's storage."
 msgstr "A PC5 nem tudta kiírni a konzol tárhelyére."
 
-#: title/pc5_ui.c:5494
+#: title/pc5_ui.c:5539
 msgid "Saved as your mapping"
 msgstr "Mentve saját kiosztásként"
 
-#: title/pc5_ui.c:5495
+#: title/pc5_ui.c:5540
 msgid ""
 "Games set up from now on start with it, and Use my mapping puts it on any "
 "game."
@@ -2587,31 +2619,31 @@ msgstr ""
 "A mostantól beállított játékok ezzel indulnak, a Saját kiosztás használata "
 "pedig bármelyik játékra ráteszi."
 
-#: title/pc5_ui.c:5566
+#: title/pc5_ui.c:5611
 msgid "PC5 can't read the game's folder"
 msgstr "A PC5 nem tudja olvasni a játék mappáját"
 
-#: title/pc5_ui.c:5571
+#: title/pc5_ui.c:5616
 msgid "This game has one program"
 msgstr "Ennek a játéknak egy programja van"
 
-#: title/pc5_ui.c:5571
+#: title/pc5_ui.c:5616
 msgid "There is no other program in its folder to start."
 msgstr "A mappájában nincs más elindítható program."
 
-#: title/pc5_ui.c:5665
+#: title/pc5_ui.c:5710
 #, c-format
 msgid "%s wasn't uninstalled"
 msgstr "%s nem lett eltávolítva"
 
-#: title/pc5_ui.c:5666
+#: title/pc5_ui.c:5711
 #, c-format
 msgid "%s Nothing was changed."
 msgstr "%s Semmi sem változott."
 
 #. added after the sentence before it, hence the space at its start.
 #. Keep the space at the start or end: the text is joined to another.
-#: title/pc5_ui.c:5689
+#: title/pc5_ui.c:5734
 msgid ""
 " Its home screen tile's folder was deleted: if the tile is still on the "
 "home screen, delete it there."
@@ -2619,41 +2651,41 @@ msgstr ""
 " A kezdőképernyő-csempéjének mappája törölve: ha a csempe még a "
 "kezdőképernyőn van, ott töröld."
 
-#: title/pc5_ui.c:5692
+#: title/pc5_ui.c:5737
 #, c-format
 msgid "The saves of %s weren't fully deleted"
 msgstr "Nem törlődött minden mentés: %s"
 
-#: title/pc5_ui.c:5692
+#: title/pc5_ui.c:5737
 #, c-format
 msgid "The saves of %s are deleted"
 msgstr "A mentések törölve: %s"
 
-#: title/pc5_ui.c:5694
+#: title/pc5_ui.c:5739
 #, c-format
 msgid "%s PC5 finishes deleting them the next time it starts."
 msgstr "%s A PC5 a következő indításkor befejezi a törlésüket."
 
-#: title/pc5_ui.c:5695
+#: title/pc5_ui.c:5740
 msgid "Its saves and settings, kept when it was uninstalled, are gone."
 msgstr "Az eltávolításkor megtartott mentései és beállításai törlődtek."
 
-#: title/pc5_ui.c:5697
+#: title/pc5_ui.c:5742
 #, c-format
 msgid "%s wasn't fully uninstalled"
 msgstr "%s nem lett teljesen eltávolítva"
 
-#: title/pc5_ui.c:5697
+#: title/pc5_ui.c:5742
 #, c-format
 msgid "%s is uninstalled"
 msgstr "%s eltávolítva"
 
-#: title/pc5_ui.c:5698
+#: title/pc5_ui.c:5743
 #, c-format
 msgid "%s PC5 finishes it the next time it starts."
 msgstr "%s A PC5 a következő indításkor befejezi."
 
-#: title/pc5_ui.c:5700
+#: title/pc5_ui.c:5745
 #, c-format
 msgid ""
 "Its saves and settings are kept: installing it again puts them back. "
@@ -2662,12 +2694,12 @@ msgstr ""
 "A mentései és beállításai megmaradtak: az újratelepítés visszahozza őket. "
 "A Beállítások › Játékok karbantartása › Játék eltávolítása törli őket.%s"
 
-#: title/pc5_ui.c:5702
+#: title/pc5_ui.c:5747
 #, c-format
 msgid "The game, its saves and its settings were deleted.%s"
 msgstr "A játék, a mentései és a beállításai törlődtek.%s"
 
-#: title/pc5_ui.c:5743
+#: title/pc5_ui.c:5788
 msgid ""
 "Choose a readable MP3 or 16-bit PCM WAV file. Protected or damaged files "
 "may not work."
@@ -2675,13 +2707,13 @@ msgstr ""
 "Válassz egy olvasható MP3 vagy 16 bites PCM WAV fájlt. A védett vagy "
 "sérült fájlok nem biztos, hogy működnek."
 
-#: title/pc5_ui.c:5745
+#: title/pc5_ui.c:5790
 msgid "The prepared music exceeds the 2 GB limit. Choose a shorter track."
 msgstr ""
 "Az előkészített zene meghaladja a 2 GB-os korlátot. Válassz rövidebb "
 "számot."
 
-#: title/pc5_ui.c:5746
+#: title/pc5_ui.c:5791
 msgid ""
 "Check free space and keep the source drive connected until importing "
 "finishes. Your previous music was kept."
@@ -2689,11 +2721,11 @@ msgstr ""
 "Ellenőrizd a szabad helyet, és hagyd csatlakoztatva a forrásmeghajtót, "
 "amíg az importálás be nem fejeződik. Az előző zenéd megmaradt."
 
-#: title/pc5_ui.c:5751 title/pc5_ui_enhancements_input.h:21
+#: title/pc5_ui.c:5796 title/pc5_ui_enhancements_input.h:21
 msgid "PC5 couldn't save the music selection. Try again."
 msgstr "A PC5 nem tudta menteni a zeneválasztást. Próbáld újra."
 
-#: title/pc5_ui.c:5771
+#: title/pc5_ui.c:5816
 msgid ""
 "Choose an H.264 video up to 1920x1080, 60 fps and 1 GB. MP4 is "
 "recommended. Audio is ignored."
@@ -2701,7 +2733,7 @@ msgstr ""
 "Válassz egy legfeljebb 1920x1080-as, 60 fps-es és 1 GB-os H.264 videót. Az "
 "MP4 ajánlott. A hang figyelmen kívül marad."
 
-#: title/pc5_ui.c:5772
+#: title/pc5_ui.c:5817
 msgid ""
 "Check free space and keep the source drive connected until importing "
 "finishes. Your previous video was kept."
@@ -2709,16 +2741,16 @@ msgstr ""
 "Ellenőrizd a szabad helyet, és hagyd csatlakoztatva a forrásmeghajtót, "
 "amíg az importálás be nem fejeződik. Az előző videód megmaradt."
 
-#: title/pc5_ui.c:5778
+#: title/pc5_ui.c:5823
 msgid "PC5 couldn't save the video selection. Try again."
 msgstr "A PC5 nem tudta menteni a videóválasztást. Próbáld újra."
 
-#: title/pc5_ui.c:5939
+#: title/pc5_ui.c:5984
 #, c-format
 msgid "%s needs Steam"
 msgstr "%s Steamet igényel"
 
-#: title/pc5_ui.c:5942
+#: title/pc5_ui.c:5987
 msgid ""
 "Its program is wrapped in Steam's DRM (SteamStub), which starts only with "
 "Steam running, and Steam doesn't run on the console. A copy of the game "
@@ -2728,58 +2760,58 @@ msgstr ""
 "Steammel indul, a Steam pedig nem fut a konzolon. A játék e nélküli "
 "példánya elindulhat."
 
-#: title/pc5_ui.c:6567 title/pc5_ui.c:6577
+#: title/pc5_ui.c:6612 title/pc5_ui.c:6622
 msgid "Play Game"
 msgstr "Játék indítása"
 
 #. a chip under the game's name: 64-bit or 32-bit. Keep it short.
-#: title/pc5_ui.c:6588
+#: title/pc5_ui.c:6633
 #, c-format
 msgid "%d-bit"
 msgstr "%d bites"
 
-#: title/pc5_ui.c:6592
+#: title/pc5_ui.c:6637
 msgid "Frame gen"
 msgstr "Képkocka-gen."
 
-#: title/pc5_ui.c:6593
+#: title/pc5_ui.c:6638
 #, c-format
 msgid "Controller: %s"
 msgstr "Kontroller: %s"
 
-#: title/pc5_ui.c:6682
+#: title/pc5_ui.c:6727
 msgid "No games yet."
 msgstr "Még nincsenek játékok."
 
-#: title/pc5_ui.c:6682
+#: title/pc5_ui.c:6727
 msgid "Nothing played yet: games show here once you play them."
 msgstr ""
 "Még nem játszottál semmivel: a játékok itt jelennek meg, amint játszol "
 "velük."
 
-#: title/pc5_ui.c:6683
+#: title/pc5_ui.c:6728
 msgid "No favourites yet: press Square on a game to add it."
 msgstr ""
 "Még nincsenek kedvencek: egy játékot a Négyzet gombbal adhatsz hozzá."
 
-#: title/pc5_ui.c:6684
+#: title/pc5_ui.c:6729
 msgid "No game is played from a USB drive."
 msgstr "Egyik játék sem fut USB-meghajtóról."
 
-#: title/pc5_ui.c:6684
+#: title/pc5_ui.c:6729
 msgid "Every game can start."
 msgstr "Minden játék elindítható."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6708 title/pc5_ui.c:6753 title/pc5_ui.c:6829
-#: title/pc5_ui.c:7203 title/pc5_ui.c:7234 title/pc5_ui.c:7335
-#: title/pc5_ui.c:7364 title/pc5_ui.c:7418 title/pc5_ui.c:7465
-#: title/pc5_ui.c:7692 title/pc5_ui.c:7701 title/pc5_ui.c:7718
-#: title/pc5_ui.c:7940 title/pc5_ui.c:8149 title/pc5_ui.c:8208
-#: title/pc5_ui.c:8210 title/pc5_ui.c:8211 title/pc5_ui.c:8227
-#: title/pc5_ui.c:8292 title/pc5_ui.c:8324 title/pc5_ui.c:8326
-#: title/pc5_ui.c:8369 title/pc5_ui.c:8575 title/pc5_ui.c:8674
-#: title/pc5_ui.c:8685 title/pc5_ui.c:8709 title/pc5_ui.c:8715
+#: title/pc5_ui.c:6753 title/pc5_ui.c:6798 title/pc5_ui.c:6874
+#: title/pc5_ui.c:7248 title/pc5_ui.c:7279 title/pc5_ui.c:7380
+#: title/pc5_ui.c:7409 title/pc5_ui.c:7463 title/pc5_ui.c:7510
+#: title/pc5_ui.c:7737 title/pc5_ui.c:7746 title/pc5_ui.c:7763
+#: title/pc5_ui.c:7985 title/pc5_ui.c:8194 title/pc5_ui.c:8253
+#: title/pc5_ui.c:8255 title/pc5_ui.c:8256 title/pc5_ui.c:8272
+#: title/pc5_ui.c:8337 title/pc5_ui.c:8369 title/pc5_ui.c:8371
+#: title/pc5_ui.c:8414 title/pc5_ui.c:8620 title/pc5_ui.c:8719
+#: title/pc5_ui.c:8730 title/pc5_ui.c:8754 title/pc5_ui.c:8760
 #: title/pc5_ui_enhancements_draw.h:120 title/pc5_ui_enhancements_draw.h:132
 #: title/pc5_ui_enhancements_draw.h:158
 msgid "Back"
@@ -2787,16 +2819,16 @@ msgstr "Vissza"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6708 title/pc5_ui.c:6732 title/pc5_ui.c:6738
-#: title/pc5_ui.c:6843 title/pc5_ui.c:8685
+#: title/pc5_ui.c:6753 title/pc5_ui.c:6777 title/pc5_ui.c:6783
+#: title/pc5_ui.c:6888 title/pc5_ui.c:8730
 msgid "Play"
 msgstr "Indítás"
 
-#: title/pc5_ui.c:6718
+#: title/pc5_ui.c:6763
 msgid "No games yet"
 msgstr "Még nincsenek játékok"
 
-#: title/pc5_ui.c:6720
+#: title/pc5_ui.c:6765
 msgid ""
 "Put a game's folder in PC5/INSTALL on a USB drive, then open Install › "
 "Install games from USB."
@@ -2804,7 +2836,7 @@ msgstr ""
 "Tedd egy játék mappáját egy USB-meghajtó PC5/INSTALL mappájába, majd nyisd "
 "meg: Telepítés › Játékok telepítése USB-ről."
 
-#: title/pc5_ui.c:6723
+#: title/pc5_ui.c:6768
 msgid ""
 "Or send it from a phone or PC: Settings › Network › Web page or FTP server."
 msgstr ""
@@ -2812,117 +2844,117 @@ msgstr ""
 "vagy FTP-szerver."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6724
+#: title/pc5_ui.c:6769
 msgid "Tabs"
 msgstr "Lapok"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6732 title/pc5_ui_enhancements_draw.h:56
+#: title/pc5_ui.c:6777 title/pc5_ui_enhancements_draw.h:56
 #: title/pc5_ui_enhancements_draw.h:101
 msgid "Filter"
 msgstr "Szűrő"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6732 title/pc5_ui.c:6738
+#: title/pc5_ui.c:6777 title/pc5_ui.c:6783
 msgid "Game options"
 msgstr "Játékbeállítások"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6732 title/pc5_ui.c:6738
+#: title/pc5_ui.c:6777 title/pc5_ui.c:6783
 msgid "Favourite"
 msgstr "Kedvenc"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6829 title/pc5_ui.c:7234 title/pc5_ui.c:7334
-#: title/pc5_ui.c:8325
+#: title/pc5_ui.c:6874 title/pc5_ui.c:7279 title/pc5_ui.c:7379
+#: title/pc5_ui.c:8370
 msgid "Change"
 msgstr "Módosítás"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6829 title/pc5_ui.c:7234 title/pc5_ui.c:7364
-#: title/pc5_ui.c:7418 title/pc5_ui.c:7701 title/pc5_ui.c:8211
-#: title/pc5_ui.c:8292 title/pc5_ui.c:8369 title/pc5_ui.c:8674
+#: title/pc5_ui.c:6874 title/pc5_ui.c:7279 title/pc5_ui.c:7409
+#: title/pc5_ui.c:7463 title/pc5_ui.c:7746 title/pc5_ui.c:8256
+#: title/pc5_ui.c:8337 title/pc5_ui.c:8414 title/pc5_ui.c:8719
 msgid "Choose"
 msgstr "Kiválasztás"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6829
+#: title/pc5_ui.c:6874
 msgid "QR code"
 msgstr "QR-kód"
 
-#: title/pc5_ui.c:6844
+#: title/pc5_ui.c:6889
 msgid "To leave it, hold the touchpad and OPTIONS for 2 s"
 msgstr ""
 "A kilépéshez tartsd lenyomva az érintőpadot és az OPTIONS gombot 2 mp-ig"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6848 title/pc5_ui_enhancements_draw.h:110
+#: title/pc5_ui.c:6893 title/pc5_ui_enhancements_draw.h:110
 msgid "Controller"
 msgstr "Kontroller"
 
-#: title/pc5_ui.c:6849
+#: title/pc5_ui.c:6894
 msgid "The game sees a DualSense, as one plugged into a PC"
 msgstr "A játék egy DualSense-t lát, mintha PC-hez lenne csatlakoztatva"
 
-#: title/pc5_ui.c:6849
+#: title/pc5_ui.c:6894
 msgid "The buttons press keys, the sticks move the mouse"
 msgstr "A gombok billentyűket nyomnak, a karok az egeret mozgatják"
 
-#: title/pc5_ui.c:6849
+#: title/pc5_ui.c:6894
 msgid "Games with controller support see an Xbox controller"
 msgstr "A kontrollert támogató játékok Xbox kontrollert látnak"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6853 title/pc5_ui.c:7255
+#: title/pc5_ui.c:6898 title/pc5_ui.c:7300
 msgid "Button mapping"
 msgstr "Gombkiosztás"
 
-#: title/pc5_ui.c:6854
+#: title/pc5_ui.c:6899
 msgid "The key or mouse button each one sends"
 msgstr "Az egyes gombok által küldött billentyű vagy egérgomb"
 
-#: title/pc5_ui.c:6859
+#: title/pc5_ui.c:6904
 msgid "Hides when not moved or clicked for 5 s"
 msgstr "Elrejtődik, ha 5 mp-ig nem mozdul és nincs kattintás"
 
-#: title/pc5_ui.c:6859
+#: title/pc5_ui.c:6904
 msgid "Stays as the game shows it"
 msgstr "Úgy marad, ahogy a játék mutatja"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6860
+#: title/pc5_ui.c:6905
 msgid "Auto-hide"
 msgstr "Autom. elrejtés"
 
-#: title/pc5_ui.c:6864
+#: title/pc5_ui.c:6909
 msgid "Frames, resolution, aspect ratio, memory and CPU"
 msgstr "Képkockák, felbontás, képarány, memória és CPU"
 
-#: title/pc5_ui.c:6864
+#: title/pc5_ui.c:6909
 msgid "Frame generation, resolution, aspect ratio and CPU"
 msgstr "Képkocka-generálás, felbontás, képarány és CPU"
 
-#: title/pc5_ui.c:6864
+#: title/pc5_ui.c:6909
 msgid "Frame generation, aspect ratio, memory and CPU"
 msgstr "Képkocka-generálás, képarány, memória és CPU"
 
-#: title/pc5_ui.c:6864
+#: title/pc5_ui.c:6909
 msgid "Frame generation, aspect ratio and CPU"
 msgstr "Képkocka-generálás, képarány és CPU"
 
-#: title/pc5_ui.c:6869
+#: title/pc5_ui.c:6914
 msgid "Its cover, its background and a home screen tile"
 msgstr "A borítója, a háttere és egy kezdőképernyő-csempe"
 
-#: title/pc5_ui.c:6874
+#: title/pc5_ui.c:6919
 msgid "Its program, updating it and uninstalling it"
 msgstr "A programja, a frissítése és az eltávolítása"
 
-#: title/pc5_ui.c:6874
+#: title/pc5_ui.c:6919
 msgid "Its program and uninstalling it"
 msgstr "A programja és az eltávolítása"
 
-#: title/pc5_ui.c:6881
+#: title/pc5_ui.c:6926
 msgid ""
 "The usual way for older games like this; change it only if the picture is "
 "wrong"
@@ -2930,7 +2962,7 @@ msgstr ""
 "A szokásos mód az ilyen régebbi játékokhoz; csak akkor módosítsd, ha hibás "
 "a kép"
 
-#: title/pc5_ui.c:6882
+#: title/pc5_ui.c:6927
 msgid ""
 "Best for most games; change it only if the picture is wrong or it won't "
 "start"
@@ -2938,35 +2970,35 @@ msgstr ""
 "A legtöbb játékhoz ez a legjobb; csak akkor módosítsd, ha hibás a kép, "
 "vagy nem indul el"
 
-#: title/pc5_ui.c:6883
+#: title/pc5_ui.c:6928
 msgid "A slower way to draw it; set it back to Auto if it doesn't help"
 msgstr "Lassabb rajzolási mód; ha nem segít, legyen újra Automatikus"
 
-#: title/pc5_ui.c:6884
+#: title/pc5_ui.c:6929
 msgid "Drawn in 2D only; set it back to Auto if it doesn't help"
 msgstr "Csak 2D-ben rajzolva; ha nem segít, legyen újra Automatikus"
 
-#: title/pc5_ui.c:6885
+#: title/pc5_ui.c:6930
 msgid "Another way to draw it; set it back to Auto if it doesn't help"
 msgstr "Másik rajzolási mód; ha nem segít, legyen újra Automatikus"
 
-#: title/pc5_ui.c:6886
+#: title/pc5_ui.c:6931
 msgid ""
 "The slowest way, but it starts the most games; Auto if it doesn't help"
 msgstr ""
 "A leglassabb mód, de a legtöbb játékot elindítja; Automatikus, ha nem segít"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6887 title/pc5_ui.c:7400
+#: title/pc5_ui.c:6932 title/pc5_ui.c:7445
 msgid "Graphics mode"
 msgstr "Grafikus mód"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6893
+#: title/pc5_ui.c:6938
 msgid "Frame generation"
 msgstr "Képkocka-generálás"
 
-#: title/pc5_ui.c:6897
+#: title/pc5_ui.c:6942
 msgid ""
 "Held at 40 fps, two frames made between each two: for a game that can't "
 "hold 60"
@@ -2975,35 +3007,35 @@ msgstr ""
 "nem bírja a 60-at"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6898
+#: title/pc5_ui.c:6943
 msgid "40 → 120 fps"
 msgstr "40 → 120 fps"
 
-#: title/pc5_ui.c:6900
+#: title/pc5_ui.c:6945
 msgid ""
 "Held at 60 fps, a frame made between each two: smoother on a 120 Hz TV"
 msgstr ""
 "60 fps-en tartva, minden két kép közé egy készül: simább 120 Hz-es tévén"
 
-#: title/pc5_ui.c:6901
+#: title/pc5_ui.c:6946
 msgid "Held at 30 fps and shown at 60: smoother where it runs below 60"
 msgstr "30 fps-en tartva, 60-on megjelenítve: simább ott, ahol 60 alatt fut"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6902
+#: title/pc5_ui.c:6947
 msgid "60 → 120 fps"
 msgstr "60 → 120 fps"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6902
+#: title/pc5_ui.c:6947
 msgid "30 → 60 fps"
 msgstr "30 → 60 fps"
 
-#: title/pc5_ui.c:6904
+#: title/pc5_ui.c:6949
 msgid "Off. Left and right: 60 → 120 or 40 → 120 fps"
 msgstr "Ki. Balra és jobbra: 60 → 120 vagy 40 → 120 fps"
 
-#: title/pc5_ui.c:6905
+#: title/pc5_ui.c:6950
 msgid ""
 "Off. Left and right: 30 → 60 fps (with 120 Hz output on, 60 → 120 or 40 → "
 "120)"
@@ -3012,109 +3044,109 @@ msgstr ""
 "vagy 40 → 120)"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6910
+#: title/pc5_ui.c:6955
 msgid "Resolution"
 msgstr "Felbontás"
 
-#: title/pc5_ui.c:6911
+#: title/pc5_ui.c:6956
 msgid "Drawn at 4K, as the console shows it; four times the work of 1080p"
 msgstr ""
 "4K-ban rajzolva, ahogy a konzol megjeleníti; négyszer annyi munka, mint az "
 "1080p"
 
-#: title/pc5_ui.c:6911
+#: title/pc5_ui.c:6956
 msgid "Drawn at 1440p and shown at 4K; sharper than 1080p, slower"
 msgstr ""
 "1440p-ben rajzolva, 4K-ban megjelenítve; élesebb az 1080p-nél, de lassabb"
 
-#: title/pc5_ui.c:6911
+#: title/pc5_ui.c:6956
 msgid "Drawn at 1080p and shown at 4K by the console"
 msgstr "1080p-ben rajzolva, a konzol 4K-ban jeleníti meg"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6912
+#: title/pc5_ui.c:6957
 msgid "4K"
 msgstr "4K"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6915
+#: title/pc5_ui.c:6960
 msgid "Aspect ratio"
 msgstr "Képarány"
 
-#: title/pc5_ui.c:6916
+#: title/pc5_ui.c:6961
 msgid "Stretched to fill the screen: a 4:3 picture gets wider"
 msgstr "Kitöltve a képernyőt: a 4:3-as kép szélesebb lesz"
 
-#: title/pc5_ui.c:6916
+#: title/pc5_ui.c:6961
 msgid "The picture's own shape, with bars beside a 4:3 one"
 msgstr "A kép saját formája, 4:3-as képnél sávokkal az oldalán"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6917 title/pc5_ui_enhancements_draw.h:145
+#: title/pc5_ui.c:6962 title/pc5_ui_enhancements_draw.h:145
 msgid "Stretch"
 msgstr "Nyújtás"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6917
+#: title/pc5_ui.c:6962
 msgid "Keep"
 msgstr "Megtartás"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6920
+#: title/pc5_ui.c:6965
 msgid "Game memory"
 msgstr "Játékmemória"
 
-#: title/pc5_ui.c:6921
+#: title/pc5_ui.c:6966
 msgid ""
 "4 GB even for a game not made for it: room for mods; Auto if it misbehaves"
 msgstr ""
 "4 GB akkor is, ha a játék nem erre készült: hely a modoknak; Automatikus, "
 "ha rosszul működik"
 
-#: title/pc5_ui.c:6922
+#: title/pc5_ui.c:6967
 msgid "2 GB, or 4 GB for a game made for it, as on Windows"
 msgstr "2 GB, vagy 4 GB az erre készült játéknak, mint Windowson"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6923 title/pc5_ui.c:6944
+#: title/pc5_ui.c:6968 title/pc5_ui.c:6989
 msgid "4 GB"
 msgstr "4 GB"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6930
+#: title/pc5_ui.c:6975
 msgid "Graphics memory"
 msgstr "Grafikus memória"
 
-#: title/pc5_ui.c:6932
+#: title/pc5_ui.c:6977
 msgid "All the console's; Auto if the game says there is too little"
 msgstr ""
 "A konzol összes memóriája; Automatikus, ha a játék szerint túl kevés van"
 
-#: title/pc5_ui.c:6933
+#: title/pc5_ui.c:6978
 msgid "All 8 GB: the game may take memory the rest of it needs"
 msgstr "Mind a 8 GB: a játék elveheti a memóriát, amely a többinek kell"
 
-#: title/pc5_ui.c:6935
+#: title/pc5_ui.c:6980
 msgid "2 GB at most, so older games don't get confused"
 msgstr "Legfeljebb 2 GB, hogy a régebbi játékok ne zavarodjanak össze"
 
-#: title/pc5_ui.c:6936
+#: title/pc5_ui.c:6981
 msgid ""
 "4 GB, so the game leaves room for the rest: the console's memory is shared"
 msgstr "4 GB, így a játék helyet hagy a többinek: a konzol memóriája közös"
 
-#: title/pc5_ui.c:6938
+#: title/pc5_ui.c:6983
 msgid ""
 "Less for textures, more for the game: for one that runs out of memory"
 msgstr "Kevesebb a textúráknak, több a játéknak: ha elfogy a memória"
 
-#: title/pc5_ui.c:6940
+#: title/pc5_ui.c:6985
 msgid "More for a game that says there is too little; Auto if it misbehaves"
 msgstr ""
 "Több annak a játéknak, amely túl keveset lát; Automatikus, ha rosszul "
 "működik"
 
-#: title/pc5_ui.c:6941
+#: title/pc5_ui.c:6986
 msgid ""
 "More for the game's textures, less for the rest; Auto if it runs out of "
 "memory"
@@ -3123,116 +3155,116 @@ msgstr ""
 "memória"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6942
+#: title/pc5_ui.c:6987
 msgid "Maximum"
 msgstr "Maximális"
 
-#: title/pc5_ui.c:6944
+#: title/pc5_ui.c:6989
 #, c-format
 msgid "%s (%s)"
 msgstr "%s (%s)"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6944 title/pc5_ui.c:6947
+#: title/pc5_ui.c:6989 title/pc5_ui.c:6992
 msgid "2 GB"
 msgstr "2 GB"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6947
+#: title/pc5_ui.c:6992
 msgid "512 MB"
 msgstr "512 MB"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6947
+#: title/pc5_ui.c:6992
 msgid "1 GB"
 msgstr "1 GB"
 
-#: title/pc5_ui.c:6948
+#: title/pc5_ui.c:6993
 msgid "3 GB"
 msgstr "3 GB"
 
-#: title/pc5_ui.c:6948
+#: title/pc5_ui.c:6993
 msgid "5 GB"
 msgstr "5 GB"
 
-#: title/pc5_ui.c:6948
+#: title/pc5_ui.c:6993
 msgid "6 GB"
 msgstr "6 GB"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6952
+#: title/pc5_ui.c:6997
 msgid "Sound output"
 msgstr "Hangkimenet"
 
-#: title/pc5_ui.c:6953
+#: title/pc5_ui.c:6998
 msgid ""
 "Each sound on its own speaker of a surround system; Stereo if it is silent"
 msgstr ""
 "Minden hang a saját hangszórójából egy térhangrendszeren; Sztereó, ha néma"
 
-#: title/pc5_ui.c:6954
+#: title/pc5_ui.c:6999
 msgid ""
 "Two speakers, for a TV or headphones; 5.1 or 7.1 for a surround system"
 msgstr ""
 "Két hangszóró, tévéhez vagy fejhallgatóhoz; 5.1 vagy 7.1 térhangzáshoz"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6955
+#: title/pc5_ui.c:7000
 msgid "Stereo"
 msgstr "Sztereó"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6958
+#: title/pc5_ui.c:7003
 msgid "Stutter fix"
 msgstr "Akadásjavítás"
 
-#: title/pc5_ui.c:6959
+#: title/pc5_ui.c:7004
 msgid "The game's work takes turns, as on a PC: steadier for some games"
 msgstr ""
 "A játék munkája felváltva fut, mint PC-n: egyes játékoknál egyenletesebb"
 
-#: title/pc5_ui.c:6959
+#: title/pc5_ui.c:7004
 msgid "Fastest for most games; turn on if it freezes or stutters"
 msgstr ""
 "A legtöbb játéknál a leggyorsabb; kapcsold be, ha lefagy vagy akadozik"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6963 title/pc5_ui.c:7970
+#: title/pc5_ui.c:7008 title/pc5_ui.c:8015
 msgid "Cover"
 msgstr "Borító"
 
-#: title/pc5_ui.c:6964
+#: title/pc5_ui.c:7009
 msgid "Another of those found, or search by another name"
 msgstr "Egy másik a találatok közül, vagy keresés más néven"
 
-#: title/pc5_ui.c:6969
+#: title/pc5_ui.c:7014
 msgid "Choose a background image or a silent video"
 msgstr "Válassz háttérképet vagy hang nélküli videót"
 
-#: title/pc5_ui.c:6970
+#: title/pc5_ui.c:7015
 msgid "Another of those found, search by another name, or none"
 msgstr "Egy másik a találatok közül, keresés más néven, vagy semmi"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6974 title/pc5_ui.c:7970
+#: title/pc5_ui.c:7019 title/pc5_ui.c:8015
 msgid "Background image"
 msgstr "Háttérkép"
 
-#: title/pc5_ui.c:6975
+#: title/pc5_ui.c:7020
 msgid ""
 "Choose a still image; it also appears when video playback is unavailable"
 msgstr "Válassz állóképet; akkor is megjelenik, ha a videó nem játszható le"
 
-#: title/pc5_ui.c:6980
+#: title/pc5_ui.c:7025
 msgid "Choose or remove this game's silent background video"
 msgstr "A játék hang nélküli háttérvideójának kiválasztása vagy eltávolítása"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6984
+#: title/pc5_ui.c:7029
 msgid "Choose video file"
 msgstr "Videófájl kiválasztása"
 
-#: title/pc5_ui.c:6985
+#: title/pc5_ui.c:7030
 msgid ""
 "Import H.264 video to console storage; experimental 1080p/60, without audio"
 msgstr ""
@@ -3240,11 +3272,11 @@ msgstr ""
 "nélkül"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6989
+#: title/pc5_ui.c:7034
 msgid "Remove background video"
 msgstr "Háttérvideó eltávolítása"
 
-#: title/pc5_ui.c:6990
+#: title/pc5_ui.c:7035
 msgid ""
 "Delete the imported video and return to the background image; keep the "
 "source file"
@@ -3252,100 +3284,100 @@ msgstr ""
 "Az importált videó törlése és visszatérés a háttérképhez; a forrásfájl "
 "megmarad"
 
-#: title/pc5_ui.c:6995
+#: title/pc5_ui.c:7040
 msgid "Choose or remove the music that plays on this game's cover"
 msgstr "A játék borítóján szóló zene kiválasztása vagy eltávolítása"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6999
+#: title/pc5_ui.c:7044
 msgid "Choose music file"
 msgstr "Zenefájl kiválasztása"
 
-#: title/pc5_ui.c:7000
+#: title/pc5_ui.c:7045
 msgid ""
 "Import MP3 or WAV to console storage: plays on this cover, even without USB"
 msgstr ""
 "MP3 vagy WAV importálása a konzol tárhelyére: ezen a borítón szól, USB "
 "nélkül is"
 
-#: title/pc5_ui.c:7005
+#: title/pc5_ui.c:7050
 msgid ""
 "Its cover, background and loading screen, and its music and video settings"
 msgstr ""
 "Borító, háttér és betöltőképernyő, valamint zene- és videóbeállítások"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7009
+#: title/pc5_ui.c:7054
 msgid "Music, video and backup"
 msgstr "Zene, videó és mentés"
 
-#: title/pc5_ui.c:7010
+#: title/pc5_ui.c:7055
 msgid ""
 "Music volume and start, video loop, framing, darkness and appearance backup"
 msgstr ""
 "Zene hangereje és kezdete, videóismétlés, képkivágás, sötétítés és a "
 "megjelenés biztonsági mentése"
 
-#: title/pc5_ui.c:7016
+#: title/pc5_ui.c:7061
 msgid "The picture shown while it starts: PC5's own, or one of yours"
 msgstr "A kép induláskor: a PC5-é vagy a tiéd"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7017
+#: title/pc5_ui.c:7062
 #, fuzzy
 msgid "Own"
 msgstr "Be"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7017
+#: title/pc5_ui.c:7062
 msgid "PC5's"
 msgstr "A PC5-é"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7021
+#: title/pc5_ui.c:7066
 #, fuzzy
 msgid "Choose image file"
 msgstr "Videófájl kiválasztása"
 
-#: title/pc5_ui.c:7022
+#: title/pc5_ui.c:7067
 msgid ""
 "A JPEG or PNG from a USB drive or the console; Square: from your phone"
 msgstr "JPEG vagy PNG USB-ről vagy a konzolról; Négyzet: telefonról"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7026
+#: title/pc5_ui.c:7071
 #, fuzzy
 msgid "Use its background"
 msgstr "A háttere"
 
-#: title/pc5_ui.c:7027
+#: title/pc5_ui.c:7072
 msgid "Its background picture, as its loading screen"
 msgstr "A háttérképe betöltőképernyőként"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7031
+#: title/pc5_ui.c:7076
 msgid "Use PC5's"
 msgstr "A PC5-é"
 
-#: title/pc5_ui.c:7032
+#: title/pc5_ui.c:7077
 msgid "Back to PC5's own loading screen for it"
 msgstr "Vissza a PC5 betöltőképernyőjéhez"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7036
+#: title/pc5_ui.c:7081
 msgid "Remove library music"
 msgstr "Könyvtárzene eltávolítása"
 
-#: title/pc5_ui.c:7037
+#: title/pc5_ui.c:7082
 msgid "Delete this game's imported music; the original source file is kept"
 msgstr "A játék importált zenéjének törlése; az eredeti forrásfájl megmarad"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7041 title/pc5_ui.c:7970
+#: title/pc5_ui.c:7086 title/pc5_ui.c:8015
 msgid "Tile picture"
 msgstr "Csempekép"
 
-#: title/pc5_ui.c:7042
+#: title/pc5_ui.c:7087
 msgid ""
 "Its home screen tile's picture: a square one found online, or one made "
 "from its cover"
@@ -3353,92 +3385,92 @@ msgstr ""
 "A kezdőképernyő-csempéjének képe: egy online talált négyzetes kép, vagy a "
 "borítójából készült"
 
-#: title/pc5_ui.c:7046
+#: title/pc5_ui.c:7091
 #, c-format
 msgid "Its tile, %.40s, starts the game"
 msgstr "A csempéje (%.40s) indítja a játékot"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7047
+#: title/pc5_ui.c:7092
 msgid "Home screen tile"
 msgstr "Kezdőképernyő-csempe"
 
-#: title/pc5_ui.c:7048
+#: title/pc5_ui.c:7093
 msgid "A tile on the PS5's home screen that starts it"
 msgstr "Egy csempe a PS5 kezdőképernyőjén, amely elindítja"
 
-#: title/pc5_ui.c:7053
+#: title/pc5_ui.c:7098
 #, c-format
 msgid "Now: %.150s"
 msgstr "Most: %.150s"
 
 #. A menu row's name (about 30 characters fit).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7054 title/pc5_ui.c:7691
+#: title/pc5_ui.c:7099 title/pc5_ui.c:7736
 msgid "Change program"
 msgstr "Program módosítása"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7060
+#: title/pc5_ui.c:7105
 msgid "Steam emulator"
 msgstr "Steam-emulátor"
 
-#: title/pc5_ui.c:7061
+#: title/pc5_ui.c:7106
 msgid "Steam's own library: the game won't find Steam on the console"
 msgstr "A Steam saját könyvtára: a játék nem találja a Steamet a konzolon"
 
-#: title/pc5_ui.c:7062
+#: title/pc5_ui.c:7107
 msgid "Stands in for Steam, which the game asks for; Off if it misbehaves"
 msgstr "Helyettesíti a Steamet, amelyet a játék kér; Ki, ha rosszul működik"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7066 title/pc5_ui.c:8186
+#: title/pc5_ui.c:7111 title/pc5_ui.c:8231
 msgid "Game files"
 msgstr "Játékfájlok"
 
-#: title/pc5_ui.c:7067
+#: title/pc5_ui.c:7112
 msgid "Its folder: copy, move, rename and delete its files"
 msgstr "A mappája: fájljainak másolása, áthelyezése, átnevezése és törlése"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7071 title/pc5_ui.c:8612
+#: title/pc5_ui.c:7116 title/pc5_ui.c:8657
 msgid "Update"
 msgstr "Frissítés"
 
-#: title/pc5_ui.c:7072
+#: title/pc5_ui.c:7117
 msgid "A newer copy from USB; its saves and settings stay"
 msgstr "Újabb példány USB-ről; a mentései és beállításai megmaradnak"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7076
+#: title/pc5_ui.c:7121
 msgid "Report a problem"
 msgstr "Hiba jelentése"
 
-#: title/pc5_ui.c:7077
+#: title/pc5_ui.c:7122
 msgid "A QR code for GitHub's form, filled in from the game's newest log"
 msgstr "QR-kód a GitHub űrlapjához, a játék legújabb naplójából kitöltve"
 
 #. A menu row's name (about 30 characters fit).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7081 title/pc5_ui.c:8709 title/pc5_ui.c:8737
+#: title/pc5_ui.c:7126 title/pc5_ui.c:8754 title/pc5_ui.c:8782
 msgid "Uninstall"
 msgstr "Eltávolítás"
 
-#: title/pc5_ui.c:7082
+#: title/pc5_ui.c:7127
 msgid "Deletes the game, or keeps its saves for later"
 msgstr "Törli a játékot, vagy későbbre megtartja a mentéseit"
 
-#: title/pc5_ui.c:7095
+#: title/pc5_ui.c:7140
 msgid "What the game sees when you play with the controller."
 msgstr "Mit lát a játék, amikor kontrollerrel játszol."
 
-#: title/pc5_ui.c:7096
+#: title/pc5_ui.c:7141
 msgid "Xbox controller: what most PC games expect. Try this first."
 msgstr ""
 "Xbox kontroller: ezt várja a legtöbb PC-s játék. Először ezt próbáld."
 
-#: title/pc5_ui.c:7097
+#: title/pc5_ui.c:7142
 msgid ""
 "DualSense: a PS5 controller plugged into a PC, with PlayStation buttons in "
 "games that support it."
@@ -3446,7 +3478,7 @@ msgstr ""
 "DualSense: PC-hez csatlakoztatott PS5 kontroller, PlayStation gombokkal az "
 "ezt támogató játékokban."
 
-#: title/pc5_ui.c:7098
+#: title/pc5_ui.c:7143
 msgid ""
 "Keyboard & mouse: for games with no controller support. The buttons press "
 "keys and the sticks move the mouse; Button mapping changes which key each "
@@ -3456,7 +3488,7 @@ msgstr ""
 "billentyűket nyomnak, a karok az egeret mozgatják; a Gombkiosztás menüben "
 "választhatod ki, melyik gomb melyik billentyűt küldi."
 
-#: title/pc5_ui.c:7101
+#: title/pc5_ui.c:7146
 msgid ""
 "What each button, stick and the touchpad sends to the game with Keyboard & "
 "mouse."
@@ -3464,7 +3496,7 @@ msgstr ""
 "Mit küld a játéknak minden gomb, kar és az érintőpad Billentyűzet és egér "
 "módban."
 
-#: title/pc5_ui.c:7102
+#: title/pc5_ui.c:7147
 msgid ""
 "Touchpad: One button (a click sends one key), Halves and swipes (a key for "
 "each half's click and each quick swipe up, down, left or right), or Mouse "
@@ -3475,26 +3507,26 @@ msgstr ""
 "le, balra vagy jobbra pöccintésre) vagy Egér (egy ujj mozgatja a mutatót, "
 "mint egy laptopon)."
 
-#: title/pc5_ui.c:7103
+#: title/pc5_ui.c:7148
 msgid "Two-finger click: PC5's on-screen keyboard, or a key of its own."
 msgstr ""
 "Kétujjas kattintás: a PC5 képernyő-billentyűzete vagy egy saját billentyű."
 
-#: title/pc5_ui.c:7104
+#: title/pc5_ui.c:7149
 msgid "Save as my mapping keeps your layout for every game set up after it."
 msgstr ""
 "A Mentés saját kiosztásként minden később beállított játékra megtartja az "
 "elrendezésedet."
 
-#: title/pc5_ui.c:7107
+#: title/pc5_ui.c:7152
 msgid "Whether the mouse pointer shows over the game."
 msgstr "Látszik-e az egérmutató a játék fölött."
 
-#: title/pc5_ui.c:7108
+#: title/pc5_ui.c:7153
 msgid "Normal: the game decides, as on a PC."
 msgstr "Normál: a játék dönt, mint PC-n."
 
-#: title/pc5_ui.c:7109
+#: title/pc5_ui.c:7154
 msgid ""
 "Auto-hide: hidden after 5 seconds without moving or clicking, for a game "
 "that leaves it on the screen."
@@ -3502,7 +3534,7 @@ msgstr ""
 "Autom. elrejtés: 5 másodperc mozdulatlanság és kattintás nélkül eltűnik, "
 "olyan játékhoz, amely a képernyőn hagyja."
 
-#: title/pc5_ui.c:7112
+#: title/pc5_ui.c:7157
 msgid ""
 "How the game's pictures are made on the console. Auto is right for almost "
 "every game; the others are for a game that won't start or shows a wrong "
@@ -3512,7 +3544,7 @@ msgstr ""
 "játékhoz jó; a többi olyan játékhoz való, amely nem indul el, vagy hibás "
 "képet mutat."
 
-#: title/pc5_ui.c:7114
+#: title/pc5_ui.c:7159
 msgid ""
 "Alternative: another way to draw the game. Try it if the picture is wrong "
 "with Auto."
@@ -3520,14 +3552,14 @@ msgstr ""
 "Alternatív: a játék rajzolásának másik módja. Próbáld ki, ha Automatikus "
 "beállítással hibás a kép."
 
-#: title/pc5_ui.c:7115
+#: title/pc5_ui.c:7160
 msgid ""
 "2D only: for a 2D game that flickers or shows only part of its screen."
 msgstr ""
 "Csak 2D: olyan 2D-s játékhoz, amely villog, vagy csak a képernyője egy "
 "részét mutatja."
 
-#: title/pc5_ui.c:7117
+#: title/pc5_ui.c:7162
 msgid ""
 "Alternative: slower than Auto. Try it if the game won't start or its "
 "picture is wrong."
@@ -3535,7 +3567,7 @@ msgstr ""
 "Alternatív: lassabb az Automatikusnál. Próbáld ki, ha a játék nem indul "
 "el, vagy hibás a képe."
 
-#: title/pc5_ui.c:7119
+#: title/pc5_ui.c:7164
 msgid ""
 "Alternative: another way to draw the game. Try it if the picture is wrong "
 "with Auto. Some mods need it."
@@ -3543,15 +3575,15 @@ msgstr ""
 "Alternatív: a játék rajzolásának másik módja. Próbáld ki, ha Automatikus "
 "beállítással hibás a kép. Egyes modoknak szükségük van rá."
 
-#: title/pc5_ui.c:7120
+#: title/pc5_ui.c:7165
 msgid "Compatibility (slow): the slowest, but it starts the most games."
 msgstr "Kompatibilis (lassú): a leglassabb, de a legtöbb játékot elindítja."
 
-#: title/pc5_ui.c:7122
+#: title/pc5_ui.c:7167
 msgid "Choose the row to see each one with what it does."
 msgstr "Válaszd ki a sort, hogy lásd mindegyiket azzal, amit csinál."
 
-#: title/pc5_ui.c:7125
+#: title/pc5_ui.c:7170
 msgid ""
 "Makes extra frames between the game's own, so movement looks smoother. It "
 "can add a little delay to the controls."
@@ -3559,11 +3591,11 @@ msgstr ""
 "Extra képkockákat készít a játék saját képkockái közé, így a mozgás "
 "simábbnak látszik. Kicsit késleltetheti az irányítást."
 
-#: title/pc5_ui.c:7126
+#: title/pc5_ui.c:7171
 msgid "30 → 60 fps: the game is held at 30 fps and shown at 60."
 msgstr "30 → 60 fps: a játék 30 fps-en van tartva, és 60-on látszik."
 
-#: title/pc5_ui.c:7127
+#: title/pc5_ui.c:7172
 msgid ""
 "60 → 120 fps: held at 60 and shown at 120, on a 120 Hz TV with 120 Hz "
 "output on in Settings."
@@ -3571,7 +3603,7 @@ msgstr ""
 "60 → 120 fps: 60-on tartva, 120-on megjelenítve, 120 Hz-es tévén, ha a "
 "Beállításokban be van kapcsolva a 120 Hz-es kimenet."
 
-#: title/pc5_ui.c:7128
+#: title/pc5_ui.c:7173
 msgid ""
 "40 → 120 fps: held at 40, two frames made between each two, for a game "
 "that can't hold 60."
@@ -3579,7 +3611,7 @@ msgstr ""
 "40 → 120 fps: 40-en tartva, minden két kép közé kettő készül, olyan "
 "játékhoz, amely nem bírja a 60-at."
 
-#: title/pc5_ui.c:7131
+#: title/pc5_ui.c:7176
 msgid ""
 "The size the game is drawn at. The console always shows 4K, so a smaller "
 "picture is scaled up."
@@ -3587,25 +3619,25 @@ msgstr ""
 "A méret, amelyben a játék rajzolódik. A konzol mindig 4K-t mutat, így a "
 "kisebb képet felnagyítja."
 
-#: title/pc5_ui.c:7132
+#: title/pc5_ui.c:7177
 msgid "1080p: the fastest, and right for most games."
 msgstr "1080p: a leggyorsabb, és a legtöbb játékhoz megfelelő."
 
-#: title/pc5_ui.c:7133
+#: title/pc5_ui.c:7178
 msgid "1440p: sharper, but slower."
 msgstr "1440p: élesebb, de lassabb."
 
-#: title/pc5_ui.c:7134
+#: title/pc5_ui.c:7179
 msgid ""
 "4K: the sharpest, four times the work of 1080p: only for light games."
 msgstr ""
 "4K: a legélesebb, a 1080p munkájának négyszerese: csak könnyű játékokhoz."
 
-#: title/pc5_ui.c:7137
+#: title/pc5_ui.c:7182
 msgid "The shape of the picture on the TV."
 msgstr "A kép formája a tévén."
 
-#: title/pc5_ui.c:7138
+#: title/pc5_ui.c:7183
 msgid ""
 "Keep: the picture's own shape. An older 4:3 game gets black bars at the "
 "sides."
@@ -3613,21 +3645,21 @@ msgstr ""
 "Megtartás: a kép saját formája. Egy régebbi 4:3-as játék fekete sávokat "
 "kap az oldalán."
 
-#: title/pc5_ui.c:7139
+#: title/pc5_ui.c:7184
 msgid "Stretch: fills the whole screen, so a 4:3 picture gets wider."
 msgstr ""
 "Nyújtás: kitölti az egész képernyőt, így a 4:3-as kép szélesebb lesz."
 
-#: title/pc5_ui.c:7142
+#: title/pc5_ui.c:7187
 msgid "How much memory an older 32-bit game may use."
 msgstr "Mennyi memóriát használhat egy régebbi, 32 bites játék."
 
-#: title/pc5_ui.c:7143
+#: title/pc5_ui.c:7188
 msgid "Auto: as on Windows, 4 GB for a game made for it, otherwise 2 GB."
 msgstr ""
 "Automatikus: mint Windowson, 4 GB az erre készült játéknak, egyébként 2 GB."
 
-#: title/pc5_ui.c:7144
+#: title/pc5_ui.c:7189
 msgid ""
 "4 GB: for a game that runs out of memory, often with big mods. Set it back "
 "to Auto if the game misbehaves."
@@ -3635,7 +3667,7 @@ msgstr ""
 "4 GB: olyan játékhoz, amelynek elfogy a memóriája, gyakran nagy modokkal. "
 "Ha a játék rosszul működik, legyen újra Automatikus."
 
-#: title/pc5_ui.c:7147
+#: title/pc5_ui.c:7192
 msgid ""
 "How much graphics memory the game is told the console has. The PS5's "
 "memory is shared by the game and its graphics, so more for graphics leaves "
@@ -3645,7 +3677,7 @@ msgstr ""
 "játék és a grafikája osztozik, így ha több jut a grafikának, kevesebb "
 "marad a játéknak."
 
-#: title/pc5_ui.c:7149
+#: title/pc5_ui.c:7194
 msgid ""
 "512 MB or 1 GB: less for textures, more for the game, for one that runs "
 "out of memory."
@@ -3653,14 +3685,14 @@ msgstr ""
 "512 MB vagy 1 GB: kevesebb a textúráknak, több a játéknak, ha elfogy a "
 "memória."
 
-#: title/pc5_ui.c:7150
+#: title/pc5_ui.c:7195
 msgid ""
 "Auto: 2 GB at most, so older games don't get confused by a large number."
 msgstr ""
 "Automatikus: legfeljebb 2 GB, hogy a régebbi játékok ne zavarodjanak össze "
 "egy nagy számtól."
 
-#: title/pc5_ui.c:7151
+#: title/pc5_ui.c:7196
 msgid ""
 "3 GB or Maximum: for a game that says there is too little. Set it back to "
 "Auto if it misbehaves."
@@ -3668,7 +3700,7 @@ msgstr ""
 "3 GB vagy Maximális: annak a játéknak, amely túl keveset lát. Ha rosszul "
 "működik, állítsd Automatikusra."
 
-#: title/pc5_ui.c:7153
+#: title/pc5_ui.c:7198
 msgid ""
 "2 GB or 3 GB: less for textures, more for the game, for one that runs out "
 "of memory."
@@ -3676,11 +3708,11 @@ msgstr ""
 "2 GB vagy 3 GB: kevesebb a textúráknak, több a játéknak, ha elfogy a "
 "memória."
 
-#: title/pc5_ui.c:7154
+#: title/pc5_ui.c:7199
 msgid "Auto: 4 GB, room for both."
 msgstr "Automatikus: 4 GB, hely mindkettőnek."
 
-#: title/pc5_ui.c:7155
+#: title/pc5_ui.c:7200
 msgid ""
 "5 GB or 6 GB: more for textures. Set it back to Auto if the game runs out "
 "of memory."
@@ -3688,7 +3720,7 @@ msgstr ""
 "5 GB vagy 6 GB: több a textúráknak. Ha elfogy a játék memóriája, legyen "
 "újra Automatikus."
 
-#: title/pc5_ui.c:7156
+#: title/pc5_ui.c:7201
 msgid ""
 "Maximum: all of it, only for a game that won't start because it sees too "
 "little."
@@ -3696,15 +3728,15 @@ msgstr ""
 "Maximális: az összes, csak olyan játékhoz, amely nem indul el, mert túl "
 "keveset lát."
 
-#: title/pc5_ui.c:7160
+#: title/pc5_ui.c:7205
 msgid "How many speakers the game is told the console has."
 msgstr "Hány hangszórót lát a játék a konzolon."
 
-#: title/pc5_ui.c:7161
+#: title/pc5_ui.c:7206
 msgid "Stereo: two, right for a TV or headphones."
 msgstr "Sztereó: kettő, tévéhez vagy fejhallgatóhoz."
 
-#: title/pc5_ui.c:7162
+#: title/pc5_ui.c:7207
 msgid ""
 "5.1 or 7.1: the game plays each sound on its own speaker of a surround "
 "system, and the PS5 sends it on as it does its own games' sound."
@@ -3712,22 +3744,22 @@ msgstr ""
 "5.1 vagy 7.1: a játék minden hangot a saját hangszóróján szól egy "
 "térhangrendszeren, és a PS5 úgy továbbítja, mint a saját játékai hangját."
 
-#: title/pc5_ui.c:7163
+#: title/pc5_ui.c:7208
 msgid ""
 "If the game is silent or plays only from the front, set it back to Stereo."
 msgstr "Ha a játék néma vagy csak elölről szól, állítsd vissza Sztereóra."
 
-#: title/pc5_ui.c:7166
+#: title/pc5_ui.c:7211
 msgid ""
 "Changes how the game's work is shared out on the console's processor."
 msgstr ""
 "Megváltoztatja, hogyan oszlik el a játék munkája a konzol processzorán."
 
-#: title/pc5_ui.c:7167
+#: title/pc5_ui.c:7212
 msgid "Off: the fastest for most games."
 msgstr "Ki: a leggyorsabb a legtöbb játékhoz."
 
-#: title/pc5_ui.c:7168
+#: title/pc5_ui.c:7213
 msgid ""
 "On: the game's work takes turns, as on a PC. Try it if the game freezes, "
 "stutters or hangs while loading; it can be a little slower."
@@ -3735,7 +3767,7 @@ msgstr ""
 "Be: a játék munkája felváltva fut, mint PC-n. Próbáld ki, ha a játék "
 "lefagy, akadozik vagy betöltéskor megakad; kicsit lassabb lehet."
 
-#: title/pc5_ui.c:7171
+#: title/pc5_ui.c:7216
 msgid ""
 "Many PC games need Steam running to start. The console has no Steam, so "
 "PC5 stands in for it."
@@ -3743,11 +3775,11 @@ msgstr ""
 "Sok PC-s játéknak futó Steam kell az induláshoz. A konzolon nincs Steam, "
 "ezért a PC5 helyettesíti."
 
-#: title/pc5_ui.c:7172
+#: title/pc5_ui.c:7217
 msgid "Auto: the game starts as if Steam were running, offline."
 msgstr "Automatikus: a játék úgy indul, mintha a Steam futna, offline."
 
-#: title/pc5_ui.c:7173
+#: title/pc5_ui.c:7218
 msgid ""
 "Off: the game's own Steam files are used. It won't find Steam and may not "
 "start; only for a game that misbehaves with Auto."
@@ -3756,117 +3788,117 @@ msgstr ""
 "lehet, hogy el sem indul; csak olyan játékhoz, amely Automatikus "
 "beállítással rosszul működik."
 
-#: title/pc5_ui.c:7235
+#: title/pc5_ui.c:7280
 msgid "About"
 msgstr "Leírás"
 
-#: title/pc5_ui.c:7235 title/pc5_ui.c:7975
+#: title/pc5_ui.c:7280 title/pc5_ui.c:8020
 msgid "Receive from phone"
 msgstr "Fogadás telefonról"
 
-#: title/pc5_ui.c:7263
+#: title/pc5_ui.c:7308
 msgid "Touchpad + OPTIONS for 2 s still leaves the game"
 msgstr "Az érintőpad + OPTIONS 2 mp-ig továbbra is kilép a játékból"
 
-#: title/pc5_ui.c:7265
+#: title/pc5_ui.c:7310
 msgid "Two fingers: PC5's on-screen keyboard, or a key of its own"
 msgstr "Két ujj: a PC5 képernyő-billentyűzete vagy egy saját billentyű"
 
-#: title/pc5_ui.c:7268
+#: title/pc5_ui.c:7313
 msgid "A key for each half's click and each quick swipe"
 msgstr "Külön billentyű mindkét fél kattintására és minden gyors pöccintésre"
 
-#: title/pc5_ui.c:7269
+#: title/pc5_ui.c:7314
 msgid "A finger moves the pointer; a click sends its key"
 msgstr "Egy ujj mozgatja a mutatót; a kattintás a saját billentyűjét küldi"
 
-#: title/pc5_ui.c:7270
+#: title/pc5_ui.c:7315
 msgid "The whole touchpad is one button"
 msgstr "Az egész érintőpad egy gomb"
 
-#: title/pc5_ui.c:7280
+#: title/pc5_ui.c:7325
 msgid "Right stick"
 msgstr "Jobb kar"
 
-#: title/pc5_ui.c:7280
+#: title/pc5_ui.c:7325
 msgid "Left stick"
 msgstr "Bal kar"
 
-#: title/pc5_ui.c:7288
+#: title/pc5_ui.c:7333
 msgid "Pointer speed"
 msgstr "Mutató sebessége"
 
 #. which picture is shown: 3 of 12.
-#: title/pc5_ui.c:7289 title/pc5_ui.c:7480 title/pc5_ui.c:8113
+#: title/pc5_ui.c:7334 title/pc5_ui.c:7525 title/pc5_ui.c:8158
 #, c-format
 msgid "%d of %d"
 msgstr "%d/%d"
 
-#: title/pc5_ui.c:7292
+#: title/pc5_ui.c:7337
 msgid "Slow pointer button"
 msgstr "Lassú mutató gombja"
 
 #. Keep the space at the start or end: the text is joined to another.
-#: title/pc5_ui.c:7296
+#: title/pc5_ui.c:7341
 msgid "    Slower by"
 msgstr "    Lassítás mértéke"
 
-#: title/pc5_ui.c:7301
+#: title/pc5_ui.c:7346
 msgid "Click"
 msgstr "Kattintás"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7304
+#: title/pc5_ui.c:7349
 msgid "Slows the pointer"
 msgstr "Lassú mutató"
 
-#: title/pc5_ui.c:7306
+#: title/pc5_ui.c:7351
 msgid "On-screen keyboard"
 msgstr "Képernyő-billentyűzet"
 
-#: title/pc5_ui.c:7314
+#: title/pc5_ui.c:7359
 msgid "Reset to default"
 msgstr "Alapértelmezés visszaállítása"
 
-#: title/pc5_ui.c:7317
+#: title/pc5_ui.c:7362
 msgid "Save as my mapping"
 msgstr "Mentés saját kiosztásként"
 
-#: title/pc5_ui.c:7320
+#: title/pc5_ui.c:7365
 msgid "Use my mapping"
 msgstr "Saját kiosztás használata"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7332
+#: title/pc5_ui.c:7377
 msgid "Choose a key"
 msgstr "Billentyű"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7332
+#: title/pc5_ui.c:7377
 msgid "Reset"
 msgstr "Visszaállítás"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7333 title/pc5_ui.c:8343 title/pc5_ui.c:8414
+#: title/pc5_ui.c:7378 title/pc5_ui.c:8388 title/pc5_ui.c:8459
 msgid "Save"
 msgstr "Mentés"
 
-#: title/pc5_ui.c:7333
+#: title/pc5_ui.c:7378
 msgid "Use"
 msgstr "Használat"
 
-#: title/pc5_ui.c:7354
+#: title/pc5_ui.c:7399
 #, c-format
 msgid "What %s sends"
 msgstr "Amit ez küld: %s"
 
-#: title/pc5_ui.c:7372
+#: title/pc5_ui.c:7417
 msgid "The usual way for older games like this one, with their 2D and 3D."
 msgstr ""
 "A szokásos mód az ilyen régebbi játékokhoz, a 2D-jükkel és 3D-jükkel."
 
-#: title/pc5_ui.c:7373
+#: title/pc5_ui.c:7418
 msgid ""
 "The fastest, and what most games want. Leave it here unless the game won't "
 "start or its picture is wrong."
@@ -3874,7 +3906,7 @@ msgstr ""
 "A leggyorsabb, és a legtöbb játék ezt akarja. Hagyd így, hacsak a játék "
 "nem indul el, vagy hibás a képe."
 
-#: title/pc5_ui.c:7375
+#: title/pc5_ui.c:7420
 msgid ""
 "Another way to draw the game, slower than Auto. Try it if the game won't "
 "start or its picture is wrong."
@@ -3882,7 +3914,7 @@ msgstr ""
 "A játék rajzolásának másik módja, lassabb az Automatikusnál. Próbáld ki, "
 "ha a játék nem indul el, vagy hibás a képe."
 
-#: title/pc5_ui.c:7377
+#: title/pc5_ui.c:7422
 msgid ""
 "Draws everything in 2D, the way ordinary Windows programs are drawn. For a "
 "2D game that flickers or shows only part of its screen; a game with 3D "
@@ -3892,7 +3924,7 @@ msgstr ""
 "Olyan 2D-s játékhoz, amely villog, vagy csak a képernyője egy részét "
 "mutatja; egy 3D-s jeleneteket tartalmazó játék nem indul el vele."
 
-#: title/pc5_ui.c:7379
+#: title/pc5_ui.c:7424
 msgid ""
 "Another way to draw the game. Try it if the picture is wrong with Auto; "
 "faster than Compatibility. Some mods need it."
@@ -3900,7 +3932,7 @@ msgstr ""
 "A játék rajzolásának másik módja. Próbáld ki, ha Automatikus beállítással "
 "hibás a kép; gyorsabb a Kompatibilisnél. Egyes modoknak szükségük van rá."
 
-#: title/pc5_ui.c:7380
+#: title/pc5_ui.c:7425
 msgid ""
 "The slowest, but it starts the most games. Try it if the game won't start "
 "with the others."
@@ -3908,16 +3940,16 @@ msgstr ""
 "A leglassabb, de a legtöbb játékot elindítja. Próbáld ki, ha a játék a "
 "többivel nem indul el."
 
-#: title/pc5_ui.c:7401
+#: title/pc5_ui.c:7446
 #, c-format
 msgid "The game uses %s"
 msgstr "A játék ezt használja: %s"
 
-#: title/pc5_ui.c:7413
+#: title/pc5_ui.c:7458
 msgid "In use"
 msgstr "Használatban"
 
-#: title/pc5_ui.c:7433
+#: title/pc5_ui.c:7478
 msgid ""
 "PC5 runs your PC games with prospero-win: Wine, DXVK for Direct3D 8 to 11, "
 "VKD3D-Proton for Direct3D 12, and Mesa (RADV for Vulkan, Zink for OpenGL)."
@@ -3926,7 +3958,7 @@ msgstr ""
 "Direct3D 8–11-hez, VKD3D-Proton a Direct3D 12-höz, és Mesa (RADV a "
 "Vulkanhoz, Zink az OpenGL-hez)."
 
-#: title/pc5_ui.c:7435
+#: title/pc5_ui.c:7480
 msgid ""
 "Covers come from Steam, GOG, PCGamingWiki and Wikidata, and SteamGridDB "
 "with your key. No game is part of PC5."
@@ -3935,206 +3967,206 @@ msgstr ""
 "valamint a kulcsoddal a SteamGridDB-ről származnak. Egyetlen játék sem "
 "része a PC5-nek."
 
-#: title/pc5_ui.c:7436
+#: title/pc5_ui.c:7481
 msgid "Free software under the GNU LGPL 2.1 or later."
 msgstr "Szabad szoftver a GNU LGPL 2.1 vagy újabb licenc alatt."
 
 #. About PC5: the version (2.0.7 · PPSA11018).
-#: title/pc5_ui.c:7445
+#: title/pc5_ui.c:7490
 #, c-format
 msgid "version %s"
 msgstr "verzió: %s"
 
-#: title/pc5_ui.c:7451
+#: title/pc5_ui.c:7496
 msgid "Like PC5?"
 msgstr "Tetszik a PC5?"
 
-#: title/pc5_ui.c:7454
+#: title/pc5_ui.c:7499
 msgid "Buy me a coffee"
 msgstr "Hívj meg egy kávéra"
 
-#: title/pc5_ui.c:7458
+#: title/pc5_ui.c:7503
 #, c-format
 msgid "Games are kept in %.150s"
 msgstr "A játékok helye: %.150s"
 
-#: title/pc5_ui.c:7462
+#: title/pc5_ui.c:7507
 #, c-format
 msgid "%s free on the console"
 msgstr "Szabad hely a konzolon: %s"
 
-#: title/pc5_ui.c:7527
+#: title/pc5_ui.c:7572
 msgid "INSTALL folder"
 msgstr "INSTALL mappa"
 
-#: title/pc5_ui.c:7529
+#: title/pc5_ui.c:7574
 #, c-format
 msgid "INSTALL folder, %.20s"
 msgstr "INSTALL mappa, %.20s"
 
-#: title/pc5_ui.c:7545
+#: title/pc5_ui.c:7590
 msgid "No program found: it will be skipped"
 msgstr "Nincs program: kimarad"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7549
+#: title/pc5_ui.c:7594
 #, c-format
 msgid "%s · %d-bit · %s · %s"
 msgstr "%s · %d bites · %s · %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7562
+#: title/pc5_ui.c:7607
 #, c-format
 msgid "%d-bit · %s · %s%s"
 msgstr "%d bites · %s · %s%s"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7563 title/pc5_ui.c:7581
+#: title/pc5_ui.c:7608 title/pc5_ui.c:7626
 msgid " · chosen"
 msgstr " · kiválasztva"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7564
+#: title/pc5_ui.c:7609
 msgid " · offered at Play"
 msgstr " · játéknál felajánlva"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7580 title/pc5_ui.c:7658
+#: title/pc5_ui.c:7625 title/pc5_ui.c:7703
 #, c-format
 msgid "%d-bit · %s"
 msgstr "%d bites · %s"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7595
+#: title/pc5_ui.c:7640
 msgid "Jan"
 msgstr "jan."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7595
+#: title/pc5_ui.c:7640
 msgid "Feb"
 msgstr "febr."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7595
+#: title/pc5_ui.c:7640
 msgid "Mar"
 msgstr "márc."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7595
+#: title/pc5_ui.c:7640
 msgid "Apr"
 msgstr "ápr."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7595
+#: title/pc5_ui.c:7640
 msgid "May"
 msgstr "máj."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7595
+#: title/pc5_ui.c:7640
 msgid "Jun"
 msgstr "jún."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7596
+#: title/pc5_ui.c:7641
 msgid "Jul"
 msgstr "júl."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7596
+#: title/pc5_ui.c:7641
 msgid "Aug"
 msgstr "aug."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7596
+#: title/pc5_ui.c:7641
 msgid "Sep"
 msgstr "szept."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7596
+#: title/pc5_ui.c:7641
 msgid "Oct"
 msgstr "okt."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7596
+#: title/pc5_ui.c:7641
 msgid "Nov"
 msgstr "nov."
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7596
+#: title/pc5_ui.c:7641
 msgid "Dec"
 msgstr "dec."
 
-#: title/pc5_ui.c:7598
+#: title/pc5_ui.c:7643
 #, c-format
 msgid "Saves of %s"
 msgstr "Mentések: %s"
 
 #. the day, the month (Jan to Dec, translated on their own) and the year: put them in your order with %1$d, %2$s, %3$d.
-#: title/pc5_ui.c:7607
+#: title/pc5_ui.c:7652
 #, c-format
 msgid "Kept %d %s %d; installing it again puts them back"
 msgstr "Megtartva: %3$d. %2$s %1$d.; az újratelepítés visszahozza őket"
 
-#: title/pc5_ui.c:7610
+#: title/pc5_ui.c:7655
 msgid "Kept when it was uninstalled; installing it again puts them back"
 msgstr "Az eltávolításkor megtartva; az újratelepítés visszahozza őket"
 
-#: title/pc5_ui.c:7646
+#: title/pc5_ui.c:7691
 #, c-format
 msgid "Cover %d of %d"
 msgstr "Borító: %d/%d"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7647
+#: title/pc5_ui.c:7692
 #, c-format
 msgid "Made from the game's icon · %d of %d"
 msgstr "A játék ikonjából készült · %d/%d"
 
-#: title/pc5_ui.c:7655
+#: title/pc5_ui.c:7700
 msgid "Program"
 msgstr "Program"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7656
+#: title/pc5_ui.c:7701
 msgid "none found"
 msgstr "nincs találat"
 
-#: title/pc5_ui.c:7657
+#: title/pc5_ui.c:7702
 msgid "Runs as"
 msgstr "Futás módja"
 
-#: title/pc5_ui.c:7662
+#: title/pc5_ui.c:7707
 #, c-format
 msgid "%s in %u file"
 msgstr "%s, %u fájlban"
 
-#: title/pc5_ui.c:7662
+#: title/pc5_ui.c:7707
 #, c-format
 msgid "%s in %u files"
 msgstr "%s, %u fájlban"
 
-#: title/pc5_ui.c:7663
+#: title/pc5_ui.c:7708
 msgid "Space"
 msgstr "Hely"
 
-#: title/pc5_ui.c:7667
+#: title/pc5_ui.c:7712
 #, c-format
 msgid "%s free after installing"
 msgstr "Telepítés után %s szabad"
 
-#: title/pc5_ui.c:7667
+#: title/pc5_ui.c:7712
 #, c-format
 msgid "not enough: %s free"
 msgstr "nem elég: %s szabad"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7669
+#: title/pc5_ui.c:7714
 msgid "unknown"
 msgstr "ismeretlen"
 
-#: title/pc5_ui.c:7681
+#: title/pc5_ui.c:7726
 msgid ""
 "A .NET program: PC5 sets up what it needs the first time a .NET game "
 "starts."
@@ -4142,7 +4174,7 @@ msgstr ""
 ".NET-program: a PC5 a .NET-játékok első indításakor beállítja, amire "
 "szüksége van."
 
-#: title/pc5_ui.c:7685
+#: title/pc5_ui.c:7730
 msgid ""
 "The game is copied once and checked, to the console or, with a USB drive "
 "plugged in, to its PC5 folder. Whether a game runs is only known by trying "
@@ -4153,35 +4185,35 @@ msgstr ""
 "fut-e, csak kipróbálva derül ki."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7689 title/pc5_ui.c:7961
+#: title/pc5_ui.c:7734 title/pc5_ui.c:8006
 msgid "Done"
 msgstr "Kész"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7690 title/pc5_ui.c:8147
+#: title/pc5_ui.c:7735 title/pc5_ui.c:8192
 msgid "Other covers"
 msgstr "Más borítók"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7701 title/pc5_ui.c:7717
+#: title/pc5_ui.c:7746 title/pc5_ui.c:7762
 msgid "Look again"
 msgstr "Újrakeresés"
 
-#: title/pc5_ui.c:7702
+#: title/pc5_ui.c:7747
 #, c-format
 msgid "Update %s from USB"
 msgstr "%s frissítése USB-ről"
 
-#: title/pc5_ui.c:7702 title/pc5_ui.c:8554 title/pc5_ui.c:8606
-#: title/pc5_ui.c:8718 title/pc5_ui.c:8806
+#: title/pc5_ui.c:7747 title/pc5_ui.c:8599 title/pc5_ui.c:8651
+#: title/pc5_ui.c:8763 title/pc5_ui.c:8851
 msgid "the game"
 msgstr "A játék"
 
-#: title/pc5_ui.c:7703 title/pc5_ui.c:7720
+#: title/pc5_ui.c:7748 title/pc5_ui.c:7765
 msgid "No game folders found"
 msgstr "Nem található játékmappa"
 
-#: title/pc5_ui.c:7704
+#: title/pc5_ui.c:7749
 msgid ""
 "Put the newer copy's folder (the one with the game's .exe in it) at the "
 "top of a USB drive formatted as exFAT, plug the drive into the PS5, then "
@@ -4191,26 +4223,26 @@ msgstr ""
 "exFAT-ra formázott USB-meghajtó gyökerébe, csatlakoztasd a meghajtót a "
 "PS5-höz, majd keress újra."
 
-#: title/pc5_ui.c:7711
+#: title/pc5_ui.c:7756
 #, c-format
 msgid "Install ticked (%d)"
 msgstr "Kijelöltek telepítése (%d)"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7715
+#: title/pc5_ui.c:7760
 msgid "Install one"
 msgstr "Egy telepítése"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7716 title/pc5_ui.c:8210
+#: title/pc5_ui.c:7761 title/pc5_ui.c:8255
 msgid "Tick"
 msgstr "Kijelölés"
 
-#: title/pc5_ui.c:7719
+#: title/pc5_ui.c:7764
 msgid "Install games from the INSTALL folder"
 msgstr "Játékok telepítése az INSTALL mappából"
 
-#: title/pc5_ui.c:7721
+#: title/pc5_ui.c:7766
 msgid ""
 "Put each game's folder (the one with its .exe in it) at the top of a USB "
 "drive formatted as exFAT, plug the drive into the PS5, then look again."
@@ -4219,110 +4251,110 @@ msgstr ""
 "formázott USB-meghajtó gyökerébe, csatlakoztasd a meghajtót a PS5-höz, "
 "majd keress újra."
 
-#: title/pc5_ui.c:7735
+#: title/pc5_ui.c:7780
 msgid "Putting back its saves and settings"
 msgstr "A mentések és beállítások visszaállítása"
 
-#: title/pc5_ui.c:7735
+#: title/pc5_ui.c:7780
 msgid "Setting up the game's Windows"
 msgstr "A játék Windowsának beállítása"
 
-#: title/pc5_ui.c:7738
+#: title/pc5_ui.c:7783
 msgid "Copying the newer version"
 msgstr "Az újabb verzió másolása"
 
-#: title/pc5_ui.c:7738
+#: title/pc5_ui.c:7783
 msgid "Copying the game"
 msgstr "A játék másolása"
 
-#: title/pc5_ui.c:7739
+#: title/pc5_ui.c:7784
 msgid "Checking the copy against the USB drive"
 msgstr "A másolat ellenőrzése az USB-meghajtóhoz képest"
 
-#: title/pc5_ui.c:7740 title/pc5_ui.c:8022
+#: title/pc5_ui.c:7785 title/pc5_ui.c:8067
 msgid "Putting the new files in place"
 msgstr "Az új fájlok a helyükre kerülnek"
 
-#: title/pc5_ui.c:7740 title/pc5_ui.c:7742
+#: title/pc5_ui.c:7785 title/pc5_ui.c:7787
 msgid "Finishing"
 msgstr "Befejezés"
 
-#: title/pc5_ui.c:7743
+#: title/pc5_ui.c:7788
 msgid "Stopping: deleting what was copied"
 msgstr "Leállítás: az átmásolt adatok törlése"
 
-#: title/pc5_ui.c:7743
+#: title/pc5_ui.c:7788
 msgid "Deleting what was copied"
 msgstr "Az átmásolt adatok törlése"
 
-#: title/pc5_ui.c:7748
+#: title/pc5_ui.c:7793
 #, c-format
 msgid "Game %d of %d"
 msgstr "Játék: %d/%d"
 
-#: title/pc5_ui.c:7751
+#: title/pc5_ui.c:7796
 #, c-format
 msgid "Updating %s"
 msgstr "Frissítés: %s"
 
-#: title/pc5_ui.c:7751
+#: title/pc5_ui.c:7796
 #, c-format
 msgid "Installing %s"
 msgstr "Telepítés: %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7753 title/pc5_ui.c:8031
+#: title/pc5_ui.c:7798 title/pc5_ui.c:8076
 #, c-format
 msgid "Step %d of 3 · %s"
 msgstr "%d/3. lépés · %s"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7767 title/pc5_ui.c:8046
+#: title/pc5_ui.c:7812 title/pc5_ui.c:8091
 msgid " · under a minute left"
 msgstr " · kevesebb mint egy perc van hátra"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7768 title/pc5_ui.c:8047
+#: title/pc5_ui.c:7813 title/pc5_ui.c:8092
 #, c-format
 msgid " · about %d min left"
 msgstr " · kb. %d perc van hátra"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7770 title/pc5_ui.c:8049
+#: title/pc5_ui.c:7815 title/pc5_ui.c:8094
 #, c-format
 msgid "%s of %s · %s/s%s"
 msgstr "%s / %s · %s/s%s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7772 title/pc5_ui.c:8051
+#: title/pc5_ui.c:7817 title/pc5_ui.c:8096
 #, c-format
 msgid "%s of %s · measuring the speed"
 msgstr "%s / %s · sebesség mérése"
 
-#: title/pc5_ui.c:7775
+#: title/pc5_ui.c:7820
 #, c-format
 msgid "%u of %u files"
 msgstr "%u/%u fájl"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7779 title/pc5_ui.c:8062 title/pc5_ui.c:8399
-#: title/pc5_ui.c:8698 title/pc5_ui.c:8706
+#: title/pc5_ui.c:7824 title/pc5_ui.c:8107 title/pc5_ui.c:8444
+#: title/pc5_ui.c:8743 title/pc5_ui.c:8751
 msgid "Stop"
 msgstr "Leállítás"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7884
+#: title/pc5_ui.c:7929
 msgid "OK"
 msgstr "OK"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7884 title/pc5_ui.c:7923
+#: title/pc5_ui.c:7929 title/pc5_ui.c:7968
 msgid "Report on GitHub"
 msgstr "Jelentés a GitHubon"
 
-#: title/pc5_ui.c:7929
+#: title/pc5_ui.c:7974
 #, c-format
 msgid ""
 "1. Scan the code with your phone. GitHub's form for a new issue opens, "
@@ -4331,21 +4363,21 @@ msgstr ""
 "1. Olvasd be a kódot a telefonoddal. Megnyílik a GitHub új "
 "hibajegy-űrlapja, kitöltve ezzel: %s, a PC5 verziója és amit a PC5 észlelt."
 
-#: title/pc5_ui.c:7932
+#: title/pc5_ui.c:7977
 #, c-format
 msgid "1. On your phone or computer, open %s and choose New issue."
 msgstr ""
 "1. A telefonodon vagy számítógépeden nyisd meg ezt: %s, és válaszd a New "
 "issue lehetőséget."
 
-#: title/pc5_ui.c:7935
+#: title/pc5_ui.c:7980
 #, c-format
 msgid "2. Copy %s off the console, from %s/logs, as you copy files to it."
 msgstr ""
 "2. Másold le a konzolról ezt: %s, innen: %s/logs, ahogy fájlokat is "
 "másolsz rá."
 
-#: title/pc5_ui.c:7939
+#: title/pc5_ui.c:7984
 msgid ""
 "3. Say what happened, attach the zip, and submit. You need a GitHub "
 "account."
@@ -4353,11 +4385,11 @@ msgstr ""
 "3. Írd le, mi történt, csatold a zipet, és küldd el. GitHub-fiók kell "
 "hozzá."
 
-#: title/pc5_ui.c:7952
+#: title/pc5_ui.c:7997
 msgid "PC5's web page"
 msgstr "A PC5 weboldala"
 
-#: title/pc5_ui.c:7956
+#: title/pc5_ui.c:8001
 #, c-format
 msgid ""
 "Scan the code with your phone, or open %s in a browser on a PC on the same "
@@ -4366,7 +4398,7 @@ msgstr ""
 "Olvasd be a kódot a telefonoddal, vagy nyisd meg ezt egy ugyanazon a "
 "hálózaton lévő PC böngészőjében: %s."
 
-#: title/pc5_ui.c:7959
+#: title/pc5_ui.c:8004
 msgid ""
 "From there: send a game's folder to install, report a problem with a game "
 "(its log and settings go with it), edit launch options and download logs. "
@@ -4376,7 +4408,7 @@ msgstr ""
 "naplója és a beállításai vele mennek), szerkeszd az indítási "
 "beállításokat, és tölts le naplókat. Amíg a PC5 nyitva van, működik."
 
-#: title/pc5_ui.c:7980
+#: title/pc5_ui.c:8025
 msgid ""
 "Connect your phone and PS5 to the same network or phone hotspot. Scan this "
 "code and choose one file. Keep this screen open."
@@ -4385,7 +4417,7 @@ msgstr ""
 "hotspotra. Olvasd be ezt a kódot, és válassz ki egy fájlt. Hagyd nyitva "
 "ezt a képernyőt."
 
-#: title/pc5_ui.c:7983
+#: title/pc5_ui.c:8028
 msgid ""
 "This link expires after 10 minutes or when you leave. Your previous "
 "selection stays until import succeeds."
@@ -4393,29 +4425,29 @@ msgstr ""
 "A link 10 perc után vagy kilépéskor lejár. Az előző választásod megmarad, "
 "amíg az importálás sikeres nem lesz."
 
-#: title/pc5_ui.c:7984
+#: title/pc5_ui.c:8029
 #, c-format
 msgid "Receiving: %u%%"
 msgstr "Fogadás: %u%%"
 
-#: title/pc5_ui.c:7985
+#: title/pc5_ui.c:8030
 msgid "Waiting for a file"
 msgstr "Várakozás egy fájlra"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7988 title/pc5_ui.c:8414 title/pc5_ui.c:8450
-#: title/pc5_ui.c:8590 title/pc5_ui.c:8593 title/pc5_ui.c:8612
-#: title/pc5_ui.c:8720 title/pc5_ui.c:8733 title/pc5_ui.c:8737
+#: title/pc5_ui.c:8033 title/pc5_ui.c:8459 title/pc5_ui.c:8495
+#: title/pc5_ui.c:8635 title/pc5_ui.c:8638 title/pc5_ui.c:8657
+#: title/pc5_ui.c:8765 title/pc5_ui.c:8778 title/pc5_ui.c:8782
 msgid "Cancel"
 msgstr "Mégse"
 
-#: title/pc5_ui.c:8011
+#: title/pc5_ui.c:8056
 #, c-format
 msgid "PC5 %s is installed"
 msgstr "A PC5 %s települt"
 
-#: title/pc5_ui.c:8014
+#: title/pc5_ui.c:8059
 msgid ""
 "PC5 restarts now with the new version. Your games, saves and settings are "
 "as they were."
@@ -4424,112 +4456,112 @@ msgstr ""
 "beállításaid változatlanok."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8015
+#: title/pc5_ui.c:8060
 msgid "Restart PC5"
 msgstr "PC5 újraindítása"
 
-#: title/pc5_ui.c:8020
+#: title/pc5_ui.c:8065
 msgid "Downloading it from GitHub"
 msgstr "Letöltés a GitHubról"
 
-#: title/pc5_ui.c:8021
+#: title/pc5_ui.c:8066
 msgid "Unpacking it and checking every file"
 msgstr "Kicsomagolás és minden fájl ellenőrzése"
 
-#: title/pc5_ui.c:8023
+#: title/pc5_ui.c:8068
 msgid "Deleting the old files"
 msgstr "A régi fájlok törlése"
 
-#: title/pc5_ui.c:8024
+#: title/pc5_ui.c:8069
 msgid "Asking GitHub and finding PC5's folder"
 msgstr "A GitHub lekérdezése és a PC5 mappájának keresése"
 
-#: title/pc5_ui.c:8027 title/pc5_ui.c:8382
+#: title/pc5_ui.c:8072 title/pc5_ui.c:8427
 msgid "Stopping"
 msgstr "Leállítás"
 
-#: title/pc5_ui.c:8028
+#: title/pc5_ui.c:8073
 #, c-format
 msgid "Updating PC5 to %s"
 msgstr "A PC5 frissítése erre: %s"
 
-#: title/pc5_ui.c:8029
+#: title/pc5_ui.c:8074
 msgid "Updating PC5"
 msgstr "A PC5 frissítése"
 
-#: title/pc5_ui.c:8036
+#: title/pc5_ui.c:8081
 #, c-format
 msgid "%llu of %llu files"
 msgstr "%llu/%llu fájl"
 
-#: title/pc5_ui.c:8058
+#: title/pc5_ui.c:8103
 #, c-format
 msgid "Into %.280s"
 msgstr "Ide: %.280s"
 
-#: title/pc5_ui.c:8066
+#: title/pc5_ui.c:8111
 msgid "Don't turn the console off now. This takes a moment."
 msgstr "Most ne kapcsold ki a konzolt. Ez eltart egy pillanatig."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8079 title/pc5_ui.c:8429
+#: title/pc5_ui.c:8124 title/pc5_ui.c:8474
 msgid "Skip"
 msgstr "Kihagyás"
 
-#: title/pc5_ui.c:8118
+#: title/pc5_ui.c:8163
 msgid "Its cover"
 msgstr "A borítója"
 
-#: title/pc5_ui.c:8118
+#: title/pc5_ui.c:8163
 msgid "Its tile picture"
 msgstr "A csempeképe"
 
-#: title/pc5_ui.c:8118
+#: title/pc5_ui.c:8163
 msgid "Its background"
 msgstr "A háttere"
 
-#: title/pc5_ui.c:8122
+#: title/pc5_ui.c:8167
 msgid "The cover it has now"
 msgstr "A jelenlegi borítója"
 
-#: title/pc5_ui.c:8122
+#: title/pc5_ui.c:8167
 msgid "The tile picture it has now"
 msgstr "A jelenlegi csempeképe"
 
-#: title/pc5_ui.c:8122
+#: title/pc5_ui.c:8167
 msgid "The background it has now"
 msgstr "A jelenlegi háttere"
 
-#: title/pc5_ui.c:8124
+#: title/pc5_ui.c:8169
 msgid "A cover found online"
 msgstr "Online talált borító"
 
-#: title/pc5_ui.c:8124
+#: title/pc5_ui.c:8169
 msgid "A square picture found online"
 msgstr "Online talált négyzetes kép"
 
-#: title/pc5_ui.c:8124
+#: title/pc5_ui.c:8169
 msgid "A background found online"
 msgstr "Online talált háttér"
 
-#: title/pc5_ui.c:8126
+#: title/pc5_ui.c:8171
 msgid "Made from the game's icon and name"
 msgstr "A játék ikonjából és nevéből készült"
 
-#: title/pc5_ui.c:8127
+#: title/pc5_ui.c:8172
 msgid "Made from its cover"
 msgstr "A borítójából készült"
 
-#: title/pc5_ui.c:8127
+#: title/pc5_ui.c:8172
 msgid "None: a backdrop made from its cover"
 msgstr "Nincs: a borítójából készült háttér"
 
-#: title/pc5_ui.c:8134
+#: title/pc5_ui.c:8179
 #, c-format
 msgid "Nothing found for “%s”."
 msgstr "Nincs találat erre: „%s”."
 
-#: title/pc5_ui.c:8136
+#: title/pc5_ui.c:8181
 msgid ""
 "Square pictures come from SteamGridDB: put your key in api_keys.txt "
 "(Covers on the wiki)."
@@ -4537,337 +4569,337 @@ msgstr ""
 "A négyzetes képek a SteamGridDB-ről származnak: írd be a kulcsodat az "
 "api_keys.txt fájlba (Covers a wikin)."
 
-#: title/pc5_ui.c:8138
+#: title/pc5_ui.c:8183
 msgid "Nothing found for its name."
 msgstr "Nincs találat a nevére."
 
-#: title/pc5_ui.c:8141
+#: title/pc5_ui.c:8186
 #, c-format
 msgid "Found for “%s”"
 msgstr "Találatok erre: „%s”"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8146
+#: title/pc5_ui.c:8191
 msgid "Use this"
 msgstr "Ez legyen"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8147
+#: title/pc5_ui.c:8192
 msgid "Other pictures"
 msgstr "Más képek"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8147
+#: title/pc5_ui.c:8192
 msgid "Other backgrounds"
 msgstr "Más hátterek"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8148
+#: title/pc5_ui.c:8193
 msgid "Search by name"
 msgstr "Keresés név szerint"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8162 title/pc5_ui.c:8202 title/pc5_ui.c:8322
+#: title/pc5_ui.c:8207 title/pc5_ui.c:8247 title/pc5_ui.c:8367
 msgid " · read-only"
 msgstr " · csak olvasható"
 
-#: title/pc5_ui.c:8178
+#: title/pc5_ui.c:8223
 msgid "Folder"
 msgstr "Mappa"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8203
+#: title/pc5_ui.c:8248
 #, c-format
 msgid " · %d ticked"
 msgstr " · %d kijelölve"
 
-#: title/pc5_ui.c:8205
+#: title/pc5_ui.c:8250
 msgid "△ Paste or New folder puts something in it."
 msgstr "△ A Beillesztés vagy az Új mappa tesz bele valamit."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8210 title/pc5_ui.c:8325
+#: title/pc5_ui.c:8255 title/pc5_ui.c:8370
 msgid "Actions"
 msgstr "Műveletek"
 
-#: title/pc5_ui.c:8214
+#: title/pc5_ui.c:8259
 msgid "Choose backup destination"
 msgstr "Biztonsági mentés helyének kiválasztása"
 
-#: title/pc5_ui.c:8215
+#: title/pc5_ui.c:8260
 msgid "Open a folder, then press OPTIONS to save the backup here."
 msgstr ""
 "Nyiss meg egy mappát, majd nyomd meg az OPTIONS gombot, hogy ide mentsd a "
 "biztonsági mentést."
 
-#: title/pc5_ui.c:8222
+#: title/pc5_ui.c:8267
 msgid "Choose a background video"
 msgstr "Válassz háttérvideót"
 
-#: title/pc5_ui.c:8223
+#: title/pc5_ui.c:8268
 msgid "H.264 up to 1080p/60 and 1 GB; MP4 recommended. Playback is silent."
 msgstr ""
 "H.264, legfeljebb 1080p/60 és 1 GB; MP4 ajánlott. Lejátszás hang nélkül."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8227
+#: title/pc5_ui.c:8272
 msgid "Open folder"
 msgstr "Mappa megnyitása"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8227
+#: title/pc5_ui.c:8272
 msgid "Save here"
 msgstr "Mentés ide"
 
-#: title/pc5_ui.c:8228
+#: title/pc5_ui.c:8273
 msgid "This folder is empty"
 msgstr "Ez a mappa üres"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8240
+#: title/pc5_ui.c:8285
 msgid "Copy"
 msgstr "Másolás"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8240
+#: title/pc5_ui.c:8285
 msgid "Then Paste puts a copy in another folder"
 msgstr "Utána a Beillesztés másolatot tesz máshová"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8241
+#: title/pc5_ui.c:8286
 msgid "Cut"
 msgstr "Kivágás"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8241
+#: title/pc5_ui.c:8286
 msgid "Then Paste moves it to another folder"
 msgstr "Utána a Beillesztés máshová helyezi át"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8244
+#: title/pc5_ui.c:8289
 msgid "Paste"
 msgstr "Beillesztés"
 
-#: title/pc5_ui.c:8245
+#: title/pc5_ui.c:8290
 #, c-format
 msgid "Moves %d item from %.120s"
 msgstr "%d elemet helyez át innen: %.120s"
 
-#: title/pc5_ui.c:8245
+#: title/pc5_ui.c:8290
 #, c-format
 msgid "Moves %d items from %.120s"
 msgstr "%d elemet helyez át innen: %.120s"
 
-#: title/pc5_ui.c:8245
+#: title/pc5_ui.c:8290
 #, c-format
 msgid "Copies %d item from %.120s"
 msgstr "%d elemet másol innen: %.120s"
 
-#: title/pc5_ui.c:8245
+#: title/pc5_ui.c:8290
 #, c-format
 msgid "Copies %d items from %.120s"
 msgstr "%d elemet másol innen: %.120s"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8251
+#: title/pc5_ui.c:8296
 msgid "Type its new name"
 msgstr "Írd be az új nevét"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8252
+#: title/pc5_ui.c:8297
 msgid "An empty folder in this one"
 msgstr "Üres mappa ebben a mappában"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8253 title/pc5_ui.c:8450 title/pc5_ui.c:8590
-#: title/pc5_ui.c:8709 title/pc5_ui.c:8715 title/pc5_ui.c:8720
+#: title/pc5_ui.c:8298 title/pc5_ui.c:8495 title/pc5_ui.c:8635
+#: title/pc5_ui.c:8754 title/pc5_ui.c:8760 title/pc5_ui.c:8765
 msgid "Delete"
 msgstr "Törlés"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8253
+#: title/pc5_ui.c:8298
 msgid "Deleted for good: there is no undo"
 msgstr "Végleg törlődik: nem vonható vissza"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8255
+#: title/pc5_ui.c:8300
 msgid "Untick all"
 msgstr "Összes kijelölés törlése"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8255
+#: title/pc5_ui.c:8300
 msgid "Tick all"
 msgstr "Összes kijelölése"
 
-#: title/pc5_ui.c:8256
+#: title/pc5_ui.c:8301
 msgid "Every item in this folder"
 msgstr "A mappa minden eleme"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8260
+#: title/pc5_ui.c:8305
 msgid "Edit"
 msgstr "Szerkesztés"
 
-#: title/pc5_ui.c:8261
+#: title/pc5_ui.c:8306
 msgid ""
 "A text file (.ini, .cfg, .txt and the like), changed a line at a time"
 msgstr "Szövegfájl (.ini, .cfg, .txt és hasonlók), soronként módosítva"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8263
+#: title/pc5_ui.c:8308
 msgid "View"
 msgstr "Megtekintés"
 
-#: title/pc5_ui.c:8264
+#: title/pc5_ui.c:8309
 msgid "A text file, shown: nothing here can be changed"
 msgstr "Szövegfájl, csak megjelenítve: itt semmi sem módosítható"
 
-#: title/pc5_ui.c:8277
+#: title/pc5_ui.c:8322
 #, c-format
 msgid "%d items"
 msgstr "%d elem"
 
-#: title/pc5_ui.c:8279
+#: title/pc5_ui.c:8324
 msgid "This folder"
 msgstr "Ez a mappa"
 
-#: title/pc5_ui.c:8283
+#: title/pc5_ui.c:8328
 msgid "Read-only: PC5 changes nothing here"
 msgstr "Csak olvasható: a PC5 itt semmit sem módosít"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8323
+#: title/pc5_ui.c:8368
 msgid " · not saved"
 msgstr " · nincs mentve"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8324 title/pc5_ui.c:8326
+#: title/pc5_ui.c:8369 title/pc5_ui.c:8371
 msgid "Page"
 msgstr "Oldal"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8325
+#: title/pc5_ui.c:8370
 msgid "Add a line"
 msgstr "Sor hozzáadása"
 
-#: title/pc5_ui.c:8329
+#: title/pc5_ui.c:8374
 msgid "This file is empty"
 msgstr "Ez a fájl üres"
 
-#: title/pc5_ui.c:8330
+#: title/pc5_ui.c:8375
 msgid "There's nothing in it."
 msgstr "Nincs benne semmi."
 
-#: title/pc5_ui.c:8330
+#: title/pc5_ui.c:8375
 msgid "✕ puts a first line in it."
 msgstr "A ✕ beír egy első sort."
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8339
+#: title/pc5_ui.c:8384
 msgid "Add a line below"
 msgstr "Sor beszúrása alá"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8339
+#: title/pc5_ui.c:8384
 msgid "Typed with the keyboard, under the line chosen"
 msgstr "Billentyűzettel írva, a kiválasztott sor alá"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8340
+#: title/pc5_ui.c:8385
 msgid "Add a line above"
 msgstr "Sor beszúrása fölé"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8340
+#: title/pc5_ui.c:8385
 msgid "Typed with the keyboard, over the line chosen"
 msgstr "Billentyűzettel írva, a kiválasztott sor fölé"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8341
+#: title/pc5_ui.c:8386
 msgid "Delete line"
 msgstr "Sor törlése"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8341
+#: title/pc5_ui.c:8386
 msgid "The line chosen goes; nothing is saved until Save"
 msgstr "A kiválasztott sor eltűnik; semmi sem mentődik a Mentésig"
 
-#: title/pc5_ui.c:8344
+#: title/pc5_ui.c:8389
 msgid "Written back as it was: UTF-16, with its line ends"
 msgstr "Úgy írja vissza, ahogy volt: UTF-16, a saját sorvégeivel"
 
-#: title/pc5_ui.c:8345
+#: title/pc5_ui.c:8390
 msgid "Written back as it was: one byte a letter, with its line ends"
 msgstr "Úgy írja vissza, ahogy volt: betűnként egy bájt, a saját sorvégeivel"
 
-#: title/pc5_ui.c:8346
+#: title/pc5_ui.c:8391
 msgid "Written back as it was: UTF-8, with its line ends"
 msgstr "Úgy írja vissza, ahogy volt: UTF-8, a saját sorvégeivel"
 
-#: title/pc5_ui.c:8359
+#: title/pc5_ui.c:8404
 msgid "This file"
 msgstr "Ez a fájl"
 
-#: title/pc5_ui.c:8383
+#: title/pc5_ui.c:8428
 msgid "Deleting"
 msgstr "Törlés"
 
-#: title/pc5_ui.c:8384
+#: title/pc5_ui.c:8429
 msgid "Moving"
 msgstr "Áthelyezés"
 
-#: title/pc5_ui.c:8384
+#: title/pc5_ui.c:8429
 msgid "Copying"
 msgstr "Másolás"
 
-#: title/pc5_ui.c:8386
+#: title/pc5_ui.c:8431
 msgid "Getting ready"
 msgstr "Előkészítés"
 
-#: title/pc5_ui.c:8393
+#: title/pc5_ui.c:8438
 #, c-format
 msgid "%s of %s"
 msgstr "%s / %s"
 
-#: title/pc5_ui.c:8395
+#: title/pc5_ui.c:8440
 #, c-format
 msgid "%u of %u"
 msgstr "%u/%u"
 
-#: title/pc5_ui.c:8413
+#: title/pc5_ui.c:8458
 #, c-format
 msgid "Save the changes to %.200s?"
 msgstr "Mented a(z) %.200s módosításait?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8414
+#: title/pc5_ui.c:8459
 msgid "Don't save leaves the file as it was before."
 msgstr "A Ne mentse a fájlt olyan állapotban hagyja, amilyen volt."
 
-#: title/pc5_ui.c:8415
+#: title/pc5_ui.c:8460
 msgid "Don't save"
 msgstr "Ne mentse"
 
-#: title/pc5_ui.c:8424
+#: title/pc5_ui.c:8469
 #, c-format
 msgid "This folder has %.200s already"
 msgstr "Ebben a mappában már van ilyen: %.200s"
 
-#: title/pc5_ui.c:8424 title/pc5_ui.c:8439
+#: title/pc5_ui.c:8469 title/pc5_ui.c:8484
 msgid "it"
 msgstr "ez az elem"
 
-#: title/pc5_ui.c:8425
+#: title/pc5_ui.c:8470
 #, c-format
 msgid "This folder has %d of the %d items already"
 msgstr "Ebben a mappában már megvan %d elem a(z) %d közül"
 
-#: title/pc5_ui.c:8427
+#: title/pc5_ui.c:8472
 msgid ""
 "Skip leaves those as they are. Keep both gives the new ones a name like "
 "“name (2)”. Replace overwrites files and puts folders' contents together."
@@ -4876,50 +4908,50 @@ msgstr ""
 "„név (2)” jellegű nevet ad. A Csere felülírja a fájlokat, és összefésüli a "
 "mappák tartalmát."
 
-#: title/pc5_ui.c:8429
+#: title/pc5_ui.c:8474
 msgid "Keep both"
 msgstr "Mindkettő megtartása"
 
-#: title/pc5_ui.c:8429
+#: title/pc5_ui.c:8474
 msgid "Replace"
 msgstr "Csere"
 
-#: title/pc5_ui.c:8434
+#: title/pc5_ui.c:8479
 #, c-format
 msgid "Delete %d items?"
 msgstr "Törölsz %d elemet?"
 
-#: title/pc5_ui.c:8439
+#: title/pc5_ui.c:8484
 #, c-format
 msgid "Delete %.200s?"
 msgstr "Törlés: %.200s?"
 
-#: title/pc5_ui.c:8440
+#: title/pc5_ui.c:8485
 msgid "Delete?"
 msgstr "Törlöd?"
 
-#: title/pc5_ui.c:8442
+#: title/pc5_ui.c:8487
 #, c-format
 msgid "%u file"
 msgstr "%u fájl"
 
-#: title/pc5_ui.c:8442
+#: title/pc5_ui.c:8487
 #, c-format
 msgid "%u files"
 msgstr "%u fájl"
 
-#: title/pc5_ui.c:8443
+#: title/pc5_ui.c:8488
 #, c-format
 msgid "%u folder"
 msgstr "%u mappa"
 
-#: title/pc5_ui.c:8443
+#: title/pc5_ui.c:8488
 #, c-format
 msgid "%u folders"
 msgstr "%u mappa"
 
 #. the first %s is a count of files ("3 files"), the second of folders, the third a size ("2.1 GB").
-#: title/pc5_ui.c:8446
+#: title/pc5_ui.c:8491
 #, c-format
 msgid ""
 "At least %s and %s, %s. They're deleted for good: there is no backup and "
@@ -4929,7 +4961,7 @@ msgstr ""
 "vonható vissza."
 
 #. the first %s is a count of files ("3 files"), the second of folders, the third a size ("2.1 GB").
-#: title/pc5_ui.c:8446
+#: title/pc5_ui.c:8491
 #, c-format
 msgid ""
 "%s and %s, %s. They're deleted for good: there is no backup and no undo."
@@ -4937,30 +4969,30 @@ msgstr ""
 "%s és %s, %s. Végleg törlődnek: nincs biztonsági másolat, és nem vonható "
 "vissza."
 
-#: title/pc5_ui.c:8513
+#: title/pc5_ui.c:8558
 msgid "Finishing an install or uninstall that was cut short"
 msgstr "Egy félbeszakadt telepítés vagy eltávolítás befejezése"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8516
+#: title/pc5_ui.c:8561
 #, c-format
 msgid "Getting covers · %d of %d"
 msgstr "Borítók letöltése · %d/%d"
 
-#: title/pc5_ui.c:8520 title/pc5_ui.c:8536 title/pc5_ui.c:8792
+#: title/pc5_ui.c:8565 title/pc5_ui.c:8581 title/pc5_ui.c:8837
 msgid "Checking for a newer PC5"
 msgstr "Újabb PC5 keresése"
 
-#: title/pc5_ui.c:8536
+#: title/pc5_ui.c:8581
 msgid "Asking GitHub"
 msgstr "A GitHub lekérdezése"
 
-#: title/pc5_ui.c:8540
+#: title/pc5_ui.c:8585
 #, c-format
 msgid "PC5 %s is available"
 msgstr "Elérhető a PC5 %s"
 
-#: title/pc5_ui.c:8541
+#: title/pc5_ui.c:8586
 #, c-format
 msgid ""
 "%s, installs it and restarts. Your games, saves and settings stay. Later: "
@@ -4970,66 +5002,66 @@ msgstr ""
 "megmaradnak. Később: Beállítások › Rendszer."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8543 title/pc5_ui.c:8785
+#: title/pc5_ui.c:8588 title/pc5_ui.c:8830
 msgid "Later"
 msgstr "Később"
 
-#: title/pc5_ui.c:8554 title/pc5_ui.c:8601
+#: title/pc5_ui.c:8599 title/pc5_ui.c:8646
 #, c-format
 msgid "Reading %s"
 msgstr "%s beolvasása"
 
-#: title/pc5_ui.c:8555
+#: title/pc5_ui.c:8600
 msgid "Finding its programs"
 msgstr "A programjai keresése"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8560
+#: title/pc5_ui.c:8605
 #, c-format
 msgid "Getting ready · %d of %d"
 msgstr "Előkészítés · %d/%d"
 
-#: title/pc5_ui.c:8564
+#: title/pc5_ui.c:8609
 msgid "reading its files"
 msgstr "a fájljai olvasása"
 
-#: title/pc5_ui.c:8564
+#: title/pc5_ui.c:8609
 msgid "looking for its cover"
 msgstr "a borítója keresése"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8573
+#: title/pc5_ui.c:8618
 #, c-format
 msgid "Install %d game · %s"
 msgstr "%d játék telepítése · %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8573
+#: title/pc5_ui.c:8618
 #, c-format
 msgid "Install %d games · %s"
 msgstr "%d játék telepítése · %s"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8575
+#: title/pc5_ui.c:8620
 msgid "Install all"
 msgstr "Összes telepítése"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8575
+#: title/pc5_ui.c:8620
 msgid "Review"
 msgstr "Áttekintés"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8587
+#: title/pc5_ui.c:8632
 msgid "Remove background video?"
 msgstr "Eltávolítod a háttérvideót?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8587
+#: title/pc5_ui.c:8632
 msgid "Remove library music?"
 msgstr "Eltávolítod a könyvtárzenét?"
 
-#: title/pc5_ui.c:8588
+#: title/pc5_ui.c:8633
 msgid ""
 "Delete this game's imported video and return to the background image? The "
 "original source file is kept."
@@ -5037,17 +5069,17 @@ msgstr ""
 "Törlöd a játék importált videóját, és visszatérsz a háttérképhez? Az "
 "eredeti forrásfájl megmarad."
 
-#: title/pc5_ui.c:8589
+#: title/pc5_ui.c:8634
 msgid "Delete this game's imported music? The original source file is kept."
 msgstr "Törlöd a játék importált zenéjét? Az eredeti forrásfájl megmarad."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8593
+#: title/pc5_ui.c:8638
 msgid "Restore this appearance?"
 msgstr "Visszaállítod ezt a megjelenést?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8593
+#: title/pc5_ui.c:8638
 msgid ""
 "This replaces this game's pictures, music, video and media settings. Game "
 "files and saves are kept."
@@ -5056,36 +5088,36 @@ msgstr ""
 "játékfájlok és a mentések megmaradnak."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8593
+#: title/pc5_ui.c:8638
 msgid "Restore"
 msgstr "Visszaállítás"
 
-#: title/pc5_ui.c:8595
+#: title/pc5_ui.c:8640
 msgid "Restoring appearance"
 msgstr "Megjelenés visszaállítása"
 
-#: title/pc5_ui.c:8595
+#: title/pc5_ui.c:8640
 msgid "Exporting appearance"
 msgstr "Megjelenés exportálása"
 
-#: title/pc5_ui.c:8595
+#: title/pc5_ui.c:8640
 msgid "Keep the drive connected. Back cancels."
 msgstr "Hagyd csatlakoztatva a meghajtót. A Vissza megszakítja."
 
-#: title/pc5_ui.c:8598
+#: title/pc5_ui.c:8643
 msgid "Looking at the USB drives"
 msgstr "Az USB-meghajtók átnézése"
 
-#: title/pc5_ui.c:8602
+#: title/pc5_ui.c:8647
 msgid "Counting its files and finding its program"
 msgstr "A fájljai megszámolása és a programja keresése"
 
-#: title/pc5_ui.c:8609
+#: title/pc5_ui.c:8654
 #, c-format
 msgid "Update %s?"
 msgstr "%s frissítése?"
 
-#: title/pc5_ui.c:8610
+#: title/pc5_ui.c:8655
 #, c-format
 msgid ""
 "PC5 copies %s (%s) from the USB drive over the game's folder: the files it "
@@ -5096,17 +5128,17 @@ msgstr ""
 "benne lévő fájlok felülírják a játékéit, a többi marad. A mentései, "
 "beállításai és opciói is megmaradnak."
 
-#: title/pc5_ui.c:8622
+#: title/pc5_ui.c:8667
 #, c-format
 msgid "Where should the %d games go?"
 msgstr "Hová kerüljön a(z) %d játék?"
 
-#: title/pc5_ui.c:8623
+#: title/pc5_ui.c:8668
 #, c-format
 msgid "Where should %s go?"
 msgstr "Hová kerüljön: %s?"
 
-#: title/pc5_ui.c:8627
+#: title/pc5_ui.c:8672
 #, c-format
 msgid ""
 "The console has %s free. Extended storage (%.40s) has %s free: a game "
@@ -5115,7 +5147,7 @@ msgstr ""
 "A konzolon %s szabad. A bővített tárhelyen (%.40s) %s szabad: az ott lévő "
 "játék a PC5 mappájából fut. A mentései mindenképp a konzolon maradnak."
 
-#: title/pc5_ui.c:8632
+#: title/pc5_ui.c:8677
 #, c-format
 msgid ""
 "The console has %s free. The USB drive (%.40s) has %s free: a game there "
@@ -5126,28 +5158,28 @@ msgstr ""
 "játék a meghajtó PC5 mappájából fut, ezért tartsd a meghajtót egy gyors "
 "portban. A mentései mindenképp a konzolon maradnak."
 
-#: title/pc5_ui.c:8642
+#: title/pc5_ui.c:8687
 #, c-format
 msgid "Left and right choose among the %d drives a game can go on."
 msgstr ""
 "Balra és jobbra választhatsz a %d meghajtó közül, amelyre játék kerülhet."
 
-#: title/pc5_ui.c:8644
+#: title/pc5_ui.c:8689
 msgid "Extended storage"
 msgstr "Bővített tárhely"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8647
+#: title/pc5_ui.c:8692
 msgid "Console"
 msgstr "Konzol"
 
-#: title/pc5_ui.c:8652
+#: title/pc5_ui.c:8697
 #, c-format
 msgid "Put back the saves of %s?"
 msgstr "%s mentéseinek visszaállítása?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8654
+#: title/pc5_ui.c:8699
 msgid ""
 "They were kept when it was uninstalled: its saves, settings and options "
 "come back with it. Start fresh: they stay kept, for later."
@@ -5155,67 +5187,67 @@ msgstr ""
 "Az eltávolításakor megmaradtak: a mentései, beállításai és opciói vele "
 "együtt visszatérnek. Újrakezdés: megmaradnak későbbre."
 
-#: title/pc5_ui.c:8655
+#: title/pc5_ui.c:8700
 msgid "Start fresh"
 msgstr "Újrakezdés"
 
-#: title/pc5_ui.c:8655
+#: title/pc5_ui.c:8700
 msgid "Put them back"
 msgstr "Visszaállítás"
 
-#: title/pc5_ui.c:8659
+#: title/pc5_ui.c:8704
 msgid "Looking for the cover"
 msgstr "Borító keresése"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:8659 title/pc5_ui.c:8665
+#: title/pc5_ui.c:8704 title/pc5_ui.c:8710
 msgid "On Steam, GOG and others"
 msgstr "A Steamen, a GOG-on és máshol"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:8664
+#: title/pc5_ui.c:8709
 #, c-format
 msgid "“%s”, %s"
 msgstr "„%s”, %s"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:8664
+#: title/pc5_ui.c:8709
 msgid "on Steam, GOG and others"
 msgstr "a Steamen, a GOG-on és máshol"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:8666
+#: title/pc5_ui.c:8711
 msgid "Looking for covers"
 msgstr "Borítók keresése"
 
-#: title/pc5_ui.c:8667
+#: title/pc5_ui.c:8712
 msgid "Looking for tile pictures"
 msgstr "Csempeképek keresése"
 
-#: title/pc5_ui.c:8667
+#: title/pc5_ui.c:8712
 msgid "Looking for backgrounds"
 msgstr "Hátterek keresése"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8674
+#: title/pc5_ui.c:8719
 msgid "Offer at Play"
 msgstr "Felajánlás játéknál"
 
-#: title/pc5_ui.c:8677 title/pc5_ui.c:8680
+#: title/pc5_ui.c:8722 title/pc5_ui.c:8725
 msgid "Which program is the game?"
 msgstr "Melyik program a játék?"
 
-#: title/pc5_ui.c:8690
+#: title/pc5_ui.c:8735
 msgid "Which program?"
 msgstr "Melyik program?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8697
+#: title/pc5_ui.c:8742
 msgid "Stop updating?"
 msgstr "Leállítod a frissítést?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8697
+#: title/pc5_ui.c:8742
 msgid ""
 "The copy made so far is deleted and the game stays as it was. The USB "
 "drive isn't changed."
@@ -5223,16 +5255,16 @@ msgstr ""
 "Az eddig elkészült másolat törlődik, a játék változatlan marad. Az "
 "USB-meghajtó nem változik."
 
-#: title/pc5_ui.c:8698
+#: title/pc5_ui.c:8743
 msgid "Keep updating"
 msgstr "Frissítés folytatása"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8700 title/pc5_ui.c:8705
+#: title/pc5_ui.c:8745 title/pc5_ui.c:8750
 msgid "Stop installing?"
 msgstr "Leállítod a telepítést?"
 
-#: title/pc5_ui.c:8701
+#: title/pc5_ui.c:8746
 msgid ""
 "What this game copied so far is deleted; games already installed stay. The "
 "USB drive isn't changed. Press the back button to keep installing."
@@ -5241,34 +5273,34 @@ msgstr ""
 "maradnak. Az USB-meghajtó nem változik. A telepítés folytatásához nyomd "
 "meg a vissza gombot."
 
-#: title/pc5_ui.c:8703
+#: title/pc5_ui.c:8748
 msgid "Stop this game"
 msgstr "Ennek leállítása"
 
-#: title/pc5_ui.c:8703
+#: title/pc5_ui.c:8748
 msgid "Stop all"
 msgstr "Összes leállítása"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8705
+#: title/pc5_ui.c:8750
 msgid "Everything copied so far is deleted. The USB drive isn't changed."
 msgstr "Minden eddig átmásolt adat törlődik. Az USB-meghajtó nem változik."
 
-#: title/pc5_ui.c:8706
+#: title/pc5_ui.c:8751
 msgid "Keep installing"
 msgstr "Telepítés folytatása"
 
-#: title/pc5_ui.c:8710
+#: title/pc5_ui.c:8755
 msgid "There are no games to uninstall"
 msgstr "Nincs eltávolítható játék"
 
-#: title/pc5_ui.c:8718
+#: title/pc5_ui.c:8763
 #, c-format
 msgid "Delete the saves of %s?"
 msgstr "%s mentéseinek törlése?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8719
+#: title/pc5_ui.c:8764
 msgid ""
 "Its saves and settings, kept when it was uninstalled, are deleted. There "
 "is no backup and no undo."
@@ -5276,12 +5308,12 @@ msgstr ""
 "Az eltávolításakor megtartott mentései és beállításai törlődnek. Nincs "
 "biztonsági másolat, és nem vonható vissza."
 
-#: title/pc5_ui.c:8728
+#: title/pc5_ui.c:8773
 #, c-format
 msgid "Uninstall %s?"
 msgstr "%s eltávolítása?"
 
-#: title/pc5_ui.c:8731
+#: title/pc5_ui.c:8776
 msgid ""
 "Keep saves: the game goes, its saves and settings stay, and installing it "
 "again puts them back. Delete all: the game, its saves and settings go, "
@@ -5291,15 +5323,15 @@ msgstr ""
 "és az újratelepítés visszahozza őket. Összes törlése: a játék, a mentései "
 "és beállításai törlődnek, biztonsági másolat és visszavonás nélkül."
 
-#: title/pc5_ui.c:8733
+#: title/pc5_ui.c:8778
 msgid "Keep saves"
 msgstr "Mentések megtartása"
 
-#: title/pc5_ui.c:8733
+#: title/pc5_ui.c:8778
 msgid "Delete all"
 msgstr "Összes törlése"
 
-#: title/pc5_ui.c:8736
+#: title/pc5_ui.c:8781
 msgid ""
 "This deletes the game and all its saves and settings. There is no backup "
 "and no undo."
@@ -5307,26 +5339,26 @@ msgstr ""
 "Ez törli a játékot és az összes mentését és beállítását. Nincs biztonsági "
 "másolat, és nem vonható vissza."
 
-#: title/pc5_ui.c:8741
+#: title/pc5_ui.c:8786
 #, c-format
 msgid "Deleting the saves of %s"
 msgstr "%s mentéseinek törlése"
 
-#: title/pc5_ui.c:8741
+#: title/pc5_ui.c:8786
 #, c-format
 msgid "Uninstalling %s"
 msgstr "%s eltávolítása"
 
-#: title/pc5_ui.c:8744
+#: title/pc5_ui.c:8789
 #, c-format
 msgid "%u files and folders deleted"
 msgstr "%u fájl és mappa törölve"
 
-#: title/pc5_ui.c:8750
+#: title/pc5_ui.c:8795
 msgid "Importing library music"
 msgstr "Könyvtárzene importálása"
 
-#: title/pc5_ui.c:8751
+#: title/pc5_ui.c:8796
 msgid ""
 "Preparing a copy on the console. Keep the source drive connected until "
 "this finishes."
@@ -5334,11 +5366,11 @@ msgstr ""
 "Másolat előkészítése a konzolon. Hagyd csatlakoztatva a forrásmeghajtót, "
 "amíg ez be nem fejeződik."
 
-#: title/pc5_ui.c:8754
+#: title/pc5_ui.c:8799
 msgid "Importing background video"
 msgstr "Háttérvideó importálása"
 
-#: title/pc5_ui.c:8755
+#: title/pc5_ui.c:8800
 msgid ""
 "Copying video to the console. Keep the source drive connected until this "
 "finishes."
@@ -5346,7 +5378,7 @@ msgstr ""
 "Videó másolása a konzolra. Hagyd csatlakoztatva a forrásmeghajtót, amíg ez "
 "be nem fejeződik."
 
-#: title/pc5_ui.c:8773
+#: title/pc5_ui.c:8818
 #, c-format
 msgid ""
 "%d game is waiting in PC5's INSTALL folders (its own, and PC5/INSTALL on "
@@ -5357,7 +5389,7 @@ msgstr ""
 "PC5/INSTALL mappájában). Telepíted most? Az onnan telepített játék átkerül "
 "a PC5 könyvtárába, ki az INSTALL mappából."
 
-#: title/pc5_ui.c:8773
+#: title/pc5_ui.c:8818
 #, c-format
 msgid ""
 "%d games are waiting in PC5's INSTALL folders (its own, and PC5/INSTALL on "
@@ -5368,7 +5400,7 @@ msgstr ""
 "PC5/INSTALL mappájában). Telepíted őket most? Az onnan telepített játék "
 "átkerül a PC5 könyvtárába, ki az INSTALL mappából."
 
-#: title/pc5_ui.c:8773
+#: title/pc5_ui.c:8818
 #, c-format
 msgid ""
 "%d game is waiting in PC5's INSTALL folder. Install it now? A game "
@@ -5378,7 +5410,7 @@ msgstr ""
 "%d játék vár a PC5 INSTALL mappájában. Telepíted most? Az onnan telepített "
 "játék átkerül a PC5 könyvtárába, ki az INSTALL mappából."
 
-#: title/pc5_ui.c:8773
+#: title/pc5_ui.c:8818
 #, c-format
 msgid ""
 "%d games are waiting in PC5's INSTALL folder. Install them now? A game "
@@ -5389,33 +5421,33 @@ msgstr ""
 "telepített játék átkerül a PC5 könyvtárába, ki az INSTALL mappából."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8785
+#: title/pc5_ui.c:8830
 msgid "Games in PC5's INSTALL folder"
 msgstr "Játékok a PC5 INSTALL mappájában"
 
-#: title/pc5_ui.c:8790
+#: title/pc5_ui.c:8835
 msgid "Updating the home screen tile"
 msgstr "A kezdőképernyő-csempe frissítése"
 
-#: title/pc5_ui.c:8790
+#: title/pc5_ui.c:8835
 msgid "Its picture and background"
 msgstr "A képe és a háttere"
 
-#: title/pc5_ui.c:8792
+#: title/pc5_ui.c:8837
 msgid "A newer one may have fixed it"
 msgstr "Lehet, hogy egy újabb verzió már javította"
 
-#: title/pc5_ui.c:8795
+#: title/pc5_ui.c:8840
 #, c-format
 msgid "Update to PC5 %s first?"
 msgstr "Előbb frissítesz a PC5 %s verzióra?"
 
-#: title/pc5_ui.c:8797
+#: title/pc5_ui.c:8842
 #, c-format
 msgid "You have %s"
 msgstr "Neked ez van: %s"
 
-#: title/pc5_ui.c:8798
+#: title/pc5_ui.c:8843
 #, c-format
 msgid ""
 "This may already be fixed in it. Update, try the game again, and report it "
@@ -5425,21 +5457,21 @@ msgstr ""
 "jelentsd, ha még mindig előfordul. %s."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8801
+#: title/pc5_ui.c:8846
 msgid "Report anyway"
 msgstr "Jelentés mégis"
 
-#: title/pc5_ui.c:8806
+#: title/pc5_ui.c:8851
 #, c-format
 msgid "Starting %s"
 msgstr "%s indítása"
 
-#: title/pc5_ui.c:8809
+#: title/pc5_ui.c:8854
 #, c-format
 msgid "Installing %.80s for it, once"
 msgstr "%.80s egyszeri telepítése hozzá"
 
-#: title/pc5_ui.c:8813
+#: title/pc5_ui.c:8858
 #, c-format
 msgid "Setting up .NET for your games, once: %u of %u"
 msgstr ".NET egyszeri beállítása a játékaidhoz: %u/%u"
@@ -5658,11 +5690,11 @@ msgstr ""
 msgid "PC5 can't start the update (%d)."
 msgstr "A PC5 nem tudja elindítani a frissítést (%d)."
 
-#: title/pc5_web.c:711
+#: title/pc5_web.c:738
 msgid "It isn't UTF-8 text"
 msgstr "Ez nem UTF-8 szöveg"
 
-#: title/pc5_web.c:1063
+#: title/pc5_web.c:1103
 msgid "PC5 has no folder to show."
 msgstr "A PC5-nek nincs megjeleníthető mappája."
 
@@ -6580,13 +6612,27 @@ msgstr ""
 "csatold a naplót."
 
 #. Web page text.
+#: title/pc5_web_page.html:314
+msgctxt "web"
+msgid "Report it works"
+msgstr ""
+
+#. Web page text.
 #: title/pc5_web_page.html:315
+msgctxt "web"
+msgid ""
+"Opens GitHub's game compatibility form, filled in: say how well it runs "
+"there, then post it."
+msgstr ""
+
+#. Web page text.
+#: title/pc5_web_page.html:320
 msgctxt "web"
 msgid "Launch options (launch.txt)"
 msgstr "Indítási beállítások (launch.txt)"
 
 #. Web page text.
-#: title/pc5_web_page.html:316
+#: title/pc5_web_page.html:321
 msgctxt "web"
 msgid ""
 "The first line that isn't empty or a comment (# or ;) is added to the "
@@ -6596,25 +6642,25 @@ msgstr ""
 "parancssorához adódik."
 
 #. Web page text.
-#: title/pc5_web_page.html:320
+#: title/pc5_web_page.html:325
 msgctxt "web"
 msgid "Environment variables (env.txt)"
 msgstr "Környezeti változók (env.txt)"
 
 #. Web page text.
-#: title/pc5_web_page.html:320
+#: title/pc5_web_page.html:325
 msgctxt "web"
 msgid "One NAME=value a line, set before the game starts."
 msgstr "Soronként egy NÉV=érték, a játék indulása előtt beállítva."
 
 #. Web page text.
-#: title/pc5_web_page.html:321
+#: title/pc5_web_page.html:326
 msgctxt "web"
 msgid "Extra logging (winedebug.txt)"
 msgstr "Részletesebb naplózás (winedebug.txt)"
 
 #. Web page text.
-#: title/pc5_web_page.html:322
+#: title/pc5_web_page.html:327
 msgctxt "web"
 msgid ""
 "Only when an issue asks for it, for example err+all,+seh. Empty it "
@@ -6625,41 +6671,41 @@ msgstr ""
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:327
+#: title/pc5_web_page.html:332
 #, c-format
 msgctxt "web"
 msgid "The games didn't load: %s"
 msgstr "A játékok nem töltődtek be: %s"
 
 #. Web page text.
-#: title/pc5_web_page.html:340
+#: title/pc5_web_page.html:345
 msgctxt "web"
 msgid "No logs kept."
 msgstr "Nincsenek megtartott naplók."
 
 #. Web page text.
-#: title/pc5_web_page.html:344
+#: title/pc5_web_page.html:349
 msgctxt "web"
 msgid "had a problem"
 msgstr "hibás volt"
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:347
+#: title/pc5_web_page.html:352
 #, c-format
 msgctxt "web"
 msgid "The logs didn't load: %s"
 msgstr "A naplók nem töltődtek be: %s"
 
 #. Web page text.
-#: title/pc5_web_page.html:356
+#: title/pc5_web_page.html:362 title/pc5_web_page.html:363
 msgctxt "web"
 msgid "the connection was lost"
 msgstr "megszakadt a kapcsolat"
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:373
+#: title/pc5_web_page.html:389
 #, c-format
 msgctxt "web"
 msgid "Sending %d of %d: %s"
@@ -6667,7 +6713,7 @@ msgstr "Küldés: %d/%d: %s"
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:377
+#: title/pc5_web_page.html:394
 #, c-format
 msgctxt "web"
 msgid "Stopped at %s: %s"
@@ -6675,7 +6721,7 @@ msgstr "Leállt itt: %s – %s"
 
 #. Web page text.
 #. %s and %d are filled in by the page; %1$s, %2$s put them in another order.
-#: title/pc5_web_page.html:384
+#: title/pc5_web_page.html:408
 #, c-format
 msgctxt "web"
 msgid "Sent %d files (%s). PC5 asks to install the game in a moment."
@@ -6684,7 +6730,7 @@ msgstr ""
 "telepítését."
 
 #. Web page text.
-#: title/pc5_web_page.html:393
+#: title/pc5_web_page.html:417
 msgctxt "web"
 msgid "Type the game's folder name first (no / or \\)."
 msgstr "Előbb írd be a játék mappájának nevét (/ vagy \\ nélkül)."

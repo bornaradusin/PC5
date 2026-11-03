@@ -123,7 +123,7 @@ typedef enum SettingRow {
     SR_OVERLAY_SIZE, SR_VIBRATION, SR_LIGHT, SR_TRIGGERS, SR_TRIGGER_RUMBLE, SR_TRIGGER_RESISTANCE,
     SR_STARTUP_SOUND, SR_STARTUP_VOLUME, SR_KEEP_LOGS, SR_PICTURES, SR_CHECK_ON_OPEN, SR_CHECK_NOW, SR_UPDATE_NOW,
     SR_FILES, SR_FTP, SR_WEB, SR_PHONE_LIBRARY, SR_NETWORK, SR_REMOTE_USER, SR_REMOTE_PASSWORD, SR_LANGUAGE, SR_KEYBOARD,
-    SR_HIGH_REFRESH,
+    SR_HIGH_REFRESH, SR_CHECK_COPIES,
     SR_SOURCE   /* a picture source: SR_SOURCE + its index (pc5_cover.h) */
 } SettingRow;
 
@@ -176,6 +176,7 @@ static int page_rows(const Pc5Settings *set, int page, int offer_update, Setting
     } else if (page == PAGE_MAINTENANCE) {
         rows[n++] = SR_INSTALL;
         rows[n++] = SR_UNINSTALL;
+        rows[n++] = SR_CHECK_COPIES;
     } else if (page == PAGE_NETWORK) {
         rows[n++] = SR_FTP;
         rows[n++] = SR_WEB;
@@ -447,6 +448,10 @@ struct Pc5Ui {
     int installing;
     uint64_t speed_at, speed_bytes;
     double speed;
+    /* What the install's or the file manager's progress showed when last drawn (progress_redraw). */
+    uint64_t progress_at, progress_bytes;
+    uint32_t progress_items;
+    int progress_step;
     Pc5Upgrade upgrade;            /* PC5 updating itself, on its own thread */
     int upgrade_step;              /* the step speed is measured for */
     Screen upgrade_back;           /* where a stopped update goes back to */
@@ -1924,6 +1929,13 @@ static void drive_name(const char *root, char *out, size_t size)
         pc5_copy(out, size, name);
 }
 
+/* A new install's copy checked (read back and compared) or not, as Settings › Check copied
+ * games says for the game's size. An update's always is (pc5_update_begin). */
+static void install_check_choose(Pc5Ui *ui)
+{
+    ui->install.no_check = !pc5_copy_checked(ui->settings.copy_check, ui->install.info.bytes);
+}
+
 /* The review's game installed: copied to the console, or to the USB drive chosen (install_usb). */
 static void begin_install_as(Pc5Ui *ui)
 {
@@ -1964,8 +1976,10 @@ static void begin_install_as(Pc5Ui *ui)
         pc5_copy(ui->install.background, sizeof(ui->install.background), ui->search.choices[ui->choice].background);
         ui->install.background_appid = ui->search.choices[ui->choice].steam_appid;
     }
+    install_check_choose(ui);
     speed_reset(ui);
-    say(ui, "PC5 install id=%s from=%s exe=%s", ui->install.id, ui->folder.path, ui->install.info.exe);
+    say(ui, "PC5 install id=%s from=%s exe=%s check=%d", ui->install.id, ui->folder.path, ui->install.info.exe,
+        !ui->install.no_check);
     go(ui, S_INSTALL);
 }
 
@@ -2101,20 +2115,36 @@ static void queue_next(Pc5Ui *ui)
             ui->install.background_appid = q->search.choices[q->choice].steam_appid;
         }
         ui->installing = 1;
+        install_check_choose(ui);
         speed_reset(ui);
-        say(ui, "PC5 install id=%s from=%s exe=%s queue=%d/%d", ui->install.id, q->folder.path, ui->install.info.exe,
-            ui->queue_at + 1, ui->queue_count);
+        say(ui, "PC5 install id=%s from=%s exe=%s queue=%d/%d check=%d", ui->install.id, q->folder.path, ui->install.info.exe,
+            ui->queue_at + 1, ui->queue_count, !ui->install.no_check);
         go(ui, S_INSTALL);
         return;
     }
     queue_summary(ui);
 }
 
+/* A progress screen drawn again when what it shows has changed (step: its step, then its bytes
+ * and items done), the step at once, the rest at most four times a second: drawing every
+ * frame took the time from the copy. */
+static void progress_redraw(Pc5Ui *ui, int step, uint64_t bytes, uint32_t items)
+{
+    if (step == ui->progress_step && (ui->now - ui->progress_at < 250 || (bytes == ui->progress_bytes && items == ui->progress_items)))
+        return;
+    ui->progress_step = step;
+    ui->progress_bytes = bytes;
+    ui->progress_items = items;
+    ui->progress_at = ui->now;
+    ui->dirty = 1;
+}
+
 static void install_progress(Pc5Ui *ui)
 {
     Pc5InstallPhase phase = pc5_install_step(&ui->install, 14);
 
-    ui->dirty = 1;
+    if (phase >= PC5_INSTALL_FINISH) ui->dirty = 1;   /* its spinner turns */
+    else progress_redraw(ui, (int)phase + (ui->install.cancel ? 100 : 0), ui->install.bytes_done, ui->install.files_done);
     if (phase != ui->speed_phase) speed_reset(ui);
     else if (ui->now - ui->speed_at >= 1000 && phase <= PC5_INSTALL_VERIFY) {
         double rate = (double)(ui->install.bytes_done - ui->speed_bytes) * 1000.0 / (double)(ui->now - ui->speed_at);
@@ -2454,6 +2484,17 @@ static void setting_text(Pc5Ui *ui, SettingRow row, const char **label, char *ab
                                                      : T("A USB keyboard types as your language's in games"));
         pc5_copy(value, value_size, set->keyboard_us ? T("US") : T("Auto"));
         break;
+    case SR_CHECK_COPIES:
+        *label = T("Check copied games");
+        if (set->copy_check == PC5_CHECK_ALWAYS)
+            pc5_copy(about, about_size, T("Every install is read back and compared with the USB drive: it takes about twice as long"));
+        else if (set->copy_check == PC5_CHECK_BIG)
+            pc5_tf(about, about_size, "Installs over %d GB are read back and compared with the USB drive, catching a bad drive or cable",
+                   PC5_CHECK_BIG_GB);
+        else
+            pc5_copy(about, about_size, T("Installs aren't read back: fastest. Turn on for a drive or cable you don't trust"));
+        pc5_copy(value, value_size, T(pc5_copy_check_name(set->copy_check)));
+        break;
     case SR_KEEP_LOGS:
         *label = T("Keep all logs");
         pc5_copy(about, about_size, set->keep_logs ? T("Every session's log is kept for 7 days")
@@ -2755,6 +2796,7 @@ static int setting_change(Pc5Ui *ui, SettingRow row, int step)
     case SR_KEEP_LOGS: set->keep_logs = !set->keep_logs; break;
     case SR_KEYBOARD: set->keyboard_us = !set->keyboard_us; break;
     case SR_HIGH_REFRESH: set->high_refresh = !set->high_refresh; break;
+    case SR_CHECK_COPIES: set->copy_check = (Pc5CopyCheck)((set->copy_check + PC5_CHECKS + step) % PC5_CHECKS); break;
     case SR_FTP:
         set->ftp_server = !set->ftp_server;
         ftp_apply(ui);
@@ -2816,11 +2858,11 @@ static int setting_change(Pc5Ui *ui, SettingRow row, int step)
     if (pc5_settings_save(ui->root, set)) say(ui, "PC5 problem settings: can't write them");
     say(ui, "PC5 settings fps=%d frame_time=%d cpu=%d gpu=%d cpu_temp=%d soc_temp=%d memory=%d corner=%d size=%s vibration=%d light=%d "
         "triggers=%d trigger_rumble=%d trigger_resistance=%d updates=%d keep_logs=%d startup_sound=%s startup_volume=%d "
-        "pictures_off=%#x language=%s",
+        "pictures_off=%#x language=%s check_copies=%s",
         set->fps, set->frame_time, set->cpu_usage, set->gpu_usage, set->cpu_temperature, set->soc_temperature, set->memory,
         (int)set->fps_corner, pc5_overlay_size_key(set->overlay_size), set->vibration, (int)set->light_bar, (int)set->triggers, set->trigger_rumble,
         set->trigger_resistance, set->check_updates, set->keep_logs, set->startup_sound, set->startup_volume,
-        (unsigned)set->pictures_off, set->language[0] ? set->language : "system");
+        (unsigned)set->pictures_off, set->language[0] ? set->language : "system", pc5_copy_check_key(set->copy_check));
     return 1;
 }
 
@@ -4476,7 +4518,10 @@ static void files_update(Pc5Ui *ui, uint32_t k)
             say(ui, "PC5 files stop");
             pc5_files_stop(&ui->files_job);
         }
-        if (pc5_files_step(&ui->files_job, 14)) { ui->dirty = 1; break; }
+        if (pc5_files_step(&ui->files_job, 14)) {
+            progress_redraw(ui, ui->files_job.stop, ui->files_job.done_bytes, ui->files_job.done_items);
+            break;
+        }
         files_finish(ui);
         break;
     default:
@@ -6824,7 +6869,7 @@ static void settings_screen(Pc5Ui *ui, Pc5Canvas *c)
                    i == ui->menu, label, about, value);
     }
     SettingRow row = rows[ui->menu < count ? ui->menu : 0];
-    int changes = row == SR_KEEP_LOGS || row == SR_KEYBOARD || row == SR_HIGH_REFRESH || row == SR_FTP || row == SR_WEB || (row >= SR_FPS && row <= SR_TRIGGER_RESISTANCE) || row == SR_CHECK_ON_OPEN ||
+    int changes = row == SR_KEEP_LOGS || row == SR_KEYBOARD || row == SR_HIGH_REFRESH || row == SR_CHECK_COPIES || row == SR_FTP || row == SR_WEB || (row >= SR_FPS && row <= SR_TRIGGER_RESISTANCE) || row == SR_CHECK_ON_OPEN ||
                   row == SR_STARTUP_SOUND || row == SR_STARTUP_VOLUME || row >= SR_SOURCE;
     Hint list[] = { { accept_glyph(ui), changes ? T("Change") : T("Choose") }, { back_glyph(ui), T("Back") }, { G_TRIANGLE, T("QR code") } };
     Pc5WebStatus web = { 0 };

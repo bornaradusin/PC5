@@ -12,7 +12,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-enum { CHUNK = 1 << 20, DEPTH = 64 };
+enum { CHUNK = 4 << 20, DEPTH = 64 };
 #define PART ".pc5part"
 
 /* ---- a folder's items ------------------------------------------------------------------ */

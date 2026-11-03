@@ -145,9 +145,16 @@ def main():
         listed = [g for g in json.loads(body) if g["id"] == game["id"]][0]
         assert listed["debug"] == "err+all,+seh\n" and "Graphics API" in listed["settings"], listed
         assert listed["report"] == "" or listed["report"].startswith("https://github.com/bornaradusin/PC5/issues/new?"), listed
+        # Report it works: the compatibility form, its fields filled in by their ids.
+        works = urllib.parse.urlsplit(listed["works"])
+        fields = urllib.parse.parse_qs(works.query)
+        assert works.path == "/bornaradusin/PC5/discussions/new" and fields["category"] == ["game-compatibility"], listed
+        assert fields["game"] == [listed["title"]] and fields["result"] == ["Works perfectly"] and fields["pc5"][0], fields
+        assert fields["controller"][0] in ("Xbox controller", "DualSense", "Keyboard & mouse"), fields
+        assert fields["settings"] == [listed["settings"]] and "notes" not in fields, fields
         status, body, _ = request(server.base, "api/games/%s/debug" % game["id"], "PUT", b"\n")
         assert status == 200 and not os.path.exists(debug), status
-        checks += 3
+        checks += 4
         # Files: the game's folder and its Windows; a text file read as UTF-8 and written back as it was.
         files = "api/games/%s/files/" % urllib.parse.quote(game["id"])
         top = [p for p in glob.glob(os.path.join(root, "prefixes", game["id"], "**", game["folder"]), recursive=True)

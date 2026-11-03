@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -332,6 +333,88 @@ static void sha_block(Pc5Sha256 *sha, const uint8_t *p)
     sha->state[4] += e; sha->state[5] += f; sha->state[6] += g; sha->state[7] += h;
 }
 
+/* ---- SHA-256 on the CPU's SHA instructions (x86-64's SHA-NI), with SSE4.1's; the C above
+ * where the CPU hasn't them (CPUID leaf 7's EBX bit 29). The 64 rounds four at a time: each
+ * sha256rnds2 does two, on the state as the instructions keep it (A B E F and C D G H); the
+ * words past the block's 16 come from sha256msg1 and sha256msg2. */
+#if defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))
+#include <cpuid.h>
+#include <immintrin.h>
+#define PC5_SHA_NI 1
+
+__attribute__((target("sha,sse4.1"))) static void sha_blocks_ni(uint32_t state[8], const uint8_t *p, size_t blocks)
+{
+    /* each 32-bit word's bytes turned round: the block's words are big-endian */
+    const __m128i order = _mm_set_epi64x(0x0c0d0e0f08090a0bLL, 0x0405060700010203LL);
+    __m128i t = _mm_loadu_si128((const __m128i *)&state[0]), abef, cdgh, w[4];
+
+    cdgh = _mm_loadu_si128((const __m128i *)&state[4]);
+    t = _mm_shuffle_epi32(t, 0xb1);
+    cdgh = _mm_shuffle_epi32(cdgh, 0x1b);
+    abef = _mm_alignr_epi8(t, cdgh, 8);
+    cdgh = _mm_blend_epi16(cdgh, t, 0xf0);
+    for (; blocks; blocks--, p += 64) {
+        __m128i abef_was = abef, cdgh_was = cdgh;
+        for (int i = 0; i < 4; i++) w[i] = _mm_shuffle_epi8(_mm_loadu_si128((const __m128i *)(p + 16 * i)), order);
+        for (int i = 0; i < 16; i++) {
+            /* rounds 4i to 4i + 3, with words 4i to 4i + 3 (w[i % 4]) */
+            __m128i m = _mm_add_epi32(w[i & 3], _mm_loadu_si128((const __m128i *)&sha_k[4 * i]));
+            cdgh = _mm_sha256rnds2_epu32(cdgh, abef, m);
+            abef = _mm_sha256rnds2_epu32(abef, cdgh, _mm_shuffle_epi32(m, 0x0e));
+            if (i < 12) {
+                /* words 4i + 16 to 4i + 19 in w[i % 4]'s place: w[t - 16] + s0(w[t - 15]),
+                 * + w[t - 7], + s1(w[t - 2]) */
+                __m128i next = _mm_sha256msg1_epu32(w[i & 3], w[(i + 1) & 3]);
+                next = _mm_add_epi32(next, _mm_alignr_epi8(w[(i + 3) & 3], w[(i + 2) & 3], 4));
+                w[i & 3] = _mm_sha256msg2_epu32(next, w[(i + 3) & 3]);
+            }
+        }
+        abef = _mm_add_epi32(abef, abef_was);
+        cdgh = _mm_add_epi32(cdgh, cdgh_was);
+    }
+    t = _mm_shuffle_epi32(abef, 0x1b);
+    cdgh = _mm_shuffle_epi32(cdgh, 0xb1);
+    abef = _mm_blend_epi16(t, cdgh, 0xf0);
+    cdgh = _mm_alignr_epi8(cdgh, t, 8);
+    _mm_storeu_si128((__m128i *)&state[0], abef);
+    _mm_storeu_si128((__m128i *)&state[4], cdgh);
+}
+
+/* 1 when the CPU has SHA-NI and the SSSE3 and SSE4.1 it goes with. */
+static int sha_ni_there(void)
+{
+    unsigned a, b, c, d;
+    if (!__get_cpuid(1, &a, &b, &c, &d) || !(c & (1u << 9)) || !(c & (1u << 19))) return 0;
+    return __get_cpuid_count(7, 0, &a, &b, &c, &d) && (b & (1u << 29));
+}
+#endif
+
+/* 0 not chosen yet, 1 the C, 2 the instructions: what the CPU has, or what the tests asked for. */
+static atomic_int sha_way;
+
+int pc5_sha256_way(int way)
+{
+    int chosen = 1;
+#ifdef PC5_SHA_NI
+    if (way != 0 && sha_ni_there()) chosen = 2;
+#endif
+    atomic_store(&sha_way, chosen);
+    return chosen - 1;
+}
+
+static void sha_blocks(Pc5Sha256 *sha, const uint8_t *p, size_t blocks)
+{
+    int way = atomic_load_explicit(&sha_way, memory_order_relaxed);
+    if (!way) way = pc5_sha256_way(-1) + 1;   /* chosen the first time */
+#ifdef PC5_SHA_NI
+    if (way == 2) {
+        sha_blocks_ni(sha->state, p, blocks);
+        return;
+    }
+#endif
+    for (; blocks; blocks--, p += 64) sha_block(sha, p);
+}
+
 void pc5_sha256_init(Pc5Sha256 *sha)
 {
     static const uint32_t start[8] = { 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
@@ -353,10 +436,12 @@ void pc5_sha256_update(Pc5Sha256 *sha, const void *data, size_t size)
         p += take;
         size -= take;
         if (sha->used < 64) return;
-        sha_block(sha, sha->block);
+        sha_blocks(sha, sha->block, 1);
         sha->used = 0;
     }
-    for (; size >= 64; p += 64, size -= 64) sha_block(sha, p);
+    sha_blocks(sha, p, size / 64);
+    p += size / 64 * 64;
+    size %= 64;
     memcpy(sha->block, p, size);
     sha->used = size;
 }
