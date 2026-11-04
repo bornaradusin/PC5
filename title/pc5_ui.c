@@ -79,7 +79,7 @@ typedef enum Screen {
     S_FILES_TYPING, S_FILES_CONFLICT, S_FILES_DELETE, S_FILES_WORKING, S_TILE_ART, S_INSTALL_ASK, S_SETTINGS_TYPING, S_INSTALL_WHERE,
     S_PLAY_WHICH, S_FILES_EDIT, S_FILES_EDIT_MENU, S_FILES_EDIT_TYPING, S_FILES_EDIT_LEAVE,
     S_MUSIC_IMPORT, S_VIDEO_IMPORT, S_PHONE_QR, S_COMPAT_SEARCH, S_COMPAT_REPORT, S_MEDIA_OPTIONS, S_LOOK_CONFIRM, S_LOOK_WORK,
-    S_MEDIA_DELETE, S_COMPAT_SHARE, S_SETTING_ABOUT
+    S_MEDIA_DELETE, S_COMPAT_SHARE, S_SETTING_ABOUT, S_RESET_CONFIRM
 } Screen;
 
 static const char *const screen_names[] = { "start", "covers", "library", "settings", "about", "scan", "sources",
@@ -93,7 +93,7 @@ static const char *const screen_names[] = { "start", "covers", "library", "setti
                                             "files-working", "tile-art", "install-ask", "settings-typing", "install-where",
                                             "play-which", "files-edit", "files-edit-menu", "files-edit-typing",
                                             "files-edit-leave", "music-import", "video-import", "phone-qr", "compat-search", "compat-report", "media-options", "look-confirm", "look-work",
-                                            "media-delete", "compat-share", "setting-about" };
+                                            "media-delete", "compat-share", "setting-about", "reset-confirm" };
 
 /* One game of several being installed in a row. */
 typedef enum QueueState { Q_WAITING, Q_INSTALLED, Q_FAILED, Q_STOPPED, Q_SKIPPED } QueueState;
@@ -202,7 +202,7 @@ typedef enum GameRow {
     GR_COVER, GR_BACKGROUND, GR_HOME, GR_ICON, GR_MUSIC, GR_MUSIC_CLEAR,
     GR_BACKGROUND_IMAGE, GR_BACKGROUND_VIDEO, GR_VIDEO_CLEAR, GR_MEDIA_OPTIONS, GR_MUSIC_FILE, GR_VIDEO_FILE,
     GR_MEDIA, GR_LOADING, GR_LOADING_FILE, GR_LOADING_BACKGROUND, GR_LOADING_CLEAR,
-    GR_PROGRAM, GR_STEAM, GR_FILES, GR_UPDATE, GR_REPORT, GR_WORKS, GR_UNINSTALL
+    GR_PROGRAM, GR_STEAM, GR_FILES, GR_UPDATE, GR_REPORT, GR_WORKS, GR_RESET, GR_UNINSTALL
 } GameRow;
 enum { GAME_ROWS = 8, GAME_PAGES = 9, GP_MAIN = 0, GP_GRAPHICS = 1, GP_APPEARANCE = 2, GP_MANAGE = 3, GP_BACKGROUND = 4,
        GP_MUSIC = 5, GP_VIDEO = 6, GP_MEDIA = 7, GP_LOADING = 8 };
@@ -271,6 +271,8 @@ static int game_rows(const Pc5Controls *controls, int kind, int page, GameRow ro
         if (kind & GAME_PC5) rows[n++] = GR_UPDATE;
         rows[n++] = GR_REPORT;
         rows[n++] = GR_WORKS;
+        /* Only a game PC5 installed has a Windows of its own to make new (8 rows at most). */
+        if (kind & GAME_MEDIA) rows[n++] = GR_RESET;
         rows[n++] = GR_UNINSTALL;
         break;
     default:
@@ -2016,6 +2018,36 @@ static void begin_update(Pc5Ui *ui)
     go(ui, S_INSTALL);
 }
 
+/* Reset Windows for the game in launch_id: its Windows made new, its files, saves and settings
+ * moved into it (pc5_reset_begin), with an install's progress; or why it can't be, nothing changed. */
+static void begin_reset(Pc5Ui *ui)
+{
+    int index = pc5_library_find(&ui->library, ui->launch_id);
+    char title[200], body[PC5_ERROR + 64];
+
+    if (index < 0) {
+        go(ui, S_LIBRARY);
+        return;
+    }
+    const Pc5Game *game = &ui->library.games[index];
+    atomic_store(&ui->backgrounds.stop, 1);   /* not to save into the game while its Windows changes */
+    if (pc5_reset_begin(&ui->install, ui->root, ui->template_prefix, game, &ui->library)) {
+        pc5_tf(title, sizeof(title), "The Windows of %s wasn't reset", game->title);
+        pc5_tf(body, sizeof(body), "%s Nothing was changed.", TX(ui->install.error));
+        say(ui, "PC5 problem reset %s: %s", game->id, ui->install.error);
+        pc5_install_end(&ui->install);
+        ui->backgrounds_for = -1;   /* the worker, stopped for this, looks again */
+        game_menu_at(ui, GR_RESET);
+        message(ui, 0, title, body, S_GAME_MENU);
+        return;
+    }
+    ui->installing = 1;
+    speed_reset(ui);
+    say(ui, "PC5 reset id=%s usb=%d step=windows files=%u bytes=%llu", ui->install.id, game->usb,
+        (unsigned)ui->install.files_total, (unsigned long long)ui->install.bytes_total);
+    go(ui, S_INSTALL);
+}
+
 /* The USB drives' PC5/INSTALL folders, made on each drive plugged in that can be written to;
  * how many drives there are. */
 static int usb_install_refresh(Pc5Ui *ui)
@@ -2148,6 +2180,10 @@ static void install_progress(Pc5Ui *ui)
 
     if (phase >= PC5_INSTALL_FINISH) ui->dirty = 1;   /* its spinner turns */
     else progress_redraw(ui, (int)phase + (ui->install.cancel ? 100 : 0), ui->install.bytes_done, ui->install.files_done);
+    /* A reset's steps, each as it begins: its files and saves moved, the old Windows deleted. */
+    if (ui->install.reset && phase != ui->speed_phase && (phase == PC5_INSTALL_FINISH || phase == PC5_INSTALL_CLEANUP))
+        say(ui, "PC5 reset id=%s step=%s", ui->install.id,
+            phase == PC5_INSTALL_FINISH ? "moving" : ui->install.tidying ? "deleting-old" : "deleting-new");
     if (phase != ui->speed_phase) speed_reset(ui);
     else if (ui->now - ui->speed_at >= 1000 && phase <= PC5_INSTALL_VERIFY) {
         double rate = (double)(ui->install.bytes_done - ui->speed_bytes) * 1000.0 / (double)(ui->now - ui->speed_at);
@@ -2172,6 +2208,33 @@ static void install_progress(Pc5Ui *ui)
         ui->installing = 0;
         ui->queue_at++;
         queue_next(ui);
+        return;
+    }
+    if (ui->install.reset) {
+        /* Reset Windows of the game in launch_id: back to its menu, at the row. */
+        char title[200], body[1400], id[PC5_ID];
+        int good = phase == PC5_INSTALL_DONE;
+        pc5_copy(id, sizeof(id), ui->install.id);
+        if (good) {
+            pc5_tf(title, sizeof(title), "The Windows of %s is reset", ui->install.info.title);
+            pc5_tf(body, sizeof(body), "It is a new Windows, as a fresh install has. The game's files, its saves and PC5's "
+                     "settings for it are as they were; its old registry is kept in its pc5/reset-backup folder.");
+            say(ui, "PC5 reset done id=%s", id);
+        } else if (phase == PC5_INSTALL_CANCELLED) {
+            pc5_tf(title, sizeof(title), "Reset stopped");
+            pc5_tf(body, sizeof(body), "The new Windows made so far was deleted: the game is as it was.");
+            say(ui, "PC5 reset ended cancelled=1 id=%s", id);
+        } else {
+            pc5_tf(title, sizeof(title), "The Windows of %s wasn't reset", ui->install.info.title);
+            pc5_tf(body, sizeof(body), ui->install.moving ? "%s PC5 finishes it the next time it starts." : "%s Nothing was changed.",
+                   TX(ui->install.error));
+            say(ui, "PC5 problem reset %s: %s (moving=%d)", id, ui->install.error, ui->install.moving);
+        }
+        pc5_install_end(&ui->install);
+        ui->installing = 0;
+        library_reload(ui, id);
+        game_menu_at(ui, GR_RESET);
+        message(ui, good, title, body, S_GAME_MENU);
         return;
     }
     if (ui->install.update) {
@@ -5471,6 +5534,9 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 report_game_log(ui, &ui->library.games[ui->selected]);
             } else if (row == GR_WORKS) {
                 report_works(ui, &ui->library.games[ui->selected]);
+            } else if (row == GR_RESET) {
+                ui->button = 0;   /* Cancel first */
+                go(ui, S_RESET_CONFIRM);
             } else if (row == GR_UNINSTALL) {
                 ui->menu = index;
                 ui->button = 0;   /* Cancel first */
@@ -5757,6 +5823,17 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         }
         break;
     }
+    case S_RESET_CONFIRM:
+        /* Cancel, Reset: back to its row, or the reset begun (begin_reset). */
+        if ((k & PC5_KEY_LEFT) && ui->button > 0) { ui->button--; ui->dirty = 1; }
+        if ((k & PC5_KEY_RIGHT) && ui->button < 1) { ui->button++; ui->dirty = 1; }
+        if ((k & back) || ((k & accept) && ui->now - ui->entered > 400 && !ui->button)) {
+            game_menu_at(ui, GR_RESET);
+            go(ui, S_GAME_MENU);
+        } else if ((k & accept) && ui->now - ui->entered > 400) {
+            begin_reset(ui);
+        }
+        break;
     case S_REMOVING:
         if (!ui->remove.failed && pc5_remove_step(&ui->remove, 14)) { ui->dirty = 1; break; }
         {
@@ -7166,6 +7243,11 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
         *text = T("A QR code for the game compatibility form, filled in: adds the game to the list");
         *value = more;
         break;
+    case GR_RESET:
+        *label = T("Reset Windows");
+        *text = T("Makes its Windows new, as a fresh install's; its files, saves and settings stay");
+        *value = "";
+        break;
     case GR_UNINSTALL:
         *label = T("Uninstall");
         *text = T("Deletes the game, or keeps its saves for later");
@@ -7265,6 +7347,11 @@ static int setting_about(Pc5Ui *ui, GameRow row, const char *lines[6])
         lines[n++] = T("Many PC games need Steam running to start. The console has no Steam, so PC5 stands in for it.");
         lines[n++] = T("Auto: the game starts as if Steam were running, offline.");
         lines[n++] = T("Off: the game's own Steam files are used. It won't find Steam and may not start; only for a game that misbehaves with Auto.");
+        break;
+    case GR_RESET:
+        lines[n++] = T("Makes the game's Windows new, as a fresh install has it. Use it when a game that used to work stops starting.");
+        lines[n++] = T("What stays: the game's files, its saves in its Windows user folders (AppData, Documents, Saved Games) and PC5's settings for it.");
+        lines[n++] = T("What goes back to its default: the Windows settings the game kept in the registry. Some games keep options or saves there; the old registry is kept in the game's pc5/reset-backup folder.");
         break;
     default:
         break;
@@ -7825,7 +7912,12 @@ static void install_screen(Pc5Ui *ui, Pc5Canvas *c)
     const char *step;
     int number;
 
-    switch (in->phase) {
+    if (in->reset && (in->phase == PC5_INSTALL_PREFIX || in->phase == PC5_INSTALL_FINISH || in->tidying)) {
+        /* A reset: its new Windows, then what is the game's moved into it and the old one deleted. */
+        step = in->phase == PC5_INSTALL_PREFIX ? T("Making a new Windows from PC5's template")
+               : in->tidying ? T("Deleting the old Windows") : T("Moving the game's files, saves and settings into it");
+        number = in->phase == PC5_INSTALL_PREFIX ? 1 : 2;
+    } else switch (in->phase) {
     case PC5_INSTALL_PREFIX: step = in->kept[0] ? T("Putting back its saves and settings") : T("Setting up the game's Windows");
         number = 1; break;
     case PC5_INSTALL_LIST:
@@ -7842,9 +7934,11 @@ static void install_screen(Pc5Ui *ui, Pc5Canvas *c)
         pc5_tf(line, sizeof(line), "Game %d of %d", ui->queue_at + 1, ui->queue_count);
         pc5_text(c, &ui->fonts, PC5_FACE_SMALL, (int)x + 64, (int)y + 62, C_ACCENT, line, (int)w - 128, 0);
     }
-    pc5_tf(title, sizeof(title), in->update ? "Updating %s" : "Installing %s", in->info.title);
+    pc5_tf(title, sizeof(title), in->reset ? "Resetting the Windows of %s" : in->update ? "Updating %s" : "Installing %s",
+           in->info.title);
     pc5_text(c, &ui->fonts, PC5_FACE_HEAD, (int)x + 64, (int)y + 116, C_TEXT, title, (int)w - 128, 0);
-    if (number) pc5_tf(line, sizeof(line), "Step %d of 3 \xc2\xb7 %s", number, step);
+    if (number && in->reset) pc5_tf(line, sizeof(line), "Step %d of 2 \xc2\xb7 %s", number, step);
+    else if (number) pc5_tf(line, sizeof(line), "Step %d of 3 \xc2\xb7 %s", number, step);
     else pc5_copy(line, sizeof(line), step);
     pc5_text(c, &ui->fonts, PC5_FACE_LABEL, (int)x + 64, (int)y + 186, C_TEXT, line, (int)w - 128, 0);
     double fraction = in->bytes_total ? (double)in->bytes_done / (double)in->bytes_total : 0;
@@ -8804,7 +8898,10 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
     case S_INSTALL: install_screen(ui, c); break;
     case S_STOP:
         install_screen(ui, c);
-        if (ui->install.update)
+        if (ui->install.reset)
+            confirm_dialog(ui, c, T("Stop resetting?"), T("The new Windows made so far is deleted and the game stays as it was."),
+                           T("Keep resetting"), T("Stop"), 1, NULL);
+        else if (ui->install.update)
             confirm_dialog(ui, c, T("Stop updating?"), T("The copy made so far is deleted and the game stays as it was. The USB "
                            "drive isn't changed."), T("Keep updating"), T("Stop"), 1, NULL);
         else if (ui->queue_installing)
@@ -8846,6 +8943,19 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
             confirm_dialog(ui, c, line,
                            T("This deletes the game and all its saves and settings. There is no backup and no undo."),
                            T("Cancel"), T("Uninstall"), 1, thumb);
+        break;
+    }
+    case S_RESET_CONFIRM: {
+        int index = pc5_library_find(&ui->library, ui->launch_id);
+        const Pc5Picture *thumb = index >= 0 && ui->covers[index].state ? &ui->covers[index].picture : NULL;
+        game_menu_screen(ui, c, game_row_find(&ui->controls, ui_game_kind(ui), GR_RESET, NULL));
+        pc5_tf(line, sizeof(line), "Reset the Windows of %s?", index >= 0 ? ui->library.games[index].title : T("the game"));
+        confirm_dialog(ui, c, line,
+                       T("Its Windows is made new, like a fresh install. The game's files, its saves (its Windows user "
+                       "folders) and PC5's settings for it stay. Windows settings the game kept in the registry go back "
+                       "to their defaults: some games keep options or saves there. Use it when a game that used to work "
+                       "stops starting."),
+                       T("Cancel"), T("Reset"), 1, thumb);
         break;
     }
     case S_REMOVING:

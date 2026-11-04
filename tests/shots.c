@@ -462,6 +462,18 @@ int main(int argc, char **argv)
     save("15r-report-works");
     step(ui, PC5_KEY_BACK, 1);             /* back to Manage */
     settle(ui);
+    step(ui, PC5_KEY_DOWN, 1);             /* Reset Windows */
+    settle(ui);
+    save("15s-game-menu-reset");
+    step(ui, PC5_KEY_SQUARE, 1);           /* what it does */
+    settle(ui);
+    save("15t-reset-about");
+    step(ui, PC5_KEY_BACK, 1);
+    step(ui, PC5_KEY_ACCEPT, 1);
+    settle(ui);
+    save("15u-reset-confirm");
+    step(ui, PC5_KEY_BACK, 1);             /* Cancel: back to Manage, nothing changed */
+    settle(ui);
     step(ui, PC5_KEY_TRIANGLE, 1);
     step(ui, PC5_KEY_OPTIONS, 1);
     settle(ui);

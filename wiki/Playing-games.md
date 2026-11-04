@@ -98,7 +98,7 @@ Choose a game in the library and press **△**. Its menu has what you change mos
 | Graphics › | Graphics mode, frame generation, resolution, aspect ratio, game memory, graphics memory and stutter fix. See [Graphics](#graphics). |
 | Sound output | **Stereo** (the default), **5.1** or **7.1**: how many speakers the game is told the console has. With 5.1 or 7.1 the game plays each sound on its own speaker of a surround system, and the PS5 sends it on as it does its own games' sound. If the game is silent or sound only comes from the front, set it back to Stereo. Press **✕** or left / right to change it. From 2.2.2-test. |
 | Appearance › | The game's cover, its background (a picture or a video), its loading picture, its home screen tile, the tile's picture and its music. See [Appearance](#appearance). |
-| Manage › | The program PC5 starts, its files, updating the game and uninstalling it. See [Manage](#manage). |
+| Manage › | The program PC5 starts, its files, updating the game, resetting its Windows and uninstalling it. See [Manage](#manage). |
 
 **○** goes back from a group to the menu, and from the menu to the library. **△** closes the menu from anywhere in it.
 
@@ -155,6 +155,7 @@ From 2.1.9, **□ About** on a setting opens a window that says in plain words w
 | Update | Only for games PC5 installed: copies a newer version from the USB drive over the game. Its saves, settings and options stay. See [Updating a game](Installing-games#updating-a-game). |
 | Report a problem | (From 2.0.4.) A QR code for GitHub's issue form, filled in from the game's newest log: the game, its program, PC5's version, what went wrong, the log's name and the game's settings. Attach that log on the form. See [Reporting a problem](Reporting-a-problem). |
 | Report it works | (From 2.2.7.) A QR code for the game compatibility form, filled in with the game, PC5's version and the game's settings: say how well it runs and post it, and the [game compatibility list](Game-compatibility) adds it. PC5's web page has the same button in its Games list (from 2.2.6). |
+| Reset Windows | (From 2.2.8.) Only for games PC5 installed: makes the game's Windows new, as a fresh install has it, after asking; for a game that used to work and stopped starting. The game's files, its saves in its Windows user folders (`AppData`, `Documents`, `Saved Games`, and `ProgramData`), and PC5's settings and pictures for it stay: they are moved into the new Windows, not copied, so it takes a few seconds and needs only about 200 MB free. Windows settings the game kept in the registry go back to their defaults: some games keep their options or saves there. The old registry is kept in the game's `pc5/reset-backup/` folder. A game played from its USB drive keeps its folder there. If the console turns off while it works, PC5 finishes it the next time it opens. |
 | Uninstall | Deletes the game, keeping its saves or not, after asking. See [Uninstalling a game](Installing-games#uninstalling-a-game). |
 
 ## Games made for Steam

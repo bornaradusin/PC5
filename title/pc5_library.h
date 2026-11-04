@@ -218,6 +218,9 @@ typedef struct Pc5Install {
      * folder moved into the game's Windows, not copied (take); and moved there now (taken), so
      * a cleanup moves it back first. */
     int take, taken;
+    /* pc5_reset_begin: the game's Windows made new (in staging, prefixes/.resetting-<id>), nothing
+     * copied but the template; moving is set once its note is written (finished from then on). */
+    int reset;
 } Pc5Install;
 
 /* Checks the space and starts. -1 (with error set) when it can't begin. The
@@ -303,6 +306,38 @@ int pc5_install_use_saves(Pc5Install *install, const char *path);
 int pc5_update_begin(Pc5Install *install, const char *root, const char *id, const Pc5Folder *folder);
 /* Bytes an update with folder needs: the copy and some room. */
 uint64_t pc5_update_needs(const Pc5Folder *folder);
+
+/* ---- resetting a game's Windows ------------------------------------------------------
+ * Reset Windows makes a PC5 game's Windows new, as an install makes it, for a game that used to
+ * work and stopped starting. Nothing of the game's or the player's is copied or deleted:
+ *   1. The new Windows is made from the app's template in prefixes/.resetting-<id>, as an
+ *      install's is (the registry last, system.reg last).
+ *   2. Its note (PC5_RESET_NOTE there) is written: from here on the reset is finished, now or at
+ *      the next start, never undone.
+ *   3. What is the game's and the player's is moved (renamed) from the old Windows into the new
+ *      one: C:\Games (the game's files, or the link to its folder on its USB drive), C:\users
+ *      (the players' saves and settings: AppData, Documents, Saved Games), C:\ProgramData and
+ *      any other folder of C: the template doesn't have, over the template's own where both
+ *      have one; PC5's settings and pictures (pc5/), the shader cache (pc5-cache/), and anything
+ *      else the template doesn't have. The old registry (system.reg, user.reg, userdef.reg) and
+ *      PC5's notes on what the old Windows had (pc5/template.txt, dxvk.txt, redist.txt,
+ *      path.txt) go to the new one's pc5/reset-backup/, so the game's next start puts in what
+ *      each start adds (pc5_game_begin) as it does for a game just installed.
+ *   4. The old Windows goes aside (prefixes/.reset-old-<id>), the new one in its place, and the
+ *      old one, all that is left of it the template's, is deleted.
+ * Cut short before the note, the new Windows is deleted at the next start and the game is as it
+ * was (pc5_recover_step); after it, the moves and the swap are finished then. A game played from
+ * its USB drive keeps its folder there: only its link in C:\Games is moved. Settings a game kept
+ * in the registry (some keep options or saves there) are the template's again. Progress and the
+ * steps are an install's (pc5_install_step): PREFIX, then FINISH (and CLEANUP, deleting the old
+ * Windows). Refused (-1, with why in error, nothing changed) for a game PC5 didn't install in a
+ * Windows of its own, one with an update or a reset not finished, or without room for the
+ * template. */
+int pc5_reset_begin(Pc5Install *install, const char *root, const char *template_prefix, const Pc5Game *game,
+                    const Pc5Library *library);
+/* Bytes a reset needs: the new Windows, beside the old one while it works. */
+uint64_t pc5_reset_needs(void);
+#define PC5_RESET_NOTE "pc5-reset.txt"
 
 /* ---- uninstalling ------------------------------------------------------------------- */
 

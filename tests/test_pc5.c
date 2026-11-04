@@ -1060,6 +1060,7 @@ static void make_template(void)
     char file[PC5_PATH];
     static const char *const files[] = { "drive_c/windows/system32/kernel32.dll", "drive_c/windows/syswow64/d3d9.dll",
                                          "drive_c/users/prospero/Documents/.keep", "dosdevices/.pw-symlinks",
+                                         "drive_c/Program Files (x86)/Common Files/wine.txt",
                                          "user.reg", "userdef.reg", "system.reg" };
     Pc5Buf list = { 0 };
 
@@ -1108,7 +1109,7 @@ static Pc5InstallPhase install_folder(const char *name, int cancel_after_copy_st
     }
     /* Step 1 counts the template's files and bytes; steps 2 and 3 the game's. */
     if (install_saves) CHECK(!pc5_install_use_saves(&install, install_saves), "saves used: %s", install.error);
-    else CHECK(install.files_total == 7 && install.bytes_total > 0, "step 1's progress: %u files", (unsigned)install.files_total);
+    else CHECK(install.files_total == 8 && install.bytes_total > 0, "step 1's progress: %u files", (unsigned)install.files_total);
     pc5_copy(install.background, sizeof(install.background), "https://images.gog-statics.com/background.jpg");
     install.background_appid = 901001;
     install.no_check = install_unchecked;
@@ -2209,6 +2210,24 @@ static void test_usb_play(void)
     CHECK(!rename(dir, game_usb), "plugged back");
     CHECK(!pc5_profile_refresh(root, id, error, sizeof(error)), "starts again: %s", error);
 
+    /* Reset Windows: its link to the drive (and Wine's other one) moved into the new Windows, the
+     * drive not touched. */
+    pc5_library_load(root, &library);
+    i = pc5_library_find(&library, id);
+    CHECK(i >= 0 && !pc5_reset_begin(&install, root, template_prefix, &library.games[i], &library), "reset begins: %s",
+          install.error);
+    phase = install_run(&install, &copied);
+    CHECK(phase == PC5_INSTALL_DONE && !copied, "reset: %d %s", (int)phase, install.error);
+    pc5_install_end(&install);
+    {
+        char line[PC5_PATH + 64];
+        snprintf(line, sizeof(line), "Saved\t/dev/null\nNeonDrift\t%s\n", game_usb);
+        CHECK(file_is(file, line), "its links kept");
+    }
+    path(dir, sizeof(dir), "%s/data/level1.pak", game_usb);
+    CHECK(file_is(dir, "level one data\n") && !pc5_profile_refresh(root, id, error, sizeof(error)),
+          "the game on the drive as it was, and it starts: %s", error);
+
     /* Updating it is copying over its folder on the drive. */
     path(dir, sizeof(dir), "%s/NeonDrift", usb);
     pc5_folder_inspect(dir, "NeonDrift", &folder);
@@ -2433,6 +2452,241 @@ static void test_keep_saves(void)
         pc5_remove_end(&remove);
     }
     CHECK(pc5_saves_list(root, saves, 4) == 0 && count_entries(prefixes, ".removing-") == 0, "none left");
+    pc5_copy(root, sizeof(root), kept_root);
+}
+
+/* The inode of a file, or 0 (below, with the upgrade's checks): a file moved is the same one, a
+ * file copied isn't. */
+static ino_t inode_of(const char *file);
+
+/* What a reset finds in a game's old Windows: the player's saves and settings, PC5's, and the
+ * old Windows' own files (a damaged one, one that shouldn't be there, the registry). */
+static void reset_fill(const char *game)
+{
+    static const char *const files[][2] = {
+        { "drive_c/users/prospero/AppData/Roaming/NeonDrift/options.ini", "my options" },
+        { "drive_c/users/prospero/Documents/NeonDrift/slot1.sav", "my save" },
+        { "drive_c/users/prospero/Saved Games/NeonDrift/slot2.sav", "my other save" },
+        { "drive_c/users/prospero/Documents/.keep", "the player's own" },
+        { "drive_c/ProgramData/NeonDrift/licence.dat", "its licence" },
+        { "drive_c/NeonSaves/slot3.sav", "a folder of its own on C:" },
+        { "pc5/controls.txt", "mode = keyboard\n" },
+        { "pc5/template.txt", "2.2.7\n" },
+        { "pc5/dxvk.txt", "old dxvk\n" },
+        { "pc5-cache/radv/cache.bin", "shaders" },
+        { "drive_c/windows/system32/kernel32.dll", "damaged" },
+        { "drive_c/windows/system32/stray.dll", "shouldn't be there" },
+        /* A game its setup put in Program Files (the template has one), and Wine's own there, old. */
+        { "drive_c/Program Files (x86)/Old Studio/Old Game/game.exe", "a game a setup installed" },
+        { "drive_c/Program Files (x86)/Common Files/wine.txt", "an old Wine's" },
+        { "system.reg", "the old registry" },
+        { "user.reg", "the game's settings" },
+    };
+    char file[PC5_PATH];
+    for (size_t i = 0; i < sizeof(files) / sizeof(files[0]); i++) {
+        path(file, sizeof(file), "%s/%s", game, files[i][0]);
+        write_text(file, files[i][1]);
+    }
+}
+
+/* What a reset leaves: the game's files the same ones, the saves and PC5's settings as they
+ * were, the template's Windows and registry, the old registry kept, nothing left over. */
+static void reset_check(const char *game, ino_t program, const char *how)
+{
+    static const char *const kept[][2] = {
+        { "drive_c/users/prospero/AppData/Roaming/NeonDrift/options.ini", "my options" },
+        { "drive_c/users/prospero/Documents/NeonDrift/slot1.sav", "my save" },
+        { "drive_c/users/prospero/Saved Games/NeonDrift/slot2.sav", "my other save" },
+        { "drive_c/users/prospero/Documents/.keep", "the player's own" },
+        { "drive_c/ProgramData/NeonDrift/licence.dat", "its licence" },
+        { "drive_c/NeonSaves/slot3.sav", "a folder of its own on C:" },
+        { "pc5/controls.txt", "mode = keyboard\n" },
+        { "pc5-cache/radv/cache.bin", "shaders" },
+        { "drive_c/Games/NeonDrift/data/level1.pak", "level one data\n" },
+        { "drive_c/Program Files (x86)/Old Studio/Old Game/game.exe", "a game a setup installed" },
+        { "drive_c/Program Files (x86)/Common Files/wine.txt", "drive_c/Program Files (x86)/Common Files/wine.txt" },
+        { "drive_c/windows/system32/kernel32.dll", "drive_c/windows/system32/kernel32.dll" },
+        { "system.reg", "system.reg" },
+        { "user.reg", "user.reg" },
+        { "userdef.reg", "userdef.reg" },
+        { "pc5/reset-backup/system.reg", "the old registry" },
+        { "pc5/reset-backup/user.reg", "the game's settings" },
+        { "pc5/reset-backup/userdef.reg", "userdef.reg" },
+        { "pc5/reset-backup/template.txt", "2.2.7\n" },
+        { "pc5/reset-backup/dxvk.txt", "old dxvk\n" },
+    };
+    char file[PC5_PATH], prefixes[PC5_PATH];
+    int wrong = 0;
+    for (size_t i = 0; i < sizeof(kept) / sizeof(kept[0]); i++) {
+        path(file, sizeof(file), "%s/%s", game, kept[i][0]);
+        if (!file_is(file, kept[i][1])) {
+            fprintf(stderr, "(%s: %s isn't what it should be)\n", how, kept[i][0]);
+            wrong++;
+        }
+    }
+    CHECK(!wrong, "%s: the saves, settings and game kept, the Windows and registry the template's", how);
+    path(file, sizeof(file), "%s/drive_c/Games/NeonDrift/data/level1.pak", game);
+    CHECK(inode_of(file) == program, "%s: the game's files moved, not copied", how);
+    static const char *const gone[] = { "drive_c/windows/system32/stray.dll", "pc5/template.txt", "pc5/dxvk.txt",
+                                        PC5_RESET_NOTE };
+    for (size_t i = 0; i < sizeof(gone) / sizeof(gone[0]); i++) {
+        path(file, sizeof(file), "%s/%s", game, gone[i]);
+        CHECK(!pc5_exists(file), "%s: %s gone from the new Windows", how, gone[i]);
+    }
+    path(prefixes, sizeof(prefixes), "%s/..", game);
+    CHECK(count_entries(prefixes, ".resetting-") == 0 && count_entries(prefixes, ".reset-old-") == 0, "%s: nothing left", how);
+}
+
+/* Reset Windows: a new Windows from the template, the game's files, saves and settings moved into
+ * it; cut short at each step, finished or undone at the next start; refused when it can't be. */
+static void test_reset(void)
+{
+    char kept_root[PC5_PATH], id[PC5_ID], prefixes[PC5_PATH], game[PC5_PATH], file[PC5_PATH], staging[PC5_PATH];
+    Pc5Library library;
+    Pc5Install install;
+    Pc5Remove remove;
+    Pc5InstallPhase phase;
+    ino_t program;
+    int i, steps;
+
+    pc5_copy(kept_root, sizeof(kept_root), root);
+    path(root, sizeof(root), "%s/data-reset/prospero-win", work);
+    path(prefixes, sizeof(prefixes), "%s/prefixes", root);
+    CHECK(install_folder("NeonDrift", 0, 0, id, sizeof(id)) == PC5_INSTALL_DONE, "reset: installed");
+    path(game, sizeof(game), "%s/%s", prefixes, id);
+    path(staging, sizeof(staging), "%s/.resetting-%s", prefixes, id);
+    reset_fill(game);
+    path(file, sizeof(file), "%s/drive_c/Games/NeonDrift/data/level1.pak", game);
+    program = inode_of(file);
+
+    /* Reset, start to end. */
+    pc5_library_load(root, &library);
+    i = pc5_library_find(&library, id);
+    CHECK(i >= 0 && !pc5_reset_begin(&install, root, template_prefix, &library.games[i], &library), "reset begins: %s",
+          install.error);
+    CHECK(install.files_total == 8 && install.bytes_total > 0 && !strcmp(install.info.title, "NeonDrift"),
+          "step 1's progress: the template's %u files", (unsigned)install.files_total);
+    steps = 0;
+    int saw_finish = 0;
+    do {
+        phase = pc5_install_step(&install, 1);
+        saw_finish |= phase == PC5_INSTALL_FINISH;
+    } while (phase < PC5_INSTALL_DONE && ++steps < 100000);
+    CHECK(phase == PC5_INSTALL_DONE && saw_finish, "reset: %d %s", (int)phase, install.error);
+    pc5_install_end(&install);
+    reset_check(game, program, "reset");
+    path(file, sizeof(file), "%s/profiles/%s.profile", root, id);
+    pc5_library_load(root, &library);
+    i = pc5_library_find(&library, id);
+    CHECK(pc5_exists(file) && i >= 0 && library.games[i].playable && library.games[i].pc5, "still in the library, playable");
+
+    /* Stopped while its new Windows is made: deleted, the game as it was. */
+    reset_fill(game);
+    CHECK(!pc5_reset_begin(&install, root, template_prefix, &library.games[i], &library), "begins again: %s", install.error);
+    pc5_install_cancel(&install);
+    while ((phase = pc5_install_step(&install, 5)) < PC5_INSTALL_DONE) {}
+    CHECK(phase == PC5_INSTALL_CANCELLED && !pc5_exists(staging), "stopped: %d", (int)phase);
+    pc5_install_end(&install);
+    path(file, sizeof(file), "%s/system.reg", game);
+    CHECK(file_is(file, "the old registry"), "the game's Windows as it was");
+
+    /* Cut short (the console turned off) while its new Windows is made, before its note: the
+     * new Windows is deleted at the next start, the game as it was. */
+    CHECK(!pc5_reset_begin(&install, root, template_prefix, &library.games[i], &library), "begins again: %s", install.error);
+    phase = pc5_install_step(&install, 1);   /* part of it, or all: its note comes after */
+    pc5_install_end(&install);
+    CHECK(pc5_is_dir(staging) && phase <= PC5_INSTALL_FINISH, "a new Windows made, without its note: %d", (int)phase);
+    pc5_library_load(root, &library);
+    i = pc5_library_find(&library, id);
+    CHECK(library.leftovers == 1 && i >= 0 && library.games[i].playable, "a leftover, the game still playable");
+    memset(&remove, 0, sizeof(remove));
+    steps = 0;
+    while (pc5_recover_step(root, &remove, 1) && ++steps < 100000) {}
+    pc5_remove_end(&remove);
+    CHECK(!pc5_exists(staging), "deleted at the next start");
+    CHECK(file_is(file, "the old registry"), "the game's Windows as it was");
+    path(file, sizeof(file), "%s/drive_c/users/prospero/Documents/NeonDrift/slot1.sav", game);
+    CHECK(file_is(file, "my save"), "its save where it was");
+
+    /* Cut short after its note, with the game's files moved and its saves not yet: finished at the
+     * next start. Meanwhile the game doesn't start. */
+    CHECK(!pc5_reset_begin(&install, root, template_prefix, &library.games[i], &library), "begins again: %s", install.error);
+    while ((phase = pc5_install_step(&install, 1)) == PC5_INSTALL_PREFIX) {}
+    CHECK(phase == PC5_INSTALL_FINISH, "the new Windows whole: %d %s", (int)phase, install.error);
+    pc5_install_end(&install);
+    {
+        char note[PC5_PATH], from[PC5_PATH], to[PC5_PATH];
+        path(note, sizeof(note), "%s/" PC5_RESET_NOTE, staging);
+        write_text(note, "neondrift\n");
+        path(from, sizeof(from), "%s/drive_c/Games", game);
+        path(to, sizeof(to), "%s/drive_c/Games", staging);
+        CHECK(!rename(from, to), "the game's files moved, as the reset does first");
+    }
+    pc5_library_load(root, &library);
+    i = pc5_library_find(&library, id);
+    CHECK(i >= 0 && !library.games[i].playable && strstr(library.games[i].problem, "Resetting"),
+          "not playable until it is finished: %s", i >= 0 ? library.games[i].problem : "-");
+    CHECK(pc5_reset_begin(&install, root, template_prefix, &library.games[i], &library) && strstr(install.error, "isn't finished") &&
+          pc5_is_dir(staging), "no second reset meanwhile: %s", install.error);
+    pc5_install_end(&install);
+    memset(&remove, 0, sizeof(remove));
+    steps = 0;
+    while (pc5_recover_step(root, &remove, 1) && ++steps < 100000) {}
+    pc5_remove_end(&remove);
+    reset_check(game, program, "finished at the next start");
+    pc5_library_load(root, &library);
+    i = pc5_library_find(&library, id);
+    CHECK(i >= 0 && library.games[i].playable && !library.leftovers, "playable again");
+
+    /* Cut short right after its note, nothing moved yet: finished at the next start. */
+    reset_fill(game);
+    path(file, sizeof(file), "%s/pc5/reset-backup", game);
+    {
+        char command[2 * PC5_PATH];
+        snprintf(command, sizeof(command), "rm -rf '%s'", file);
+        run(command);
+    }
+    CHECK(!pc5_reset_begin(&install, root, template_prefix, &library.games[i], &library), "begins again: %s", install.error);
+    while ((phase = pc5_install_step(&install, 1)) == PC5_INSTALL_PREFIX) {}
+    pc5_install_end(&install);
+    path(file, sizeof(file), "%s/" PC5_RESET_NOTE, staging);
+    write_text(file, "neondrift\n");
+    pc5_library_load(root, &library);
+    CHECK(library.leftovers == 1, "the reset is a leftover: %d", library.leftovers);
+    memset(&remove, 0, sizeof(remove));
+    steps = 0;
+    while (pc5_recover_step(root, &remove, 1) && ++steps < 100000) {}
+    pc5_remove_end(&remove);
+    reset_check(game, program, "with its note, all moves left to the next start");
+
+    /* Cut short once the new Windows is in place, while the old one is deleted: deleted at the
+     * next start, with the new one's note. */
+    path(file, sizeof(file), "%s/.reset-old-%s/drive_c/windows/system32/kernel32.dll", prefixes, id);
+    write_text(file, "the old Windows");
+    path(file, sizeof(file), "%s/" PC5_RESET_NOTE, game);
+    write_text(file, "neondrift\n");
+    memset(&remove, 0, sizeof(remove));
+    steps = 0;
+    while (pc5_recover_step(root, &remove, 1) && ++steps < 100000) {}
+    pc5_remove_end(&remove);
+    reset_check(game, program, "the old Windows deleted at the next start");
+
+    /* Refused, nothing changed: an update not finished, a game not PC5's own. */
+    path(file, sizeof(file), "%s/.updating-%s", prefixes, id);
+    pc5_mkdirs(file);
+    pc5_library_load(root, &library);
+    i = pc5_library_find(&library, id);
+    CHECK(pc5_reset_begin(&install, root, template_prefix, &library.games[i], &library) && !pc5_exists(staging),
+          "not while an update isn't finished: %s", install.error);
+    pc5_install_end(&install);
+    rmdir(file);
+    {
+        Pc5Game other = library.games[i];
+        other.pc5 = 0;
+        CHECK(pc5_reset_begin(&install, root, template_prefix, &other, &library) && strstr(install.error, "Windows of its own"),
+              "not a game PC5 didn't install: %s", install.error);
+        pc5_install_end(&install);
+    }
     pc5_copy(root, sizeof(root), kept_root);
 }
 
@@ -6785,6 +7039,49 @@ static void test_screens(const char *fonts)
         CHECK(!strcmp(pc5_ui_screen(ui), "library"), "back in the library: %s", pc5_ui_screen(ui));
     }
 
+    /* Reset Windows, from the game's menu: Manage, the row before Uninstall; Cancel is chosen
+     * first, and a press that came too soon does nothing. */
+    {
+        char save[PC5_PATH], reg[PC5_PATH];
+        path(save, sizeof(save), "%s/prefixes/neondrift/drive_c/users/prospero/Documents/NeonDrift/slot1.sav", root);
+        write_text(save, "my save");
+        path(reg, sizeof(reg), "%s/prefixes/neondrift/system.reg", root);
+        write_text(reg, "the old registry");
+        press(ui, PC5_KEY_TRIANGLE, &canvas);
+        for (int i = 0; i < 40; i++) press(ui, PC5_KEY_DOWN, &canvas);   /* Manage, the last row */
+        press(ui, PC5_KEY_ACCEPT, &canvas);
+        for (int i = 0; i < 40; i++) press(ui, PC5_KEY_DOWN, &canvas);   /* Uninstall, the last row */
+        press(ui, PC5_KEY_UP, &canvas);          /* Reset Windows */
+        press(ui, PC5_KEY_SQUARE, &canvas);
+        CHECK(!strcmp(pc5_ui_screen(ui), "setting-about"), "what it does: %s", pc5_ui_screen(ui));
+        save_shot(&canvas, "game-menu-reset-about");
+        press(ui, PC5_KEY_BACK, &canvas);
+        press(ui, PC5_KEY_ACCEPT, &canvas);
+        CHECK(!strcmp(pc5_ui_screen(ui), "reset-confirm"), "asked first: %s", pc5_ui_screen(ui));
+        save_shot(&canvas, "reset-confirm");
+        press(ui, PC5_KEY_ACCEPT, &canvas);      /* too soon after the dialog opened: nothing */
+        frames(ui, 0, 0, 30, &canvas);
+        press(ui, PC5_KEY_ACCEPT, &canvas);      /* Cancel, chosen first */
+        CHECK(!strcmp(pc5_ui_screen(ui), "game-menu") && file_is(reg, "the old registry"), "cancel changes nothing: %s",
+              pc5_ui_screen(ui));
+        press(ui, PC5_KEY_ACCEPT, &canvas);      /* Reset Windows again */
+        press(ui, PC5_KEY_RIGHT, &canvas);
+        press(ui, PC5_KEY_ACCEPT, &canvas);      /* too soon after the dialog opened */
+        CHECK(!strcmp(pc5_ui_screen(ui), "reset-confirm"), "an early press is ignored");
+        frames(ui, 0, 0, 30, &canvas);
+        press(ui, PC5_KEY_ACCEPT, &canvas);      /* Reset */
+        until_screen(ui, "message", &canvas);
+        CHECK(!strcmp(pc5_ui_screen(ui), "message"), "reset: %s", pc5_ui_screen(ui));
+        save_shot(&canvas, "reset-done");
+        CHECK(file_is(save, "my save") && file_is(reg, "system.reg"), "its save kept, its registry the template's");
+        path(reg, sizeof(reg), "%s/prefixes/neondrift/pc5/reset-backup/system.reg", root);
+        CHECK(file_is(reg, "the old registry"), "the old registry kept aside");
+        press(ui, PC5_KEY_ACCEPT, &canvas);
+        CHECK(!strcmp(pc5_ui_screen(ui), "game-menu"), "back on its menu: %s", pc5_ui_screen(ui));
+        press(ui, PC5_KEY_TRIANGLE, &canvas);
+        CHECK(!strcmp(pc5_ui_screen(ui), "library"), "back in the library: %s", pc5_ui_screen(ui));
+    }
+
     /* Compatibility is a top-level tab; root Back is inert, OPTIONS shares a report. */
     press(ui, PC5_KEY_OPTIONS, &canvas);
     press(ui, PC5_KEY_L1, &canvas);         /* Settings to Install */
@@ -9274,6 +9571,7 @@ int main(int argc, char **argv)
     test_uninstall();
     test_game_update();
     test_keep_saves();
+    test_reset();
     test_usb_play();
     test_sources_skip_apps();
     test_play_speed();

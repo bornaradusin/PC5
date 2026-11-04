@@ -92,7 +92,7 @@ msgstr "Panah kiri"
 msgid "Right arrow"
 msgstr "Panah kanan"
 
-#: title/pc5_controls.c:30 title/pc5_controls.c:64 title/pc5_ui.c:7429
+#: title/pc5_controls.c:30 title/pc5_controls.c:64 title/pc5_ui.c:7516
 msgid "Nothing"
 msgstr "Tidak ada"
 
@@ -140,7 +140,7 @@ msgstr "D-pad kanan"
 msgid "Create"
 msgstr "Create"
 
-#: title/pc5_controls.c:44 title/pc5_ui.c:7404
+#: title/pc5_controls.c:44 title/pc5_ui.c:7491
 msgid "Touchpad"
 msgstr "Touchpad"
 
@@ -229,13 +229,13 @@ msgid "Keys"
 msgstr "Tombol"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_controls.c:64 title/pc5_ui.c:6942
+#: title/pc5_controls.c:64 title/pc5_ui.c:7019
 msgid "Mouse pointer"
 msgstr "Penunjuk mouse"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_controls.c:96 title/pc5_ui.c:2488 title/pc5_ui.c:7007
-#: title/pc5_ui.c:7028 title/pc5_ui.c:7147
+#: title/pc5_controls.c:96 title/pc5_ui.c:2551 title/pc5_ui.c:7084
+#: title/pc5_ui.c:7105 title/pc5_ui.c:7224
 msgid "Auto"
 msgstr "Otomatis"
 
@@ -338,8 +338,8 @@ msgid "PC5 ran out of memory planning the work."
 msgstr "Memori PC5 habis saat merencanakan pekerjaan."
 
 #: title/pc5_files.c:385 title/pc5_files.c:406 title/pc5_files.c:419
-#: title/pc5_library.c:2446 title/pc5_library.c:2699 title/pc5_library.c:2709
-#: title/pc5_library.c:2722
+#: title/pc5_library.c:2756 title/pc5_library.c:3010 title/pc5_library.c:3020
+#: title/pc5_library.c:3033
 #, c-format
 msgid "PC5 can't write %s: %s."
 msgstr "PC5 tidak bisa menulis %s: %s."
@@ -349,7 +349,7 @@ msgstr "PC5 tidak bisa menulis %s: %s."
 msgid "PC5 ran out of memory copying %s."
 msgstr "Memori PC5 habis saat menyalin %s."
 
-#: title/pc5_files.c:427 title/pc5_library.c:1860
+#: title/pc5_files.c:427 title/pc5_library.c:1869
 #, c-format
 msgid "PC5 can't put %s in place: %s."
 msgstr "PC5 tidak bisa menaruh %s di tempatnya: %s."
@@ -373,7 +373,7 @@ msgstr "Memori PC5 habis saat menghapus %s."
 msgid "There's no network here."
 msgstr "Tidak ada jaringan di sini."
 
-#: title/pc5_ftp.c:642 title/pc5_ui.c:2713
+#: title/pc5_ftp.c:642 title/pc5_ui.c:2776
 msgid "PC5's INSTALL folder isn't there."
 msgstr "Folder INSTALL PC5 tidak ada."
 
@@ -445,7 +445,7 @@ msgstr ""
 "Colokkan drive USB berisi %.100s: game ini dimainkan dari folder %.200s di "
 "dalamnya."
 
-#: title/pc5_library.c:175 title/pc5_library.c:3151 title/pc5_library.c:3202
+#: title/pc5_library.c:175 title/pc5_library.c:3548 title/pc5_library.c:3599
 #, c-format
 msgid "PC5 can't make the game's folder: %s."
 msgstr "PC5 tidak bisa membuat folder game: %s."
@@ -467,9 +467,9 @@ msgstr "Catatan PC5 tentang game ini hilang."
 msgid "That program is too deep in the game's folder for Windows."
 msgstr "Program itu terlalu dalam di folder game untuk Windows."
 
-#: title/pc5_library.c:625 title/pc5_library.c:1877 title/pc5_library.c:2886
-#: title/pc5_library.c:2889 title/pc5_library.c:2898 title/pc5_library.c:2972
-#: title/pc5_library.c:3164
+#: title/pc5_library.c:625 title/pc5_library.c:1886 title/pc5_library.c:3197
+#: title/pc5_library.c:3200 title/pc5_library.c:3209 title/pc5_library.c:3283
+#: title/pc5_library.c:3435 title/pc5_library.c:3561
 #, c-format
 msgid "PC5 can't write its notes: %s."
 msgstr "PC5 tidak bisa menulis catatannya: %s."
@@ -514,106 +514,135 @@ msgstr "Program-programnya terus saling menjalankan: %d kali berturut-turut."
 msgid "The program's path is too long for Windows."
 msgstr "Jalur program terlalu panjang untuk Windows."
 
-#: title/pc5_library.c:1116
+#: title/pc5_library.c:1119
 #, c-format
 msgid "Its profile has a mistake (%s)."
 msgstr "Profilnya ada kesalahan (%s)."
 
-#: title/pc5_library.c:1133
+#: title/pc5_library.c:1136
 msgid "Its Windows folder is missing."
 msgstr "Folder Windows-nya hilang."
 
-#: title/pc5_library.c:1273
+#: title/pc5_library.c:1140
+msgid "Resetting its Windows isn't finished: close PC5 and open it again."
+msgstr ""
+
+#: title/pc5_library.c:1282
 #, c-format
 msgid "PC5 can't delete %s: %s."
 msgstr "PC5 tidak bisa menghapus %s: %s."
 
-#: title/pc5_library.c:1372 title/pc5_library.c:1647 title/pc5_library.c:1702
+#: title/pc5_library.c:1381 title/pc5_library.c:1656 title/pc5_library.c:1711
+#: title/pc5_library.c:2182
 #, c-format
 msgid "PC5 can't move the game's folder: %s."
 msgstr "PC5 tidak bisa memindahkan folder game: %s."
 
-#: title/pc5_library.c:1381 title/pc5_library.c:1652
+#: title/pc5_library.c:1390 title/pc5_library.c:1661
 #, c-format
 msgid "PC5 can't delete the game's profile: %s."
 msgstr "PC5 tidak bisa menghapus profil game: %s."
 
-#: title/pc5_library.c:1395 title/pc5_library.c:1639 title/pc5_library.c:3037
-#: title/pc5_library.c:3045
+#: title/pc5_library.c:1404 title/pc5_library.c:1648 title/pc5_library.c:2103
+#: title/pc5_library.c:2129 title/pc5_library.c:2138 title/pc5_library.c:2178
+#: title/pc5_library.c:3348 title/pc5_library.c:3356 title/pc5_library.c:3402
+#: title/pc5_library.c:3438
 msgid "A path is too long."
 msgstr "Ada jalur yang terlalu panjang."
 
-#: title/pc5_library.c:1598
+#: title/pc5_library.c:1607
 msgid "PC5 can't read the game's folder."
 msgstr "PC5 tidak bisa membaca folder game."
 
-#: title/pc5_library.c:1606 title/pc5_library.c:1857 title/pc5_library.c:2635
+#: title/pc5_library.c:1615 title/pc5_library.c:1866 title/pc5_library.c:2946
 #, c-format
 msgid "A path in the game is too long: %s."
 msgstr "Ada jalur di game yang terlalu panjang: %s."
 
-#: title/pc5_library.c:1615
+#: title/pc5_library.c:1624
 #, c-format
 msgid "PC5 can't keep %s: %s."
 msgstr "PC5 tidak bisa menyimpan %s: %s."
 
-#: title/pc5_library.c:1671
+#: title/pc5_library.c:1680
 #, c-format
 msgid "PC5 can't put the saves in place: %s."
 msgstr "PC5 tidak bisa menaruh data simpanan di tempatnya: %s."
 
-#: title/pc5_library.c:1685
+#: title/pc5_library.c:1694
 msgid "This game's saves can't be kept apart from it."
 msgstr "Data simpanan game ini tidak bisa disimpan terpisah darinya."
 
-#: title/pc5_library.c:1691
+#: title/pc5_library.c:1700
 #, c-format
 msgid "PC5 can't make its saves folder: %s."
 msgstr "PC5 tidak bisa membuat folder data simpanannya: %s."
 
-#: title/pc5_library.c:1695
+#: title/pc5_library.c:1704
 msgid "PC5 is still keeping this game's saves from before: start PC5 again."
 msgstr "PC5 masih menyimpan data simpanan lama game ini: jalankan PC5 lagi."
 
-#: title/pc5_library.c:1728
+#: title/pc5_library.c:1737
 #, c-format
 msgid "PC5 can't move the saves: %s."
 msgstr "PC5 tidak bisa memindahkan data simpanan: %s."
 
-#: title/pc5_library.c:1815
+#: title/pc5_library.c:1824
 #, c-format
 msgid "A path in the update is too long: %s."
 msgstr "Ada jalur di pembaruan yang terlalu panjang: %s."
 
-#: title/pc5_library.c:1897
+#: title/pc5_library.c:1906
 #, c-format
 msgid "PC5 can't write the game's list of files: %s."
 msgstr "PC5 tidak bisa menulis daftar file game: %s."
 
-#: title/pc5_library.c:2215
+#: title/pc5_library.c:1972 title/pc5_library.c:2003 title/pc5_library.c:2053
+#: title/pc5_library.c:2061 title/pc5_library.c:2092 title/pc5_library.c:2112
+#: title/pc5_library.c:2709 title/pc5_library.c:2783 title/pc5_library.c:2819
+#: title/pc5_library.c:3096 title/pc5_library.c:3364 title/pc5_library.c:3418
+msgid "Out of memory."
+msgstr "Memori habis."
+
+#: title/pc5_library.c:2031 title/pc5_library.c:2068
+#, c-format
+msgid "PC5 can't move %.150s into the new Windows: %s."
+msgstr ""
+
+#: title/pc5_library.c:2148 title/pc5_library.c:2154 title/pc5_library.c:2160
+#, c-format
+msgid "PC5 can't keep the old registry: %s."
+msgstr ""
+
+#: title/pc5_library.c:2186 title/pc5_library.c:3220
+#, c-format
+msgid "PC5 can't put the game in place: %s."
+msgstr "PC5 tidak bisa menaruh game di tempatnya: %s."
+
+#: title/pc5_library.c:2525
 msgid ""
 "PC5's Windows template is missing from the app: copy the PC5 folder again."
 msgstr "Templat Windows PC5 tidak ada di aplikasi: salin lagi folder PC5."
 
-#: title/pc5_library.c:2239
+#: title/pc5_library.c:2549
 msgid "PC5's Windows template is damaged: copy the PC5 folder again."
 msgstr "Templat Windows PC5 rusak: salin lagi folder PC5."
 
-#: title/pc5_library.c:2321 title/pc5_library.c:2381
+#: title/pc5_library.c:2631 title/pc5_library.c:2691
 #, c-format
 msgid "PC5 can't make its folders in %s: %s."
 msgstr "PC5 tidak bisa membuat foldernya di %s: %s."
 
-#: title/pc5_library.c:2332
+#: title/pc5_library.c:2642
 #, c-format
 msgid "PC5 can't make its folder on the USB drive: %s."
 msgstr "PC5 tidak bisa membuat foldernya di drive USB: %s."
 
-#: title/pc5_library.c:2335
+#: title/pc5_library.c:2645
 msgid "PC5 can't name the game's folder on the USB drive."
 msgstr "PC5 tidak bisa memberi nama folder game di drive USB."
 
-#: title/pc5_library.c:2353
+#: title/pc5_library.c:2663
 #, c-format
 msgid ""
 "The drive reads at %.0f MB/s here, too slow to play from (%.0f needed). "
@@ -624,7 +653,7 @@ msgstr ""
 "darinya (perlu %.0f). Colokkan ke port di belakang atau port USB-C di "
 "depan. Instal ke konsol tetap bisa."
 
-#: title/pc5_library.c:2361
+#: title/pc5_library.c:2671
 #, c-format
 msgid ""
 "Not enough space on the USB drive: the game needs %s and it has %s free."
@@ -632,18 +661,18 @@ msgstr ""
 "Ruang di drive USB tidak cukup: game perlu %s, sedangkan drive hanya punya "
 "%s ruang kosong."
 
-#: title/pc5_library.c:2365
+#: title/pc5_library.c:2675
 msgid ""
 "Only a game on a USB drive can play from it: this folder isn't on one."
 msgstr ""
 "Hanya game di drive USB yang bisa dimainkan langsung dari drive itu: "
 "folder ini tidak ada di drive USB."
 
-#: title/pc5_library.c:2367
+#: title/pc5_library.c:2677
 msgid "A game in PC5's INSTALL folder is installed, not played from there."
 msgstr "Game di folder INSTALL PC5 diinstal, bukan dimainkan dari sana."
 
-#: title/pc5_library.c:2372
+#: title/pc5_library.c:2682
 #, c-format
 msgid ""
 "The drive reads at %.0f MB/s in this USB port, too slow to play from (at "
@@ -656,72 +685,67 @@ msgstr ""
 "depan adalah yang lambat: colokkan drive ke port di belakang, atau port "
 "USB-C depan. Instal tetap bisa dari port ini."
 
-#: title/pc5_library.c:2378
+#: title/pc5_library.c:2688
 msgid "The game's program is too deep in its folder for Windows."
 msgstr "Program game terlalu dalam di foldernya untuk Windows."
 
-#: title/pc5_library.c:2386
+#: title/pc5_library.c:2696
 #, c-format
 msgid "Not enough space: the game needs %s and the console has %s free."
 msgstr ""
 "Ruang tidak cukup: game perlu %s, sedangkan konsol hanya punya %s ruang "
 "kosong."
 
-#: title/pc5_library.c:2389
+#: title/pc5_library.c:2699
 msgid "PC5 can't name the game."
 msgstr "PC5 tidak bisa memberi nama game."
 
-#: title/pc5_library.c:2392 title/pc5_library.c:2801
+#: title/pc5_library.c:2702 title/pc5_library.c:3112
 #, c-format
 msgid "PC5 can't start the install: %s."
 msgstr "PC5 tidak bisa memulai instalasi: %s."
 
-#: title/pc5_library.c:2399 title/pc5_library.c:2472 title/pc5_library.c:2508
-#: title/pc5_library.c:2785 title/pc5_library.c:3053
-msgid "Out of memory."
-msgstr "Memori habis."
-
-#: title/pc5_library.c:2432
+#: title/pc5_library.c:2742
 msgid "A path in the Windows template is too long."
 msgstr "Ada jalur di templat Windows yang terlalu panjang."
 
-#: title/pc5_library.c:2435 title/pc5_library.c:2440 title/pc5_library.c:2643
+#: title/pc5_library.c:2745 title/pc5_library.c:2750 title/pc5_library.c:2954
 #: title/pc5_tile.c:519
 #, c-format
 msgid "PC5 can't make %s: %s."
 msgstr "PC5 tidak bisa membuat %s: %s."
 
-#: title/pc5_library.c:2443
+#: title/pc5_library.c:2753
 #, c-format
 msgid "PC5's Windows template is missing %s."
 msgstr "Templat Windows PC5 tidak memiliki %s."
 
-#: title/pc5_library.c:2461
+#: title/pc5_library.c:2772
 #, c-format
 msgid "PC5 can't copy %s: %s."
 msgstr "PC5 tidak bisa menyalin %s: %s."
 
-#: title/pc5_library.c:2486
+#: title/pc5_library.c:2797
 #, c-format
 msgid "PC5 can't read %s on the USB drive: %s."
 msgstr "PC5 tidak bisa membaca %s di drive USB: %s."
 
-#: title/pc5_library.c:2650 title/pc5_library.c:2662
+#: title/pc5_library.c:2961 title/pc5_library.c:2973
 #, c-format
 msgid "PC5 can't read back %s: %s."
 msgstr "PC5 tidak bisa membaca ulang %s: %s."
 
-#: title/pc5_library.c:2650
+#: title/pc5_library.c:2961
 #, c-format
 msgid "PC5 can't open %s on the USB drive: %s."
 msgstr "PC5 tidak bisa membuka %s di drive USB: %s."
 
-#: title/pc5_library.c:2663
+#: title/pc5_library.c:2974
 #, c-format
 msgid "The USB drive stopped answering while PC5 copied %s (%s)."
 msgstr "Drive USB berhenti merespons saat PC5 menyalin %s (%s)."
 
-#: title/pc5_library.c:2732
+#: title/pc5_library.c:3043
 #, c-format
 msgid ""
 "The copy of %s doesn't match the USB drive. The drive or its cable may be "
@@ -730,27 +754,22 @@ msgstr ""
 "Salinan %s tidak cocok dengan drive USB. Drive atau kabelnya mungkin "
 "bermasalah; tidak ada yang disimpan."
 
-#: title/pc5_library.c:2851 title/pc5_library.c:2863
+#: title/pc5_library.c:3162 title/pc5_library.c:3174
 #, c-format
 msgid ""
 "The game couldn't be put back in the INSTALL folder: it is in %.180s."
 msgstr "Game tidak bisa dikembalikan ke folder INSTALL: game ada di %.180s."
 
-#: title/pc5_library.c:2902
+#: title/pc5_library.c:3213
 #, c-format
 msgid "PC5 can't save the cover: %s."
 msgstr "PC5 tidak bisa menyimpan sampul: %s."
 
-#: title/pc5_library.c:2909
-#, c-format
-msgid "PC5 can't put the game in place: %s."
-msgstr "PC5 tidak bisa menaruh game di tempatnya: %s."
-
-#: title/pc5_library.c:3018
+#: title/pc5_library.c:3329
 msgid "PC5 didn't install this game, so it can't update it."
 msgstr "PC5 tidak menginstal game ini, jadi tidak bisa memperbaruinya."
 
-#: title/pc5_library.c:3020
+#: title/pc5_library.c:3331
 #, c-format
 msgid ""
 "%s plays from its USB drive: copy the newer version over its folder %s "
@@ -759,11 +778,11 @@ msgstr ""
 "%s dimainkan dari drive USB-nya: salin versi yang lebih baru untuk menimpa "
 "foldernya %s di sana."
 
-#: title/pc5_library.c:3025
+#: title/pc5_library.c:3336 title/pc5_library.c:3398
 msgid "The game's folder is missing: uninstall it and install it again."
 msgstr "Folder game hilang: hapus instalannya lalu instal lagi."
 
-#: title/pc5_library.c:3028
+#: title/pc5_library.c:3339
 #, c-format
 msgid ""
 "This folder doesn't have %s, the program %s starts. Choose the folder of a "
@@ -772,14 +791,14 @@ msgstr ""
 "Folder ini tidak punya %s, program yang dijalankan %s. Pilih folder "
 "salinan %s yang lebih baru."
 
-#: title/pc5_library.c:3042
+#: title/pc5_library.c:3353
 #, c-format
 msgid "Not enough space: the update needs %s and the console has %s free."
 msgstr ""
 "Ruang tidak cukup: pembaruan perlu %s, sedangkan konsol hanya punya %s "
 "ruang kosong."
 
-#: title/pc5_library.c:3048
+#: title/pc5_library.c:3359
 msgid ""
 "An earlier update of this game isn't finished: close PC5 and open it again "
 "to finish it."
@@ -787,31 +806,59 @@ msgstr ""
 "Pembaruan sebelumnya untuk game ini belum selesai: tutup PC5 lalu buka "
 "lagi untuk menyelesaikannya."
 
-#: title/pc5_library.c:3050
+#: title/pc5_library.c:3361
 #, c-format
 msgid "PC5 can't start the update: %s."
 msgstr "PC5 tidak bisa memulai pembaruan: %s."
 
-#: title/pc5_library.c:3079
+#: title/pc5_library.c:3396
+msgid ""
+"PC5 didn't install this game in a Windows of its own, so its Windows can't "
+"be reset."
+msgstr ""
+
+#: title/pc5_library.c:3401
+#, fuzzy
+msgid ""
+"An update or a reset of this game isn't finished: close PC5 and open it "
+"again to finish it."
+msgstr ""
+"Pembaruan sebelumnya untuk game ini belum selesai: tutup PC5 lalu buka "
+"lagi untuk menyelesaikannya."
+
+#: title/pc5_library.c:3407
+#, c-format, fuzzy
+msgid ""
+"Not enough space: a new Windows needs %s and the console has %s free."
+msgstr ""
+"Ruang tidak cukup: pembaruan perlu %s, sedangkan konsol hanya punya %s "
+"ruang kosong."
+
+#: title/pc5_library.c:3411
+#, c-format
+msgid "PC5 can't start resetting its Windows: %s."
+msgstr ""
+
+#: title/pc5_library.c:3470
 msgid ""
 "Kept saves can't be put back for a game that plays from its USB drive."
 msgstr ""
 "Data simpanan yang dipertahankan tidak bisa dikembalikan untuk game yang "
 "dimainkan dari drive USB-nya."
 
-#: title/pc5_library.c:3083
+#: title/pc5_library.c:3474
 msgid "The install has begun already."
 msgstr "Instalasi sudah dimulai."
 
-#: title/pc5_library.c:3099
+#: title/pc5_library.c:3490
 msgid "PC5 can't read the kept saves."
 msgstr "PC5 tidak bisa membaca data simpanan yang dipertahankan."
 
-#: title/pc5_library.c:3099
+#: title/pc5_library.c:3490
 msgid "The kept saves are damaged: they have no registry."
 msgstr "Data simpanan yang dipertahankan rusak: tidak ada registry."
 
-#: title/pc5_library.c:3176
+#: title/pc5_library.c:3573
 #, c-format
 msgid "PC5 can't make the game's folder on the USB drive: %s."
 msgstr "PC5 tidak bisa membuat folder game di drive USB: %s."
@@ -850,7 +897,7 @@ msgid "Console's colour"
 msgstr "Warna konsol"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_settings.c:17 title/pc5_ui.c:6944
+#: title/pc5_settings.c:17 title/pc5_ui.c:7021
 msgid "Normal"
 msgstr "Normal"
 
@@ -863,13 +910,13 @@ msgid "Extra large"
 msgstr "Ekstra besar"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_settings.c:19 title/pc5_settings.c:21 title/pc5_ui.c:347
-#: title/pc5_ui.c:2482 title/pc5_ui.c:2505 title/pc5_ui.c:2518
-#: title/pc5_ui.c:2531 title/pc5_ui.c:2563 title/pc5_ui.c:2568
-#: title/pc5_ui.c:2573 title/pc5_ui.c:2578 title/pc5_ui.c:2583
-#: title/pc5_ui.c:2588 title/pc5_ui.c:2593 title/pc5_ui.c:2642
-#: title/pc5_ui.c:2655 title/pc5_ui.c:2694 title/pc5_ui.c:6990
-#: title/pc5_ui.c:7044 title/pc5_ui.c:7133 title/pc5_ui.c:7147
+#: title/pc5_settings.c:19 title/pc5_settings.c:21 title/pc5_ui.c:349
+#: title/pc5_ui.c:2545 title/pc5_ui.c:2568 title/pc5_ui.c:2581
+#: title/pc5_ui.c:2594 title/pc5_ui.c:2626 title/pc5_ui.c:2631
+#: title/pc5_ui.c:2636 title/pc5_ui.c:2641 title/pc5_ui.c:2646
+#: title/pc5_ui.c:2651 title/pc5_ui.c:2656 title/pc5_ui.c:2705
+#: title/pc5_ui.c:2718 title/pc5_ui.c:2757 title/pc5_ui.c:7067
+#: title/pc5_ui.c:7121 title/pc5_ui.c:7210 title/pc5_ui.c:7224
 msgid "Off"
 msgstr "Nonaktif"
 
@@ -1068,7 +1115,7 @@ msgstr "PC5 tidak bisa mengganti pintasan: %s."
 msgid "PC5 can't put the tile in place: %s."
 msgstr "PC5 tidak bisa menaruh pintasan di tempatnya: %s."
 
-#: title/pc5_tile.c:636 title/pc5_ui.c:4722
+#: title/pc5_tile.c:636 title/pc5_ui.c:4785
 msgid ""
 "It isn't in PC5 any more. Take the tile off the home screen, or install "
 "the game again."
@@ -1098,14 +1145,14 @@ msgstr "Kompatibilitas"
 #. One of the tabs along the top of the screen: one short word.
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:65 title/pc5_ui.c:7783 title/pc5_ui.c:8896
+#: title/pc5_ui.c:65 title/pc5_ui.c:7870 title/pc5_ui.c:9006
 msgid "Install"
 msgstr "Instal"
 
 #. One of the tabs along the top of the screen: one short word.
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:65 title/pc5_ui.c:132 title/pc5_ui.c:6801 title/pc5_ui.c:6815
+#: title/pc5_ui.c:65 title/pc5_ui.c:132 title/pc5_ui.c:6878 title/pc5_ui.c:6892
 msgid "Settings"
 msgstr "Pengaturan"
 
@@ -1125,7 +1172,7 @@ msgid "Favourites"
 msgstr "Favorit"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:68 title/pc5_ui.c:6673 title/pc5_ui.c:8755
+#: title/pc5_ui.c:68 title/pc5_ui.c:6750 title/pc5_ui.c:8849
 msgid "USB drive"
 msgstr "Drive USB"
 
@@ -1136,97 +1183,97 @@ msgstr "Perlu perhatian"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:132 title/pc5_ui.c:2455
+#: title/pc5_ui.c:132 title/pc5_ui.c:2518
 msgid "In games"
 msgstr "Dalam game"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:132 title/pc5_ui.c:2465
+#: title/pc5_ui.c:132 title/pc5_ui.c:2528
 msgid "System"
 msgstr "Sistem"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:132 title/pc5_ui.c:2460
+#: title/pc5_ui.c:132 title/pc5_ui.c:2523
 msgid "Overlay"
 msgstr "Overlay"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:132 title/pc5_ui.c:2473
+#: title/pc5_ui.c:132 title/pc5_ui.c:2536
 msgid "Picture sources"
 msgstr "Sumber gambar"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:133 title/pc5_ui.c:2450
+#: title/pc5_ui.c:133 title/pc5_ui.c:2513
 msgid "Game maintenance"
 msgstr "Pemeliharaan game"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:133 title/pc5_ui.c:2535
+#: title/pc5_ui.c:133 title/pc5_ui.c:2598
 msgid "Network"
 msgstr "Jaringan"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:209 title/pc5_ui.c:6947
+#: title/pc5_ui.c:209 title/pc5_ui.c:7024
 msgid "Graphics"
 msgstr "Grafis"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:209 title/pc5_ui.c:6952
+#: title/pc5_ui.c:209 title/pc5_ui.c:7029
 msgid "Appearance"
 msgstr "Tampilan"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:209 title/pc5_ui.c:6957
+#: title/pc5_ui.c:209 title/pc5_ui.c:7034
 msgid "Manage"
 msgstr "Kelola"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:209 title/pc5_ui.c:7052
+#: title/pc5_ui.c:209 title/pc5_ui.c:7129
 msgid "Background"
 msgstr "Latar belakang"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:210 title/pc5_ui.c:7078 title/pc5_ui.c:8081
+#: title/pc5_ui.c:210 title/pc5_ui.c:7155 title/pc5_ui.c:8175
 msgid "Library music"
 msgstr "Musik pustaka"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:210 title/pc5_ui.c:7063 title/pc5_ui.c:8081
+#: title/pc5_ui.c:210 title/pc5_ui.c:7140 title/pc5_ui.c:8175
 msgid "Background video"
 msgstr "Video latar"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:211 title/pc5_ui.c:7088
+#: title/pc5_ui.c:211 title/pc5_ui.c:7165
 msgid "Media settings and backup"
 msgstr "Pengaturan media dan cadangan"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:211 title/pc5_ui.c:3819 title/pc5_ui.c:7099
-#: title/pc5_ui.c:8082
+#: title/pc5_ui.c:211 title/pc5_ui.c:3882 title/pc5_ui.c:7176
+#: title/pc5_ui.c:8176
 msgid "Loading screen"
 msgstr "Layar memuat"
 
 #. a percentage (Vibration 50%); put a space before % where your language does.
-#: title/pc5_ui.c:349 title/pc5_ui.c:7391
+#: title/pc5_ui.c:351 title/pc5_ui.c:7478
 #, c-format
 msgid "%d%%"
 msgstr "%d%%"
 
-#: title/pc5_ui.c:997
+#: title/pc5_ui.c:999
 #, c-format
 msgid ""
 "You have %s, the version before: PC5 downloads only what changed (%s)"
 msgstr ""
 "Anda punya %s, versi sebelumnya: PC5 hanya mengunduh yang berubah (%s)"
 
-#: title/pc5_ui.c:1002
+#: title/pc5_ui.c:1004
 #, c-format
 msgid ""
 "You have %s, more than one version behind: PC5 downloads the whole app (%s)"
@@ -1234,17 +1281,17 @@ msgstr ""
 "Anda punya %s, tertinggal lebih dari satu versi: PC5 mengunduh seluruh "
 "aplikasi (%s)"
 
-#: title/pc5_ui.c:1005
+#: title/pc5_ui.c:1007
 #, c-format
 msgid "You have %s: PC5 downloads the whole app (%s)"
 msgstr "Anda punya %s: PC5 mengunduh seluruh aplikasi (%s)"
 
-#: title/pc5_ui.c:1666 title/pc5_ui.c:3849 title/pc5_ui.c:5453
-#: title/pc5_ui.c:5462
+#: title/pc5_ui.c:1668 title/pc5_ui.c:3912 title/pc5_ui.c:5516
+#: title/pc5_ui.c:5525
 msgid "PC5 didn't install this game"
 msgstr "PC5 tidak menginstal game ini"
 
-#: title/pc5_ui.c:1667
+#: title/pc5_ui.c:1669
 msgid ""
 "Its cover can only be changed as in Covers on the wiki: a picture of your "
 "own."
@@ -1252,11 +1299,11 @@ msgstr ""
 "Sampulnya hanya bisa diganti seperti di Covers pada wiki: dengan gambar "
 "milik Anda sendiri."
 
-#: title/pc5_ui.c:1668
+#: title/pc5_ui.c:1670
 msgid "Only a game PC5 installed has a tile picture."
 msgstr "Hanya game yang diinstal PC5 yang punya gambar pintasan."
 
-#: title/pc5_ui.c:1669
+#: title/pc5_ui.c:1671
 msgid ""
 "Its background can only be changed as in Covers on the wiki: a picture of "
 "your own."
@@ -1264,88 +1311,123 @@ msgstr ""
 "Latar belakangnya hanya bisa diganti seperti di Covers pada wiki: dengan "
 "gambar milik Anda sendiri."
 
-#: title/pc5_ui.c:1675
+#: title/pc5_ui.c:1677
 msgid "PC5 ran out of memory"
 msgstr "Memori PC5 habis"
 
-#: title/pc5_ui.c:1675
+#: title/pc5_ui.c:1677
 msgid "Close PC5 and open it again."
 msgstr "Tutup PC5 lalu buka lagi."
 
-#: title/pc5_ui.c:1849
+#: title/pc5_ui.c:1851
 msgid "The cover wasn't changed"
 msgstr "Sampul tidak diganti"
 
-#: title/pc5_ui.c:1850
+#: title/pc5_ui.c:1852
 msgid "The tile picture wasn't changed"
 msgstr "Gambar pintasan tidak diganti"
 
-#: title/pc5_ui.c:1850
+#: title/pc5_ui.c:1852
 msgid "The background wasn't changed"
 msgstr "Latar belakang tidak diganti"
 
-#: title/pc5_ui.c:1852
+#: title/pc5_ui.c:1854
 msgid "PC5 can't write to the game's folder in /data/prospero-win/prefixes."
 msgstr ""
 "PC5 tidak bisa menulis ke folder game di /data/prospero-win/prefixes."
 
-#: title/pc5_ui.c:1853
+#: title/pc5_ui.c:1855
 msgid "PC5 couldn't make the card from the game's icon and name."
 msgstr "PC5 tidak bisa membuat kartu dari ikon dan nama game."
 
-#: title/pc5_ui.c:1926 title/pc5_ui.c:7624
+#: title/pc5_ui.c:1928 title/pc5_ui.c:7711
 #, c-format
 msgid "USB drive %d"
 msgstr "Drive USB %d"
 
-#: title/pc5_ui.c:1928
+#: title/pc5_ui.c:1930
 #, c-format
 msgid "Extended storage %d"
 msgstr "Penyimpanan diperluas %d"
 
-#: title/pc5_ui.c:1930
+#: title/pc5_ui.c:1932
 msgid "Console storage"
 msgstr "Penyimpanan konsol"
 
-#: title/pc5_ui.c:1955
+#: title/pc5_ui.c:1957
 #, c-format
 msgid "%s can't be installed"
 msgstr "%s tidak bisa diinstal"
 
-#: title/pc5_ui.c:2005
+#: title/pc5_ui.c:2007
 #, c-format
 msgid "%s can't be updated"
 msgstr "%s tidak bisa diperbarui"
 
-#: title/pc5_ui.c:2005 title/pc5_ui.c:3127 title/pc5_ui.c:4604
-#: title/pc5_ui.c:5294 title/pc5_ui.c:5964 title/pc5_ui.c:8021
+#: title/pc5_ui.c:2007 title/pc5_ui.c:3190 title/pc5_ui.c:4667
+#: title/pc5_ui.c:5357 title/pc5_ui.c:6041 title/pc5_ui.c:8115
 msgid "The game"
 msgstr "Game ini"
 
-#: title/pc5_ui.c:2070
+#: title/pc5_ui.c:2035 title/pc5_ui.c:2228
+#, c-format
+msgid "The Windows of %s wasn't reset"
+msgstr ""
+
+#: title/pc5_ui.c:2036 title/pc5_ui.c:2229 title/pc5_ui.c:5809
+#, c-format
+msgid "%s Nothing was changed."
+msgstr "%s Tidak ada yang diubah."
+
+#: title/pc5_ui.c:2102
 #, c-format
 msgid "Its Windows needs %s and the console has %s free."
 msgstr "Windows-nya perlu %s, sedangkan konsol hanya punya %s ruang kosong."
 
-#: title/pc5_ui.c:2070
+#: title/pc5_ui.c:2102
 #, c-format
 msgid "The game needs %s and the console has %s free."
 msgstr "Game perlu %s, sedangkan konsol hanya punya %s ruang kosong."
 
-#: title/pc5_ui.c:2072 title/pc5_ui.c:5265
+#: title/pc5_ui.c:2104 title/pc5_ui.c:5328
 msgid "Not enough space"
 msgstr "Ruang tidak cukup"
 
-#: title/pc5_ui.c:2092
+#: title/pc5_ui.c:2124
 msgid "It has no program to start."
 msgstr "Tidak ada program untuk dijalankan."
 
-#: title/pc5_ui.c:2183
+#: title/pc5_ui.c:2219
+#, c-format
+msgid "The Windows of %s is reset"
+msgstr ""
+
+#: title/pc5_ui.c:2220
+msgid ""
+"It is a new Windows, as a fresh install has. The game's files, its saves "
+"and PC5's settings for it are as they were; its old registry is kept in "
+"its pc5/reset-backup folder."
+msgstr ""
+
+#: title/pc5_ui.c:2224
+msgid "Reset stopped"
+msgstr ""
+
+#: title/pc5_ui.c:2225
+msgid "The new Windows made so far was deleted: the game is as it was."
+msgstr ""
+
+#: title/pc5_ui.c:2229 title/pc5_ui.c:5852
+#, c-format
+msgid "%s PC5 finishes it the next time it starts."
+msgstr "%s PC5 akan menyelesaikannya saat dijalankan berikutnya."
+
+#: title/pc5_ui.c:2246
 #, c-format
 msgid "%s is partly updated"
 msgstr "%s baru diperbarui sebagian"
 
-#: title/pc5_ui.c:2184
+#: title/pc5_ui.c:2247
 #, c-format
 msgid ""
 "%u of its files couldn't be put in place. %s Update it again; its saves, "
@@ -1354,20 +1436,20 @@ msgstr ""
 "Sebanyak %u filenya tidak bisa ditaruh di tempatnya. %s Perbarui lagi; "
 "data simpanan, pengaturan, dan opsinya tetap seperti semula."
 
-#: title/pc5_ui.c:2188
+#: title/pc5_ui.c:2251
 #, c-format
 msgid "%s is updated"
 msgstr "%s sudah diperbarui"
 
-#: title/pc5_ui.c:2189
+#: title/pc5_ui.c:2252
 msgid "Its saves, settings and options are as they were."
 msgstr "Data simpanan, pengaturan, dan opsinya tetap seperti semula."
 
-#: title/pc5_ui.c:2192
+#: title/pc5_ui.c:2255
 msgid "Update stopped"
 msgstr "Pembaruan dihentikan"
 
-#: title/pc5_ui.c:2193
+#: title/pc5_ui.c:2256
 msgid ""
 "The copy made so far was deleted: the game is as it was. The USB drive "
 "wasn't changed."
@@ -1375,119 +1457,119 @@ msgstr ""
 "Salinan yang sudah dibuat telah dihapus: game tetap seperti semula. Drive "
 "USB tidak diubah."
 
-#: title/pc5_ui.c:2196
+#: title/pc5_ui.c:2259
 #, c-format
 msgid "%s wasn't updated"
 msgstr "%s tidak diperbarui"
 
-#: title/pc5_ui.c:2197
+#: title/pc5_ui.c:2260
 #, c-format
 msgid "%s PC5 finishes the update the next time it starts."
 msgstr "%s PC5 akan menyelesaikan pembaruan saat dijalankan berikutnya."
 
-#: title/pc5_ui.c:2197
+#: title/pc5_ui.c:2260
 #, c-format
 msgid "%s The game is as it was."
 msgstr "%s Game tetap seperti semula."
 
-#: title/pc5_ui.c:2213
+#: title/pc5_ui.c:2276
 #, c-format
 msgid "%s is installed"
 msgstr "%s sudah diinstal"
 
-#: title/pc5_ui.c:2218
+#: title/pc5_ui.c:2281
 msgid "It's in your library, with the saves and settings it had before."
 msgstr ""
 "Game ada di pustaka Anda, dengan data simpanan dan pengaturan yang "
 "dimilikinya sebelumnya."
 
-#: title/pc5_ui.c:2219
+#: title/pc5_ui.c:2282
 msgid "It's in your library. Press the button to play it from there."
 msgstr "Game ada di pustaka Anda. Tekan tombol untuk memainkannya dari sana."
 
-#: title/pc5_ui.c:2223
+#: title/pc5_ui.c:2286
 msgid "Install stopped"
 msgstr "Instalasi dihentikan"
 
-#: title/pc5_ui.c:2223
+#: title/pc5_ui.c:2286
 #, c-format
 msgid "%s wasn't installed"
 msgstr "%s tidak diinstal"
 
-#: title/pc5_ui.c:2224
+#: title/pc5_ui.c:2287
 msgid "Everything copied so far was deleted. The USB drive wasn't changed."
 msgstr "Semua yang sudah disalin telah dihapus. Drive USB tidak diubah."
 
-#: title/pc5_ui.c:2226
+#: title/pc5_ui.c:2289
 #, c-format
 msgid "%s Nothing was kept."
 msgstr "%s Tidak ada yang disimpan."
 
-#: title/pc5_ui.c:2227
+#: title/pc5_ui.c:2290
 #, c-format
 msgid "%s PC5 tries again the next time it starts."
 msgstr "%s PC5 akan mencoba lagi saat dijalankan berikutnya."
 
-#: title/pc5_ui.c:2281
+#: title/pc5_ui.c:2344
 msgid "PC5 can't read this folder."
 msgstr "PC5 tidak bisa membaca folder ini."
 
-#: title/pc5_ui.c:2365
+#: title/pc5_ui.c:2428
 msgid "stopped, nothing kept."
 msgstr "dihentikan, tidak ada yang disimpan."
 
-#: title/pc5_ui.c:2365
+#: title/pc5_ui.c:2428
 msgid "not installed."
 msgstr "tidak diinstal."
 
-#: title/pc5_ui.c:2371
+#: title/pc5_ui.c:2434
 msgid "1 game is installed"
 msgstr "1 game sudah diinstal"
 
-#: title/pc5_ui.c:2371
+#: title/pc5_ui.c:2434
 #, c-format
 msgid "%d games are installed"
 msgstr "%d game sudah diinstal"
 
-#: title/pc5_ui.c:2373
+#: title/pc5_ui.c:2436
 #, c-format
 msgid "%d of %d games are installed"
 msgstr "%d dari %d game sudah diinstal"
 
-#: title/pc5_ui.c:2375
+#: title/pc5_ui.c:2438
 msgid "No game was installed"
 msgstr "Tidak ada game yang diinstal"
 
-#: title/pc5_ui.c:2376
+#: title/pc5_ui.c:2439
 msgid "They're in your library. The USB drive wasn't changed."
 msgstr "Game-game itu ada di pustaka Anda. Drive USB tidak diubah."
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2433 title/pc5_ui.c:7813
+#: title/pc5_ui.c:2496 title/pc5_ui.c:7900
 msgid "Install games from USB"
 msgstr "Instal game dari USB"
 
-#: title/pc5_ui.c:2434
+#: title/pc5_ui.c:2497
 msgid "Copies one game, or several in a row, to the console"
 msgstr "Menyalin satu game, atau beberapa berturut-turut, ke konsol"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2437 title/pc5_ui.c:8821 title/pc5_ui.c:8828
+#: title/pc5_ui.c:2500 title/pc5_ui.c:8918 title/pc5_ui.c:8925
 msgid "Uninstall game"
 msgstr "Hapus instalan game"
 
-#: title/pc5_ui.c:2438
+#: title/pc5_ui.c:2501
 msgid "Deletes a game (its saves can be kept), or saves kept from before"
 msgstr ""
 "Menghapus game (data simpanannya bisa dipertahankan), atau data simpanan "
 "yang dipertahankan dari sebelumnya"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2441 title/pc5_ui.c:8082 title/pc5_ui.c:8089
+#: title/pc5_ui.c:2504 title/pc5_ui.c:8176 title/pc5_ui.c:8183
 msgid "Library appearance from phone"
 msgstr "Tampilan dari ponsel"
 
-#: title/pc5_ui.c:2442
+#: title/pc5_ui.c:2505
 msgid ""
 "One QR code to choose any installed game and send its pictures, music or "
 "video"
@@ -1497,51 +1579,51 @@ msgstr ""
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:2443 title/pc5_ui.c:8319 title/pc5_ui.c:8321
+#: title/pc5_ui.c:2506 title/pc5_ui.c:8413 title/pc5_ui.c:8415
 msgid "Open"
 msgstr "Buka"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2446
+#: title/pc5_ui.c:2509
 msgid "Game compatibility list"
 msgstr "Daftar kompatibilitas game"
 
-#: title/pc5_ui.c:2447
+#: title/pc5_ui.c:2510
 msgid "Browse community reports, settings and saved offline results"
 msgstr "Jelajahi laporan komunitas, pengaturan, dan hasil offline tersimpan"
 
-#: title/pc5_ui.c:2451
+#: title/pc5_ui.c:2514
 msgid "Installing, uninstalling and the compatibility list"
 msgstr "Instalasi, hapus instalan, dan daftar kompatibilitas"
 
-#: title/pc5_ui.c:2456
+#: title/pc5_ui.c:2519
 msgid "Vibration, light bar, triggers and 120 Hz output"
 msgstr "Getaran, light bar, pemicu, dan output 120 Hz"
 
-#: title/pc5_ui.c:2461
+#: title/pc5_ui.c:2524
 msgid "FPS, frame time, CPU and GPU use, temperatures and memory"
 msgstr "FPS, waktu frame, penggunaan CPU dan GPU, suhu, dan memori"
 
-#: title/pc5_ui.c:2467
+#: title/pc5_ui.c:2530
 msgid "Startup sound, logs, picture sources, updates and language"
 msgstr "Suara pembuka, log, sumber gambar, pembaruan, dan bahasa"
 
-#: title/pc5_ui.c:2474
+#: title/pc5_ui.c:2537
 msgid "Where covers and backgrounds are looked for"
 msgstr "Tempat mencari sampul dan latar belakang"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2475
+#: title/pc5_ui.c:2538
 #, c-format
 msgid "%d of %d ›"
 msgstr "%d dari %d ›"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2479
+#: title/pc5_ui.c:2542
 msgid "120 Hz output"
 msgstr "Output 120 Hz"
 
-#: title/pc5_ui.c:2480
+#: title/pc5_ui.c:2543
 msgid ""
 "Up to 120 fps on a TV that takes it; turn on the PS5's 120 Hz output and "
 "turn VRR off"
@@ -1549,345 +1631,345 @@ msgstr ""
 "Hingga 120 fps di TV yang mendukungnya; nyalakan output 120 Hz PS5 dan "
 "matikan VRR"
 
-#: title/pc5_ui.c:2481
+#: title/pc5_ui.c:2544
 msgid "Off: games show up to 60 fps"
 msgstr "Mati: game tampil hingga 60 fps"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2482 title/pc5_ui.c:2505 title/pc5_ui.c:2518
-#: title/pc5_ui.c:2531 title/pc5_ui.c:2563 title/pc5_ui.c:2568
-#: title/pc5_ui.c:2573 title/pc5_ui.c:2578 title/pc5_ui.c:2583
-#: title/pc5_ui.c:2588 title/pc5_ui.c:2593 title/pc5_ui.c:2642
-#: title/pc5_ui.c:2694 title/pc5_ui.c:7044 title/pc5_ui.c:7133
+#: title/pc5_ui.c:2545 title/pc5_ui.c:2568 title/pc5_ui.c:2581
+#: title/pc5_ui.c:2594 title/pc5_ui.c:2626 title/pc5_ui.c:2631
+#: title/pc5_ui.c:2636 title/pc5_ui.c:2641 title/pc5_ui.c:2646
+#: title/pc5_ui.c:2651 title/pc5_ui.c:2656 title/pc5_ui.c:2705
+#: title/pc5_ui.c:2757 title/pc5_ui.c:7121 title/pc5_ui.c:7210
 msgid "On"
 msgstr "Aktif"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2485
+#: title/pc5_ui.c:2548
 msgid "Keyboard layout"
 msgstr "Tata letak keyboard"
 
-#: title/pc5_ui.c:2486
+#: title/pc5_ui.c:2549
 msgid "A USB keyboard types as a US one in games"
 msgstr "Keyboard USB mengetik seperti keyboard AS di game"
 
-#: title/pc5_ui.c:2487
+#: title/pc5_ui.c:2550
 msgid "A USB keyboard types as your language's in games"
 msgstr "Keyboard USB mengetik sesuai bahasamu di game"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2488
+#: title/pc5_ui.c:2551
 msgid "US"
 msgstr "AS"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2491
+#: title/pc5_ui.c:2554
 msgid "Check copied games"
 msgstr ""
 
-#: title/pc5_ui.c:2493
+#: title/pc5_ui.c:2556
 msgid ""
 "Every install is read back and compared with the USB drive: it takes about "
 "twice as long"
 msgstr ""
 
-#: title/pc5_ui.c:2495
+#: title/pc5_ui.c:2558
 #, c-format
 msgid ""
 "Installs over %d GB are read back and compared with the USB drive, "
 "catching a bad drive or cable"
 msgstr ""
 
-#: title/pc5_ui.c:2498
+#: title/pc5_ui.c:2561
 msgid ""
 "Installs aren't read back: fastest. Turn on for a drive or cable you don't "
 "trust"
 msgstr ""
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2502
+#: title/pc5_ui.c:2565
 msgid "Keep all logs"
 msgstr "Simpan semua log"
 
-#: title/pc5_ui.c:2503
+#: title/pc5_ui.c:2566
 msgid "Every session's log is kept for 7 days"
 msgstr "Log setiap sesi disimpan selama 7 hari"
 
-#: title/pc5_ui.c:2504
+#: title/pc5_ui.c:2567
 msgid "Problem sessions and each game's newest; turn on when testing a game"
 msgstr ""
 "Sesi bermasalah dan yang terbaru dari tiap game; aktifkan saat menguji game"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2510
+#: title/pc5_ui.c:2573
 msgid "FTP server"
 msgstr "Server FTP"
 
-#: title/pc5_ui.c:2512
+#: title/pc5_ui.c:2575
 #, c-format
 msgid ""
 "ftp://%s from a PC (FileZilla): the INSTALL folder, while PC5 is open"
 msgstr "ftp://%s dari PC (FileZilla): folder INSTALL, selama PC5 terbuka"
 
-#: title/pc5_ui.c:2515 title/pc5_ui.c:2528
+#: title/pc5_ui.c:2578 title/pc5_ui.c:2591
 #, c-format
 msgid "Not started: %.150s"
 msgstr "Tidak dimulai: %.150s"
 
-#: title/pc5_ui.c:2517
+#: title/pc5_ui.c:2580
 msgid "Send games from a PC to PC5's INSTALL folder, then install them here"
 msgstr "Kirim game dari PC ke folder INSTALL PC5, lalu instal di sini"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2524
+#: title/pc5_ui.c:2587
 msgid "Web page"
 msgstr "Halaman web"
 
-#: title/pc5_ui.c:2526
+#: title/pc5_ui.c:2589
 #, c-format
 msgid ""
 "http://%s in a browser on a phone or a PC; Triangle: a QR code for it"
 msgstr "http://%s di browser ponsel atau PC; Segitiga: kode QR untuknya"
 
-#: title/pc5_ui.c:2530
+#: title/pc5_ui.c:2593
 msgid "PC5 from a browser: send games, launch options, logs"
 msgstr "PC5 dari browser: kirim game, opsi peluncuran, log"
 
-#: title/pc5_ui.c:2536
+#: title/pc5_ui.c:2599
 msgid ""
 "From a PC or a phone: the FTP server, the web page, a username and password"
 msgstr ""
 "Dari PC atau ponsel: server FTP, halaman web, nama pengguna, dan kata sandi"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2540
+#: title/pc5_ui.c:2603
 msgid "Username"
 msgstr "Nama pengguna"
 
-#: title/pc5_ui.c:2541
+#: title/pc5_ui.c:2604
 msgid "The username the FTP server and the web page ask for"
 msgstr "Nama pengguna yang diminta server FTP dan halaman web"
 
-#: title/pc5_ui.c:2542
+#: title/pc5_ui.c:2605
 msgid "None set: any username will do"
 msgstr "Belum diatur: nama pengguna apa pun bisa"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2543
+#: title/pc5_ui.c:2606
 msgid "Any"
 msgstr "Bebas"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2546
+#: title/pc5_ui.c:2609
 msgid "Password"
 msgstr "Kata sandi"
 
-#: title/pc5_ui.c:2547
+#: title/pc5_ui.c:2610
 msgid "The password the FTP server and the web page ask for"
 msgstr "Kata sandi yang diminta server FTP dan halaman web"
 
-#: title/pc5_ui.c:2548
+#: title/pc5_ui.c:2611
 msgid "Optional: none set, no password is asked for"
 msgstr "Opsional: belum diatur, tidak ada kata sandi yang diminta"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2549 title/pc5_ui.c:7387
+#: title/pc5_ui.c:2612 title/pc5_ui.c:7474
 msgid "None"
 msgstr "Tidak ada"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2552 title/pc5_ui.c:8303
+#: title/pc5_ui.c:2615 title/pc5_ui.c:8397
 msgid "File manager"
 msgstr "Pengelola file"
 
-#: title/pc5_ui.c:2553
+#: title/pc5_ui.c:2616
 msgid "Copy, move, rename and delete files on the console and its drives"
 msgstr "Salin, pindahkan, ganti nama, dan hapus file di konsol dan drive-nya"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2557
+#: title/pc5_ui.c:2620
 msgid "About PC5"
 msgstr "Tentang PC5"
 
-#: title/pc5_ui.c:2558
+#: title/pc5_ui.c:2621
 msgid "Version, free space and credits"
 msgstr "Versi, ruang kosong, dan kredit"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2561
+#: title/pc5_ui.c:2624
 msgid "Show FPS"
 msgstr "Tampilkan FPS"
 
-#: title/pc5_ui.c:2562
+#: title/pc5_ui.c:2625
 msgid "Frames shown each second"
 msgstr "Frame yang ditampilkan tiap detik"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2566
+#: title/pc5_ui.c:2629
 msgid "Frame time"
 msgstr "Waktu frame"
 
-#: title/pc5_ui.c:2567
+#: title/pc5_ui.c:2630
 msgid "How long a frame takes, on average, in milliseconds"
 msgstr "Lama satu frame, rata-rata, dalam milidetik"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2571
+#: title/pc5_ui.c:2634
 msgid "CPU usage"
 msgstr "Penggunaan CPU"
 
-#: title/pc5_ui.c:2572
+#: title/pc5_ui.c:2635
 msgid "How busy the console's CPU is, with everything it runs"
 msgstr "Seberapa sibuk CPU konsol, dengan semua yang dijalankannya"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2576
+#: title/pc5_ui.c:2639
 msgid "GPU usage"
 msgstr "Penggunaan GPU"
 
-#: title/pc5_ui.c:2577
+#: title/pc5_ui.c:2640
 msgid "How busy the console's GPU is"
 msgstr "Seberapa sibuk GPU konsol"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2581
+#: title/pc5_ui.c:2644
 msgid "CPU temperature"
 msgstr "Suhu CPU"
 
-#: title/pc5_ui.c:2582
+#: title/pc5_ui.c:2645
 msgid "In degrees Celsius"
 msgstr "Dalam derajat Celsius"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2586
+#: title/pc5_ui.c:2649
 msgid "Chip temperature"
 msgstr "Suhu chip"
 
-#: title/pc5_ui.c:2587
+#: title/pc5_ui.c:2650
 msgid "The console chip's, in degrees Celsius"
 msgstr "Suhu chip konsol, dalam derajat Celsius"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2591
+#: title/pc5_ui.c:2654
 msgid "Memory"
 msgstr "Memori"
 
-#: title/pc5_ui.c:2592
+#: title/pc5_ui.c:2655
 msgid "What the game uses, of what it has, in GB"
 msgstr "Yang dipakai game dari yang tersedia, dalam GB"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2596
+#: title/pc5_ui.c:2659
 msgid "Corner"
 msgstr "Sudut"
 
-#: title/pc5_ui.c:2597
+#: title/pc5_ui.c:2660
 msgid "Where the overlay sits on the screen"
 msgstr "Posisi overlay di layar"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2601 title/pc5_ui.c:7755
+#: title/pc5_ui.c:2664 title/pc5_ui.c:7842
 msgid "Size"
 msgstr "Ukuran"
 
-#: title/pc5_ui.c:2603
+#: title/pc5_ui.c:2666
 msgid "Every line at once, twice the size, by the console"
 msgstr "Semua baris sekaligus, ukuran dua kali, digambar oleh konsol"
 
-#: title/pc5_ui.c:2604
+#: title/pc5_ui.c:2667
 msgid "Twice the size, two lines at a time, taking turns"
 msgstr "Ukuran dua kali, dua baris sekaligus, bergantian"
 
-#: title/pc5_ui.c:2605
+#: title/pc5_ui.c:2668
 msgid "Every line at once, in small text"
 msgstr "Semua baris sekaligus, dengan teks kecil"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2609
+#: title/pc5_ui.c:2672
 msgid "Vibration"
 msgstr "Getaran"
 
-#: title/pc5_ui.c:2610
+#: title/pc5_ui.c:2673
 msgid "How strongly the controller rumbles with the game"
 msgstr "Seberapa kuat kontroler bergetar mengikuti game"
 
-#: title/pc5_ui.c:2611
+#: title/pc5_ui.c:2674
 msgid "The game's rumble on the controller"
 msgstr "Getaran game di kontroler"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2615
+#: title/pc5_ui.c:2678
 msgid "Light bar"
 msgstr "Light bar"
 
-#: title/pc5_ui.c:2616
+#: title/pc5_ui.c:2679
 msgid "The colour of what is on screen"
 msgstr "Warna dari yang ada di layar"
 
-#: title/pc5_ui.c:2617
+#: title/pc5_ui.c:2680
 msgid "The main colour of the game's cover"
 msgstr "Warna utama sampul game"
 
-#: title/pc5_ui.c:2618
+#: title/pc5_ui.c:2681
 msgid "PC5 leaves the console's colour"
 msgstr "PC5 membiarkan warna konsol"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2622
+#: title/pc5_ui.c:2685
 msgid "Adaptive triggers"
 msgstr "Pemicu adaptif"
 
-#: title/pc5_ui.c:2623
+#: title/pc5_ui.c:2686
 msgid "L2 and R2 vibrate with the game's rumble"
 msgstr "L2 dan R2 bergetar mengikuti getaran game"
 
-#: title/pc5_ui.c:2624
+#: title/pc5_ui.c:2687
 msgid "L2 and R2 push back as you press them"
 msgstr "L2 dan R2 memberi perlawanan saat Anda menekannya"
 
-#: title/pc5_ui.c:2625
+#: title/pc5_ui.c:2688
 msgid "L2 and R2 push back, and buzz with the rumble"
 msgstr "L2 dan R2 memberi perlawanan, dan bergetar mengikuti getaran"
 
-#: title/pc5_ui.c:2626
+#: title/pc5_ui.c:2689
 msgid "Rumble, resistance or both on L2 and R2"
 msgstr "Getar, resistansi, atau keduanya di L2 dan R2"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2630
+#: title/pc5_ui.c:2693
 msgid "Trigger rumble"
 msgstr "Getaran pemicu"
 
-#: title/pc5_ui.c:2631
+#: title/pc5_ui.c:2694
 msgid "How strongly L2 and R2 vibrate"
 msgstr "Seberapa kuat L2 dan R2 bergetar"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2635
+#: title/pc5_ui.c:2698
 msgid "Trigger resistance"
 msgstr "Resistansi pemicu"
 
-#: title/pc5_ui.c:2636
+#: title/pc5_ui.c:2699
 msgid "How firmly L2 and R2 push back"
 msgstr "Seberapa kuat L2 dan R2 memberi perlawanan"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2640
+#: title/pc5_ui.c:2703
 msgid "Check when PC5 opens"
 msgstr "Periksa saat PC5 dibuka"
 
-#: title/pc5_ui.c:2641
+#: title/pc5_ui.c:2704
 msgid "Asks GitHub for a newer PC5 each time you open PC5, and offers it"
 msgstr ""
 "Menanyakan PC5 yang lebih baru ke GitHub setiap kali Anda membuka PC5, "
 "lalu menawarkannya"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2645
+#: title/pc5_ui.c:2708
 msgid "Check now"
 msgstr "Periksa sekarang"
 
-#: title/pc5_ui.c:2647
+#: title/pc5_ui.c:2710
 #, c-format
 msgid ""
 "PC5 %s is out: copy it over this one from github.com/bornaradusin/PC5"
@@ -1896,111 +1978,111 @@ msgstr ""
 "yang ini"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2653
+#: title/pc5_ui.c:2716
 msgid "Startup sound"
 msgstr "Suara pembuka"
 
-#: title/pc5_ui.c:2654
+#: title/pc5_ui.c:2717
 msgid "On the controller's speaker when PC5 opens"
 msgstr "Dari speaker kontroler saat PC5 dibuka"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2658
+#: title/pc5_ui.c:2721
 msgid "Startup sound volume"
 msgstr "Volume suara pembuka"
 
-#: title/pc5_ui.c:2659
+#: title/pc5_ui.c:2722
 msgid "How loud the startup sound plays"
 msgstr "Seberapa keras suara pembuka diputar"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2665
+#: title/pc5_ui.c:2728
 msgid "Language"
 msgstr "Bahasa"
 
-#: title/pc5_ui.c:2667
+#: title/pc5_ui.c:2730
 msgid "PC5's screens and web page; System default follows the console"
 msgstr "Layar dan halaman web PC5; Bawaan sistem mengikuti konsol"
 
-#: title/pc5_ui.c:2670
+#: title/pc5_ui.c:2733
 #, c-format
 msgid "As the console: %s"
 msgstr "Sesuai konsol: %s"
 
 #. the Language setting's value when PC5 follows the console's language.
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2672
+#: title/pc5_ui.c:2735
 msgid "System default"
 msgstr "Bawaan sistem"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:2677 title/pc5_ui.c:8654 title/pc5_ui.c:8912
+#: title/pc5_ui.c:2740 title/pc5_ui.c:8748 title/pc5_ui.c:9022
 msgid "Update now"
 msgstr "Perbarui sekarang"
 
-#: title/pc5_ui.c:2681
+#: title/pc5_ui.c:2744
 #, c-format
 msgid "%.160s, installs it and restarts PC5"
 msgstr "%.160s, menginstalnya, lalu memulai ulang PC5"
 
-#: title/pc5_ui.c:2687
+#: title/pc5_ui.c:2750
 msgid "Its store's covers and backgrounds"
 msgstr "Sampul dan latar belakang dari tokonya"
 
-#: title/pc5_ui.c:2687
+#: title/pc5_ui.c:2750
 msgid "Covers and backgrounds its members made, with your key"
 msgstr "Sampul dan latar belakang buatan anggotanya, dengan kunci Anda"
 
-#: title/pc5_ui.c:2688
+#: title/pc5_ui.c:2751
 msgid "Its catalogue's covers and backgrounds"
 msgstr "Sampul dan latar belakang dari katalognya"
 
-#: title/pc5_ui.c:2688
+#: title/pc5_ui.c:2751
 msgid "The cover on the game's page, and its Steam background"
 msgstr "Sampul di halaman game, dan latar belakang Steam-nya"
 
-#: title/pc5_ui.c:2689
+#: title/pc5_ui.c:2752
 msgid "Steam's pictures for a game Steam's search misses"
 msgstr "Gambar Steam untuk game yang tidak ditemukan pencarian Steam"
 
-#: title/pc5_ui.c:2697
+#: title/pc5_ui.c:2760
 #, c-format
 msgid "Needs your key, in %s"
 msgstr "Perlu kunci Anda, di %s"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2698
+#: title/pc5_ui.c:2761
 msgid "No key"
 msgstr "Tanpa kunci"
 
-#: title/pc5_ui.c:2700
+#: title/pc5_ui.c:2763
 #, c-format
 msgid "It refused the key in %s: check it there"
 msgstr "Kunci di %s ditolak: periksa di sana"
 
-#: title/pc5_ui.c:2948
+#: title/pc5_ui.c:3011
 msgid "Home screen tiles aren't available"
 msgstr "Pintasan layar beranda tidak tersedia"
 
-#: title/pc5_ui.c:2948
+#: title/pc5_ui.c:3011
 msgid "This copy of PC5 has no tile program."
 msgstr "Salinan PC5 ini tidak punya program pintasan."
 
-#: title/pc5_ui.c:2955
+#: title/pc5_ui.c:3018
 #, c-format
 msgid "PC5 can't delete its folder, %s/%s."
 msgstr "PC5 tidak bisa menghapus foldernya, %s/%s."
 
-#: title/pc5_ui.c:2956
+#: title/pc5_ui.c:3019
 msgid "The tile wasn't taken away"
 msgstr "Pintasan tidak dihapus"
 
-#: title/pc5_ui.c:2960
+#: title/pc5_ui.c:3023
 msgid "Taken off the home screen"
 msgstr "Dihapus dari layar beranda"
 
-#: title/pc5_ui.c:2961
+#: title/pc5_ui.c:3024
 msgid ""
 "The tile's folder is deleted. If the tile is still on the home screen, "
 "delete it there."
@@ -2008,11 +2090,11 @@ msgstr ""
 "Folder pintasan sudah dihapus. Jika pintasan masih ada di layar beranda, "
 "hapus di sana."
 
-#: title/pc5_ui.c:2978 title/pc5_ui.c:2994
+#: title/pc5_ui.c:3041 title/pc5_ui.c:3057
 msgid "The tile wasn't made"
 msgstr "Pintasan tidak dibuat"
 
-#: title/pc5_ui.c:2981
+#: title/pc5_ui.c:3044
 #, c-format
 msgid ""
 "Its tile, %s, appears on the home screen once you close PC5 and "
@@ -2025,11 +2107,11 @@ msgstr ""
 "game langsung dimulai, dan keluar dari game kembali ke layar beranda. "
 "Pintasan ini berjalan dari folder PC5, %s: biarkan PC5 di sana."
 
-#: title/pc5_ui.c:2986 title/pc5_ui.c:3001
+#: title/pc5_ui.c:3049 title/pc5_ui.c:3064
 msgid "Added to the home screen"
 msgstr "Ditambahkan ke layar beranda"
 
-#: title/pc5_ui.c:2998
+#: title/pc5_ui.c:3061
 #, c-format
 msgid ""
 "Its tile, %s, appears on the home screen once ShadowMountPlus finds it in "
@@ -2040,27 +2122,27 @@ msgstr ""
 "menemukannya di %s. Game langsung dimulai, dan keluar dari game kembali ke "
 "layar beranda."
 
-#: title/pc5_ui.c:3100
+#: title/pc5_ui.c:3163
 #, c-format
 msgid "PC5 %s is available on GitHub (you have %s)."
 msgstr "PC5 %s tersedia di GitHub (Anda punya %s)."
 
-#: title/pc5_ui.c:3134
+#: title/pc5_ui.c:3197
 #, c-format
 msgid "%s stopped with an error"
 msgstr "%s berhenti karena kesalahan"
 
-#: title/pc5_ui.c:3135
+#: title/pc5_ui.c:3198
 #, c-format
 msgid "Wine reported a crash. Its log is kept as %.120s in %.120s."
 msgstr "Wine melaporkan crash. Log-nya disimpan sebagai %.120s di %.120s."
 
-#: title/pc5_ui.c:3138
+#: title/pc5_ui.c:3201
 #, c-format
 msgid "%s closed before showing anything"
 msgstr "%s tertutup sebelum menampilkan apa pun"
 
-#: title/pc5_ui.c:3139
+#: title/pc5_ui.c:3202
 #, c-format
 msgid ""
 "If PC5 started the wrong program, choose Change program in the game's menu "
@@ -2069,12 +2151,12 @@ msgstr ""
 "Jika PC5 menjalankan program yang salah, pilih Ganti program di menu game "
 "(Segitiga). Log-nya disimpan sebagai %.120s di %.120s."
 
-#: title/pc5_ui.c:3143
+#: title/pc5_ui.c:3206
 #, c-format
 msgid "%s had to be closed"
 msgstr "%s harus ditutup"
 
-#: title/pc5_ui.c:3144
+#: title/pc5_ui.c:3207
 #, c-format
 msgid ""
 "It didn't close when asked, so PC5 ended it. Its log is kept as %.120s in "
@@ -2083,26 +2165,26 @@ msgstr ""
 "Game tidak menutup saat diminta, jadi PC5 menghentikannya. Log-nya "
 "disimpan sebagai %.120s di %.120s."
 
-#: title/pc5_ui.c:3148
+#: title/pc5_ui.c:3211
 #, c-format
 msgid "%s ended unexpectedly"
 msgstr "%s berhenti tiba-tiba"
 
-#: title/pc5_ui.c:3149
+#: title/pc5_ui.c:3212
 msgid "PC5 ended unexpectedly last time"
 msgstr "PC5 berhenti tiba-tiba terakhir kali"
 
-#: title/pc5_ui.c:3150
+#: title/pc5_ui.c:3213
 #, c-format
 msgid "Its log is kept as %.120s in %.120s."
 msgstr "Log-nya disimpan sebagai %.120s di %.120s."
 
-#: title/pc5_ui.c:3172
+#: title/pc5_ui.c:3235
 #, c-format
 msgid "No log of %s yet"
 msgstr "Belum ada log %s"
 
-#: title/pc5_ui.c:3173
+#: title/pc5_ui.c:3236
 msgid ""
 "Play it once until the problem happens, then come back here: its log goes "
 "with the report."
@@ -2110,12 +2192,12 @@ msgstr ""
 "Mainkan sekali sampai masalahnya terjadi, lalu kembali ke sini: log-nya "
 "ikut dalam laporan."
 
-#: title/pc5_ui.c:3187
+#: title/pc5_ui.c:3250
 #, c-format
 msgid "Report a problem with %s"
 msgstr "Laporkan masalah pada %s"
 
-#: title/pc5_ui.c:3188
+#: title/pc5_ui.c:3251
 #, c-format
 msgid ""
 "Its newest log, %.120s, is in %.120s/logs. Press Triangle for a QR code "
@@ -2126,69 +2208,69 @@ msgstr ""
 "yang membuka formulir GitHub dengan game, PC5, dan pengaturan game sudah "
 "terisi; lampirkan zip itu di sana."
 
-#: title/pc5_ui.c:3479
+#: title/pc5_ui.c:3542
 msgid "Internal storage"
 msgstr "Penyimpanan konsol"
 
-#: title/pc5_ui.c:3492
+#: title/pc5_ui.c:3555
 msgid "PC5's INSTALL folder"
 msgstr "Folder INSTALL PC5"
 
-#: title/pc5_ui.c:3498
+#: title/pc5_ui.c:3561
 msgid "PC5's app"
 msgstr "Aplikasi PC5"
 
-#: title/pc5_ui.c:3503
+#: title/pc5_ui.c:3566
 msgid "Whole console"
 msgstr "Seluruh konsol"
 
-#: title/pc5_ui.c:3581 title/pc5_ui.c:3588 title/pc5_ui.c:5824
-#: title/pc5_ui.c:5828 title/pc5_ui_enhancements_input.h:19
+#: title/pc5_ui.c:3644 title/pc5_ui.c:3651 title/pc5_ui.c:5901
+#: title/pc5_ui.c:5905 title/pc5_ui_enhancements_input.h:19
 msgid "Music wasn't saved"
 msgstr "Musik tidak tersimpan"
 
-#: title/pc5_ui.c:3581
+#: title/pc5_ui.c:3644
 msgid "PC5 couldn't create the game's music folder. Check free space."
 msgstr "PC5 tidak bisa membuat folder musik game. Periksa ruang kosong."
 
-#: title/pc5_ui.c:3588
+#: title/pc5_ui.c:3651
 msgid "PC5 couldn't start importing the music. Try again."
 msgstr "PC5 tidak bisa mulai mengimpor musik. Coba lagi."
 
-#: title/pc5_ui.c:3625 title/pc5_ui.c:3632 title/pc5_ui.c:5851
-#: title/pc5_ui.c:5855 title/pc5_ui_enhancements_input.h:19
+#: title/pc5_ui.c:3688 title/pc5_ui.c:3695 title/pc5_ui.c:5928
+#: title/pc5_ui.c:5932 title/pc5_ui_enhancements_input.h:19
 msgid "Video wasn't saved"
 msgstr "Video tidak tersimpan"
 
-#: title/pc5_ui.c:3625
+#: title/pc5_ui.c:3688
 msgid "PC5 couldn't create the game's video folder. Check free space."
 msgstr "PC5 tidak bisa membuat folder video game. Periksa ruang kosong."
 
-#: title/pc5_ui.c:3632
+#: title/pc5_ui.c:3695
 msgid "This build couldn't start the video importer."
 msgstr "Build ini tidak bisa menjalankan pengimpor video."
 
-#: title/pc5_ui.c:3740
+#: title/pc5_ui.c:3803
 msgid "Plug in the game's USB drive"
 msgstr "Colokkan drive USB game"
 
-#: title/pc5_ui.c:3740
+#: title/pc5_ui.c:3803
 msgid "Its files are on the USB drive it plays from."
 msgstr "File-nya ada di drive USB tempat game ini dimainkan."
 
-#: title/pc5_ui.c:3742
+#: title/pc5_ui.c:3805
 msgid "PC5 can't find the game's folder"
 msgstr "PC5 tidak menemukan folder game"
 
-#: title/pc5_ui.c:3742 title/pc5_ui.c:5643
+#: title/pc5_ui.c:3805 title/pc5_ui.c:5709
 msgid "Its files may be missing: uninstall it and install it again."
 msgstr "File-nya mungkin hilang: hapus instalannya lalu instal lagi."
 
-#: title/pc5_ui.c:3787 title/pc5_ui.c:3808 title/pc5_ui.c:3892
+#: title/pc5_ui.c:3850 title/pc5_ui.c:3871 title/pc5_ui.c:3955
 msgid "Picture wasn't saved"
 msgstr "Gambar tidak tersimpan"
 
-#: title/pc5_ui.c:3787 title/pc5_ui.c:3892
+#: title/pc5_ui.c:3850 title/pc5_ui.c:3955
 msgid ""
 "Choose a readable JPEG or PNG image, at most 20 MB. Your previous picture "
 "was kept."
@@ -2196,35 +2278,35 @@ msgstr ""
 "Pilih gambar JPEG atau PNG yang bisa dibaca, maksimal 20 MB. Gambar "
 "sebelumnya tetap ada."
 
-#: title/pc5_ui.c:3793 title/pc5_ui.c:3809
+#: title/pc5_ui.c:3856 title/pc5_ui.c:3872
 msgid "Loading screen saved"
 msgstr "Layar memuat disimpan"
 
-#: title/pc5_ui.c:3793
+#: title/pc5_ui.c:3856
 msgid "It shows the next time the game starts."
 msgstr "Muncul saat game dimulai lagi."
 
-#: title/pc5_ui.c:3808
+#: title/pc5_ui.c:3871
 msgid "It has no background picture yet: choose one in Background first."
 msgstr "Belum ada gambar latar: pilih dulu di Latar belakang."
 
-#: title/pc5_ui.c:3809
+#: title/pc5_ui.c:3872
 msgid "Its background shows the next time the game starts."
 msgstr "Latarnya muncul saat game dimulai lagi."
 
-#: title/pc5_ui.c:3819
+#: title/pc5_ui.c:3882
 msgid "It shows PC5's own loading screen again."
 msgstr "Kembali menampilkan layar memuat PC5."
 
-#: title/pc5_ui.c:3849
+#: title/pc5_ui.c:3912
 msgid "Phone uploads need a game with its own PC5 folder."
 msgstr "Unggahan dari ponsel butuh game dengan folder PC5 sendiri."
 
-#: title/pc5_ui.c:3859 title/pc5_ui.c:3868
+#: title/pc5_ui.c:3922 title/pc5_ui.c:3931
 msgid "Phone connection unavailable"
 msgstr "Koneksi ponsel tidak tersedia"
 
-#: title/pc5_ui.c:3868
+#: title/pc5_ui.c:3931
 msgid ""
 "Check the network, then try again. The phone and PS5 must share a network "
 "or phone hotspot."
@@ -2232,74 +2314,74 @@ msgstr ""
 "Periksa jaringan, lalu coba lagi. Ponsel dan PS5 harus berada di jaringan "
 "yang sama atau hotspot ponsel."
 
-#: title/pc5_ui.c:4029 title/pc5_ui.c:8327
+#: title/pc5_ui.c:4092 title/pc5_ui.c:8421
 msgid "Choose an appearance backup"
 msgstr "Pilih cadangan tampilan"
 
-#: title/pc5_ui.c:4029
+#: title/pc5_ui.c:4092
 msgid "Choose a .pc5look backup made by PC5."
 msgstr "Pilih cadangan .pc5look buatan PC5."
 
-#: title/pc5_ui.c:4038
+#: title/pc5_ui.c:4101
 msgid "Choose a picture"
 msgstr "Pilih gambar"
 
-#: title/pc5_ui.c:4038
+#: title/pc5_ui.c:4101
 msgid "Choose a JPEG or PNG picture."
 msgstr "Pilih gambar JPEG atau PNG."
 
-#: title/pc5_ui.c:4047 title/pc5_ui.c:8329
+#: title/pc5_ui.c:4110 title/pc5_ui.c:8423
 msgid "Choose a music file"
 msgstr "Pilih file musik"
 
-#: title/pc5_ui.c:4047 title/pc5_ui.c:8330
+#: title/pc5_ui.c:4110 title/pc5_ui.c:8424
 msgid "Choose an MP3 or a 16-bit PCM WAV file."
 msgstr "Pilih file MP3 atau 16-bit PCM WAV."
 
-#: title/pc5_ui.c:4057 title/pc5_ui.c:8339
+#: title/pc5_ui.c:4120 title/pc5_ui.c:8433
 msgid "PC5 can't open this folder"
 msgstr "PC5 tidak bisa membuka folder ini"
 
-#: title/pc5_ui.c:4057
+#: title/pc5_ui.c:4120
 msgid "Its path is too long."
 msgstr "Jalurnya terlalu panjang."
 
-#: title/pc5_ui.c:4113
+#: title/pc5_ui.c:4176
 msgid "Nothing was deleted"
 msgstr "Tidak ada yang dihapus"
 
-#: title/pc5_ui.c:4113
+#: title/pc5_ui.c:4176
 msgid "Nothing was moved"
 msgstr "Tidak ada yang dipindahkan"
 
-#: title/pc5_ui.c:4113
+#: title/pc5_ui.c:4176
 msgid "Nothing was copied"
 msgstr "Tidak ada yang disalin"
 
-#: title/pc5_ui.c:4159
+#: title/pc5_ui.c:4222
 msgid "Nothing was pasted"
 msgstr "Tidak ada yang ditempel"
 
-#: title/pc5_ui.c:4159
+#: title/pc5_ui.c:4222
 msgid "Those items are here already, and were left as they were."
 msgstr "Item tersebut sudah ada di sini, dan dibiarkan seperti semula."
 
-#: title/pc5_ui.c:4162
+#: title/pc5_ui.c:4225
 msgid "Stopped"
 msgstr "Dihentikan"
 
-#: title/pc5_ui.c:4163
+#: title/pc5_ui.c:4226
 msgid "What was deleted so far is gone; the rest is still here."
 msgstr "Yang sudah dihapus telah hilang; sisanya masih ada di sini."
 
-#: title/pc5_ui.c:4164
+#: title/pc5_ui.c:4227
 msgid ""
 "What was moved so far is here. Nothing was deleted from where it came from."
 msgstr ""
 "Yang sudah dipindahkan ada di sini. Tidak ada yang dihapus dari tempat "
 "asalnya."
 
-#: title/pc5_ui.c:4165
+#: title/pc5_ui.c:4228
 msgid ""
 "What was copied so far is here; the file being copied when it stopped was "
 "deleted."
@@ -2307,83 +2389,83 @@ msgstr ""
 "Yang sudah disalin ada di sini; file yang sedang disalin saat berhenti "
 "telah dihapus."
 
-#: title/pc5_ui.c:4168
+#: title/pc5_ui.c:4231
 msgid "Not everything was deleted"
 msgstr "Tidak semuanya dihapus"
 
-#: title/pc5_ui.c:4168
+#: title/pc5_ui.c:4231
 msgid "Not everything was moved"
 msgstr "Tidak semuanya dipindahkan"
 
-#: title/pc5_ui.c:4168
+#: title/pc5_ui.c:4231
 msgid "Not everything was copied"
 msgstr "Tidak semuanya disalin"
 
-#: title/pc5_ui.c:4180 title/pc5_ui.c:4184
+#: title/pc5_ui.c:4243 title/pc5_ui.c:4247
 msgid "That name can't be used"
 msgstr "Nama itu tidak bisa dipakai"
 
-#: title/pc5_ui.c:4184
+#: title/pc5_ui.c:4247
 msgid "The path would be too long."
 msgstr "Jalurnya akan terlalu panjang."
 
-#: title/pc5_ui.c:4193 title/pc5_ui.c:4206
+#: title/pc5_ui.c:4256 title/pc5_ui.c:4269
 #, c-format
 msgid "This folder has %.200s already."
 msgstr "Folder ini sudah berisi %.200s."
 
-#: title/pc5_ui.c:4194 title/pc5_ui.c:4207
+#: title/pc5_ui.c:4257 title/pc5_ui.c:4270
 msgid "That name is taken"
 msgstr "Nama itu sudah dipakai"
 
-#: title/pc5_ui.c:4198 title/pc5_ui.c:4211
+#: title/pc5_ui.c:4261 title/pc5_ui.c:4274
 #, c-format
 msgid "%s."
 msgstr "%s."
 
-#: title/pc5_ui.c:4200
+#: title/pc5_ui.c:4263
 msgid "PC5 can't rename it"
 msgstr "PC5 tidak bisa mengganti namanya"
 
-#: title/pc5_ui.c:4213
+#: title/pc5_ui.c:4276
 msgid "PC5 can't make the folder"
 msgstr "PC5 tidak bisa membuat folder"
 
 #. The title of the console's on-screen keyboard.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:4247 title/pc5_ui.c:8362
+#: title/pc5_ui.c:4310 title/pc5_ui.c:8456
 msgid "Rename"
 msgstr "Ganti nama"
 
 #. The title of the console's on-screen keyboard.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:4247 title/pc5_ui.c:4249 title/pc5_ui.c:8363
+#: title/pc5_ui.c:4310 title/pc5_ui.c:4312 title/pc5_ui.c:8457
 msgid "New folder"
 msgstr "Folder baru"
 
-#: title/pc5_ui.c:4252 title/pc5_ui.c:4353 title/pc5_ui.c:4936
-#: title/pc5_ui.c:5514 title/pc5_ui_enhancements_input.h:56
+#: title/pc5_ui.c:4315 title/pc5_ui.c:4416 title/pc5_ui.c:4999
+#: title/pc5_ui.c:5580 title/pc5_ui_enhancements_input.h:56
 msgid "The keyboard didn't open"
 msgstr "Keyboard tidak terbuka"
 
-#: title/pc5_ui.c:4252 title/pc5_ui.c:4353 title/pc5_ui.c:4936
-#: title/pc5_ui.c:5514 title/pc5_ui_enhancements_input.h:56
+#: title/pc5_ui.c:4315 title/pc5_ui.c:4416 title/pc5_ui.c:4999
+#: title/pc5_ui.c:5580 title/pc5_ui_enhancements_input.h:56
 msgid "The console's on-screen keyboard can't be used just now."
 msgstr "Keyboard layar konsol tidak bisa dipakai saat ini."
 
-#: title/pc5_ui.c:4292
+#: title/pc5_ui.c:4355
 msgid "PC5 can't open it as text"
 msgstr "PC5 tidak bisa membukanya sebagai teks"
 
-#: title/pc5_ui.c:4322
+#: title/pc5_ui.c:4385
 msgid "PC5 couldn't save it"
 msgstr "PC5 tidak bisa menyimpannya"
 
-#: title/pc5_ui.c:4339
+#: title/pc5_ui.c:4402
 msgid "This line is too long to change here"
 msgstr "Baris ini terlalu panjang untuk diubah di sini"
 
-#: title/pc5_ui.c:4340
+#: title/pc5_ui.c:4403
 msgid ""
 "The console's keyboard holds about 1000 characters. Change it from PC5's "
 "web page, or a computer over FTP."
@@ -2391,31 +2473,31 @@ msgstr ""
 "Keyboard konsol memuat sekitar 1000 karakter. Ubah dari halaman web PC5, "
 "atau dari komputer lewat FTP."
 
-#: title/pc5_ui.c:4345 title/pc5_ui.c:8469
+#: title/pc5_ui.c:4408 title/pc5_ui.c:8563
 #, c-format
 msgid "Line %d"
 msgstr "Baris %d"
 
-#: title/pc5_ui.c:4347
+#: title/pc5_ui.c:4410
 msgid "New line"
 msgstr "Baris baru"
 
-#: title/pc5_ui.c:4461
+#: title/pc5_ui.c:4524
 msgid "Choose a writable folder"
 msgstr "Pilih folder yang bisa ditulisi"
 
-#: title/pc5_ui.c:4461
+#: title/pc5_ui.c:4524
 msgid ""
 "Open a folder on internal storage or a USB drive, then choose Save here."
 msgstr ""
 "Buka folder di penyimpanan konsol atau drive USB, lalu pilih Simpan di "
 "sini."
 
-#: title/pc5_ui.c:4471
+#: title/pc5_ui.c:4534
 msgid "Backup wasn't saved"
 msgstr "Cadangan tidak tersimpan"
 
-#: title/pc5_ui.c:4471
+#: title/pc5_ui.c:4534
 msgid ""
 "Choose another folder. The backup name is unavailable or its path is too "
 "long."
@@ -2423,52 +2505,52 @@ msgstr ""
 "Pilih folder lain. Nama cadangan tidak tersedia atau jalurnya terlalu "
 "panjang."
 
-#: title/pc5_ui.c:4604
+#: title/pc5_ui.c:4667
 #, c-format
 msgid "%s didn't start"
 msgstr "%s tidak dimulai"
 
-#: title/pc5_ui.c:4606
+#: title/pc5_ui.c:4669
 msgid "The console refused to start it. Try again, or restart PC5."
 msgstr "Konsol menolak menjalankannya. Coba lagi, atau mulai ulang PC5."
 
-#: title/pc5_ui.c:4721
+#: title/pc5_ui.c:4784
 msgid "This tile's game can't start"
 msgstr "Game pintasan ini tidak bisa dimulai"
 
-#: title/pc5_ui.c:4767
+#: title/pc5_ui.c:4830
 msgid "PC5 couldn't restart"
 msgstr "PC5 tidak bisa dimulai ulang"
 
-#: title/pc5_ui.c:4768
+#: title/pc5_ui.c:4831
 msgid ""
 "The new version is installed. Close PC5 from the PS button and open it "
 "again."
 msgstr "Versi baru sudah diinstal. Tutup PC5 dari tombol PS lalu buka lagi."
 
-#: title/pc5_ui.c:4778
+#: title/pc5_ui.c:4841
 msgid "The update was stopped"
 msgstr "Pembaruan dihentikan"
 
-#: title/pc5_ui.c:4778
+#: title/pc5_ui.c:4841
 msgid "PC5 is as it was, and what was downloaded is deleted."
 msgstr "PC5 tetap seperti semula, dan yang sudah diunduh telah dihapus."
 
-#: title/pc5_ui.c:4781
+#: title/pc5_ui.c:4844
 msgid "PC5's update isn't finished"
 msgstr "Pembaruan PC5 belum selesai"
 
-#: title/pc5_ui.c:4781
+#: title/pc5_ui.c:4844
 msgid "PC5 wasn't updated"
 msgstr "PC5 tidak diperbarui"
 
-#: title/pc5_ui.c:4867 title/pc5_ui.c:5947 title/pc5_ui.c:5964
-#: title/pc5_ui.c:6034
+#: title/pc5_ui.c:4930 title/pc5_ui.c:6024 title/pc5_ui.c:6041
+#: title/pc5_ui.c:6111
 #, c-format
 msgid "%s can't start"
 msgstr "%s tidak bisa dimulai"
 
-#: title/pc5_ui.c:4868
+#: title/pc5_ui.c:4931
 #, c-format
 msgid ""
 "%s You can uninstall it from its menu (Triangle) and install it again."
@@ -2476,58 +2558,58 @@ msgstr ""
 "%s Anda bisa menghapus instalannya dari menunya (Segitiga) lalu "
 "menginstalnya lagi."
 
-#: title/pc5_ui.c:4869 title/pc5_ui.c:5429
+#: title/pc5_ui.c:4932 title/pc5_ui.c:5492
 msgid "Something it needs is missing."
 msgstr "Ada sesuatu yang dibutuhkannya yang hilang."
 
 #. The title of the console's on-screen keyboard.
-#: title/pc5_ui.c:4931
+#: title/pc5_ui.c:4994
 msgid "Username (empty: any)"
 msgstr "Nama pengguna (kosong: bebas)"
 
 #. The title of the console's on-screen keyboard.
-#: title/pc5_ui.c:4931
+#: title/pc5_ui.c:4994
 msgid "Password (empty: none)"
 msgstr "Kata sandi (kosong: tidak ada)"
 
-#: title/pc5_ui.c:5040
+#: title/pc5_ui.c:5103
 msgid "Appearance wasn't changed"
 msgstr "Tampilan tidak berubah"
 
-#: title/pc5_ui.c:5040
+#: title/pc5_ui.c:5103
 msgid "Appearance backup complete"
 msgstr "Cadangan tampilan selesai"
 
-#: title/pc5_ui.c:5041
+#: title/pc5_ui.c:5104
 msgid "The saved appearance was restored. Game files and saves were kept."
 msgstr ""
 "Tampilan tersimpan telah dipulihkan. File game dan data simpanan tetap ada."
 
-#: title/pc5_ui.c:5105 title/pc5_ui.c:5236
+#: title/pc5_ui.c:5168 title/pc5_ui.c:5299
 msgid "Out of memory"
 msgstr "Memori habis"
 
-#: title/pc5_ui.c:5105 title/pc5_ui.c:5236
+#: title/pc5_ui.c:5168 title/pc5_ui.c:5299
 msgid "PC5 couldn't make room to read the folders."
 msgstr "PC5 tidak bisa menyediakan memori untuk membaca folder."
 
-#: title/pc5_ui.c:5117
+#: title/pc5_ui.c:5180
 msgid "PC5 can't read that folder"
 msgstr "PC5 tidak bisa membaca folder itu"
 
-#: title/pc5_ui.c:5117
+#: title/pc5_ui.c:5180
 msgid "Check that the USB drive is still plugged in."
 msgstr "Pastikan drive USB masih terpasang."
 
-#: title/pc5_ui.c:5168
+#: title/pc5_ui.c:5231
 msgid "Nothing to install"
 msgstr "Tidak ada yang bisa diinstal"
 
-#: title/pc5_ui.c:5168
+#: title/pc5_ui.c:5231
 msgid "None of these folders has a game PC5 can install."
 msgstr "Tidak ada folder yang berisi game yang bisa diinstal PC5."
 
-#: title/pc5_ui.c:5173
+#: title/pc5_ui.c:5236
 #, c-format
 msgid ""
 "Together they need %s and the console has %s free. Go back and untick some."
@@ -2535,71 +2617,71 @@ msgstr ""
 "Semuanya perlu %s, sedangkan konsol hanya punya %s ruang kosong. Kembali "
 "dan hapus centang beberapa."
 
-#: title/pc5_ui.c:5175
+#: title/pc5_ui.c:5238
 msgid "Not enough space for all of them"
 msgstr "Ruang tidak cukup untuk semuanya"
 
-#: title/pc5_ui.c:5209
+#: title/pc5_ui.c:5272
 msgid "This folder can't be installed"
 msgstr "Folder ini tidak bisa diinstal"
 
-#: title/pc5_ui.c:5264
+#: title/pc5_ui.c:5327
 #, c-format
 msgid "The update needs %s and the console has %s free."
 msgstr "Pembaruan perlu %s, sedangkan konsol hanya punya %s ruang kosong."
 
-#: title/pc5_ui.c:5297
+#: title/pc5_ui.c:5360
 #, c-format
 msgid "%s's program wasn't changed"
 msgstr "Program %s tidak diganti"
 
-#: title/pc5_ui.c:5301
+#: title/pc5_ui.c:5364
 #, c-format
 msgid "%s starts %s now"
 msgstr "%s sekarang menjalankan %s"
 
-#: title/pc5_ui.c:5302
+#: title/pc5_ui.c:5365
 #, c-format
 msgid "It runs as %d-bit %s."
 msgstr "Berjalan sebagai %d-bit %s."
 
-#: title/pc5_ui.c:5321 title/pc5_ui.c:5429
+#: title/pc5_ui.c:5384 title/pc5_ui.c:5492
 msgid "This game can't start"
 msgstr "Game ini tidak bisa dimulai"
 
-#: title/pc5_ui.c:5453
+#: title/pc5_ui.c:5516
 msgid "Media settings need a game with its own PC5 folder."
 msgstr "Pengaturan media butuh game dengan folder PC5 sendiri."
 
-#: title/pc5_ui.c:5463
+#: title/pc5_ui.c:5526
 msgid "PC5 didn't install it, so its program can't be changed here."
 msgstr "PC5 tidak menginstalnya, jadi programnya tidak bisa diubah di sini."
 
-#: title/pc5_ui.c:5508
+#: title/pc5_ui.c:5574
 msgid "Search for covers by name"
 msgstr "Cari sampul berdasarkan nama"
 
-#: title/pc5_ui.c:5509
+#: title/pc5_ui.c:5575
 msgid "Search for tile pictures by name"
 msgstr "Cari gambar pintasan berdasarkan nama"
 
-#: title/pc5_ui.c:5510
+#: title/pc5_ui.c:5576
 msgid "Search for backgrounds by name"
 msgstr "Cari latar belakang berdasarkan nama"
 
-#: title/pc5_ui.c:5568
+#: title/pc5_ui.c:5634
 msgid "Your mapping wasn't saved"
 msgstr "Pemetaan Anda tidak disimpan"
 
-#: title/pc5_ui.c:5568
+#: title/pc5_ui.c:5634
 msgid "PC5 couldn't write it to the console's storage."
 msgstr "PC5 tidak bisa menulisnya ke penyimpanan konsol."
 
-#: title/pc5_ui.c:5571
+#: title/pc5_ui.c:5637
 msgid "Saved as your mapping"
 msgstr "Disimpan sebagai pemetaan Anda"
 
-#: title/pc5_ui.c:5572
+#: title/pc5_ui.c:5638
 msgid ""
 "Games set up from now on start with it, and Use my mapping puts it on any "
 "game."
@@ -2607,31 +2689,26 @@ msgstr ""
 "Game yang disiapkan mulai sekarang memakai pemetaan ini, dan Pakai "
 "pemetaan saya menerapkannya ke game mana pun."
 
-#: title/pc5_ui.c:5643
+#: title/pc5_ui.c:5709
 msgid "PC5 can't read the game's folder"
 msgstr "PC5 tidak bisa membaca folder game"
 
-#: title/pc5_ui.c:5648
+#: title/pc5_ui.c:5714
 msgid "This game has one program"
 msgstr "Game ini hanya punya satu program"
 
-#: title/pc5_ui.c:5648
+#: title/pc5_ui.c:5714
 msgid "There is no other program in its folder to start."
 msgstr "Tidak ada program lain di foldernya untuk dijalankan."
 
-#: title/pc5_ui.c:5742
+#: title/pc5_ui.c:5808
 #, c-format
 msgid "%s wasn't uninstalled"
 msgstr "Instalan %s tidak dihapus"
 
-#: title/pc5_ui.c:5743
-#, c-format
-msgid "%s Nothing was changed."
-msgstr "%s Tidak ada yang diubah."
-
 #. added after the sentence before it, hence the space at its start.
 #. Keep the space at the start or end: the text is joined to another.
-#: title/pc5_ui.c:5766
+#: title/pc5_ui.c:5843
 msgid ""
 " Its home screen tile's folder was deleted: if the tile is still on the "
 "home screen, delete it there."
@@ -2639,43 +2716,38 @@ msgstr ""
 " Folder pintasan layar berandanya sudah dihapus: jika pintasan masih ada "
 "di layar beranda, hapus di sana."
 
-#: title/pc5_ui.c:5769
+#: title/pc5_ui.c:5846
 #, c-format
 msgid "The saves of %s weren't fully deleted"
 msgstr "Data simpanan %s tidak terhapus sepenuhnya"
 
-#: title/pc5_ui.c:5769
+#: title/pc5_ui.c:5846
 #, c-format
 msgid "The saves of %s are deleted"
 msgstr "Data simpanan %s sudah dihapus"
 
-#: title/pc5_ui.c:5771
+#: title/pc5_ui.c:5848
 #, c-format
 msgid "%s PC5 finishes deleting them the next time it starts."
 msgstr "%s PC5 akan selesai menghapusnya saat dijalankan berikutnya."
 
-#: title/pc5_ui.c:5772
+#: title/pc5_ui.c:5849
 msgid "Its saves and settings, kept when it was uninstalled, are gone."
 msgstr ""
 "Data simpanan dan pengaturannya, yang dipertahankan saat instalannya "
 "dihapus, sudah hilang."
 
-#: title/pc5_ui.c:5774
+#: title/pc5_ui.c:5851
 #, c-format
 msgid "%s wasn't fully uninstalled"
 msgstr "Instalan %s tidak terhapus sepenuhnya"
 
-#: title/pc5_ui.c:5774
+#: title/pc5_ui.c:5851
 #, c-format
 msgid "%s is uninstalled"
 msgstr "Instalan %s sudah dihapus"
 
-#: title/pc5_ui.c:5775
-#, c-format
-msgid "%s PC5 finishes it the next time it starts."
-msgstr "%s PC5 akan menyelesaikannya saat dijalankan berikutnya."
-
-#: title/pc5_ui.c:5777
+#: title/pc5_ui.c:5854
 #, c-format
 msgid ""
 "Its saves and settings are kept: installing it again puts them back. "
@@ -2685,12 +2757,12 @@ msgstr ""
 "mengembalikannya. Pengaturan › Pemeliharaan game › Hapus instalan game "
 "akan menghapusnya.%s"
 
-#: title/pc5_ui.c:5779
+#: title/pc5_ui.c:5856
 #, c-format
 msgid "The game, its saves and its settings were deleted.%s"
 msgstr "Game, data simpanan, dan pengaturannya sudah dihapus.%s"
 
-#: title/pc5_ui.c:5820
+#: title/pc5_ui.c:5897
 msgid ""
 "Choose a readable MP3 or 16-bit PCM WAV file. Protected or damaged files "
 "may not work."
@@ -2698,12 +2770,12 @@ msgstr ""
 "Pilih file MP3 atau 16-bit PCM WAV yang bisa dibaca. File yang dilindungi "
 "atau rusak mungkin tidak berfungsi."
 
-#: title/pc5_ui.c:5822
+#: title/pc5_ui.c:5899
 msgid "The prepared music exceeds the 2 GB limit. Choose a shorter track."
 msgstr ""
 "Musik yang disiapkan melebihi batas 2 GB. Pilih lagu yang lebih pendek."
 
-#: title/pc5_ui.c:5823
+#: title/pc5_ui.c:5900
 msgid ""
 "Check free space and keep the source drive connected until importing "
 "finishes. Your previous music was kept."
@@ -2711,11 +2783,11 @@ msgstr ""
 "Periksa ruang kosong dan biarkan drive sumber terhubung sampai impor "
 "selesai. Musik sebelumnya tetap ada."
 
-#: title/pc5_ui.c:5828 title/pc5_ui_enhancements_input.h:21
+#: title/pc5_ui.c:5905 title/pc5_ui_enhancements_input.h:21
 msgid "PC5 couldn't save the music selection. Try again."
 msgstr "PC5 tidak bisa menyimpan pilihan musik. Coba lagi."
 
-#: title/pc5_ui.c:5848
+#: title/pc5_ui.c:5925
 msgid ""
 "Choose an H.264 video up to 1920x1080, 60 fps and 1 GB. MP4 is "
 "recommended. Audio is ignored."
@@ -2723,7 +2795,7 @@ msgstr ""
 "Pilih video H.264 hingga 1920x1080, 60 fps, dan 1 GB. MP4 disarankan. "
 "Audio diabaikan."
 
-#: title/pc5_ui.c:5849
+#: title/pc5_ui.c:5926
 msgid ""
 "Check free space and keep the source drive connected until importing "
 "finishes. Your previous video was kept."
@@ -2731,16 +2803,16 @@ msgstr ""
 "Periksa ruang kosong dan biarkan drive sumber terhubung sampai impor "
 "selesai. Video sebelumnya tetap ada."
 
-#: title/pc5_ui.c:5855
+#: title/pc5_ui.c:5932
 msgid "PC5 couldn't save the video selection. Try again."
 msgstr "PC5 tidak bisa menyimpan pilihan video. Coba lagi."
 
-#: title/pc5_ui.c:6016
+#: title/pc5_ui.c:6093
 #, c-format
 msgid "%s needs Steam"
 msgstr "%s memerlukan Steam"
 
-#: title/pc5_ui.c:6019
+#: title/pc5_ui.c:6096
 msgid ""
 "Its program is wrapped in Steam's DRM (SteamStub), which starts only with "
 "Steam running, and Steam doesn't run on the console. A copy of the game "
@@ -2750,73 +2822,73 @@ msgstr ""
 "Steam berjalan, dan Steam tidak berjalan di konsol. Salinan game tanpa DRM "
 "itu bisa dijalankan."
 
-#: title/pc5_ui.c:6644 title/pc5_ui.c:6654
+#: title/pc5_ui.c:6721 title/pc5_ui.c:6731
 msgid "Play Game"
 msgstr "Mainkan Game"
 
 #. a chip under the game's name: 64-bit or 32-bit. Keep it short.
-#: title/pc5_ui.c:6665
+#: title/pc5_ui.c:6742
 #, c-format
 msgid "%d-bit"
 msgstr "%d-bit"
 
-#: title/pc5_ui.c:6669
+#: title/pc5_ui.c:6746
 msgid "Frame gen"
 msgstr "Frame gen"
 
-#: title/pc5_ui.c:6670
+#: title/pc5_ui.c:6747
 #, c-format
 msgid "Controller: %s"
 msgstr "Kontroler: %s"
 
-#: title/pc5_ui.c:6759
+#: title/pc5_ui.c:6836
 msgid "No games yet."
 msgstr "Belum ada game."
 
-#: title/pc5_ui.c:6759
+#: title/pc5_ui.c:6836
 msgid "Nothing played yet: games show here once you play them."
 msgstr ""
 "Belum ada yang dimainkan: game muncul di sini setelah Anda memainkannya."
 
-#: title/pc5_ui.c:6760
+#: title/pc5_ui.c:6837
 msgid "No favourites yet: press Square on a game to add it."
 msgstr "Belum ada favorit: tekan Kotak pada game untuk menambahkannya."
 
-#: title/pc5_ui.c:6761
+#: title/pc5_ui.c:6838
 msgid "No game is played from a USB drive."
 msgstr "Tidak ada game yang dimainkan dari drive USB."
 
-#: title/pc5_ui.c:6761
+#: title/pc5_ui.c:6838
 msgid "Every game can start."
 msgstr "Semua game bisa dijalankan."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6785 title/pc5_ui.c:6830 title/pc5_ui.c:6906
-#: title/pc5_ui.c:7297 title/pc5_ui.c:7328 title/pc5_ui.c:7429
-#: title/pc5_ui.c:7458 title/pc5_ui.c:7512 title/pc5_ui.c:7559
-#: title/pc5_ui.c:7786 title/pc5_ui.c:7795 title/pc5_ui.c:7812
-#: title/pc5_ui.c:8035 title/pc5_ui.c:8051 title/pc5_ui.c:8260
-#: title/pc5_ui.c:8319 title/pc5_ui.c:8321 title/pc5_ui.c:8322
-#: title/pc5_ui.c:8338 title/pc5_ui.c:8403 title/pc5_ui.c:8435
-#: title/pc5_ui.c:8437 title/pc5_ui.c:8480 title/pc5_ui.c:8686
-#: title/pc5_ui.c:8785 title/pc5_ui.c:8796 title/pc5_ui.c:8820
-#: title/pc5_ui.c:8826 title/pc5_ui_enhancements_draw.h:120
+#: title/pc5_ui.c:6862 title/pc5_ui.c:6907 title/pc5_ui.c:6983
+#: title/pc5_ui.c:7384 title/pc5_ui.c:7415 title/pc5_ui.c:7516
+#: title/pc5_ui.c:7545 title/pc5_ui.c:7599 title/pc5_ui.c:7646
+#: title/pc5_ui.c:7873 title/pc5_ui.c:7882 title/pc5_ui.c:7899
+#: title/pc5_ui.c:8129 title/pc5_ui.c:8145 title/pc5_ui.c:8354
+#: title/pc5_ui.c:8413 title/pc5_ui.c:8415 title/pc5_ui.c:8416
+#: title/pc5_ui.c:8432 title/pc5_ui.c:8497 title/pc5_ui.c:8529
+#: title/pc5_ui.c:8531 title/pc5_ui.c:8574 title/pc5_ui.c:8780
+#: title/pc5_ui.c:8879 title/pc5_ui.c:8890 title/pc5_ui.c:8917
+#: title/pc5_ui.c:8923 title/pc5_ui_enhancements_draw.h:120
 #: title/pc5_ui_enhancements_draw.h:132 title/pc5_ui_enhancements_draw.h:158
 msgid "Back"
 msgstr "Kembali"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6785 title/pc5_ui.c:6809 title/pc5_ui.c:6815
-#: title/pc5_ui.c:6920 title/pc5_ui.c:8796
+#: title/pc5_ui.c:6862 title/pc5_ui.c:6886 title/pc5_ui.c:6892
+#: title/pc5_ui.c:6997 title/pc5_ui.c:8890
 msgid "Play"
 msgstr "Main"
 
-#: title/pc5_ui.c:6795
+#: title/pc5_ui.c:6872
 msgid "No games yet"
 msgstr "Belum ada game"
 
-#: title/pc5_ui.c:6797
+#: title/pc5_ui.c:6874
 msgid ""
 "Put a game's folder in PC5/INSTALL on a USB drive, then open Install › "
 "Install games from USB."
@@ -2824,7 +2896,7 @@ msgstr ""
 "Taruh folder game di PC5/INSTALL pada drive USB, lalu buka Instal › Instal "
 "game dari USB."
 
-#: title/pc5_ui.c:6800
+#: title/pc5_ui.c:6877
 msgid ""
 "Or send it from a phone or PC: Settings › Network › Web page or FTP server."
 msgstr ""
@@ -2832,150 +2904,150 @@ msgstr ""
 "Server FTP."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6801
+#: title/pc5_ui.c:6878
 msgid "Tabs"
 msgstr "Tab"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6809 title/pc5_ui_enhancements_draw.h:56
+#: title/pc5_ui.c:6886 title/pc5_ui_enhancements_draw.h:56
 #: title/pc5_ui_enhancements_draw.h:101
 msgid "Filter"
 msgstr "Filter"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6809 title/pc5_ui.c:6815
+#: title/pc5_ui.c:6886 title/pc5_ui.c:6892
 msgid "Game options"
 msgstr "Opsi game"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6809 title/pc5_ui.c:6815
+#: title/pc5_ui.c:6886 title/pc5_ui.c:6892
 msgid "Favourite"
 msgstr "Favorit"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6906 title/pc5_ui.c:7328 title/pc5_ui.c:7428
-#: title/pc5_ui.c:8436
+#: title/pc5_ui.c:6983 title/pc5_ui.c:7415 title/pc5_ui.c:7515
+#: title/pc5_ui.c:8530
 msgid "Change"
 msgstr "Ubah"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6906 title/pc5_ui.c:7328 title/pc5_ui.c:7458
-#: title/pc5_ui.c:7512 title/pc5_ui.c:7795 title/pc5_ui.c:8322
-#: title/pc5_ui.c:8403 title/pc5_ui.c:8480 title/pc5_ui.c:8785
+#: title/pc5_ui.c:6983 title/pc5_ui.c:7415 title/pc5_ui.c:7545
+#: title/pc5_ui.c:7599 title/pc5_ui.c:7882 title/pc5_ui.c:8416
+#: title/pc5_ui.c:8497 title/pc5_ui.c:8574 title/pc5_ui.c:8879
 msgid "Choose"
 msgstr "Pilih"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6906
+#: title/pc5_ui.c:6983
 msgid "QR code"
 msgstr "Kode QR"
 
-#: title/pc5_ui.c:6921
+#: title/pc5_ui.c:6998
 msgid "To leave it, hold the touchpad and OPTIONS for 2 s"
 msgstr "Untuk keluar, tahan touchpad dan OPTIONS selama 2 detik"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6925 title/pc5_ui_enhancements_draw.h:110
+#: title/pc5_ui.c:7002 title/pc5_ui_enhancements_draw.h:110
 msgid "Controller"
 msgstr "Kontroler"
 
-#: title/pc5_ui.c:6926
+#: title/pc5_ui.c:7003
 msgid "The game sees a DualSense, as one plugged into a PC"
 msgstr "Game melihat DualSense, seperti yang dicolokkan ke PC"
 
-#: title/pc5_ui.c:6926
+#: title/pc5_ui.c:7003
 msgid "The buttons press keys, the sticks move the mouse"
 msgstr "Tombol menekan tombol keyboard, stik menggerakkan mouse"
 
-#: title/pc5_ui.c:6926
+#: title/pc5_ui.c:7003
 msgid "Games with controller support see an Xbox controller"
 msgstr "Game yang mendukung kontroler melihat kontroler Xbox"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6930 title/pc5_ui.c:7349
+#: title/pc5_ui.c:7007 title/pc5_ui.c:7436
 msgid "Button mapping"
 msgstr "Pemetaan tombol"
 
-#: title/pc5_ui.c:6931
+#: title/pc5_ui.c:7008
 msgid "The key or mouse button each one sends"
 msgstr "Tombol keyboard atau mouse yang dikirim masing-masing"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6935
+#: title/pc5_ui.c:7012
 msgid "Create button"
 msgstr ""
 
-#: title/pc5_ui.c:6936
+#: title/pc5_ui.c:7013
 msgid "Kept from the game: safe for the PS5's screenshots"
 msgstr ""
 
-#: title/pc5_ui.c:6937
+#: title/pc5_ui.c:7014
 msgid "The game sees it, as a DualSense's Create"
 msgstr ""
 
-#: title/pc5_ui.c:6938
+#: title/pc5_ui.c:7015
 msgid "The game sees it as Back (Select)"
 msgstr ""
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6939
+#: title/pc5_ui.c:7016
 msgid "Not sent"
 msgstr ""
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6939
+#: title/pc5_ui.c:7016
 msgid "Sent"
 msgstr ""
 
-#: title/pc5_ui.c:6943
+#: title/pc5_ui.c:7020
 msgid "Hides when not moved or clicked for 5 s"
 msgstr "Sembunyi jika tak digerakkan atau diklik selama 5 dtk"
 
-#: title/pc5_ui.c:6943
+#: title/pc5_ui.c:7020
 msgid "Stays as the game shows it"
 msgstr "Tetap seperti yang ditampilkan game"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6944
+#: title/pc5_ui.c:7021
 msgid "Auto-hide"
 msgstr "Sembunyi otomatis"
 
-#: title/pc5_ui.c:6948
+#: title/pc5_ui.c:7025
 msgid "Frames, resolution, aspect ratio, memory and CPU"
 msgstr "Frame, resolusi, rasio aspek, memori, dan CPU"
 
-#: title/pc5_ui.c:6948
+#: title/pc5_ui.c:7025
 msgid "Frame generation, resolution, aspect ratio and CPU"
 msgstr "Frame generation, resolusi, rasio aspek, dan CPU"
 
-#: title/pc5_ui.c:6948
+#: title/pc5_ui.c:7025
 msgid "Frame generation, aspect ratio, memory and CPU"
 msgstr "Frame generation, rasio aspek, memori, dan CPU"
 
-#: title/pc5_ui.c:6948
+#: title/pc5_ui.c:7025
 msgid "Frame generation, aspect ratio and CPU"
 msgstr "Frame generation, rasio aspek, dan CPU"
 
-#: title/pc5_ui.c:6953
+#: title/pc5_ui.c:7030
 msgid "Its cover, its background and a home screen tile"
 msgstr "Sampul, latar belakang, dan pintasan layar beranda"
 
-#: title/pc5_ui.c:6958
+#: title/pc5_ui.c:7035
 msgid "Its program, updating it and uninstalling it"
 msgstr "Programnya, pembaruan, dan hapus instalannya"
 
-#: title/pc5_ui.c:6958
+#: title/pc5_ui.c:7035
 msgid "Its program and uninstalling it"
 msgstr "Programnya dan hapus instalannya"
 
-#: title/pc5_ui.c:6965
+#: title/pc5_ui.c:7042
 msgid ""
 "The usual way for older games like this; change it only if the picture is "
 "wrong"
 msgstr ""
 "Cara biasa untuk game lama seperti ini; ubah hanya jika gambarnya salah"
 
-#: title/pc5_ui.c:6966
+#: title/pc5_ui.c:7043
 msgid ""
 "Best for most games; change it only if the picture is wrong or it won't "
 "start"
@@ -2983,22 +3055,22 @@ msgstr ""
 "Terbaik untuk sebagian besar game; ubah hanya jika gambarnya salah atau "
 "game tidak mau jalan"
 
-#: title/pc5_ui.c:6967
+#: title/pc5_ui.c:7044
 msgid "A slower way to draw it; set it back to Auto if it doesn't help"
 msgstr ""
 "Cara menggambar yang lebih lambat; kembalikan ke Otomatis jika tidak "
 "membantu"
 
-#: title/pc5_ui.c:6968
+#: title/pc5_ui.c:7045
 msgid "Drawn in 2D only; set it back to Auto if it doesn't help"
 msgstr "Hanya digambar dalam 2D; kembalikan ke Otomatis jika tidak membantu"
 
-#: title/pc5_ui.c:6969
+#: title/pc5_ui.c:7046
 msgid "Another way to draw it; set it back to Auto if it doesn't help"
 msgstr ""
 "Cara lain untuk menggambarnya; kembalikan ke Otomatis jika tidak membantu"
 
-#: title/pc5_ui.c:6970
+#: title/pc5_ui.c:7047
 msgid ""
 "The slowest way, but it starts the most games; Auto if it doesn't help"
 msgstr ""
@@ -3006,16 +3078,16 @@ msgstr ""
 "tidak membantu"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6971 title/pc5_ui.c:7494
+#: title/pc5_ui.c:7048 title/pc5_ui.c:7581
 msgid "Graphics mode"
 msgstr "Mode grafis"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6977
+#: title/pc5_ui.c:7054
 msgid "Frame generation"
 msgstr "Frame generation"
 
-#: title/pc5_ui.c:6981
+#: title/pc5_ui.c:7058
 msgid ""
 "Held at 40 fps, two frames made between each two: for a game that can't "
 "hold 60"
@@ -3024,38 +3096,38 @@ msgstr ""
 "tidak bisa bertahan di 60"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6982
+#: title/pc5_ui.c:7059
 msgid "40 → 120 fps"
 msgstr "40 → 120 fps"
 
-#: title/pc5_ui.c:6984
+#: title/pc5_ui.c:7061
 msgid ""
 "Held at 60 fps, a frame made between each two: smoother on a 120 Hz TV"
 msgstr ""
 "Ditahan di 60 fps, satu frame dibuat di antara tiap dua: lebih mulus di TV "
 "120 Hz"
 
-#: title/pc5_ui.c:6985
+#: title/pc5_ui.c:7062
 msgid "Held at 30 fps and shown at 60: smoother where it runs below 60"
 msgstr ""
 "Dikunci di 30 fps dan ditampilkan di 60: lebih mulus jika berjalan di "
 "bawah 60"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6986
+#: title/pc5_ui.c:7063
 msgid "60 → 120 fps"
 msgstr "60 → 120 fps"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6986
+#: title/pc5_ui.c:7063
 msgid "30 → 60 fps"
 msgstr "30 → 60 fps"
 
-#: title/pc5_ui.c:6988
+#: title/pc5_ui.c:7065
 msgid "Off. Left and right: 60 → 120 or 40 → 120 fps"
 msgstr "Mati. Kiri dan kanan: 60 → 120 atau 40 → 120 fps"
 
-#: title/pc5_ui.c:6989
+#: title/pc5_ui.c:7066
 msgid ""
 "Off. Left and right: 30 → 60 fps (with 120 Hz output on, 60 → 120 or 40 → "
 "120)"
@@ -3064,112 +3136,112 @@ msgstr ""
 "atau 40 → 120)"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6994
+#: title/pc5_ui.c:7071
 msgid "Resolution"
 msgstr "Resolusi"
 
-#: title/pc5_ui.c:6995
+#: title/pc5_ui.c:7072
 msgid "Drawn at 4K, as the console shows it; four times the work of 1080p"
 msgstr ""
 "Digambar di 4K, seperti yang ditampilkan konsol; empat kali beban 1080p"
 
-#: title/pc5_ui.c:6995
+#: title/pc5_ui.c:7072
 msgid "Drawn at 1440p and shown at 4K; sharper than 1080p, slower"
 msgstr ""
 "Digambar di 1440p dan ditampilkan di 4K; lebih tajam dari 1080p, lebih "
 "lambat"
 
-#: title/pc5_ui.c:6995
+#: title/pc5_ui.c:7072
 msgid "Drawn at 1080p and shown at 4K by the console"
 msgstr "Digambar di 1080p dan ditampilkan di 4K oleh konsol"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:6996
+#: title/pc5_ui.c:7073
 msgid "4K"
 msgstr "4K"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6999
+#: title/pc5_ui.c:7076
 msgid "Aspect ratio"
 msgstr "Rasio aspek"
 
-#: title/pc5_ui.c:7000
+#: title/pc5_ui.c:7077
 msgid "Stretched to fill the screen: a 4:3 picture gets wider"
 msgstr "Direntangkan memenuhi layar: gambar 4:3 jadi lebih lebar"
 
-#: title/pc5_ui.c:7000
+#: title/pc5_ui.c:7077
 msgid "The picture's own shape, with bars beside a 4:3 one"
 msgstr "Bentuk asli gambar, dengan bilah di samping gambar 4:3"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7001 title/pc5_ui_enhancements_draw.h:145
+#: title/pc5_ui.c:7078 title/pc5_ui_enhancements_draw.h:145
 msgid "Stretch"
 msgstr "Rentangkan"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7001
+#: title/pc5_ui.c:7078
 msgid "Keep"
 msgstr "Pertahankan"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7004
+#: title/pc5_ui.c:7081
 msgid "Game memory"
 msgstr "Memori game"
 
-#: title/pc5_ui.c:7005
+#: title/pc5_ui.c:7082
 msgid ""
 "4 GB even for a game not made for it: room for mods; Auto if it misbehaves"
 msgstr ""
 "4 GB bahkan untuk game yang tidak dibuat untuk itu: ruang untuk mod; "
 "Otomatis jika bermasalah"
 
-#: title/pc5_ui.c:7006
+#: title/pc5_ui.c:7083
 msgid "2 GB, or 4 GB for a game made for it, as on Windows"
 msgstr "2 GB, atau 4 GB untuk game yang dibuat untuk itu, seperti di Windows"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7007 title/pc5_ui.c:7028
+#: title/pc5_ui.c:7084 title/pc5_ui.c:7105
 msgid "4 GB"
 msgstr "4 GB"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7014
+#: title/pc5_ui.c:7091
 msgid "Graphics memory"
 msgstr "Memori grafis"
 
-#: title/pc5_ui.c:7016
+#: title/pc5_ui.c:7093
 msgid "All the console's; Auto if the game says there is too little"
 msgstr "Semua memori konsol; Otomatis jika game bilang terlalu sedikit"
 
-#: title/pc5_ui.c:7017
+#: title/pc5_ui.c:7094
 msgid "All 8 GB: the game may take memory the rest of it needs"
 msgstr ""
 "Semua 8 GB: game bisa mengambil memori yang dibutuhkan bagian lainnya"
 
-#: title/pc5_ui.c:7019
+#: title/pc5_ui.c:7096
 msgid "2 GB at most, so older games don't get confused"
 msgstr "Paling banyak 2 GB, agar game lama tidak bingung"
 
-#: title/pc5_ui.c:7020
+#: title/pc5_ui.c:7097
 msgid ""
 "4 GB, so the game leaves room for the rest: the console's memory is shared"
 msgstr ""
 "4 GB, agar game menyisakan ruang untuk yang lain: memori konsol dipakai "
 "bersama"
 
-#: title/pc5_ui.c:7022
+#: title/pc5_ui.c:7099
 msgid ""
 "Less for textures, more for the game: for one that runs out of memory"
 msgstr ""
 "Lebih sedikit untuk tekstur, lebih banyak untuk game: jika memorinya habis"
 
-#: title/pc5_ui.c:7024
+#: title/pc5_ui.c:7101
 msgid "More for a game that says there is too little; Auto if it misbehaves"
 msgstr ""
 "Lebih banyak untuk game yang melihat terlalu sedikit; Otomatis jika "
 "bermasalah"
 
-#: title/pc5_ui.c:7025
+#: title/pc5_ui.c:7102
 msgid ""
 "More for the game's textures, less for the rest; Auto if it runs out of "
 "memory"
@@ -3178,118 +3250,118 @@ msgstr ""
 "jika memorinya habis"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7026
+#: title/pc5_ui.c:7103
 msgid "Maximum"
 msgstr "Maksimum"
 
-#: title/pc5_ui.c:7028
+#: title/pc5_ui.c:7105
 #, c-format
 msgid "%s (%s)"
 msgstr "%s (%s)"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7028 title/pc5_ui.c:7031
+#: title/pc5_ui.c:7105 title/pc5_ui.c:7108
 msgid "2 GB"
 msgstr "2 GB"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7031
+#: title/pc5_ui.c:7108
 msgid "512 MB"
 msgstr "512 MB"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7031
+#: title/pc5_ui.c:7108
 msgid "1 GB"
 msgstr "1 GB"
 
-#: title/pc5_ui.c:7032
+#: title/pc5_ui.c:7109
 msgid "3 GB"
 msgstr "3 GB"
 
-#: title/pc5_ui.c:7032
+#: title/pc5_ui.c:7109
 msgid "5 GB"
 msgstr "5 GB"
 
-#: title/pc5_ui.c:7032
+#: title/pc5_ui.c:7109
 msgid "6 GB"
 msgstr "6 GB"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7036
+#: title/pc5_ui.c:7113
 msgid "Sound output"
 msgstr "Keluaran suara"
 
-#: title/pc5_ui.c:7037
+#: title/pc5_ui.c:7114
 msgid ""
 "Each sound on its own speaker of a surround system; Stereo if it is silent"
 msgstr ""
 "Tiap suara di speakernya sendiri pada sistem surround; Stereo jika senyap"
 
-#: title/pc5_ui.c:7038
+#: title/pc5_ui.c:7115
 msgid ""
 "Two speakers, for a TV or headphones; 5.1 or 7.1 for a surround system"
 msgstr ""
 "Dua speaker, untuk TV atau headphone; 5.1 atau 7.1 untuk sistem surround"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7039
+#: title/pc5_ui.c:7116
 msgid "Stereo"
 msgstr "Stereo"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7042
+#: title/pc5_ui.c:7119
 msgid "Stutter fix"
 msgstr "Perbaikan tersendat"
 
-#: title/pc5_ui.c:7043
+#: title/pc5_ui.c:7120
 msgid "The game's work takes turns, as on a PC: steadier for some games"
 msgstr ""
 "Pekerjaan game bergiliran, seperti di PC: lebih stabil untuk beberapa game"
 
-#: title/pc5_ui.c:7043
+#: title/pc5_ui.c:7120
 msgid "Fastest for most games; turn on if it freezes or stutters"
 msgstr ""
 "Tercepat untuk sebagian besar game; aktifkan jika game macet atau tersendat"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7047 title/pc5_ui.c:8081
+#: title/pc5_ui.c:7124 title/pc5_ui.c:8175
 msgid "Cover"
 msgstr "Sampul"
 
-#: title/pc5_ui.c:7048
+#: title/pc5_ui.c:7125
 msgid "Another of those found, or search by another name"
 msgstr "Pilih yang lain dari yang ditemukan, atau cari dengan nama lain"
 
-#: title/pc5_ui.c:7053
+#: title/pc5_ui.c:7130
 msgid "Choose a background image or a silent video"
 msgstr "Pilih gambar latar atau video tanpa suara"
 
-#: title/pc5_ui.c:7054
+#: title/pc5_ui.c:7131
 msgid "Another of those found, search by another name, or none"
 msgstr ""
 "Pilih yang lain dari yang ditemukan, cari dengan nama lain, atau tanpa "
 "latar"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7058 title/pc5_ui.c:8081
+#: title/pc5_ui.c:7135 title/pc5_ui.c:8175
 msgid "Background image"
 msgstr "Gambar latar"
 
-#: title/pc5_ui.c:7059
+#: title/pc5_ui.c:7136
 msgid ""
 "Choose a still image; it also appears when video playback is unavailable"
 msgstr "Pilih gambar diam; juga tampil saat video tidak bisa diputar"
 
-#: title/pc5_ui.c:7064
+#: title/pc5_ui.c:7141
 msgid "Choose or remove this game's silent background video"
 msgstr "Pilih atau hapus video latar tanpa suara untuk game ini"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7068
+#: title/pc5_ui.c:7145
 msgid "Choose video file"
 msgstr "Pilih file video"
 
-#: title/pc5_ui.c:7069
+#: title/pc5_ui.c:7146
 msgid ""
 "Import H.264 video to console storage; experimental 1080p/60, without audio"
 msgstr ""
@@ -3297,110 +3369,110 @@ msgstr ""
 "audio"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7073
+#: title/pc5_ui.c:7150
 msgid "Remove background video"
 msgstr "Hapus video latar"
 
-#: title/pc5_ui.c:7074
+#: title/pc5_ui.c:7151
 msgid ""
 "Delete the imported video and return to the background image; keep the "
 "source file"
 msgstr ""
 "Hapus video yang diimpor dan kembali ke gambar latar; file sumber tetap ada"
 
-#: title/pc5_ui.c:7079
+#: title/pc5_ui.c:7156
 msgid "Choose or remove the music that plays on this game's cover"
 msgstr "Pilih atau hapus musik yang diputar di sampul game ini"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7083
+#: title/pc5_ui.c:7160
 msgid "Choose music file"
 msgstr "Pilih file musik"
 
-#: title/pc5_ui.c:7084
+#: title/pc5_ui.c:7161
 msgid ""
 "Import MP3 or WAV to console storage: plays on this cover, even without USB"
 msgstr ""
 "Impor MP3 atau WAV ke penyimpanan konsol: diputar di sampul ini, bahkan "
 "tanpa USB"
 
-#: title/pc5_ui.c:7089
+#: title/pc5_ui.c:7166
 msgid ""
 "Its cover, background and loading screen, and its music and video settings"
 msgstr "Sampul, latar, dan layar memuat, serta pengaturan musik dan video"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7093
+#: title/pc5_ui.c:7170
 msgid "Music, video and backup"
 msgstr "Musik, video, dan cadangan"
 
-#: title/pc5_ui.c:7094
+#: title/pc5_ui.c:7171
 msgid ""
 "Music volume and start, video loop, framing, darkness and appearance backup"
 msgstr ""
 "Volume dan awal musik, ulang video, pembingkaian, kegelapan, dan cadangan "
 "tampilan"
 
-#: title/pc5_ui.c:7100
+#: title/pc5_ui.c:7177
 msgid "The picture shown while it starts: PC5's own, or one of yours"
 msgstr "Gambar saat dimulai: milik PC5 atau milikmu"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7101
+#: title/pc5_ui.c:7178
 #, fuzzy
 msgid "Own"
 msgstr "Aktif"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7101
+#: title/pc5_ui.c:7178
 msgid "PC5's"
 msgstr "Milik PC5"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7105
+#: title/pc5_ui.c:7182
 #, fuzzy
 msgid "Choose image file"
 msgstr "Pilih file video"
 
-#: title/pc5_ui.c:7106
+#: title/pc5_ui.c:7183
 msgid ""
 "A JPEG or PNG from a USB drive or the console; Square: from your phone"
 msgstr "JPEG atau PNG dari USB atau konsol; Kotak: dari ponsel"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7110
+#: title/pc5_ui.c:7187
 #, fuzzy
 msgid "Use its background"
 msgstr "Latar belakangnya"
 
-#: title/pc5_ui.c:7111
+#: title/pc5_ui.c:7188
 msgid "Its background picture, as its loading screen"
 msgstr "Gambar latarnya sebagai layar memuat"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7115
+#: title/pc5_ui.c:7192
 msgid "Use PC5's"
 msgstr "Pakai milik PC5"
 
-#: title/pc5_ui.c:7116
+#: title/pc5_ui.c:7193
 msgid "Back to PC5's own loading screen for it"
 msgstr "Kembali ke layar memuat PC5"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7120
+#: title/pc5_ui.c:7197
 msgid "Remove library music"
 msgstr "Hapus musik pustaka"
 
-#: title/pc5_ui.c:7121
+#: title/pc5_ui.c:7198
 msgid "Delete this game's imported music; the original source file is kept"
 msgstr "Hapus musik yang diimpor untuk game ini; file sumber asli tetap ada"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7125 title/pc5_ui.c:8081
+#: title/pc5_ui.c:7202 title/pc5_ui.c:8175
 msgid "Tile picture"
 msgstr "Gambar pintasan"
 
-#: title/pc5_ui.c:7126
+#: title/pc5_ui.c:7203
 msgid ""
 "Its home screen tile's picture: a square one found online, or one made "
 "from its cover"
@@ -3408,103 +3480,114 @@ msgstr ""
 "Gambar pintasan layar berandanya: gambar persegi yang ditemukan online, "
 "atau yang dibuat dari sampulnya"
 
-#: title/pc5_ui.c:7130
+#: title/pc5_ui.c:7207
 #, c-format
 msgid "Its tile, %.40s, starts the game"
 msgstr "Pintasannya, %.40s, menjalankan game"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7131
+#: title/pc5_ui.c:7208
 msgid "Home screen tile"
 msgstr "Pintasan layar beranda"
 
-#: title/pc5_ui.c:7132
+#: title/pc5_ui.c:7209
 msgid "A tile on the PS5's home screen that starts it"
 msgstr "Pintasan di layar beranda PS5 yang menjalankannya"
 
-#: title/pc5_ui.c:7137
+#: title/pc5_ui.c:7214
 #, c-format
 msgid "Now: %.150s"
 msgstr "Sekarang: %.150s"
 
 #. A menu row's name (about 30 characters fit).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7138 title/pc5_ui.c:7785
+#: title/pc5_ui.c:7215 title/pc5_ui.c:7872
 msgid "Change program"
 msgstr "Ganti program"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7144
+#: title/pc5_ui.c:7221
 msgid "Steam emulator"
 msgstr "Emulator Steam"
 
-#: title/pc5_ui.c:7145
+#: title/pc5_ui.c:7222
 msgid "Steam's own library: the game won't find Steam on the console"
 msgstr "Library asli Steam: game tidak akan menemukan Steam di konsol"
 
-#: title/pc5_ui.c:7146
+#: title/pc5_ui.c:7223
 msgid "Stands in for Steam, which the game asks for; Off if it misbehaves"
 msgstr "Menggantikan Steam, yang diminta game; Nonaktif jika bermasalah"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7150 title/pc5_ui.c:8297
+#: title/pc5_ui.c:7227 title/pc5_ui.c:8391
 msgid "Game files"
 msgstr "File game"
 
-#: title/pc5_ui.c:7151
+#: title/pc5_ui.c:7228
 msgid "Its folder: copy, move, rename and delete its files"
 msgstr "Foldernya: salin, pindahkan, ganti nama, dan hapus file-nya"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7155 title/pc5_ui.c:8723
+#: title/pc5_ui.c:7232 title/pc5_ui.c:8817
 msgid "Update"
 msgstr "Perbarui"
 
-#: title/pc5_ui.c:7156
+#: title/pc5_ui.c:7233
 msgid "A newer copy from USB; its saves and settings stay"
 msgstr "Salinan lebih baru dari USB; data simpanan dan pengaturan tetap ada"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7160
+#: title/pc5_ui.c:7237
 msgid "Report a problem"
 msgstr "Laporkan masalah"
 
-#: title/pc5_ui.c:7161
+#: title/pc5_ui.c:7238
 msgid "A QR code for GitHub's form, filled in from the game's newest log"
 msgstr "Kode QR untuk formulir GitHub, terisi dari log terbaru game"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7165
+#: title/pc5_ui.c:7242
 msgid "Report it works"
 msgstr ""
 
-#: title/pc5_ui.c:7166
+#: title/pc5_ui.c:7243
 msgid ""
 "A QR code for the game compatibility form, filled in: adds the game to the "
 "list"
 msgstr ""
 
 #. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:7247
+msgid "Reset Windows"
+msgstr ""
+
+#: title/pc5_ui.c:7248
+msgid ""
+"Makes its Windows new, as a fresh install's; its files, saves and settings "
+"stay"
+msgstr ""
+
+#. A menu row's name (about 30 characters fit).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7170 title/pc5_ui.c:8820 title/pc5_ui.c:8848
+#: title/pc5_ui.c:7252 title/pc5_ui.c:8917 title/pc5_ui.c:8945
 msgid "Uninstall"
 msgstr "Hapus instalan"
 
-#: title/pc5_ui.c:7171
+#: title/pc5_ui.c:7253
 msgid "Deletes the game, or keeps its saves for later"
 msgstr "Menghapus game, atau mempertahankan data simpanannya untuk nanti"
 
-#: title/pc5_ui.c:7184
+#: title/pc5_ui.c:7266
 msgid "What the game sees when you play with the controller."
 msgstr "Apa yang dilihat game saat Anda bermain dengan kontroler."
 
-#: title/pc5_ui.c:7185
+#: title/pc5_ui.c:7267
 msgid "Xbox controller: what most PC games expect. Try this first."
 msgstr ""
 "Kontroler Xbox: yang diharapkan sebagian besar game PC. Coba ini dulu."
 
-#: title/pc5_ui.c:7186
+#: title/pc5_ui.c:7268
 msgid ""
 "DualSense: a PS5 controller plugged into a PC, with PlayStation buttons in "
 "games that support it."
@@ -3512,7 +3595,7 @@ msgstr ""
 "DualSense: kontroler PS5 yang dicolokkan ke PC, dengan tombol PlayStation "
 "di game yang mendukungnya."
 
-#: title/pc5_ui.c:7187
+#: title/pc5_ui.c:7269
 msgid ""
 "Keyboard & mouse: for games with no controller support. The buttons press "
 "keys and the sticks move the mouse; Button mapping changes which key each "
@@ -3522,7 +3605,7 @@ msgstr ""
 "tombol keyboard dan stik menggerakkan mouse; Pemetaan tombol mengatur "
 "tombol keyboard mana yang dikirim tiap tombol."
 
-#: title/pc5_ui.c:7190
+#: title/pc5_ui.c:7272
 msgid ""
 "What each button, stick and the touchpad sends to the game with Keyboard & "
 "mouse."
@@ -3530,7 +3613,7 @@ msgstr ""
 "Apa yang dikirim setiap tombol, stik, dan touchpad ke game dengan Keyboard "
 "& mouse."
 
-#: title/pc5_ui.c:7191
+#: title/pc5_ui.c:7273
 msgid ""
 "Touchpad: One button (a click sends one key), Halves and swipes (a key for "
 "each half's click and each quick swipe up, down, left or right), or Mouse "
@@ -3541,41 +3624,41 @@ msgstr ""
 "ke atas, bawah, kiri, atau kanan), atau Mouse (jari menggerakkan penunjuk, "
 "seperti di laptop)."
 
-#: title/pc5_ui.c:7192
+#: title/pc5_ui.c:7274
 msgid "Two-finger click: PC5's on-screen keyboard, or a key of its own."
 msgstr "Klik dua jari: keyboard layar PC5, atau tombol keyboard tersendiri."
 
-#: title/pc5_ui.c:7193
+#: title/pc5_ui.c:7275
 msgid "Save as my mapping keeps your layout for every game set up after it."
 msgstr ""
 "Simpan sebagai pemetaan saya memakai tata letak Anda untuk setiap game "
 "yang disiapkan sesudahnya."
 
-#: title/pc5_ui.c:7196
+#: title/pc5_ui.c:7278
 msgid "Whether the game sees the Create button."
 msgstr ""
 
-#: title/pc5_ui.c:7197
+#: title/pc5_ui.c:7279
 msgid ""
 "Sent: the game sees it, as Back (Select) on an Xbox controller or as "
 "Create on a DualSense."
 msgstr ""
 
-#: title/pc5_ui.c:7198
+#: title/pc5_ui.c:7280
 msgid ""
 "Not sent: the game never sees it, so taking a screenshot with the PS5's "
 "Create button doesn't press anything in the game."
 msgstr ""
 
-#: title/pc5_ui.c:7201
+#: title/pc5_ui.c:7283
 msgid "Whether the mouse pointer shows over the game."
 msgstr "Apakah penunjuk mouse tampil di atas game."
 
-#: title/pc5_ui.c:7202
+#: title/pc5_ui.c:7284
 msgid "Normal: the game decides, as on a PC."
 msgstr "Normal: game yang menentukan, seperti di PC."
 
-#: title/pc5_ui.c:7203
+#: title/pc5_ui.c:7285
 msgid ""
 "Auto-hide: hidden after 5 seconds without moving or clicking, for a game "
 "that leaves it on the screen."
@@ -3583,7 +3666,7 @@ msgstr ""
 "Sembunyi otomatis: disembunyikan setelah 5 detik tanpa digerakkan atau "
 "diklik, untuk game yang membiarkannya di layar."
 
-#: title/pc5_ui.c:7206
+#: title/pc5_ui.c:7288
 msgid ""
 "How the game's pictures are made on the console. Auto is right for almost "
 "every game; the others are for a game that won't start or shows a wrong "
@@ -3592,7 +3675,7 @@ msgstr ""
 "Cara gambar game dibuat di konsol. Otomatis cocok untuk hampir semua game; "
 "yang lain untuk game yang tidak mau jalan atau gambarnya salah."
 
-#: title/pc5_ui.c:7208
+#: title/pc5_ui.c:7290
 msgid ""
 "Alternative: another way to draw the game. Try it if the picture is wrong "
 "with Auto."
@@ -3600,14 +3683,14 @@ msgstr ""
 "Alternatif: cara lain untuk menggambar game. Coba jika gambarnya salah "
 "dengan Otomatis."
 
-#: title/pc5_ui.c:7209
+#: title/pc5_ui.c:7291
 msgid ""
 "2D only: for a 2D game that flickers or shows only part of its screen."
 msgstr ""
 "Hanya 2D: untuk game 2D yang berkedip atau hanya menampilkan sebagian "
 "layarnya."
 
-#: title/pc5_ui.c:7211
+#: title/pc5_ui.c:7293
 msgid ""
 "Alternative: slower than Auto. Try it if the game won't start or its "
 "picture is wrong."
@@ -3615,7 +3698,7 @@ msgstr ""
 "Alternatif: lebih lambat dari Otomatis. Coba jika game tidak mau jalan "
 "atau gambarnya salah."
 
-#: title/pc5_ui.c:7213
+#: title/pc5_ui.c:7295
 msgid ""
 "Alternative: another way to draw the game. Try it if the picture is wrong "
 "with Auto. Some mods need it."
@@ -3623,16 +3706,16 @@ msgstr ""
 "Alternatif: cara lain untuk menggambar game. Coba jika gambarnya salah "
 "dengan Otomatis. Beberapa mod memerlukannya."
 
-#: title/pc5_ui.c:7214
+#: title/pc5_ui.c:7296
 msgid "Compatibility (slow): the slowest, but it starts the most games."
 msgstr ""
 "Kompatibel (lambat): paling lambat, tapi paling banyak game bisa jalan."
 
-#: title/pc5_ui.c:7216
+#: title/pc5_ui.c:7298
 msgid "Choose the row to see each one with what it does."
 msgstr "Pilih barisnya untuk melihat tiap pilihan beserta fungsinya."
 
-#: title/pc5_ui.c:7219
+#: title/pc5_ui.c:7301
 msgid ""
 "Makes extra frames between the game's own, so movement looks smoother. It "
 "can add a little delay to the controls."
@@ -3640,11 +3723,11 @@ msgstr ""
 "Membuat frame tambahan di antara frame game sendiri, agar gerakan terlihat "
 "lebih mulus. Bisa menambah sedikit jeda pada kontrol."
 
-#: title/pc5_ui.c:7220
+#: title/pc5_ui.c:7302
 msgid "30 → 60 fps: the game is held at 30 fps and shown at 60."
 msgstr "30 → 60 fps: game ditahan di 30 fps dan ditampilkan di 60."
 
-#: title/pc5_ui.c:7221
+#: title/pc5_ui.c:7303
 msgid ""
 "60 → 120 fps: held at 60 and shown at 120, on a 120 Hz TV with 120 Hz "
 "output on in Settings."
@@ -3652,7 +3735,7 @@ msgstr ""
 "60 → 120 fps: ditahan di 60 dan ditampilkan di 120, di TV 120 Hz dengan "
 "Output 120 Hz aktif di Pengaturan."
 
-#: title/pc5_ui.c:7222
+#: title/pc5_ui.c:7304
 msgid ""
 "40 → 120 fps: held at 40, two frames made between each two, for a game "
 "that can't hold 60."
@@ -3660,7 +3743,7 @@ msgstr ""
 "40 → 120 fps: ditahan di 40, dua frame dibuat di antara tiap dua, untuk "
 "game yang tidak bisa bertahan di 60."
 
-#: title/pc5_ui.c:7225
+#: title/pc5_ui.c:7307
 msgid ""
 "The size the game is drawn at. The console always shows 4K, so a smaller "
 "picture is scaled up."
@@ -3668,24 +3751,24 @@ msgstr ""
 "Ukuran game digambar. Konsol selalu menampilkan 4K, jadi gambar yang lebih "
 "kecil diperbesar."
 
-#: title/pc5_ui.c:7226
+#: title/pc5_ui.c:7308
 msgid "1080p: the fastest, and right for most games."
 msgstr "1080p: paling cepat, dan tepat untuk sebagian besar game."
 
-#: title/pc5_ui.c:7227
+#: title/pc5_ui.c:7309
 msgid "1440p: sharper, but slower."
 msgstr "1440p: lebih tajam, tapi lebih lambat."
 
-#: title/pc5_ui.c:7228
+#: title/pc5_ui.c:7310
 msgid ""
 "4K: the sharpest, four times the work of 1080p: only for light games."
 msgstr "4K: paling tajam, empat kali kerja 1080p: hanya untuk game ringan."
 
-#: title/pc5_ui.c:7231
+#: title/pc5_ui.c:7313
 msgid "The shape of the picture on the TV."
 msgstr "Bentuk gambar di TV."
 
-#: title/pc5_ui.c:7232
+#: title/pc5_ui.c:7314
 msgid ""
 "Keep: the picture's own shape. An older 4:3 game gets black bars at the "
 "sides."
@@ -3693,22 +3776,22 @@ msgstr ""
 "Pertahankan: bentuk asli gambar. Game lama 4:3 mendapat bilah hitam di "
 "sisi."
 
-#: title/pc5_ui.c:7233
+#: title/pc5_ui.c:7315
 msgid "Stretch: fills the whole screen, so a 4:3 picture gets wider."
 msgstr ""
 "Rentangkan: memenuhi seluruh layar, jadi gambar 4:3 jadi lebih lebar."
 
-#: title/pc5_ui.c:7236
+#: title/pc5_ui.c:7318
 msgid "How much memory an older 32-bit game may use."
 msgstr "Berapa banyak memori yang boleh dipakai game 32-bit lama."
 
-#: title/pc5_ui.c:7237
+#: title/pc5_ui.c:7319
 msgid "Auto: as on Windows, 4 GB for a game made for it, otherwise 2 GB."
 msgstr ""
 "Otomatis: seperti di Windows, 4 GB untuk game yang dibuat untuk itu, "
 "selain itu 2 GB."
 
-#: title/pc5_ui.c:7238
+#: title/pc5_ui.c:7320
 msgid ""
 "4 GB: for a game that runs out of memory, often with big mods. Set it back "
 "to Auto if the game misbehaves."
@@ -3716,7 +3799,7 @@ msgstr ""
 "4 GB: untuk game yang kehabisan memori, sering dengan mod besar. "
 "Kembalikan ke Otomatis jika game bermasalah."
 
-#: title/pc5_ui.c:7241
+#: title/pc5_ui.c:7323
 msgid ""
 "How much graphics memory the game is told the console has. The PS5's "
 "memory is shared by the game and its graphics, so more for graphics leaves "
@@ -3726,7 +3809,7 @@ msgstr ""
 "dibagi antara game dan grafisnya, jadi lebih banyak untuk grafis berarti "
 "lebih sedikit untuk game."
 
-#: title/pc5_ui.c:7243
+#: title/pc5_ui.c:7325
 msgid ""
 "512 MB or 1 GB: less for textures, more for the game, for one that runs "
 "out of memory."
@@ -3734,14 +3817,14 @@ msgstr ""
 "512 MB atau 1 GB: lebih sedikit untuk tekstur, lebih banyak untuk game, "
 "jika memorinya habis."
 
-#: title/pc5_ui.c:7244
+#: title/pc5_ui.c:7326
 msgid ""
 "Auto: 2 GB at most, so older games don't get confused by a large number."
 msgstr ""
 "Otomatis: paling banyak 2 GB, agar game lama tidak bingung dengan angka "
 "besar."
 
-#: title/pc5_ui.c:7245
+#: title/pc5_ui.c:7327
 msgid ""
 "3 GB or Maximum: for a game that says there is too little. Set it back to "
 "Auto if it misbehaves."
@@ -3749,7 +3832,7 @@ msgstr ""
 "3 GB atau Maksimum: untuk game yang melihat terlalu sedikit. Kembalikan ke "
 "Otomatis jika bermasalah."
 
-#: title/pc5_ui.c:7247
+#: title/pc5_ui.c:7329
 msgid ""
 "2 GB or 3 GB: less for textures, more for the game, for one that runs out "
 "of memory."
@@ -3757,11 +3840,11 @@ msgstr ""
 "2 GB atau 3 GB: lebih sedikit untuk tekstur, lebih banyak untuk game, jika "
 "memorinya habis."
 
-#: title/pc5_ui.c:7248
+#: title/pc5_ui.c:7330
 msgid "Auto: 4 GB, room for both."
 msgstr "Otomatis: 4 GB, cukup untuk keduanya."
 
-#: title/pc5_ui.c:7249
+#: title/pc5_ui.c:7331
 msgid ""
 "5 GB or 6 GB: more for textures. Set it back to Auto if the game runs out "
 "of memory."
@@ -3769,7 +3852,7 @@ msgstr ""
 "5 GB atau 6 GB: lebih banyak untuk tekstur. Kembalikan ke Otomatis jika "
 "game kehabisan memori."
 
-#: title/pc5_ui.c:7250
+#: title/pc5_ui.c:7332
 msgid ""
 "Maximum: all of it, only for a game that won't start because it sees too "
 "little."
@@ -3777,15 +3860,15 @@ msgstr ""
 "Maksimum: semuanya, hanya untuk game yang tidak mau jalan karena melihat "
 "terlalu sedikit."
 
-#: title/pc5_ui.c:7254
+#: title/pc5_ui.c:7336
 msgid "How many speakers the game is told the console has."
 msgstr "Berapa speaker yang dikatakan kepada game dimiliki konsol."
 
-#: title/pc5_ui.c:7255
+#: title/pc5_ui.c:7337
 msgid "Stereo: two, right for a TV or headphones."
 msgstr "Stereo: dua, untuk TV atau headphone."
 
-#: title/pc5_ui.c:7256
+#: title/pc5_ui.c:7338
 msgid ""
 "5.1 or 7.1: the game plays each sound on its own speaker of a surround "
 "system, and the PS5 sends it on as it does its own games' sound."
@@ -3793,22 +3876,22 @@ msgstr ""
 "5.1 atau 7.1: game memutar tiap suara di speakernya sendiri pada sistem "
 "surround, dan PS5 meneruskannya seperti suara game-nya sendiri."
 
-#: title/pc5_ui.c:7257
+#: title/pc5_ui.c:7339
 msgid ""
 "If the game is silent or plays only from the front, set it back to Stereo."
 msgstr ""
 "Jika game senyap atau hanya terdengar dari depan, kembalikan ke Stereo."
 
-#: title/pc5_ui.c:7260
+#: title/pc5_ui.c:7342
 msgid ""
 "Changes how the game's work is shared out on the console's processor."
 msgstr "Mengubah cara pekerjaan game dibagi di prosesor konsol."
 
-#: title/pc5_ui.c:7261
+#: title/pc5_ui.c:7343
 msgid "Off: the fastest for most games."
 msgstr "Nonaktif: paling cepat untuk sebagian besar game."
 
-#: title/pc5_ui.c:7262
+#: title/pc5_ui.c:7344
 msgid ""
 "On: the game's work takes turns, as on a PC. Try it if the game freezes, "
 "stutters or hangs while loading; it can be a little slower."
@@ -3816,7 +3899,7 @@ msgstr ""
 "Aktif: pekerjaan game bergiliran, seperti di PC. Coba jika game macet, "
 "tersendat, atau tertahan saat memuat; bisa sedikit lebih lambat."
 
-#: title/pc5_ui.c:7265
+#: title/pc5_ui.c:7347
 msgid ""
 "Many PC games need Steam running to start. The console has no Steam, so "
 "PC5 stands in for it."
@@ -3824,11 +3907,11 @@ msgstr ""
 "Banyak game PC perlu Steam berjalan agar bisa mulai. Konsol tidak punya "
 "Steam, jadi PC5 menggantikannya."
 
-#: title/pc5_ui.c:7266
+#: title/pc5_ui.c:7348
 msgid "Auto: the game starts as if Steam were running, offline."
 msgstr "Otomatis: game mulai seolah Steam sedang berjalan, secara offline."
 
-#: title/pc5_ui.c:7267
+#: title/pc5_ui.c:7349
 msgid ""
 "Off: the game's own Steam files are used. It won't find Steam and may not "
 "start; only for a game that misbehaves with Auto."
@@ -3837,116 +3920,135 @@ msgstr ""
 "menemukan Steam dan mungkin tidak mau jalan; hanya untuk game yang "
 "bermasalah dengan Otomatis."
 
-#: title/pc5_ui.c:7329
+#: title/pc5_ui.c:7352
+msgid ""
+"Makes the game's Windows new, as a fresh install has it. Use it when a "
+"game that used to work stops starting."
+msgstr ""
+
+#: title/pc5_ui.c:7353
+msgid ""
+"What stays: the game's files, its saves in its Windows user folders "
+"(AppData, Documents, Saved Games) and PC5's settings for it."
+msgstr ""
+
+#: title/pc5_ui.c:7354
+msgid ""
+"What goes back to its default: the Windows settings the game kept in the "
+"registry. Some games keep options or saves there; the old registry is kept "
+"in the game's pc5/reset-backup folder."
+msgstr ""
+
+#: title/pc5_ui.c:7416
 msgid "About"
 msgstr "Info"
 
-#: title/pc5_ui.c:7329 title/pc5_ui.c:8086
+#: title/pc5_ui.c:7416 title/pc5_ui.c:8180
 msgid "Receive from phone"
 msgstr "Terima dari ponsel"
 
-#: title/pc5_ui.c:7357
+#: title/pc5_ui.c:7444
 msgid "Touchpad + OPTIONS for 2 s still leaves the game"
 msgstr "Touchpad + OPTIONS selama 2 detik tetap keluar dari game"
 
-#: title/pc5_ui.c:7359
+#: title/pc5_ui.c:7446
 msgid "Two fingers: PC5's on-screen keyboard, or a key of its own"
 msgstr "Dua jari: keyboard layar PC5, atau tombol keyboard tersendiri"
 
-#: title/pc5_ui.c:7362
+#: title/pc5_ui.c:7449
 msgid "A key for each half's click and each quick swipe"
 msgstr "Satu tombol keyboard untuk klik tiap separuh dan tiap usapan cepat"
 
-#: title/pc5_ui.c:7363
+#: title/pc5_ui.c:7450
 msgid "A finger moves the pointer; a click sends its key"
 msgstr "Jari menggerakkan penunjuk; klik mengirim tombolnya"
 
-#: title/pc5_ui.c:7364
+#: title/pc5_ui.c:7451
 msgid "The whole touchpad is one button"
 msgstr "Seluruh touchpad menjadi satu tombol"
 
-#: title/pc5_ui.c:7374
+#: title/pc5_ui.c:7461
 msgid "Right stick"
 msgstr "Stik kanan"
 
-#: title/pc5_ui.c:7374
+#: title/pc5_ui.c:7461
 msgid "Left stick"
 msgstr "Stik kiri"
 
-#: title/pc5_ui.c:7382
+#: title/pc5_ui.c:7469
 msgid "Pointer speed"
 msgstr "Kecepatan penunjuk"
 
 #. which picture is shown: 3 of 12.
-#: title/pc5_ui.c:7383 title/pc5_ui.c:7574 title/pc5_ui.c:8224
+#: title/pc5_ui.c:7470 title/pc5_ui.c:7661 title/pc5_ui.c:8318
 #, c-format
 msgid "%d of %d"
 msgstr "%d dari %d"
 
-#: title/pc5_ui.c:7386
+#: title/pc5_ui.c:7473
 msgid "Slow pointer button"
 msgstr "Tombol penunjuk lambat"
 
 #. Keep the space at the start or end: the text is joined to another.
-#: title/pc5_ui.c:7390
+#: title/pc5_ui.c:7477
 msgid "    Slower by"
 msgstr "    Lebih lambat"
 
-#: title/pc5_ui.c:7395
+#: title/pc5_ui.c:7482
 msgid "Click"
 msgstr "Klik"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7398
+#: title/pc5_ui.c:7485
 msgid "Slows the pointer"
 msgstr "Memperlambat"
 
-#: title/pc5_ui.c:7400
+#: title/pc5_ui.c:7487
 msgid "On-screen keyboard"
 msgstr "Keyboard layar"
 
-#: title/pc5_ui.c:7408
+#: title/pc5_ui.c:7495
 msgid "Reset to default"
 msgstr "Atur ulang ke bawaan"
 
-#: title/pc5_ui.c:7411
+#: title/pc5_ui.c:7498
 msgid "Save as my mapping"
 msgstr "Simpan sebagai pemetaan saya"
 
-#: title/pc5_ui.c:7414
+#: title/pc5_ui.c:7501
 msgid "Use my mapping"
 msgstr "Pakai pemetaan saya"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7426
+#: title/pc5_ui.c:7513
 msgid "Choose a key"
 msgstr "Pilih tombol"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7426
+#: title/pc5_ui.c:7513 title/pc5_ui.c:8958
 msgid "Reset"
 msgstr "Atur ulang"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7427 title/pc5_ui.c:8454 title/pc5_ui.c:8525
+#: title/pc5_ui.c:7514 title/pc5_ui.c:8548 title/pc5_ui.c:8619
 msgid "Save"
 msgstr "Simpan"
 
-#: title/pc5_ui.c:7427
+#: title/pc5_ui.c:7514
 msgid "Use"
 msgstr "Pakai"
 
-#: title/pc5_ui.c:7448
+#: title/pc5_ui.c:7535
 #, c-format
 msgid "What %s sends"
 msgstr "Yang dikirim %s"
 
-#: title/pc5_ui.c:7466
+#: title/pc5_ui.c:7553
 msgid "The usual way for older games like this one, with their 2D and 3D."
 msgstr "Cara biasa untuk game lama seperti ini, dengan 2D dan 3D-nya."
 
-#: title/pc5_ui.c:7467
+#: title/pc5_ui.c:7554
 msgid ""
 "The fastest, and what most games want. Leave it here unless the game won't "
 "start or its picture is wrong."
@@ -3954,7 +4056,7 @@ msgstr ""
 "Paling cepat, dan yang diinginkan sebagian besar game. Biarkan saja, "
 "kecuali game tidak mau jalan atau gambarnya salah."
 
-#: title/pc5_ui.c:7469
+#: title/pc5_ui.c:7556
 msgid ""
 "Another way to draw the game, slower than Auto. Try it if the game won't "
 "start or its picture is wrong."
@@ -3962,7 +4064,7 @@ msgstr ""
 "Cara lain untuk menggambar game, lebih lambat dari Otomatis. Coba jika "
 "game tidak mau jalan atau gambarnya salah."
 
-#: title/pc5_ui.c:7471
+#: title/pc5_ui.c:7558
 msgid ""
 "Draws everything in 2D, the way ordinary Windows programs are drawn. For a "
 "2D game that flickers or shows only part of its screen; a game with 3D "
@@ -3972,7 +4074,7 @@ msgstr ""
 "Untuk game 2D yang berkedip atau hanya menampilkan sebagian layarnya; game "
 "dengan adegan 3D tidak akan jalan dengan ini."
 
-#: title/pc5_ui.c:7473
+#: title/pc5_ui.c:7560
 msgid ""
 "Another way to draw the game. Try it if the picture is wrong with Auto; "
 "faster than Compatibility. Some mods need it."
@@ -3980,7 +4082,7 @@ msgstr ""
 "Cara lain untuk menggambar game. Coba jika gambarnya salah dengan "
 "Otomatis; lebih cepat dari Kompatibel. Beberapa mod memerlukannya."
 
-#: title/pc5_ui.c:7474
+#: title/pc5_ui.c:7561
 msgid ""
 "The slowest, but it starts the most games. Try it if the game won't start "
 "with the others."
@@ -3988,16 +4090,16 @@ msgstr ""
 "Paling lambat, tapi paling banyak game bisa jalan. Coba jika game tidak "
 "mau jalan dengan yang lain."
 
-#: title/pc5_ui.c:7495
+#: title/pc5_ui.c:7582
 #, c-format
 msgid "The game uses %s"
 msgstr "Game memakai %s"
 
-#: title/pc5_ui.c:7507
+#: title/pc5_ui.c:7594
 msgid "In use"
 msgstr "Dipakai"
 
-#: title/pc5_ui.c:7527
+#: title/pc5_ui.c:7614
 msgid ""
 "PC5 runs your PC games with prospero-win: Wine, DXVK for Direct3D 8 to 11, "
 "VKD3D-Proton for Direct3D 12, and Mesa (RADV for Vulkan, Zink for OpenGL)."
@@ -4006,7 +4108,7 @@ msgstr ""
 "Direct3D 8 hingga 11, VKD3D-Proton untuk Direct3D 12, dan Mesa (RADV untuk "
 "Vulkan, Zink untuk OpenGL)."
 
-#: title/pc5_ui.c:7529
+#: title/pc5_ui.c:7616
 msgid ""
 "Covers come from Steam, GOG, PCGamingWiki and Wikidata, and SteamGridDB "
 "with your key. No game is part of PC5."
@@ -4014,208 +4116,208 @@ msgstr ""
 "Sampul berasal dari Steam, GOG, PCGamingWiki, dan Wikidata, serta "
 "SteamGridDB dengan kunci Anda. Tidak ada game yang termasuk dalam PC5."
 
-#: title/pc5_ui.c:7530
+#: title/pc5_ui.c:7617
 msgid "Free software under the GNU LGPL 2.1 or later."
 msgstr "Perangkat lunak bebas di bawah GNU LGPL 2.1 atau yang lebih baru."
 
 #. About PC5: the version (2.0.7 · PPSA11018).
-#: title/pc5_ui.c:7539
+#: title/pc5_ui.c:7626
 #, c-format
 msgid "version %s"
 msgstr "versi %s"
 
-#: title/pc5_ui.c:7545
+#: title/pc5_ui.c:7632
 msgid "Like PC5?"
 msgstr "Suka PC5?"
 
-#: title/pc5_ui.c:7548
+#: title/pc5_ui.c:7635
 msgid "Buy me a coffee"
 msgstr "Traktir saya kopi"
 
-#: title/pc5_ui.c:7552
+#: title/pc5_ui.c:7639
 #, c-format
 msgid "Games are kept in %.150s"
 msgstr "Game disimpan di %.150s"
 
-#: title/pc5_ui.c:7556
+#: title/pc5_ui.c:7643
 #, c-format
 msgid "%s free on the console"
 msgstr "%s kosong di konsol"
 
-#: title/pc5_ui.c:7621
+#: title/pc5_ui.c:7708
 msgid "INSTALL folder"
 msgstr "Folder INSTALL"
 
-#: title/pc5_ui.c:7623
+#: title/pc5_ui.c:7710
 #, c-format
 msgid "INSTALL folder, %.20s"
 msgstr "Folder INSTALL, %.20s"
 
-#: title/pc5_ui.c:7639
+#: title/pc5_ui.c:7726
 msgid "No program found: it will be skipped"
 msgstr "Tidak ada program: akan dilewati"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7643
+#: title/pc5_ui.c:7730
 #, c-format
 msgid "%s · %d-bit · %s · %s"
 msgstr "%s · %d-bit · %s · %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7656
+#: title/pc5_ui.c:7743
 #, c-format
 msgid "%d-bit · %s · %s%s"
 msgstr "%d-bit · %s · %s%s"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7657 title/pc5_ui.c:7675
+#: title/pc5_ui.c:7744 title/pc5_ui.c:7762
 msgid " · chosen"
 msgstr " · dipilih"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7658
+#: title/pc5_ui.c:7745
 msgid " · offered at Play"
 msgstr " · ditawarkan saat Main"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7674 title/pc5_ui.c:7752
+#: title/pc5_ui.c:7761 title/pc5_ui.c:7839
 #, c-format
 msgid "%d-bit · %s"
 msgstr "%d-bit · %s"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7689
+#: title/pc5_ui.c:7776
 msgid "Jan"
 msgstr "Jan"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7689
+#: title/pc5_ui.c:7776
 msgid "Feb"
 msgstr "Feb"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7689
+#: title/pc5_ui.c:7776
 msgid "Mar"
 msgstr "Mar"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7689
+#: title/pc5_ui.c:7776
 msgid "Apr"
 msgstr "Apr"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7689
+#: title/pc5_ui.c:7776
 msgid "May"
 msgstr "Mei"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7689
+#: title/pc5_ui.c:7776
 msgid "Jun"
 msgstr "Jun"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7690
+#: title/pc5_ui.c:7777
 msgid "Jul"
 msgstr "Jul"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7690
+#: title/pc5_ui.c:7777
 msgid "Aug"
 msgstr "Agu"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7690
+#: title/pc5_ui.c:7777
 msgid "Sep"
 msgstr "Sep"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7690
+#: title/pc5_ui.c:7777
 msgid "Oct"
 msgstr "Okt"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7690
+#: title/pc5_ui.c:7777
 msgid "Nov"
 msgstr "Nov"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7690
+#: title/pc5_ui.c:7777
 msgid "Dec"
 msgstr "Des"
 
-#: title/pc5_ui.c:7692
+#: title/pc5_ui.c:7779
 #, c-format
 msgid "Saves of %s"
 msgstr "Data simpanan %s"
 
 #. the day, the month (Jan to Dec, translated on their own) and the year: put them in your order with %1$d, %2$s, %3$d.
-#: title/pc5_ui.c:7701
+#: title/pc5_ui.c:7788
 #, c-format
 msgid "Kept %d %s %d; installing it again puts them back"
 msgstr "Dipertahankan %d %s %d; menginstalnya lagi akan mengembalikannya"
 
-#: title/pc5_ui.c:7704
+#: title/pc5_ui.c:7791
 msgid "Kept when it was uninstalled; installing it again puts them back"
 msgstr ""
 "Dipertahankan saat instalannya dihapus; menginstalnya lagi akan "
 "mengembalikannya"
 
-#: title/pc5_ui.c:7740
+#: title/pc5_ui.c:7827
 #, c-format
 msgid "Cover %d of %d"
 msgstr "Sampul %d dari %d"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7741
+#: title/pc5_ui.c:7828
 #, c-format
 msgid "Made from the game's icon · %d of %d"
 msgstr "Dibuat dari ikon game · %d dari %d"
 
-#: title/pc5_ui.c:7749
+#: title/pc5_ui.c:7836
 msgid "Program"
 msgstr "Program"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7750
+#: title/pc5_ui.c:7837
 msgid "none found"
 msgstr "tidak ditemukan"
 
-#: title/pc5_ui.c:7751
+#: title/pc5_ui.c:7838
 msgid "Runs as"
 msgstr "Berjalan sebagai"
 
-#: title/pc5_ui.c:7756
+#: title/pc5_ui.c:7843
 #, c-format
 msgid "%s in %u file"
 msgstr "%s dalam %u file"
 
-#: title/pc5_ui.c:7756
+#: title/pc5_ui.c:7843
 #, c-format
 msgid "%s in %u files"
 msgstr "%s dalam %u file"
 
-#: title/pc5_ui.c:7757
+#: title/pc5_ui.c:7844
 msgid "Space"
 msgstr "Ruang"
 
-#: title/pc5_ui.c:7761
+#: title/pc5_ui.c:7848
 #, c-format
 msgid "%s free after installing"
 msgstr "%s kosong setelah instal"
 
-#: title/pc5_ui.c:7761
+#: title/pc5_ui.c:7848
 #, c-format
 msgid "not enough: %s free"
 msgstr "tidak cukup: %s kosong"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7763
+#: title/pc5_ui.c:7850
 msgid "unknown"
 msgstr "tidak diketahui"
 
-#: title/pc5_ui.c:7775
+#: title/pc5_ui.c:7862
 msgid ""
 "A .NET program: PC5 sets up what it needs the first time a .NET game "
 "starts."
@@ -4223,7 +4325,7 @@ msgstr ""
 "Program .NET: PC5 menyiapkan yang dibutuhkannya saat game .NET pertama "
 "kali dijalankan."
 
-#: title/pc5_ui.c:7779
+#: title/pc5_ui.c:7866
 msgid ""
 "The game is copied once and checked, to the console or, with a USB drive "
 "plugged in, to its PC5 folder. Whether a game runs is only known by trying "
@@ -4234,35 +4336,35 @@ msgstr ""
 "dengan mencobanya."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7783 title/pc5_ui.c:8072
+#: title/pc5_ui.c:7870 title/pc5_ui.c:8166
 msgid "Done"
 msgstr "Selesai"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7784 title/pc5_ui.c:8258
+#: title/pc5_ui.c:7871 title/pc5_ui.c:8352
 msgid "Other covers"
 msgstr "Sampul lain"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7795 title/pc5_ui.c:7811
+#: title/pc5_ui.c:7882 title/pc5_ui.c:7898
 msgid "Look again"
 msgstr "Cari lagi"
 
-#: title/pc5_ui.c:7796
+#: title/pc5_ui.c:7883
 #, c-format
 msgid "Update %s from USB"
 msgstr "Perbarui %s dari USB"
 
-#: title/pc5_ui.c:7796 title/pc5_ui.c:8665 title/pc5_ui.c:8717
-#: title/pc5_ui.c:8829 title/pc5_ui.c:8917
+#: title/pc5_ui.c:7883 title/pc5_ui.c:8759 title/pc5_ui.c:8811
+#: title/pc5_ui.c:8926 title/pc5_ui.c:8952 title/pc5_ui.c:9027
 msgid "the game"
 msgstr "game ini"
 
-#: title/pc5_ui.c:7797 title/pc5_ui.c:7814
+#: title/pc5_ui.c:7884 title/pc5_ui.c:7901
 msgid "No game folders found"
 msgstr "Tidak ada folder game"
 
-#: title/pc5_ui.c:7798
+#: title/pc5_ui.c:7885
 msgid ""
 "Put the newer copy's folder (the one with the game's .exe in it) at the "
 "top of a USB drive formatted as exFAT, plug the drive into the PS5, then "
@@ -4271,26 +4373,26 @@ msgstr ""
 "Taruh folder salinan yang lebih baru (yang berisi .exe game) di tingkat "
 "teratas drive USB berformat exFAT, colokkan drive ke PS5, lalu cari lagi."
 
-#: title/pc5_ui.c:7805
+#: title/pc5_ui.c:7892
 #, c-format
 msgid "Install ticked (%d)"
 msgstr "Instal yang dicentang (%d)"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7809
+#: title/pc5_ui.c:7896
 msgid "Install one"
 msgstr "Instal satu"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7810 title/pc5_ui.c:8321
+#: title/pc5_ui.c:7897 title/pc5_ui.c:8415
 msgid "Tick"
 msgstr "Centang"
 
-#: title/pc5_ui.c:7813
+#: title/pc5_ui.c:7900
 msgid "Install games from the INSTALL folder"
 msgstr "Instal game dari folder INSTALL"
 
-#: title/pc5_ui.c:7815
+#: title/pc5_ui.c:7902
 msgid ""
 "Put each game's folder (the one with its .exe in it) at the top of a USB "
 "drive formatted as exFAT, plug the drive into the PS5, then look again."
@@ -4298,135 +4400,159 @@ msgstr ""
 "Taruh folder setiap game (yang berisi .exe-nya) di tingkat teratas drive "
 "USB berformat exFAT, colokkan drive ke PS5, lalu cari lagi."
 
-#: title/pc5_ui.c:7829
+#: title/pc5_ui.c:7917
+msgid "Making a new Windows from PC5's template"
+msgstr ""
+
+#: title/pc5_ui.c:7918
+#, fuzzy
+msgid "Deleting the old Windows"
+msgstr "Menghapus file lama"
+
+#: title/pc5_ui.c:7918
+msgid "Moving the game's files, saves and settings into it"
+msgstr ""
+
+#: title/pc5_ui.c:7921
 msgid "Putting back its saves and settings"
 msgstr "Mengembalikan data simpanan dan pengaturan"
 
-#: title/pc5_ui.c:7829
+#: title/pc5_ui.c:7921
 msgid "Setting up the game's Windows"
 msgstr "Menyiapkan Windows untuk game"
 
-#: title/pc5_ui.c:7832
+#: title/pc5_ui.c:7924
 msgid "Copying the newer version"
 msgstr "Menyalin versi yang lebih baru"
 
-#: title/pc5_ui.c:7832
+#: title/pc5_ui.c:7924
 msgid "Copying the game"
 msgstr "Menyalin game"
 
-#: title/pc5_ui.c:7833
+#: title/pc5_ui.c:7925
 msgid "Checking the copy against the USB drive"
 msgstr "Memeriksa salinan dengan drive USB"
 
-#: title/pc5_ui.c:7834 title/pc5_ui.c:8133
+#: title/pc5_ui.c:7926 title/pc5_ui.c:8227
 msgid "Putting the new files in place"
 msgstr "Menaruh file baru di tempatnya"
 
-#: title/pc5_ui.c:7834 title/pc5_ui.c:7836
+#: title/pc5_ui.c:7926 title/pc5_ui.c:7928
 msgid "Finishing"
 msgstr "Menyelesaikan"
 
-#: title/pc5_ui.c:7837
+#: title/pc5_ui.c:7929
 msgid "Stopping: deleting what was copied"
 msgstr "Menghentikan: menghapus yang sudah disalin"
 
-#: title/pc5_ui.c:7837
+#: title/pc5_ui.c:7929
 msgid "Deleting what was copied"
 msgstr "Menghapus yang sudah disalin"
 
-#: title/pc5_ui.c:7842
+#: title/pc5_ui.c:7934
 #, c-format
 msgid "Game %d of %d"
 msgstr "Game %d dari %d"
 
-#: title/pc5_ui.c:7845
+#: title/pc5_ui.c:7937
+#, c-format
+msgid "Resetting the Windows of %s"
+msgstr ""
+
+#: title/pc5_ui.c:7937
 #, c-format
 msgid "Updating %s"
 msgstr "Memperbarui %s"
 
-#: title/pc5_ui.c:7845
+#: title/pc5_ui.c:7937
 #, c-format
 msgid "Installing %s"
 msgstr "Menginstal %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7847 title/pc5_ui.c:8142
+#: title/pc5_ui.c:7940
+#, c-format, fuzzy
+msgid "Step %d of 2 · %s"
+msgstr "Langkah %d dari 3 · %s"
+
+#. · separates parts of a line; keep it.
+#: title/pc5_ui.c:7941 title/pc5_ui.c:8236
 #, c-format
 msgid "Step %d of 3 · %s"
 msgstr "Langkah %d dari 3 · %s"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7861 title/pc5_ui.c:8157
+#: title/pc5_ui.c:7955 title/pc5_ui.c:8251
 msgid " · under a minute left"
 msgstr " · kurang dari semenit lagi"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7862 title/pc5_ui.c:8158
+#: title/pc5_ui.c:7956 title/pc5_ui.c:8252
 #, c-format
 msgid " · about %d min left"
 msgstr " · sekitar %d menit lagi"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7864 title/pc5_ui.c:8160
+#: title/pc5_ui.c:7958 title/pc5_ui.c:8254
 #, c-format
 msgid "%s of %s · %s/s%s"
 msgstr "%s dari %s · %s/s%s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7866 title/pc5_ui.c:8162
+#: title/pc5_ui.c:7960 title/pc5_ui.c:8256
 #, c-format
 msgid "%s of %s · measuring the speed"
 msgstr "%s dari %s · mengukur kecepatan"
 
-#: title/pc5_ui.c:7869
+#: title/pc5_ui.c:7963
 #, c-format
 msgid "%u of %u files"
 msgstr "%u dari %u file"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7873 title/pc5_ui.c:8173 title/pc5_ui.c:8510
-#: title/pc5_ui.c:8809 title/pc5_ui.c:8817
+#: title/pc5_ui.c:7967 title/pc5_ui.c:8267 title/pc5_ui.c:8604
+#: title/pc5_ui.c:8903 title/pc5_ui.c:8906 title/pc5_ui.c:8914
 msgid "Stop"
 msgstr "Hentikan"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7978
+#: title/pc5_ui.c:8072
 msgid "OK"
 msgstr "OK"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7978 title/pc5_ui.c:8017
+#: title/pc5_ui.c:8072 title/pc5_ui.c:8111
 msgid "Report on GitHub"
 msgstr "Lapor di GitHub"
 
-#: title/pc5_ui.c:8024
+#: title/pc5_ui.c:8118
 #, c-format
 msgid ""
 "1. Scan the code with your phone. GitHub's game compatibility form opens, "
 "filled in with %s, PC5's version and the game's settings."
 msgstr ""
 
-#: title/pc5_ui.c:8027
+#: title/pc5_ui.c:8121
 #, c-format
 msgid ""
 "1. On your phone or computer, open %s and start a new Game compatibility "
 "discussion."
 msgstr ""
 
-#: title/pc5_ui.c:8032
+#: title/pc5_ui.c:8126
 msgid ""
 "2. Say how well it runs and anything that helped, then post it. You need a "
 "GitHub account."
 msgstr ""
 
-#: title/pc5_ui.c:8034
+#: title/pc5_ui.c:8128
 msgid ""
 "3. The game compatibility list adds it, so other players know it runs."
 msgstr ""
 
-#: title/pc5_ui.c:8040
+#: title/pc5_ui.c:8134
 #, c-format
 msgid ""
 "1. Scan the code with your phone. GitHub's form for a new issue opens, "
@@ -4435,19 +4561,19 @@ msgstr ""
 "1. Pindai kode dengan ponsel Anda. Formulir GitHub untuk issue baru akan "
 "terbuka, terisi dengan %s, versi PC5, dan apa yang dilihat PC5."
 
-#: title/pc5_ui.c:8043
+#: title/pc5_ui.c:8137
 #, c-format
 msgid "1. On your phone or computer, open %s and choose New issue."
 msgstr "1. Di ponsel atau komputer, buka %s lalu pilih New issue."
 
-#: title/pc5_ui.c:8046
+#: title/pc5_ui.c:8140
 #, c-format
 msgid "2. Copy %s off the console, from %s/logs, as you copy files to it."
 msgstr ""
 "2. Salin %s dari konsol, dari %s/logs, dengan cara yang sama seperti Anda "
 "menyalin file ke konsol."
 
-#: title/pc5_ui.c:8050
+#: title/pc5_ui.c:8144
 msgid ""
 "3. Say what happened, attach the zip, and submit. You need a GitHub "
 "account."
@@ -4455,11 +4581,11 @@ msgstr ""
 "3. Ceritakan apa yang terjadi, lampirkan zip, lalu kirim. Anda perlu akun "
 "GitHub."
 
-#: title/pc5_ui.c:8063
+#: title/pc5_ui.c:8157
 msgid "PC5's web page"
 msgstr "Halaman web PC5"
 
-#: title/pc5_ui.c:8067
+#: title/pc5_ui.c:8161
 #, c-format
 msgid ""
 "Scan the code with your phone, or open %s in a browser on a PC on the same "
@@ -4468,7 +4594,7 @@ msgstr ""
 "Pindai kode dengan ponsel Anda, atau buka %s di browser pada PC di "
 "jaringan yang sama."
 
-#: title/pc5_ui.c:8070
+#: title/pc5_ui.c:8164
 msgid ""
 "From there: send a game's folder to install, report a problem with a game "
 "(its log and settings go with it), edit launch options and download logs. "
@@ -4478,7 +4604,7 @@ msgstr ""
 "(log dan pengaturannya ikut terkirim), ubah opsi peluncuran, dan unduh "
 "log. Bisa dipakai selama PC5 terbuka."
 
-#: title/pc5_ui.c:8091
+#: title/pc5_ui.c:8185
 msgid ""
 "Connect your phone and PS5 to the same network or phone hotspot. Scan this "
 "code and choose one file. Keep this screen open."
@@ -4486,7 +4612,7 @@ msgstr ""
 "Hubungkan ponsel dan PS5 ke jaringan yang sama atau hotspot ponsel. Pindai "
 "kode ini dan pilih satu file. Biarkan layar ini terbuka."
 
-#: title/pc5_ui.c:8094
+#: title/pc5_ui.c:8188
 msgid ""
 "This link expires after 10 minutes or when you leave. Your previous "
 "selection stays until import succeeds."
@@ -4494,29 +4620,30 @@ msgstr ""
 "Tautan ini kedaluwarsa setelah 10 menit atau saat Anda keluar. Pilihan "
 "sebelumnya tetap berlaku sampai impor berhasil."
 
-#: title/pc5_ui.c:8095
+#: title/pc5_ui.c:8189
 #, c-format
 msgid "Receiving: %u%%"
 msgstr "Menerima: %u%%"
 
-#: title/pc5_ui.c:8096
+#: title/pc5_ui.c:8190
 msgid "Waiting for a file"
 msgstr "Menunggu file"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8099 title/pc5_ui.c:8525 title/pc5_ui.c:8561
-#: title/pc5_ui.c:8701 title/pc5_ui.c:8704 title/pc5_ui.c:8723
-#: title/pc5_ui.c:8831 title/pc5_ui.c:8844 title/pc5_ui.c:8848
+#: title/pc5_ui.c:8193 title/pc5_ui.c:8619 title/pc5_ui.c:8655
+#: title/pc5_ui.c:8795 title/pc5_ui.c:8798 title/pc5_ui.c:8817
+#: title/pc5_ui.c:8928 title/pc5_ui.c:8941 title/pc5_ui.c:8945
+#: title/pc5_ui.c:8958
 msgid "Cancel"
 msgstr "Batal"
 
-#: title/pc5_ui.c:8122
+#: title/pc5_ui.c:8216
 #, c-format
 msgid "PC5 %s is installed"
 msgstr "PC5 %s sudah diinstal"
 
-#: title/pc5_ui.c:8125
+#: title/pc5_ui.c:8219
 msgid ""
 "PC5 restarts now with the new version. Your games, saves and settings are "
 "as they were."
@@ -4525,112 +4652,112 @@ msgstr ""
 "pengaturan Anda tetap seperti semula."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8126
+#: title/pc5_ui.c:8220
 msgid "Restart PC5"
 msgstr "Mulai ulang PC5"
 
-#: title/pc5_ui.c:8131
+#: title/pc5_ui.c:8225
 msgid "Downloading it from GitHub"
 msgstr "Mengunduh dari GitHub"
 
-#: title/pc5_ui.c:8132
+#: title/pc5_ui.c:8226
 msgid "Unpacking it and checking every file"
 msgstr "Mengekstrak dan memeriksa setiap file"
 
-#: title/pc5_ui.c:8134
+#: title/pc5_ui.c:8228
 msgid "Deleting the old files"
 msgstr "Menghapus file lama"
 
-#: title/pc5_ui.c:8135
+#: title/pc5_ui.c:8229
 msgid "Asking GitHub and finding PC5's folder"
 msgstr "Menghubungi GitHub dan mencari folder PC5"
 
-#: title/pc5_ui.c:8138 title/pc5_ui.c:8493
+#: title/pc5_ui.c:8232 title/pc5_ui.c:8587
 msgid "Stopping"
 msgstr "Menghentikan"
 
-#: title/pc5_ui.c:8139
+#: title/pc5_ui.c:8233
 #, c-format
 msgid "Updating PC5 to %s"
 msgstr "Memperbarui PC5 ke %s"
 
-#: title/pc5_ui.c:8140
+#: title/pc5_ui.c:8234
 msgid "Updating PC5"
 msgstr "Memperbarui PC5"
 
-#: title/pc5_ui.c:8147
+#: title/pc5_ui.c:8241
 #, c-format
 msgid "%llu of %llu files"
 msgstr "%llu dari %llu file"
 
-#: title/pc5_ui.c:8169
+#: title/pc5_ui.c:8263
 #, c-format
 msgid "Into %.280s"
 msgstr "Ke %.280s"
 
-#: title/pc5_ui.c:8177
+#: title/pc5_ui.c:8271
 msgid "Don't turn the console off now. This takes a moment."
 msgstr "Jangan matikan konsol sekarang. Ini butuh waktu sebentar."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8190 title/pc5_ui.c:8540
+#: title/pc5_ui.c:8284 title/pc5_ui.c:8634
 msgid "Skip"
 msgstr "Lewati"
 
-#: title/pc5_ui.c:8229
+#: title/pc5_ui.c:8323
 msgid "Its cover"
 msgstr "Sampulnya"
 
-#: title/pc5_ui.c:8229
+#: title/pc5_ui.c:8323
 msgid "Its tile picture"
 msgstr "Gambar pintasannya"
 
-#: title/pc5_ui.c:8229
+#: title/pc5_ui.c:8323
 msgid "Its background"
 msgstr "Latar belakangnya"
 
-#: title/pc5_ui.c:8233
+#: title/pc5_ui.c:8327
 msgid "The cover it has now"
 msgstr "Sampul saat ini"
 
-#: title/pc5_ui.c:8233
+#: title/pc5_ui.c:8327
 msgid "The tile picture it has now"
 msgstr "Gambar pintasan saat ini"
 
-#: title/pc5_ui.c:8233
+#: title/pc5_ui.c:8327
 msgid "The background it has now"
 msgstr "Latar belakang saat ini"
 
-#: title/pc5_ui.c:8235
+#: title/pc5_ui.c:8329
 msgid "A cover found online"
 msgstr "Sampul yang ditemukan online"
 
-#: title/pc5_ui.c:8235
+#: title/pc5_ui.c:8329
 msgid "A square picture found online"
 msgstr "Gambar persegi yang ditemukan online"
 
-#: title/pc5_ui.c:8235
+#: title/pc5_ui.c:8329
 msgid "A background found online"
 msgstr "Latar belakang yang ditemukan online"
 
-#: title/pc5_ui.c:8237
+#: title/pc5_ui.c:8331
 msgid "Made from the game's icon and name"
 msgstr "Dibuat dari ikon dan nama game"
 
-#: title/pc5_ui.c:8238
+#: title/pc5_ui.c:8332
 msgid "Made from its cover"
 msgstr "Dibuat dari sampulnya"
 
-#: title/pc5_ui.c:8238
+#: title/pc5_ui.c:8332
 msgid "None: a backdrop made from its cover"
 msgstr "Tidak ada: latar dibuat dari sampulnya"
 
-#: title/pc5_ui.c:8245
+#: title/pc5_ui.c:8339
 #, c-format
 msgid "Nothing found for “%s”."
 msgstr "Tidak ada hasil untuk “%s”."
 
-#: title/pc5_ui.c:8247
+#: title/pc5_ui.c:8341
 msgid ""
 "Square pictures come from SteamGridDB: put your key in api_keys.txt "
 "(Covers on the wiki)."
@@ -4638,335 +4765,335 @@ msgstr ""
 "Gambar persegi berasal dari SteamGridDB: taruh kunci Anda di api_keys.txt "
 "(Covers di wiki)."
 
-#: title/pc5_ui.c:8249
+#: title/pc5_ui.c:8343
 msgid "Nothing found for its name."
 msgstr "Tidak ada hasil untuk namanya."
 
-#: title/pc5_ui.c:8252
+#: title/pc5_ui.c:8346
 #, c-format
 msgid "Found for “%s”"
 msgstr "Ditemukan untuk “%s”"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8257
+#: title/pc5_ui.c:8351
 msgid "Use this"
 msgstr "Pakai ini"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8258
+#: title/pc5_ui.c:8352
 msgid "Other pictures"
 msgstr "Gambar lain"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8258
+#: title/pc5_ui.c:8352
 msgid "Other backgrounds"
 msgstr "Latar lain"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8259
+#: title/pc5_ui.c:8353
 msgid "Search by name"
 msgstr "Cari nama"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8273 title/pc5_ui.c:8313 title/pc5_ui.c:8433
+#: title/pc5_ui.c:8367 title/pc5_ui.c:8407 title/pc5_ui.c:8527
 msgid " · read-only"
 msgstr " · hanya-baca"
 
-#: title/pc5_ui.c:8289
+#: title/pc5_ui.c:8383
 msgid "Folder"
 msgstr "Folder"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8314
+#: title/pc5_ui.c:8408
 #, c-format
 msgid " · %d ticked"
 msgstr " · %d dicentang"
 
-#: title/pc5_ui.c:8316
+#: title/pc5_ui.c:8410
 msgid "△ Paste or New folder puts something in it."
 msgstr "△ Tempel atau Folder baru akan menaruh sesuatu di dalamnya."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8321 title/pc5_ui.c:8436
+#: title/pc5_ui.c:8415 title/pc5_ui.c:8530
 msgid "Actions"
 msgstr "Tindakan"
 
-#: title/pc5_ui.c:8325
+#: title/pc5_ui.c:8419
 msgid "Choose backup destination"
 msgstr "Pilih tujuan cadangan"
 
-#: title/pc5_ui.c:8326
+#: title/pc5_ui.c:8420
 msgid "Open a folder, then press OPTIONS to save the backup here."
 msgstr "Buka folder, lalu tekan OPTIONS untuk menyimpan cadangan di sini."
 
-#: title/pc5_ui.c:8333
+#: title/pc5_ui.c:8427
 msgid "Choose a background video"
 msgstr "Pilih video latar"
 
-#: title/pc5_ui.c:8334
+#: title/pc5_ui.c:8428
 msgid "H.264 up to 1080p/60 and 1 GB; MP4 recommended. Playback is silent."
 msgstr "H.264 hingga 1080p/60 dan 1 GB; MP4 disarankan. Diputar tanpa suara."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8338
+#: title/pc5_ui.c:8432
 msgid "Open folder"
 msgstr "Buka folder"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8338
+#: title/pc5_ui.c:8432
 msgid "Save here"
 msgstr "Simpan di sini"
 
-#: title/pc5_ui.c:8339
+#: title/pc5_ui.c:8433
 msgid "This folder is empty"
 msgstr "Folder ini kosong"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8351
+#: title/pc5_ui.c:8445
 msgid "Copy"
 msgstr "Salin"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8351
+#: title/pc5_ui.c:8445
 msgid "Then Paste puts a copy in another folder"
 msgstr "Lalu Tempel menaruh salinan di folder lain"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8352
+#: title/pc5_ui.c:8446
 msgid "Cut"
 msgstr "Potong"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8352
+#: title/pc5_ui.c:8446
 msgid "Then Paste moves it to another folder"
 msgstr "Lalu Tempel memindahkannya ke folder lain"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8355
+#: title/pc5_ui.c:8449
 msgid "Paste"
 msgstr "Tempel"
 
-#: title/pc5_ui.c:8356
+#: title/pc5_ui.c:8450
 #, c-format
 msgid "Moves %d item from %.120s"
 msgstr "Memindahkan %d item dari %.120s"
 
-#: title/pc5_ui.c:8356
+#: title/pc5_ui.c:8450
 #, c-format
 msgid "Moves %d items from %.120s"
 msgstr "Memindahkan %d item dari %.120s"
 
-#: title/pc5_ui.c:8356
+#: title/pc5_ui.c:8450
 #, c-format
 msgid "Copies %d item from %.120s"
 msgstr "Menyalin %d item dari %.120s"
 
-#: title/pc5_ui.c:8356
+#: title/pc5_ui.c:8450
 #, c-format
 msgid "Copies %d items from %.120s"
 msgstr "Menyalin %d item dari %.120s"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8362
+#: title/pc5_ui.c:8456
 msgid "Type its new name"
 msgstr "Ketik nama barunya"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8363
+#: title/pc5_ui.c:8457
 msgid "An empty folder in this one"
 msgstr "Folder kosong di dalam folder ini"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8364 title/pc5_ui.c:8561 title/pc5_ui.c:8701
-#: title/pc5_ui.c:8820 title/pc5_ui.c:8826 title/pc5_ui.c:8831
+#: title/pc5_ui.c:8458 title/pc5_ui.c:8655 title/pc5_ui.c:8795
+#: title/pc5_ui.c:8917 title/pc5_ui.c:8923 title/pc5_ui.c:8928
 msgid "Delete"
 msgstr "Hapus"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8364
+#: title/pc5_ui.c:8458
 msgid "Deleted for good: there is no undo"
 msgstr "Dihapus permanen: tidak bisa dibatalkan"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8366
+#: title/pc5_ui.c:8460
 msgid "Untick all"
 msgstr "Hapus semua centang"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8366
+#: title/pc5_ui.c:8460
 msgid "Tick all"
 msgstr "Centang semua"
 
-#: title/pc5_ui.c:8367
+#: title/pc5_ui.c:8461
 msgid "Every item in this folder"
 msgstr "Semua item di folder ini"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8371
+#: title/pc5_ui.c:8465
 msgid "Edit"
 msgstr "Edit"
 
-#: title/pc5_ui.c:8372
+#: title/pc5_ui.c:8466
 msgid ""
 "A text file (.ini, .cfg, .txt and the like), changed a line at a time"
 msgstr "File teks (.ini, .cfg, .txt, dan sejenisnya), diubah per baris"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8374
+#: title/pc5_ui.c:8468
 msgid "View"
 msgstr "Lihat"
 
-#: title/pc5_ui.c:8375
+#: title/pc5_ui.c:8469
 msgid "A text file, shown: nothing here can be changed"
 msgstr "File teks, hanya ditampilkan: tidak ada yang bisa diubah di sini"
 
-#: title/pc5_ui.c:8388
+#: title/pc5_ui.c:8482
 #, c-format
 msgid "%d items"
 msgstr "%d item"
 
-#: title/pc5_ui.c:8390
+#: title/pc5_ui.c:8484
 msgid "This folder"
 msgstr "Folder ini"
 
-#: title/pc5_ui.c:8394
+#: title/pc5_ui.c:8488
 msgid "Read-only: PC5 changes nothing here"
 msgstr "Hanya-baca: PC5 tidak mengubah apa pun di sini"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8434
+#: title/pc5_ui.c:8528
 msgid " · not saved"
 msgstr " · belum disimpan"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8435 title/pc5_ui.c:8437
+#: title/pc5_ui.c:8529 title/pc5_ui.c:8531
 msgid "Page"
 msgstr "Halaman"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8436
+#: title/pc5_ui.c:8530
 msgid "Add a line"
 msgstr "Tambah baris"
 
-#: title/pc5_ui.c:8440
+#: title/pc5_ui.c:8534
 msgid "This file is empty"
 msgstr "File ini kosong"
 
-#: title/pc5_ui.c:8441
+#: title/pc5_ui.c:8535
 msgid "There's nothing in it."
 msgstr "Tidak ada isinya."
 
-#: title/pc5_ui.c:8441
+#: title/pc5_ui.c:8535
 msgid "✕ puts a first line in it."
 msgstr "✕ menambahkan baris pertama."
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8450
+#: title/pc5_ui.c:8544
 msgid "Add a line below"
 msgstr "Tambah baris di bawah"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8450
+#: title/pc5_ui.c:8544
 msgid "Typed with the keyboard, under the line chosen"
 msgstr "Diketik dengan keyboard, di bawah baris yang dipilih"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8451
+#: title/pc5_ui.c:8545
 msgid "Add a line above"
 msgstr "Tambah baris di atas"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8451
+#: title/pc5_ui.c:8545
 msgid "Typed with the keyboard, over the line chosen"
 msgstr "Diketik dengan keyboard, di atas baris yang dipilih"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8452
+#: title/pc5_ui.c:8546
 msgid "Delete line"
 msgstr "Hapus baris"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8452
+#: title/pc5_ui.c:8546
 msgid "The line chosen goes; nothing is saved until Save"
 msgstr "Baris yang dipilih hilang; tidak ada yang disimpan sampai Simpan"
 
-#: title/pc5_ui.c:8455
+#: title/pc5_ui.c:8549
 msgid "Written back as it was: UTF-16, with its line ends"
 msgstr "Ditulis kembali seperti semula: UTF-16, dengan akhir barisnya"
 
-#: title/pc5_ui.c:8456
+#: title/pc5_ui.c:8550
 msgid "Written back as it was: one byte a letter, with its line ends"
 msgstr ""
 "Ditulis kembali seperti semula: satu byte per huruf, dengan akhir barisnya"
 
-#: title/pc5_ui.c:8457
+#: title/pc5_ui.c:8551
 msgid "Written back as it was: UTF-8, with its line ends"
 msgstr "Ditulis kembali seperti semula: UTF-8, dengan akhir barisnya"
 
-#: title/pc5_ui.c:8470
+#: title/pc5_ui.c:8564
 msgid "This file"
 msgstr "File ini"
 
-#: title/pc5_ui.c:8494
+#: title/pc5_ui.c:8588
 msgid "Deleting"
 msgstr "Menghapus"
 
-#: title/pc5_ui.c:8495
+#: title/pc5_ui.c:8589
 msgid "Moving"
 msgstr "Memindahkan"
 
-#: title/pc5_ui.c:8495
+#: title/pc5_ui.c:8589
 msgid "Copying"
 msgstr "Menyalin"
 
-#: title/pc5_ui.c:8497
+#: title/pc5_ui.c:8591
 msgid "Getting ready"
 msgstr "Bersiap"
 
-#: title/pc5_ui.c:8504
+#: title/pc5_ui.c:8598
 #, c-format
 msgid "%s of %s"
 msgstr "%s dari %s"
 
-#: title/pc5_ui.c:8506
+#: title/pc5_ui.c:8600
 #, c-format
 msgid "%u of %u"
 msgstr "%u dari %u"
 
-#: title/pc5_ui.c:8524
+#: title/pc5_ui.c:8618
 #, c-format
 msgid "Save the changes to %.200s?"
 msgstr "Simpan perubahan pada %.200s?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8525
+#: title/pc5_ui.c:8619
 msgid "Don't save leaves the file as it was before."
 msgstr "Jangan simpan membiarkan file seperti sebelumnya."
 
-#: title/pc5_ui.c:8526
+#: title/pc5_ui.c:8620
 msgid "Don't save"
 msgstr "Jangan simpan"
 
-#: title/pc5_ui.c:8535
+#: title/pc5_ui.c:8629
 #, c-format
 msgid "This folder has %.200s already"
 msgstr "Folder ini sudah berisi %.200s"
 
-#: title/pc5_ui.c:8535 title/pc5_ui.c:8550
+#: title/pc5_ui.c:8629 title/pc5_ui.c:8644
 msgid "it"
 msgstr "item itu"
 
-#: title/pc5_ui.c:8536
+#: title/pc5_ui.c:8630
 #, c-format
 msgid "This folder has %d of the %d items already"
 msgstr "Folder ini sudah berisi %d dari %d item"
 
-#: title/pc5_ui.c:8538
+#: title/pc5_ui.c:8632
 msgid ""
 "Skip leaves those as they are. Keep both gives the new ones a name like "
 "“name (2)”. Replace overwrites files and puts folders' contents together."
@@ -4974,50 +5101,50 @@ msgstr ""
 "Lewati membiarkannya seperti semula. Simpan keduanya memberi yang baru "
 "nama seperti “nama (2)”. Ganti menimpa file dan menggabungkan isi folder."
 
-#: title/pc5_ui.c:8540
+#: title/pc5_ui.c:8634
 msgid "Keep both"
 msgstr "Simpan keduanya"
 
-#: title/pc5_ui.c:8540
+#: title/pc5_ui.c:8634
 msgid "Replace"
 msgstr "Ganti"
 
-#: title/pc5_ui.c:8545
+#: title/pc5_ui.c:8639
 #, c-format
 msgid "Delete %d items?"
 msgstr "Hapus %d item?"
 
-#: title/pc5_ui.c:8550
+#: title/pc5_ui.c:8644
 #, c-format
 msgid "Delete %.200s?"
 msgstr "Hapus %.200s?"
 
-#: title/pc5_ui.c:8551
+#: title/pc5_ui.c:8645
 msgid "Delete?"
 msgstr "Hapus?"
 
-#: title/pc5_ui.c:8553
+#: title/pc5_ui.c:8647
 #, c-format
 msgid "%u file"
 msgstr "%u file"
 
-#: title/pc5_ui.c:8553
+#: title/pc5_ui.c:8647
 #, c-format
 msgid "%u files"
 msgstr "%u file"
 
-#: title/pc5_ui.c:8554
+#: title/pc5_ui.c:8648
 #, c-format
 msgid "%u folder"
 msgstr "%u folder"
 
-#: title/pc5_ui.c:8554
+#: title/pc5_ui.c:8648
 #, c-format
 msgid "%u folders"
 msgstr "%u folder"
 
 #. the first %s is a count of files ("3 files"), the second of folders, the third a size ("2.1 GB").
-#: title/pc5_ui.c:8557
+#: title/pc5_ui.c:8651
 #, c-format
 msgid ""
 "At least %s and %s, %s. They're deleted for good: there is no backup and "
@@ -5027,7 +5154,7 @@ msgstr ""
 "dan tidak bisa dibatalkan."
 
 #. the first %s is a count of files ("3 files"), the second of folders, the third a size ("2.1 GB").
-#: title/pc5_ui.c:8557
+#: title/pc5_ui.c:8651
 #, c-format
 msgid ""
 "%s and %s, %s. They're deleted for good: there is no backup and no undo."
@@ -5035,30 +5162,30 @@ msgstr ""
 "%s dan %s, %s. Semuanya dihapus permanen: tidak ada cadangan dan tidak "
 "bisa dibatalkan."
 
-#: title/pc5_ui.c:8624
+#: title/pc5_ui.c:8718
 msgid "Finishing an install or uninstall that was cut short"
 msgstr "Menyelesaikan instalasi atau penghapusan instalan yang terputus"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8627
+#: title/pc5_ui.c:8721
 #, c-format
 msgid "Getting covers · %d of %d"
 msgstr "Mengambil sampul · %d dari %d"
 
-#: title/pc5_ui.c:8631 title/pc5_ui.c:8647 title/pc5_ui.c:8903
+#: title/pc5_ui.c:8725 title/pc5_ui.c:8741 title/pc5_ui.c:9013
 msgid "Checking for a newer PC5"
 msgstr "Memeriksa PC5 yang lebih baru"
 
-#: title/pc5_ui.c:8647
+#: title/pc5_ui.c:8741
 msgid "Asking GitHub"
 msgstr "Menghubungi GitHub"
 
-#: title/pc5_ui.c:8651
+#: title/pc5_ui.c:8745
 #, c-format
 msgid "PC5 %s is available"
 msgstr "PC5 %s tersedia"
 
-#: title/pc5_ui.c:8652
+#: title/pc5_ui.c:8746
 #, c-format
 msgid ""
 "%s, installs it and restarts. Your games, saves and settings stay. Later: "
@@ -5068,66 +5195,66 @@ msgstr ""
 "Anda tetap ada. Nanti: Pengaturan › Sistem."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8654 title/pc5_ui.c:8896
+#: title/pc5_ui.c:8748 title/pc5_ui.c:9006
 msgid "Later"
 msgstr "Nanti"
 
-#: title/pc5_ui.c:8665 title/pc5_ui.c:8712
+#: title/pc5_ui.c:8759 title/pc5_ui.c:8806
 #, c-format
 msgid "Reading %s"
 msgstr "Membaca %s"
 
-#: title/pc5_ui.c:8666
+#: title/pc5_ui.c:8760
 msgid "Finding its programs"
 msgstr "Mencari programnya"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8671
+#: title/pc5_ui.c:8765
 #, c-format
 msgid "Getting ready · %d of %d"
 msgstr "Bersiap · %d dari %d"
 
-#: title/pc5_ui.c:8675
+#: title/pc5_ui.c:8769
 msgid "reading its files"
 msgstr "membaca file-nya"
 
-#: title/pc5_ui.c:8675
+#: title/pc5_ui.c:8769
 msgid "looking for its cover"
 msgstr "mencari sampulnya"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8684
+#: title/pc5_ui.c:8778
 #, c-format
 msgid "Install %d game · %s"
 msgstr "Instal %d game · %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8684
+#: title/pc5_ui.c:8778
 #, c-format
 msgid "Install %d games · %s"
 msgstr "Instal %d game · %s"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8686
+#: title/pc5_ui.c:8780
 msgid "Install all"
 msgstr "Instal semua"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8686
+#: title/pc5_ui.c:8780
 msgid "Review"
 msgstr "Tinjau"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8698
+#: title/pc5_ui.c:8792
 msgid "Remove background video?"
 msgstr "Hapus video latar?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8698
+#: title/pc5_ui.c:8792
 msgid "Remove library music?"
 msgstr "Hapus musik pustaka?"
 
-#: title/pc5_ui.c:8699
+#: title/pc5_ui.c:8793
 msgid ""
 "Delete this game's imported video and return to the background image? The "
 "original source file is kept."
@@ -5135,17 +5262,17 @@ msgstr ""
 "Hapus video yang diimpor untuk game ini dan kembali ke gambar latar? File "
 "sumber asli tetap ada."
 
-#: title/pc5_ui.c:8700
+#: title/pc5_ui.c:8794
 msgid "Delete this game's imported music? The original source file is kept."
 msgstr "Hapus musik yang diimpor untuk game ini? File sumber asli tetap ada."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8704
+#: title/pc5_ui.c:8798
 msgid "Restore this appearance?"
 msgstr "Pulihkan tampilan ini?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8704
+#: title/pc5_ui.c:8798
 msgid ""
 "This replaces this game's pictures, music, video and media settings. Game "
 "files and saves are kept."
@@ -5154,36 +5281,36 @@ msgstr ""
 "game dan data simpanan tetap ada."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8704
+#: title/pc5_ui.c:8798
 msgid "Restore"
 msgstr "Pulihkan"
 
-#: title/pc5_ui.c:8706
+#: title/pc5_ui.c:8800
 msgid "Restoring appearance"
 msgstr "Memulihkan tampilan"
 
-#: title/pc5_ui.c:8706
+#: title/pc5_ui.c:8800
 msgid "Exporting appearance"
 msgstr "Mengekspor tampilan"
 
-#: title/pc5_ui.c:8706
+#: title/pc5_ui.c:8800
 msgid "Keep the drive connected. Back cancels."
 msgstr "Biarkan drive tetap terhubung. Kembali untuk membatalkan."
 
-#: title/pc5_ui.c:8709
+#: title/pc5_ui.c:8803
 msgid "Looking at the USB drives"
 msgstr "Memeriksa drive USB"
 
-#: title/pc5_ui.c:8713
+#: title/pc5_ui.c:8807
 msgid "Counting its files and finding its program"
 msgstr "Menghitung file-nya dan mencari programnya"
 
-#: title/pc5_ui.c:8720
+#: title/pc5_ui.c:8814
 #, c-format
 msgid "Update %s?"
 msgstr "Perbarui %s?"
 
-#: title/pc5_ui.c:8721
+#: title/pc5_ui.c:8815
 #, c-format
 msgid ""
 "PC5 copies %s (%s) from the USB drive over the game's folder: the files it "
@@ -5194,17 +5321,17 @@ msgstr ""
 "ada di sana menggantikan file game, sisanya tetap. Data simpanan, "
 "pengaturan, dan opsinya juga tetap."
 
-#: title/pc5_ui.c:8733
+#: title/pc5_ui.c:8827
 #, c-format
 msgid "Where should the %d games go?"
 msgstr "Ke mana %d game ini akan dipasang?"
 
-#: title/pc5_ui.c:8734
+#: title/pc5_ui.c:8828
 #, c-format
 msgid "Where should %s go?"
 msgstr "Ke mana %s akan dipasang?"
 
-#: title/pc5_ui.c:8738
+#: title/pc5_ui.c:8832
 #, c-format
 msgid ""
 "The console has %s free. Extended storage (%.40s) has %s free: a game "
@@ -5214,7 +5341,7 @@ msgstr ""
 "di sana dimainkan dari folder PC5-nya. Simpanannya tetap di konsol "
 "bagaimanapun juga."
 
-#: title/pc5_ui.c:8743
+#: title/pc5_ui.c:8837
 #, c-format
 msgid ""
 "The console has %s free. The USB drive (%.40s) has %s free: a game there "
@@ -5225,27 +5352,27 @@ msgstr ""
 "game di sana dimainkan dari folder PC5-nya, jadi biarkan drive terpasang "
 "di port yang cepat. Data simpanannya tetap di konsol."
 
-#: title/pc5_ui.c:8753
+#: title/pc5_ui.c:8847
 #, c-format
 msgid "Left and right choose among the %d drives a game can go on."
 msgstr "Kiri dan kanan memilih di antara %d drive tempat game bisa dipasang."
 
-#: title/pc5_ui.c:8755
+#: title/pc5_ui.c:8849
 msgid "Extended storage"
 msgstr "Penyimpanan diperluas"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8758
+#: title/pc5_ui.c:8852
 msgid "Console"
 msgstr "Konsol"
 
-#: title/pc5_ui.c:8763
+#: title/pc5_ui.c:8857
 #, c-format
 msgid "Put back the saves of %s?"
 msgstr "Kembalikan data simpanan %s?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8765
+#: title/pc5_ui.c:8859
 msgid ""
 "They were kept when it was uninstalled: its saves, settings and options "
 "come back with it. Start fresh: they stay kept, for later."
@@ -5254,67 +5381,81 @@ msgstr ""
 "pengaturan, dan opsinya kembali bersamanya. Mulai baru: data tetap "
 "disimpan, untuk nanti."
 
-#: title/pc5_ui.c:8766
+#: title/pc5_ui.c:8860
 msgid "Start fresh"
 msgstr "Mulai baru"
 
-#: title/pc5_ui.c:8766
+#: title/pc5_ui.c:8860
 msgid "Put them back"
 msgstr "Kembalikan"
 
-#: title/pc5_ui.c:8770
+#: title/pc5_ui.c:8864
 msgid "Looking for the cover"
 msgstr "Mencari sampul"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:8770 title/pc5_ui.c:8776
+#: title/pc5_ui.c:8864 title/pc5_ui.c:8870
 msgid "On Steam, GOG and others"
 msgstr "Di Steam, GOG, dan lainnya"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:8775
+#: title/pc5_ui.c:8869
 #, c-format
 msgid "“%s”, %s"
 msgstr "“%s”, %s"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:8775
+#: title/pc5_ui.c:8869
 msgid "on Steam, GOG and others"
 msgstr "di Steam, GOG, dan lainnya"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:8777
+#: title/pc5_ui.c:8871
 msgid "Looking for covers"
 msgstr "Mencari sampul"
 
-#: title/pc5_ui.c:8778
+#: title/pc5_ui.c:8872
 msgid "Looking for tile pictures"
 msgstr "Mencari gambar pintasan"
 
-#: title/pc5_ui.c:8778
+#: title/pc5_ui.c:8872
 msgid "Looking for backgrounds"
 msgstr "Mencari latar belakang"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8785
+#: title/pc5_ui.c:8879
 msgid "Offer at Play"
 msgstr "Tawarkan saat Main"
 
-#: title/pc5_ui.c:8788 title/pc5_ui.c:8791
+#: title/pc5_ui.c:8882 title/pc5_ui.c:8885
 msgid "Which program is the game?"
 msgstr "Program mana yang merupakan game-nya?"
 
-#: title/pc5_ui.c:8801
+#: title/pc5_ui.c:8895
 msgid "Which program?"
 msgstr "Program yang mana?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8808
+#: title/pc5_ui.c:8902
+msgid "Stop resetting?"
+msgstr ""
+
+#. In a question window: the title, its text, or a button's label (keep buttons short).
+#: title/pc5_ui.c:8902
+msgid "The new Windows made so far is deleted and the game stays as it was."
+msgstr ""
+
+#: title/pc5_ui.c:8903
+msgid "Keep resetting"
+msgstr ""
+
+#. In a question window: the title, its text, or a button's label (keep buttons short).
+#: title/pc5_ui.c:8905
 msgid "Stop updating?"
 msgstr "Hentikan pembaruan?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8808
+#: title/pc5_ui.c:8905
 msgid ""
 "The copy made so far is deleted and the game stays as it was. The USB "
 "drive isn't changed."
@@ -5322,16 +5463,16 @@ msgstr ""
 "Salinan yang sudah dibuat akan dihapus dan game tetap seperti semula. "
 "Drive USB tidak diubah."
 
-#: title/pc5_ui.c:8809
+#: title/pc5_ui.c:8906
 msgid "Keep updating"
 msgstr "Lanjutkan pembaruan"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8811 title/pc5_ui.c:8816
+#: title/pc5_ui.c:8908 title/pc5_ui.c:8913
 msgid "Stop installing?"
 msgstr "Hentikan instalasi?"
 
-#: title/pc5_ui.c:8812
+#: title/pc5_ui.c:8909
 msgid ""
 "What this game copied so far is deleted; games already installed stay. The "
 "USB drive isn't changed. Press the back button to keep installing."
@@ -5340,34 +5481,34 @@ msgstr ""
 "tetap ada. Drive USB tidak diubah. Tekan tombol kembali untuk melanjutkan "
 "instalasi."
 
-#: title/pc5_ui.c:8814
+#: title/pc5_ui.c:8911
 msgid "Stop this game"
 msgstr "Hentikan game ini"
 
-#: title/pc5_ui.c:8814
+#: title/pc5_ui.c:8911
 msgid "Stop all"
 msgstr "Hentikan semua"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8816
+#: title/pc5_ui.c:8913
 msgid "Everything copied so far is deleted. The USB drive isn't changed."
 msgstr "Semua yang sudah disalin akan dihapus. Drive USB tidak diubah."
 
-#: title/pc5_ui.c:8817
+#: title/pc5_ui.c:8914
 msgid "Keep installing"
 msgstr "Lanjutkan instalasi"
 
-#: title/pc5_ui.c:8821
+#: title/pc5_ui.c:8918
 msgid "There are no games to uninstall"
 msgstr "Tidak ada game untuk dihapus instalannya"
 
-#: title/pc5_ui.c:8829
+#: title/pc5_ui.c:8926
 #, c-format
 msgid "Delete the saves of %s?"
 msgstr "Hapus data simpanan %s?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8830
+#: title/pc5_ui.c:8927
 msgid ""
 "Its saves and settings, kept when it was uninstalled, are deleted. There "
 "is no backup and no undo."
@@ -5375,12 +5516,12 @@ msgstr ""
 "Data simpanan dan pengaturannya, yang dipertahankan saat instalannya "
 "dihapus, akan dihapus. Tidak ada cadangan dan tidak bisa dibatalkan."
 
-#: title/pc5_ui.c:8839
+#: title/pc5_ui.c:8936
 #, c-format
 msgid "Uninstall %s?"
 msgstr "Hapus instalan %s?"
 
-#: title/pc5_ui.c:8842
+#: title/pc5_ui.c:8939
 msgid ""
 "Keep saves: the game goes, its saves and settings stay, and installing it "
 "again puts them back. Delete all: the game, its saves and settings go, "
@@ -5391,15 +5532,15 @@ msgstr ""
 "simpanan, dan pengaturannya dihapus, tanpa cadangan dan tidak bisa "
 "dibatalkan."
 
-#: title/pc5_ui.c:8844
+#: title/pc5_ui.c:8941
 msgid "Keep saves"
 msgstr "Pertahankan simpanan"
 
-#: title/pc5_ui.c:8844
+#: title/pc5_ui.c:8941
 msgid "Delete all"
 msgstr "Hapus semua"
 
-#: title/pc5_ui.c:8847
+#: title/pc5_ui.c:8944
 msgid ""
 "This deletes the game and all its saves and settings. There is no backup "
 "and no undo."
@@ -5407,26 +5548,40 @@ msgstr ""
 "Ini menghapus game beserta semua data simpanan dan pengaturannya. Tidak "
 "ada cadangan dan tidak bisa dibatalkan."
 
-#: title/pc5_ui.c:8852
+#: title/pc5_ui.c:8952
+#, c-format
+msgid "Reset the Windows of %s?"
+msgstr ""
+
+#: title/pc5_ui.c:8954
+msgid ""
+"Its Windows is made new, like a fresh install. The game's files, its saves "
+"(its Windows user folders) and PC5's settings for it stay. Windows "
+"settings the game kept in the registry go back to their defaults: some "
+"games keep options or saves there. Use it when a game that used to work "
+"stops starting."
+msgstr ""
+
+#: title/pc5_ui.c:8962
 #, c-format
 msgid "Deleting the saves of %s"
 msgstr "Menghapus data simpanan %s"
 
-#: title/pc5_ui.c:8852
+#: title/pc5_ui.c:8962
 #, c-format
 msgid "Uninstalling %s"
 msgstr "Menghapus instalan %s"
 
-#: title/pc5_ui.c:8855
+#: title/pc5_ui.c:8965
 #, c-format
 msgid "%u files and folders deleted"
 msgstr "%u file dan folder dihapus"
 
-#: title/pc5_ui.c:8861
+#: title/pc5_ui.c:8971
 msgid "Importing library music"
 msgstr "Mengimpor musik pustaka"
 
-#: title/pc5_ui.c:8862
+#: title/pc5_ui.c:8972
 msgid ""
 "Preparing a copy on the console. Keep the source drive connected until "
 "this finishes."
@@ -5434,18 +5589,18 @@ msgstr ""
 "Menyiapkan salinan di konsol. Biarkan drive sumber terhubung sampai "
 "selesai."
 
-#: title/pc5_ui.c:8865
+#: title/pc5_ui.c:8975
 msgid "Importing background video"
 msgstr "Mengimpor video latar"
 
-#: title/pc5_ui.c:8866
+#: title/pc5_ui.c:8976
 msgid ""
 "Copying video to the console. Keep the source drive connected until this "
 "finishes."
 msgstr ""
 "Menyalin video ke konsol. Biarkan drive sumber terhubung sampai selesai."
 
-#: title/pc5_ui.c:8884
+#: title/pc5_ui.c:8994
 #, c-format
 msgid ""
 "%d game is waiting in PC5's INSTALL folders (its own, and PC5/INSTALL on "
@@ -5456,7 +5611,7 @@ msgstr ""
 "di drive USB). Instal sekarang? Game yang diinstal dari sana dipindahkan "
 "ke pustaka PC5, keluar dari folder INSTALL."
 
-#: title/pc5_ui.c:8884
+#: title/pc5_ui.c:8994
 #, c-format
 msgid ""
 "%d games are waiting in PC5's INSTALL folders (its own, and PC5/INSTALL on "
@@ -5467,7 +5622,7 @@ msgstr ""
 "di drive USB). Instal sekarang? Game yang diinstal dari sana dipindahkan "
 "ke pustaka PC5, keluar dari folder INSTALL."
 
-#: title/pc5_ui.c:8884
+#: title/pc5_ui.c:8994
 #, c-format
 msgid ""
 "%d game is waiting in PC5's INSTALL folder. Install it now? A game "
@@ -5477,7 +5632,7 @@ msgstr ""
 "%d game menunggu di folder INSTALL PC5. Instal sekarang? Game yang "
 "diinstal dari sana dipindahkan ke pustaka PC5, keluar dari folder INSTALL."
 
-#: title/pc5_ui.c:8884
+#: title/pc5_ui.c:8994
 #, c-format
 msgid ""
 "%d games are waiting in PC5's INSTALL folder. Install them now? A game "
@@ -5488,33 +5643,33 @@ msgstr ""
 "diinstal dari sana dipindahkan ke pustaka PC5, keluar dari folder INSTALL."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8896
+#: title/pc5_ui.c:9006
 msgid "Games in PC5's INSTALL folder"
 msgstr "Game di folder INSTALL PC5"
 
-#: title/pc5_ui.c:8901
+#: title/pc5_ui.c:9011
 msgid "Updating the home screen tile"
 msgstr "Memperbarui pintasan layar beranda"
 
-#: title/pc5_ui.c:8901
+#: title/pc5_ui.c:9011
 msgid "Its picture and background"
 msgstr "Gambar dan latar belakangnya"
 
-#: title/pc5_ui.c:8903
+#: title/pc5_ui.c:9013
 msgid "A newer one may have fixed it"
 msgstr "Versi yang lebih baru mungkin sudah memperbaikinya"
 
-#: title/pc5_ui.c:8906
+#: title/pc5_ui.c:9016
 #, c-format
 msgid "Update to PC5 %s first?"
 msgstr "Perbarui ke PC5 %s dulu?"
 
-#: title/pc5_ui.c:8908
+#: title/pc5_ui.c:9018
 #, c-format
 msgid "You have %s"
 msgstr "Anda punya %s"
 
-#: title/pc5_ui.c:8909
+#: title/pc5_ui.c:9019
 #, c-format
 msgid ""
 "This may already be fixed in it. Update, try the game again, and report it "
@@ -5524,21 +5679,21 @@ msgstr ""
 "game-nya, dan laporkan jika masih terjadi. %s."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8912
+#: title/pc5_ui.c:9022
 msgid "Report anyway"
 msgstr "Tetap laporkan"
 
-#: title/pc5_ui.c:8917
+#: title/pc5_ui.c:9027
 #, c-format
 msgid "Starting %s"
 msgstr "Memulai %s"
 
-#: title/pc5_ui.c:8920
+#: title/pc5_ui.c:9030
 #, c-format
 msgid "Installing %.80s for it, once"
 msgstr "Menginstal %.80s untuknya, sekali saja"
 
-#: title/pc5_ui.c:8924
+#: title/pc5_ui.c:9034
 #, c-format
 msgid "Setting up .NET for your games, once: %u of %u"
 msgstr "Menyiapkan .NET untuk game Anda, sekali saja: %u dari %u"

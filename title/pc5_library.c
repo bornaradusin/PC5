@@ -1085,7 +1085,8 @@ static int count_leftovers(const char *root)
     if (pc5_format(path, sizeof(path), "%s/prefixes", root) || !(dir = opendir(path))) return 0;
     while ((entry = readdir(dir)))
         count += !strncmp(entry->d_name, ".installing-", 12) || !strncmp(entry->d_name, ".removing-", 10) ||
-                 !strncmp(entry->d_name, ".updating-", 10);
+                 !strncmp(entry->d_name, ".updating-", 10) || !strncmp(entry->d_name, ".resetting-", 11) ||
+                 !strncmp(entry->d_name, ".reset-old-", 11);
     closedir(dir);
     if (!pc5_format(path, sizeof(path), "%s/saves", root) && (dir = opendir(path))) {
         while ((entry = readdir(dir))) count += !strncmp(entry->d_name, ".keeping-", 9);
@@ -1093,6 +1094,8 @@ static int count_leftovers(const char *root)
     }
     return count;
 }
+
+static int reset_pending(const char *root, const char *prefix);
 
 int pc5_library_load(const char *root, Pc5Library *library)
 {
@@ -1131,6 +1134,11 @@ int pc5_library_load(const char *root, Pc5Library *library)
         else pc5_format(marker, sizeof(marker), "%s/prefix/system.reg", root);
         game->playable = pc5_is_file(marker);
         if (!game->playable) snprintf(game->problem, sizeof(game->problem), N_("Its Windows folder is missing."));
+        /* Its Windows being reset, the game in two places until it is finished. */
+        if (game->playable && strcmp(app->prefix, "default") && reset_pending(root, app->prefix)) {
+            game->playable = 0;
+            snprintf(game->problem, sizeof(game->problem), N_("Resetting its Windows isn't finished: close PC5 and open it again."));
+        }
         if (!strcmp(app->prefix, app->id) && !pc5_info_read(root, app->id, &info)) {
             game->pc5 = 1;
             game->bits = info.bits == 64 ? 64 : 32;
@@ -1189,7 +1197,8 @@ int pc5_new_id(const char *root, const char *name, char *id, size_t size)
         if (k == 1) pc5_copy(candidate, sizeof(candidate), base);
         else snprintf(candidate, sizeof(candidate), "%s-%d", base, k);
         static const char *const places[] = { "profiles/%s.profile", "prefixes/%s", "prefixes/.installing-%s",
-                                              "prefixes/.removing-%s", "prefixes/.updating-%s", "saves/.keeping-%s" };
+                                              "prefixes/.removing-%s", "prefixes/.updating-%s", "saves/.keeping-%s",
+                                              "prefixes/.resetting-%s", "prefixes/.reset-old-%s" };
         for (size_t i = 0; i < sizeof(places) / sizeof(places[0]) && !taken; i++) {
             char format[64];
             snprintf(format, sizeof(format), "%%s/%s", places[i]);
@@ -1936,6 +1945,298 @@ static int update_recover(const char *root, const char *name)
     return update_complete(root, id, staging, error, sizeof(error)) ? -1 : 1;
 }
 
+/* ---- resets, the moves (pc5_reset_begin) ---------------------------------------------------- */
+
+/* PC5's notes on what a game's Windows has (pc5_game_begin's: its template's version, its DXVK,
+ * the redistributables put in it and the folders they put in PATH): the old Windows', kept aside
+ * with its registry, so the next start puts all that in the new one. */
+static const char *const reset_marks[] = { "template.txt", "dxvk.txt", "redist.txt", "path.txt" };
+static const char *const reset_registry[] = { "system.reg", "user.reg", "userdef.reg" };
+
+/* from (in the old Windows) moved to to (its place in the new one), the old one's over the
+ * template's: all of it when the new one has nothing of that name (in any case); two folders,
+ * what from holds a name at a time, the same way; a file over the template's file, or in place
+ * of its folder... except that a file where the template has a folder is kept beside it, as
+ * <name>.pc5-old. What was moved is gone from from, so this can run again. depth: how deep in
+ * from it is (folders inside each other, at most 32). */
+static int merge_move(const char *from, const char *to, int depth, char *error, size_t size)
+{
+    /* the paths on the heap: one set a folder deep */
+    char (*p)[PC5_PATH] = pc5_alloc(sizeof(*p) * 4);
+    char *target, *dir, *a, *b;
+    struct stat in, at;
+    Pc5Buf names = { 0 };
+    int status = 0;
+
+    if (!p) {
+        snprintf(error, size, N_("Out of memory."));
+        return -1;
+    }
+    target = p[0], dir = p[1], a = p[2], b = p[3];
+    if (lstat(from, &in)) goto done;   /* moved already */
+    pc5_copy(target, PC5_PATH, to);
+    if (lstat(target, &at)) {
+        /* Not there: the same name in another case, when the new folder has one. */
+        const char *slash = strrchr(to, '/');
+        pc5_copy(dir, PC5_PATH, to);
+        dir[slash - to] = 0;
+        if (name_in(dir, slash + 1, a, PC5_PATH) || pc5_join(target, PC5_PATH, dir, a) || lstat(target, &at)) {
+            if (rename(from, to)) goto failed;
+            goto done;
+        }
+    }
+    if (S_ISDIR(in.st_mode) && S_ISDIR(at.st_mode)) {
+        DIR *folder = opendir(from);
+        struct dirent *entry;
+        if (!folder) goto failed;
+        if (depth >= 32) {
+            closedir(folder);
+            errno = ENAMETOOLONG;
+            goto failed;
+        }
+        /* Its names first, then each moved: the folder isn't read while it changes. */
+        while (!status && (entry = readdir(folder)))
+            if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
+                status = pc5_buf_put(&names, entry->d_name, strlen(entry->d_name) + 1);
+        closedir(folder);
+        if (status) {
+            snprintf(error, size, N_("Out of memory."));
+            goto done;
+        }
+        for (size_t i = 0; !status && i < names.len; i += strlen((char *)names.data + i) + 1) {
+            const char *name = (const char *)names.data + i;
+            if (pc5_join(a, PC5_PATH, from, name) || pc5_join(b, PC5_PATH, target, name)) {
+                errno = ENAMETOOLONG;
+                goto failed;
+            }
+            status = merge_move(a, b, depth + 1, error, size);
+        }
+        goto done;
+    }
+    if (S_ISDIR(at.st_mode)) {
+        /* A file of the old Windows where the template has a folder: kept beside it. */
+        const char *slash = strrchr(target, '/');
+        pc5_copy(dir, PC5_PATH, target);
+        dir[slash - target] = 0;
+        if (pc5_format(a, PC5_PATH, "%s.pc5-old", slash + 1) || free_name(dir, a, b, PC5_PATH) ||
+            pc5_join(a, PC5_PATH, dir, b) || rename(from, a))
+            goto failed;
+        goto done;
+    }
+    /* A folder where the template has a file: the folder, in its place. */
+    if (S_ISDIR(in.st_mode) && unlink(target)) goto failed;
+    if (rename(from, target)) goto failed;
+    goto done;
+failed:
+    snprintf(error, size, N_("PC5 can't move %.150s into the new Windows: %s."), from, strerror(errno));
+    status = -1;
+done:
+    pc5_buf_free(&names);
+    pc5_free(p);
+    return status;
+}
+
+/* What the old Windows (from) has and the template's (to) hasn't, moved into it: a name the
+ * template has stays the template's, and in two folders of one name, what from holds the same
+ * way. For Program Files: a game or program a setup put there stays, Wine's own are the template's.
+ * What was moved is gone from from, so this can run again. depth as merge_move's. */
+static int add_missing(const char *from, const char *to, int depth, char *error, size_t size)
+{
+    char (*p)[PC5_PATH] = pc5_alloc(sizeof(*p) * 3);
+    Pc5Buf names = { 0 };
+    struct dirent *entry;
+    struct stat in, at;
+    DIR *folder;
+    int status = 0;
+
+    if (!p) {
+        snprintf(error, size, N_("Out of memory."));
+        return -1;
+    }
+    if (depth >= 32 || !(folder = opendir(from))) goto done;   /* moved already, or none */
+    while (!status && (entry = readdir(folder)))
+        if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
+            status = pc5_buf_put(&names, entry->d_name, strlen(entry->d_name) + 1);
+    closedir(folder);
+    if (status) snprintf(error, size, N_("Out of memory."));
+    for (size_t i = 0; !status && i < names.len; i += strlen((char *)names.data + i) + 1) {
+        const char *name = (const char *)names.data + i;
+        if (pc5_join(p[0], PC5_PATH, from, name)) continue;
+        if (name_in(to, name, p[2], PC5_PATH)) {
+            /* The template has nothing of that name: the old one's, whole. */
+            if (pc5_join(p[1], PC5_PATH, to, name) || rename(p[0], p[1])) {
+                snprintf(error, size, N_("PC5 can't move %.150s into the new Windows: %s."), p[0], strerror(errno));
+                status = -1;
+            }
+            continue;
+        }
+        if (pc5_join(p[1], PC5_PATH, to, p[2]) || lstat(p[0], &in) || lstat(p[1], &at)) continue;
+        if (S_ISDIR(in.st_mode) && S_ISDIR(at.st_mode)) status = add_missing(p[0], p[1], depth + 1, error, size);
+    }
+done:
+    pc5_buf_free(&names);
+    pc5_free(p);
+    return status;
+}
+
+/* What is the game's and the player's moved from its old Windows (from, prefixes/<id>) into the
+ * new one (to), as pc5_reset_begin says, and the old registry and PC5's notes on the old Windows
+ * kept in the new one's pc5/reset-backup/. Run again, it finishes one cut short. */
+static int reset_move(const char *from, const char *to, char *error, size_t size)
+{
+    char (*p)[PC5_PATH] = pc5_alloc(sizeof(*p) * 4);
+    char *a, *b, *top, *found;
+    int status = 0;
+
+    if (!p) {
+        snprintf(error, size, N_("Out of memory."));
+        return -1;
+    }
+    a = p[0], b = p[1], top = p[2], found = p[3];
+    /* The old Windows' own folder (its top), then its C: drive. */
+    for (int level = 0; level < 2 && !status; level++) {
+        Pc5Buf names = { 0 };
+        DIR *folder;
+        struct dirent *entry;
+        if (level ? pc5_format(top, PC5_PATH, "%s/drive_c", from) || pc5_format(b, PC5_PATH, "%s/drive_c", to)
+                  : pc5_format(top, PC5_PATH, "%s", from) || pc5_format(b, PC5_PATH, "%s", to)) {
+            snprintf(error, size, N_("A path is too long."));
+            status = -1;
+            break;
+        }
+        if (!(folder = opendir(top))) continue;   /* no C: drive left: moved already, or none */
+        while (!status && (entry = readdir(folder)))
+            if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
+                status = pc5_buf_put(&names, entry->d_name, strlen(entry->d_name) + 1);
+        closedir(folder);
+        if (status) snprintf(error, size, N_("Out of memory."));
+        for (size_t i = 0; !status && i < names.len; i += strlen((char *)names.data + i) + 1) {
+            const char *name = (const char *)names.data + i;
+            int registry = 0, kept;
+            for (size_t r = 0; r < sizeof(reset_registry) / sizeof(reset_registry[0]); r++)
+                registry |= !strcmp(name, reset_registry[r]);
+            /* The player's and the game's, always; the rest when the template has nothing of that
+             * name (its Windows folder, its Program Files and its links are the template's now). */
+            if (!level)
+                kept = !registry && strcmp(name, "drive_c") &&
+                       (!pc5_casecmp(name, "pc5") || !pc5_casecmp(name, "pc5-cache") || name_in(b, name, found, PC5_PATH));
+            else
+                kept = !pc5_casecmp(name, "Games") || !pc5_casecmp(name, "users") || !pc5_casecmp(name, "ProgramData") ||
+                       name_in(b, name, found, PC5_PATH);
+            /* Program Files: what a setup installed there (a game run from its installer) stays. */
+            if (!status && !kept && level && (!pc5_casecmp(name, "Program Files") || !pc5_casecmp(name, "Program Files (x86)"))) {
+                if (pc5_join(a, PC5_PATH, top, name) || pc5_join(found, PC5_PATH, b, name)) {
+                    snprintf(error, size, N_("A path is too long."));
+                    status = -1;
+                    break;
+                }
+                status = add_missing(a, found, 0, error, size);
+                continue;
+            }
+            if (status || !kept) continue;
+            if (pc5_join(a, PC5_PATH, top, name) || pc5_join(found, PC5_PATH, b, name)) {
+                snprintf(error, size, N_("A path is too long."));
+                status = -1;
+                break;
+            }
+            status = merge_move(a, found, 0, error, size);
+        }
+        pc5_buf_free(&names);
+    }
+    /* The old registry and PC5's notes on the old Windows, aside in the new one. */
+    if (!status && (pc5_format(b, PC5_PATH, "%s/pc5/reset-backup", to) || pc5_mkdirs(b))) {
+        snprintf(error, size, N_("PC5 can't keep the old registry: %s."), strerror(errno));
+        status = -1;
+    }
+    for (size_t r = 0; !status && r < sizeof(reset_registry) / sizeof(reset_registry[0]); r++)
+        if (pc5_join(a, PC5_PATH, from, reset_registry[r]) || pc5_format(found, PC5_PATH, "%s/%s", b, reset_registry[r]) ||
+            (pc5_exists(a) && rename(a, found))) {
+            snprintf(error, size, N_("PC5 can't keep the old registry: %s."), strerror(errno));
+            status = -1;
+        }
+    for (size_t m = 0; !status && m < sizeof(reset_marks) / sizeof(reset_marks[0]); m++)
+        if (!pc5_format(a, PC5_PATH, "%s/pc5/%s", to, reset_marks[m]) && pc5_exists(a) &&
+            (pc5_format(found, PC5_PATH, "%s/%s", b, reset_marks[m]) || rename(a, found))) {
+            snprintf(error, size, N_("PC5 can't keep the old registry: %s."), strerror(errno));
+            status = -1;
+        }
+    pc5_free(p);
+    return status;
+}
+
+/* The new Windows (prefixes/.resetting-<id>) put in the old one's place, the old one aside
+ * first as prefixes/.reset-old-<id> (its path in old, to delete), and the reset's note deleted.
+ * Run again, it finishes one cut short. */
+static int reset_swap(const char *root, const char *id, char *old, size_t old_size, char *error, size_t size)
+{
+    char game[PC5_PATH], staging[PC5_PATH], note[PC5_PATH];
+
+    if (pc5_format(game, sizeof(game), "%s/prefixes/%s", root, id) ||
+        pc5_format(staging, sizeof(staging), "%s/prefixes/.resetting-%s", root, id) ||
+        pc5_format(old, old_size, "%s/prefixes/.reset-old-%s", root, id) ||
+        pc5_format(note, sizeof(note), "%s/" PC5_RESET_NOTE, game)) {
+        snprintf(error, size, N_("A path is too long."));
+        return -1;
+    }
+    if (pc5_exists(staging) && pc5_exists(game) && rename(game, old)) {
+        snprintf(error, size, N_("PC5 can't move the game's folder: %s."), strerror(errno));
+        return -1;
+    }
+    if (pc5_exists(staging) && rename(staging, game)) {
+        snprintf(error, size, N_("PC5 can't put the game in place: %s."), strerror(errno));
+        return -1;
+    }
+    unlink(note);
+    return 0;
+}
+
+/* A reset left at prefixes/<name> (".resetting-<id>"): without its note its new Windows wasn't
+ * whole and the game wasn't changed, so it is to be deleted; with it, it is finished. 1 with
+ * what is to be deleted in out (the new Windows, or the old one), 0 when nothing is, -1 when it
+ * couldn't be finished (it stays, for the next start). */
+static int reset_recover(const char *root, const char *name, char *out, size_t size)
+{
+    char staging[PC5_PATH], note[PC5_PATH], game[PC5_PATH], error[PC5_ERROR];
+    const char *id = name + 11;
+
+    out[0] = 0;
+    if (pc5_format(staging, sizeof(staging), "%s/prefixes/%s", root, name) ||
+        pc5_format(note, sizeof(note), "%s/" PC5_RESET_NOTE, staging) ||
+        pc5_format(game, sizeof(game), "%s/prefixes/%s", root, id))
+        return -1;
+    if (!pc5_exists(note)) return pc5_format(out, size, "%s", staging) ? -1 : 1;
+    /* The game's Windows still where it was: the old one, what is left of the moves done now. */
+    if (pc5_is_dir(game) && reset_move(game, staging, error, sizeof(error))) return -1;
+    if (reset_swap(root, id, out, size, error, sizeof(error))) {
+        out[0] = 0;
+        return -1;
+    }
+    if (pc5_exists(out)) return 1;
+    out[0] = 0;
+    return 0;
+}
+
+/* 1 when the old Windows prefixes/<name> (".reset-old-<id>") of a reset is left to delete: the
+ * new one is in its place (no ".resetting-<id>" is). The new one's note goes too. */
+static int reset_old_left(const char *prefixes, const char *name)
+{
+    char path[PC5_PATH];
+
+    if (strncmp(name, ".reset-old-", 11) || !name[11] ||
+        pc5_format(path, sizeof(path), "%s/.resetting-%s", prefixes, name + 11) || pc5_exists(path))
+        return 0;
+    if (!pc5_format(path, sizeof(path), "%s/%s/" PC5_RESET_NOTE, prefixes, name + 11)) unlink(path);
+    return 1;
+}
+
+/* 1 while a reset of the game's Windows (its prefix) is under way, past its note: the game is
+ * in two places until it is finished (pc5_recover_step). */
+static int reset_pending(const char *root, const char *prefix)
+{
+    char note[PC5_PATH];
+    return !pc5_format(note, sizeof(note), "%s/prefixes/.resetting-%s/" PC5_RESET_NOTE, root, prefix) && pc5_exists(note);
+}
+
 /* PC5's INSTALL folder (pc5_install_take_from), when it has one. */
 static char take_dir[PC5_PATH];
 
@@ -2039,10 +2340,19 @@ int pc5_recover_step(const char *root, Pc5Remove *remove, int budget_ms)
     while (!leftover[0] && (entry = readdir(dir)))
         if (!strncmp(entry->d_name, ".updating-", 10) && entry->d_name[10] && update_recover(root, entry->d_name) > 0)
             pc5_join(leftover, sizeof(leftover), path, entry->d_name);
+    /* A reset of a game's Windows the console stopped: its new Windows deleted when it wasn't
+     * whole (the game wasn't changed yet), else the reset finished and the old one deleted. */
+    if (!leftover[0]) {
+        rewinddir(dir);
+        while (!leftover[0] && (entry = readdir(dir)))
+            if (!strncmp(entry->d_name, ".resetting-", 11) && entry->d_name[11])
+                reset_recover(root, entry->d_name, leftover, sizeof(leftover));
+    }
     if (!leftover[0]) {
         rewinddir(dir);
         while ((entry = readdir(dir))) {
-            if (!strncmp(entry->d_name, ".installing-", 12) || !strncmp(entry->d_name, ".removing-", 10)) {
+            if (!strncmp(entry->d_name, ".installing-", 12) || !strncmp(entry->d_name, ".removing-", 10) ||
+                reset_old_left(path, entry->d_name)) {
                 pc5_join(leftover, sizeof(leftover), path, entry->d_name);
                 break;
             }
@@ -2455,7 +2765,8 @@ static int prefix_entry(Pc5Install *install, const char *line)
     }
     close(in);
     /* Kept saves are deleted once the game is in place: their copy must be on the disk first. */
-    if (ok && install->kept[0] && fsync(out)) ok = 0;
+    /* So is a reset's old Windows, once the new one is in its place. */
+    if (ok && (install->kept[0] || install->reset) && fsync(out)) ok = 0;
     if (close(out)) ok = 0;
     install->files_done++;
     return ok ? 0 : fail(install, N_("PC5 can't copy %s: %s."), line, errno == ENOSPC ? "the console is full" : strerror(errno));
@@ -3058,6 +3369,86 @@ int pc5_update_begin(Pc5Install *install, const char *root, const char *id, cons
     return 0;
 }
 
+/* ---- resetting a game's Windows ------------------------------------------------------------- */
+
+uint64_t pc5_reset_needs(void)
+{
+    return TEMPLATE_ROOM;
+}
+
+int pc5_reset_begin(Pc5Install *install, const char *root, const char *template_prefix, const Pc5Game *game,
+                    const Pc5Library *library)
+{
+    static const char *const unfinished[] = { "%s/prefixes/.updating-%s", "%s/prefixes/.resetting-%s",
+                                              "%s/prefixes/.reset-old-%s" };
+    char path[PC5_PATH];
+    uint64_t free_bytes = 0;
+
+    memset(install, 0, sizeof(*install));
+    install->in_fd = install->out_fd = -1;
+    install->phase = PC5_INSTALL_FAILED;
+    install->reset = 1;
+    pc5_copy(install->root, sizeof(install->root), root);
+    pc5_copy(install->template_prefix, sizeof(install->template_prefix), template_prefix);
+    pc5_copy(install->id, sizeof(install->id), game->prefix);
+    /* A game of PC5's in a Windows of its own: one another game shares would be reset with it. */
+    if (!pc5_remove_can_keep(game, library) || pc5_info_read(root, game->prefix, &install->info))
+        return fail(install, N_("PC5 didn't install this game in a Windows of its own, so its Windows can't be reset."));
+    if (pc5_format(path, sizeof(path), "%s/prefixes/%s", root, game->prefix) || !pc5_is_dir(path))
+        return fail(install, N_("The game's folder is missing: uninstall it and install it again."));
+    for (size_t i = 0; i < sizeof(unfinished) / sizeof(unfinished[0]); i++)
+        if (pc5_format(path, sizeof(path), unfinished[i], root, game->prefix) || pc5_exists(path))
+            return fail(install, N_("An update or a reset of this game isn't finished: close PC5 and open it again to finish it."));
+    if (pc5_format(path, sizeof(path), "%s/prefixes", root)) return fail(install, N_("A path is too long."));
+    if (pc5_free_bytes(path, &free_bytes) == 0 && free_bytes < pc5_reset_needs()) {
+        char need[32], have[32];
+        pc5_size_text(pc5_reset_needs(), need, sizeof(need));
+        pc5_size_text(free_bytes, have, sizeof(have));
+        return fail(install, N_("Not enough space: a new Windows needs %s and the console has %s free."), need, have);
+    }
+    if (pc5_format(install->staging, sizeof(install->staging), "%s/prefixes/.resetting-%s", root, game->prefix) ||
+        mkdir(install->staging, 0777))
+        return fail(install, N_("PC5 can't start resetting its Windows: %s."), strerror(errno));
+    if (template_paths(install)) {
+        rmdir(install->staging);
+        return -1;
+    }
+    if (!(install->chunk = pc5_alloc(CHUNK))) {
+        rmdir(install->staging);
+        return fail(install, N_("Out of memory."));
+    }
+    /* Step 1's progress: the template's bytes and files (template_paths). */
+    install->phase = PC5_INSTALL_PREFIX;
+    return 0;
+}
+
+/* A reset's last step, its new Windows whole: its note written, what is the game's and the
+ * player's moved into it (reset_move), and it put in the old one's place (reset_swap); the old
+ * one is deleted after (tidying). moving is set once the note is there: from then on it is
+ * finished, now or at the next start. */
+static int reset_finish(Pc5Install *install)
+{
+    char path[PC5_PATH], game[PC5_PATH], old[PC5_PATH], note[PC5_ID + 2];
+
+    snprintf(note, sizeof(note), "%s\n", install->id);
+    if (pc5_format(path, sizeof(path), "%s/" PC5_RESET_NOTE, install->staging) || pc5_write_file(path, note, strlen(note)))
+        return fail(install, N_("PC5 can't write its notes: %s."), strerror(errno));
+    install->moving = 1;
+    if (pc5_format(game, sizeof(game), "%s/prefixes/%s", install->root, install->id))
+        return fail(install, N_("A path is too long."));
+    if (reset_move(game, install->staging, install->error, sizeof(install->error)) ||
+        reset_swap(install->root, install->id, old, sizeof(old), install->error, sizeof(install->error)))
+        return -1;
+    pc5_copy(install->staging, sizeof(install->staging), game);   /* the game's Windows now */
+    /* The old Windows, all that is left of it the template's, goes. */
+    if (!install->cleanup) install->cleanup = pc5_alloc(sizeof(Pc5Remove));
+    if (install->cleanup) {
+        memset(install->cleanup, 0, sizeof(*install->cleanup));
+        if (!pc5_tree_delete_begin(install->cleanup, old)) install->tidying = 1;
+    }
+    return 0;
+}
+
 /* ---- kept saves, installed ------------------------------------------------------------------- */
 
 /* What of the kept saves makes the game's Windows: all but the game's folders and PC5's
@@ -3128,6 +3519,12 @@ Pc5InstallPhase pc5_install_step(Pc5Install *install, int budget_ms)
                 install->at = 0;
                 install->phase = PC5_INSTALL_FINISH;
                 break;
+            }
+            if (install->at >= install->template_list.len && install->reset) {
+                /* A reset: no game to copy, what it has is moved in as it finishes. */
+                install->at = 0;
+                install->phase = PC5_INSTALL_FINISH;
+                return install->phase;   /* shown before the moves */
             }
             if (install->at >= install->template_list.len) {
                 install->at = 0;
@@ -3251,6 +3648,17 @@ Pc5InstallPhase pc5_install_step(Pc5Install *install, int budget_ms)
                 } else if (placed) {
                     install->phase = install->tidying ? PC5_INSTALL_CLEANUP : PC5_INSTALL_DONE;
                 }
+                break;
+            }
+            if (install->reset) {
+                if (reset_finish(install)) {
+                    /* Before its note the new Windows is deleted, the game as it was; after it,
+                     * the reset is finished at the next start. */
+                    if (!install->moving) start_cleanup(install, 0);
+                    else install->phase = PC5_INSTALL_FAILED;
+                    break;
+                }
+                install->phase = install->tidying ? PC5_INSTALL_CLEANUP : PC5_INSTALL_DONE;
                 break;
             }
             if (finish(install)) {
