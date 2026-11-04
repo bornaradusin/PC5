@@ -16,6 +16,14 @@ out=$B/tests
 rm -rf "$out" && mkdir -p "$out/work"
 cd "$here"
 
+# sce_sys/param.json's contentVersion is PC5's version (2.2.6 as 02.002.006): the console and the
+# store see an update by it, and 2.2.5 was published with 2.2.4's.
+version=$(sed -n 's/^#define PC5_VERSION "\(.*\)"/\1/p' title/pc5.h)
+content=$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["contentVersion"])' sce_sys/param.json)
+IFS=. read -r major minor patch <<<"$version"
+[[ $content == "$(printf '%02d.%03d.%03d' "$major" "$minor" "$patch")" ]] ||
+    { echo "sce_sys/param.json's contentVersion $content isn't PC5 $version's" >&2; exit 1; }
+
 # What the tests read: Windows programs (MinGW), made-up covers, the font atlas.
 python3 tests/make-test-programs.py "$out/programs" >/dev/null
 python3 tests/make-sample-covers.py "$out/covers" >/dev/null
