@@ -119,6 +119,14 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
             const char *name_end = found - strlen(" is a helper: not handed off"), *name = name_end;
             while (name > line && name[-1] != '\\' && name[-1] != '/' && name[-1] != ' ') name--;
             if (name_end > name) line_text(name, name_end, installer, sizeof(installer));
+            /* Only an installer: a crash reporter a game starts beside it (Unity's
+             * UnityCrashHandler64.exe) is handed over to nothing either, and stops nothing. */
+            static const char *const setups[] = { "redist", "setup", "install", "unins", "dxweb", "dotnet", "prereq",
+                                                  "physx", "oalinst" };
+            int is_setup = 0;
+            for (size_t i = 0; i < sizeof(setups) / sizeof(setups[0]) && installer[0] && !is_setup; i++)
+                is_setup = contains_ci_range(installer, installer + strlen(installer), setups[i]);
+            if (!is_setup) installer[0] = 0;
         }
         if (!copy_file[0] && after(line, end, "trace:loaddll:")) {
             static const char *const others[] = { "OnlineFix64.dll", "OnlineFix.dll", "steam_api64_o.dll", "steam_api_o.dll" };

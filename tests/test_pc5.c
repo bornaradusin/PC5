@@ -4578,6 +4578,10 @@ static void test_logs(void)
                                "context\nREC seq=2 t=1.1 PW_WINE64 session_end reason=wine-exit\n") == PC5_LOG_NO_PICTURE &&
                   issue.cause == PC5_CAUSE_NO_OPENGL, "no OpenGL context");
         CHECK(CLASSIFY("blur", played) == PC5_LOG_FINE && issue.cause == PC5_CAUSE_NONE, "a game played: no cause");
+        CHECK(CLASSIFY("cinderia", "REC seq=1 t=1.0 WINESERVER wine-ps5: C:\\Games\\Cinderia\\UnityCrashHandler64.exe is a helper: "
+                                   "not handed off\nREC seq=2 t=2.0 PW_WINE64 alive tick=60 sink_calls=1 frames_put=2 shown=1\n"
+                                   "REC seq=3 t=3.0 PW_WINE64 session_end reason=wine-exit\n") == PC5_LOG_FINE &&
+                  issue.cause == PC5_CAUSE_NONE, "Unity's crash handler is no installer: %d", (int)issue.cause);
         CHECK(CLASSIFY("launcher", "REC seq=1 t=1.0 WINESERVER wine-ps5: C:\\x\\setup.exe is a helper: not handed off\n") ==
                   PC5_LOG_FINE && issue.cause == PC5_CAUSE_NONE, "PC5's own session has none");
     }
