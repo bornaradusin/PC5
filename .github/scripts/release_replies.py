@@ -39,7 +39,7 @@ REPLIES = Path(__file__).resolve().parent.parent / "replies"
 REPLY_MARK = "<!-- pc5-release-reply {} -->"
 RETEST_MARK = "<!-- pc5-retest {} -->"
 DRY_RUN = os.environ.get("RELEASE_REPLIES_DRY_RUN") == "1"
-LEFT_ALONE = {listing.CHEAT_LABEL, listing.STORE, "needs steam"}
+LEFT_ALONE = {listing.CHEAT_LABEL, listing.STORE, "needs steam", listing.SUMMARY_LABEL}
 
 
 def waiting(version: str) -> list:
@@ -114,6 +114,9 @@ def main() -> int:
         done.append(path)
         if issue.get("state") != "open" or "pull_request" in issue:
             print(f"release replies: #{number} is closed: its reply isn't posted")
+            continue
+        if any((label.get("name") or "").casefold() == listing.SUMMARY_LABEL for label in issue.get("labels", [])):
+            print(f"release replies: #{number} is the weekly summary: no reply there")
             continue
         print(f"release replies: #{number} {issue['title'][:80]!r}: replied{' (dry run)' if DRY_RUN else ''}")
         replied.append(issue)

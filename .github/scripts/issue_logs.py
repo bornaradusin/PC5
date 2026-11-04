@@ -157,7 +157,9 @@ def event_text() -> tuple:
     """(issue, where: "body" or the comment's id, its text, its author) for the event, or None."""
     event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())
     issue = event.get("issue") or {}
-    if not issue or "pull_request" in issue:
+    # The weekly summary (weekly_summary.py) is about no game: nothing to look at there.
+    if not issue or "pull_request" in issue or any((label.get("name") or "").casefold() == "summary"
+                                                   for label in issue.get("labels", [])):
         return None
     if os.environ.get("GITHUB_EVENT_NAME") == "issue_comment":
         comment = event.get("comment") or {}
