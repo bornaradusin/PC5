@@ -31,6 +31,19 @@ jobs:
   list:
     runs-on: ubuntu-latest
     steps:
+      # A report made on a test version ("test version" at the start of its title) gets the
+      # "test version" label, so those reports stay together. Nothing is posted on the issue.
+      - name: Label a test version's report
+        if: github.event_name == 'issues' && (github.event.action == 'opened' || github.event.action == 'edited')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TITLE: ${{ github.event.issue.title }}
+          NUMBER: ${{ github.event.issue.number }}
+        run: |
+          shopt -s nocasematch
+          if [[ $TITLE =~ ^[[:space:]]*\[?test[[:space:]-]*version ]]; then
+            gh issue edit "$NUMBER" -R "$GITHUB_REPOSITORY" --add-label "test version"
+          fi
       - uses: actions/checkout@v5
         with:
           sparse-checkout: .github/scripts
