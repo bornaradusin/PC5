@@ -481,8 +481,21 @@ jobs:
             { cat "$notes"; printf '\n<!-- pc5-update-from: %s -->\n' "$(cat release/update-from.txt)"; } > "$RUNNER_TEMP/notes-update.md"
             notes=$RUNNER_TEMP/notes-update.md
           fi
-          gh release create "$tag" --draft --target "$GITHUB_SHA" --title "PC5 $VERSION" --notes-file "$notes" \
-            release/PPSA11018.zip $(ls release/PPSA11018-update.zip 2>/dev/null) release/PPSA11018-sources.tar.xz \
+          # A test version (PC5_VERSION with a suffix: 2.3.1-programs-test) is a pre-release, and
+          # its app zip is PPSA11018-test.zip beside PPSA11018-update.zip: the homebrew catalog
+          # moves its listing to the newest release, pre-releases included, when the release
+          # has a file named as the listed one (PPSA11018.zip) or only one zip. Two zips with
+          # neither name, it leaves the listing as it is.
+          app=release/PPSA11018.zip pre=
+          case $VERSION in
+            *[!0-9.]*)
+              [ -f release/PPSA11018-update.zip ] ||
+                { echo "::error::A test version needs its update zip, or the catalog would take its only zip"; exit 1; }
+              mv release/PPSA11018.zip release/PPSA11018-test.zip
+              app=release/PPSA11018-test.zip pre=--prerelease ;;
+          esac
+          gh release create "$tag" --draft $pre --target "$GITHUB_SHA" --title "PC5 $VERSION" --notes-file "$notes" \
+            "$app" $(ls release/PPSA11018-update.zip 2>/dev/null) release/PPSA11018-sources.tar.xz \
             release/wine-mono-*-src.tar.xz
           echo "Draft release $tag is ready: check it and publish it from the Releases page." >> "$GITHUB_STEP_SUMMARY"
 
@@ -490,8 +503,10 @@ jobs:
         if: inputs.draft_release
         # PPSA11018.json (the homebrew catalog's record, with PPSA11018.zip's SHA-256) and
         # catalog-pr.md (its pull request's text), attached to the draft for the catalog's
-        # update once the release is published (tools/make-catalog-files.py).
+        # update once the release is published (tools/make-catalog-files.py). A test version
+        # has none: it doesn't go to the catalog.
         run: |
+          case $VERSION in *[!0-9.]*) echo "A test version: no catalog files"; exit 0 ;; esac
           python3 tools/make-catalog-files.py release/PPSA11018.zip "$RUNNER_TEMP/catalog"
           gh release upload "v$VERSION" "$RUNNER_TEMP/catalog/PPSA11018.json" "$RUNNER_TEMP/catalog/catalog-pr.md"
 

@@ -21,7 +21,20 @@ int pc5_version_compare(const char *a, const char *b)
         a = *end_a == '.' ? end_a + 1 : end_a;
         b = *end_b == '.' ? end_b + 1 : end_b;
     }
-    return 0;
+    /* The same numbers: a test version ("2.3.1-programs-test2") comes before its release
+     * (2.3.1), and test versions of one number go by their last number ("-test" is 1). */
+    while (*a == '-' || *a == '.') a++;
+    while (*b == '-' || *b == '.') b++;
+    if (!*a || !*b) return !*a && !*b ? 0 : !*a ? 1 : -1;
+    {
+        size_t la = strlen(a), lb = strlen(b), da = la, db = lb;
+        while (da && a[da - 1] >= '0' && a[da - 1] <= '9') da--;
+        while (db && b[db - 1] >= '0' && b[db - 1] <= '9') db--;
+        long x = da < la ? strtol(a + da, NULL, 10) : 1, y = db < lb ? strtol(b + db, NULL, 10) : 1;
+        int name = strncmp(a, b, da > db ? da : db);
+        if (da != db || name) return 0;   /* tests of different changes: neither is newer */
+        return x == y ? 0 : x < y ? -1 : 1;
+    }
 }
 
 static int test_track;
@@ -101,7 +114,9 @@ void pc5_update_check(const Pc5Http *http, const char *current, Pc5Update *updat
         char *to_url, *to_sha256;
         uint64_t *to_size;
         if (pc5_json_text(&json, pc5_json_get(&json, asset, "name"), name, sizeof(name))) continue;
-        if (!strcmp(name, PC5_TITLE_ID ".zip") && !update->asset_url[0]) {
+        /* A test version's app zip is PPSA11018-test.zip: the homebrew catalog moves its listing
+         * to the newest release, test versions included, by the app zip's name. */
+        if ((!strcmp(name, PC5_TITLE_ID ".zip") || !strcmp(name, PC5_TITLE_ID "-test.zip")) && !update->asset_url[0]) {
             to_url = update->asset_url;
             to_size = &update->asset_size;
             to_sha256 = update->asset_sha256;

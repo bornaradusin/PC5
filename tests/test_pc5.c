@@ -3228,6 +3228,12 @@ static void test_update(void)
     CHECK(pc5_version_compare("1.0.0", "1.0.0") == 0 && pc5_version_compare("v1.0.1", "1.0.0") > 0 &&
           pc5_version_compare("1.10", "1.9.4") > 0 && pc5_version_compare("1.0", "1.0.0") == 0 &&
           pc5_version_compare("0.9.9", "v1.0.0") < 0, "versions");
+    CHECK(pc5_version_compare("2.3.1-programs-test", "2.3.0") > 0 &&
+          pc5_version_compare("v2.3.1", "2.3.1-programs-test") > 0 &&
+          pc5_version_compare("2.3.1-programs-test2", "2.3.1-programs-test") > 0 &&
+          pc5_version_compare("2.3.1-programs-test", "2.3.1-programs-test1") == 0 &&
+          pc5_version_compare("2.3.1-programs-test", "2.3.1-programs-test") == 0 &&
+          pc5_version_compare("2.3.2", "2.3.1-programs-test3") > 0, "test versions come before their release");
     pc5_update_check(&http, "1.0.0", &update);
     CHECK(update.state == PC5_UPDATE_NONE && !strcmp(net.last, PC5_RELEASES_API), "no release yet: %d", (int)update.state);
     net.release = "{\"tag_name\":\"v1.1.0\",\"name\":\"PC5 1.1.0\",\"draft\":false,"
