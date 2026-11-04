@@ -892,6 +892,16 @@ static void test_sources(void)
     CHECK(!pc5_folder_inspect(dir, "Orbital Nine", &folder), "inspect engine game");
     CHECK(folder.exe_count == 2 && strstr(folder.exes[0].path, "-Shipping"), "the shipping program first: %s",
           folder.exe_count ? folder.exes[0].path : "");
+    CHECK(!folder.not_store[0], "no other Steam fix's files: %s", folder.not_store);
+    {
+        char fix[PC5_PATH];
+        path(fix, sizeof(fix), "%s/Games/Orbital Nine/Binaries/Win64/onlinefix64.dll", usb);
+        write_text(fix, "MZ");
+        CHECK(!pc5_folder_inspect(dir, "Orbital Nine", &folder) && !strcmp(folder.not_store, "OnlineFix64.dll"),
+              "another Steam fix's file, said at Install: %s", folder.not_store);
+        unlink(fix);
+        CHECK(!pc5_folder_inspect(dir, "Orbital Nine", &folder), "inspect engine game again");
+    }
     CHECK(pc5_folder_api(&folder, 0) == PC5_API_D3D12, "the engine library's d3d12");
     path(dir, sizeof(dir), "%s/Music", usb);
     CHECK(!pc5_folder_inspect(dir, "Music", &folder) && folder.problem[0], "no program: %s", folder.problem);
