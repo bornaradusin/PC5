@@ -10,7 +10,11 @@
   or "keep open", or an idea ("enhancement"), is left open; so is one the maintainer hasn't
   answered yet.
 - A comment by someone other than the maintainer on an issue closed that way opens it again,
-  without the label: the game is being looked at again.
+  without the label: the game is being looked at again. So does one on an issue closed as not
+  planned that a release asked to try again (release_replies.py's <!-- pc5-retest --> comment).
+- The reply release_replies.py posts for the maintainer when a release with its fix is published
+  (a bot's comment starting <!-- pc5-release-reply) counts as the maintainer's: the two days
+  start from it.
 
 The list is made again afterwards (an Action's own changes start no other workflow, but it
 can ask for one). Run with GITHUB_TOKEN, GITHUB_REPOSITORY, GITHUB_EVENT_NAME and
@@ -32,6 +36,8 @@ LABEL = listing.NO_REPLY
 KEEP = {"in progress", "planned", "keep open", "enhancement"}
 WAIT = timedelta(days=2)
 DRY_RUN = os.environ.get("NO_REPLY_DRY_RUN") == "1"
+RELEASE_REPLY = "<!-- pc5-release-reply"   # release_replies.py's: the maintainer's words, posted for them
+RETEST = "<!-- pc5-retest"                 # release_replies.py's: a closed issue asked to try again
 
 
 def api(method: str, path: str, body=None):
@@ -94,8 +100,9 @@ def sweep(repo: str, owner: str, now: datetime) -> int:
         labels = {label["name"].casefold() for label in issue["labels"]}
         if labels & KEEP:
             continue
-        comments = [c for c in pages(f"repos/{repo}/issues/{issue['number']}/comments") if not is_bot(c.get("user"))]
-        if not comments or comments[-1]["user"]["login"].casefold() != owner.casefold():
+        comments = [c for c in pages(f"repos/{repo}/issues/{issue['number']}/comments") if not is_bot(c.get("user"))
+                    or (c.get("body") or "").startswith(RELEASE_REPLY)]
+        if not comments or speaker(comments[-1], owner).casefold() != owner.casefold():
             continue   # the maintainer hasn't answered, or the reporter has: not waiting on them
         last = datetime.fromisoformat(comments[-1]["created_at"].replace("Z", "+00:00"))
         if now - last < WAIT:
@@ -121,18 +128,31 @@ def sweep(repo: str, owner: str, now: datetime) -> int:
     return closed
 
 
+def speaker(comment: dict, owner: str) -> str:
+    """Who a comment is from, for waiting on the reporter: a release's reply is the maintainer's."""
+    if is_bot(comment.get("user")) and (comment.get("body") or "").startswith(RELEASE_REPLY):
+        return owner
+    return (comment.get("user") or {}).get("login", "")
+
+
 def reopen(repo: str, owner: str, event: dict) -> int:
-    """A reply on an issue closed for no reply: open again. 1 when it was."""
+    """A reply on an issue closed for no reply, or on one closed as not planned that a release
+    asked to try again: open again. 1 when it was."""
     issue, comment = event.get("issue") or {}, event.get("comment") or {}
     user = comment.get("user") or {}
     labels = {label["name"].casefold() for label in issue.get("labels", [])}
-    if ("pull_request" in issue or issue.get("state") != "closed" or LABEL not in labels or is_bot(user) or
+    if ("pull_request" in issue or issue.get("state") != "closed" or is_bot(user) or
             user.get("login", "").casefold() == owner.casefold()):
+        return 0
+    if LABEL not in labels and not (issue.get("state_reason") == "not_planned" and any(
+            is_bot(c.get("user")) and (c.get("body") or "").startswith(RETEST)
+            for c in pages(f"repos/{repo}/issues/{issue['number']}/comments"))):
         return 0
     print(f"no reply: #{issue['number']} answered by {user.get('login')}: opened again{' (dry run)' if DRY_RUN else ''}")
     if DRY_RUN:
         return 1
-    api("DELETE", f"repos/{repo}/issues/{issue['number']}/labels/{urllib.parse.quote(LABEL)}")
+    if LABEL in labels:
+        api("DELETE", f"repos/{repo}/issues/{issue['number']}/labels/{urllib.parse.quote(LABEL)}")
     api("PATCH", f"repos/{repo}/issues/{issue['number']}", {"state": "open"})
     return 1
 

@@ -1,0 +1,44 @@
+# When a release is published, the replies waiting for it in .github/replies/ are posted on
+# their issues, which get the "fix ready" label, and the closed issues of the same games are
+# asked to try again (.github/scripts/release_replies.py). The replies posted are deleted from
+# main.
+name: Release replies
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "The release's version (2.3.0)"
+        type: string
+        required: true
+      dry_run:
+        description: "Only say what it would post"
+        type: boolean
+        default: true
+
+permissions:
+  issues: write     # the replies, the label and the requests to try again
+  contents: write   # the replies posted, deleted from main
+  actions: write    # the compatibility list made again
+
+concurrency:
+  group: release-replies
+  cancel-in-progress: false
+
+jobs:
+  replies:
+    # A pre-release (a test build) posts nothing: its fixes aren't out for everyone yet.
+    if: ${{ github.event_name != 'release' || !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main   # the files are deleted on main's newest commit, not the release's
+      - name: Post them
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ github.event.release.tag_name || inputs.version }}
+          RELEASE_REPLIES_DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: python3 .github/scripts/release_replies.py

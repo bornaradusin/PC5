@@ -1,0 +1,53 @@
+# The logs attached to an issue: each zip unpacked and kept as the run's artifact for 90 days,
+# where the maintainer's tools fetch it, and a first look at it as a comment, with labels
+# (.github/scripts/issue_logs.py).
+name: Issue logs
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only print what it would say (needs an issue event to read: not useful by hand)"
+        type: boolean
+        default: true
+
+permissions:
+  issues: write    # the comment and the labels
+  contents: read
+
+concurrency:
+  group: issue-logs-${{ github.event.issue.number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  logs:
+    # A pull request's comments are left out, and so are bots' (this one's own among them).
+    if: ${{ !github.event.issue.pull_request && !endsWith(github.actor, '[bot]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: .github/scripts
+      - name: The zips
+        id: fetch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 .github/scripts/issue_logs.py fetch "$RUNNER_TEMP/logs"
+      - name: Kept
+        if: steps.fetch.outputs.artifacts != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.fetch.outputs.artifacts }}
+          path: ${{ runner.temp }}/logs/${{ steps.fetch.outputs.artifacts }}
+          retention-days: 90
+          if-no-files-found: ignore
+      - name: A first look
+        if: steps.fetch.outputs.artifacts != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_LOGS_DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: python3 .github/scripts/issue_logs.py check "$RUNNER_TEMP/logs"

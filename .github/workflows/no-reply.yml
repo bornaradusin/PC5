@@ -26,8 +26,11 @@ concurrency:
 
 jobs:
   issues:
-    # A comment matters only on an issue closed for no reply.
-    if: github.event_name != 'issue_comment' || (github.event.issue.state == 'closed' && contains(github.event.issue.labels.*.name, 'needs testing'))
+    # A comment matters only on an issue closed for no reply, or closed as not planned (one a
+    # release asked to try again: no_reply.py looks for that comment).
+    if: >-
+      github.event_name != 'issue_comment' || (github.event.issue.state == 'closed' &&
+      (contains(github.event.issue.labels.*.name, 'needs testing') || github.event.issue.state_reason == 'not_planned'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5

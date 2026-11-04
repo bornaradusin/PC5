@@ -40,6 +40,23 @@ body:
     validations:
       required: true
   - type: dropdown
+    id: source
+    attributes:
+      label: Where is your copy from?
+      description: The store or place the game's files came from.
+      options:
+        - Steam
+        - GOG
+        - Epic Games Store
+        - EA app
+        - Ubisoft Connect
+        - Xbox / Microsoft Store
+        - itch.io
+        - A disc or another store
+        - Somewhere else
+    validations:
+      required: false
+  - type: dropdown
     id: problem
     attributes:
       label: What goes wrong

@@ -486,6 +486,15 @@ jobs:
             release/wine-mono-*-src.tar.xz
           echo "Draft release $tag is ready: check it and publish it from the Releases page." >> "$GITHUB_STEP_SUMMARY"
 
+      - name: The catalog's files
+        if: inputs.draft_release
+        # PPSA11018.json (the homebrew catalog's record, with PPSA11018.zip's SHA-256) and
+        # catalog-pr.md (its pull request's text), attached to the draft for the catalog's
+        # update once the release is published (tools/make-catalog-files.py).
+        run: |
+          python3 tools/make-catalog-files.py release/PPSA11018.zip "$RUNNER_TEMP/catalog"
+          gh release upload "v$VERSION" "$RUNNER_TEMP/catalog/PPSA11018.json" "$RUNNER_TEMP/catalog/catalog-pr.md"
+
       - name: Only the newest work kept
         # Each Wine piece's last build is what the next one starts from: older ones are left
         # to nothing, so they don't push the pieces out of the 10 GB GitHub keeps.
