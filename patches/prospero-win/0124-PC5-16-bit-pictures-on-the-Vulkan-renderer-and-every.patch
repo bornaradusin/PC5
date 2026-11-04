@@ -1,0 +1,261 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Wed, 4 Nov 2026 12:00:00 +0000
+Subject: [PATCH 124/124] PC5: 16-bit pictures on the Vulkan renderer, and every
+ keyboard read (Wine patch 0904)
+
+- 0904: a 16-bit back buffer presents through an 8-bit Vulkan swapchain, so a DirectDraw game's 16-bit full-screen mode works with Alternative.
+- A USB keyboard is read at each of the system's indexes 0 to 3, the keys held on any of them together: a wireless mouse's receiver that is a keyboard too, plugged in first, took index 0, and the real keyboard was never read.
+---
+ PUBLICATION_ALLOWLIST.txt                     |  1 +
+ docs/WINE_PS5_BUILD.md                        |  1 +
+ native/pw_hid_ps5.c                           | 35 ++++++++++++++--
+ native/pw_hid_ps5.h                           |  6 ++-
+ tests/test_pw_hid_ps5.c                       | 42 ++++++++++++++++---
+ ...ts-through-an-8-bit-vulkan-swapchain.patch | 34 +++++++++++++++
+ 6 files changed, 109 insertions(+), 10 deletions(-)
+ create mode 100644 wine/patches/0904-wined3d-a-16-bit-back-buffer-presents-through-an-8-bit-vulkan-swapchain.patch
+
+diff --git a/PUBLICATION_ALLOWLIST.txt b/PUBLICATION_ALLOWLIST.txt
+index e659850..867b3e8 100644
+--- a/PUBLICATION_ALLOWLIST.txt
++++ b/PUBLICATION_ALLOWLIST.txt
+@@ -511,6 +511,7 @@ tests/test_pw_key_shared.c
+ wine/patches/0901-win32u-ps5-shared-key-state-fastpath.patch
+ wine/patches/0902-win32u-ps5-send-extended-keys-as-extended.patch
+ wine/patches/0903-ntdll-ps5-keep-the-fs-base-of-a-resumed-64-bit-thread.patch
++wine/patches/0904-wined3d-a-16-bit-back-buffer-presents-through-an-8-bit-vulkan-swapchain.patch
+ wine/patches/0906-xlive-games-for-windows-live-offline-so-the-games-made-for-it-start.patch
+ wine/patches/0907-d3d9-a-2d-texture-keeps-its-width-height-and-level-0-data-where-microsofts-does.patch
+ wine/patches/0908-ntdll-win32u-how-far-a-game-s-start-is-for-the-loading-screen.patch
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index b902a28..51152c8 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -132,6 +132,7 @@ before evaluating a candidate built from that cache.
+ | 0899 | `include`: list the PS5 sync headers (0810, 0820, 0885, 0887) in `include/Makefile.in`, which makedep needs to resolve them; configure failed without it |
+ | 0902 | `win32u`: the PS5 driver sends the arrows, Insert, Delete, Home, End, Page Up, Page Down, right Ctrl and Alt, the Windows and menu keys and keypad `/` with `KEYEVENTF_EXTENDEDKEY`; their scan codes are the keypad's without it, so DirectInput reported the keypad's 8 for the up arrow and a game's arrow-key bindings never fired |
+ | 0903 | `ntdll`: a signal frame keeps the FS base it was taken with when the thread resumes where it was; the host's is set only where the handler sends a context to Wine's 64-bit code (the exception dispatcher, a different 64-bit context). The native WoW64 CPU sets the guest FS just before it switches to 32-bit code, and a signal in that window used to send the thread into its 32-bit code with the host FS (GTA San Andreas' DXVK workers crashing at startup in `RtlEnterCriticalSection`) |
++| 0904 | `wined3d`: a 16-bit back buffer (`B5G6R5`, `B5G5R5A1`) presents through a `B8G8R8A8` Vulkan swapchain where the display offers no 16-bit format (the PS5's), the present's blit converting it (Vulkan requires every device to blit from both). A DirectDraw game's 16-bit full-screen mode had no swapchain on the Vulkan renderer ("Failed to find Vulkan swapchain format for WINED3DFMT_B5G6R5_UNORM"), and The Legend of Heroes: A Tear of Vermillion fell back to a 640x480 window in the middle of the screen |
+ | 0906 | `xlive`: Games for Windows - LIVE as a builtin, offline, with all 252 of xlive 3.5's ordinals (the numbers and names GFWL replacements publish; new code), so a game made for it starts instead of stopping at the loader ("Library xlive.dll ... not found", c0000135: Resident Evil 5's retail `RE5DX10.EXE`; GTA IV before the Complete Edition, Fallout 3, Batman: Arkham Asylum, Dark Souls: Prepare to Die Edition). User 0 is signed in locally as "Player" with a fixed offline XUID, so a game lets the profile save; its hooks succeed and leave the game its input; protected buffers are memory and protected data passes through unchanged; profile settings a game writes are kept under `HKCU\Software\Wine\xlive\<program>`; achievements are dropped, enumerations are empty and what needs Live fails with `ERROR_NOT_LOGGED_ON`; asynchronous calls complete at once. XSocket and XWSA are Winsock's (a VDP socket is UDP). A game's own `xlive.dll` (xliveless, XLiveLessNess) still loads first: the module prefers native |
+ | 0907 | `d3d9`: a 2D texture keeps its level 0 width at 0x20, its height at 0x24 and, while level 0 is locked from its top left corner, its data's address at 0x90 on i386, where Microsoft's d3d9 has them (`C_ASSERT`s check them). Resident Evil 3's "Seamless HD" mod (`bio3hd.asi`, with Classic REbirth) reads them straight from the object, got a list pointer and memory past it, skipped every HD picture and showed the menu small in a corner (WineHQ bugs 53775 and 57395). DXVK's d3d9 (PC5's Auto) keeps its own layout: the mod needs Wine's |
+ | 0908 | `ntdll`, `win32u`: `__wine_virtual_stats` also gives how many images had been mapped when the first program (not a DLL) was, the game's, and how many top-level windows of a window's size the PS5 display driver has shown (`__wine_ps5_note_window`). PC5's loading screen fills its bar through Windows starting, the game's program and DLLs loading and its window showing, where it filled on a timer |
+diff --git a/native/pw_hid_ps5.c b/native/pw_hid_ps5.c
+index 68a5972..e479c46 100644
+--- a/native/pw_hid_ps5.c
++++ b/native/pw_hid_ps5.c
+@@ -81,6 +81,15 @@ static void open_keyboard(PwHidPs5 *hid)
+         handle = open(hid->user_id, 0, 0, param);
+     }
+     if (handle >= 0) hid->keyboard = handle;
++    /* The keyboards after the first: refused where there is none, quietly. */
++    for (int i = 0; handle >= 0 && i < PW_HID_PS5_KEYBOARDS - 1; i++) {
++        if (hid->more_keyboards[i] >= 0) continue;
++        int more = open(hid->user_id, 0, i + 1, param);
++        if (more < 0 || more == handle) continue;
++        hid->more_keyboards[i] = more;
++        snprintf(line, sizeof(line), "keyboard index=%d open=%#x", i + 1, (unsigned)more);
++        logf_(hid, line);
++    }
+     if (handle >= 0 || !hid->keyboard_failed) {
+         snprintf(line, sizeof(line), "keyboard module=%#x init=%#x open=%#x user=%d", (unsigned)module,
+                  (unsigned)init_rc, (unsigned)handle, (int)hid->user_id);
+@@ -128,6 +137,7 @@ int pw_hid_ps5_open(PwHidPs5 *hid, const PwHidPs5Ops *ops, int32_t user_id)
+     hid->ops = *ops;
+     hid->user_id = user_id;
+     hid->keyboard = hid->mouse = -1;
++    for (int i = 0; i < PW_HID_PS5_KEYBOARDS - 1; i++) hid->more_keyboards[i] = -1;
+     return pw_hid_ps5_retry(hid);
+ }
+ 
+@@ -144,15 +154,32 @@ void pw_hid_ps5_poll(PwHidPs5 *hid, PwHidPs5Poll *poll)
+     memset(poll, 0, sizeof(*poll));
+     if (!hid) return;
+     if (hid->keyboard >= 0) {
+-        uint8_t state[PW_HID_PS5_KEYBOARD_STATE] = { 0 };
+         PwHidKeyboard now;
++        int read = 0;
++
++        memset(&now, 0, sizeof(now));
++        for (int k = 0; k < PW_HID_PS5_KEYBOARDS; k++) {
++            int32_t handle = k ? hid->more_keyboards[k - 1] : hid->keyboard;
++            uint8_t state[PW_HID_PS5_KEYBOARD_STATE] = { 0 };
++            PwHidKeyboard one;
+ 
+-        if (hid->keyboard_read_state(hid->keyboard, state) == 0) {
+-            pw_hid_ps5_keyboard_state(state, &now);
+-            if (hid->keyboard_dumps < PW_HID_PS5_DUMPS && (now.keys[0] || now.modifiers)) {
++            if (handle < 0 || hid->keyboard_read_state(handle, state) != 0) continue;
++            read++;
++            pw_hid_ps5_keyboard_state(state, &one);
++            if (hid->keyboard_dumps < PW_HID_PS5_DUMPS && (one.keys[0] || one.modifiers)) {
+                 dump(hid, "keyboard state", state, sizeof(state));
+                 hid->keyboard_dumps++;
+             }
++            /* Held on any keyboard: each key once, as many as a report carries. */
++            now.modifiers |= one.modifiers;
++            for (int i = 0; i < PW_HID_KEYS; i++) {
++                int slot = 0;
++                if (!one.keys[i]) continue;
++                while (slot < PW_HID_KEYS && now.keys[slot] && now.keys[slot] != one.keys[i]) slot++;
++                if (slot < PW_HID_KEYS) now.keys[slot] = one.keys[i];
++            }
++        }
++        if (read) {
+             poll->count += pw_hid_keyboard_events(&hid->keys, &now, poll->events + poll->count,
+                                                   PW_HID_PS5_EVENTS - poll->count);
+             hid->keys = now;
+diff --git a/native/pw_hid_ps5.h b/native/pw_hid_ps5.h
+index 1c23e0e..9a5045e 100644
+--- a/native/pw_hid_ps5.h
++++ b/native/pw_hid_ps5.h
+@@ -26,6 +26,9 @@
+ enum {
+     PW_HID_PS5_MOUSE_RECORD = 40, PW_HID_PS5_MOUSE_RECORDS = 64,
+     PW_HID_PS5_KEYBOARD_STATE = 96, PW_HID_PS5_DUMPS = 3,
++    /* Keyboards read, by the system's index: a wireless mouse's receiver is often a keyboard
++     * too (for its extra buttons), and when it came first the real keyboard was index 1. */
++    PW_HID_PS5_KEYBOARDS = 4,
+     PW_HID_PS5_EVENTS = 2 * (PW_HID_KEYS + 8) + 3,
+ };
+ 
+@@ -39,6 +42,7 @@ typedef struct PwHidPs5 {
+     PwHidPs5Ops ops;
+     int32_t user_id;
+     int32_t keyboard, mouse;                                  /* handles; -1 when absent */
++    int32_t more_keyboards[PW_HID_PS5_KEYBOARDS - 1];         /* indexes 1 and on; -1 when absent */
+     int keyboard_failed, mouse_failed;                        /* the last open failed (logged) */
+     int (*keyboard_read_state)(int32_t handle, void *state);
+     int (*mouse_read)(int32_t handle, void *records, int32_t count);
+@@ -62,7 +66,7 @@ int pw_hid_ps5_open(PwHidPs5 *hid, const PwHidPs5Ops *ops, int32_t user_id);
+  * after the start; a repeated failure is not logged again. PW_OK when
+  * either is open. */
+ int pw_hid_ps5_retry(PwHidPs5 *hid);
+-/* Reads both devices once. */
++/* Reads every keyboard and the mouse once: the keys are those held on any keyboard. */
+ void pw_hid_ps5_poll(PwHidPs5 *hid, PwHidPs5Poll *poll);
+ 
+ /* The layouts, for tests: a keyboard state (0 when disconnected), and the
+diff --git a/tests/test_pw_hid_ps5.c b/tests/test_pw_hid_ps5.c
+index 56af2ff..3b41b02 100644
+--- a/tests/test_pw_hid_ps5.c
++++ b/tests/test_pw_hid_ps5.c
+@@ -12,7 +12,8 @@ static void put64(uint8_t *p, uint64_t v) { memcpy(p, &v, 8); }
+ static int keyboard_loads, mouse_loads, merged_refused, lines;
+ static int32_t opened_user, merged_flags[2];
+ static int merged_calls;
+-static uint8_t keyboard_state[PW_HID_PS5_KEYBOARD_STATE];
++static int second_keyboard;                       /* index 1 opens as handle 5 */
++static uint8_t keyboard_state[PW_HID_PS5_KEYBOARD_STATE], second_state[PW_HID_PS5_KEYBOARD_STATE];
+ static uint8_t mouse_records[4 * PW_HID_PS5_MOUSE_RECORD];
+ static int mouse_count;
+ 
+@@ -25,9 +26,10 @@ static int32_t fake_load(const char *path)
+ static int fake_init(void) { return 0; }
+ static int fake_keyboard_open(int32_t user, int32_t type, int32_t index, void *param)
+ {
+-    (void)type; (void)index; (void)param;
++    (void)type; (void)param;
+     opened_user = user;
+-    return 3;
++    if (index == 1 && second_keyboard) return 5;
++    return index ? -2 : 3;
+ }
+ static int fake_mouse_open(int32_t user, int32_t type, int32_t index, void *param)
+ {
+@@ -37,8 +39,8 @@ static int fake_mouse_open(int32_t user, int32_t type, int32_t index, void *para
+ }
+ static int fake_keyboard_read(int32_t handle, void *state)
+ {
+-    assert(handle == 3);
+-    memcpy(state, keyboard_state, sizeof(keyboard_state));
++    assert(handle == 3 || (handle == 5 && second_keyboard));
++    memcpy(state, handle == 5 ? second_state : keyboard_state, sizeof(keyboard_state));
+     return 0;
+ }
+ static int fake_mouse_read(int32_t handle, void *records, int32_t count)
+@@ -164,11 +166,41 @@ static void test_open_and_poll(void)
+     assert(poll.count == 0 && !poll.dx && !poll.dy);
+ }
+ 
++/* A wireless mouse's receiver that is a keyboard too came first: the real keyboard is index 1,
++ * and its keys are read with the first one's. */
++static void test_second_keyboard(void)
++{
++    static const uint16_t a[1] = { 0x04 }, b[2] = { 0x05, 0x04 };
++    PwHidPs5 hid;
++    PwHidPs5Poll poll;
++
++    keyboard_loads = 1;
++    mouse_loads = 0;
++    second_keyboard = 1;
++    lines = 0;
++    assert(pw_hid_ps5_open(&hid, &ops, 1000) == PW_OK && hid.keyboard == 3 && hid.more_keyboards[0] == 5 &&
++           hid.more_keyboards[1] < 0 && hid.more_keyboards[2] < 0);
++    keyboard(0, NULL, 0);                                 /* the receiver: nothing held */
++    memcpy(second_state, keyboard_state, sizeof(second_state));
++    put32(second_state + 20, 1);
++    memcpy(second_state + 32, a, 2);                      /* A on the real keyboard */
++    pw_hid_ps5_poll(&hid, &poll);
++    assert(poll.count == 1 && poll.events[0].code == 'A' && poll.events[0].down);
++    /* B and A, A held on both: A once, B new. */
++    keyboard(0, a, 1);
++    put32(second_state + 20, 2);
++    memcpy(second_state + 32, b, 4);
++    pw_hid_ps5_poll(&hid, &poll);
++    assert(poll.count == 1 && poll.events[0].code == 'B' && poll.events[0].down);
++    second_keyboard = 0;
++}
++
+ int main(void)
+ {
+     test_keyboard_layout();
+     test_mouse_layout();
+     test_open_and_poll();
++    test_second_keyboard();
+     puts("ps5 usb keyboard and mouse passed");
+     return 0;
+ }
+diff --git a/wine/patches/0904-wined3d-a-16-bit-back-buffer-presents-through-an-8-bit-vulkan-swapchain.patch b/wine/patches/0904-wined3d-a-16-bit-back-buffer-presents-through-an-8-bit-vulkan-swapchain.patch
+new file mode 100644
+index 0000000..83f5b19
+--- /dev/null
++++ b/wine/patches/0904-wined3d-a-16-bit-back-buffer-presents-through-an-8-bit-vulkan-swapchain.patch
+@@ -0,0 +1,34 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: bornaradusin <bornaradusin@users.noreply.github.com>
++Date: Wed, 4 Nov 2026 10:00:00 +0000
++Subject: [PATCH] wined3d: A 16-bit back buffer presents through an 8-bit Vulkan
++ swapchain.
++
++A display that offers no 16-bit swapchain format (the PS5's) left a
++DirectDraw game's 565 or 1555 mode without a swapchain on the Vulkan
++renderer: "Failed to find Vulkan swapchain format for
++WINED3DFMT_B5G6R5_UNORM", and SetCooperativeLevel failed. The Legend of
++Heroes: A Tear of Vermillion then fell back to a 640x480 window in the
++middle of a 1080p screen. The present already blits the back buffer into
++the swapchain's image, and Vulkan requires every device to blit from
++these two formats, so the swapchain is B8G8R8A8 and the blit converts.
++
++diff --git a/dlls/wined3d/swapchain.c b/dlls/wined3d/swapchain.c
++index 6609219..03138a4 100644
++--- a/dlls/wined3d/swapchain.c
+++++ b/dlls/wined3d/swapchain.c
++@@ -753,6 +753,11 @@ static VkFormat get_swapchain_fallback_format(VkFormat vk_format)
++         case VK_FORMAT_R8G8B8A8_UNORM:
++         case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
++         case VK_FORMAT_R16G16B16A16_SFLOAT:
+++        /* A 16-bit picture (an old DirectDraw game's 565 or 1555 mode): the present blits
+++         * it into the swapchain's image, which converts it, as the formats Vulkan requires
+++         * every device to blit from. */
+++        case VK_FORMAT_R5G6B5_UNORM_PACK16:
+++        case VK_FORMAT_A1R5G5B5_UNORM_PACK16:
++             return VK_FORMAT_B8G8R8A8_UNORM;
++         default:
++             WARN("Unhandled format %#x.\n", vk_format);
++-- 
++2.43.0
++
+-- 
+2.43.0
+

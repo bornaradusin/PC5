@@ -789,6 +789,7 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
      * only the profiles of the games it installed). */
     int memory_4gb = 0, stretch = 0, cpu_sharing = 0, video_memory_full = 0, video_memory_mb = 0, pointer_hide = 0;
     int surround = 0;
+    game->create_kept = 0;
     if (prefix && prefix[0]) {
         Pc5Controls controls;
         pc5_controls_load(root, prefix, &controls);
@@ -801,6 +802,7 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         pointer_hide = controls.pointer_hide;
         surround = controls.surround;
         /* A two-finger click mapped to a key (Keyboard & mouse): the game's, not PC5's keyboard. */
+        game->create_kept = controls.create_kept && controls.mode != PC5_PAD_KEYBOARD;
         game->two_finger_key = controls.mode == PC5_PAD_KEYBOARD &&
                                strcmp(pc5_keys[controls.key[PC5_TWO_FINGER] % pc5_key_count].name, "none");
     }
@@ -1327,7 +1329,7 @@ void pc5_game_hud(Pc5GameSession *game, int videoout, uint64_t frames, uint64_t 
 
 /* ---- the on-screen keyboard -------------------------------------------------------------- */
 
-enum { PAD_TOUCHPAD = 0x100000u };
+enum { PAD_CREATE = 0x1u, PAD_TOUCHPAD = 0x100000u };
 
 uint32_t pc5_game_keyboard(Pc5GameSession *game, uint32_t held, uint32_t pressed, uint32_t released,
                            unsigned fingers)
@@ -1335,6 +1337,9 @@ uint32_t pc5_game_keyboard(Pc5GameSession *game, uint32_t held, uint32_t pressed
     /* The touchpad is the game's again from the tick after the click's release; the
      * release is PC5's too. */
     uint32_t hidden = game->keyboard_taken;
+    /* The Create button kept for the PS5's screenshots: the game never sees it (Back on an
+     * Xbox controller, Create on a DualSense). Leaving a game is the touchpad and OPTIONS. */
+    if (game->create_kept) hidden |= PAD_CREATE;
     if (released & PAD_TOUCHPAD || !(held & PAD_TOUCHPAD)) game->keyboard_taken = 0;
 
     if (game->keyboard_open) {

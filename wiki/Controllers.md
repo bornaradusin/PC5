@@ -16,11 +16,13 @@ Which one to try: start with **Xbox controller**. If the game doesn't react to t
 
 Older games that read controllers with DirectInput see the Xbox controller as Windows shows one: "Controller (XBOX 360 For Windows)", with both triggers on one axis (the left one up, the right one down), the D-pad as a hat and ten buttons. A mod that turns a game's DirectInput controls into XInput isn't needed for that from 1.6.5.
 
-A USB keyboard and mouse plugged into the PS5 work in every mode, alongside the controller. The mouse wheel works too (from 2.0.2).
+A USB keyboard and mouse plugged into the PS5 work in every mode, alongside the controller. The mouse wheel works too (from 2.0.2). From 2.2.7 PC5 reads every keyboard the console has, so a wireless mouse whose receiver also says it is a keyboard no longer hides the real one, whichever receiver goes in first.
 
 A USB keyboard types in the layout of PC5's language, which is the console's unless **Settings › System › Language** chooses another (from 2.1.0). On a French console, for example, an AZERTY keyboard types as it is marked, and **AltGr + à** types **@**. A Russian, Ukrainian or Greek keyboard switches to the US layout and back with **Alt + Shift**, as on Windows. **Settings › System › Keyboard layout › US** keeps it as a US keyboard for every game, as before 2.1.0. The keys the controller sends with **Keyboard & mouse** are the same in every layout.
 
 **Mouse pointer**, in the game's menu (press **△**), says whether the mouse pointer stays on screen as the game shows it (**Normal**, the default) or hides when you haven't moved it or clicked for 5 seconds (**Auto-hide**). That's for a game played with the controller that leaves the pointer sitting in a corner. When it hides, moving it (a stick, the touchpad or a mouse) or clicking shows it again at once. It is set for each game on its own.
+
+**Create button**, in the game's menu with **Xbox controller** or **DualSense** (from 2.2.7), says whether the game sees the controller's Create button: **Sent** (the default), as Back (Select) on an Xbox controller or as Create on a DualSense, or **Not sent**, so taking a screenshot with the PS5's own Create button doesn't press anything in the game. With **Keyboard & mouse**, **Button mapping** sets what Create sends (Nothing, for the same). It is set for each game on its own.
 
 ## Keyboard & mouse
 

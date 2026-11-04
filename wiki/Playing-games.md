@@ -93,6 +93,7 @@ Choose a game in the library and press **△**. Its menu has what you change mos
 | Play | Starts the game. |
 | Controller | What the game sees: **Xbox controller** (the default), **DualSense**, or **Keyboard & mouse**. Press **✕** or left / right to change it. See [Controllers](Controllers). |
 | Button mapping | Only with Keyboard & mouse: what each button and stick sends. See [Controllers](Controllers#button-mapping). |
+| Create button | Only with Xbox controller and DualSense: **Sent** (the default), the game sees the Create button (as Back on an Xbox controller), or **Not sent**, so the PS5's own screenshot doesn't press anything in the game. From 2.2.7. See [Controllers](Controllers). |
 | Mouse pointer | **Normal** (the default): the pointer stays as the game shows it. **Auto-hide**: it hides when you haven't moved it or clicked for 5 seconds, for a game that leaves it in a corner. See [Controllers](Controllers). |
 | Graphics › | Graphics mode, frame generation, resolution, aspect ratio, game memory, graphics memory and stutter fix. See [Graphics](#graphics). |
 | Sound output | **Stereo** (the default), **5.1** or **7.1**: how many speakers the game is told the console has. With 5.1 or 7.1 the game plays each sound on its own speaker of a surround system, and the PS5 sends it on as it does its own games' sound. If the game is silent or sound only comes from the front, set it back to Stereo. Press **✕** or left / right to change it. From 2.2.2-test. |
@@ -153,6 +154,7 @@ From 2.1.9, **□ About** on a setting opens a window that says in plain words w
 | Game files | Only for games PC5 installed: the game's own folder, to copy, move, rename and delete its files (on its drive, for a game [installed on a USB drive](Installing-games#installing-a-game-on-a-usb-drive)). See [File manager](File-manager). |
 | Update | Only for games PC5 installed: copies a newer version from the USB drive over the game. Its saves, settings and options stay. See [Updating a game](Installing-games#updating-a-game). |
 | Report a problem | (From 2.0.4.) A QR code for GitHub's issue form, filled in from the game's newest log: the game, its program, PC5's version, what went wrong, the log's name and the game's settings. Attach that log on the form. See [Reporting a problem](Reporting-a-problem). |
+| Report it works | (From 2.2.7.) A QR code for the game compatibility form, filled in with the game, PC5's version and the game's settings: say how well it runs and post it, and the [game compatibility list](Game-compatibility) adds it. PC5's web page has the same button in its Games list (from 2.2.6). |
 | Uninstall | Deletes the game, keeping its saves or not, after asking. See [Uninstalling a game](Installing-games#uninstalling-a-game). |
 
 ## Games made for Steam

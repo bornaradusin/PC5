@@ -383,6 +383,13 @@ int main(int argc, char **argv)
     step(ui, PC5_KEY_BACK, 1);
     step(ui, PC5_KEY_UP, 1);
     step(ui, PC5_KEY_RIGHT, 1);            /* back to the Xbox controller */
+    step(ui, PC5_KEY_DOWN, 1);             /* Create button */
+    settle(ui);
+    save("15p-game-menu-create-button");
+    step(ui, PC5_KEY_ACCEPT, 1);           /* Not sent */
+    settle(ui);
+    save("15q-game-menu-create-kept");
+    step(ui, PC5_KEY_ACCEPT, 1);           /* and sent again */
     step(ui, PC5_KEY_DOWN, 1);             /* Mouse pointer */
     step(ui, PC5_KEY_DOWN, 1);
     step(ui, PC5_KEY_ACCEPT, 1);           /* Graphics */
@@ -449,6 +456,12 @@ int main(int argc, char **argv)
     step(ui, PC5_KEY_ACCEPT, 1);           /* Manage */
     settle(ui);
     save("15m-game-menu-manage");
+    for (int i = 0; i < 4; i++) step(ui, PC5_KEY_DOWN, 1);   /* Game files, Update, Report a problem, Report it works */
+    step(ui, PC5_KEY_ACCEPT, 1);
+    settle(ui);
+    save("15r-report-works");
+    step(ui, PC5_KEY_BACK, 1);             /* back to Manage */
+    settle(ui);
     step(ui, PC5_KEY_TRIANGLE, 1);
     step(ui, PC5_KEY_OPTIONS, 1);
     settle(ui);

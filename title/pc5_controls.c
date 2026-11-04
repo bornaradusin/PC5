@@ -309,6 +309,9 @@ static void controls_parse(char *data, Pc5Controls *controls)
         } else if (!strcmp(name, "touchpad_mode")) {
             for (int i = 0; i < 3; i++)
                 if (!strcmp(value, touch_mode_keys[i])) controls->touch_mode = i;
+        } else if (!strcmp(name, "create_button")) {
+            if (!strcmp(value, "kept")) controls->create_kept = 1;
+            else if (!strcmp(value, "sent")) controls->create_kept = 0;
         } else if (!strcmp(name, "mouse_pointer")) {
             if (!strcmp(value, "hides")) controls->pointer_hide = 1;
             else if (!strcmp(value, "shown")) controls->pointer_hide = 0;
@@ -371,6 +374,8 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                                    "steam_emulator = %s\n"
                                    "# Triangle on the game, then Controller: the mouse pointer shown, or hides when unused\n"
                                    "mouse_pointer = %s\n"
+                                   "# Triangle on the game, then Create button (Xbox controller and DualSense): sent, or kept for the PS5's screenshots\n"
+                                   "create_button = %s\n"
                                    "# Triangle on the game, then Sound output: 2 (stereo), 6 (5.1) or 8 (7.1)\nspeakers = %s\n",
                             mode_keys[controls->mode % PC5_PAD_MODES], stick_keys[controls->stick[0] % PC5_STICK_USES],
                             stick_keys[controls->stick[1] % PC5_STICK_USES], controls->speed,
@@ -383,7 +388,7 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                             controls->resolution == 2 ? "2160p" : controls->resolution == 1 ? "1440p" : "1080p",
                             controls->stretch ? "stretch" : "keep", controls->cpu_sharing ? "on" : "off",
                             graphics_keys[controls->graphics % PC5_GRAPHICS_COUNT], controls->steam_off ? "off" : "auto",
-                            controls->pointer_hide ? "hides" : "shown",
+                            controls->pointer_hide ? "hides" : "shown", controls->create_kept ? "kept" : "sent",
                             controls->surround == 2 ? "8" : controls->surround == 1 ? "6" : "2");
     for (int i = 0; i < PC5_CONTROLS && !status; i++)
         status = pc5_buf_printf(&text, "%s = %s\n", control_keys[i], pc5_keys[controls->key[i] % pc5_key_count].name);

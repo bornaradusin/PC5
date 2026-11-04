@@ -132,6 +132,7 @@ typedef struct Pc5GameSession {
     /* The on-screen keyboard: open, its text, how much of the accepted text is typed,
      * and the buttons PC5 took from the game for it. */
     int two_finger_key;           /* a two-finger click is mapped to a key: no on-screen keyboard */
+    int create_kept;              /* the Create button is kept from the game (its Create button option) */
     int keyboard_open;
     uint16_t keyboard_text[PC5_KEYBOARD_TEXT];
     uint32_t keyboard_length, keyboard_typed, keyboard_taken;

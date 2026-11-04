@@ -197,12 +197,12 @@ static int page_rows(const Pc5Settings *set, int page, int offer_update, Setting
 
 /* The game's groups and media submenus each have their own page. */
 typedef enum GameRow {
-    GR_PLAY, GR_CONTROLLER, GR_BUTTONS, GR_POINTER, GR_GRAPHICS, GR_SOUND, GR_APPEARANCE, GR_MANAGE,
+    GR_PLAY, GR_CONTROLLER, GR_BUTTONS, GR_CREATE, GR_POINTER, GR_GRAPHICS, GR_SOUND, GR_APPEARANCE, GR_MANAGE,
     GR_GRAPHICS_API, GR_FRAMEGEN, GR_RESOLUTION, GR_ASPECT, GR_MEMORY, GR_VIDEO_MEMORY, GR_CPU_SHARING,
     GR_COVER, GR_BACKGROUND, GR_HOME, GR_ICON, GR_MUSIC, GR_MUSIC_CLEAR,
     GR_BACKGROUND_IMAGE, GR_BACKGROUND_VIDEO, GR_VIDEO_CLEAR, GR_MEDIA_OPTIONS, GR_MUSIC_FILE, GR_VIDEO_FILE,
     GR_MEDIA, GR_LOADING, GR_LOADING_FILE, GR_LOADING_BACKGROUND, GR_LOADING_CLEAR,
-    GR_PROGRAM, GR_STEAM, GR_FILES, GR_UPDATE, GR_REPORT, GR_UNINSTALL
+    GR_PROGRAM, GR_STEAM, GR_FILES, GR_UPDATE, GR_REPORT, GR_WORKS, GR_UNINSTALL
 } GameRow;
 enum { GAME_ROWS = 8, GAME_PAGES = 9, GP_MAIN = 0, GP_GRAPHICS = 1, GP_APPEARANCE = 2, GP_MANAGE = 3, GP_BACKGROUND = 4,
        GP_MUSIC = 5, GP_VIDEO = 6, GP_MEDIA = 7, GP_LOADING = 8 };
@@ -270,12 +270,14 @@ static int game_rows(const Pc5Controls *controls, int kind, int page, GameRow ro
         if (kind & GAME_PC5) rows[n++] = GR_FILES;
         if (kind & GAME_PC5) rows[n++] = GR_UPDATE;
         rows[n++] = GR_REPORT;
+        rows[n++] = GR_WORKS;
         rows[n++] = GR_UNINSTALL;
         break;
     default:
         rows[n++] = GR_PLAY;
         rows[n++] = GR_CONTROLLER;
         if (controls->mode == PC5_PAD_KEYBOARD) rows[n++] = GR_BUTTONS;
+        else rows[n++] = GR_CREATE;     /* Button mapping sets Create with Keyboard & mouse */
         rows[n++] = GR_POINTER;
         rows[n++] = GR_GRAPHICS;
         rows[n++] = GR_SOUND;
@@ -465,6 +467,7 @@ struct Pc5Ui {
     char message_title[320], message_body[1400];
     int message_good;
     int message_report;               /* the message is about a kept log: Triangle reports it */
+    int report_works;                 /* the report's QR code is Report it works' (a game that runs), not a problem's */
     Pc5LogIssue report;               /* Report on GitHub: the log, its game, the form's link as a QR code */
     char report_game[PC5_NAME], report_url[PC5_REPORT_URL];
     Pc5Qr report_qr;
@@ -3190,6 +3193,38 @@ static void report_game_log(Pc5Ui *ui, const Pc5Game *game)
     ui->message_report = 1;
 }
 
+/* A game's own settings, as a report says them without its log; its controller in *mode. */
+static void report_settings(Pc5Ui *ui, const Pc5Game *game, char *settings, size_t size, Pc5PadMode *mode)
+{
+    Pc5Controls k;
+    pc5_controls_load(ui->root, game->prefix, &k);
+    snprintf(settings, size,
+             "%d-bit, draws with %s; Graphics mode %s; Controller %s; Frame generation %s; Memory %s; CPU sharing %s%s%s",
+             game->bits, pc5_api_name((Pc5Api)game->api), pc5_graphics_tech_name(k.graphics, game->api),
+             pc5_pad_mode_name(k.mode), k.frame_generation == 2 ? "40 -> 120 (MihawkGen)" : k.frame_generation ? "on" : "off", k.memory_4gb ? "4 GB" : "Auto",
+             k.cpu_sharing ? "on" : "off", k.steam_off ? "; Steam emulator off" : "",
+             k.surround == 2 ? "; Sound 7.1" : k.surround == 1 ? "; Sound 5.1" : "");
+    if (mode) *mode = k.mode;
+}
+
+/* Report it works (a game's Manage page): the game compatibility form's link, filled in as
+ * the web page's button fills it, as a QR code. */
+static void report_works(Pc5Ui *ui, const Pc5Game *game)
+{
+    char settings[300];
+    Pc5PadMode mode;
+
+    report_settings(ui, game, settings, sizeof(settings), &mode);
+    pc5_copy(ui->report_game, sizeof(ui->report_game), game->title);
+    ui->report_works = 1;
+    ui->report_qr.size = 0;
+    if (pc5_report_works_url(game->title, NULL, pc5_pad_mode_name(mode), settings, ui->report_url, sizeof(ui->report_url)) ||
+        pc5_qr_make(ui->report_url, &ui->report_qr))
+        ui->report_url[0] = 0;
+    say(ui, "PC5 report works link=%zu qr=%d", strlen(ui->report_url), ui->report_qr.size);
+    go(ui, S_REPORT);
+}
+
 /* Report on GitHub for ui->report: the form's link, as a QR code. */
 static void report_open(Pc5Ui *ui)
 {
@@ -3197,17 +3232,8 @@ static void report_open(Pc5Ui *ui)
     int index = pc5_library_find(&ui->library, ui->report.profile);
 
     /* The game's own settings go with it, so a report says them without its log. */
-    if (index >= 0) {
-        const Pc5Game *game = &ui->library.games[index];
-        Pc5Controls k;
-        pc5_controls_load(ui->root, game->prefix, &k);
-        snprintf(settings, sizeof(settings),
-                 "%d-bit, draws with %s; Graphics mode %s; Controller %s; Frame generation %s; Memory %s; CPU sharing %s%s%s",
-                 game->bits, pc5_api_name((Pc5Api)game->api), pc5_graphics_tech_name(k.graphics, game->api),
-                 pc5_pad_mode_name(k.mode), k.frame_generation == 2 ? "40 -> 120 (MihawkGen)" : k.frame_generation ? "on" : "off", k.memory_4gb ? "4 GB" : "Auto",
-                 k.cpu_sharing ? "on" : "off", k.steam_off ? "; Steam emulator off" : "",
-                 k.surround == 2 ? "; Sound 7.1" : k.surround == 1 ? "; Sound 5.1" : "");
-    }
+    if (index >= 0) report_settings(ui, &ui->library.games[index], settings, sizeof(settings), NULL);
+    ui->report_works = 0;
     ui->report_qr.size = 0;
     if (pc5_report_url_settings(&ui->report, ui->report_game, settings, ui->report_url, sizeof(ui->report_url)) ||
         pc5_qr_make(ui->report_url, &ui->report_qr))
@@ -5374,6 +5400,10 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             pc5_video_memory_set(&ui->controls, bits32, (level + ((k & PC5_KEY_LEFT) ? count - 1 : 1)) % count);
             controls_changed(ui);
             ui->dirty = 1;
+        } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_CREATE) {
+            ui->controls.create_kept = !ui->controls.create_kept;
+            controls_changed(ui);
+            ui->dirty = 1;
         } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_POINTER) {
             ui->controls.pointer_hide = !ui->controls.pointer_hide;
             controls_changed(ui);
@@ -5439,6 +5469,8 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 go(ui, S_SCAN);
             } else if (row == GR_REPORT) {
                 report_game_log(ui, &ui->library.games[ui->selected]);
+            } else if (row == GR_WORKS) {
+                report_works(ui, &ui->library.games[ui->selected]);
             } else if (row == GR_UNINSTALL) {
                 ui->menu = index;
                 ui->button = 0;   /* Cancel first */
@@ -5766,7 +5798,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         }
         break;
     case S_REPORT:
-        if (k & (accept | back)) go(ui, S_MESSAGE);
+        if (k & (accept | back)) go(ui, ui->report_works ? S_GAME_MENU : S_MESSAGE);
         break;
     case S_MUSIC_IMPORT:
         if (k & back) atomic_store(&ui->music_import.stop, 1);
@@ -6899,6 +6931,13 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
         *text = T("The key or mouse button each one sends");
         *value = more;
         break;
+    case GR_CREATE:
+        *label = T("Create button");
+        *text = ui->controls.create_kept ? T("Kept from the game: safe for the PS5's screenshots")
+                                         : ui->controls.mode == PC5_PAD_DUALSENSE ? T("The game sees it, as a DualSense's Create")
+                                                                                 : T("The game sees it as Back (Select)");
+        *value = ui->controls.create_kept ? T("Not sent") : T("Sent");
+        break;
     case GR_POINTER:
         *label = T("Mouse pointer");
         *text = ui->controls.pointer_hide ? T("Hides when not moved or clicked for 5 s") : T("Stays as the game shows it");
@@ -7122,6 +7161,11 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
         *text = T("A QR code for GitHub's form, filled in from the game's newest log");
         *value = more;
         break;
+    case GR_WORKS:
+        *label = T("Report it works");
+        *text = T("A QR code for the game compatibility form, filled in: adds the game to the list");
+        *value = more;
+        break;
     case GR_UNINSTALL:
         *label = T("Uninstall");
         *text = T("Deletes the game, or keeps its saves for later");
@@ -7147,6 +7191,11 @@ static int setting_about(Pc5Ui *ui, GameRow row, const char *lines[6])
         lines[n++] = T("Touchpad: One button (a click sends one key), Halves and swipes (a key for each half's click and each quick swipe up, down, left or right), or Mouse (a finger moves the pointer, like a laptop's).");
         lines[n++] = T("Two-finger click: PC5's on-screen keyboard, or a key of its own.");
         lines[n++] = T("Save as my mapping keeps your layout for every game set up after it.");
+        break;
+    case GR_CREATE:
+        lines[n++] = T("Whether the game sees the Create button.");
+        lines[n++] = T("Sent: the game sees it, as Back (Select) on an Xbox controller or as Create on a DualSense.");
+        lines[n++] = T("Not sent: the game never sees it, so taking a screenshot with the PS5's Create button doesn't press anything in the game.");
         break;
     case GR_POINTER:
         lines[n++] = T("Whether the mouse pointer shows over the game.");
@@ -7970,6 +8019,23 @@ static void report_screen(Pc5Ui *ui, Pc5Canvas *c)
     qr_draw(c, &ui->report_qr, qx, qy, box);
     int tx = (int)x + 80, tw = qx - tx - 60;
     const char *game = ui->report_game[0] ? ui->report_game : T("The game");
+    if (ui->report_works) {
+        if (ui->report_qr.size)
+            pc5_tf(line, sizeof(line), "1. Scan the code with your phone. GitHub's game compatibility form opens, filled in with %s, "
+                     "PC5's version and the game's settings.", game);
+        else
+            pc5_tf(line, sizeof(line), "1. On your phone or computer, open %s and start a new Game compatibility discussion.",
+                     "github.com/bornaradusin/PC5/discussions");
+        int at = (int)y + 190;
+        at += 42 * pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, tx, at, tw, 4, 42, C_DIM, line, 0) + 24;
+        at += 42 * pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, tx, at, tw, 4, 42, C_DIM,
+                                 T("2. Say how well it runs and anything that helped, then post it. You need a GitHub account."), 0) + 24;
+        pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, tx, at, tw, 3, 42, C_DIM,
+                      T("3. The game compatibility list adds it, so other players know it runs."), 0);
+        Hint works_hint[] = { { back_glyph(ui), T("Back") } };
+        hints(ui, c, tx, (int)(y + h - 48), works_hint, 1);
+        return;
+    }
     if (ui->report_qr.size)
         pc5_tf(line, sizeof(line), "1. Scan the code with your phone. GitHub's form for a new issue opens, filled in with %s, "
                  "PC5's version and what PC5 saw.", game);

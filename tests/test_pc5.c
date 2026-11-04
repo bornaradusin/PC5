@@ -4537,6 +4537,13 @@ static void test_keyboard(void)
     pc5_game_keyboard(&game, 0, 0, TOUCHPAD, 0);
     game.ops.keyboard_open = NULL;
     CHECK(pc5_game_keyboard(&game, TOUCHPAD, TOUCHPAD, 0, 2) == 0, "without a keyboard, nothing is taken");
+    /* The Create button kept from the game (its Create button option): hidden whenever it is
+     * held, pressed or released, the touchpad still the game's. */
+    pc5_game_keyboard(&game, 0, 0, TOUCHPAD, 0);
+    CHECK(pc5_game_keyboard(&game, 0x1u, 0x1u, 0, 0) == 0, "Create is the game's by default");
+    game.create_kept = 1;
+    CHECK(pc5_game_keyboard(&game, 0x1u | TOUCHPAD, 0x1u, 0, 1) == 0x1u, "kept: Create hidden, the touchpad not");
+    CHECK(pc5_game_keyboard(&game, 0, 0, 0x1u, 0) == 0x1u, "and its release too");
 }
 
 /* A program that loads Direct3D or Vulkan itself names it in its data: found in ASCII or
@@ -7100,7 +7107,14 @@ static void test_screens(const char *fonts)
     for (int i = 0; i < orbital; i++) press(ui, PC5_KEY_RIGHT, &canvas);
     press(ui, PC5_KEY_TRIANGLE, &canvas);
     CHECK(!strcmp(pc5_ui_screen(ui), "game-menu"), "game menu: %s", pc5_ui_screen(ui));
-    press(ui, PC5_KEY_DOWN, &canvas);       /* past Controller (the Xbox controller: no Button mapping) */
+    press(ui, PC5_KEY_DOWN, &canvas);       /* Controller */
+    press(ui, PC5_KEY_DOWN, &canvas);       /* Create button (the Xbox controller: no Button mapping) */
+    /* Create button: sent by default; kept from the game for the PS5's screenshots, then sent again. */
+    CHECK(!controls_has("orbital-nine", "create_button = kept\n"), "Create sent by default");
+    press(ui, PC5_KEY_ACCEPT, &canvas);
+    CHECK(controls_has("orbital-nine", "create_button = kept\n"), "Create button: kept from the game");
+    press(ui, PC5_KEY_RIGHT, &canvas);
+    CHECK(controls_has("orbital-nine", "create_button = sent\n"), "and sent again");
     press(ui, PC5_KEY_DOWN, &canvas);       /* Mouse pointer: shown, unless the game's own says it hides */
     CHECK(!controls_has("orbital-nine", "mouse_pointer = hides\n"), "the pointer shown by default");
     press(ui, PC5_KEY_ACCEPT, &canvas);
@@ -7266,7 +7280,8 @@ static void test_screens(const char *fonts)
     press(ui, PC5_KEY_DOWN, &canvas);
     press(ui, PC5_KEY_DOWN, &canvas);
     press(ui, PC5_KEY_DOWN, &canvas);
-    press(ui, PC5_KEY_DOWN, &canvas);       /* Play, Controller, Mouse pointer, Graphics, Sound output, Appearance */
+    press(ui, PC5_KEY_DOWN, &canvas);
+    press(ui, PC5_KEY_DOWN, &canvas);       /* Play, Controller, Create button, Mouse pointer, Graphics, Sound output, Appearance */
     press(ui, PC5_KEY_ACCEPT, &canvas);
     save_shot(&canvas, "game-menu-appearance");
     press(ui, PC5_KEY_ACCEPT, &canvas);     /* Media settings and backup: Cover, Background, Loading screen, Music, video and backup */

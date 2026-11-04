@@ -79,6 +79,10 @@ typedef struct Pc5Controls {
      * 0999, WINE_PS5_CURSOR_IDLE_MS), for a game that leaves it in a corner; 0 (the default): it
      * stays as the game shows it, as before 2.0.8. */
     int pointer_hide;
+    /* 1: the Create button is kept from the game with an Xbox controller or a DualSense (it was
+     * Back, or the DualSense's Create), so the PS5's own screenshot doesn't press anything in it;
+     * 0 (the default): sent as before 2.2.7. "create_button = sent|kept". */
+    int create_kept;
     uint8_t key[PC5_CONTROLS];    /* an index into pc5_keys */
     /* What the touchpad is with Keyboard & mouse (prospero-win's touchpad_mode): 0 one button
      * (its click is Touchpad's), 1 its halves and swipes, 2 a mouse, a finger moving the pointer. */
