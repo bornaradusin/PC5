@@ -7,16 +7,14 @@
   description is written again each week, and a short comment says it was, so the maintainer is
   told. It lists, with links:
   - open issues waiting on the maintainer: no answer of theirs yet, or someone else spoke last
-    (bots aside; a release's reply counts as theirs, as no_reply.py reads it);
+    (bots aside, as no_reply.py reads it);
   - open issues waiting on their reporter, and how long before no_reply.py closes them (an
     issue labelled "keep open", "in progress", "planned" or "enhancement" is never closed);
   - issues closed in the last seven days, and how each ended (related_issues.py's words);
-  - replies waiting for a release in .github/replies/ (release_replies.py), by issue and version;
   - game compatibility reports posted in the last seven days (from the discussions, through
     compatibility_list.py's GraphQL; left out when they can't be read).
 - The summary issue itself is about no game: compatibility_list.py doesn't list it, no_reply.py
-  never closes it (keep open), issue_logs.py and related_issues.py leave it alone, and
-  release_replies.py posts nothing there.
+  never closes it (keep open), and issue_logs.py and related_issues.py leave it alone.
 
 Run with GITHUB_TOKEN and GITHUB_REPOSITORY; WEEKLY_SUMMARY_DRY_RUN=1 prints the page instead.
 """
@@ -36,7 +34,6 @@ from related_issues import labels_of, state_words   # noqa: E402  how an issue s
 TITLE = "Weekly summary"
 SUMMARY = listing.SUMMARY_LABEL
 KEEP_OPEN = "keep open"
-REPLIES = Path(__file__).resolve().parent.parent / "replies"
 DRY_RUN = os.environ.get("WEEKLY_SUMMARY_DRY_RUN") == "1"
 WEEK = timedelta(days=7)
 
@@ -51,26 +48,13 @@ def link(issue: dict) -> str:
 
 def waiting(issue: dict, comments: list, owner: str, now: datetime):
     """("maintainer", None) or ("reporter", days left, None when it is never closed) for an open issue."""
-    spoken = [c for c in comments if not no_reply.is_bot(c.get("user")) or
-              (c.get("body") or "").startswith(no_reply.RELEASE_REPLY)]
-    if not spoken or no_reply.speaker(spoken[-1], owner).casefold() != owner.casefold():
+    spoken = [c for c in comments if not no_reply.is_bot(c.get("user"))]
+    if not spoken or spoken[-1]["user"]["login"].casefold() != owner.casefold():
         return "maintainer", None
     if labels_of(issue) & no_reply.KEEP:
         return "reporter", None
     left = no_reply.WAIT - (now - when(spoken[-1]["created_at"]))
     return "reporter", max(0.0, left.total_seconds() / 86400)
-
-
-def replies_waiting() -> list:
-    """(issue number, version) of each reply in .github/replies/."""
-    found = []
-    for path in sorted(REPLIES.glob("*.md")) if REPLIES.is_dir() else []:
-        if not path.stem.isdigit():
-            continue
-        first = path.read_text(encoding="utf-8").splitlines()[:1]
-        version = re.match(r"\s*version:\s*v?([0-9][0-9.]*)", first[0], re.I) if first else None
-        found.append((int(path.stem), version.group(1).rstrip(".") if version else "?"))
-    return found
 
 
 def reports_since(owner: str, name: str, since: datetime) -> list:
@@ -100,7 +84,7 @@ def reports_since(owner: str, name: str, since: datetime) -> list:
     return found
 
 
-def page(repo: str, owner: str, now: datetime, issues: list, comments_of, closed: list, replies: list, reports) -> str:
+def page(repo: str, owner: str, now: datetime, issues: list, comments_of, closed: list, reports) -> str:
     """The summary, from open issues (with their comments) and the issues closed this week."""
     on_me, on_them = [], []
     for issue in issues:
@@ -125,8 +109,6 @@ def page(repo: str, owner: str, now: datetime, issues: list, comments_of, closed
         lines.append("- None.")
     lines += ["", f"### Closed this week ({len(closed)})", ""]
     lines += [f"- {link(i)}: {state_words(i)}" for i in closed] or ["- None."]
-    lines += ["", f"### Replies waiting for a release ({len(replies)})", ""]
-    lines += [f"- [#{n}](https://github.com/{repo}/issues/{n}): {version}" for n, version in replies] or ["- None."]
     if reports is not None:
         lines += ["", f"### New game compatibility reports ({len(reports)})", ""]
         lines += [f"- [{listing.cell(game, 60)}]({url}): {result}" for game, result, url in reports] or ["- None."]
@@ -161,7 +143,7 @@ def main() -> int:
               if "pull_request" not in i and i.get("closed_at") and when(i["closed_at"]) >= since
               and SUMMARY not in labels_of(i) and i.get("state_reason") != "duplicate"]
     body = page(repo, owner, now, issues, lambda i: list(no_reply.pages(f"repos/{repo}/issues/{i['number']}/comments")),
-                closed, replies_waiting(), reports_since(owner, name, since))
+                closed, reports_since(owner, name, since))
     if DRY_RUN:
         print(body)
         return 0
