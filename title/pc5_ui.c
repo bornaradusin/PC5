@@ -8066,8 +8066,8 @@ static void review_screen(Pc5Ui *ui, Pc5Canvas *c)
     } else if (ui->folder.not_store[0]) {
         /* A file of another Steam emulator or fix: said before the first start, not after a log. */
         char warning[400];
-        pc5_tf(warning, sizeof(warning), "This copy has %s, which isn't one of the game's files as its store ships it. Games "
-                 "with it often close before starting: if it does, try a copy as its store ships it.", ui->folder.not_store);
+        pc5_tf(warning, sizeof(warning), "This copy has %s, which its store doesn't ship. Games with it often close "
+                 "before starting: try a copy as its store ships it.", ui->folder.not_store);
         pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)ny, (int)tw, 2, 40, C_WARN, warning, 0);
         ny += 90;
     } else if (exe && (exe->pe.imports & PC5_IMPORT_DOTNET)) {
