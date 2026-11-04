@@ -485,7 +485,7 @@ int pc5_controls_from_report(const char *text, int api, Pc5Controls *controls)
         } else if (report_part(p, length, "Frame generation", &v, &vn)) {
             if (report_is(v, vn, "off")) { controls->frame_generation = 0; read++; }
             else if (report_is(v, vn, "on")) { controls->frame_generation = 1; read++; }
-            else if (vn >= 9 && strstr(v, "MihawkGen") && strstr(v, "MihawkGen") < v + vn) { controls->frame_generation = 2; read++; }
+            else if (vn >= 9 && !strncmp(v, "40 -> 120", 9)) { controls->frame_generation = 2; read++; }
         } else if (report_part(p, length, "Memory", &v, &vn)) {
             if (report_is(v, vn, "Auto")) { controls->memory_4gb = 0; read++; }
             else if (report_is(v, vn, "4 GB")) { controls->memory_4gb = 1; read++; }
@@ -494,6 +494,8 @@ int pc5_controls_from_report(const char *text, int api, Pc5Controls *controls)
             else if (report_is(v, vn, "off")) { controls->cpu_sharing = 0; read++; }
         } else if (report_part(p, length, "Steam emulator", &v, &vn)) {
             if (report_is(v, vn, "off")) steam = 1;
+        } else if (report_part(p, length, "Launch options", &v, &vn)) {
+            break;   /* the rest of the line (pc5_report_launch_options) */
         } else if (report_part(p, length, "Sound", &v, &vn)) {
             if (report_is(v, vn, "5.1")) sound = 1;
             else if (report_is(v, vn, "7.1")) sound = 2;
@@ -508,6 +510,24 @@ int pc5_controls_from_report(const char *text, int api, Pc5Controls *controls)
         read += 2;
     }
     return read;
+}
+
+int pc5_report_launch_options(const char *text, char *out, size_t size)
+{
+    const char *at = text ? strstr(text, "Graphics mode ") : NULL;
+    if (!at && text) at = strstr(text, "Graphics API ");
+    if (size) out[0] = 0;
+    if (!at || !size) return 0;
+    const char *end = strchr(at, '\n'), *found = strstr(at, "; Launch options ");
+    if (!found || (end && found > end)) return 0;
+    found += strlen("; Launch options ");
+    if (!end) end = found + strlen(found);
+    while (end > found && (end[-1] == ' ' || end[-1] == '\r')) end--;
+    size_t n = (size_t)(end - found);
+    if (!n || n >= size) return 0;
+    memcpy(out, found, n);
+    out[n] = 0;
+    return 1;
 }
 
 const char *pc5_control_name(int control)

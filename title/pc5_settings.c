@@ -161,6 +161,7 @@ int pc5_settings_load(const char *root, Pc5Settings *settings)
         else if (!strcmp(name, "triggers"))
             settings->triggers = (Pc5Triggers)pick(value, trigger_keys, PC5_TRIGGERS_COUNT, (int)settings->triggers);
         else if (!strcmp(name, "check_updates")) settings->check_updates = on_off(value, settings->check_updates);
+        else if (!strcmp(name, "test_versions")) settings->test_versions = on_off(value, settings->test_versions);
         else if (!strcmp(name, "keep_logs")) settings->keep_logs = on_off(value, settings->keep_logs);
         else if (!strcmp(name, "high_refresh")) settings->high_refresh = on_off(value, settings->high_refresh);
         else if (!strcmp(name, "check_copies"))
@@ -195,7 +196,7 @@ int pc5_settings_save(const char *root, const Pc5Settings *settings)
                       "memory = %s\nfps_corner = %s\noverlay_size = %s\nvibration = %d\nlight_bar = %s\ntriggers = %s\n"
                       "trigger_rumble = %d\ntrigger_resistance = %d\ncheck_updates = %s\nkeep_logs = %s\nstartup_sound = %s\n"
                       "startup_volume = %d\nftp_server = %s\nweb_page = %s\nremote_user = %s\nremote_password = %s\nlanguage = %s\n"
-                      "keyboard = %s\nhigh_refresh = %s\ncheck_copies = %s\n",
+                      "keyboard = %s\nhigh_refresh = %s\ncheck_copies = %s\ntest_versions = %s\n",
                       settings->fps ? "on" : "off", settings->frame_time ? "on" : "off",
                       settings->cpu_usage ? "on" : "off", settings->gpu_usage ? "on" : "off",
                       settings->cpu_temperature ? "on" : "off",
@@ -208,7 +209,7 @@ int pc5_settings_save(const char *root, const Pc5Settings *settings)
                       settings->ftp_server ? "on" : "off", settings->web_page ? "on" : "off", settings->remote_user,
                       settings->remote_password, settings->language[0] ? settings->language : "system",
                       settings->keyboard_us ? "us" : "auto", settings->high_refresh ? "on" : "off",
-                      check_keys[settings->copy_check % PC5_CHECKS]);
+                      check_keys[settings->copy_check % PC5_CHECKS], settings->test_versions ? "on" : "off");
     for (int i = 0; i < PC5_PICTURE_SOURCES && length > 0 && (size_t)length < sizeof(text); i++)
         length += snprintf(text + length, sizeof(text) - (size_t)length, "pictures_%s = %s\n", pc5_picture_source_key(i),
                            settings->pictures_off & (1u << i) ? "off" : "on");

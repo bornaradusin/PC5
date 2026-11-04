@@ -44,6 +44,10 @@ typedef struct Pc5Update {
 
 /* <0, 0, >0 as version a is older, the same, newer than b ("1.2.0", "v1.10"). */
 int pc5_version_compare(const char *a, const char *b);
+/* Whether pc5_update_check offers test versions too (Settings' test_versions): GitHub's newest
+ * release or pre-release then, of its 10 newest, by version. Off: only its latest release. */
+void pc5_update_track(int test);
+#define PC5_RELEASES_LIST_API "https://api.github.com/repos/bornaradusin/PC5/releases?per_page=10"
 /* Asks GitHub; current is this PC5's version. Fills update in any case. */
 void pc5_update_check(const Pc5Http *http, const char *current, Pc5Update *update);
 /* What to show in Settings: "PC5 1.1.0 is available", "You have the newest PC5". */

@@ -72,6 +72,10 @@ int pc5_profile_text_at(const char *id, const Pc5Info *info, const char *argumen
  * folder holds, lower case and without .dll, "," between them, in name order, as many as
  * fit; how many were found. */
 int pc5_own_dlls(const char *folder, char *out, size_t size);
+/* The game's launch options, launch.txt's line beside its program, into out ("" for none);
+ * pc5_game_launch_options_set writes text as that line (the file's notes, # and ;, stay). 0, or -1. */
+int pc5_game_launch_options(const char *root, const char *id, char *out, size_t size);
+int pc5_game_launch_options_set(const char *root, const char *id, const char *text);
 /* Writes the game's profile again, with the launch options in launch.txt
  * beside its program (so options can be changed without reinstalling). */
 int pc5_profile_refresh(const char *root, const char *id, char *error, size_t size);

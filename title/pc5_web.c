@@ -483,6 +483,10 @@ static void game_settings(const Pc5Game *g, Pc5Controls *controls, char *out, si
              g->bits, pc5_api_name((Pc5Api)g->api), pc5_graphics_tech_name(k.graphics, g->api), pc5_pad_mode_name(k.mode),
              k.frame_generation == 2 ? "40 -> 120" : k.frame_generation ? "on" : "off", k.memory_4gb ? "4 GB" : "Auto", k.cpu_sharing ? "on" : "off",
              k.steam_off ? "; Steam emulator off" : "", k.surround == 2 ? "; Sound 7.1" : k.surround == 1 ? "; Sound 5.1" : "");
+    char options[300];
+    size_t n = strlen(out);
+    if (!pc5_game_launch_options(web.root, g->id, options, sizeof(options)) && options[0] && n < size)
+        snprintf(out + n, size - n, "; Launch options %s", options);
 }
 
 /* GitHub's issue form for the game, filled in from its newest kept log (as the console's
@@ -560,7 +564,7 @@ static void api_games(Conn *c)
         pc5_buf_puts(&buf, ",\"debug\":");
         json_file(&buf, debug_path(g, path, sizeof(path)) ? NULL : path, ENV_MAX);
         Pc5Controls controls;
-        char settings[300];
+        char settings[600];
         {
             char report[PC5_REPORT_URL];
             game_settings(g, &controls, settings, sizeof(settings));

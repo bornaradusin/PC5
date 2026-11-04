@@ -482,7 +482,7 @@ struct Pc5Ui {
     /* Settings that worked for others (known_find): the game they are for, the list's row, its
      * settings put on the game's own, and where Settings that worked goes back to. */
     int known, known_entry, known_from_play, known_back;
-    char known_id[PC5_ID], known_report[256], known_version[96];
+    char known_id[PC5_ID], known_report[256], known_version[96], known_launch[300];
     Pc5Controls known_controls;
     int compat_initialized, compat_at, compat_filter, compat_detail, compat_scroll;
     char compat_query[128];
@@ -1063,6 +1063,7 @@ Pc5Ui *pc5_ui_create(const Pc5UiConfig *config, const Pc5Platform *platform)
     ui->screen = S_START;
     ui->dirty = 1;
     pc5_settings_load(ui->root, &ui->settings);
+    pc5_update_track(ui->settings.test_versions);
     language_apply(ui);
     make_backdrop(ui);
     pc5_update_load(ui->root, &ui->update);
@@ -2711,8 +2712,10 @@ static void setting_text(Pc5Ui *ui, SettingRow row, const char **label, char *ab
         break;
     case SR_CHECK_ON_OPEN:
         *label = T("Check when PC5 opens");
-        pc5_copy(about, about_size, T("Asks GitHub for a newer PC5 each time you open PC5, and offers it"));
-        pc5_copy(value, value_size, set->check_updates ? T("On") : T("Off"));
+        pc5_copy(about, about_size, set->check_updates && set->test_versions
+                                        ? T("Test versions too: fixes to try before everyone gets them, which may have new problems")
+                                        : T("Asks GitHub for a newer PC5 each time you open PC5, and offers it"));
+        pc5_copy(value, value_size, !set->check_updates ? T("Off") : set->test_versions ? T("Test versions too") : T("On"));
         break;
     case SR_CHECK_NOW:
         *label = T("Check now");
@@ -2897,7 +2900,16 @@ static int setting_change(Pc5Ui *ui, SettingRow row, int step)
     case SR_TRIGGER_RESISTANCE: set->trigger_resistance = pc5_strength_next(set->trigger_resistance, 25, step); break;
     case SR_LIGHT: set->light_bar = (Pc5Light)((set->light_bar + PC5_LIGHTS + step) % PC5_LIGHTS); break;
     case SR_TRIGGERS: set->triggers = (Pc5Triggers)((set->triggers + PC5_TRIGGERS_COUNT + step) % PC5_TRIGGERS_COUNT); break;
-    case SR_CHECK_ON_OPEN: set->check_updates = !set->check_updates; break;
+    case SR_CHECK_ON_OPEN: {
+        /* Off, On, Test versions too, round. */
+        int at = !set->check_updates ? 0 : set->test_versions ? 2 : 1;
+        at = (at + 3 + (step < 0 ? -1 : 1)) % 3;
+        set->check_updates = at > 0;
+        set->test_versions = at == 2;
+        pc5_update_track(set->test_versions);
+        ui->update.checked = 0;   /* asked again with the new choice */
+        break;
+    }
     case SR_STARTUP_SOUND: {
         /* Off, then each sound by name; the one chosen is played. */
         Pc5SoundList list;
@@ -3021,13 +3033,18 @@ static void known_find(Pc5Ui *ui, const Pc5Controls *current, int steam_dlls)
     const Pc5CompatEntry *row = &ui->compatibility.entries[entry];
     Pc5Controls known = *current;
     if (pc5_controls_from_report(row->settings, game->api, &known) <= 0) return;
+    /* Its launch options (launch.txt) too, when the report gives some and they aren't the game's. */
+    char launch[300], now_launch[300];
+    if (!pc5_report_launch_options(row->settings, launch, sizeof(launch)) ||
+        pc5_game_launch_options(ui->root, ui->launch_id, now_launch, sizeof(now_launch)) || !strcmp(launch, now_launch))
+        launch[0] = 0;
     /* Only the settings the report gives: the sticks, keys and the rest stay the game's. */
     if (steam_dlls <= 0) known.steam_off = current->steam_off;
     if (game->bits != 32) known.memory_4gb = current->memory_4gb;
     if (known.mode == current->mode && known.graphics == current->graphics &&
         known.frame_generation == current->frame_generation && known.memory_4gb == current->memory_4gb &&
         known.cpu_sharing == current->cpu_sharing && known.steam_off == current->steam_off &&
-        known.surround == current->surround)
+        known.surround == current->surround && !launch[0])
         return;
     ui->known = 1;
     ui->known_entry = entry;
@@ -3035,6 +3052,7 @@ static void known_find(Pc5Ui *ui, const Pc5Controls *current, int steam_dlls)
     pc5_copy(ui->known_id, sizeof(ui->known_id), ui->launch_id);
     pc5_copy(ui->known_report, sizeof(ui->known_report), row->report);
     pc5_copy(ui->known_version, sizeof(ui->known_version), row->version);
+    pc5_copy(ui->known_launch, sizeof(ui->known_launch), launch);
 }
 
 /* Where the game notes the report whose settings it was offered at Play (once a report). */
@@ -3061,6 +3079,7 @@ static void known_lines(Pc5Ui *ui, const Pc5Controls *now, char *out, size_t siz
     if (k->cpu_sharing != now->cpu_sharing) KNOWN_LINE(T("Stutter fix"), k->cpu_sharing ? T("On") : T("Off"));
     if (k->steam_off != now->steam_off) KNOWN_LINE(T("Steam emulator"), k->steam_off ? T("Off") : T("Auto"));
     if (k->surround != now->surround) KNOWN_LINE(T("Sound output"), k->surround == 2 ? "7.1" : k->surround == 1 ? "5.1" : T("Stereo"));
+    if (ui->known_launch[0]) KNOWN_LINE(T("Launch options"), ui->known_launch);
 #undef KNOWN_LINE
 }
 
@@ -3381,6 +3400,11 @@ static void report_settings(Pc5Ui *ui, const Pc5Game *game, char *settings, size
              pc5_pad_mode_name(k.mode), k.frame_generation == 2 ? "40 -> 120 (MihawkGen)" : k.frame_generation ? "on" : "off", k.memory_4gb ? "4 GB" : "Auto",
              k.cpu_sharing ? "on" : "off", k.steam_off ? "; Steam emulator off" : "",
              k.surround == 2 ? "; Sound 7.1" : k.surround == 1 ? "; Sound 5.1" : "");
+    /* launch.txt's options last: they may hold anything but a new line (pc5_report_launch_options). */
+    char options[300];
+    size_t n = strlen(settings);
+    if (!pc5_game_launch_options(ui->root, game->id, options, sizeof(options)) && options[0] && n < size)
+        snprintf(settings + n, size - n, "; Launch options %s", options);
     if (mode) *mode = k.mode;
 }
 
@@ -3388,7 +3412,7 @@ static void report_settings(Pc5Ui *ui, const Pc5Game *game, char *settings, size
  * the web page's button fills it, as a QR code. */
 static void report_works(Pc5Ui *ui, const Pc5Game *game)
 {
-    char settings[300];
+    char settings[600];
     Pc5PadMode mode;
 
     report_settings(ui, game, settings, sizeof(settings), &mode);
@@ -3405,7 +3429,7 @@ static void report_works(Pc5Ui *ui, const Pc5Game *game)
 /* Report on GitHub for ui->report: the form's link, as a QR code. */
 static void report_open(Pc5Ui *ui)
 {
-    char settings[300] = "";
+    char settings[600] = "";
     int index = pc5_library_find(&ui->library, ui->report.profile);
 
     /* The game's own settings go with it, so a report says them without its log. */
@@ -4746,6 +4770,8 @@ static void known_answer(Pc5Ui *ui, int use)
             say(ui, "PC5 known settings not saved id=%s", ui->launch_id);
         else
             say(ui, "PC5 known settings used id=%s report=%s", ui->launch_id, ui->known_report);
+        if (ui->known_launch[0] && pc5_game_launch_options_set(ui->root, ui->launch_id, ui->known_launch))
+            say(ui, "PC5 known launch options not written id=%s", ui->launch_id);
         pc5_controls_load(ui->root, ui->launch_id, &ui->controls);
     } else {
         say(ui, "PC5 known settings not now id=%s", ui->launch_id);
@@ -8036,6 +8062,13 @@ static void review_screen(Pc5Ui *ui, Pc5Canvas *c)
     float ny = ry + 62 * row + 40;
     if (ui->folder.problem[0]) {
         pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)ny, (int)tw, 2, 40, C_BAD, ui->folder.problem, 0);
+        ny += 90;
+    } else if (ui->folder.not_store[0]) {
+        /* A file of another Steam emulator or fix: said before the first start, not after a log. */
+        char warning[400];
+        pc5_tf(warning, sizeof(warning), "This copy has %s, which isn't one of the game's files as its store ships it. Games "
+                 "with it often close before starting: if it does, try a copy as its store ships it.", ui->folder.not_store);
+        pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)ny, (int)tw, 2, 40, C_WARN, warning, 0);
         ny += 90;
     } else if (exe && (exe->pe.imports & PC5_IMPORT_DOTNET)) {
         pc5_text_wrap(c, &ui->fonts, PC5_FACE_BODY, (int)tx, (int)ny, (int)tw, 2, 40, C_DIM,

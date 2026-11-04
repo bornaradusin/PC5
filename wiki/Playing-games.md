@@ -111,7 +111,7 @@ From 2.1.9, **□ About** on a setting opens a window that says in plain words w
 
 | Row | What it does |
 | --- | --- |
-| Settings that worked | Only when a player has reported the game working (**Report it works**) with settings other than yours. It lists what they changed (Graphics mode, Controller, Frame generation, Game memory, Stutter fix, Steam emulator, Sound output) and **Use them** sets the same; your other settings stay. The first time you press **Play**, PC5 asks once. It comes from the [game compatibility list](Game-compatibility), which PC5 keeps a copy of. |
+| Settings that worked | Only when a player has reported the game working (**Report it works**) with settings other than yours. It lists what they changed (Graphics mode, Controller, Frame generation, Game memory, Stutter fix, Steam emulator, Sound output, launch options) and **Use them** sets the same; your other settings stay. The first time you press **Play**, PC5 asks once. It comes from the [game compatibility list](Game-compatibility), which PC5 keeps a copy of. |
 | Graphics mode | Only for games drawn with Direct3D or DirectDraw: how the game's pictures are made. **Auto** suits almost every game. See [Graphics mode](#graphics-mode) below. |
 | Frame generation | **Off** (the default) or **30 → 60 fps**. See [Frame generation](#frame-generation) below. |
 | Resolution | Only for games drawn with Direct3D, Vulkan or OpenGL: **1080p** (the default), **1440p** or **4K**. See [Resolution](#resolution) below. |

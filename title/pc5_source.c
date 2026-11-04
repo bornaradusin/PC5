@@ -329,6 +329,13 @@ int pc5_folder_inspect(const char *path, const char *name, Pc5Folder *folder)
             } else if (S_ISREG(st.st_mode)) {
                 folder->files++;
                 folder->bytes += (uint64_t)st.st_size;
+                /* The files of another Steam emulator or fix (pc5_steam.c's markers): said at Install. */
+                if (!folder->not_store[0]) {
+                    static const char *const others[] = { "OnlineFix64.dll", "OnlineFix.dll", "OnlineFix.ini",
+                                                          "steam_api64_o.dll", "steam_api_o.dll" };
+                    for (size_t i = 0; i < sizeof(others) / sizeof(others[0]); i++)
+                        if (!pc5_casecmp(entry->d_name, others[i])) pc5_copy(folder->not_store, sizeof(folder->not_store), others[i]);
+                }
                 int is_exe = pc5_ends_with_ci(entry->d_name, ".exe"), is_dll = pc5_ends_with_ci(entry->d_name, ".dll");
                 if ((is_exe || is_dll) && !helper_folder(child)) {
                     Pc5PeInfo pe;

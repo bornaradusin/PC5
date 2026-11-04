@@ -303,7 +303,7 @@ static int fake_get_unlocked(void *context, const char *url, Pc5Buf *out, size_t
         *status = 404;
         return 0;
     }
-    if (!strcmp(url, PC5_RELEASES_API)) {
+    if (!strcmp(url, PC5_RELEASES_API) || !strcmp(url, PC5_RELEASES_LIST_API)) {
         if (!net->release) { *status = 404; return pc5_buf_puts(out, "{\"message\":\"Not Found\"}"); }
         return pc5_buf_puts(out, net->release);
     }
@@ -3231,6 +3231,16 @@ static void test_update(void)
     net.release = "not json";
     pc5_update_check(&http, "1.0.0", &update);
     CHECK(update.state == PC5_UPDATE_FAILED, "a broken answer");
+    /* Test versions too: the newest of the list by version, a pre-release among them. */
+    pc5_update_track(1);
+    net.release = "[{\"tag_name\":\"v1.0.1\",\"prerelease\":false,\"html_url\":\"https://github.com/bornaradusin/PC5/releases/tag/v1.0.1\"},"
+                  "{\"tag_name\":\"v1.1.0\",\"prerelease\":true,\"name\":\"PC5 1.1.0 test\","
+                  "\"html_url\":\"https://github.com/bornaradusin/PC5/releases/tag/v1.1.0\"}]";
+    pc5_update_check(&http, "1.0.0", &update);
+    CHECK(update.state == PC5_UPDATE_AVAILABLE && !strcmp(update.version, "1.1.0") && !strcmp(net.last, PC5_RELEASES_LIST_API),
+          "a test version: %d %s %s", (int)update.state, update.version, net.last);
+    pc5_update_track(0);
+    net.release = "not json";
     net.offline = 1;
     pc5_update_check(&http, "1.0.0", &update);
     CHECK(update.state == PC5_UPDATE_FAILED, "offline");

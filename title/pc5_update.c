@@ -24,25 +24,48 @@ int pc5_version_compare(const char *a, const char *b)
     return 0;
 }
 
+static int test_track;
+
+void pc5_update_track(int test) { test_track = test != 0; }
+
 void pc5_update_check(const Pc5Http *http, const char *current, Pc5Update *update)
 {
     Pc5Buf body = { 0 };
     Pc5Json json = { 0 };
     int status = 0;
     char tag[64];
+    uint32_t release = 0;   /* the release's object: the answer itself, or one of the list's */
 
     memset(update, 0, sizeof(*update));
     update->state = PC5_UPDATE_FAILED;
-    if (!http || !http->get || http->get(http->context, PC5_RELEASES_API, &body, 256 * 1024, &status)) goto out;
+    if (!http || !http->get ||
+        http->get(http->context, test_track ? PC5_RELEASES_LIST_API : PC5_RELEASES_API, &body, test_track ? 2048 * 1024 : 256 * 1024,
+                  &status))
+        goto out;
     if (status == 404) { update->state = PC5_UPDATE_NONE; goto out; }
     if (status != 200 || pc5_buf_terminate(&body) ||
-        pc5_json_parse(&json, (const char *)body.data, body.len, 8192) ||
-        pc5_json_text(&json, pc5_json_get(&json, 0, "tag_name"), tag, sizeof(tag)) || !tag[0])
+        pc5_json_parse(&json, (const char *)body.data, body.len, test_track ? 65536 : 8192))
+        goto out;
+    if (test_track) {
+        /* The newest by version of the list (drafts aren't in it): a pre-release, or a release
+         * newer than any of them. */
+        char best[64] = "";
+        for (uint32_t i = 0, item; (item = pc5_json_item(&json, 0, i)); i++) {
+            char name[64];
+            if (pc5_json_text(&json, pc5_json_get(&json, item, "tag_name"), name, sizeof(name)) || !name[0]) continue;
+            if (!release || pc5_version_compare(name, best) > 0) {
+                release = item;
+                pc5_copy(best, sizeof(best), name);
+            }
+        }
+        if (!release) { update->state = PC5_UPDATE_NONE; goto out; }
+    }
+    if (pc5_json_text(&json, pc5_json_get(&json, release, "tag_name"), tag, sizeof(tag)) || !tag[0])
         goto out;
     pc5_copy(update->version, sizeof(update->version), tag[0] == 'v' || tag[0] == 'V' ? tag + 1 : tag);
-    if (pc5_json_text(&json, pc5_json_get(&json, 0, "name"), update->name, sizeof(update->name)))
+    if (pc5_json_text(&json, pc5_json_get(&json, release, "name"), update->name, sizeof(update->name)))
         update->name[0] = 0;
-    if (pc5_json_text(&json, pc5_json_get(&json, 0, "html_url"), update->url, sizeof(update->url)) ||
+    if (pc5_json_text(&json, pc5_json_get(&json, release, "html_url"), update->url, sizeof(update->url)) ||
         strncmp(update->url, "https://github.com/", 19))
         pc5_copy(update->url, sizeof(update->url), PC5_RELEASES_PAGE);
     update->state = pc5_version_compare(update->version, current) > 0 ? PC5_UPDATE_AVAILABLE : PC5_UPDATE_CURRENT;
@@ -54,7 +77,7 @@ void pc5_update_check(const Pc5Http *http, const char *current, Pc5Update *updat
         static const char mark[] = "<!-- pc5-update-from: ";
         char *notes = pc5_alloc(NOTES);
         const char *at;
-        if (notes && !pc5_json_text(&json, pc5_json_get(&json, 0, "body"), notes, NOTES) && (at = strstr(notes, mark))) {
+        if (notes && !pc5_json_text(&json, pc5_json_get(&json, release, "body"), notes, NOTES) && (at = strstr(notes, mark))) {
             char from[32];
             size_t n = 0;
             at += sizeof(mark) - 1;
@@ -71,7 +94,7 @@ void pc5_update_check(const Pc5Http *http, const char *current, Pc5Update *updat
         pc5_free(notes);
     }
     /* The app's zip and the update zip among the release's files. */
-    uint32_t assets = pc5_json_get(&json, 0, "assets");
+    uint32_t assets = pc5_json_get(&json, release, "assets");
     for (uint32_t i = 0, asset; assets && (asset = pc5_json_item(&json, assets, i)); i++) {
         char name[64], url[512], digest[80], label[64];
         double size = pc5_json_number(&json, pc5_json_get(&json, asset, "size"), -1);

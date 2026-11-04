@@ -43,6 +43,9 @@ typedef struct Pc5Folder {
     char identity_source[64];       /* the file they came from, or "" */
     char picture[PC5_PATH];   /* the player's cover: cover.jpg, .jpeg or .png at the top, or "" */
     char problem[PC5_ERROR];  /* why it can't be installed, or "" */
+    /* A file of the copy that isn't the game's as its store ships it (another Steam emulator's or
+     * fix's: OnlineFix64.dll, steam_api_o.dll), which often closes a game on the console; "". */
+    char not_store[64];
 } Pc5Folder;
 
 /* Walks the whole folder: its size, its programs (ranked), what they draw

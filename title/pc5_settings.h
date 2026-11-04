@@ -61,6 +61,9 @@ typedef struct Pc5Settings {
     int trigger_rumble;       /* the triggers' rumble: 25, 50, 75, 100 % */
     int trigger_resistance;   /* how firmly they push back: 25, 50, 75, 100 % */
     int check_updates;        /* when PC5 opens */
+    /* 1: test versions too (GitHub's pre-releases: fixes to try before everyone gets them), when
+     * PC5 asks for a newer one (pc5_update_track); 0, the default: only releases. */
+    int test_versions;
     int keep_logs;            /* every session's log, not only those with a problem */
     int ftp_server;           /* the INSTALL folder's FTP server, while PC5 is open (pc5_ftp.h) */
     int web_page;             /* PC5's page for a browser, while PC5 is open (pc5_web.h) */

@@ -162,6 +162,9 @@ void pc5_controls_apply_text(const char *text, Pc5Controls *controls);
  * emulator and Sound. What the line leaves out is PC5's default (Steam emulator Auto, stereo), as
  * the line says only what isn't. How many of its settings were read: 0 for text without it. */
 int pc5_controls_from_report(const char *text, int api, Pc5Controls *controls);
+/* The launch options a report's settings line ends with ("; Launch options -dx11", the rest of
+ * the line), into out: 1, or 0 when it has none. */
+int pc5_report_launch_options(const char *text, char *out, size_t size);
 /* The profile's [input] section, from its header on, and its [runtime] section
  * when CPU sharing is on. 0, or -1 when out is too small. */
 int pc5_controls_input(const Pc5Controls *controls, char *out, size_t size);

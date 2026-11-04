@@ -668,6 +668,9 @@ int main(int argc, char **argv)
             pc5_write_file(file, exe.data, exe.len);
             pc5_buf_free(&exe);
         }
+        /* A file of another Steam fix beside it: Install says so (10-install-review). */
+        fmt(file, sizeof(file), "%s/usb0/Hollow Peaks/bin/OnlineFix.ini", work);
+        put(file, "[Main]\n");
         /* The app's Windows template: a few files stand in for it. */
         fmt(file, sizeof(file), "%s/app0/pc5/prefix/system.reg", work);
         put(file, "system");

@@ -69,7 +69,7 @@ These follow the settings in every game, whatever its [controller mode](Controll
 | Startup sound volume | 10 to **100 %**, in steps of 10 | How loud the startup sound plays. Changing it plays the sound at the new volume. Shows while a startup sound is chosen. |
 | Keep all logs | **Off**, On | Off: the logs of sessions that went wrong are kept, and each game's newest session. On: every session's log is kept, PC5's own too. Either way, each is one zip, kept for 7 days. See [Reporting a problem](Reporting-a-problem). |
 | Picture sources › | the number turned on | Where PC5 looks for covers and backgrounds. See [Picture sources](#picture-sources). |
-| Check when PC5 opens | **On**, Off | On: PC5 asks GitHub for a newer release each time you open it, and offers it when there is one. Off: only when you ask. |
+| Check when PC5 opens | **On**, Test versions too, Off | On: PC5 asks GitHub for a newer release each time you open it, and offers it when there is one. Test versions too: it offers test versions as well (GitHub's pre-releases), fixes to try before everyone gets them, which may have new problems. Off: only when you ask (Check now looks for test versions too while that's chosen). |
 | Check now | | Asks GitHub straight away. The answer shows under the row. |
 | Update now | | Shows while a newer release is out: downloads it from GitHub, puts it in place of this PC5 and restarts PC5. |
 | Keyboard layout | **Auto**, US | How a USB keyboard types in games. Auto follows PC5's language (an AZERTY keyboard on a French console types as marked); US keeps a US keyboard, as before 2.1.0. See [Controllers](Controllers). |

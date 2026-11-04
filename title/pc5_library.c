@@ -749,6 +749,42 @@ static void game_winedebug(const char *root, const char *id, char *out, size_t s
  * On the console its check fails though Wine has the runtime, and it then runs the runtime's
  * installer, which can't run there, and closes (RV There Yet). The game's program is started in
  * its place, as the starter would; launch.txt stays the starter's (launch_options). */
+int pc5_game_launch_options(const char *root, const char *id, char *out, size_t size)
+{
+    Pc5Info info;
+    if (size) out[0] = 0;
+    if (pc5_info_read(root, id, &info)) return -1;
+    launch_options(root, id, &info, out, size);
+    return 0;
+}
+
+int pc5_game_launch_options_set(const char *root, const char *id, const char *text)
+{
+    Pc5Info info;
+    char path[PC5_PATH], dir[PC5_PATH], top[PC5_PATH];
+    Pc5Buf old = { 0 }, out = { 0 };
+    int status;
+
+    if (pc5_info_read(root, id, &info) || game_dir(root, id, &info, top, sizeof(top))) return -1;
+    pc5_copy(dir, sizeof(dir), info.exe);
+    char *slash = strrchr(dir, '/');
+    if (slash) *slash = 0; else dir[0] = 0;
+    if (pc5_format(path, sizeof(path), "%s%s%s/launch.txt", top, dir[0] ? "/" : "", dir)) return -1;
+    /* Its notes stay; its options line is text. */
+    if (!pc5_read_file(path, &old, 4096) && !pc5_buf_terminate(&old))
+        for (char *line = (char *)old.data, *next; line && *line; line = next) {
+            next = strchr(line, '\n');
+            if (next) *next++ = 0;
+            char *p = line;
+            while (*p == ' ' || *p == '\t') p++;
+            if (*p == '#' || *p == ';') { pc5_buf_puts(&out, line); pc5_buf_puts(&out, "\n"); }
+        }
+    status = pc5_buf_puts(&out, text) || pc5_buf_puts(&out, "\n") || pc5_write_file(path, out.data, out.len);
+    pc5_buf_free(&old);
+    pc5_buf_free(&out);
+    return status ? -1 : 0;
+}
+
 static void unreal_starter(const char *top, Pc5Info *program)
 {
     const char *slash = strrchr(program->exe, '/'), *name = slash ? slash + 1 : program->exe;
