@@ -1575,6 +1575,44 @@ static void test_install(void)
     CHECK(profile && strstr(profile->app.executable, "OrbitalNine-Win64-Shipping.exe"), "orbital: %s",
           profile ? profile->app.executable : "-");
     CHECK(profile && !profile->winedebug[0], "the title's Wine log channels");
+    /* Unreal's starter chosen as the program (<Name>.exe beside Engine): its game's -Shipping program
+     * is started in its place, the starter's check for Visual C++ and its installer skipped. */
+    {
+        char why[PC5_ERROR], file[PC5_PATH], from[PC5_PATH], notes[4096];
+        Pc5Info info, before;
+        CHECK(!pc5_info_read(root, "orbital-nine", &info), "orbital's notes");
+        before = info;
+        path(file, sizeof(file), "%s/prefixes/orbital-nine/drive_c/Games/Orbital Nine/Rover.exe", root);
+        write_text(file, "MZ");
+        path(file, sizeof(file), "%s/prefixes/orbital-nine/drive_c/Games/Orbital Nine/Engine/Binaries/ThirdParty/x.txt", root);
+        write_text(file, "x");
+        path(file, sizeof(file), "%s/prefixes/orbital-nine/drive_c/Games/Orbital Nine/rover/Binaries/Win64/Rover-Win64-Shipping.exe",
+             root);
+        path(from, sizeof(from), "%s/launcher.exe", programs);
+        copy_file(from, file);
+        pc5_copy(info.exe, sizeof(info.exe), "Rover.exe");
+        path(file, sizeof(file), "%s/prefixes/orbital-nine/pc5/info.txt", root);
+        CHECK(!pc5_info_text(&info, notes, sizeof(notes)) && !pc5_write_file(file, notes, strlen(notes)), "the starter chosen");
+        CHECK(!pc5_profile_refresh(root, "orbital-nine", why, sizeof(why)), "refreshed: %s", why);
+        pw_wine_library_load(pw, root);
+        profile = pw_wine_library_find(pw, "orbital-nine");
+        CHECK(profile && strstr(profile->app.executable, "rover\\Binaries\\Win64\\Rover-Win64-Shipping.exe"),
+              "the starter's game: %s", profile ? profile->app.executable : "-");
+        /* Without its game's program beside it, the starter is what starts. */
+        path(file, sizeof(file), "%s/prefixes/orbital-nine/drive_c/Games/Orbital Nine/rover/Binaries/Win64/Rover-Win64-Shipping.exe",
+             root);
+        unlink(file);
+        CHECK(!pc5_profile_refresh(root, "orbital-nine", why, sizeof(why)), "refreshed: %s", why);
+        pw_wine_library_load(pw, root);
+        profile = pw_wine_library_find(pw, "orbital-nine");
+        CHECK(profile && strstr(profile->app.executable, "Orbital Nine\\Rover.exe"), "no game beside it: %s",
+              profile ? profile->app.executable : "-");
+        path(file, sizeof(file), "%s/prefixes/orbital-nine/pc5/info.txt", root);
+        CHECK(!pc5_info_text(&before, notes, sizeof(notes)) && !pc5_write_file(file, notes, strlen(notes)), "orbital as it was");
+        CHECK(!pc5_profile_refresh(root, "orbital-nine", why, sizeof(why)), "refreshed: %s", why);
+        pw_wine_library_load(pw, root);
+        profile = pw_wine_library_find(pw, "orbital-nine");
+    }
     /* The player's channels for one game (winedebug.txt), for a report: in its profile while the file is there. */
     {
         char why[PC5_ERROR], debug[PC5_PATH];

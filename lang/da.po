@@ -336,8 +336,8 @@ msgid "PC5 ran out of memory planning the work."
 msgstr "PC5 løb tør for hukommelse under planlægningen af arbejdet."
 
 #: title/pc5_files.c:385 title/pc5_files.c:406 title/pc5_files.c:419
-#: title/pc5_library.c:2756 title/pc5_library.c:3010 title/pc5_library.c:3020
-#: title/pc5_library.c:3033
+#: title/pc5_library.c:2786 title/pc5_library.c:3040 title/pc5_library.c:3050
+#: title/pc5_library.c:3063
 #, c-format
 msgid "PC5 can't write %s: %s."
 msgstr "PC5 kan ikke skrive %s: %s."
@@ -347,7 +347,7 @@ msgstr "PC5 kan ikke skrive %s: %s."
 msgid "PC5 ran out of memory copying %s."
 msgstr "PC5 løb tør for hukommelse under kopieringen af %s."
 
-#: title/pc5_files.c:427 title/pc5_library.c:1869
+#: title/pc5_files.c:427 title/pc5_library.c:1899
 #, c-format
 msgid "PC5 can't put %s in place: %s."
 msgstr "PC5 kan ikke sætte %s på plads: %s."
@@ -442,7 +442,7 @@ msgid ""
 msgstr ""
 "Tilslut USB-drevet med %.100s: Spillet spilles fra mappen %.200s på det."
 
-#: title/pc5_library.c:175 title/pc5_library.c:3548 title/pc5_library.c:3599
+#: title/pc5_library.c:175 title/pc5_library.c:3578 title/pc5_library.c:3629
 #, c-format
 msgid "PC5 can't make the game's folder: %s."
 msgstr "PC5 kan ikke oprette spillets mappe: %s."
@@ -456,7 +456,7 @@ msgstr "PC5 kan ikke linke til spillets mappe på USB-drevet: %s."
 msgid "Choose one of the game's programs."
 msgstr "Vælg et af spillets programmer."
 
-#: title/pc5_library.c:608 title/pc5_library.c:758 title/pc5_library.c:982
+#: title/pc5_library.c:608 title/pc5_library.c:787 title/pc5_library.c:1012
 msgid "PC5's notes on this game are missing."
 msgstr "PC5's noter om dette spil mangler."
 
@@ -464,9 +464,9 @@ msgstr "PC5's noter om dette spil mangler."
 msgid "That program is too deep in the game's folder for Windows."
 msgstr "Det program ligger for dybt i spillets mappe til Windows."
 
-#: title/pc5_library.c:625 title/pc5_library.c:1886 title/pc5_library.c:3197
-#: title/pc5_library.c:3200 title/pc5_library.c:3209 title/pc5_library.c:3283
-#: title/pc5_library.c:3435 title/pc5_library.c:3561
+#: title/pc5_library.c:625 title/pc5_library.c:1916 title/pc5_library.c:3227
+#: title/pc5_library.c:3230 title/pc5_library.c:3239 title/pc5_library.c:3313
+#: title/pc5_library.c:3465 title/pc5_library.c:3591
 #, c-format
 msgid "PC5 can't write its notes: %s."
 msgstr "PC5 kan ikke skrive sine noter: %s."
@@ -480,169 +480,169 @@ msgstr "PC5 er løbet tør for hukommelse."
 msgid "%.200s doesn't start any of the game's programs."
 msgstr "%.200s starter ingen af spillets programmer."
 
-#: title/pc5_library.c:850
+#: title/pc5_library.c:880
 msgid "The game's launch options are too long: 511 characters at most."
 msgstr "Spillets startindstillinger er for lange: højst 511 tegn."
 
-#: title/pc5_library.c:867
+#: title/pc5_library.c:897
 msgid "The game's path is too long for Windows."
 msgstr "Spillets sti er for lang til Windows."
 
-#: title/pc5_library.c:883 title/pc5_library.c:1061
+#: title/pc5_library.c:913 title/pc5_library.c:1091
 #, c-format
 msgid "PC5 can't write the game's profile: %s."
 msgstr "PC5 kan ikke skrive spillets profil: %s."
 
-#: title/pc5_library.c:1007
+#: title/pc5_library.c:1037
 #, c-format
 msgid "The program its launcher started isn't one of the game's: %.200s"
 msgstr ""
 "Programmet, som dets launcher startede, hører ikke til spillet: %.200s"
 
-#: title/pc5_library.c:1021
+#: title/pc5_library.c:1051
 msgid "The arguments its launcher gave are too long."
 msgstr "Argumenterne fra dets launcher er for lange."
 
-#: title/pc5_library.c:1043
+#: title/pc5_library.c:1073
 #, c-format
 msgid "Its programs kept starting each other: %d hand-offs in a row."
 msgstr ""
 "Dets programmer blev ved med at starte hinanden: %d overdragelser i træk."
 
-#: title/pc5_library.c:1057
+#: title/pc5_library.c:1087
 msgid "The program's path is too long for Windows."
 msgstr "Programmets sti er for lang til Windows."
 
-#: title/pc5_library.c:1119
+#: title/pc5_library.c:1149
 #, c-format
 msgid "Its profile has a mistake (%s)."
 msgstr "Dets profil har en fejl (%s)."
 
-#: title/pc5_library.c:1136
+#: title/pc5_library.c:1166
 msgid "Its Windows folder is missing."
 msgstr "Dets Windows-mappe mangler."
 
-#: title/pc5_library.c:1140
+#: title/pc5_library.c:1170
 msgid "Resetting its Windows isn't finished: close PC5 and open it again."
 msgstr ""
 
-#: title/pc5_library.c:1282
+#: title/pc5_library.c:1312
 #, c-format
 msgid "PC5 can't delete %s: %s."
 msgstr "PC5 kan ikke slette %s: %s."
 
-#: title/pc5_library.c:1381 title/pc5_library.c:1656 title/pc5_library.c:1711
-#: title/pc5_library.c:2182
+#: title/pc5_library.c:1411 title/pc5_library.c:1686 title/pc5_library.c:1741
+#: title/pc5_library.c:2212
 #, c-format
 msgid "PC5 can't move the game's folder: %s."
 msgstr "PC5 kan ikke flytte spillets mappe: %s."
 
-#: title/pc5_library.c:1390 title/pc5_library.c:1661
+#: title/pc5_library.c:1420 title/pc5_library.c:1691
 #, c-format
 msgid "PC5 can't delete the game's profile: %s."
 msgstr "PC5 kan ikke slette spillets profil: %s."
 
-#: title/pc5_library.c:1404 title/pc5_library.c:1648 title/pc5_library.c:2103
-#: title/pc5_library.c:2129 title/pc5_library.c:2138 title/pc5_library.c:2178
-#: title/pc5_library.c:3348 title/pc5_library.c:3356 title/pc5_library.c:3402
-#: title/pc5_library.c:3438
+#: title/pc5_library.c:1434 title/pc5_library.c:1678 title/pc5_library.c:2133
+#: title/pc5_library.c:2159 title/pc5_library.c:2168 title/pc5_library.c:2208
+#: title/pc5_library.c:3378 title/pc5_library.c:3386 title/pc5_library.c:3432
+#: title/pc5_library.c:3468
 msgid "A path is too long."
 msgstr "En sti er for lang."
 
-#: title/pc5_library.c:1607
+#: title/pc5_library.c:1637
 msgid "PC5 can't read the game's folder."
 msgstr "PC5 kan ikke læse spillets mappe."
 
-#: title/pc5_library.c:1615 title/pc5_library.c:1866 title/pc5_library.c:2946
+#: title/pc5_library.c:1645 title/pc5_library.c:1896 title/pc5_library.c:2976
 #, c-format
 msgid "A path in the game is too long: %s."
 msgstr "En sti i spillet er for lang: %s."
 
-#: title/pc5_library.c:1624
+#: title/pc5_library.c:1654
 #, c-format
 msgid "PC5 can't keep %s: %s."
 msgstr "PC5 kan ikke beholde %s: %s."
 
-#: title/pc5_library.c:1680
+#: title/pc5_library.c:1710
 #, c-format
 msgid "PC5 can't put the saves in place: %s."
 msgstr "PC5 kan ikke sætte de gemte data på plads: %s."
 
-#: title/pc5_library.c:1694
+#: title/pc5_library.c:1724
 msgid "This game's saves can't be kept apart from it."
 msgstr "Dette spils gemte data kan ikke holdes adskilt fra det."
 
-#: title/pc5_library.c:1700
+#: title/pc5_library.c:1730
 #, c-format
 msgid "PC5 can't make its saves folder: %s."
 msgstr "PC5 kan ikke oprette mappen til gemte data: %s."
 
-#: title/pc5_library.c:1704
+#: title/pc5_library.c:1734
 msgid "PC5 is still keeping this game's saves from before: start PC5 again."
 msgstr ""
 "PC5 er stadig ved at gemme dette spils gemte data fra før: Start PC5 igen."
 
-#: title/pc5_library.c:1737
+#: title/pc5_library.c:1767
 #, c-format
 msgid "PC5 can't move the saves: %s."
 msgstr "PC5 kan ikke flytte de gemte data: %s."
 
-#: title/pc5_library.c:1824
+#: title/pc5_library.c:1854
 #, c-format
 msgid "A path in the update is too long: %s."
 msgstr "En sti i opdateringen er for lang: %s."
 
-#: title/pc5_library.c:1906
+#: title/pc5_library.c:1936
 #, c-format
 msgid "PC5 can't write the game's list of files: %s."
 msgstr "PC5 kan ikke skrive spillets filliste: %s."
 
-#: title/pc5_library.c:1972 title/pc5_library.c:2003 title/pc5_library.c:2053
-#: title/pc5_library.c:2061 title/pc5_library.c:2092 title/pc5_library.c:2112
-#: title/pc5_library.c:2709 title/pc5_library.c:2783 title/pc5_library.c:2819
-#: title/pc5_library.c:3096 title/pc5_library.c:3364 title/pc5_library.c:3418
+#: title/pc5_library.c:2002 title/pc5_library.c:2033 title/pc5_library.c:2083
+#: title/pc5_library.c:2091 title/pc5_library.c:2122 title/pc5_library.c:2142
+#: title/pc5_library.c:2739 title/pc5_library.c:2813 title/pc5_library.c:2849
+#: title/pc5_library.c:3126 title/pc5_library.c:3394 title/pc5_library.c:3448
 msgid "Out of memory."
 msgstr "Ikke nok hukommelse."
 
-#: title/pc5_library.c:2031 title/pc5_library.c:2068
+#: title/pc5_library.c:2061 title/pc5_library.c:2098
 #, c-format
 msgid "PC5 can't move %.150s into the new Windows: %s."
 msgstr ""
 
-#: title/pc5_library.c:2148 title/pc5_library.c:2154 title/pc5_library.c:2160
+#: title/pc5_library.c:2178 title/pc5_library.c:2184 title/pc5_library.c:2190
 #, c-format
 msgid "PC5 can't keep the old registry: %s."
 msgstr ""
 
-#: title/pc5_library.c:2186 title/pc5_library.c:3220
+#: title/pc5_library.c:2216 title/pc5_library.c:3250
 #, c-format
 msgid "PC5 can't put the game in place: %s."
 msgstr "PC5 kan ikke sætte spillet på plads: %s."
 
-#: title/pc5_library.c:2525
+#: title/pc5_library.c:2555
 msgid ""
 "PC5's Windows template is missing from the app: copy the PC5 folder again."
 msgstr "PC5's Windows-skabelon mangler i appen: Kopiér PC5-mappen igen."
 
-#: title/pc5_library.c:2549
+#: title/pc5_library.c:2579
 msgid "PC5's Windows template is damaged: copy the PC5 folder again."
 msgstr "PC5's Windows-skabelon er beskadiget: Kopiér PC5-mappen igen."
 
-#: title/pc5_library.c:2631 title/pc5_library.c:2691
+#: title/pc5_library.c:2661 title/pc5_library.c:2721
 #, c-format
 msgid "PC5 can't make its folders in %s: %s."
 msgstr "PC5 kan ikke oprette sine mapper i %s: %s."
 
-#: title/pc5_library.c:2642
+#: title/pc5_library.c:2672
 #, c-format
 msgid "PC5 can't make its folder on the USB drive: %s."
 msgstr "PC5 kan ikke oprette sin mappe på USB-drevet: %s."
 
-#: title/pc5_library.c:2645
+#: title/pc5_library.c:2675
 msgid "PC5 can't name the game's folder on the USB drive."
 msgstr "PC5 kan ikke navngive spillets mappe på USB-drevet."
 
-#: title/pc5_library.c:2663
+#: title/pc5_library.c:2693
 #, c-format
 msgid ""
 "The drive reads at %.0f MB/s here, too slow to play from (%.0f needed). "
@@ -653,26 +653,26 @@ msgstr ""
 "kræves). Sæt det i en port bagpå eller i USB-C-porten foran. Installation "
 "på konsollen virker stadig."
 
-#: title/pc5_library.c:2671
+#: title/pc5_library.c:2701
 #, c-format
 msgid ""
 "Not enough space on the USB drive: the game needs %s and it has %s free."
 msgstr ""
 "Ikke nok plads på USB-drevet: Spillet kræver %s, og der er %s ledigt."
 
-#: title/pc5_library.c:2675
+#: title/pc5_library.c:2705
 msgid ""
 "Only a game on a USB drive can play from it: this folder isn't on one."
 msgstr ""
 "Kun et spil på et USB-drev kan spilles derfra: Denne mappe ligger ikke på "
 "et."
 
-#: title/pc5_library.c:2677
+#: title/pc5_library.c:2707
 msgid "A game in PC5's INSTALL folder is installed, not played from there."
 msgstr ""
 "Et spil i PC5's INSTALL-mappe bliver installeret, ikke spillet derfra."
 
-#: title/pc5_library.c:2682
+#: title/pc5_library.c:2712
 #, c-format
 msgid ""
 "The drive reads at %.0f MB/s in this USB port, too slow to play from (at "
@@ -685,65 +685,65 @@ msgstr ""
 "langsomme: Sæt drevet i en port bagpå eller i USB-C-porten foran. "
 "Installation virker stadig fra denne port."
 
-#: title/pc5_library.c:2688
+#: title/pc5_library.c:2718
 msgid "The game's program is too deep in its folder for Windows."
 msgstr "Spillets program ligger for dybt i mappen til Windows."
 
-#: title/pc5_library.c:2696
+#: title/pc5_library.c:2726
 #, c-format
 msgid "Not enough space: the game needs %s and the console has %s free."
 msgstr "Ikke nok plads: Spillet kræver %s, og konsollen har %s ledigt."
 
-#: title/pc5_library.c:2699
+#: title/pc5_library.c:2729
 msgid "PC5 can't name the game."
 msgstr "PC5 kan ikke navngive spillet."
 
-#: title/pc5_library.c:2702 title/pc5_library.c:3112
+#: title/pc5_library.c:2732 title/pc5_library.c:3142
 #, c-format
 msgid "PC5 can't start the install: %s."
 msgstr "PC5 kan ikke starte installationen: %s."
 
-#: title/pc5_library.c:2742
+#: title/pc5_library.c:2772
 msgid "A path in the Windows template is too long."
 msgstr "En sti i Windows-skabelonen er for lang."
 
-#: title/pc5_library.c:2745 title/pc5_library.c:2750 title/pc5_library.c:2954
+#: title/pc5_library.c:2775 title/pc5_library.c:2780 title/pc5_library.c:2984
 #: title/pc5_tile.c:519
 #, c-format
 msgid "PC5 can't make %s: %s."
 msgstr "PC5 kan ikke oprette %s: %s."
 
-#: title/pc5_library.c:2753
+#: title/pc5_library.c:2783
 #, c-format
 msgid "PC5's Windows template is missing %s."
 msgstr "PC5's Windows-skabelon mangler %s."
 
-#: title/pc5_library.c:2772
+#: title/pc5_library.c:2802
 #, c-format
 msgid "PC5 can't copy %s: %s."
 msgstr "PC5 kan ikke kopiere %s: %s."
 
-#: title/pc5_library.c:2797
+#: title/pc5_library.c:2827
 #, c-format
 msgid "PC5 can't read %s on the USB drive: %s."
 msgstr "PC5 kan ikke læse %s på USB-drevet: %s."
 
-#: title/pc5_library.c:2961 title/pc5_library.c:2973
+#: title/pc5_library.c:2991 title/pc5_library.c:3003
 #, c-format
 msgid "PC5 can't read back %s: %s."
 msgstr "PC5 kan ikke læse %s tilbage: %s."
 
-#: title/pc5_library.c:2961
+#: title/pc5_library.c:2991
 #, c-format
 msgid "PC5 can't open %s on the USB drive: %s."
 msgstr "PC5 kan ikke åbne %s på USB-drevet: %s."
 
-#: title/pc5_library.c:2974
+#: title/pc5_library.c:3004
 #, c-format
 msgid "The USB drive stopped answering while PC5 copied %s (%s)."
 msgstr "USB-drevet holdt op med at svare, mens PC5 kopierede %s (%s)."
 
-#: title/pc5_library.c:3043
+#: title/pc5_library.c:3073
 #, c-format
 msgid ""
 "The copy of %s doesn't match the USB drive. The drive or its cable may be "
@@ -752,23 +752,23 @@ msgstr ""
 "Kopien af %s passer ikke med USB-drevet. Drevet eller kablet er måske ved "
 "at gå i stykker; intet blev beholdt."
 
-#: title/pc5_library.c:3162 title/pc5_library.c:3174
+#: title/pc5_library.c:3192 title/pc5_library.c:3204
 #, c-format
 msgid ""
 "The game couldn't be put back in the INSTALL folder: it is in %.180s."
 msgstr ""
 "Spillet kunne ikke lægges tilbage i INSTALL-mappen: Det ligger i %.180s."
 
-#: title/pc5_library.c:3213
+#: title/pc5_library.c:3243
 #, c-format
 msgid "PC5 can't save the cover: %s."
 msgstr "PC5 kan ikke gemme omslaget: %s."
 
-#: title/pc5_library.c:3329
+#: title/pc5_library.c:3359
 msgid "PC5 didn't install this game, so it can't update it."
 msgstr "PC5 har ikke installeret dette spil og kan derfor ikke opdatere det."
 
-#: title/pc5_library.c:3331
+#: title/pc5_library.c:3361
 #, c-format
 msgid ""
 "%s plays from its USB drive: copy the newer version over its folder %s "
@@ -777,11 +777,11 @@ msgstr ""
 "%s spilles fra sit USB-drev: Kopiér den nyere version over dets mappe %s "
 "der."
 
-#: title/pc5_library.c:3336 title/pc5_library.c:3398
+#: title/pc5_library.c:3366 title/pc5_library.c:3428
 msgid "The game's folder is missing: uninstall it and install it again."
 msgstr "Spillets mappe mangler: Afinstaller det, og installer det igen."
 
-#: title/pc5_library.c:3339
+#: title/pc5_library.c:3369
 #, c-format
 msgid ""
 "This folder doesn't have %s, the program %s starts. Choose the folder of a "
@@ -790,12 +790,12 @@ msgstr ""
 "Denne mappe har ikke %s, programmet, som %s starter. Vælg mappen med en "
 "nyere kopi af %s."
 
-#: title/pc5_library.c:3353
+#: title/pc5_library.c:3383
 #, c-format
 msgid "Not enough space: the update needs %s and the console has %s free."
 msgstr "Ikke nok plads: Opdateringen kræver %s, og konsollen har %s ledigt."
 
-#: title/pc5_library.c:3359
+#: title/pc5_library.c:3389
 msgid ""
 "An earlier update of this game isn't finished: close PC5 and open it again "
 "to finish it."
@@ -803,18 +803,18 @@ msgstr ""
 "En tidligere opdatering af dette spil er ikke færdig: Luk PC5, og åbn det "
 "igen for at gøre den færdig."
 
-#: title/pc5_library.c:3361
+#: title/pc5_library.c:3391
 #, c-format
 msgid "PC5 can't start the update: %s."
 msgstr "PC5 kan ikke starte opdateringen: %s."
 
-#: title/pc5_library.c:3396
+#: title/pc5_library.c:3426
 msgid ""
 "PC5 didn't install this game in a Windows of its own, so its Windows can't "
 "be reset."
 msgstr ""
 
-#: title/pc5_library.c:3401
+#: title/pc5_library.c:3431
 #, fuzzy
 msgid ""
 "An update or a reset of this game isn't finished: close PC5 and open it "
@@ -823,38 +823,38 @@ msgstr ""
 "En tidligere opdatering af dette spil er ikke færdig: Luk PC5, og åbn det "
 "igen for at gøre den færdig."
 
-#: title/pc5_library.c:3407
+#: title/pc5_library.c:3437
 #, c-format, fuzzy
 msgid ""
 "Not enough space: a new Windows needs %s and the console has %s free."
 msgstr "Ikke nok plads: Opdateringen kræver %s, og konsollen har %s ledigt."
 
-#: title/pc5_library.c:3411
+#: title/pc5_library.c:3441
 #, c-format
 msgid "PC5 can't start resetting its Windows: %s."
 msgstr ""
 
-#: title/pc5_library.c:3470
+#: title/pc5_library.c:3500
 msgid ""
 "Kept saves can't be put back for a game that plays from its USB drive."
 msgstr ""
 "Gemte data, der er beholdt, kan ikke lægges tilbage for et spil, der "
 "spilles fra sit USB-drev."
 
-#: title/pc5_library.c:3474
+#: title/pc5_library.c:3504
 msgid "The install has begun already."
 msgstr "Installationen er allerede i gang."
 
-#: title/pc5_library.c:3490
+#: title/pc5_library.c:3520
 msgid "PC5 can't read the kept saves."
 msgstr "PC5 kan ikke læse de beholdte gemte data."
 
-#: title/pc5_library.c:3490
+#: title/pc5_library.c:3520
 msgid "The kept saves are damaged: they have no registry."
 msgstr ""
 "De beholdte gemte data er beskadigede: De har ingen registreringsdatabase."
 
-#: title/pc5_library.c:3573
+#: title/pc5_library.c:3603
 #, c-format
 msgid "PC5 can't make the game's folder on the USB drive: %s."
 msgstr "PC5 kan ikke oprette spillets mappe på USB-drevet: %s."

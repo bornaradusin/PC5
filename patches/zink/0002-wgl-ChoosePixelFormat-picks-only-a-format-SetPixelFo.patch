@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Wed, 4 Nov 2026 12:30:00 +0000
+Subject: [PATCH] wgl: ChoosePixelFormat picks only a format SetPixelFormat
+ takes
+
+stw_pixelformat_choose looked through the extended formats too (the 16-
+and 32-bit-float ones meant for wglChoosePixelFormatARB), which
+DescribePixelFormat doesn't list and DrvSetPixelFormat refuses. A game
+asking for a 16-bit pixel format (Alone in the Dark: The New Nightmare)
+was given B5G6R5, its SetPixelFormat failed, and wglCreateContext had no
+pixel format to make a context with: every GL call then had no context
+and the game closed. It now chooses among the listed formats, as a
+Windows driver does, so the game gets the closest 32-bit one. A choice
+that was already a listed format is the same as before.
+---
+ src/gallium/frontends/wgl/stw_pixelformat.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/gallium/frontends/wgl/stw_pixelformat.c b/src/gallium/frontends/wgl/stw_pixelformat.c
+index 5b42ba0..681bfe8 100644
+--- a/src/gallium/frontends/wgl/stw_pixelformat.c
++++ b/src/gallium/frontends/wgl/stw_pixelformat.c
+@@ -495,7 +495,10 @@ stw_pixelformat_choose(HDC hdc, CONST PIXELFORMATDESCRIPTOR *ppfd)
+    uint bestindex;
+    uint bestdelta;
+ 
+-   count = stw_pixelformat_get_extended_count(hdc);
++   /* Only the formats DescribePixelFormat lists, which are all SetPixelFormat takes: a request
++    * for a 16-bit format matched an extended one (B5G6R5), which SetPixelFormat then refused, so
++    * the program got no context at all. The extended formats are for wglChoosePixelFormatARB. */
++   count = stw_pixelformat_get_count(hdc);
+    bestindex = 0;
+    bestdelta = ~0U;
+ 
+-- 
+2.43.0
+

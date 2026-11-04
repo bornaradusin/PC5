@@ -744,6 +744,35 @@ static void game_winedebug(const char *root, const char *id, char *out, size_t s
     pc5_buf_free(&text);
 }
 
+/* Unreal's starter: <Name>.exe beside the game's Engine folder and <Name>\Binaries\Win64\
+ * <Name>-Win64-Shipping.exe. It only checks for the Visual C++ runtime and starts that program.
+ * On the console its check fails though Wine has the runtime, and it then runs the runtime's
+ * installer, which can't run there, and closes (RV There Yet). The game's program is started in
+ * its place, as the starter would; launch.txt stays the starter's (launch_options). */
+static void unreal_starter(const char *top, Pc5Info *program)
+{
+    const char *slash = strrchr(program->exe, '/'), *name = slash ? slash + 1 : program->exe;
+    size_t n = strlen(name), at = slash ? (size_t)(slash - program->exe) + 1 : 0, shipping = strlen("-win64-shipping");
+    char stem[PC5_NAME], relative[PC5_PATH], starter[PC5_PATH], found[PC5_PATH];
+    struct stat st;
+
+    if (!top[0] || n <= 4 || n - 4 >= sizeof(stem) || pc5_casecmp(name + n - 4, ".exe")) return;
+    memcpy(stem, name, n - 4);
+    stem[n - 4] = 0;
+    if (n - 4 > shipping && !pc5_casecmp(stem + n - 4 - shipping, "-win64-shipping")) return;
+    /* A starter is small (some 300 KB); the game's own program, which may be named so too, isn't. */
+    if (pc5_join(starter, sizeof(starter), top, program->exe) || stat(starter, &st) || st.st_size > (4 << 20)) return;
+    if (pc5_format(relative, sizeof(relative), "%.*sEngine", (int)at, program->exe) ||
+        resolve_ci(top, relative, found, sizeof(found)) || !pc5_is_dir(found))
+        return;
+    if (pc5_format(relative, sizeof(relative), "%.*s%s/Binaries/Win64/%s-Win64-Shipping.exe", (int)at, program->exe, stem,
+                   stem) ||
+        resolve_ci(top, relative, found, sizeof(found)) || !pc5_is_file(found) || strlen(found) <= strlen(top) + 1 ||
+        strncmp(found, top, strlen(top)) || found[strlen(top)] != '/')
+        return;
+    pc5_copy(program->exe, sizeof(program->exe), found + strlen(top) + 1);
+}
+
 int pc5_profile_refresh(const char *root, const char *id, char *error, size_t size)
 {
     Pc5Info info, program;
@@ -765,6 +794,7 @@ int pc5_profile_refresh(const char *root, const char *id, char *error, size_t si
     /* A game started from a batch file: the program it starts, with its arguments and folder. */
     if (start_program(root, id, &info, &program, arguments, sizeof(arguments), work, sizeof(work), error, size))
         return -1;
+    if (!work[0]) unreal_starter(top, &program);
     /* A game installed as drawing with Windows itself may load Direct3D or Vulkan at run
      * time (before 1.6.1 PC5 didn't look): what its program names, kept in its notes. */
     if (info.api == PC5_API_GDI &&
