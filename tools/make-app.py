@@ -158,7 +158,7 @@ def main() -> int:
     param = json.loads((app / "sce_sys" / "param.json").read_text())
     if param.get("titleId") != TITLE:
         problems.append(f"sce_sys/param.json is {param.get('titleId')}, not {TITLE}")
-    for needed in ("eboot.bin", "lapy.elf", "sce_sys/icon0.png", "sce_sys/pic0.png", "sce_sys/pic0.dds",
+    for needed in ("eboot.bin", "lapy.elf", "pc5child.elf", "sce_sys/icon0.png", "sce_sys/pic0.png", "sce_sys/pic0.dds",
                    "sce_sys/pic1.dds", "sce_module/libc.prx",
                    "pc5/fonts.bin", "pc5/sounds/cheap chinese speaker.wav", "pc5/ca-certificates.crt", "pc5/prefix.list", "pc5/prefix/system.reg",
                    "pc5/prefix-media.reg", "win/wine/lib/wine/x86_64-unix/winedmo.prx",

@@ -1,0 +1,450 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Wed, 4 Nov 2026 18:00:00 +0000
+Subject: [PATCH 127/127] PC5: a game's installers and its built-in browser's processes
+ start as processes of their own
+
+A PS5 title can't create a process, so a program a game starts failed
+to start (Wine patch 0550). PC5 now starts the ones that need no picture
+of their own, hidden, through elfldr, which PC5 already uses for /data
+(PC5's title/pc5_children.h):
+
+- Wine patch 1000: with __wine_ps5_set_spawn set, NtCreateUserProcess
+  goes on as on other systems for a game's installers (Visual C++,
+  DirectX, .NET, PhysX, Windows Installer), a built-in web browser's
+  processes (Chromium's, --type= in their command line) and anything a
+  started program starts, and hands the new process's server socket to
+  the title. The new process gets the environment without the launcher
+  hand-off's, with winevulkan off and PW_CHILD=1.
+- The server runs in the title and signals a thread by its kernel id: a
+  started program's threads are in another process, so those signals go
+  to the title (pw_wine_set_remote_kill), which sends them on to PC5's
+  loader there, and the loader keeps that process's threads' table
+  (__wine_ps5_set_thread_registry).
+- wine64_main.c: in a test version of PC5, or with PW_PC5_CHILDREN=1, the
+  title reads pc5child.elf and sets the hooks once ntdll is loaded, and
+  every started program ends before the title restarts or closes.
+---
+ docs/WINE_PS5_BUILD.md                        |   1 +
+ native/wine64_main.c                          |  61 ++++-
+ tools/build_wine_ps5.sh                       |   2 +
+ ...process-of-its-own-through-the-title.patch | 212 ++++++++++++++++++
+ wine/ps5/pw_wine_threads.c                    |  11 +-
+ wine/ps5/pw_wine_threads.h                    |   5 +-
+ 6 files changed, 289 insertions(+), 3 deletions(-)
+ create mode 100644 wine/patches/1000-ntdll-ps5-start-a-program-as-a-process-of-its-own-through-the-title.patch
+
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 5a2748f..54fe041 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -187,6 +187,7 @@ before evaluating a candidate built from that cache.
+ | 0997 | `kernelbase`: on PS5, the listing 0988 writes for `fxc.exe` gives a `def` line's values as plain decimals (`1.0`, `-0.5`, `0.333333343`; vkd3d-shader writes `1.00000000e+00`, and `D3DXAssembleShader` takes no exponent), and a `vs_1_x` shader that fails to compile (vkd3d-shader's `E7002` for `sincos`) is compiled for `vs_2_0` instead, as Far Cry only assembles the listing again on a device that takes `vs_3_0` |
+ | 0998 | `ntdll`: on PS5, a non-alertable `NtWaitForSingleObject` on an event or semaphore whose one try on the shared word (0885, 0887) fails spins up to `WINE_PS5_SYNC_SPIN_US` microseconds (100 by default, 0 off, 1000 at most; never longer than a relative timeout, none for a poll or an absolute time) re-trying the word before it blocks in the server, and stops at once when the server holds the word. While it spins the word stays the client's, so `SetEvent`/`ReleaseSemaphore` need no server call either. Blur sets six events about 2000 times a frame, each waking a worker that waits again, and each of those waits and sets cost several microseconds through the server (5 to 10 ms a frame). The log says `wine-ps5: waits spin up to N us before blocking` at the first such wait, and every 65536 spins how many took the object (`wine-ps5: wait spins: …`); `tests/test_wine_sync_spin.py` runs the spin on the actual word header |
+ | 0999 | `win32u`: on PS5, the user driver hides the pointer once the player hasn't moved it or clicked for `WINE_PS5_CURSOR_IDLE_MS` milliseconds (unset or 0 never; PC5 sets 5000 for a game whose Mouse pointer option says so), both where it draws the cursor over the screen and where Vulkan frames get it from VideoOut's hardware cursor (0740); the next move, even against an edge, or click shows it again, as does the game moving it to another place itself (`SetCursorPos`; Grim Dawn moves its pointer by the controller). A game setting the same place or a new image doesn't count, and the cursor the application set is unchanged for `GetCursorInfo`. A game played with the controller that leaves the Windows cursor on showed it, still, in a corner (Valor Mortis). |
++| 1000 | `ntdll`: on PS5, with `__wine_ps5_set_spawn` set (PC5, `title/pc5_children.h`), `NtCreateUserProcess` starts a program that needs no picture of its own as a process of its own through the title, which sends PC5's loader to elfldr and hands it the new process's server socket: a game's installers (Visual C++, DirectX, .NET, PhysX, Windows Installer), a built-in browser's processes (`--type=` in the command line), and anything a started program starts. The new process gets the environment without the hand-off's (0923), `winevulkan` off and `PW_CHILD=1`; the server's signals for its threads go through the title (`__wine_ps5_set_remote_kill`, `pw_wine_set_remote_kill`), and its loader keeps their table (`__wine_ps5_set_thread_registry`). Anything else fails as before (0550) |
+ | 0964 | `kernelbase`: for a console program started without a console window (`CONSOLE_HANDLE_SHELL_NO_WINDOW`, as the title starts every game), a screen buffer query on one of its standard handles that fails answers an empty 80x25 buffer, and filling it or moving its cursor succeeds without doing anything. .NET's `Console.Clear()` threw "The handle is invalid" there and Streets of Rage 4 ended at start; a real console and other handles are answered as before |
+ | 0965 | `win32u`: setting a pixel format on the desktop window no longer posts `WM_WINE_SETPIXELFORMAT` to it. Nothing owns the server-created desktop on the PS5, so the message came back to the game's own queue and posted itself again forever. `vkCreateWin32SurfaceKHR` sets format -1 on every surface's window, so a Vulkan surface on the desktop (DXVK or Zink) kept the game on a black screen with one core busy (Syndicate) |
+ | 0966 | `win32u` (prospero-win 0998, Leo Lobato): the adapter's 32-bit `HardwareInformation.MemorySize` is capped at 0xffffffff. On the Unix side of a 64-bit build `ULONG_MAX` is 64 bits wide, so the cap never applied and a GPU with an exact multiple of 4 GiB, as the PS5's 16 GiB, wrote 0 there, and WMI's `AdapterRAM` was 0: launchers took it for a machine below their minimum (Batman: Arkham City) |
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index e6ed7b2..02e5094 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -52,6 +52,8 @@
+ #include "pc5_i18n.h"
+ #include "pc5_matrix.h"
+ #include "pc5_tile.h"
++#include "pc5_children.h"
++#include "pc5.h"
+ #include "../wine/ps5/pw_pc5_hud.h"
+ #endif
+ 
+@@ -821,6 +823,9 @@ static void restart_title_exit(const PwWineApp *app, uint32_t cycle, const char
+         next[words++] = lang;
+         next[words] = NULL;
+     }
++#endif
++#ifdef PW_PC5
++    pc5_children_stop(reason);   /* the programs a game started end before the title does */
+ #endif
+     display_quiesce(reason);
+     for (size_t i = 0; i < sizeof(eboots) / sizeof(eboots[0]); i++) {
+@@ -849,6 +854,9 @@ static void close_title_to_home(const char *reason)
+     int app = sceSystemServiceGetAppIdOfRunningBigApp(), killed = -1, exited = -1;
+ 
+     PS5LOG_LOG("PW_WINE64 exit to the home screen: started from a tile app=%d", app);
++#ifdef PW_PC5
++    pc5_children_stop(reason);
++#endif
+     display_quiesce(reason);
+     pw_diagnostics_close(reason);
+     if (app > 0) killed = sceSystemServiceKillApp(app, -1, 0, 0);
+@@ -869,6 +877,9 @@ static void load_catalog(void);
+ 
+ static void on_exit_report(void)
+ {
++#ifdef PW_PC5
++    pc5_children_stop("wine-exit");
++#endif
+     if (held_input) {
+         char held[256];
+         pw_wine_held_names(held_input, held_buttons, held_touch, held, sizeof(held));
+@@ -1587,6 +1598,50 @@ static void dualsense_effects(PwPadPs5 *pad, const PwDualSenseOutput *out, uint6
+                    out->trigger[0][0], out->trigger[1][0], pw_result_name(vibrate), pad->vibration_rc);
+ }
+ 
++#ifdef PW_PC5
++static void children_log(const char *line) { PS5LOG_LOG("%s", line); }
++
++/* Programs a game starts, each a process of its own (title/pc5_children.h): its installers,
++ * hidden. In a test version, or with PW_PC5_CHILDREN=1 in the game's launch settings; =0
++ * turns it off. The loader and Wine's files are given as other processes see them: the
++ * sandbox's app0, not /app0. */
++static void pc5_children_start(const PwWineStart *start, const char *root)
++{
++    static char loader[sizeof(sandbox_app0) + 32], app0[sizeof(sandbox_app0) + 128], ntdll[sizeof(app0) + 64],
++        run_dir[160];
++    const char *wanted = getenv("PW_PC5_CHILDREN");
++    int on = wanted ? !strcmp(wanted, "1") : strchr(PC5_VERSION, '-') != NULL;
++    void (*set_spawn)(int (*)(const char *const *, const char *const *, int)) =
++        (void (*)(int (*)(const char *const *, const char *const *, int)))(uintptr_t)pw_prx_lookup(start->descriptor,
++                                                                                                   "__wine_ps5_set_spawn");
++    void (*set_remote)(int (*)(pid_t, long, int)) =
++        (void (*)(int (*)(pid_t, long, int)))(uintptr_t)pw_prx_lookup(start->descriptor, "__wine_ps5_set_remote_kill");
++    Pc5ChildrenConfig config;
++
++    if (!on || !root) {
++        PS5LOG_LOG("PC5 programs: off%s", on ? " (no runtime)" : "");
++        return;
++    }
++    if (!set_spawn || !set_remote) {
++        PS5LOG_LOG("PC5 programs: off (this ntdll can't start programs)");
++        return;
++    }
++    snprintf(app0, sizeof(app0), "%s", strcmp(root, "/app0") ? root : sandbox_app0);
++    snprintf(loader, sizeof(loader), "%s/pc5child.elf", root);
++    snprintf(ntdll, sizeof(ntdll), "%s" PW_WINE64_RUNTIME "/ntdll.prx", app0);
++    snprintf(run_dir, sizeof(run_dir), "%s/run", library_root);
++    memset(&config, 0, sizeof(config));
++    config.loader = loader;
++    config.app0 = app0;
++    config.ntdll = ntdll;
++    config.run_dir = run_dir;
++    config.log = children_log;
++    if (pc5_children_init(&config)) return;
++    set_remote(pc5_children_signal);
++    set_spawn(pc5_children_spawn);
++}
++#endif
++
+ int main(int argc, char **argv)
+ {
+     static char prefix[PW_WINE_LIBRARY_PATH + PW_APP_ID_CAPACITY], desktop[24], view[8] = "window";
+@@ -1638,6 +1693,7 @@ int main(int argc, char **argv)
+     static char argument_words[PW_APP_ARGUMENTS_CAPACITY];
+     static char effective_dll_overrides[PW_APP_DLL_OVERRIDES_CAPACITY + sizeof(";opengl32=n")];
+     static char ntdll_dir[256], ntdll_path[288];
++    const char *runtime_root = NULL;
+     static const PwWineStartOps ops = {
+         sceKernelLoadStartModule, sceKernelGetModuleInfo, set_env, start_thread };
+     static PwWineStartConfig config = {
+@@ -1892,7 +1948,7 @@ int main(int argc, char **argv)
+         if (!runtime_roots[i][0]) continue;
+         snprintf(ntdll_dir, sizeof(ntdll_dir), "%s" PW_WINE64_RUNTIME, runtime_roots[i]);
+         snprintf(ntdll_path, sizeof(ntdll_path), "%s/ntdll.prx", ntdll_dir);
+-        if (stat(ntdll_path, &st) == 0) break;
++        if (stat(ntdll_path, &st) == 0) { runtime_root = runtime_roots[i]; break; }
+         PS5LOG_LOG("PW_WINE64 runtime not at %s", ntdll_dir);
+     }
+     PS5LOG_LOG("PW_WINE64 ntdll=%s prefix=%s exe=%s", config.ntdll_path, config.prefix,
+@@ -1919,6 +1975,9 @@ int main(int argc, char **argv)
+             (uintptr_t)pw_prx_lookup(start.descriptor, "__wine_ps5_set_output_sink");
+         PS5LOG_LOG("PW_WINE64 output_sink=%d", set_sink != NULL);
+         if (set_sink) set_sink(wine_output_sink);
++#ifdef PW_PC5
++        pc5_children_start(&start, runtime_root);
++#endif
+         void (*set_present)(PwWinePresentSink, void *) = (void (*)(PwWinePresentSink, void *))
+             (uintptr_t)pw_prx_lookup(start.descriptor, "pw_wine_set_present_sink");
+         post_input = (int (*)(const PwWineInput *))
+diff --git a/tools/build_wine_ps5.sh b/tools/build_wine_ps5.sh
+index bf2c4ff..8bee742 100755
+--- a/tools/build_wine_ps5.sh
++++ b/tools/build_wine_ps5.sh
+@@ -460,11 +460,13 @@ if [ "$prx_status" = 0 ]; then
+         pw_wine_set_audio_sink pw_wine_audio_available pw_wine_audio_output \
+         __wine_virtual_stats __wine_virtual_fault_top __wine_ps5_set_output_sink __wine_ps5_memory_stats pw_cwd_set \
+         __wine_ps5_set_segv_hook __wine_ps5_set_segv_unresolved_hook pw_wine_set_display_release pw_wine_release_display \
++        __wine_ps5_set_spawn __wine_ps5_set_remote_kill __wine_ps5_set_thread_registry \
+         --optional-from "$build/dlls/ntdll/ntdll.so" --nm "$sdk/bin/prospero-nm" \
+         --optional-export __wine_prospero_native_wow64_caps
+     python3 "$root/tools/gen_prx_descriptor.py" "$prx/obj/win32u_desc.c" __wine_unix_lib_init
+     python3 "$root/tools/gen_prx_descriptor.py" "$prx/obj/wineserver_desc.c" \
+         pw_wineserver_connect pw_wine_thread_register pw_wine_thread_unregister pw_wineserver_call_direct pw_wineserver_try_fast_mutex \
++        pw_wine_set_remote_kill \
+         pw_wineserver_mutex_backend \
+         pw_wineserver_sync_backend \
+         pw_cwd_share_changes
+diff --git a/wine/patches/1000-ntdll-ps5-start-a-program-as-a-process-of-its-own-through-the-title.patch b/wine/patches/1000-ntdll-ps5-start-a-program-as-a-process-of-its-own-through-the-title.patch
+new file mode 100644
+index 0000000..d8a4ca8
+--- /dev/null
++++ b/wine/patches/1000-ntdll-ps5-start-a-program-as-a-process-of-its-own-through-the-title.patch
+@@ -0,0 +1,212 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Wed, 4 Nov 2026 18:00:00 +0000
++Subject: [PATCH] ntdll: PS5: start a program as a process of its own through
++ the title.
++
++A PS5 title can't create a process, so NtCreateUserProcess failed (patch
++0550). PC5 can start one: it sends its own loader to elfldr, which runs
++it as a process of its own, and hands it the new process's end of its
++connection to the server (PC5's title/pc5_children.h). With
++__wine_ps5_set_spawn set, NtCreateUserProcess goes on as on other systems
++for the programs that need no picture of their own, run hidden: a game's
++installers (a Visual C++, DirectX, .NET or PhysX setup, Windows
++Installer), a built-in web browser's processes (Chromium's, started with
++--type= in their command line: a game's menus drawn as web pages), and in
++a program started that way, whatever it starts. The new process gets this
++process's environment without the launcher hand-off's (patch 0923), with
++winevulkan off, so nothing in it reaches for the GPU the game holds, and
++PW_CHILD=1. Anything else, or a start the title couldn't make, fails as
++before.
++
++The server runs in the title (patch 0110) and signals threads by their
++kernel id (wine/ps5/pw_wine_threads.h); a started program's threads are
++in another process, so the title forwards those signals
++(__wine_ps5_set_remote_kill, handed to the server module), and in the
++started program PC5's loader keeps the threads' table in place of the
++server module's (__wine_ps5_set_thread_registry).
++---
++diff --git a/dlls/ntdll/unix/process.c b/dlls/ntdll/unix/process.c
++index 552dc57..6e24253 100644
++--- a/dlls/ntdll/unix/process.c
+++++ b/dlls/ntdll/unix/process.c
++@@ -396,6 +396,85 @@ static BOOL is_unix_console_handle( HANDLE handle )
++ }
++ 
++ 
+++#ifdef __PROSPERO__
+++/* PC5 starts a program as a process of its own (title/pc5_children.h), hidden: nothing of it
+++ * is on the screen. The game's installers (a Visual C++ or DirectX setup), a built-in web
+++ * browser's processes, and anything a program started that way starts in turn: Windows
+++ * Installer's own processes, say. Set by the title, and by PC5's loader in a started
+++ * program; otherwise starts fail as before. */
+++static int (*ps5_spawn)( const char *const *argv, const char *const *envp, int server_fd );
+++
+++DECLSPEC_EXPORT void __wine_ps5_set_spawn( int (*spawn)( const char *const *, const char *const *, int ) )
+++{
+++    ps5_spawn = spawn;
+++}
+++
+++static BOOL ps5_spawn_allowed( const char *image, const char *command )
+++{
+++    static const char * const installers[] =
+++    {
+++        "vcredist", "vc_redist", "redist", "dxsetup", "dxwebsetup", "dotnet", "physx", "oalinst",
+++        "msiexec", "xnafx", "prereq", "vstor",
+++    };
+++    const char *name = strrchr( image, '\\' );
+++    char lower[256];
+++    size_t i;
+++
+++    if (!ps5_spawn) return FALSE;
+++    if (getenv( "PW_CHILD" )) return TRUE;   /* a program PC5 started: whatever it starts */
+++    /* A built-in web browser's own processes (Chromium's, a game's menus: BeamNG.drive's),
+++     * started with their part in the command line: --type=renderer, --type=gpu-process. */
+++    if (strstr( command, " --type=" )) return TRUE;
+++    name = name ? name + 1 : image;
+++    if (strrchr( name, '/' )) name = strrchr( name, '/' ) + 1;
+++    for (i = 0; name[i] && i < sizeof(lower) - 1; i++) lower[i] = (name[i] >= 'A' && name[i] <= 'Z') ? name[i] + 32 : name[i];
+++    lower[i] = 0;
+++    if (!strncmp( lower, "ndp", 3 )) return TRUE;   /* .NET's NDP472-KB4054530-x86-x64-AllOS-ENU.exe */
+++    for (i = 0; i < ARRAY_SIZE(installers); i++) if (strstr( lower, installers[i] )) return TRUE;
+++    return FALSE;
+++}
+++
+++/* Starts the new process through the title, with this process's environment and the new one's
+++ * end of its connection to the server. */
+++static NTSTATUS ps5_spawn_process( const RTL_USER_PROCESS_PARAMETERS *params, int socketfd, char *winedebug,
+++                                   const char *image )
+++{
+++    extern char **environ;
+++    char **argv = build_argv( &params->CommandLine, 1 ), **envp;
+++    size_t count = 0, n = 0, i;
+++    int pid;
+++
+++    if (!argv) return STATUS_NO_MEMORY;
+++    argv[0] = (char *)"wine";
+++    while (environ[count]) count++;
+++    if (!(envp = malloc( (count + 4) * sizeof(*envp) )))
+++    {
+++        free( argv );
+++        return STATUS_NO_MEMORY;
+++    }
+++    for (i = 0; i < count; i++)
+++    {
+++        const char *e = environ[i];
+++        if (!strncmp( e, "WINESERVERSOCKET=", 17 ) || !strncmp( e, "PW_HANDOFF", 10 ) ||
+++            !strncmp( e, "WINEDLLOVERRIDES=", 17 ) || !strncmp( e, "PW_CHILD=", 9 ) ||
+++            (winedebug && !strncmp( e, "WINEDEBUG=", 10 )))
+++            continue;
+++        envp[n++] = environ[i];
+++    }
+++    if (winedebug) envp[n++] = winedebug;
+++    /* Hidden, and without Vulkan: nothing in it reaches for the GPU the game holds. */
+++    envp[n++] = (char *)"WINEDLLOVERRIDES=winevulkan=d";
+++    envp[n++] = (char *)"PW_CHILD=1";
+++    envp[n] = NULL;
+++    pid = ps5_spawn( (const char *const *)argv, (const char *const *)envp, socketfd );
+++    if (pid > 0) fprintf( stderr, "wine-ps5: %s runs hidden as process %d\n", image, pid );
+++    else fprintf( stderr, "wine-ps5: %s could not start as a process of its own (%d)\n", image, errno );
+++    free( envp );
+++    free( argv );
+++    return pid > 0 ? STATUS_SUCCESS : STATUS_NOT_SUPPORTED;
+++}
+++#endif
+++
++ /***********************************************************************
++  *           spawn_process
++  */
++@@ -798,6 +877,9 @@ NTSTATUS WINAPI NtCreateUserProcess( HANDLE *process_handle_ptr, HANDLE *thread_
++     SIZE_T i, attr_count = (ps_attr->TotalLength - sizeof(ps_attr->TotalLength)) / sizeof(PS_ATTRIBUTE);
++     const PS_ATTRIBUTE *handles_attr = NULL, *jobs_attr = NULL;
++     data_size_t handles_size, jobs_size;
+++#ifdef __PROSPERO__
+++    char ps5_image[1024], ps5_command[4096];
+++#endif
++     obj_handle_t *handles, *jobs;
++ 
++     if (thread_flags & THREAD_CREATE_FLAGS_HIDE_FROM_DEBUGGER)
++@@ -873,9 +955,14 @@ NTSTATUS WINAPI NtCreateUserProcess( HANDLE *process_handle_ptr, HANDLE *thread_
++      * there is refused as not supported, unless the title starts it in place of this
++      * program (a game's launcher starting the game). */
++     ps5_hand_off( params, &pe_info );
++-    TRACE( "process creation is not supported on PS5\n" );
++-    status = STATUS_NOT_SUPPORTED;
++-    goto done;
+++    ps5_utf8( &params->ImagePathName, ps5_image, sizeof(ps5_image) );
+++    ps5_utf8( &params->CommandLine, ps5_command, sizeof(ps5_command) );
+++    if (!ps5_spawn_allowed( ps5_image, ps5_command ))
+++    {
+++        TRACE( "process creation is not supported on PS5\n" );
+++        status = STATUS_NOT_SUPPORTED;
+++        goto done;
+++    }
++ #endif
++     if (!machine)
++     {
++@@ -990,7 +1077,12 @@ NTSTATUS WINAPI NtCreateUserProcess( HANDLE *process_handle_ptr, HANDLE *thread_
++ 
++     /* create the child process */
++ 
+++#ifdef __PROSPERO__
+++    (void)spawn_process;   /* fork and exec: not on the console */
+++    if ((status = ps5_spawn_process( params, socketfd[0], winedebug, ps5_image ))) goto done;
+++#else
++     if ((status = spawn_process( params, socketfd[0], unixdir, winedebug, &pe_info ))) goto done;
+++#endif
++ 
++     close( socketfd[0] );
++     socketfd[0] = -1;
++diff --git a/dlls/ntdll/unix/server.c b/dlls/ntdll/unix/server.c
++index 92ae9c3..cd94e0e 100644
++--- a/dlls/ntdll/unix/server.c
+++++ b/dlls/ntdll/unix/server.c
++@@ -1918,6 +1918,9 @@ void unregister_inprocess_thread(void)
++ #ifdef WINE_INPROCESS_SERVER
++ /* the in-process server signals threads through this table on PS5 */
++ static int (*register_server_thread)( long tid, pthread_t thread );
+++#ifdef __PROSPERO__
+++static int (*ps5_remote_kill)( pid_t pid, long tid, int signal );   /* __wine_ps5_set_remote_kill */
+++#endif
++ 
++ #ifdef __PROSPERO__
++ /* wine/ps5/pw_wine_cwd.h */
++@@ -1989,6 +1992,12 @@ static int connect_inprocess_server(void)
++     if (!(connect_server = dlsym( module, "pw_wineserver_connect" )))
++         fatal_error( "%s has no pw_wineserver_connect\n", module_path );
++     register_server_thread = dlsym( module, "pw_wine_thread_register" );
+++#ifdef __PROSPERO__
+++    {
+++        void (*set_remote)( int (*)( pid_t, long, int ) ) = dlsym( module, "pw_wine_set_remote_kill" );
+++        if (set_remote && ps5_remote_kill) set_remote( ps5_remote_kill );
+++    }
+++#endif
++     if ((fd = connect_server( nls_dir )) == -1)
++         fatal_error( "the in-process server %s did not start\n", module_path );
++     unregister_server_thread = dlsym( module, "pw_wine_thread_unregister" );
++@@ -2036,6 +2045,22 @@ static void register_inprocess_thread( int tid )
++         ERR( "cannot register thread %d with the in-process server\n", tid );
++ }
++ 
+++#ifdef __PROSPERO__
+++/* PC5 (title/pc5_children.h): the title signals the threads of a program it started, a
+++ * process of its own, for the server; and in that program, PC5's loader keeps the threads'
+++ * table, which the title's signals reach, in place of the server's. */
+++DECLSPEC_EXPORT void __wine_ps5_set_remote_kill( int (*kill)( pid_t, long, int ) )
+++{
+++    ps5_remote_kill = kill;
+++}
+++
+++DECLSPEC_EXPORT void __wine_ps5_set_thread_registry( int (*reg)( long, pthread_t ), void (*unreg)( long ) )
+++{
+++    register_server_thread = reg;
+++    unregister_server_thread = unreg;
+++}
+++#endif
+++
++ #endif
++ 
++ 
++-- 
++2.43.0
++
+diff --git a/wine/ps5/pw_wine_threads.c b/wine/ps5/pw_wine_threads.c
+index 6ba6fda..eb39ff9 100644
+--- a/wine/ps5/pw_wine_threads.c
++++ b/wine/ps5/pw_wine_threads.c
+@@ -61,10 +61,19 @@ void pw_wine_thread_unregister(long tid)
+ }
+ /* The call is made with the table locked: a thread leaves the table before
+  * it exits, so a handle found here is still a live thread's. */
++static int (*remote_kill)(pid_t,long,int);
++void pw_wine_set_remote_kill(int (*remote)(pid_t,long,int))
++{
++    __atomic_store_n(&remote_kill,remote,__ATOMIC_RELEASE);
++}
+ int pw_wine_thread_kill(pid_t pid,long tid,int signal)
+ {
+     int status;
+-    if(pid!=getpid()){errno=ESRCH;return -1;}
++    if(pid!=getpid()) {
++        int (*remote)(pid_t,long,int)=__atomic_load_n(&remote_kill,__ATOMIC_ACQUIRE);
++        if(remote)return remote(pid,tid,signal);
++        errno=ESRCH;return -1;
++    }
+     pthread_mutex_lock(&lock);
+     Entry *entry=find_locked(tid);
+     status=entry?pthread_kill(entry->thread,signal):ESRCH;
+diff --git a/wine/ps5/pw_wine_threads.h b/wine/ps5/pw_wine_threads.h
+index cb886e7..98c33ab 100644
+--- a/wine/ps5/pw_wine_threads.h
++++ b/wine/ps5/pw_wine_threads.h
+@@ -19,8 +19,11 @@ enum { PW_WINE_THREADS_MAX = 4096 };
+ int pw_wine_thread_register(long tid,pthread_t thread);
+ void pw_wine_thread_unregister(long tid);
+ /* thr_kill2 on the registered threads of this process: 0, or -1 with
+- * errno ESRCH for another process or an unknown id. */
++ * errno ESRCH for an unknown id. Another process's thread goes to the
++ * remote function the title set (a program PC5 started as a process of its
++ * own, title/pc5_children.h), or ESRCH without one. */
+ int pw_wine_thread_kill(pid_t pid,long tid,int signal);
++void pw_wine_set_remote_kill(int (*remote)(pid_t pid,long tid,int signal));
+ /* pthread_setschedparam on a registered thread: 0, or an errno value (ESRCH
+  * for an unknown id, or what the system refused). */
+ int pw_wine_thread_set_priority(long tid,int policy,int priority);
+-- 
+2.43.0
+

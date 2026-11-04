@@ -63,7 +63,7 @@ cc "${common[@]}" -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all 
     tests/test_pc5.c title/pc5_base.c title/pc5_controls.c title/pc5_cover.c title/pc5_draw.c title/pc5_game.c title/pc5_image.c title/pc5_json.c \
     title/pc5_library.c title/pc5_logs.c title/pc5_matrix.c title/pc5_pe.c title/pc5_settings.c title/pc5_source.c \
     title/pc5_stb.c title/pc5_ui.c title/pc5_update.c title/pc5_home.c title/pc5_psfwd.c title/pc5_zip.c title/pc5_qr.c title/pc5_report.c \
-    title/pc5_upgrade.c title/pc5_sound.c title/pc5_video.c title/pc5_appearance.c title/pc5_compat.c title/pc5_look.c title/pc5_backgrounds.c title/pc5_tile.c title/pc5_dds.c title/pc5_files.c title/pc5_textdoc.c title/pc5_ftp.c title/pc5_web.c title/pc5_cab.c title/pc5_msi.c title/pc5_steam.c title/pc5_identity.c title/pc5_i18n.c tests/pc5_ftp_host.c "${upstream[@]}" "${text_sources[@]}" -lm -lpthread \
+    title/pc5_upgrade.c title/pc5_sound.c title/pc5_video.c title/pc5_appearance.c title/pc5_compat.c title/pc5_look.c title/pc5_backgrounds.c title/pc5_tile.c title/pc5_dds.c title/pc5_files.c title/pc5_textdoc.c title/pc5_ftp.c title/pc5_web.c title/pc5_cab.c title/pc5_msi.c title/pc5_steam.c title/pc5_identity.c title/pc5_i18n.c title/pc5_child_wire.c tests/pc5_ftp_host.c "${upstream[@]}" "${text_sources[@]}" -lm -lpthread \
     -o "$out/test_pc5"
 "$out/test_pc5" "$out/work" tests/fixtures "$out/programs" "$out/covers" "$out/fonts.bin"
 

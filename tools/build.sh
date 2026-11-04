@@ -204,7 +204,7 @@ parallel() { # function...
 src_pw() {
     local id=(-c user.name="PC5 build" -c user.email="pc5@invalid") made want
     want=$(cd "$here" && { echo "$PW_COMMIT"
-        sha256sum patches/prospero-win/*.patch title/pc5*.c title/pc5*.h title/third_party/stb_image.h \
+        sha256sum patches/prospero-win/*.patch title/pc5*.c title/pc5*.h title/child/*.c title/third_party/stb_image.h \
             title/third_party/stb_image_write.h title/third_party/dr_mp3.h $(find title/third_party/psfwd title/third_party/qrcodegen -type f | sort)
     } | sha256sum | cut -c1-64)
     made=$(git -C "$PW" rev-parse -q --verify HEAD 2>/dev/null || true)
@@ -216,10 +216,12 @@ src_pw() {
     git -C "$PW" clean -q -fd
     git -C "$PW" "${id[@]}" am -q --committer-date-is-author-date "$here"/patches/prospero-win/*.patch
     cp "$here"/title/pc5*.c "$here"/title/pc5*.h "$PW/native/"
+    mkdir -p "$PW/native/child"
+    cp "$here"/title/child/*.c "$PW/native/child/"   # pc5child.elf's, not the eboot's
     mkdir -p "$PW/native/third_party"
     cp "$here/title/third_party/stb_image.h" "$here/title/third_party/stb_image_write.h" "$here/title/third_party/dr_mp3.h" "$PW/native/third_party/"
     cp -r "$here/title/third_party/psfwd" "$here/title/third_party/qrcodegen" "$PW/native/third_party/"
-    git -C "$PW" add native/pc5* native/third_party
+    git -C "$PW" add native/pc5* native/child native/third_party
     GIT_AUTHOR_DATE="2026-10-22T17:00:00+0100" GIT_COMMITTER_DATE="2026-10-22T17:00:00+0100" \
         git -C "$PW" "${id[@]}" commit -q -m "PC5: its screens (title/ of the PC5 repo)"
     git -C "$PW" log --oneline -3
@@ -445,6 +447,13 @@ step_title() {
         PW_EXTRA_CFLAGS="-DPW_PC5=1 -DFRIBIDI_LIB_STATIC -I$bidi_source/lib -I$bidi_source/pc5-config -DPC5_VIDEO_FFMPEG=1 -DPC5_FFMPEG_EAGAIN=$video_eagain -I$video_ffmpeg/include -I$PW/wine/ps5 -I$mbedtls/include $config" \
         PW_EXTRA_LIBS="$bidi/libfribidi-pc5.a $tls/libmbedtls-pc5.a $B/video_ffmpeg_shim.o $video_ffmpeg/lib/libavformat.a $video_ffmpeg/lib/libavcodec.a $video_ffmpeg/lib/libswscale.a $B/video-avutil.a --wrap=pthread_create --version-script=$B/video-local.map" \
         PS5_NATIVE_FOUNDATION="$foundation" PW_FOUNDATION_READY=1 tools/build_native.sh)
+    # The loader for a program a game starts, a process of its own (title/pc5_children.h):
+    # an ELF of its own that elfldr runs, beside lapy.elf, not part of the eboot.
+    "$sdk/bin/prospero-clang" -std=c11 -O2 -Wall -Wextra -Werror -I"$PW/src" -I"$PW/include" \
+        "$PW/native/child/pc5child.c" "$PW/native/pc5_child_wire.c" "$PW/src/pw_wine_start.c" \
+        "$PW/wine/ps5/pw_wine_prx.c" -lpthread -o "$PW/dist/$TITLE/pc5child.elf"
+    [[ $(head -c 4 "$PW/dist/$TITLE/pc5child.elf" | od -An -tx1 | tr -d ' \n') == 7f454c46 ]] ||
+        { echo "pc5child.elf is not an ELF file" >&2; return 1; }
     # The eboot's imports, each from a library a title gets. A title's imports from
     # libkernel_sys, libkernel_web and libScePosixForWebKit stay empty, and a call to one
     # jumps to nothing; the console's statvfs and fstatvfs go through libkernel_sys.

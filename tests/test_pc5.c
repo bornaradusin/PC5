@@ -23,6 +23,7 @@ void pc5_web_host_init(void);   /* the same */
 #include "pc5_library.h"
 #include "pc5_logs.h"
 #include "pc5_cab.h"
+#include "pc5_child_wire.h"
 #include "pc5_msi.h"
 #include "pc5_qr.h"
 #include "pc5_report.h"
@@ -3234,6 +3235,46 @@ static void test_update(void)
           pc5_version_compare("2.3.1-programs-test", "2.3.1-programs-test1") == 0 &&
           pc5_version_compare("2.3.1-programs-test", "2.3.1-programs-test") == 0 &&
           pc5_version_compare("2.3.2", "2.3.1-programs-test3") > 0, "test versions come before their release");
+    {
+        /* A program a game starts (pc5_child_wire.h): the bootstrap and a start's arguments
+         * come back as they went, and what doesn't fit or isn't one is refused. */
+        static uint8_t boot[PC5_CHILD_MAX_BOOT + sizeof(Pc5ChildBootHeader)];
+        static Pc5ChildBoot got;
+        static const char *argv[] = { "wine", "C:\\game\\vcredist_x86.exe", "/q", NULL };
+        static const char *envp[] = { "WINEPREFIX=/data/prospero-win/prefixes/x", "PW_CHILD=1", NULL };
+        static const char *many[PC5_CHILD_MAX_ARGS + 2];
+        const uint8_t token[PC5_CHILD_TOKEN] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+        size_t size = pc5_child_boot_encode(boot, sizeof(boot), token, 0, "/data/prospero-win/run/c1-1.sock",
+                                            "/mnt/sandbox/PPSA11018_000/app0", "/mnt/sandbox/PPSA11018_000/app0/ntdll.prx",
+                                            argv, envp);
+        Pc5ChildBootHeader header;
+        memcpy(&header, boot, sizeof(header));
+        CHECK(size > sizeof(header) && pc5_child_boot_payload_size(&header) == size - sizeof(header) &&
+              !pc5_child_boot_decode(&header, (const char *)boot + sizeof(header), size - sizeof(header), &got) &&
+              got.argc == 3 && got.envc == 2 && !strcmp(got.argv[1], argv[1]) && !strcmp(got.argv[2], "/q") &&
+              !got.argv[3] && !strcmp(got.envp[1], "PW_CHILD=1") && !got.envp[2] &&
+              !strcmp(got.socket_path, "/data/prospero-win/run/c1-1.sock") && !memcmp(got.token, token, sizeof(token)),
+              "a started program's bootstrap");
+        CHECK(pc5_child_boot_decode(&header, (const char *)boot + sizeof(header), size - sizeof(header) - 1, &got) &&
+              !pc5_child_boot_encode(boot, sizeof(header) + 20, token, 0, "/s", "/a", "/n", argv, envp),
+              "a cut or too large bootstrap");
+        for (unsigned i = 0; i <= PC5_CHILD_MAX_ARGS; i++) many[i] = "x";
+        CHECK(!pc5_child_boot_encode(boot, sizeof(boot), token, 0, "/s", "/a", "/n", many, envp),
+              "more arguments than a bootstrap takes");
+        header.magic ^= 1;
+        CHECK(!pc5_child_boot_payload_size(&header), "not a bootstrap");
+
+        uint8_t args[4096];
+        const char *a[PC5_CHILD_MAX_ARGS + 1], *e[PC5_CHILD_MAX_ENV + 1];
+        size = pc5_child_args_encode(args, sizeof(args), argv, envp);
+        CHECK(size && !pc5_child_args_decode(args, size, a, PC5_CHILD_MAX_ARGS, e, PC5_CHILD_MAX_ENV) &&
+              !strcmp(a[2], "/q") && !a[3] && !strcmp(e[0], envp[0]) && !e[2] &&
+              pc5_child_args_decode(args, size - 1, a, PC5_CHILD_MAX_ARGS, e, PC5_CHILD_MAX_ENV),
+              "a start's arguments");
+        Pc5ChildFrame frame;
+        pc5_child_frame(&frame, PC5_CHILD_SPAWNED, 0, 1234, 0);
+        CHECK(pc5_child_frame_valid(&frame) && (frame.kind = 77, !pc5_child_frame_valid(&frame)), "control frames");
+    }
     pc5_update_check(&http, "1.0.0", &update);
     CHECK(update.state == PC5_UPDATE_NONE && !strcmp(net.last, PC5_RELEASES_API), "no release yet: %d", (int)update.state);
     net.release = "{\"tag_name\":\"v1.1.0\",\"name\":\"PC5 1.1.0\",\"draft\":false,"
