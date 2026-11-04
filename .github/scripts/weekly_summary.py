@@ -10,11 +10,11 @@
     (bots aside, as no_reply.py reads it);
   - open issues waiting on their reporter, and how long before no_reply.py closes them (an
     issue labelled "keep open", "in progress", "planned" or "enhancement" is never closed);
-  - issues closed in the last seven days, and how each ended (related_issues.py's words);
+  - issues closed in the last seven days, and how each ended;
   - game compatibility reports posted in the last seven days (from the discussions, through
     compatibility_list.py's GraphQL; left out when they can't be read).
 - The summary issue itself is about no game: compatibility_list.py doesn't list it, no_reply.py
-  never closes it (keep open), and issue_logs.py and related_issues.py leave it alone.
+  never closes it (keep open).
 
 Run with GITHUB_TOKEN and GITHUB_REPOSITORY; WEEKLY_SUMMARY_DRY_RUN=1 prints the page instead.
 """
@@ -29,7 +29,28 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 import compatibility_list as listing   # noqa: E402  the game reading and GraphQL
 import no_reply                         # noqa: E402  who spoke last, and the REST calls
-from related_issues import labels_of, state_words   # noqa: E402  how an issue stands, in words
+
+
+def labels_of(issue: dict) -> set:
+    return {(label.get("name") if isinstance(label, dict) else str(label)).casefold() for label in issue.get("labels", [])}
+
+
+def state_words(issue: dict) -> str:
+    """How an issue stands, as a player would say it."""
+    labels = labels_of(issue)
+    if listing.CHEAT_LABEL in labels:
+        return "anti-cheat: no copy runs"
+    if listing.STORE in labels or "needs steam" in labels:
+        return "that copy needs its store's app"
+    if issue.get("state") == "open":
+        return "open, a fix out to test" if listing.FIX_LABEL in labels else "open"
+    if listing.NO_REPLY in labels:
+        return "closed for no reply"
+    if listing.PLAYABLE in labels:
+        return "runs, with something to set or still wrong"
+    if issue.get("state_reason") == "not_planned" or "wontfix" in labels:
+        return "doesn't run"
+    return "fixed"
 
 TITLE = "Weekly summary"
 SUMMARY = listing.SUMMARY_LABEL
