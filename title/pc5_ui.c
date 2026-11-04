@@ -661,7 +661,8 @@ static int ui_game_kind(const Pc5Ui *ui)
            (ui->library.games[index].pc5 ? GAME_PC5 : 0) |
            (ui->library.games[index].pc5 && ui->library.games[index].prefix[0] &&
                     strcmp(ui->library.games[index].prefix, "default") ? GAME_MEDIA : 0) |
-           (pc5_graphics_choices(ui->library.games[index].api, choices) > 1 ? GAME_API : 0) |
+           /* a game PC5 didn't install keeps its profile's graphics: its api is only "plain" */
+           (ui->library.games[index].pc5 && pc5_graphics_choices(ui->library.games[index].api, choices) > 1 ? GAME_API : 0) |
            (ui->steam_dlls > 0 ? GAME_STEAM : 0) |
            (ui->library.games[index].bits != 32 && ui->library.games[index].api >= PC5_API_D3D10 &&
                     ui->library.games[index].api <= PC5_API_D3D12 ? GAME_DXGI : 0) |
@@ -7238,6 +7239,7 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
             ui->controls.graphics == PC5_GRAPHICS_AUTO
                 ? (api == PC5_API_DDRAW ? T("The usual way for older games like this; change it only if the picture is wrong")
                                         : T("Best for most games; change it only if the picture is wrong or it won't start"))
+            : ui->controls.graphics == PC5_GRAPHICS_WINDOWS_ONLY ? T("Without OpenGL; set it back to Auto if it doesn't help")
             : api == PC5_API_D3D12 ? T("A slower way to draw it; set it back to Auto if it doesn't help")
             : ui->controls.graphics == PC5_GRAPHICS_WINE_2D ? T("Drawn in 2D only; set it back to Auto if it doesn't help")
             : ui->controls.graphics == PC5_GRAPHICS_WINE_VULKAN ? T("Another way to draw it; set it back to Auto if it doesn't help")
@@ -7493,6 +7495,9 @@ static int setting_about(Pc5Ui *ui, GameRow row, const char *lines[6])
             lines[n++] = T("2D only: for a 2D game that flickers or shows only part of its screen.");
         } else if (api == PC5_API_D3D12) {
             lines[n++] = T("Alternative: slower than Auto. Try it if the game won't start or its picture is wrong.");
+        } else if (api == PC5_API_GDI) {
+            lines[n++] = T("Auto: OpenGL is ready for the game in case it asks for it while it runs.");
+            lines[n++] = T("Windows only: without OpenGL. Try it if the game starts or draws worse with Auto.");
         } else {
             lines[n++] = T("Alternative: another way to draw the game. Try it if the picture is wrong with Auto. Some mods need it.");
             lines[n++] = T("Compatibility (slow): the slowest, but it starts the most games.");
@@ -7757,7 +7762,10 @@ static const char *graphics_about(Pc5Graphics graphics, int api)
 {
     if (graphics == PC5_GRAPHICS_AUTO)
         return api == PC5_API_DDRAW ? T("The usual way for older games like this one, with their 2D and 3D.")
+             : api == PC5_API_GDI   ? T("Draws as Windows programs do, with OpenGL ready in case the game asks for it. Leave it here unless the game won't start or its picture is wrong.")
                                     : T("The fastest, and what most games want. Leave it here unless the game won't start or its picture is wrong.");
+    if (graphics == PC5_GRAPHICS_WINDOWS_ONLY)
+        return T("Draws as Windows programs do, without OpenGL. For a game that starts or draws worse with Auto.");
     if (api == PC5_API_D3D12)
         return T("Another way to draw the game, slower than Auto. Try it if the game won't start or its picture is wrong.");
     if (graphics == PC5_GRAPHICS_WINE_2D)

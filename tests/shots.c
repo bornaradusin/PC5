@@ -61,6 +61,8 @@ static void save(const char *name)
     printf("shots: %s\n", name);
 }
 
+static int library_api = -1;   /* every game's API, or -1 for the usual mix */
+
 /* A library of count made-up games, as PC5 would have installed them. */
 static void make_library(const char *root, int count, int with_covers)
 {
@@ -77,7 +79,7 @@ static void make_library(const char *root, int count, int with_covers)
         pc5_copy(info.folder, sizeof(info.folder), info.title);
         fmt(info.exe, sizeof(info.exe), "Game.exe");
         info.bits = bits[i % 5];
-        info.api = apis[i % 5];
+        info.api = library_api >= 0 ? (Pc5Api)library_api : apis[i % 5];
         info.bytes = (uint64_t)(3 + (i * 7) % 60) * 1024 * 1024 * 1024 + (uint64_t)i * 77777777u;
         info.files = 1000 + (uint32_t)i * 37;
         for (const char *p = info.title; *p; p++)
@@ -260,6 +262,34 @@ static void crash_shots(const char *root)
 
 /* Settings that worked for others: the game compatibility list's row for a game with PC5's settings
  * line, on the game's Graphics page, its question, and the same asked once at Play. */
+/* A game that draws as ordinary Windows programs do: its Graphics mode, Auto (OpenGL ready)
+ * or Windows only. */
+static void windows_only_shots(const char *root)
+{
+    library_api = PC5_API_GDI;
+    make_library(root, 1, 1);
+    library_api = -1;
+    Pc5Ui *ui = open_ui(root, 0);
+    step(ui, PC5_KEY_TRIANGLE, 1);
+    settle(ui);
+    for (int i = 0; i < 4; i++) step(ui, PC5_KEY_DOWN, 1);   /* Controller, Create button, Mouse pointer, Graphics */
+    step(ui, PC5_KEY_ACCEPT, 1);
+    settle(ui);
+    save("15y-game-menu-graphics-windows");
+    step(ui, PC5_KEY_SQUARE, 1);           /* what each choice is */
+    settle(ui);
+    save("15ya-graphics-mode-windows-about");
+    step(ui, PC5_KEY_BACK, 1);
+    step(ui, PC5_KEY_ACCEPT, 1);           /* the Graphics mode window */
+    settle(ui);
+    save("15yb-graphics-mode-windows");
+    step(ui, PC5_KEY_DOWN, 1);
+    step(ui, PC5_KEY_ACCEPT, 1);           /* Windows only */
+    settle(ui);
+    save("15yc-graphics-windows-only");
+    pc5_ui_destroy(ui);
+}
+
 static void known_shots(const char *root)
 {
     char file[PC5_PATH], text[2048];
@@ -773,6 +803,7 @@ int main(int argc, char **argv)
     crash_shots(root);
     early_shots(root);
     known_shots(root);
+    windows_only_shots(root);
     pc5_free(canvas.px);
     pc5_buf_free(&names);
     return 0;

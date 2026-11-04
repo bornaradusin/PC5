@@ -1442,8 +1442,22 @@ static void test_install(void)
               !strstr(text, "no3d") && strstr(text, "graphics = dxvk\n"), "2D only is DirectDraw's alone: Auto");
         controls.graphics = PC5_GRAPHICS_AUTO;
         flat.api = PC5_API_GDI;
+        CHECK(!pc5_profile_text_at("flat", &flat, "", &controls, NULL, NULL, text, sizeof(text)) && strstr(text, "graphics = opengl\n"),
+              "plain Windows drawing has OpenGL ready: %s", text);
+        controls.graphics = PC5_GRAPHICS_WINDOWS_ONLY;
         CHECK(!pc5_profile_text_at("flat", &flat, "", &controls, NULL, NULL, text, sizeof(text)) && strstr(text, "graphics = gdi\n"),
-              "plain Windows drawing stays with Wine");
+              "Windows only: plain Windows drawing without OpenGL");
+        {
+            Pc5Graphics choices[PC5_GRAPHICS_COUNT];
+            int n = pc5_graphics_choices(PC5_API_GDI, choices);
+            CHECK(n == 2 && choices[0] == PC5_GRAPHICS_AUTO && choices[1] == PC5_GRAPHICS_WINDOWS_ONLY &&
+                  pc5_graphics_choices(PC5_API_D3D9, choices) == 3 && choices[2] != PC5_GRAPHICS_WINDOWS_ONLY,
+                  "Windows only is a plain Windows game's alone");
+        }
+        flat.api = PC5_API_D3D9;
+        CHECK(!pc5_profile_text_at("flat", &flat, "", &controls, NULL, NULL, text, sizeof(text)) && strstr(text, "graphics = dxvk\n"),
+              "a Direct3D game set to Windows only (not offered): Auto");
+        controls.graphics = PC5_GRAPHICS_AUTO;
     }
     /* Overrides stay within prospero-win's 256 characters: whole names only. */
     {
@@ -1793,8 +1807,12 @@ static void test_install(void)
               !strcmp(pc5_graphics_tech_name(PC5_GRAPHICS_WINE, PC5_API_D3D12), "Wine's VKD3D"), "Direct3D 12: Auto, Alternative (Wine's VKD3D)");
         CHECK(pc5_graphics_choices(PC5_API_DDRAW, choices) == 3 && choices[1] == PC5_GRAPHICS_WINE_VULKAN &&
               choices[2] == PC5_GRAPHICS_WINE_2D, "DirectDraw: Auto (WineD3D already), WineD3D on Vulkan, 2D only");
-        CHECK(!pc5_graphics_choices(PC5_API_OPENGL, choices) && !pc5_graphics_choices(PC5_API_GDI, choices) &&
-              !pc5_graphics_choices(PC5_API_VULKAN, choices), "OpenGL, Vulkan, plain drawing: none");
+        CHECK(!pc5_graphics_choices(PC5_API_OPENGL, choices) && !pc5_graphics_choices(PC5_API_VULKAN, choices),
+              "OpenGL, Vulkan: none");
+        CHECK(pc5_graphics_choices(PC5_API_GDI, choices) == 2 &&
+              !strcmp(pc5_graphics_name(PC5_GRAPHICS_WINDOWS_ONLY, PC5_API_GDI), "Windows only") &&
+              !strcmp(pc5_graphics_tech_name(PC5_GRAPHICS_WINDOWS_ONLY, PC5_API_GDI), "Windows only"),
+              "plain drawing: Auto, Windows only");
         CHECK(!strcmp(pc5_graphics_name(PC5_GRAPHICS_WINE_VULKAN, PC5_API_D3D9), "Alternative") &&
               !strcmp(pc5_graphics_name(PC5_GRAPHICS_WINE, PC5_API_D3D9), "Compatibility (slow)") &&
               !strcmp(pc5_graphics_name(PC5_GRAPHICS_WINE_2D, PC5_API_DDRAW), "2D only") &&

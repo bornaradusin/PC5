@@ -71,7 +71,7 @@ static int key_index(const char *name)
 }
 
 /* controls.txt's names for a game's Graphics API (Pc5Graphics). */
-static const char *const graphics_keys[PC5_GRAPHICS_COUNT] = { "auto", "wine", "wine_vulkan", "wine_2d" };
+static const char *const graphics_keys[PC5_GRAPHICS_COUNT] = { "auto", "wine", "wine_vulkan", "wine_2d", "windows_only" };
 
 int pc5_graphics_choices(int api, Pc5Graphics choices[PC5_GRAPHICS_COUNT])
 {
@@ -86,6 +86,10 @@ int pc5_graphics_choices(int api, Pc5Graphics choices[PC5_GRAPHICS_COUNT])
     } else if (api == PC5_API_D3D12) {
         choices[n++] = PC5_GRAPHICS_AUTO;
         choices[n++] = PC5_GRAPHICS_WINE;
+    } else if (api == PC5_API_GDI) {
+        /* Auto, with OpenGL ready for a game that loads it while it runs; Windows only, without. */
+        choices[n++] = PC5_GRAPHICS_AUTO;
+        choices[n++] = PC5_GRAPHICS_WINDOWS_ONLY;
     }
     return n;
 }
@@ -94,6 +98,7 @@ int pc5_graphics_choices(int api, Pc5Graphics choices[PC5_GRAPHICS_COUNT])
 const char *pc5_graphics_name(Pc5Graphics graphics, int api)
 {
     if (graphics == PC5_GRAPHICS_AUTO) return N_("Auto");
+    if (graphics == PC5_GRAPHICS_WINDOWS_ONLY) return N_("Windows only");
     if (api == PC5_API_D3D12) return N_("Alternative");
     if (graphics == PC5_GRAPHICS_WINE_2D) return N_("2D only");
     return graphics == PC5_GRAPHICS_WINE_VULKAN ? N_("Alternative") : N_("Compatibility (slow)");
@@ -103,6 +108,7 @@ const char *pc5_graphics_name(Pc5Graphics graphics, int api)
 const char *pc5_graphics_tech_name(Pc5Graphics graphics, int api)
 {
     if (graphics == PC5_GRAPHICS_AUTO) return "Auto";
+    if (graphics == PC5_GRAPHICS_WINDOWS_ONLY) return "Windows only";
     if (api == PC5_API_D3D12) return "Wine's VKD3D";
     if (graphics == PC5_GRAPHICS_WINE_2D) return "WineD3D 2D only";
     return graphics == PC5_GRAPHICS_WINE_VULKAN ? "WineD3D on Vulkan" : "WineD3D";
@@ -369,7 +375,7 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                                    "# Triangle on the game, then Resolution\nresolution = %s\n"
                                    "# Triangle on the game, then Aspect ratio\naspect_ratio = %s\n"
                                    "# Triangle on the game, then Stutter fix\ncpu_sharing = %s\n"
-                                   "# Triangle on the game, then Graphics mode: auto, wine_vulkan (Alternative), wine (Compatibility) or wine_2d (2D only)\ngraphics_api = %s\n"
+                                   "# Triangle on the game, then Graphics mode: auto, wine_vulkan (Alternative), wine (Compatibility), wine_2d (2D only) or windows_only (Windows only)\ngraphics_api = %s\n"
                                    "# Triangle on the game, then Manage, then Steam emulator: auto or off\n"
                                    "steam_emulator = %s\n"
                                    "# Triangle on the game, then Controller: the mouse pointer shown, or hides when unused\n"

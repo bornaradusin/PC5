@@ -303,10 +303,13 @@ int pc5_profile_text_at(const char *id, const Pc5Info *info, const char *argumen
     Pc5Controls defaults;
     /* DirectDraw through Wine's own Direct3D (wined3d), which draws with OpenGL: Mesa Zink, as
      * for OpenGL games. Without OpenGL a DirectDraw game's Direct3D (7 and older) can't start
-     * and its 2D is drawn on the CPU. Plain Windows drawing stays with Wine itself. */
-    const char *graphics = info->api == PC5_API_OPENGL || info->api == PC5_API_DDRAW ? "opengl"
-                         : info->api == PC5_API_GDI                                  ? "gdi"
-                                                                                     : "dxvk";
+     * and its 2D is drawn on the CPU. A game that draws as ordinary Windows programs do gets
+     * Mesa Zink's OpenGL too, ready in case it loads it while it runs (an SDL, FNA, MonoGame or
+     * Java game: nothing PC5 reads at install names it), and Wine's own without OpenGL with
+     * Graphics mode Windows only (pc5_controls.h). One that never loads OpenGL draws as before
+     * either way. */
+    const char *graphics = info->api == PC5_API_OPENGL || info->api == PC5_API_DDRAW || info->api == PC5_API_GDI
+                               ? "opengl" : "dxvk";
     /* Direct3D 8 to 11 and DXGI through DXVK, as prospero-win's own profiles. Direct3D 12
      * through VKD3D-Proton only for a game whose program draws with it; any other game gets
      * Wine's own d3d12, as on prospero-win, so a library that merely tries Direct3D 12 (GTA
@@ -329,7 +332,9 @@ int pc5_profile_text_at(const char *id, const Pc5Info *info, const char *argumen
         for (int i = 0; i < n; i++) offered |= choices[i] == chosen;
         if (!offered) chosen = PC5_GRAPHICS_AUTO;
     }
-    if (chosen != PC5_GRAPHICS_AUTO && info->api != PC5_API_DDRAW) {
+    if (chosen == PC5_GRAPHICS_WINDOWS_ONLY) {
+        graphics = "gdi";
+    } else if (chosen != PC5_GRAPHICS_AUTO && info->api != PC5_API_DDRAW) {
         overrides = "d3d8,d3d9,d3d10core,d3d11,dxgi,d3d12,d3d12core,amd_ags_x64=b";
         graphics = chosen == PC5_GRAPHICS_WINE && info->api != PC5_API_D3D12 ? "opengl" : "dxvk";
     }

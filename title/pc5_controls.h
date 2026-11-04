@@ -41,12 +41,16 @@ typedef enum Pc5StickUse {
  *                game that mixes DirectDraw with plain Windows drawing on one window
  *                (Heroes of Might and Magic IV) shows both in one picture instead of
  *                flickering between them. A DirectDraw game's Direct3D (7 and older)
- *                can't start with it. */
+ *                can't start with it. *   WINDOWS_ONLY a game that draws as ordinary Windows programs do: no OpenGL. Its
+ *                Auto has Mesa Zink's OpenGL ready, for a game that loads it while it
+ *                runs (an SDL, FNA or Java game) with nothing PC5 can read at install
+ *                naming it; Windows only is the way back for a game that does worse. */
 typedef enum Pc5Graphics {
     PC5_GRAPHICS_AUTO,
     PC5_GRAPHICS_WINE,
     PC5_GRAPHICS_WINE_VULKAN,
     PC5_GRAPHICS_WINE_2D,
+    PC5_GRAPHICS_WINDOWS_ONLY,
     PC5_GRAPHICS_COUNT
 } Pc5Graphics;
 
