@@ -20,7 +20,7 @@ cd "$here"
 # store see an update by it, and 2.2.5 was published with 2.2.4's.
 version=$(sed -n 's/^#define PC5_VERSION "\(.*\)"/\1/p' title/pc5.h)
 content=$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["contentVersion"])' sce_sys/param.json)
-IFS=. read -r major minor patch <<<"$version"
+IFS=. read -r major minor patch <<<"${version%%-*}"   # a test version's suffix: 2.3.1-programs-test is 2.3.1
 [[ $content == "$(printf '%02d.%03d.%03d' "$major" "$minor" "$patch")" ]] ||
     { echo "sce_sys/param.json's contentVersion $content isn't PC5 $version's" >&2; exit 1; }
 

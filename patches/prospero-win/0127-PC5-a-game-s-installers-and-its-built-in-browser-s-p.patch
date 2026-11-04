@@ -27,11 +27,11 @@ of their own, hidden, through elfldr, which PC5 already uses for /data
 ---
  docs/WINE_PS5_BUILD.md                        |   1 +
  native/wine64_main.c                          |  61 ++++-
- tools/build_wine_ps5.sh                       |   2 +
+ tools/build_wine_ps5.sh                       |   6 +-
  ...process-of-its-own-through-the-title.patch | 212 ++++++++++++++++++
  wine/ps5/pw_wine_threads.c                    |  11 +-
  wine/ps5/pw_wine_threads.h                    |   5 +-
- 6 files changed, 289 insertions(+), 3 deletions(-)
+ 6 files changed, 291 insertions(+), 5 deletions(-)
  create mode 100644 wine/patches/1000-ntdll-ps5-start-a-program-as-a-process-of-its-own-through-the-title.patch
 
 diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
@@ -168,9 +168,20 @@ index e6ed7b2..02e5094 100644
              (uintptr_t)pw_prx_lookup(start.descriptor, "pw_wine_set_present_sink");
          post_input = (int (*)(const PwWineInput *))
 diff --git a/tools/build_wine_ps5.sh b/tools/build_wine_ps5.sh
-index bf2c4ff..8bee742 100755
+index bf2c4ff..d7db52c 100755
 --- a/tools/build_wine_ps5.sh
 +++ b/tools/build_wine_ps5.sh
+@@ -180,8 +180,8 @@ series() {
+             fail "patch name must be NNNN-lower-case-words.patch: $patch"
+         number=$(printf '%s' "$patch" | cut -c1-4 | sed 's/^0*//')
+         number=${number:-0}
+-        [ "$number" -ge 100 ] && [ "$number" -le 999 ] ||
+-            fail "patch number outside 0100-0999: $patch"
++        [ "$number" -ge 100 ] && [ "$number" -le 9999 ] ||
++            fail "patch number outside 0100-9999: $patch"
+         [ "$number" -ne "$last" ] || fail "duplicate patch number: $patch"
+         last=$number
+         grep -q '^Subject: ' "$patches/$patch" || fail "patch has no Subject: $patch"
 @@ -460,11 +460,13 @@ if [ "$prx_status" = 0 ]; then
          pw_wine_set_audio_sink pw_wine_audio_available pw_wine_audio_output \
          __wine_virtual_stats __wine_virtual_fault_top __wine_ps5_set_output_sink __wine_ps5_memory_stats pw_cwd_set \
