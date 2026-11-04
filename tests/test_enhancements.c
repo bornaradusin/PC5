@@ -53,6 +53,27 @@ int main(int argc, char **argv)
     assert(!strcmp(rows[0].report, "https://github.com/bornaradusin/PC5/discussions/123"));
     assert(pc5_compat_matches(&rows[0], "TEST", 1) && !pc5_compat_matches(&rows[0], "TEST", 2));
     pc5_free(rows);
+    /* One game's names, as the list's game_key has them; and its row with PC5's settings line. */
+    {
+        char a[256], b[256];
+        pc5_compat_key("Baldur's Gate II", a, sizeof(a)); pc5_compat_key("baldurs gate 2", b, sizeof(b));
+        assert(!strcmp(a, "baldursgate2") && !strcmp(a, b));
+        pc5_compat_key("The Binding of Isaac: Rebirth", a, sizeof(a)); assert(!strcmp(a, "bindingofisaacrebirth"));
+        pc5_compat_key("Mina the Hollower v1.06", a, sizeof(a)); assert(!strcmp(a, "minathehollower"));
+        pc5_compat_key("Tom & Jerry", a, sizeof(a)); assert(!strcmp(a, "tomandjerry"));
+        pc5_compat_key("The", a, sizeof(a)); assert(!strcmp(a, "the"));
+        pc5_compat_key("RV There Yet", a, sizeof(a)); assert(!strcmp(a, "rvthereyet"));
+        const char *known = "| Game | How it runs | PC5 | Store and version | Controller | Settings that helped | Notes | Report or issue |\n"
+            "| --- | --- | --- | --- | --- | --- | --- | --- |\n"
+            "| Hollow Bay | Works perfectly | 2.2.9 | Steam | DualSense | -dx11 | | |\n"
+            "| Hollow Bay II | Playable with issues | 2.2.9 | Steam | DualSense | 64-bit, draws with DirectX 11; Graphics mode WineD3D on Vulkan; Controller DualSense; Frame generation off; Memory Auto; CPU sharing on | | |\n"
+            "| Quiet Hill | Unresolved: doesn't run | 2.2.9 | Steam | | 64-bit, draws with DirectX 11; Graphics mode Auto | | |\n";
+        n = pc5_compat_parse(known, strlen(known), &rows); assert(n == 3);
+        assert(pc5_compat_with_settings(rows, n, "Hollow Bay 2") == 1);
+        assert(pc5_compat_with_settings(rows, n, "Hollow Bay") < 0);    /* no settings line */
+        assert(pc5_compat_with_settings(rows, n, "Quiet Hill") < 0);    /* doesn't run */
+        pc5_free(rows); rows = NULL;
+    }
     const char *body = strchr(sample, '\n');
     assert(body);
     Pc5Buf reordered = { 0 }, extra_header = { 0 }, extra_row = { 0 }, renamed = { 0 }, crlf = { 0 };

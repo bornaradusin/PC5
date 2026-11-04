@@ -1,0 +1,423 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Wed, 4 Nov 2026 13:00:00 +0000
+Subject: [PATCH 126/126] PC5: keys held at exit, taps, missing system files and free
+ memory in the log
+
+Three things a log couldn't show:
+
+- With Keyboard & mouse, a key that stayed down in the game (Mega Man W-64)
+  left no trace. The alive line now counts taps (buttons pressed and let
+  go within one read of the controller), and as the game ends the log says
+  which bound controls the title still holds down in it:
+  "PW_WINE64 keys held at exit: l1=key 0x5a (taps=3)", or none.
+- A system file a game looked for and didn't find (a runtime its own check
+  wants) wasn't named. Wine patch 0986 now logs each name of a kind
+  programs load that is in neither the prefix's system32 or syswow64 nor
+  Wine's folder, once, for the first 64 of a process:
+  "wine-ps5: not in system32: d3dx9_99.dll".
+- A log that stopped while the game ran didn't say whether memory had run
+  out. Once a minute: "PW_WINE64 direct memory free=11879 MiB of 12288
+  MiB", the console's free direct memory as Windows is told it (Wine patch
+  0914's way of asking).
+---
+ docs/WINE_PS5_BUILD.md                        |  2 +-
+ native/pw_wine_display.c                      | 40 ++++++++++++
+ native/pw_wine_display.h                      | 10 +++
+ native/wine64_main.c                          | 64 ++++++++++++++++++-
+ src/pw_game_profile.c                         |  3 +
+ src/pw_game_profile.h                         |  4 ++
+ tests/test_pw_wine_display.c                  | 13 ++++
+ ...-dlls-and-copy-one-before-it-changes.patch | 63 ++++++++++++++++--
+ 8 files changed, 189 insertions(+), 10 deletions(-)
+
+diff --git a/docs/WINE_PS5_BUILD.md b/docs/WINE_PS5_BUILD.md
+index 51152c8..5a2748f 100644
+--- a/docs/WINE_PS5_BUILD.md
++++ b/docs/WINE_PS5_BUILD.md
+@@ -173,7 +173,7 @@ before evaluating a candidate built from that cache.
+ | 0982 | `d3dx11`: `D3DX11CreateShaderResourceViewFromMemory`, a stub that returned `E_NOTIMPL`, and `…FromFileA/W` and `…FromResourceA/W`, not exported, each make the texture as the matching `D3DX11CreateTexture*` does and return a view of the whole of it, which holds the texture. Dragon Ball Xenoverse 2 loads its 600 start-up textures that way: it got none, showed a black screen and crashed |
+ | 0984 | `win32u`: when a controller connects or disconnects (`pw_wine_pad_changes`), the driver posts `WM_DEVICECHANGE` with `DBT_DEVNODES_CHANGED` to the top-level windows, as the plug and play service does on Windows: an Unreal Engine 4 game kept a controller that went off lost after it came back. From Playden's prospero-win |
+ | 0985 | `ntdll`: on PS5, a name opened (`FILE_OPEN`) that a prefix's `windows/system32` or `windows/syswow64` doesn't have is Wine's own file of that name (in lower case) for that architecture, from the app's `lib/wine`: PC5's prefixes hold no copy of Wine's DLLs (some 300 MB a game). A file the game makes there is found first |
+-| 0986 | `ntdll`: on PS5, a listing of a prefix's `system32` or `syswow64` also shows the files 0985 serves; an open that changes one of them (write, delete, attributes, overwrite, delete on close) copies Wine's file into the prefix first and opens the copy, so a game replaces or changes its own; `FILE_OVERWRITE` is served too; `NtDeleteFile` of one leaves Wine's file and succeeds. The first copy is logged |
++| 0986 | `ntdll`: on PS5, a listing of a prefix's `system32` or `syswow64` also shows the files 0985 serves; an open that changes one of them (write, delete, attributes, overwrite, delete on close) copies Wine's file into the prefix first and opens the copy, so a game replaces or changes its own; `FILE_OVERWRITE` is served too; `NtDeleteFile` of one leaves Wine's file and succeeds. The first copy is logged. A name looked for there that is in neither the prefix nor Wine's folder, of a kind programs load (`.dll`, `.exe`, `.drv`, `.sys`, `.ocx`, `.cpl`, `.ax`), is logged once (`wine-ps5: not in system32: <name>`), the first 64 names of a process |
+ | 0987 | `nsi`: on PS5, the NDIS tables 0934 answers also list a wired adapter with its cable out ("Ethernet", index 2, address 02-50-43-35-00-01, down, no IP address), so `GetAdaptersInfo`, which leaves the loopback out, lists an adapter instead of failing with `ERROR_NO_DATA`, which games that don't check went on from and crashed |
+ | 0988 | `kernelbase`: on PS5, a start of `fxc.exe` (the shader compiler Far Cry runs about a hundred times at start) that fails with `STATUS_NOT_SUPPORTED` is done in the calling process with `d3dcompiler_47`: its options, the listing (`/Fc`, with the constant table's parameters and registers as fxc writes them) and the code (`/Fo`); the caller gets an ended process (signalled events) whose exit code `GetExitCodeProcess` returns |
+ | 0989 | `ntdll`: on PS5, the process memory counts of 0898 (a walk of every view's pages with `virtual_mutex` held) are kept for a second, so a game that asks many times a second (Unreal Engine 5's memory stats) no longer holds the mutex all the time and runs on one core |
+diff --git a/native/pw_wine_display.c b/native/pw_wine_display.c
+index 9c96245..347e83b 100644
+--- a/native/pw_wine_display.c
++++ b/native/pw_wine_display.c
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ #include "pw_wine_display.h"
++#include <stdio.h>
+ #include <string.h>
+ 
+ int pw_wine_frame_box_init(PwWineFrameBox *box, uint8_t *storage, size_t bytes)
+@@ -108,6 +109,45 @@ size_t pw_wine_game_inputs_held(const PwGameInput *input, uint32_t pressed, uint
+     return add_edges(input, taps, 0, out, used, max);
+ }
+ 
++unsigned pw_wine_taps(uint32_t pressed, uint32_t released, uint32_t held)
++{
++    uint32_t taps = pressed & released & ~held;
++    unsigned n = 0;
++
++    for (; taps; taps &= taps - 1) n++;
++    return n;
++}
++
++static void held_add(char *out, size_t size, size_t *used, const char *name, const PwGameBinding *b)
++{
++    int n;
++
++    if (*used >= size) return;
++    n = snprintf(out + *used, size - *used, "%s%s=%s %#x", *used ? ", " : "", name,
++                 b->kind == PW_GAME_BIND_KEY ? "key" : "mouse", (unsigned)b->code);
++    if (n < 0) return;
++    *used += (size_t)n < size - *used ? (size_t)n : size - *used - 1;
++}
++
++void pw_wine_held_names(const PwGameInput *input, uint32_t held, uint32_t touch_held, char *out, size_t size)
++{
++    size_t used = 0;
++
++    if (!out || !size) return;
++    out[0] = 0;
++    for (size_t i = 0; input && i < PW_GAME_BUTTON_COUNT; i++) {
++        const PwGameBinding *b = &input->bindings[i];
++        if (!(held & b->mask) || (input->slow_mask && b->mask == input->slow_mask)) continue;
++        if (b->kind == PW_GAME_BIND_KEY || b->kind == PW_GAME_BIND_MOUSE) held_add(out, size, &used, pw_game_button_name(i), b);
++    }
++    for (size_t i = 0; input && i < PW_GAME_TOUCH_COUNT; i++) {
++        const PwGameBinding *b = &input->touch[i];
++        if (!(touch_held & (1u << i))) continue;
++        if (b->kind == PW_GAME_BIND_KEY || b->kind == PW_GAME_BIND_MOUSE) held_add(out, size, &used, pw_game_touch_name(i), b);
++    }
++    if (!used) snprintf(out, size, "none");
++}
++
+ /* Cross: Enter; the D-pad: the arrows (Windows virtual keys). */
+ static const struct { uint32_t button, vk; } dialog_buttons[] = {
+     { 0x4000u, 0x0du }, { 0x10u, 0x26u }, { 0x40u, 0x28u }, { 0x80u, 0x25u }, { 0x20u, 0x27u },
+diff --git a/native/pw_wine_display.h b/native/pw_wine_display.h
+index 90e8611..17773b4 100644
+--- a/native/pw_wine_display.h
++++ b/native/pw_wine_display.h
+@@ -64,6 +64,16 @@ size_t pw_wine_game_inputs_held(const PwGameInput *input, uint32_t pressed, uint
+  * is in front, so the game never sees them as keys. Releases first, then
+  * presses; returns how many were written (at most max). */
+ size_t pw_wine_dialog_inputs(uint32_t pressed, uint32_t released, PwWineInput *out, size_t max);
++/* The buttons in pressed that were also released within the batch and are up at its end
++ * (taps): how many, for the log. */
++unsigned pw_wine_taps(uint32_t pressed, uint32_t released, uint32_t held);
++
++/* What the title holds down in the game, for the log as a game ends: each control in held (pad
++ * buttons and stick directions) or touch_held (the touchpad's own) bound to a key or a mouse
++ * button, as "name=key 0xNN" or "name=mouse N", comma-separated, into out; "none" when there is
++ * none (wheel bindings and the slow button hold nothing). A key that stays down shows here. */
++void pw_wine_held_names(const PwGameInput *input, uint32_t held, uint32_t touch_held, char *out, size_t size);
++
+ /* The same, a tap's release after its press (pw_wine_game_inputs_held). */
+ size_t pw_wine_dialog_inputs_held(uint32_t pressed, uint32_t released, uint32_t held, PwWineInput *out, size_t max);
+ 
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 8a9840e..e6ed7b2 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -303,6 +303,9 @@ int32_t sceKernelLoadStartModule(const char *path, size_t argc, const void *argv
+                                  uint32_t flags, const void *option, int *result);
+ int sceKernelGetModuleInfo(int32_t handle, void *info);
+ int sceKernelAvailableFlexibleMemorySize(size_t *bytes);
++size_t sceKernelGetDirectMemorySize(void);
++int sceKernelAvailableDirectMemorySize(long long start, long long end, size_t alignment, long long *start_out,
++                                       size_t *size_out);
+ 
+ /* libkernel's description of one mapping of the title's own address space
+  * (the layout every PS4 and PS5 SDK documents). */
+@@ -319,6 +322,42 @@ int sceKernelVirtualQuery(const void *address, int flags, void *info, size_t siz
+  * and protection, largest first. Logged once when less than 64 MiB is left
+  * and once below 4 MiB, the levels at which a browser's views and then a
+  * new thread's translator state were refused. */
++/* The console's direct memory still free, which every allocation of the game and of the GPU comes
++ * from: the figure Windows is told (Wine patch 0914, which asks the kernel as MihawkOS's patch
++ * 0912 does). The kernel only says where the first free run in a range is, so each answer splits
++ * the range in two and both are asked in turn; at most 512 questions and 64 ranges waiting, so
++ * the figure is a lower bound. Logged once a minute, so a log that stops shows whether memory had
++ * run out. */
++static size_t direct_memory_free(size_t *total)
++{
++    struct range { long long low, high; } waiting[64], now = { 0, 0 };
++    const size_t alignment = 0x4000;
++    unsigned count = 0, questions = 0;
++    size_t free_bytes = 0;
++
++    *total = sceKernelGetDirectMemorySize();
++    now.high = (long long)*total;
++    for (;;) {
++        long long start = 0;
++        size_t size = 0;
++
++        if (now.high - now.low >= (long long)alignment && questions++ < 512 &&
++            !sceKernelAvailableDirectMemorySize(now.low, now.high, alignment, &start, &size) && size &&
++            start >= now.low && size <= (unsigned long long)(now.high - start)) {
++            struct range after = { start + (long long)size, now.high };
++
++            free_bytes += size;
++            if (after.high - after.low >= (long long)alignment && count < sizeof(waiting) / sizeof(waiting[0]))
++                waiting[count++] = after;
++            now.high = start;
++            continue;
++        }
++        if (!count) break;
++        now = waiting[--count];
++    }
++    return free_bytes;
++}
++
+ static void log_flexible_holders(size_t available)
+ {
+     enum { BUCKETS = 64, TOP = 16 };
+@@ -388,6 +427,12 @@ static char sink_line[1024];
+ static size_t sink_used;
+ static pthread_mutex_t sink_lock = PTHREAD_MUTEX_INITIALIZER;
+ static volatile unsigned long sink_calls;
++/* For the log as a game ends (on_exit_report): with Keyboard & mouse, the controls the title
++ * still holds down in the game (a key left down shows there), and the buttons pressed and let go
++ * within one read of the controller (taps, which the alive line counts too). */
++static const PwGameInput *held_input;
++static volatile uint32_t held_buttons, held_touch;
++static volatile unsigned long long held_taps;
+ 
+ static void wine_output_sink(const char *str, size_t len)
+ {
+@@ -824,6 +869,11 @@ static void load_catalog(void);
+ 
+ static void on_exit_report(void)
+ {
++    if (held_input) {
++        char held[256];
++        pw_wine_held_names(held_input, held_buttons, held_touch, held, sizeof(held));
++        PS5LOG_LOG("PW_WINE64 keys held at exit: %s (taps=%llu)", held, held_taps);
++    }
+     PS5LOG_LOG("PW_WINE64 exit sink_calls=%lu", sink_calls);
+ #ifdef PW_PC5
+     /* The game's launcher started the game (Wine patch 0923): PC5 writes the game's profile
+@@ -2143,6 +2193,7 @@ int main(int argc, char **argv)
+             }
+             /* A button tapped within one read has both edges: its key goes down, then up (a key
+              * released first and then pressed stayed down until the button was pressed again). */
++            held_taps += pw_wine_taps(pad_pressed, pad_released, pad.core.previous_buttons);
+             size_t count = pw_wine_game_inputs_held(&game_input, pad_pressed | stick_pressed,
+                                                     pad_released | stick_released,
+                                                     pad.core.previous_buttons | sticks, events,
+@@ -2150,6 +2201,11 @@ int main(int argc, char **argv)
+             count += pw_wine_touch_inputs(&game_input, touch_now & ~touch_held, touch_held & ~touch_now, &events[count],
+                                           sizeof(events) / sizeof(events[0]) - 2 - count);
+             touch_held = touch_now;
++            if (game_input.mode == PW_GAME_INPUT_KEYBOARD) {
++                held_buttons = pad.core.previous_buttons | sticks;
++                held_touch = touch_held;
++                held_input = &game_input;
++            }
+             if (touch_moved) events[count++] = touch_move;
+             if (game_input.mouse != PW_GAME_STICK_NONE) {
+                 const PwPadPs5Stick *stick = game_input.mouse == PW_GAME_STICK_LEFT ?
+@@ -2317,14 +2373,14 @@ int main(int argc, char **argv)
+             io_blocks(&blocks_in, &blocks_out);
+             PS5LOG_LOG("PW_WINE64 alive tick=%llu sink_calls=%lu frames_put=%llu shown=%llu "
+                        "rejected=%llu last=%ux%u inputs=%llu refused=%llu vk_shown=%llu vk_busy=%llu vk_kept=%llu "
+-                       "vk_held=%llu cpu_ms=%llu audio=%lu audible=%lu peak=%d blocks_in=%ld blocks_out=%ld",
++                       "vk_held=%llu cpu_ms=%llu audio=%lu audible=%lu peak=%d blocks_in=%ld blocks_out=%ld taps=%llu",
+                        (unsigned long long)tick, sink_calls, (unsigned long long)frames.sequence,
+                        (unsigned long long)shown, (unsigned long long)frames.rejected,
+                        frames.width, frames.height, (unsigned long long)posted,
+                        (unsigned long long)refused, (unsigned long long)vulkan_frames.shown,
+                        (unsigned long long)vulkan_frames.busy, (unsigned long long)vulkan_frames.kept,
+                        (unsigned long long)vulkan_frames.held, cpu_ms(),
+-                       audio_grains, audio_audible, audio_peak, blocks_in, blocks_out);
++                       audio_grains, audio_audible, audio_peak, blocks_in, blocks_out, held_taps);
+             audio_peak = 0;
+             if (start.virtual_stats && tick % 300 == 0) {
+                 static uint64_t faults_logged;
+@@ -2363,6 +2419,10 @@ int main(int argc, char **argv)
+                     holders_logged = flexible < ((size_t)4 << 20) ? 2 : 1;
+                 }
+             }
++            if (tick % (60 * PW_WINE64_TICKS_PER_S) == 0) {
++                size_t total = 0, free_bytes = direct_memory_free(&total);
++                PS5LOG_LOG("PW_WINE64 direct memory free=%zu MiB of %zu MiB", free_bytes >> 20, total >> 20);
++            }
+             if (tick % 300 == 0) {
+                 uint64_t m[13] = { 0 };
+                 size_t flexible = 0;
+diff --git a/src/pw_game_profile.c b/src/pw_game_profile.c
+index a0ce12d..674d962 100644
+--- a/src/pw_game_profile.c
++++ b/src/pw_game_profile.c
+@@ -510,6 +510,9 @@ size_t pw_game_graphics_env(const PwGameProfile *profile, PwGameEnv *env)
+     return count;
+ }
+ 
++const char *pw_game_button_name(size_t i) { return i < PW_GAME_BUTTON_COUNT ? buttons[i].name : ""; }
++const char *pw_game_touch_name(size_t i) { return i < PW_GAME_TOUCH_COUNT ? touch_names[i] : ""; }
++
+ void pw_game_input_init(PwGameInput *input)
+ {
+     if (!input) return;
+diff --git a/src/pw_game_profile.h b/src/pw_game_profile.h
+index 47315a6..6894923 100644
+--- a/src/pw_game_profile.h
++++ b/src/pw_game_profile.h
+@@ -222,6 +222,10 @@ size_t pw_game_graphics_env(const PwGameProfile *profile, PwGameEnv *env);
+ /* The [debug] env variables, into env, which has room for
+  * PW_GAME_DEBUG_ENV_MAX; how many. The strings live in profile. */
+ size_t pw_game_debug_env(const PwGameProfile *profile, PwGameEnv *env);
++/* A control's name as a profile writes it ("cross", "left_stick_down"): button i in
++ * PW_GAME_BUTTON order, or the touchpad's own i (PwGameInput.touch's order); "" past the end. */
++const char *pw_game_button_name(size_t i);
++const char *pw_game_touch_name(size_t i);
+ /* An input with nothing bound, keyboard mode, no pointer. */
+ void pw_game_input_init(PwGameInput *input);
+ /* Parse an input preset file (one [input] section, no preset= line) into
+diff --git a/tests/test_pw_wine_display.c b/tests/test_pw_wine_display.c
+index 4ea7e5b..b15d96a 100644
+--- a/tests/test_pw_wine_display.c
++++ b/tests/test_pw_wine_display.c
+@@ -125,6 +125,19 @@ static void test_inputs(void)
+     assert(events[0].code == 0x20 && !events[0].down && events[1].code == 'Z' && events[1].down);
+     assert(events[2].code == 'Z' && !events[2].down);
+     assert(pw_wine_game_inputs_held(NULL, L1, L1, 0, events, 8) == 0);
++
++    /* Taps counted for the log: pressed and let go within the read, up at its end. */
++    assert(pw_wine_taps(L1 | CROSS, L1 | CROSS, CROSS) == 1 && pw_wine_taps(L1, 0, 0) == 0 && pw_wine_taps(0, L1, 0) == 0);
++    /* What is held down in the game as it ends: bound keys and mouse buttons by their controls. */
++    char held[128];
++    pw_wine_held_names(&input, L1 | R2 | CIRCLE, 0, held, sizeof(held));
++    assert(!strcmp(held, "l1=key 0x5a, r2=mouse 0"));
++    pw_wine_held_names(&input, 0, 0, held, sizeof(held));
++    assert(!strcmp(held, "none"));
++    pw_wine_held_names(&input, CIRCLE, 0, held, sizeof(held));   /* unbound */
++    assert(!strcmp(held, "none"));
++    pw_wine_held_names(&input, L1 | CROSS, 0, held, 8);           /* cut short, still a string */
++    assert(strlen(held) < 8);
+ }
+ 
+ /* A button bound to the wheel turns it a notch as it is pressed (up away from the player),
+diff --git a/wine/patches/0986-ntdll-ps5-list-wine-s-dlls-and-copy-one-before-it-changes.patch b/wine/patches/0986-ntdll-ps5-list-wine-s-dlls-and-copy-one-before-it-changes.patch
+index 1c898f0..12e493e 100644
+--- a/wine/patches/0986-ntdll-ps5-list-wine-s-dlls-and-copy-one-before-it-changes.patch
++++ b/wine/patches/0986-ntdll-ps5-list-wine-s-dlls-and-copy-one-before-it-changes.patch
+@@ -24,12 +24,17 @@ folder is left as asked.
+ 
+ NtDeleteFile of one of them leaves Wine's file and succeeds: this
+ Windows has no copy of it to delete. The first copy is logged.
++
++A name looked for in system32 or syswow64 that is in neither the prefix nor
++Wine's folder, and is a kind of file programs load (.dll, .exe, .drv, .sys,
++.ocx, .cpl, .ax), is logged once ("wine-ps5: not in system32: <name>"), for
++the first 64 names of a process: a game's own check for a runtime or a
++DirectX part that isn't there then shows in the log.
+ ---
+ diff --git a/dlls/ntdll/unix/file.c b/dlls/ntdll/unix/file.c
+-index e0ee85f..971f59e 100644
+ --- a/dlls/ntdll/unix/file.c
+ +++ b/dlls/ntdll/unix/file.c
+-@@ -2726,6 +2726,107 @@ done:
++@@ -2726,6 +2726,107 @@
+  }
+  
+  
+@@ -137,7 +142,7 @@ index e0ee85f..971f59e 100644
+  /***********************************************************************
+   *           read_directory_data
+   *
+-@@ -2734,6 +2835,15 @@ done:
++@@ -2734,6 +2835,15 @@
+  static NTSTATUS read_directory_data( struct dir_data *data, int fd, const UNICODE_STRING *mask )
+  {
+      NTSTATUS status;
+@@ -153,7 +158,51 @@ index e0ee85f..971f59e 100644
+  
+  #ifdef VFAT_IOCTL_READDIR_BOTH
+      if (!(status = read_directory_data_vfat( data, fd, mask ))) return status;
+-@@ -4118,7 +4228,8 @@ static NTSTATUS lookup_unix_name( int root_fd, OBJECT_ATTRIBUTES *attr, UNICODE_
++@@ -3917,6 +4027,35 @@
++ #endif
++ 
++ #ifdef __PROSPERO__
+++/* A system file a program looked for that is neither in the prefix's system32 or syswow64 nor
+++ * in Wine's own folder: a runtime or a DirectX part that a game's own check wants, say, which
+++ * the log otherwise never names. One line a name, for the first 64 names of a process, and only
+++ * for the kinds of file programs load (a program also looks for its own settings there). */
+++static void ps5_log_missing( const char *pe_dir, const char *lower )
+++{
+++    static const char *const kinds[] = { ".dll", ".exe", ".drv", ".sys", ".ocx", ".cpl", ".ax" };
+++    static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+++    static char seen[64][MAX_DIR_ENTRY_LEN + 1];
+++    static unsigned int count;
+++    size_t n = strlen( lower ), k;
+++    unsigned int i;
+++
+++    for (i = 0; i < ARRAY_SIZE(kinds); i++)
+++    {
+++        k = strlen( kinds[i] );
+++        if (n > k && !strcmp( lower + n - k, kinds[i] )) break;
+++    }
+++    if (i == ARRAY_SIZE(kinds)) return;
+++    pthread_mutex_lock( &lock );
+++    for (i = 0; i < count; i++) if (!strcmp( seen[i], lower )) break;
+++    if (i == count && count < ARRAY_SIZE(seen))
+++    {
+++        strcpy( seen[count++], lower );
+++        MESSAGE( "wine-ps5: not in %s: %s\n", strcmp( pe_dir, "/i386-windows" ) ? "system32" : "syswow64", lower );
+++    }
+++    pthread_mutex_unlock( &lock );
+++}
+++
++ /* PC5 gives a game's Windows no copy of the DLLs Wine itself has (some 300 MB a game):
++  * a name missing from its system32 or syswow64 is Wine's own file of that name, as if
++  * linked there. Only for opening what is there; a game's own file of that name, once
++@@ -3975,6 +4114,7 @@
++         }
++         free( path );
++     }
+++    ps5_log_missing( pe_dir, lower );
++     return STATUS_OBJECT_NAME_NOT_FOUND;
++ }
++ #endif
++@@ -4118,7 +4258,8 @@
+          if (!name_len)
+          {
+  #ifdef __PROSPERO__
+@@ -163,7 +212,7 @@ index e0ee85f..971f59e 100644
+                  !is_unix && end == next)
+              {
+                  unix_name[pos] = 0;
+-@@ -5125,6 +5236,87 @@ NTSTATUS open_unix_file( HANDLE *handle, const char *unix_name, ACCESS_MASK acce
++@@ -5129,6 +5270,87 @@
+  }
+  
+  
+@@ -251,7 +300,7 @@ index e0ee85f..971f59e 100644
+  /******************************************************************************
+   *              NtCreateFile   (NTDLL.@)
+   */
+-@@ -5215,6 +5407,36 @@ NTSTATUS WINAPI NtCreateFile( HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBU
++@@ -5219,6 +5441,36 @@
+          status = get_nt_and_unix_names( &new_attr, &nt_name, &unix_name, disposition,
+                                          options & FILE_OPEN_REPARSE_POINT );
+      }
+@@ -288,7 +337,7 @@ index e0ee85f..971f59e 100644
+  #endif
+  
+      if (status == STATUS_BAD_DEVICE_TYPE)
+-@@ -5398,6 +5620,16 @@ NTSTATUS WINAPI NtDeleteFile( OBJECT_ATTRIBUTES *attr )
++@@ -5402,6 +5654,16 @@
+  
+      if (!(status = get_nt_and_unix_names( &new_attr, &nt_name, &unix_name, FILE_OPEN, FALSE )))
+      {
+-- 
+2.43.0
+

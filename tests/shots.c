@@ -258,6 +258,87 @@ static void crash_shots(const char *root)
     pc5_ui_destroy(ui);
 }
 
+/* Settings that worked for others: the game compatibility list's row for a game with PC5's settings
+ * line, on the game's Graphics page, its question, and the same asked once at Play. */
+static void known_shots(const char *root)
+{
+    char file[PC5_PATH], text[2048];
+    Pc5Library library;
+
+    make_library(root, 3, 1);
+    pc5_library_load(root, &library);
+    if (!library.count) return;
+    fmt(text, sizeof(text),
+        "| Game | How it runs | PC5 | Store and version | Controller | Settings that helped | Notes | Report or issue |\n"
+        "| --- | --- | --- | --- | --- | --- | --- | --- |\n"
+        "| %s | Works perfectly | 2.2.9 | Steam | DualSense | 64-bit, draws with DirectX 11; Graphics mode WineD3D on Vulkan; "
+        "Controller DualSense; Frame generation off; Memory Auto; CPU sharing on | Sample | "
+        "[#1](https://github.com/bornaradusin/PC5/discussions/1) by Sample |\n", library.games[0].title);
+    fmt(file, sizeof(file), "%s/compatibility.md", root);
+    put(file, text);
+    Pc5Ui *ui = open_ui(root, 0);
+    step(ui, PC5_KEY_TRIANGLE, 1);
+    settle(ui);
+    for (int i = 0; i < 4; i++) step(ui, PC5_KEY_DOWN, 1);   /* Controller, Create button, Mouse pointer, Graphics */
+    step(ui, PC5_KEY_ACCEPT, 1);
+    settle(ui);
+    save("15v-game-menu-known-settings");
+    step(ui, PC5_KEY_SQUARE, 1);           /* what it is */
+    settle(ui);
+    save("15w-known-settings-about");
+    step(ui, PC5_KEY_BACK, 1);
+    step(ui, PC5_KEY_ACCEPT, 1);
+    settle(ui);
+    save("15x-known-settings-confirm");
+    step(ui, PC5_KEY_BACK, 1);             /* Not now */
+    step(ui, PC5_KEY_BACK, 1);
+    step(ui, PC5_KEY_BACK, 1);
+    settle(ui);
+    /* At Play, asked once: the marker Not now wrote is taken away so it is asked again. */
+    fmt(file, sizeof(file), "%s/prefixes/%s/pc5/known-settings.txt", root, library.games[0].id);
+    unlink(file);
+    step(ui, PC5_KEY_ACCEPT, 1);
+    settle(ui);
+    save("15y-known-settings-at-play");
+    pc5_ui_destroy(ui);
+}
+
+/* PC5 opening after a game closed soon after starting, for a reason its log shows. */
+static void early_shots(const char *root)
+{
+    static const char *roots[2];
+    static char usb[PC5_PATH], template_prefix[PC5_PATH];
+    char file[PC5_PATH], text[2048];
+    Pc5Library library;
+    Pc5Platform platform = { NULL, { NULL, offline, NULL, NULL }, fake_clock, fake_play, NULL, NULL, shot_time, 0, NULL, NULL,
+                             NULL, NULL, NULL, NULL, NULL };
+
+    make_library(root, 3, 1);
+    pc5_library_load(root, &library);
+    if (!library.count) return;
+    fmt(file, sizeof(file), "%s/logs/next.txt", root);
+    put(file, "2\n");
+    fmt(text, sizeof(text), "PW_REPORT/1 build=abc profile=%s cycle=1 pid=9 time=1792999000\n"
+        "REC seq=1 t=1.0 PW_WINE64 ntdll=/app0/ntdll.prx prefix=/data/prospero-win/prefixes/%s exe=C:\\Games\\%s\\Game.exe\n"
+        "REC seq=2 t=1.1 PC5 system firmware=12.40 data_free=250.0GB version=" PC5_VERSION "\n"
+        "REC seq=3 t=2.0 PW_WINE64 alive tick=60 sink_calls=49 frames_put=5 shown=1\n"
+        "REC seq=4 t=4.9 WINESERVER wine-ps5: C:\\Games\\%s\\Engine\\Extras\\Redist\\en-us\\vc_redist.x64.exe is a helper: "
+        "not handed off\nREC seq=5 t=5.3 PW_WINE64 session_end reason=wine-exit\n", library.games[0].id, library.games[0].id,
+        library.games[0].title, library.games[0].title);
+    fmt(file, sizeof(file), "%s/logs/session-0.log", root);
+    put(file, text);
+    fmt(usb, sizeof(usb), "%s/usb0", work);
+    roots[0] = usb;
+    fmt(template_prefix, sizeof(template_prefix), "%s/app0/pc5/prefix", work);
+    Pc5UiConfig config = { root, template_prefix, fonts, roots, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0,
+                           getenv("PC5_SHOTS_LANG") };
+    Pc5Ui *ui = pc5_ui_create(&config, &platform);
+    until(ui, "message");
+    settle(ui);
+    save("17c-issue-closed-early");
+    pc5_ui_destroy(ui);
+}
+
 int main(int argc, char **argv)
 {
     char root[PC5_PATH], file[PC5_PATH], from[PC5_PATH];
@@ -687,6 +768,8 @@ int main(int argc, char **argv)
         pc5_game_end(&game, -1);
     }
     crash_shots(root);
+    early_shots(root);
+    known_shots(root);
     pc5_free(canvas.px);
     pc5_buf_free(&names);
     return 0;

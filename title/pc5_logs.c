@@ -61,12 +61,25 @@ static void word(const char *from, const char *end, char *out, size_t size)
     out[n] = 0;
 }
 
+/* 1 when the line holds needle, its case aside. */
+static int contains_ci_range(const char *line, const char *end, const char *needle)
+{
+    size_t n = strlen(needle);
+    for (const char *p = line; p + n <= end; p++) {
+        size_t i = 0;
+        while (i < n && pc5_lower((unsigned char)p[i]) == pc5_lower((unsigned char)needle[i])) i++;
+        if (i == n) return 1;
+    }
+    return 0;
+}
+
 Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *issue)
 {
     const char *end_of_text = text + length, *line = text;
     double first_t = -1, last_t = -1;
     int ended = 0, launch_failed = 0, unhandled = 0, forced = 0, pc5_problem = 0, picture = 0, asked = 0, handed_off = 0;
-    char crash[200] = "", problem[200] = "";
+    char crash[200] = "", problem[200] = "", installer[160] = "", copy_file[160] = "";
+    int no_opengl = 0;
 
     memset(issue, 0, sizeof(*issue));
     pc5_copy(issue->profile, sizeof(issue->profile), "launcher");
@@ -100,6 +113,19 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
             line_text(found, end, problem, sizeof(problem));
         }
         if (after(line, end, "display released to vulkan")) picture = 1;
+        /* Causes a player can act on. A program the game tried to start that PC5 can't hand over to:
+         * "wine-ps5: C:\\...\\vc_redist.x64.exe is a helper: not handed off". */
+        if (!installer[0] && (found = after(line, end, " is a helper: not handed off"))) {
+            const char *name_end = found - strlen(" is a helper: not handed off"), *name = name_end;
+            while (name > line && name[-1] != '\\' && name[-1] != '/' && name[-1] != ' ') name--;
+            if (name_end > name) line_text(name, name_end, installer, sizeof(installer));
+        }
+        if (!copy_file[0] && after(line, end, "trace:loaddll:")) {
+            static const char *const others[] = { "OnlineFix64.dll", "OnlineFix.dll", "steam_api64_o.dll", "steam_api_o.dll" };
+            for (size_t i = 0; i < sizeof(others) / sizeof(others[0]) && !copy_file[0]; i++)
+                if (contains_ci_range(line, end, others[i])) pc5_copy(copy_file, sizeof(copy_file), others[i]);
+        }
+        if (after(line, end, "called without a rendering context")) no_opengl = 1;
         /* A game's own launcher that started the game itself (Warcraft III's Frozen Throne.exe
          * starting war3.exe): PC5 starts that program in its place, so no picture is expected. */
         if (after(line, end, "PW_WINE64 restart ") && after(line, end, " reason=handoff")) handed_off = 1;
@@ -115,6 +141,15 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
         if (!issue->firmware[0] && after(line, end, "PC5 system ") && (found = after(line, end, " firmware=")))
             word(found, end, issue->firmware, sizeof(issue->firmware));
         line = end + 1;
+    }
+    if (installer[0]) {
+        issue->cause = PC5_CAUSE_INSTALLER;
+        pc5_copy(issue->cause_what, sizeof(issue->cause_what), installer);
+    } else if (copy_file[0]) {
+        issue->cause = PC5_CAUSE_COPY_FILES;
+        pc5_copy(issue->cause_what, sizeof(issue->cause_what), copy_file);
+    } else if (no_opengl) {
+        issue->cause = PC5_CAUSE_NO_OPENGL;
     }
     issue->closed = ended;
     issue->ended = issue->time;
@@ -139,8 +174,34 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
         /* A game closed with the PS button soon after starting looks the same when it
          * ended unasked (no end line): both are reported, a quick close rarely. */
         issue->problem = PC5_LOG_NO_PICTURE;
+    } else if (issue->cause && first_t >= 0 && last_t - first_t < NO_PICTURE_S) {
+        /* It showed something (an installer's question) and closed by itself soon after, for a
+         * reason the log shows (RV There Yet's starter, closed when vc_redist couldn't start). */
+        issue->problem = PC5_LOG_CLOSED_EARLY;
     }
+    if (!strcmp(issue->profile, "launcher")) issue->cause = PC5_CAUSE_NONE;
     return issue->problem;
+}
+
+void pc5_log_cause_text(const Pc5LogIssue *issue, char *out, size_t size)
+{
+    switch (issue->cause) {
+    case PC5_CAUSE_INSTALLER:
+        snprintf(out, size, "the game tried to start %s, an installer, which can't run on the console", issue->cause_what);
+        break;
+    case PC5_CAUSE_COPY_FILES:
+        snprintf(out, size, "its copy loaded %s, which isn't one of the game's files as its store ships it", issue->cause_what);
+        break;
+    case PC5_CAUSE_NO_OPENGL:
+        snprintf(out, size, "its OpenGL never started: it drew with no rendering context");
+        break;
+    case PC5_CAUSE_CRASH_REPORT:
+        snprintf(out, size, "the game's own crash report says: %s", issue->cause_what);
+        break;
+    default:
+        if (size) out[0] = 0;
+        break;
+    }
 }
 
 const char *pc5_log_problem_text(Pc5LogProblem problem)
@@ -151,6 +212,7 @@ const char *pc5_log_problem_text(Pc5LogProblem problem)
     case PC5_LOG_FORCED: return "had to be closed";
     case PC5_LOG_CRASHED: return "ended unexpectedly";
     case PC5_LOG_PC5_PROBLEM: return "PC5 logged a problem";
+    case PC5_LOG_CLOSED_EARLY: return "closed soon after starting";
     case PC5_LOG_FINE: break;
     }
     return "nothing went wrong that PC5 could see";
@@ -245,6 +307,7 @@ static int game_file_kind(const char *name)
 typedef struct Collect {
     Pc5Zip *zip;
     Pc5Buf *about;
+    Pc5LogIssue *issue;
     int64_t from, to;
     int offset_s;
     int files, entries;
@@ -278,6 +341,26 @@ static void windows_path(const char *rel, char *out, size_t size)
     out[n++] = 'C'; out[n++] = ':'; out[n++] = '\\';
     for (; *rel && n + 1 < size; rel++) out[n++] = *rel == '/' ? '\\' : *rel;
     out[n] = 0;
+}
+
+/* <ErrorMessage> of an Unreal crash report in data, as the issue's cause. */
+static void crash_message(const Pc5Buf *data, Pc5LogIssue *issue)
+{
+    const char *text = (const char *)data->data, *end = text + data->len;
+    const char *open = text ? after(text, end, "<ErrorMessage>") : NULL, *close = NULL;
+    if (!open) return;
+    for (const char *p = open; p + 15 <= end && !close; p++)
+        if (!memcmp(p, "</ErrorMessage>", 15)) close = p;
+    if (!close || close == open) return;
+    size_t n = 0;
+    for (const char *p = open; p < close && n + 1 < sizeof(issue->cause_what); p++) {
+        char ch = *p == '\r' || *p == '\n' || *p == '\t' ? ' ' : *p;
+        if (ch == ' ' && (!n || issue->cause_what[n - 1] == ' ')) continue;
+        issue->cause_what[n++] = ch;
+    }
+    while (n && issue->cause_what[n - 1] == ' ') n--;
+    issue->cause_what[n] = 0;
+    if (n) issue->cause = PC5_CAUSE_CRASH_REPORT;
 }
 
 static void walk(Collect *c, const char *dir, const char *rel, int depth)
@@ -321,6 +404,10 @@ static void walk(Collect *c, const char *dir, const char *rel, int depth)
             !pc5_zip_add(c->zip, name, data.data, data.len, (int64_t)st.st_mtime + c->offset_s)) {
             c->files++;
             c->bytes += data.len;
+            /* Unreal's crash report says what it was ("Unhandled Exception: EXCEPTION_ACCESS_VIOLATION
+             * writing address 0x0..."): the likely cause when the log showed none. */
+            if (!c->issue->cause && pc5_ends_with_ci(entry->d_name, "CrashContext.runtime-xml"))
+                crash_message(&data, c->issue);
             pc5_buf_printf(c->about, "  %s (%s%s)\n", shown, amount, cut ? ", its last 2 MB" : "");
         }
         pc5_buf_free(&data);
@@ -363,7 +450,7 @@ static int game_folder(const char *exe, char *out, size_t size)
 static void collect_game_files(const char *root, Pc5LogIssue *issue, Pc5Zip *zip, Pc5Buf *about, int offset_s)
 {
     char drive[PC5_PATH], dir[PC5_PATH], folder[PC5_PATH];
-    Collect c = { zip, about, issue->time - GAME_BEFORE_S, issue->ended + GAME_AFTER_S, offset_s, 0, 0, 0 };
+    Collect c = { zip, about, issue, issue->time - GAME_BEFORE_S, issue->ended + GAME_AFTER_S, offset_s, 0, 0, 0 };
 
     if (game_drive(root, issue, drive, sizeof(drive)) || !pc5_is_dir(drive)) return;
     pc5_buf_puts(about, "\nThe game's own files, written while it ran:\n");
@@ -387,6 +474,9 @@ static void about_page(Pc5Buf *about, const Pc5LogIssue *issue, const char *when
     if (issue->firmware[0]) pc5_buf_printf(about, "Console firmware: %s\n", issue->firmware);
     pc5_buf_printf(about, "What PC5 saw: %s%s%s\n", pc5_log_problem_text(issue->problem), issue->detail[0] ? ": " : "",
                    issue->detail);
+    char cause[260];
+    pc5_log_cause_text(issue, cause, sizeof(cause));
+    if (cause[0]) pc5_buf_printf(about, "Likely cause: %s.\n", cause);
     if (!issue->closed)
         pc5_buf_puts(about, "Its log has no end line: it was closed with the PS button, or the console stopped while it ran.\n");
     pc5_buf_printf(about, "\nPC5's log: %s.log, with %s-earlier.log and %s-start.log when the session was long, and "
@@ -450,8 +540,12 @@ static int keep(const char *root, const char *logs, int session, const char *kin
             pc5_buf_free(&data);
         }
         if (!failed) {
+            /* The game's files first: its crash report may say the likely cause about.txt gives. */
+            Pc5Buf files = { 0 };
+            if (strcmp(issue->profile, "launcher")) collect_game_files(root, issue, &zip, &files, offset_s);
             about_page(&about, issue, when_text, base);
-            if (strcmp(issue->profile, "launcher")) collect_game_files(root, issue, &zip, &about, offset_s);
+            if (files.len) pc5_buf_put(&about, files.data, files.len);
+            pc5_buf_free(&files);
             failed = pc5_zip_add(&zip, "about.txt", about.data, about.len, now + offset_s);
         }
         pc5_buf_free(&about);

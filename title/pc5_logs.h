@@ -22,7 +22,17 @@ typedef enum Pc5LogProblem {
     PC5_LOG_NO_PICTURE,       /* the game closed within a minute, having shown nothing */
     PC5_LOG_FORCED,           /* the game didn't close when asked and was ended */
     PC5_LOG_PC5_PROBLEM,      /* PC5 logged a problem (an install or uninstall that failed) */
+    PC5_LOG_CLOSED_EARLY,     /* the game closed by itself within a minute, for a reason PC5 found (cause) */
 } Pc5LogProblem;
+
+/* What likely went wrong, when the log shows it: what a player can act on. */
+typedef enum Pc5LogCause {
+    PC5_CAUSE_NONE,
+    PC5_CAUSE_INSTALLER,      /* it tried to start an installer (vc_redist.x64.exe), which can't run on the console */
+    PC5_CAUSE_COPY_FILES,     /* its copy loaded files that aren't the game's as its store ships it (OnlineFix64.dll) */
+    PC5_CAUSE_NO_OPENGL,      /* its OpenGL never started: it drew with no rendering context */
+    PC5_CAUSE_CRASH_REPORT,   /* the game's own crash report (Unreal's CrashContext) says what it was */
+} Pc5LogCause;
 
 typedef struct Pc5LogIssue {
     Pc5LogProblem problem;
@@ -36,6 +46,8 @@ typedef struct Pc5LogIssue {
     char exe[PC5_PATH];       /* the program Wine ran (C:\Games\...), or "" */
     char firmware[32];        /* the console's, as the log names it, or "" */
     int files;                /* the game's own files kept with the log */
+    Pc5LogCause cause;
+    char cause_what[160];     /* the installer's or file's name, or the crash report's message */
 } Pc5LogIssue;
 
 /* What a session's log says: the problem, if any. */
@@ -43,6 +55,9 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
 
 /* What PC5 saw, in a few words ("stopped with an error"), for a report. */
 const char *pc5_log_problem_text(Pc5LogProblem problem);
+/* The likely cause in a sentence, for a report and about.txt ("the game tried to start
+ * vc_redist.x64.exe, an installer, which can't run on the console"); "" for none. */
+void pc5_log_cause_text(const Pc5LogIssue *issue, char *out, size_t size);
 
 /* Tidies root/logs as above, leaving the session now running alone. now is
  * the time in seconds since 1970 and offset_s the console's offset from UTC,

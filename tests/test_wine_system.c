@@ -4,6 +4,7 @@
  * Wine's dlls/ntdll/unix/file.c with prospero-win's patches applied into system_func.c,
  * and builds this around it, with a prefix and a Wine folder of its own. */
 #define _GNU_SOURCE
+#include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,7 +46,7 @@ typedef int LONG;
 #define FILE_OVERWRITE 4
 #define FILE_OVERWRITE_IF 5
 #define FILE_DELETE_ON_CLOSE 0x1000u
-#define MESSAGE(...) ((void)0)
+#define MESSAGE(format, ...) ((void)sizeof(printf(format, __VA_ARGS__)))
 static LONG InterlockedExchange(LONG *target, LONG value) { LONG old = *target; *target = value; return old; }
 static NTSTATUS errno_to_status(int error) { return error ? 0xc0000001L : 0; }
 static const char *config_dir;

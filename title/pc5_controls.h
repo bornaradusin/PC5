@@ -155,6 +155,13 @@ int pc5_controls_mapping_exists(const char *root);
 int pc5_controls_save(const char *root, const char *id, const Pc5Controls *controls);
 /* controls.txt's lines ("graphics_api = wine_2d\n", a recipe's) over controls, as a load reads them. */
 void pc5_controls_apply_text(const char *text, Pc5Controls *controls);
+/* A report's settings line, as Report it works writes it ("64-bit, draws with DirectX 12; Graphics
+ * mode WineD3D on Vulkan; Controller DualSense; Frame generation off; Memory Auto; CPU sharing on;
+ * Steam emulator off; Sound 5.1"), put on controls for a game that draws with api: Graphics mode
+ * (when it is one of the game's choices), Controller, Frame generation, Memory, CPU sharing, Steam
+ * emulator and Sound. What the line leaves out is PC5's default (Steam emulator Auto, stereo), as
+ * the line says only what isn't. How many of its settings were read: 0 for text without it. */
+int pc5_controls_from_report(const char *text, int api, Pc5Controls *controls);
 /* The profile's [input] section, from its header on, and its [runtime] section
  * when CPU sharing is on. 0, or -1 when out is too small. */
 int pc5_controls_input(const Pc5Controls *controls, char *out, size_t size);

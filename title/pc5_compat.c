@@ -139,6 +139,90 @@ int pc5_compat_matches(const Pc5CompatEntry *r, const char *q, int filter)
     }
     return !q[0];
 }
+void pc5_compat_key(const char *name, char *out, size_t size)
+{
+    static const char *const numerals[][2] = { { "ii", "2" }, { "iii", "3" }, { "iv", "4" }, { "v", "5" },
+                                               { "vi", "6" }, { "vii", "7" }, { "viii", "8" }, { "ix", "9" } };
+    char text[512], words[64][64];
+    size_t n = 0, count = 0, used = 0;
+
+    if (!size) return;
+    out[0] = 0;
+    /* Lower case, "&" as " and ", apostrophes (' and U+2019) gone. */
+    for (const unsigned char *p = (const unsigned char *)name; *p && n + 6 < sizeof(text); p++) {
+        if (*p == '\'') continue;
+        if (p[0] == 0xe2 && p[1] == 0x80 && p[2] == 0x99) { p += 2; continue; }
+        if (*p == '&') { memcpy(text + n, " and ", 5); n += 5; continue; }
+        text[n++] = (char)pc5_lower(*p);
+    }
+    text[n] = 0;
+    /* A version after the name: spaces, an optional "v", digits with at least one point, maybe a
+     * letter, then only spaces. */
+    {
+        size_t end = n;
+        while (end && text[end - 1] == ' ') end--;
+        size_t at = end;
+        if (at && text[at - 1] >= 'a' && text[at - 1] <= 'z' && at >= 2 && text[at - 2] >= '0' && text[at - 2] <= '9') at--;
+        size_t digits_end = at;
+        int points = 0, ok = 1;
+        while (at && ((text[at - 1] >= '0' && text[at - 1] <= '9') || text[at - 1] == '.')) {
+            if (text[at - 1] == '.') points++;
+            at--;
+        }
+        /* digits, points between them: no point first or last, none doubled */
+        if (at == digits_end || !points || text[at] == '.' || text[digits_end - 1] == '.') ok = 0;
+        for (size_t i = at; ok && i + 1 < digits_end; i++)
+            if (text[i] == '.' && text[i + 1] == '.') ok = 0;
+        if (ok && at && text[at - 1] == 'v') at--;
+        if (ok && at && text[at - 1] == ' ') {
+            while (at && text[at - 1] == ' ') at--;
+            text[at] = 0;
+            n = at;
+        }
+    }
+    /* Words: letters, digits and any byte of a character past ASCII. */
+    for (size_t i = 0; i <= n && count < 64; i++) {
+        unsigned char c = i < n ? (unsigned char)text[i] : 0;
+        int letter = (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c >= 0x80;
+        if (letter) {
+            if (used + 1 < sizeof(words[0])) words[count][used++] = (char)c;
+        } else if (used) {
+            words[count++][used] = 0;
+            used = 0;
+        }
+    }
+    size_t first = count > 1 && !strcmp(words[0], "the") ? 1 : 0, at = 0;
+    for (size_t w = first; w < count; w++) {
+        const char *word = words[w];
+        for (size_t k = 0; k < sizeof(numerals) / sizeof(numerals[0]); k++)
+            if (!strcmp(word, numerals[k][0])) word = numerals[k][1];
+        size_t len = strlen(word);
+        if (at + len + 1 > size) break;
+        memcpy(out + at, word, len);
+        at += len;
+    }
+    out[at] = 0;
+    if (!at) {   /* nothing but punctuation: the name in lower case */
+        for (; name[at] && at + 1 < size; at++) out[at] = (char)pc5_lower((unsigned char)name[at]);
+        out[at] = 0;
+    }
+}
+
+int pc5_compat_with_settings(const Pc5CompatEntry *entries, int count, const char *title)
+{
+    char want[512], key[512];
+    pc5_compat_key(title, want, sizeof(want));
+    if (!want[0]) return -1;
+    for (int i = 0; i < count; i++) {
+        const Pc5CompatEntry *e = &entries[i];
+        if ((e->status != 1 && e->status != 2) || (!strstr(e->settings, "Graphics mode ") && !strstr(e->settings, "Graphics API ")))
+            continue;
+        pc5_compat_key(e->title, key, sizeof(key));
+        if (!strcmp(key, want)) return i;
+    }
+    return -1;
+}
+
 void pc5_compat_init(Pc5Compat *l, const char *root, const Pc5Http *http)
 {
     memset(l, 0, sizeof(*l)); l->http = *http;

@@ -44,15 +44,15 @@ msgstr ""
 msgid "Unresolved: doesn't run"
 msgstr ""
 
-#: title/pc5_compat.c:164
+#: title/pc5_compat.c:248
 msgid "Couldn't refresh. Showing the last saved list."
 msgstr ""
 
-#: title/pc5_compat.c:176
+#: title/pc5_compat.c:260
 msgid "Updated, but the offline copy couldn't be saved."
 msgstr ""
 
-#: title/pc5_compat.c:177
+#: title/pc5_compat.c:261
 msgid "The source format changed. Your saved list was kept."
 msgstr ""
 
@@ -92,7 +92,7 @@ msgstr "Šipka doleva"
 msgid "Right arrow"
 msgstr "Šipka doprava"
 
-#: title/pc5_controls.c:30 title/pc5_controls.c:64 title/pc5_ui.c:7516
+#: title/pc5_controls.c:30 title/pc5_controls.c:64 title/pc5_ui.c:7696
 msgid "Nothing"
 msgstr "Nic"
 
@@ -140,7 +140,7 @@ msgstr "Směrové tlačítko doprava"
 msgid "Create"
 msgstr "Create"
 
-#: title/pc5_controls.c:44 title/pc5_ui.c:7491
+#: title/pc5_controls.c:44 title/pc5_ui.c:7671
 msgid "Touchpad"
 msgstr "Dotyková plocha"
 
@@ -229,13 +229,14 @@ msgid "Keys"
 msgstr "Klávesy"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_controls.c:64 title/pc5_ui.c:7019
+#: title/pc5_controls.c:64 title/pc5_ui.c:7190
 msgid "Mouse pointer"
 msgstr "Ukazatel myši"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_controls.c:96 title/pc5_ui.c:2551 title/pc5_ui.c:7084
-#: title/pc5_ui.c:7105 title/pc5_ui.c:7224
+#: title/pc5_controls.c:96 title/pc5_ui.c:2561 title/pc5_ui.c:3060
+#: title/pc5_ui.c:3062 title/pc5_ui.c:7255 title/pc5_ui.c:7276
+#: title/pc5_ui.c:7395
 msgid "Auto"
 msgstr "Automaticky"
 
@@ -371,7 +372,7 @@ msgstr "PC5 došla paměť při odstraňování %s."
 msgid "There's no network here."
 msgstr "Není k dispozici žádná síť."
 
-#: title/pc5_ftp.c:642 title/pc5_ui.c:2776
+#: title/pc5_ftp.c:642 title/pc5_ui.c:2786
 msgid "PC5's INSTALL folder isn't there."
 msgstr "Složka INSTALL aplikace PC5 neexistuje."
 
@@ -886,7 +887,7 @@ msgid "Console's colour"
 msgstr "Barva konzole"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_settings.c:17 title/pc5_ui.c:7021
+#: title/pc5_settings.c:17 title/pc5_ui.c:7192
 msgid "Normal"
 msgstr "Normální"
 
@@ -899,13 +900,14 @@ msgid "Extra large"
 msgstr "Extra velká"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_settings.c:19 title/pc5_settings.c:21 title/pc5_ui.c:349
-#: title/pc5_ui.c:2545 title/pc5_ui.c:2568 title/pc5_ui.c:2581
-#: title/pc5_ui.c:2594 title/pc5_ui.c:2626 title/pc5_ui.c:2631
-#: title/pc5_ui.c:2636 title/pc5_ui.c:2641 title/pc5_ui.c:2646
-#: title/pc5_ui.c:2651 title/pc5_ui.c:2656 title/pc5_ui.c:2705
-#: title/pc5_ui.c:2718 title/pc5_ui.c:2757 title/pc5_ui.c:7067
-#: title/pc5_ui.c:7121 title/pc5_ui.c:7210 title/pc5_ui.c:7224
+#: title/pc5_settings.c:19 title/pc5_settings.c:21 title/pc5_ui.c:353
+#: title/pc5_ui.c:2555 title/pc5_ui.c:2578 title/pc5_ui.c:2591
+#: title/pc5_ui.c:2604 title/pc5_ui.c:2636 title/pc5_ui.c:2641
+#: title/pc5_ui.c:2646 title/pc5_ui.c:2651 title/pc5_ui.c:2656
+#: title/pc5_ui.c:2661 title/pc5_ui.c:2666 title/pc5_ui.c:2715
+#: title/pc5_ui.c:2728 title/pc5_ui.c:2767 title/pc5_ui.c:3059
+#: title/pc5_ui.c:3061 title/pc5_ui.c:3062 title/pc5_ui.c:7238
+#: title/pc5_ui.c:7292 title/pc5_ui.c:7381 title/pc5_ui.c:7395
 msgid "Off"
 msgstr "Vypnuto"
 
@@ -1103,7 +1105,7 @@ msgstr "PC5 nemůže nahradit dlaždici: %s."
 msgid "PC5 can't put the tile in place: %s."
 msgstr "PC5 nemůže umístit dlaždici: %s."
 
-#: title/pc5_tile.c:636 title/pc5_ui.c:4785
+#: title/pc5_tile.c:636 title/pc5_ui.c:4946
 msgid ""
 "It isn't in PC5 any more. Take the tile off the home screen, or install "
 "the game again."
@@ -1116,301 +1118,301 @@ msgid "PC5 lost its place readying the game."
 msgstr "PC5 se při přípravě hry ztratila."
 
 #. One of the tabs along the top of the screen: one short word.
-#: title/pc5_ui.c:65
+#: title/pc5_ui.c:66
 msgid "Home"
 msgstr "Domů"
 
 #. One of the tabs along the top of the screen: one short word.
-#: title/pc5_ui.c:65
+#: title/pc5_ui.c:66
 msgid "Library"
 msgstr "Knihovna"
 
 #. One of the tabs along the top of the screen: one short word.
-#: title/pc5_ui.c:65
+#: title/pc5_ui.c:66
 msgid "Compatibility"
 msgstr "Kompatibilita"
 
 #. One of the tabs along the top of the screen: one short word.
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:65 title/pc5_ui.c:7870 title/pc5_ui.c:9006
+#: title/pc5_ui.c:66 title/pc5_ui.c:8050 title/pc5_ui.c:9208
 msgid "Install"
 msgstr "Instalovat"
 
 #. One of the tabs along the top of the screen: one short word.
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:65 title/pc5_ui.c:132 title/pc5_ui.c:6878 title/pc5_ui.c:6892
+#: title/pc5_ui.c:66 title/pc5_ui.c:133 title/pc5_ui.c:7049 title/pc5_ui.c:7063
 msgid "Settings"
 msgstr "Nastavení"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:68 title/pc5_ui_enhancements_draw.h:57
+#: title/pc5_ui.c:69 title/pc5_ui_enhancements_draw.h:57
 msgid "All"
 msgstr "Vše"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:68
+#: title/pc5_ui.c:69
 msgid "Recently played"
 msgstr "Nedávno hrané"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:68
+#: title/pc5_ui.c:69
 msgid "Favourites"
 msgstr "Oblíbené"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:68 title/pc5_ui.c:6750 title/pc5_ui.c:8849
+#: title/pc5_ui.c:69 title/pc5_ui.c:6921 title/pc5_ui.c:9029
 msgid "USB drive"
 msgstr "USB disk"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:68
+#: title/pc5_ui.c:69
 msgid "Needs attention"
 msgstr "Vyžaduje pozornost"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:132 title/pc5_ui.c:2518
+#: title/pc5_ui.c:133 title/pc5_ui.c:2528
 msgid "In games"
 msgstr "Ve hrách"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:132 title/pc5_ui.c:2528
+#: title/pc5_ui.c:133 title/pc5_ui.c:2538
 msgid "System"
 msgstr "Systém"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:132 title/pc5_ui.c:2523
+#: title/pc5_ui.c:133 title/pc5_ui.c:2533
 msgid "Overlay"
 msgstr "Překryvná vrstva"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:132 title/pc5_ui.c:2536
+#: title/pc5_ui.c:133 title/pc5_ui.c:2546
 msgid "Picture sources"
 msgstr "Zdroje obrázků"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:133 title/pc5_ui.c:2513
+#: title/pc5_ui.c:134 title/pc5_ui.c:2523
 msgid "Game maintenance"
 msgstr "Údržba her"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:133 title/pc5_ui.c:2598
+#: title/pc5_ui.c:134 title/pc5_ui.c:2608
 msgid "Network"
 msgstr "Síť"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:209 title/pc5_ui.c:7024
+#: title/pc5_ui.c:210 title/pc5_ui.c:7195
 msgid "Graphics"
 msgstr "Grafika"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:209 title/pc5_ui.c:7029
+#: title/pc5_ui.c:210 title/pc5_ui.c:7200
 msgid "Appearance"
 msgstr "Vzhled"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:209 title/pc5_ui.c:7034
+#: title/pc5_ui.c:210 title/pc5_ui.c:7205
 msgid "Manage"
 msgstr "Spravovat"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:209 title/pc5_ui.c:7129
+#: title/pc5_ui.c:210 title/pc5_ui.c:7300
 msgid "Background"
 msgstr "Pozadí"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:210 title/pc5_ui.c:7155 title/pc5_ui.c:8175
+#: title/pc5_ui.c:211 title/pc5_ui.c:7326 title/pc5_ui.c:8355
 msgid "Library music"
 msgstr "Hudba v knihovně"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:210 title/pc5_ui.c:7140 title/pc5_ui.c:8175
+#: title/pc5_ui.c:211 title/pc5_ui.c:7311 title/pc5_ui.c:8355
 msgid "Background video"
 msgstr "Video na pozadí"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:211 title/pc5_ui.c:7165
+#: title/pc5_ui.c:212 title/pc5_ui.c:7336
 msgid "Media settings and backup"
 msgstr "Nastavení médií a záloha"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:211 title/pc5_ui.c:3882 title/pc5_ui.c:7176
-#: title/pc5_ui.c:8176
+#: title/pc5_ui.c:212 title/pc5_ui.c:3996 title/pc5_ui.c:7347
+#: title/pc5_ui.c:8356
 msgid "Loading screen"
 msgstr "Načítací obrazovka"
 
 #. a percentage (Vibration 50%); put a space before % where your language does.
-#: title/pc5_ui.c:351 title/pc5_ui.c:7478
+#: title/pc5_ui.c:355 title/pc5_ui.c:7658
 #, c-format
 msgid "%d%%"
 msgstr "%d %%"
 
-#: title/pc5_ui.c:999
+#: title/pc5_ui.c:1009
 #, c-format
 msgid ""
 "You have %s, the version before: PC5 downloads only what changed (%s)"
 msgstr "Máte %s, předchozí verzi: PC5 stáhne jen změny (%s)"
 
-#: title/pc5_ui.c:1004
+#: title/pc5_ui.c:1014
 #, c-format
 msgid ""
 "You have %s, more than one version behind: PC5 downloads the whole app (%s)"
 msgstr ""
 "Máte %s, o více než jednu verzi starší: PC5 stáhne celou aplikaci (%s)"
 
-#: title/pc5_ui.c:1007
+#: title/pc5_ui.c:1017
 #, c-format
 msgid "You have %s: PC5 downloads the whole app (%s)"
 msgstr "Máte %s: PC5 stáhne celou aplikaci (%s)"
 
-#: title/pc5_ui.c:1668 title/pc5_ui.c:3912 title/pc5_ui.c:5516
-#: title/pc5_ui.c:5525
+#: title/pc5_ui.c:1678 title/pc5_ui.c:4026 title/pc5_ui.c:5677
+#: title/pc5_ui.c:5686
 msgid "PC5 didn't install this game"
 msgstr "Tuto hru neinstalovala PC5"
 
-#: title/pc5_ui.c:1669
+#: title/pc5_ui.c:1679
 msgid ""
 "Its cover can only be changed as in Covers on the wiki: a picture of your "
 "own."
 msgstr ""
 "Její obal lze změnit jen podle stránky Covers na wiki: vlastním obrázkem."
 
-#: title/pc5_ui.c:1670
+#: title/pc5_ui.c:1680
 msgid "Only a game PC5 installed has a tile picture."
 msgstr "Obrázek dlaždice má jen hra, kterou nainstalovala PC5."
 
-#: title/pc5_ui.c:1671
+#: title/pc5_ui.c:1681
 msgid ""
 "Its background can only be changed as in Covers on the wiki: a picture of "
 "your own."
 msgstr ""
 "Její pozadí lze změnit jen podle stránky Covers na wiki: vlastním obrázkem."
 
-#: title/pc5_ui.c:1677
+#: title/pc5_ui.c:1687
 msgid "PC5 ran out of memory"
 msgstr "PC5 došla paměť"
 
-#: title/pc5_ui.c:1677
+#: title/pc5_ui.c:1687
 msgid "Close PC5 and open it again."
 msgstr "Zavřete PC5 a znovu ji otevřete."
 
-#: title/pc5_ui.c:1851
+#: title/pc5_ui.c:1861
 msgid "The cover wasn't changed"
 msgstr "Obal nebyl změněn"
 
-#: title/pc5_ui.c:1852
+#: title/pc5_ui.c:1862
 msgid "The tile picture wasn't changed"
 msgstr "Obrázek dlaždice nebyl změněn"
 
-#: title/pc5_ui.c:1852
+#: title/pc5_ui.c:1862
 msgid "The background wasn't changed"
 msgstr "Pozadí nebylo změněno"
 
-#: title/pc5_ui.c:1854
+#: title/pc5_ui.c:1864
 msgid "PC5 can't write to the game's folder in /data/prospero-win/prefixes."
 msgstr "PC5 nemůže zapisovat do složky hry v /data/prospero-win/prefixes."
 
-#: title/pc5_ui.c:1855
+#: title/pc5_ui.c:1865
 msgid "PC5 couldn't make the card from the game's icon and name."
 msgstr "PC5 nedokázala vytvořit kartu z ikony a názvu hry."
 
-#: title/pc5_ui.c:1928 title/pc5_ui.c:7711
+#: title/pc5_ui.c:1938 title/pc5_ui.c:7891
 #, c-format
 msgid "USB drive %d"
 msgstr "USB disk %d"
 
-#: title/pc5_ui.c:1930
+#: title/pc5_ui.c:1940
 #, c-format
 msgid "Extended storage %d"
 msgstr "Rozšířené úložiště %d"
 
-#: title/pc5_ui.c:1932
+#: title/pc5_ui.c:1942
 msgid "Console storage"
 msgstr "Úložiště konzole"
 
-#: title/pc5_ui.c:1957
+#: title/pc5_ui.c:1967
 #, c-format
 msgid "%s can't be installed"
 msgstr "Nelze nainstalovat: %s"
 
-#: title/pc5_ui.c:2007
+#: title/pc5_ui.c:2017
 #, c-format
 msgid "%s can't be updated"
 msgstr "Nelze aktualizovat: %s"
 
-#: title/pc5_ui.c:2007 title/pc5_ui.c:3190 title/pc5_ui.c:4667
-#: title/pc5_ui.c:5357 title/pc5_ui.c:6041 title/pc5_ui.c:8115
+#: title/pc5_ui.c:2017 title/pc5_ui.c:3276 title/pc5_ui.c:4828
+#: title/pc5_ui.c:5518 title/pc5_ui.c:6212 title/pc5_ui.c:8295
 msgid "The game"
 msgstr "Hra"
 
-#: title/pc5_ui.c:2035 title/pc5_ui.c:2228
+#: title/pc5_ui.c:2045 title/pc5_ui.c:2238
 #, c-format
 msgid "The Windows of %s wasn't reset"
 msgstr ""
 
-#: title/pc5_ui.c:2036 title/pc5_ui.c:2229 title/pc5_ui.c:5809
+#: title/pc5_ui.c:2046 title/pc5_ui.c:2239 title/pc5_ui.c:5974
 #, c-format
 msgid "%s Nothing was changed."
 msgstr "%s Nic se nezměnilo."
 
-#: title/pc5_ui.c:2102
+#: title/pc5_ui.c:2112
 #, c-format
 msgid "Its Windows needs %s and the console has %s free."
 msgstr "Její Windows potřebuje %s a v konzoli je volných %s."
 
-#: title/pc5_ui.c:2102
+#: title/pc5_ui.c:2112
 #, c-format
 msgid "The game needs %s and the console has %s free."
 msgstr "Hra potřebuje %s a v konzoli je volných %s."
 
-#: title/pc5_ui.c:2104 title/pc5_ui.c:5328
+#: title/pc5_ui.c:2114 title/pc5_ui.c:5489
 msgid "Not enough space"
 msgstr "Není dost místa"
 
-#: title/pc5_ui.c:2124
+#: title/pc5_ui.c:2134
 msgid "It has no program to start."
 msgstr "Nemá žádný program ke spuštění."
 
-#: title/pc5_ui.c:2219
+#: title/pc5_ui.c:2229
 #, c-format
 msgid "The Windows of %s is reset"
 msgstr ""
 
-#: title/pc5_ui.c:2220
+#: title/pc5_ui.c:2230
 msgid ""
 "It is a new Windows, as a fresh install has. The game's files, its saves "
 "and PC5's settings for it are as they were; its old registry is kept in "
 "its pc5/reset-backup folder."
 msgstr ""
 
-#: title/pc5_ui.c:2224
+#: title/pc5_ui.c:2234
 msgid "Reset stopped"
 msgstr ""
 
-#: title/pc5_ui.c:2225
+#: title/pc5_ui.c:2235
 msgid "The new Windows made so far was deleted: the game is as it was."
 msgstr ""
 
-#: title/pc5_ui.c:2229 title/pc5_ui.c:5852
+#: title/pc5_ui.c:2239 title/pc5_ui.c:6023
 #, c-format
 msgid "%s PC5 finishes it the next time it starts."
 msgstr "%s PC5 to dokončí při příštím spuštění."
 
-#: title/pc5_ui.c:2246
+#: title/pc5_ui.c:2256
 #, c-format
 msgid "%s is partly updated"
 msgstr "Částečně aktualizováno: %s"
 
-#: title/pc5_ui.c:2247
+#: title/pc5_ui.c:2257
 #, c-format
 msgid ""
 "%u of its files couldn't be put in place. %s Update it again; its saves, "
@@ -1419,20 +1421,20 @@ msgstr ""
 "Soubory, které nešlo umístit: %u. %s Aktualizujte ji znovu; její uložené "
 "hry, nastavení a možnosti zůstaly beze změny."
 
-#: title/pc5_ui.c:2251
+#: title/pc5_ui.c:2261
 #, c-format
 msgid "%s is updated"
 msgstr "Aktualizováno: %s"
 
-#: title/pc5_ui.c:2252
+#: title/pc5_ui.c:2262
 msgid "Its saves, settings and options are as they were."
 msgstr "Její uložené hry, nastavení a možnosti zůstaly beze změny."
 
-#: title/pc5_ui.c:2255
+#: title/pc5_ui.c:2265
 msgid "Update stopped"
 msgstr "Aktualizace zastavena"
 
-#: title/pc5_ui.c:2256
+#: title/pc5_ui.c:2266
 msgid ""
 "The copy made so far was deleted: the game is as it was. The USB drive "
 "wasn't changed."
@@ -1440,118 +1442,118 @@ msgstr ""
 "Dosud vytvořená kopie byla odstraněna: hra je jako dřív. USB disk se "
 "nezměnil."
 
-#: title/pc5_ui.c:2259
+#: title/pc5_ui.c:2269
 #, c-format
 msgid "%s wasn't updated"
 msgstr "Neaktualizováno: %s"
 
-#: title/pc5_ui.c:2260
+#: title/pc5_ui.c:2270
 #, c-format
 msgid "%s PC5 finishes the update the next time it starts."
 msgstr "%s PC5 dokončí aktualizaci při příštím spuštění."
 
-#: title/pc5_ui.c:2260
+#: title/pc5_ui.c:2270
 #, c-format
 msgid "%s The game is as it was."
 msgstr "%s Hra je jako dřív."
 
-#: title/pc5_ui.c:2276
+#: title/pc5_ui.c:2286
 #, c-format
 msgid "%s is installed"
 msgstr "Nainstalováno: %s"
 
-#: title/pc5_ui.c:2281
+#: title/pc5_ui.c:2291
 msgid "It's in your library, with the saves and settings it had before."
 msgstr ""
 "Je ve vaší knihovně, s uloženými hrami a nastavením, které měla dříve."
 
-#: title/pc5_ui.c:2282
+#: title/pc5_ui.c:2292
 msgid "It's in your library. Press the button to play it from there."
 msgstr "Je ve vaší knihovně. Stiskněte tlačítko a hrajte ji odtud."
 
-#: title/pc5_ui.c:2286
+#: title/pc5_ui.c:2296
 msgid "Install stopped"
 msgstr "Instalace zastavena"
 
-#: title/pc5_ui.c:2286
+#: title/pc5_ui.c:2296
 #, c-format
 msgid "%s wasn't installed"
 msgstr "Nenainstalováno: %s"
 
-#: title/pc5_ui.c:2287
+#: title/pc5_ui.c:2297
 msgid "Everything copied so far was deleted. The USB drive wasn't changed."
 msgstr "Vše, co se dosud zkopírovalo, bylo odstraněno. USB disk se nezměnil."
 
-#: title/pc5_ui.c:2289
+#: title/pc5_ui.c:2299
 #, c-format
 msgid "%s Nothing was kept."
 msgstr "%s Nic nebylo ponecháno."
 
-#: title/pc5_ui.c:2290
+#: title/pc5_ui.c:2300
 #, c-format
 msgid "%s PC5 tries again the next time it starts."
 msgstr "%s PC5 to zkusí znovu při příštím spuštění."
 
-#: title/pc5_ui.c:2344
+#: title/pc5_ui.c:2354
 msgid "PC5 can't read this folder."
 msgstr "PC5 nemůže přečíst tuto složku."
 
-#: title/pc5_ui.c:2428
+#: title/pc5_ui.c:2438
 msgid "stopped, nothing kept."
 msgstr "zastaveno, nic nebylo ponecháno."
 
-#: title/pc5_ui.c:2428
+#: title/pc5_ui.c:2438
 msgid "not installed."
 msgstr "nenainstalováno."
 
-#: title/pc5_ui.c:2434
+#: title/pc5_ui.c:2444
 msgid "1 game is installed"
 msgstr "1 hra je nainstalována"
 
-#: title/pc5_ui.c:2434
+#: title/pc5_ui.c:2444
 #, c-format
 msgid "%d games are installed"
 msgstr "Nainstalované hry: %d"
 
-#: title/pc5_ui.c:2436
+#: title/pc5_ui.c:2446
 #, c-format
 msgid "%d of %d games are installed"
 msgstr "Nainstalováno her: %d z %d"
 
-#: title/pc5_ui.c:2438
+#: title/pc5_ui.c:2448
 msgid "No game was installed"
 msgstr "Žádná hra nebyla nainstalována"
 
-#: title/pc5_ui.c:2439
+#: title/pc5_ui.c:2449
 msgid "They're in your library. The USB drive wasn't changed."
 msgstr "Jsou ve vaší knihovně. USB disk se nezměnil."
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2496 title/pc5_ui.c:7900
+#: title/pc5_ui.c:2506 title/pc5_ui.c:8080
 msgid "Install games from USB"
 msgstr "Instalovat hry z USB"
 
-#: title/pc5_ui.c:2497
+#: title/pc5_ui.c:2507
 msgid "Copies one game, or several in a row, to the console"
 msgstr "Zkopíruje do konzole jednu hru nebo několik za sebou"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2500 title/pc5_ui.c:8918 title/pc5_ui.c:8925
+#: title/pc5_ui.c:2510 title/pc5_ui.c:9098 title/pc5_ui.c:9105
 msgid "Uninstall game"
 msgstr "Odinstalovat hru"
 
-#: title/pc5_ui.c:2501
+#: title/pc5_ui.c:2511
 msgid "Deletes a game (its saves can be kept), or saves kept from before"
 msgstr ""
 "Odstraní hru (její uložené hry lze ponechat) nebo dříve ponechané uložené "
 "hry"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2504 title/pc5_ui.c:8176 title/pc5_ui.c:8183
+#: title/pc5_ui.c:2514 title/pc5_ui.c:8356 title/pc5_ui.c:8363
 msgid "Library appearance from phone"
 msgstr "Vzhled knihovny z telefonu"
 
-#: title/pc5_ui.c:2505
+#: title/pc5_ui.c:2515
 msgid ""
 "One QR code to choose any installed game and send its pictures, music or "
 "video"
@@ -1561,51 +1563,51 @@ msgstr ""
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:2506 title/pc5_ui.c:8413 title/pc5_ui.c:8415
+#: title/pc5_ui.c:2516 title/pc5_ui.c:8593 title/pc5_ui.c:8595
 msgid "Open"
 msgstr "Otevřít"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2509
+#: title/pc5_ui.c:2519
 msgid "Game compatibility list"
 msgstr "Seznam kompatibility her"
 
-#: title/pc5_ui.c:2510
+#: title/pc5_ui.c:2520
 msgid "Browse community reports, settings and saved offline results"
 msgstr "Procházejte hlášení komunity, nastavení a uložené offline výsledky"
 
-#: title/pc5_ui.c:2514
+#: title/pc5_ui.c:2524
 msgid "Installing, uninstalling and the compatibility list"
 msgstr "Instalace, odinstalace a seznam kompatibility"
 
-#: title/pc5_ui.c:2519
+#: title/pc5_ui.c:2529
 msgid "Vibration, light bar, triggers and 120 Hz output"
 msgstr "Vibrace, světelná lišta, triggery a výstup 120 Hz"
 
-#: title/pc5_ui.c:2524
+#: title/pc5_ui.c:2534
 msgid "FPS, frame time, CPU and GPU use, temperatures and memory"
 msgstr "FPS, doba snímku, využití CPU a GPU, teploty a paměť"
 
-#: title/pc5_ui.c:2530
+#: title/pc5_ui.c:2540
 msgid "Startup sound, logs, picture sources, updates and language"
 msgstr "Zvuk při spuštění, protokoly, zdroje obrázků, aktualizace a jazyk"
 
-#: title/pc5_ui.c:2537
+#: title/pc5_ui.c:2547
 msgid "Where covers and backgrounds are looked for"
 msgstr "Kde se hledají obaly a pozadí"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2538
+#: title/pc5_ui.c:2548
 #, c-format
 msgid "%d of %d ›"
 msgstr "%d z %d ›"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2542
+#: title/pc5_ui.c:2552
 msgid "120 Hz output"
 msgstr "Výstup 120 Hz"
 
-#: title/pc5_ui.c:2543
+#: title/pc5_ui.c:2553
 msgid ""
 "Up to 120 fps on a TV that takes it; turn on the PS5's 120 Hz output and "
 "turn VRR off"
@@ -1613,346 +1615,347 @@ msgstr ""
 "Až 120 fps na televizoru, který to umí; zapněte výstup 120 Hz na PS5 a "
 "vypněte VRR"
 
-#: title/pc5_ui.c:2544
+#: title/pc5_ui.c:2554
 msgid "Off: games show up to 60 fps"
 msgstr "Vypnuto: hry ukazují až 60 fps"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2545 title/pc5_ui.c:2568 title/pc5_ui.c:2581
-#: title/pc5_ui.c:2594 title/pc5_ui.c:2626 title/pc5_ui.c:2631
-#: title/pc5_ui.c:2636 title/pc5_ui.c:2641 title/pc5_ui.c:2646
-#: title/pc5_ui.c:2651 title/pc5_ui.c:2656 title/pc5_ui.c:2705
-#: title/pc5_ui.c:2757 title/pc5_ui.c:7121 title/pc5_ui.c:7210
+#: title/pc5_ui.c:2555 title/pc5_ui.c:2578 title/pc5_ui.c:2591
+#: title/pc5_ui.c:2604 title/pc5_ui.c:2636 title/pc5_ui.c:2641
+#: title/pc5_ui.c:2646 title/pc5_ui.c:2651 title/pc5_ui.c:2656
+#: title/pc5_ui.c:2661 title/pc5_ui.c:2666 title/pc5_ui.c:2715
+#: title/pc5_ui.c:2767 title/pc5_ui.c:3059 title/pc5_ui.c:3061
+#: title/pc5_ui.c:7292 title/pc5_ui.c:7381
 msgid "On"
 msgstr "Zapnuto"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2548
+#: title/pc5_ui.c:2558
 msgid "Keyboard layout"
 msgstr "Rozložení klávesnice"
 
-#: title/pc5_ui.c:2549
+#: title/pc5_ui.c:2559
 msgid "A USB keyboard types as a US one in games"
 msgstr "USB klávesnice ve hrách píše jako americká"
 
-#: title/pc5_ui.c:2550
+#: title/pc5_ui.c:2560
 msgid "A USB keyboard types as your language's in games"
 msgstr "USB klávesnice ve hrách píše podle vašeho jazyka"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2551
+#: title/pc5_ui.c:2561
 msgid "US"
 msgstr "US"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2554
+#: title/pc5_ui.c:2564
 msgid "Check copied games"
 msgstr ""
 
-#: title/pc5_ui.c:2556
+#: title/pc5_ui.c:2566
 msgid ""
 "Every install is read back and compared with the USB drive: it takes about "
 "twice as long"
 msgstr ""
 
-#: title/pc5_ui.c:2558
+#: title/pc5_ui.c:2568
 #, c-format
 msgid ""
 "Installs over %d GB are read back and compared with the USB drive, "
 "catching a bad drive or cable"
 msgstr ""
 
-#: title/pc5_ui.c:2561
+#: title/pc5_ui.c:2571
 msgid ""
 "Installs aren't read back: fastest. Turn on for a drive or cable you don't "
 "trust"
 msgstr ""
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2565
+#: title/pc5_ui.c:2575
 msgid "Keep all logs"
 msgstr "Ponechat všechny protokoly"
 
-#: title/pc5_ui.c:2566
+#: title/pc5_ui.c:2576
 msgid "Every session's log is kept for 7 days"
 msgstr "Protokol každé relace se uchová 7 dní"
 
-#: title/pc5_ui.c:2567
+#: title/pc5_ui.c:2577
 msgid "Problem sessions and each game's newest; turn on when testing a game"
 msgstr ""
 "Problémové relace a nejnovější u každé hry; zapněte při testování hry"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2573
+#: title/pc5_ui.c:2583
 msgid "FTP server"
 msgstr "Server FTP"
 
-#: title/pc5_ui.c:2575
+#: title/pc5_ui.c:2585
 #, c-format
 msgid ""
 "ftp://%s from a PC (FileZilla): the INSTALL folder, while PC5 is open"
 msgstr "ftp://%s z PC (FileZilla): složka INSTALL, dokud je PC5 otevřená"
 
-#: title/pc5_ui.c:2578 title/pc5_ui.c:2591
+#: title/pc5_ui.c:2588 title/pc5_ui.c:2601
 #, c-format
 msgid "Not started: %.150s"
 msgstr "Nespuštěno: %.150s"
 
-#: title/pc5_ui.c:2580
+#: title/pc5_ui.c:2590
 msgid "Send games from a PC to PC5's INSTALL folder, then install them here"
 msgstr ""
 "Posílejte hry z PC do složky INSTALL aplikace PC5 a pak je instalujte zde"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2587
+#: title/pc5_ui.c:2597
 msgid "Web page"
 msgstr "Webová stránka"
 
-#: title/pc5_ui.c:2589
+#: title/pc5_ui.c:2599
 #, c-format
 msgid ""
 "http://%s in a browser on a phone or a PC; Triangle: a QR code for it"
 msgstr "http://%s v prohlížeči v telefonu nebo PC; Trojúhelník: QR kód k ní"
 
-#: title/pc5_ui.c:2593
+#: title/pc5_ui.c:2603
 msgid "PC5 from a browser: send games, launch options, logs"
 msgstr "PC5 z prohlížeče: posílání her, možnosti spuštění, protokoly"
 
-#: title/pc5_ui.c:2599
+#: title/pc5_ui.c:2609
 msgid ""
 "From a PC or a phone: the FTP server, the web page, a username and password"
 msgstr ""
 "Z PC nebo telefonu: server FTP, webová stránka, uživatelské jméno a heslo"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2603
+#: title/pc5_ui.c:2613
 msgid "Username"
 msgstr "Uživatelské jméno"
 
-#: title/pc5_ui.c:2604
+#: title/pc5_ui.c:2614
 msgid "The username the FTP server and the web page ask for"
 msgstr "Uživatelské jméno, které vyžaduje server FTP a webová stránka"
 
-#: title/pc5_ui.c:2605
+#: title/pc5_ui.c:2615
 msgid "None set: any username will do"
 msgstr "Nenastaveno: projde jakékoli uživatelské jméno"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2606
+#: title/pc5_ui.c:2616
 msgid "Any"
 msgstr "Jakékoli"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2609
+#: title/pc5_ui.c:2619
 msgid "Password"
 msgstr "Heslo"
 
-#: title/pc5_ui.c:2610
+#: title/pc5_ui.c:2620
 msgid "The password the FTP server and the web page ask for"
 msgstr "Heslo, které vyžaduje server FTP a webová stránka"
 
-#: title/pc5_ui.c:2611
+#: title/pc5_ui.c:2621
 msgid "Optional: none set, no password is asked for"
 msgstr "Volitelné: když není nastavené, heslo se nevyžaduje"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2612 title/pc5_ui.c:7474
+#: title/pc5_ui.c:2622 title/pc5_ui.c:7654
 msgid "None"
 msgstr "Žádné"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2615 title/pc5_ui.c:8397
+#: title/pc5_ui.c:2625 title/pc5_ui.c:8577
 msgid "File manager"
 msgstr "Správce souborů"
 
-#: title/pc5_ui.c:2616
+#: title/pc5_ui.c:2626
 msgid "Copy, move, rename and delete files on the console and its drives"
 msgstr ""
 "Kopírování, přesun, přejmenování a odstranění souborů v konzoli a na "
 "jejích discích"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2620
+#: title/pc5_ui.c:2630
 msgid "About PC5"
 msgstr "O aplikaci PC5"
 
-#: title/pc5_ui.c:2621
+#: title/pc5_ui.c:2631
 msgid "Version, free space and credits"
 msgstr "Verze, volné místo a autoři"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2624
+#: title/pc5_ui.c:2634
 msgid "Show FPS"
 msgstr "Zobrazit FPS"
 
-#: title/pc5_ui.c:2625
+#: title/pc5_ui.c:2635
 msgid "Frames shown each second"
 msgstr "Snímky zobrazené za sekundu"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2629
+#: title/pc5_ui.c:2639
 msgid "Frame time"
 msgstr "Doba snímku"
 
-#: title/pc5_ui.c:2630
+#: title/pc5_ui.c:2640
 msgid "How long a frame takes, on average, in milliseconds"
 msgstr "Jak dlouho v průměru trvá jeden snímek, v milisekundách"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2634
+#: title/pc5_ui.c:2644
 msgid "CPU usage"
 msgstr "Využití CPU"
 
-#: title/pc5_ui.c:2635
+#: title/pc5_ui.c:2645
 msgid "How busy the console's CPU is, with everything it runs"
 msgstr "Jak vytížený je procesor konzole, se vším, co na něm běží"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2639
+#: title/pc5_ui.c:2649
 msgid "GPU usage"
 msgstr "Využití GPU"
 
-#: title/pc5_ui.c:2640
+#: title/pc5_ui.c:2650
 msgid "How busy the console's GPU is"
 msgstr "Jak vytížený je grafický procesor konzole"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2644
+#: title/pc5_ui.c:2654
 msgid "CPU temperature"
 msgstr "Teplota CPU"
 
-#: title/pc5_ui.c:2645
+#: title/pc5_ui.c:2655
 msgid "In degrees Celsius"
 msgstr "Ve stupních Celsia"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2649
+#: title/pc5_ui.c:2659
 msgid "Chip temperature"
 msgstr "Teplota čipu"
 
-#: title/pc5_ui.c:2650
+#: title/pc5_ui.c:2660
 msgid "The console chip's, in degrees Celsius"
 msgstr "Teplota čipu konzole, ve stupních Celsia"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2654
+#: title/pc5_ui.c:2664
 msgid "Memory"
 msgstr "Paměť"
 
-#: title/pc5_ui.c:2655
+#: title/pc5_ui.c:2665
 msgid "What the game uses, of what it has, in GB"
 msgstr "Kolik hra používá z toho, co má k dispozici, v GB"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2659
+#: title/pc5_ui.c:2669
 msgid "Corner"
 msgstr "Roh"
 
-#: title/pc5_ui.c:2660
+#: title/pc5_ui.c:2670
 msgid "Where the overlay sits on the screen"
 msgstr "Kde se na obrazovce zobrazuje překryvná vrstva"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2664 title/pc5_ui.c:7842
+#: title/pc5_ui.c:2674 title/pc5_ui.c:8022
 msgid "Size"
 msgstr "Velikost"
 
-#: title/pc5_ui.c:2666
+#: title/pc5_ui.c:2676
 msgid "Every line at once, twice the size, by the console"
 msgstr "Všechny řádky najednou, dvojnásobná velikost, podle konzole"
 
-#: title/pc5_ui.c:2667
+#: title/pc5_ui.c:2677
 msgid "Twice the size, two lines at a time, taking turns"
 msgstr "Dvojnásobná velikost, po dvou řádcích, střídavě"
 
-#: title/pc5_ui.c:2668
+#: title/pc5_ui.c:2678
 msgid "Every line at once, in small text"
 msgstr "Všechny řádky najednou, malým písmem"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2672
+#: title/pc5_ui.c:2682
 msgid "Vibration"
 msgstr "Vibrace"
 
-#: title/pc5_ui.c:2673
+#: title/pc5_ui.c:2683
 msgid "How strongly the controller rumbles with the game"
 msgstr "Jak silně ovladač vibruje se hrou"
 
-#: title/pc5_ui.c:2674
+#: title/pc5_ui.c:2684
 msgid "The game's rumble on the controller"
 msgstr "Vibrace hry na ovladači"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2678
+#: title/pc5_ui.c:2688
 msgid "Light bar"
 msgstr "Světelná lišta"
 
-#: title/pc5_ui.c:2679
+#: title/pc5_ui.c:2689
 msgid "The colour of what is on screen"
 msgstr "Barva toho, co je na obrazovce"
 
-#: title/pc5_ui.c:2680
+#: title/pc5_ui.c:2690
 msgid "The main colour of the game's cover"
 msgstr "Hlavní barva obalu hry"
 
-#: title/pc5_ui.c:2681
+#: title/pc5_ui.c:2691
 msgid "PC5 leaves the console's colour"
 msgstr "PC5 ponechá barvu konzole"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2685
+#: title/pc5_ui.c:2695
 msgid "Adaptive triggers"
 msgstr "Adaptivní triggery"
 
-#: title/pc5_ui.c:2686
+#: title/pc5_ui.c:2696
 msgid "L2 and R2 vibrate with the game's rumble"
 msgstr "L2 a R2 vibrují s vibracemi hry"
 
-#: title/pc5_ui.c:2687
+#: title/pc5_ui.c:2697
 msgid "L2 and R2 push back as you press them"
 msgstr "L2 a R2 při stisku kladou odpor"
 
-#: title/pc5_ui.c:2688
+#: title/pc5_ui.c:2698
 msgid "L2 and R2 push back, and buzz with the rumble"
 msgstr "L2 a R2 kladou odpor a bzučí s vibracemi"
 
-#: title/pc5_ui.c:2689
+#: title/pc5_ui.c:2699
 msgid "Rumble, resistance or both on L2 and R2"
 msgstr "Vibrace, odpor nebo obojí na L2 a R2"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2693
+#: title/pc5_ui.c:2703
 msgid "Trigger rumble"
 msgstr "Vibrace triggerů"
 
-#: title/pc5_ui.c:2694
+#: title/pc5_ui.c:2704
 msgid "How strongly L2 and R2 vibrate"
 msgstr "Jak silně L2 a R2 vibrují"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2698
+#: title/pc5_ui.c:2708
 msgid "Trigger resistance"
 msgstr "Odpor triggerů"
 
-#: title/pc5_ui.c:2699
+#: title/pc5_ui.c:2709
 msgid "How firmly L2 and R2 push back"
 msgstr "Jak pevně L2 a R2 kladou odpor"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2703
+#: title/pc5_ui.c:2713
 msgid "Check when PC5 opens"
 msgstr "Kontrolovat při otevření PC5"
 
-#: title/pc5_ui.c:2704
+#: title/pc5_ui.c:2714
 msgid "Asks GitHub for a newer PC5 each time you open PC5, and offers it"
 msgstr "Při každém otevření PC5 se zeptá GitHubu na novější PC5 a nabídne ji"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2708
+#: title/pc5_ui.c:2718
 msgid "Check now"
 msgstr "Zkontrolovat nyní"
 
-#: title/pc5_ui.c:2710
+#: title/pc5_ui.c:2720
 #, c-format
 msgid ""
 "PC5 %s is out: copy it over this one from github.com/bornaradusin/PC5"
@@ -1960,111 +1963,161 @@ msgstr ""
 "Je venku PC5 %s: zkopírujte ji přes tuto z github.com/bornaradusin/PC5"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2716
+#: title/pc5_ui.c:2726
 msgid "Startup sound"
 msgstr "Zvuk při spuštění"
 
-#: title/pc5_ui.c:2717
+#: title/pc5_ui.c:2727
 msgid "On the controller's speaker when PC5 opens"
 msgstr "Z reproduktoru ovladače při otevření PC5"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2721
+#: title/pc5_ui.c:2731
 msgid "Startup sound volume"
 msgstr "Hlasitost zvuku při spuštění"
 
-#: title/pc5_ui.c:2722
+#: title/pc5_ui.c:2732
 msgid "How loud the startup sound plays"
 msgstr "Jak hlasitě zvuk při spuštění hraje"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2728
+#: title/pc5_ui.c:2738
 msgid "Language"
 msgstr "Jazyk"
 
-#: title/pc5_ui.c:2730
+#: title/pc5_ui.c:2740
 msgid "PC5's screens and web page; System default follows the console"
 msgstr "Obrazovky a webová stránka PC5; Podle systému sleduje konzoli"
 
-#: title/pc5_ui.c:2733
+#: title/pc5_ui.c:2743
 #, c-format
 msgid "As the console: %s"
 msgstr "Podle konzole: %s"
 
 #. the Language setting's value when PC5 follows the console's language.
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2735
+#: title/pc5_ui.c:2745
 msgid "System default"
 msgstr "Podle systému"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:2740 title/pc5_ui.c:8748 title/pc5_ui.c:9022
+#: title/pc5_ui.c:2750 title/pc5_ui.c:8928 title/pc5_ui.c:9224
 msgid "Update now"
 msgstr "Aktualizovat nyní"
 
-#: title/pc5_ui.c:2744
+#: title/pc5_ui.c:2754
 #, c-format
 msgid "%.160s, installs it and restarts PC5"
 msgstr "%.160s, nainstaluje ji a restartuje PC5"
 
-#: title/pc5_ui.c:2750
+#: title/pc5_ui.c:2760
 msgid "Its store's covers and backgrounds"
 msgstr "Obaly a pozadí z jeho obchodu"
 
-#: title/pc5_ui.c:2750
+#: title/pc5_ui.c:2760
 msgid "Covers and backgrounds its members made, with your key"
 msgstr "Obaly a pozadí od jeho členů, s vaším klíčem"
 
-#: title/pc5_ui.c:2751
+#: title/pc5_ui.c:2761
 msgid "Its catalogue's covers and backgrounds"
 msgstr "Obaly a pozadí z jeho katalogu"
 
-#: title/pc5_ui.c:2751
+#: title/pc5_ui.c:2761
 msgid "The cover on the game's page, and its Steam background"
 msgstr "Obal na stránce hry a její pozadí ze Steamu"
 
-#: title/pc5_ui.c:2752
+#: title/pc5_ui.c:2762
 msgid "Steam's pictures for a game Steam's search misses"
 msgstr "Obrázky ze Steamu pro hru, kterou hledání na Steamu mine"
 
-#: title/pc5_ui.c:2760
+#: title/pc5_ui.c:2770
 #, c-format
 msgid "Needs your key, in %s"
 msgstr "Vyžaduje váš klíč, v %s"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2761
+#: title/pc5_ui.c:2771
 msgid "No key"
 msgstr "Bez klíče"
 
-#: title/pc5_ui.c:2763
+#: title/pc5_ui.c:2773
 #, c-format
 msgid "It refused the key in %s: check it there"
 msgstr "Klíč odmítl, v %s: zkontrolujte ho tam"
 
-#: title/pc5_ui.c:3011
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:3056 title/pc5_ui.c:7219 title/pc5_ui.c:7761
+msgid "Graphics mode"
+msgstr "Grafický režim"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:3057 title/pc5_ui.c:7173 title/pc5_ui_enhancements_draw.h:110
+msgid "Controller"
+msgstr "Ovladač"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:3059 title/pc5_ui.c:7225
+msgid "Frame generation"
+msgstr "Generování snímků"
+
+#. A menu row's value, shown at its right: keep it short (about 15 characters).
+#: title/pc5_ui.c:3059 title/pc5_ui.c:7230
+msgid "40 → 120 fps"
+msgstr "40 → 120 fps"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:3060 title/pc5_ui.c:7252
+msgid "Game memory"
+msgstr "Paměť hry"
+
+#. A menu row's value, shown at its right: keep it short (about 15 characters).
+#: title/pc5_ui.c:3060 title/pc5_ui.c:7255 title/pc5_ui.c:7276
+msgid "4 GB"
+msgstr "4 GB"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:3061 title/pc5_ui.c:7290
+msgid "Stutter fix"
+msgstr "Oprava trhání"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:3062 title/pc5_ui.c:7392
+msgid "Steam emulator"
+msgstr "Emulátor Steamu"
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:3063 title/pc5_ui.c:7284
+msgid "Sound output"
+msgstr "Zvukový výstup"
+
+#. A menu row's value, shown at its right: keep it short (about 15 characters).
+#: title/pc5_ui.c:3063 title/pc5_ui.c:7287
+msgid "Stereo"
+msgstr "Stereo"
+
+#: title/pc5_ui.c:3097
 msgid "Home screen tiles aren't available"
 msgstr "Dlaždice na domovské obrazovce nejsou k dispozici"
 
-#: title/pc5_ui.c:3011
+#: title/pc5_ui.c:3097
 msgid "This copy of PC5 has no tile program."
 msgstr "Tato kopie PC5 nemá program pro dlaždice."
 
-#: title/pc5_ui.c:3018
+#: title/pc5_ui.c:3104
 #, c-format
 msgid "PC5 can't delete its folder, %s/%s."
 msgstr "PC5 nemůže odstranit svou složku, %s/%s."
 
-#: title/pc5_ui.c:3019
+#: title/pc5_ui.c:3105
 msgid "The tile wasn't taken away"
 msgstr "Dlaždice nebyla odebrána"
 
-#: title/pc5_ui.c:3023
+#: title/pc5_ui.c:3109
 msgid "Taken off the home screen"
 msgstr "Odebráno z domovské obrazovky"
 
-#: title/pc5_ui.c:3024
+#: title/pc5_ui.c:3110
 msgid ""
 "The tile's folder is deleted. If the tile is still on the home screen, "
 "delete it there."
@@ -2072,11 +2125,11 @@ msgstr ""
 "Složka dlaždice je odstraněná. Pokud je dlaždice stále na domovské "
 "obrazovce, odstraňte ji tam."
 
-#: title/pc5_ui.c:3041 title/pc5_ui.c:3057
+#: title/pc5_ui.c:3127 title/pc5_ui.c:3143
 msgid "The tile wasn't made"
 msgstr "Dlaždice nebyla vytvořena"
 
-#: title/pc5_ui.c:3044
+#: title/pc5_ui.c:3130
 #, c-format
 msgid ""
 "Its tile, %s, appears on the home screen once you close PC5 and "
@@ -2089,11 +2142,11 @@ msgstr ""
 "rovnou a po opuštění hry se vrátíte na domovskou obrazovku. Spouští se ze "
 "složky PC5, %s: nechte PC5 tam."
 
-#: title/pc5_ui.c:3049 title/pc5_ui.c:3064
+#: title/pc5_ui.c:3135 title/pc5_ui.c:3150
 msgid "Added to the home screen"
 msgstr "Přidáno na domovskou obrazovku"
 
-#: title/pc5_ui.c:3061
+#: title/pc5_ui.c:3147
 #, c-format
 msgid ""
 "Its tile, %s, appears on the home screen once ShadowMountPlus finds it in "
@@ -2104,27 +2157,48 @@ msgstr ""
 "ShadowMountPlus najde v %s. Spustí hru rovnou a po opuštění hry se vrátíte "
 "na domovskou obrazovku."
 
-#: title/pc5_ui.c:3163
+#: title/pc5_ui.c:3249
 #, c-format
 msgid "PC5 %s is available on GitHub (you have %s)."
 msgstr "Na GitHubu je k dispozici PC5 %s (máte %s)."
 
-#: title/pc5_ui.c:3197
+#: title/pc5_ui.c:3285
+#, c-format
+msgid "It tried to start %s, an installer, which can't run on the console."
+msgstr ""
+
+#: title/pc5_ui.c:3288
+#, c-format
+msgid ""
+"Its copy has %s, which isn't one of the game's files as its store ships "
+"it: it is likely what closed it."
+msgstr ""
+
+#: title/pc5_ui.c:3292
+msgid "Its OpenGL drawing never started."
+msgstr ""
+
+#: title/pc5_ui.c:3295
+#, c-format
+msgid "Its own crash report says: %.200s"
+msgstr ""
+
+#: title/pc5_ui.c:3302
 #, c-format
 msgid "%s stopped with an error"
 msgstr "Ukončeno s chybou: %s"
 
-#: title/pc5_ui.c:3198
+#: title/pc5_ui.c:3303
 #, c-format
 msgid "Wine reported a crash. Its log is kept as %.120s in %.120s."
 msgstr "Wine ohlásilo pád. Protokol je uložen jako %.120s v %.120s."
 
-#: title/pc5_ui.c:3201
+#: title/pc5_ui.c:3306
 #, c-format
 msgid "%s closed before showing anything"
 msgstr "Zavřeno dřív, než se něco zobrazilo: %s"
 
-#: title/pc5_ui.c:3202
+#: title/pc5_ui.c:3307
 #, c-format
 msgid ""
 "If PC5 started the wrong program, choose Change program in the game's menu "
@@ -2133,12 +2207,12 @@ msgstr ""
 "Pokud PC5 spustila nesprávný program, vyberte Změnit program v nabídce hry "
 "(Trojúhelník). Protokol je uložen jako %.120s v %.120s."
 
-#: title/pc5_ui.c:3206
+#: title/pc5_ui.c:3311
 #, c-format
 msgid "%s had to be closed"
 msgstr "Bylo nutné zavřít: %s"
 
-#: title/pc5_ui.c:3207
+#: title/pc5_ui.c:3312
 #, c-format
 msgid ""
 "It didn't close when asked, so PC5 ended it. Its log is kept as %.120s in "
@@ -2147,26 +2221,31 @@ msgstr ""
 "Nezavřela se, když o to byla požádána, a tak ji PC5 ukončila. Protokol je "
 "uložen jako %.120s v %.120s."
 
-#: title/pc5_ui.c:3211
+#: title/pc5_ui.c:3316
 #, c-format
-msgid "%s ended unexpectedly"
-msgstr "Neočekávaně ukončeno: %s"
+msgid "%s closed soon after starting"
+msgstr ""
 
-#: title/pc5_ui.c:3212
-msgid "PC5 ended unexpectedly last time"
-msgstr "PC5 minule neočekávaně skončila"
-
-#: title/pc5_ui.c:3213
+#: title/pc5_ui.c:3317 title/pc5_ui.c:3322
 #, c-format
 msgid "Its log is kept as %.120s in %.120s."
 msgstr "Protokol je uložen jako %.120s v %.120s."
 
-#: title/pc5_ui.c:3235
+#: title/pc5_ui.c:3320
+#, c-format
+msgid "%s ended unexpectedly"
+msgstr "Neočekávaně ukončeno: %s"
+
+#: title/pc5_ui.c:3321
+msgid "PC5 ended unexpectedly last time"
+msgstr "PC5 minule neočekávaně skončila"
+
+#: title/pc5_ui.c:3349
 #, c-format
 msgid "No log of %s yet"
 msgstr "Zatím žádný protokol: %s"
 
-#: title/pc5_ui.c:3236
+#: title/pc5_ui.c:3350
 msgid ""
 "Play it once until the problem happens, then come back here: its log goes "
 "with the report."
@@ -2174,12 +2253,12 @@ msgstr ""
 "Hrajte ji jednou, dokud se problém neobjeví, a pak se sem vraťte: její "
 "protokol se přiloží k hlášení."
 
-#: title/pc5_ui.c:3250
+#: title/pc5_ui.c:3364
 #, c-format
 msgid "Report a problem with %s"
 msgstr "Nahlásit problém: %s"
 
-#: title/pc5_ui.c:3251
+#: title/pc5_ui.c:3365
 #, c-format
 msgid ""
 "Its newest log, %.120s, is in %.120s/logs. Press Triangle for a QR code "
@@ -2190,69 +2269,69 @@ msgstr ""
 "pro QR kód, který otevře formulář na GitHubu s vyplněnou hrou, PC5 a "
 "nastavením hry; přiložte tam tento zip."
 
-#: title/pc5_ui.c:3542
+#: title/pc5_ui.c:3656
 msgid "Internal storage"
 msgstr "Interní úložiště"
 
-#: title/pc5_ui.c:3555
+#: title/pc5_ui.c:3669
 msgid "PC5's INSTALL folder"
 msgstr "Složka INSTALL aplikace PC5"
 
-#: title/pc5_ui.c:3561
+#: title/pc5_ui.c:3675
 msgid "PC5's app"
 msgstr "Aplikace PC5"
 
-#: title/pc5_ui.c:3566
+#: title/pc5_ui.c:3680
 msgid "Whole console"
 msgstr "Celá konzole"
 
-#: title/pc5_ui.c:3644 title/pc5_ui.c:3651 title/pc5_ui.c:5901
-#: title/pc5_ui.c:5905 title/pc5_ui_enhancements_input.h:19
+#: title/pc5_ui.c:3758 title/pc5_ui.c:3765 title/pc5_ui.c:6072
+#: title/pc5_ui.c:6076 title/pc5_ui_enhancements_input.h:19
 msgid "Music wasn't saved"
 msgstr "Hudba nebyla uložena"
 
-#: title/pc5_ui.c:3644
+#: title/pc5_ui.c:3758
 msgid "PC5 couldn't create the game's music folder. Check free space."
 msgstr "PC5 nemohlo vytvořit složku hudby hry. Zkontrolujte volné místo."
 
-#: title/pc5_ui.c:3651
+#: title/pc5_ui.c:3765
 msgid "PC5 couldn't start importing the music. Try again."
 msgstr "PC5 nemohlo spustit import hudby. Zkuste to znovu."
 
-#: title/pc5_ui.c:3688 title/pc5_ui.c:3695 title/pc5_ui.c:5928
-#: title/pc5_ui.c:5932 title/pc5_ui_enhancements_input.h:19
+#: title/pc5_ui.c:3802 title/pc5_ui.c:3809 title/pc5_ui.c:6099
+#: title/pc5_ui.c:6103 title/pc5_ui_enhancements_input.h:19
 msgid "Video wasn't saved"
 msgstr "Video nebylo uloženo"
 
-#: title/pc5_ui.c:3688
+#: title/pc5_ui.c:3802
 msgid "PC5 couldn't create the game's video folder. Check free space."
 msgstr "PC5 nemohlo vytvořit složku videa hry. Zkontrolujte volné místo."
 
-#: title/pc5_ui.c:3695
+#: title/pc5_ui.c:3809
 msgid "This build couldn't start the video importer."
 msgstr "Tato verze nemohla spustit import videa."
 
-#: title/pc5_ui.c:3803
+#: title/pc5_ui.c:3917
 msgid "Plug in the game's USB drive"
 msgstr "Připojte USB disk hry"
 
-#: title/pc5_ui.c:3803
+#: title/pc5_ui.c:3917
 msgid "Its files are on the USB drive it plays from."
 msgstr "Její soubory jsou na USB disku, ze kterého se hraje."
 
-#: title/pc5_ui.c:3805
+#: title/pc5_ui.c:3919
 msgid "PC5 can't find the game's folder"
 msgstr "PC5 nemůže najít složku hry"
 
-#: title/pc5_ui.c:3805 title/pc5_ui.c:5709
+#: title/pc5_ui.c:3919 title/pc5_ui.c:5874
 msgid "Its files may be missing: uninstall it and install it again."
 msgstr "Možná chybí její soubory: odinstalujte ji a nainstalujte znovu."
 
-#: title/pc5_ui.c:3850 title/pc5_ui.c:3871 title/pc5_ui.c:3955
+#: title/pc5_ui.c:3964 title/pc5_ui.c:3985 title/pc5_ui.c:4069
 msgid "Picture wasn't saved"
 msgstr "Obrázek nebyl uložen"
 
-#: title/pc5_ui.c:3850 title/pc5_ui.c:3955
+#: title/pc5_ui.c:3964 title/pc5_ui.c:4069
 msgid ""
 "Choose a readable JPEG or PNG image, at most 20 MB. Your previous picture "
 "was kept."
@@ -2260,35 +2339,35 @@ msgstr ""
 "Vyberte čitelný obrázek JPEG nebo PNG, nejvýše 20 MB. Předchozí obrázek "
 "zůstal zachován."
 
-#: title/pc5_ui.c:3856 title/pc5_ui.c:3872
+#: title/pc5_ui.c:3970 title/pc5_ui.c:3986
 msgid "Loading screen saved"
 msgstr "Načítací obrazovka uložena"
 
-#: title/pc5_ui.c:3856
+#: title/pc5_ui.c:3970
 msgid "It shows the next time the game starts."
 msgstr "Zobrazí se při příštím spuštění hry."
 
-#: title/pc5_ui.c:3871
+#: title/pc5_ui.c:3985
 msgid "It has no background picture yet: choose one in Background first."
 msgstr "Zatím nemá obrázek pozadí: nejdřív ho vyberte v Pozadí."
 
-#: title/pc5_ui.c:3872
+#: title/pc5_ui.c:3986
 msgid "Its background shows the next time the game starts."
 msgstr "Pozadí se zobrazí při příštím spuštění hry."
 
-#: title/pc5_ui.c:3882
+#: title/pc5_ui.c:3996
 msgid "It shows PC5's own loading screen again."
 msgstr "Znovu ukazuje načítací obrazovku PC5."
 
-#: title/pc5_ui.c:3912
+#: title/pc5_ui.c:4026
 msgid "Phone uploads need a game with its own PC5 folder."
 msgstr "Nahrávání z telefonu vyžaduje hru s vlastní složkou PC5."
 
-#: title/pc5_ui.c:3922 title/pc5_ui.c:3931
+#: title/pc5_ui.c:4036 title/pc5_ui.c:4045
 msgid "Phone connection unavailable"
 msgstr "Připojení telefonu není k dispozici"
 
-#: title/pc5_ui.c:3931
+#: title/pc5_ui.c:4045
 msgid ""
 "Check the network, then try again. The phone and PS5 must share a network "
 "or phone hotspot."
@@ -2296,72 +2375,72 @@ msgstr ""
 "Zkontrolujte síť a zkuste to znovu. Telefon a PS5 musí být ve stejné síti "
 "nebo na hotspotu telefonu."
 
-#: title/pc5_ui.c:4092 title/pc5_ui.c:8421
+#: title/pc5_ui.c:4206 title/pc5_ui.c:8601
 msgid "Choose an appearance backup"
 msgstr "Vyberte zálohu vzhledu"
 
-#: title/pc5_ui.c:4092
+#: title/pc5_ui.c:4206
 msgid "Choose a .pc5look backup made by PC5."
 msgstr "Vyberte zálohu .pc5look vytvořenou v PC5."
 
-#: title/pc5_ui.c:4101
+#: title/pc5_ui.c:4215
 msgid "Choose a picture"
 msgstr "Vybrat obrázek"
 
-#: title/pc5_ui.c:4101
+#: title/pc5_ui.c:4215
 msgid "Choose a JPEG or PNG picture."
 msgstr "Vyberte obrázek JPEG nebo PNG."
 
-#: title/pc5_ui.c:4110 title/pc5_ui.c:8423
+#: title/pc5_ui.c:4224 title/pc5_ui.c:8603
 msgid "Choose a music file"
 msgstr "Vyberte hudební soubor"
 
-#: title/pc5_ui.c:4110 title/pc5_ui.c:8424
+#: title/pc5_ui.c:4224 title/pc5_ui.c:8604
 msgid "Choose an MP3 or a 16-bit PCM WAV file."
 msgstr "Vyberte soubor MP3 nebo 16bitový PCM WAV."
 
-#: title/pc5_ui.c:4120 title/pc5_ui.c:8433
+#: title/pc5_ui.c:4234 title/pc5_ui.c:8613
 msgid "PC5 can't open this folder"
 msgstr "PC5 nemůže otevřít tuto složku"
 
-#: title/pc5_ui.c:4120
+#: title/pc5_ui.c:4234
 msgid "Its path is too long."
 msgstr "Její cesta je příliš dlouhá."
 
-#: title/pc5_ui.c:4176
+#: title/pc5_ui.c:4290
 msgid "Nothing was deleted"
 msgstr "Nic nebylo odstraněno"
 
-#: title/pc5_ui.c:4176
+#: title/pc5_ui.c:4290
 msgid "Nothing was moved"
 msgstr "Nic nebylo přesunuto"
 
-#: title/pc5_ui.c:4176
+#: title/pc5_ui.c:4290
 msgid "Nothing was copied"
 msgstr "Nic nebylo zkopírováno"
 
-#: title/pc5_ui.c:4222
+#: title/pc5_ui.c:4336
 msgid "Nothing was pasted"
 msgstr "Nic nebylo vloženo"
 
-#: title/pc5_ui.c:4222
+#: title/pc5_ui.c:4336
 msgid "Those items are here already, and were left as they were."
 msgstr "Tyto položky tu už jsou a zůstaly beze změny."
 
-#: title/pc5_ui.c:4225
+#: title/pc5_ui.c:4339
 msgid "Stopped"
 msgstr "Zastaveno"
 
-#: title/pc5_ui.c:4226
+#: title/pc5_ui.c:4340
 msgid "What was deleted so far is gone; the rest is still here."
 msgstr "Co se dosud odstranilo, je pryč; zbytek tu stále je."
 
-#: title/pc5_ui.c:4227
+#: title/pc5_ui.c:4341
 msgid ""
 "What was moved so far is here. Nothing was deleted from where it came from."
 msgstr "Co se dosud přesunulo, je tady. Ze zdroje nebylo nic odstraněno."
 
-#: title/pc5_ui.c:4228
+#: title/pc5_ui.c:4342
 msgid ""
 "What was copied so far is here; the file being copied when it stopped was "
 "deleted."
@@ -2369,83 +2448,83 @@ msgstr ""
 "Co se dosud zkopírovalo, je tady; soubor, který se kopíroval při "
 "zastavení, byl odstraněn."
 
-#: title/pc5_ui.c:4231
+#: title/pc5_ui.c:4345
 msgid "Not everything was deleted"
 msgstr "Ne vše bylo odstraněno"
 
-#: title/pc5_ui.c:4231
+#: title/pc5_ui.c:4345
 msgid "Not everything was moved"
 msgstr "Ne vše bylo přesunuto"
 
-#: title/pc5_ui.c:4231
+#: title/pc5_ui.c:4345
 msgid "Not everything was copied"
 msgstr "Ne vše bylo zkopírováno"
 
-#: title/pc5_ui.c:4243 title/pc5_ui.c:4247
+#: title/pc5_ui.c:4357 title/pc5_ui.c:4361
 msgid "That name can't be used"
 msgstr "Tento název nelze použít"
 
-#: title/pc5_ui.c:4247
+#: title/pc5_ui.c:4361
 msgid "The path would be too long."
 msgstr "Cesta by byla příliš dlouhá."
 
-#: title/pc5_ui.c:4256 title/pc5_ui.c:4269
+#: title/pc5_ui.c:4370 title/pc5_ui.c:4383
 #, c-format
 msgid "This folder has %.200s already."
 msgstr "Tato složka už obsahuje %.200s."
 
-#: title/pc5_ui.c:4257 title/pc5_ui.c:4270
+#: title/pc5_ui.c:4371 title/pc5_ui.c:4384
 msgid "That name is taken"
 msgstr "Tento název je obsazený"
 
-#: title/pc5_ui.c:4261 title/pc5_ui.c:4274
+#: title/pc5_ui.c:4375 title/pc5_ui.c:4388
 #, c-format
 msgid "%s."
 msgstr "%s."
 
-#: title/pc5_ui.c:4263
+#: title/pc5_ui.c:4377
 msgid "PC5 can't rename it"
 msgstr "PC5 nemůže položku přejmenovat"
 
-#: title/pc5_ui.c:4276
+#: title/pc5_ui.c:4390
 msgid "PC5 can't make the folder"
 msgstr "PC5 nemůže vytvořit složku"
 
 #. The title of the console's on-screen keyboard.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:4310 title/pc5_ui.c:8456
+#: title/pc5_ui.c:4424 title/pc5_ui.c:8636
 msgid "Rename"
 msgstr "Přejmenovat"
 
 #. The title of the console's on-screen keyboard.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:4310 title/pc5_ui.c:4312 title/pc5_ui.c:8457
+#: title/pc5_ui.c:4424 title/pc5_ui.c:4426 title/pc5_ui.c:8637
 msgid "New folder"
 msgstr "Nová složka"
 
-#: title/pc5_ui.c:4315 title/pc5_ui.c:4416 title/pc5_ui.c:4999
-#: title/pc5_ui.c:5580 title/pc5_ui_enhancements_input.h:56
+#: title/pc5_ui.c:4429 title/pc5_ui.c:4530 title/pc5_ui.c:5160
+#: title/pc5_ui.c:5745 title/pc5_ui_enhancements_input.h:56
 msgid "The keyboard didn't open"
 msgstr "Klávesnice se neotevřela"
 
-#: title/pc5_ui.c:4315 title/pc5_ui.c:4416 title/pc5_ui.c:4999
-#: title/pc5_ui.c:5580 title/pc5_ui_enhancements_input.h:56
+#: title/pc5_ui.c:4429 title/pc5_ui.c:4530 title/pc5_ui.c:5160
+#: title/pc5_ui.c:5745 title/pc5_ui_enhancements_input.h:56
 msgid "The console's on-screen keyboard can't be used just now."
 msgstr "Klávesnici na obrazovce konzole teď nelze použít."
 
-#: title/pc5_ui.c:4355
+#: title/pc5_ui.c:4469
 msgid "PC5 can't open it as text"
 msgstr "PC5 to nemůže otevřít jako text"
 
-#: title/pc5_ui.c:4385
+#: title/pc5_ui.c:4499
 msgid "PC5 couldn't save it"
 msgstr "PC5 to nemohlo uložit"
 
-#: title/pc5_ui.c:4402
+#: title/pc5_ui.c:4516
 msgid "This line is too long to change here"
 msgstr "Tento řádek je na úpravu tady příliš dlouhý"
 
-#: title/pc5_ui.c:4403
+#: title/pc5_ui.c:4517
 msgid ""
 "The console's keyboard holds about 1000 characters. Change it from PC5's "
 "web page, or a computer over FTP."
@@ -2453,31 +2532,31 @@ msgstr ""
 "Klávesnice konzole pojme asi 1000 znaků. Změňte ho z webové stránky PC5 "
 "nebo z počítače přes FTP."
 
-#: title/pc5_ui.c:4408 title/pc5_ui.c:8563
+#: title/pc5_ui.c:4522 title/pc5_ui.c:8743
 #, c-format
 msgid "Line %d"
 msgstr "Řádek %d"
 
-#: title/pc5_ui.c:4410
+#: title/pc5_ui.c:4524
 msgid "New line"
 msgstr "Nový řádek"
 
-#: title/pc5_ui.c:4524
+#: title/pc5_ui.c:4638
 msgid "Choose a writable folder"
 msgstr "Vyberte zapisovatelnou složku"
 
-#: title/pc5_ui.c:4524
+#: title/pc5_ui.c:4638
 msgid ""
 "Open a folder on internal storage or a USB drive, then choose Save here."
 msgstr ""
 "Otevřete složku v interním úložišti nebo na USB disku a pak zvolte Uložit "
 "sem."
 
-#: title/pc5_ui.c:4534
+#: title/pc5_ui.c:4648
 msgid "Backup wasn't saved"
 msgstr "Záloha nebyla uložena"
 
-#: title/pc5_ui.c:4534
+#: title/pc5_ui.c:4648
 msgid ""
 "Choose another folder. The backup name is unavailable or its path is too "
 "long."
@@ -2485,53 +2564,53 @@ msgstr ""
 "Vyberte jinou složku. Název zálohy není k dispozici nebo je její cesta "
 "příliš dlouhá."
 
-#: title/pc5_ui.c:4667
+#: title/pc5_ui.c:4828
 #, c-format
 msgid "%s didn't start"
 msgstr "Nespustilo se: %s"
 
-#: title/pc5_ui.c:4669
+#: title/pc5_ui.c:4830
 msgid "The console refused to start it. Try again, or restart PC5."
 msgstr "Konzole ji odmítla spustit. Zkuste to znovu, nebo restartujte PC5."
 
-#: title/pc5_ui.c:4784
+#: title/pc5_ui.c:4945
 msgid "This tile's game can't start"
 msgstr "Hru této dlaždice nelze spustit"
 
-#: title/pc5_ui.c:4830
+#: title/pc5_ui.c:4991
 msgid "PC5 couldn't restart"
 msgstr "PC5 se nepodařilo restartovat"
 
-#: title/pc5_ui.c:4831
+#: title/pc5_ui.c:4992
 msgid ""
 "The new version is installed. Close PC5 from the PS button and open it "
 "again."
 msgstr ""
 "Nová verze je nainstalovaná. Zavřete PC5 tlačítkem PS a znovu ji otevřete."
 
-#: title/pc5_ui.c:4841
+#: title/pc5_ui.c:5002
 msgid "The update was stopped"
 msgstr "Aktualizace byla zastavena"
 
-#: title/pc5_ui.c:4841
+#: title/pc5_ui.c:5002
 msgid "PC5 is as it was, and what was downloaded is deleted."
 msgstr "PC5 je jako dřív a stažená data jsou odstraněna."
 
-#: title/pc5_ui.c:4844
+#: title/pc5_ui.c:5005
 msgid "PC5's update isn't finished"
 msgstr "Aktualizace PC5 není dokončená"
 
-#: title/pc5_ui.c:4844
+#: title/pc5_ui.c:5005
 msgid "PC5 wasn't updated"
 msgstr "PC5 nebyla aktualizována"
 
-#: title/pc5_ui.c:4930 title/pc5_ui.c:6024 title/pc5_ui.c:6041
-#: title/pc5_ui.c:6111
+#: title/pc5_ui.c:5091 title/pc5_ui.c:6195 title/pc5_ui.c:6212
+#: title/pc5_ui.c:6282
 #, c-format
 msgid "%s can't start"
 msgstr "Nelze spustit: %s"
 
-#: title/pc5_ui.c:4931
+#: title/pc5_ui.c:5092
 #, c-format
 msgid ""
 "%s You can uninstall it from its menu (Triangle) and install it again."
@@ -2539,58 +2618,58 @@ msgstr ""
 "%s Můžete ji odinstalovat z její nabídky (Trojúhelník) a nainstalovat "
 "znovu."
 
-#: title/pc5_ui.c:4932 title/pc5_ui.c:5492
+#: title/pc5_ui.c:5093 title/pc5_ui.c:5653
 msgid "Something it needs is missing."
 msgstr "Chybí něco, co potřebuje."
 
 #. The title of the console's on-screen keyboard.
-#: title/pc5_ui.c:4994
+#: title/pc5_ui.c:5155
 msgid "Username (empty: any)"
 msgstr "Uživatelské jméno (prázdné: jakékoli)"
 
 #. The title of the console's on-screen keyboard.
-#: title/pc5_ui.c:4994
+#: title/pc5_ui.c:5155
 msgid "Password (empty: none)"
 msgstr "Heslo (prázdné: žádné)"
 
-#: title/pc5_ui.c:5103
+#: title/pc5_ui.c:5264
 msgid "Appearance wasn't changed"
 msgstr "Vzhled nebyl změněn"
 
-#: title/pc5_ui.c:5103
+#: title/pc5_ui.c:5264
 msgid "Appearance backup complete"
 msgstr "Záloha vzhledu dokončena"
 
-#: title/pc5_ui.c:5104
+#: title/pc5_ui.c:5265
 msgid "The saved appearance was restored. Game files and saves were kept."
 msgstr ""
 "Uložený vzhled byl obnoven. Soubory hry a uložené hry zůstaly zachovány."
 
-#: title/pc5_ui.c:5168 title/pc5_ui.c:5299
+#: title/pc5_ui.c:5329 title/pc5_ui.c:5460
 msgid "Out of memory"
 msgstr "Nedostatek paměti"
 
-#: title/pc5_ui.c:5168 title/pc5_ui.c:5299
+#: title/pc5_ui.c:5329 title/pc5_ui.c:5460
 msgid "PC5 couldn't make room to read the folders."
 msgstr "PC5 nedokázala uvolnit místo pro čtení složek."
 
-#: title/pc5_ui.c:5180
+#: title/pc5_ui.c:5341
 msgid "PC5 can't read that folder"
 msgstr "PC5 nemůže přečíst tuto složku"
 
-#: title/pc5_ui.c:5180
+#: title/pc5_ui.c:5341
 msgid "Check that the USB drive is still plugged in."
 msgstr "Zkontrolujte, zda je USB disk stále připojený."
 
-#: title/pc5_ui.c:5231
+#: title/pc5_ui.c:5392
 msgid "Nothing to install"
 msgstr "Nic k instalaci"
 
-#: title/pc5_ui.c:5231
+#: title/pc5_ui.c:5392
 msgid "None of these folders has a game PC5 can install."
 msgstr "Žádná z těchto složek neobsahuje hru, kterou PC5 umí nainstalovat."
 
-#: title/pc5_ui.c:5236
+#: title/pc5_ui.c:5397
 #, c-format
 msgid ""
 "Together they need %s and the console has %s free. Go back and untick some."
@@ -2598,71 +2677,71 @@ msgstr ""
 "Dohromady potřebují %s a v konzoli je volných %s. Vraťte se a některé "
 "odškrtněte."
 
-#: title/pc5_ui.c:5238
+#: title/pc5_ui.c:5399
 msgid "Not enough space for all of them"
 msgstr "Na všechny není dost místa"
 
-#: title/pc5_ui.c:5272
+#: title/pc5_ui.c:5433
 msgid "This folder can't be installed"
 msgstr "Tuto složku nelze nainstalovat"
 
-#: title/pc5_ui.c:5327
+#: title/pc5_ui.c:5488
 #, c-format
 msgid "The update needs %s and the console has %s free."
 msgstr "Aktualizace potřebuje %s a v konzoli je volných %s."
 
-#: title/pc5_ui.c:5360
+#: title/pc5_ui.c:5521
 #, c-format
 msgid "%s's program wasn't changed"
 msgstr "Program nebyl změněn: %s"
 
-#: title/pc5_ui.c:5364
+#: title/pc5_ui.c:5525
 #, c-format
 msgid "%s starts %s now"
 msgstr "%s nyní spouští %s"
 
-#: title/pc5_ui.c:5365
+#: title/pc5_ui.c:5526
 #, c-format
 msgid "It runs as %d-bit %s."
 msgstr "Běží jako %dbitový program (%s)."
 
-#: title/pc5_ui.c:5384 title/pc5_ui.c:5492
+#: title/pc5_ui.c:5545 title/pc5_ui.c:5653
 msgid "This game can't start"
 msgstr "Tuto hru nelze spustit"
 
-#: title/pc5_ui.c:5516
+#: title/pc5_ui.c:5677
 msgid "Media settings need a game with its own PC5 folder."
 msgstr "Nastavení médií vyžaduje hru s vlastní složkou PC5."
 
-#: title/pc5_ui.c:5526
+#: title/pc5_ui.c:5687
 msgid "PC5 didn't install it, so its program can't be changed here."
 msgstr "PC5 ji neinstalovala, takže její program tu nelze změnit."
 
-#: title/pc5_ui.c:5574
+#: title/pc5_ui.c:5739
 msgid "Search for covers by name"
 msgstr "Hledat obaly podle názvu"
 
-#: title/pc5_ui.c:5575
+#: title/pc5_ui.c:5740
 msgid "Search for tile pictures by name"
 msgstr "Hledat obrázky dlaždice podle názvu"
 
-#: title/pc5_ui.c:5576
+#: title/pc5_ui.c:5741
 msgid "Search for backgrounds by name"
 msgstr "Hledat pozadí podle názvu"
 
-#: title/pc5_ui.c:5634
+#: title/pc5_ui.c:5799
 msgid "Your mapping wasn't saved"
 msgstr "Vaše přiřazení nebylo uloženo"
 
-#: title/pc5_ui.c:5634
+#: title/pc5_ui.c:5799
 msgid "PC5 couldn't write it to the console's storage."
 msgstr "PC5 ho nedokázala zapsat do úložiště konzole."
 
-#: title/pc5_ui.c:5637
+#: title/pc5_ui.c:5802
 msgid "Saved as your mapping"
 msgstr "Uloženo jako vaše přiřazení"
 
-#: title/pc5_ui.c:5638
+#: title/pc5_ui.c:5803
 msgid ""
 "Games set up from now on start with it, and Use my mapping puts it on any "
 "game."
@@ -2670,26 +2749,26 @@ msgstr ""
 "Hry nastavené od teď s ním začnou a Použít mé přiřazení ho nastaví u "
 "jakékoli hry."
 
-#: title/pc5_ui.c:5709
+#: title/pc5_ui.c:5874
 msgid "PC5 can't read the game's folder"
 msgstr "PC5 nemůže přečíst složku hry"
 
-#: title/pc5_ui.c:5714
+#: title/pc5_ui.c:5879
 msgid "This game has one program"
 msgstr "Tato hra má jeden program"
 
-#: title/pc5_ui.c:5714
+#: title/pc5_ui.c:5879
 msgid "There is no other program in its folder to start."
 msgstr "V její složce není žádný jiný program ke spuštění."
 
-#: title/pc5_ui.c:5808
+#: title/pc5_ui.c:5973
 #, c-format
 msgid "%s wasn't uninstalled"
 msgstr "Neodinstalováno: %s"
 
 #. added after the sentence before it, hence the space at its start.
 #. Keep the space at the start or end: the text is joined to another.
-#: title/pc5_ui.c:5843
+#: title/pc5_ui.c:6014
 msgid ""
 " Its home screen tile's folder was deleted: if the tile is still on the "
 "home screen, delete it there."
@@ -2697,36 +2776,36 @@ msgstr ""
 " Složka její dlaždice na domovské obrazovce byla odstraněna: pokud je "
 "dlaždice stále na domovské obrazovce, odstraňte ji tam."
 
-#: title/pc5_ui.c:5846
+#: title/pc5_ui.c:6017
 #, c-format
 msgid "The saves of %s weren't fully deleted"
 msgstr "Uložené hry nebyly úplně odstraněny: %s"
 
-#: title/pc5_ui.c:5846
+#: title/pc5_ui.c:6017
 #, c-format
 msgid "The saves of %s are deleted"
 msgstr "Uložené hry odstraněny: %s"
 
-#: title/pc5_ui.c:5848
+#: title/pc5_ui.c:6019
 #, c-format
 msgid "%s PC5 finishes deleting them the next time it starts."
 msgstr "%s PC5 je dokončí odstraňovat při příštím spuštění."
 
-#: title/pc5_ui.c:5849
+#: title/pc5_ui.c:6020
 msgid "Its saves and settings, kept when it was uninstalled, are gone."
 msgstr "Její uložené hry a nastavení, ponechané při odinstalaci, jsou pryč."
 
-#: title/pc5_ui.c:5851
+#: title/pc5_ui.c:6022
 #, c-format
 msgid "%s wasn't fully uninstalled"
 msgstr "Nebylo úplně odinstalováno: %s"
 
-#: title/pc5_ui.c:5851
+#: title/pc5_ui.c:6022
 #, c-format
 msgid "%s is uninstalled"
 msgstr "Odinstalováno: %s"
 
-#: title/pc5_ui.c:5854
+#: title/pc5_ui.c:6025
 #, c-format
 msgid ""
 "Its saves and settings are kept: installing it again puts them back. "
@@ -2735,12 +2814,12 @@ msgstr ""
 "Její uložené hry a nastavení jsou ponechány: opětovná instalace je vrátí. "
 "Odstraní je Nastavení › Údržba her › Odinstalovat hru.%s"
 
-#: title/pc5_ui.c:5856
+#: title/pc5_ui.c:6027
 #, c-format
 msgid "The game, its saves and its settings were deleted.%s"
 msgstr "Hra, její uložené hry a nastavení byly odstraněny.%s"
 
-#: title/pc5_ui.c:5897
+#: title/pc5_ui.c:6068
 msgid ""
 "Choose a readable MP3 or 16-bit PCM WAV file. Protected or damaged files "
 "may not work."
@@ -2748,11 +2827,11 @@ msgstr ""
 "Vyberte čitelný soubor MP3 nebo 16bitový PCM WAV. Chráněné nebo poškozené "
 "soubory nemusí fungovat."
 
-#: title/pc5_ui.c:5899
+#: title/pc5_ui.c:6070
 msgid "The prepared music exceeds the 2 GB limit. Choose a shorter track."
 msgstr "Připravená hudba překračuje limit 2 GB. Vyberte kratší skladbu."
 
-#: title/pc5_ui.c:5900
+#: title/pc5_ui.c:6071
 msgid ""
 "Check free space and keep the source drive connected until importing "
 "finishes. Your previous music was kept."
@@ -2760,11 +2839,11 @@ msgstr ""
 "Zkontrolujte volné místo a nechte zdrojový disk připojený až do dokončení "
 "importu. Předchozí hudba zůstala zachována."
 
-#: title/pc5_ui.c:5905 title/pc5_ui_enhancements_input.h:21
+#: title/pc5_ui.c:6076 title/pc5_ui_enhancements_input.h:21
 msgid "PC5 couldn't save the music selection. Try again."
 msgstr "PC5 nemohlo uložit výběr hudby. Zkuste to znovu."
 
-#: title/pc5_ui.c:5925
+#: title/pc5_ui.c:6096
 msgid ""
 "Choose an H.264 video up to 1920x1080, 60 fps and 1 GB. MP4 is "
 "recommended. Audio is ignored."
@@ -2772,7 +2851,7 @@ msgstr ""
 "Vyberte video H.264 do 1920x1080, 60 fps a 1 GB. Doporučujeme MP4. Zvuk se "
 "ignoruje."
 
-#: title/pc5_ui.c:5926
+#: title/pc5_ui.c:6097
 msgid ""
 "Check free space and keep the source drive connected until importing "
 "finishes. Your previous video was kept."
@@ -2780,16 +2859,16 @@ msgstr ""
 "Zkontrolujte volné místo a nechte zdrojový disk připojený až do dokončení "
 "importu. Předchozí video zůstalo zachováno."
 
-#: title/pc5_ui.c:5932
+#: title/pc5_ui.c:6103
 msgid "PC5 couldn't save the video selection. Try again."
 msgstr "PC5 nemohlo uložit výběr videa. Zkuste to znovu."
 
-#: title/pc5_ui.c:6093
+#: title/pc5_ui.c:6264
 #, c-format
 msgid "%s needs Steam"
 msgstr "%s vyžaduje Steam"
 
-#: title/pc5_ui.c:6096
+#: title/pc5_ui.c:6267
 msgid ""
 "Its program is wrapped in Steam's DRM (SteamStub), which starts only with "
 "Steam running, and Steam doesn't run on the console. A copy of the game "
@@ -2799,72 +2878,72 @@ msgstr ""
 "se spuštěným Steamem, a Steam na konzoli neběží. Kopie hry bez něj se "
 "spustit může."
 
-#: title/pc5_ui.c:6721 title/pc5_ui.c:6731
+#: title/pc5_ui.c:6892 title/pc5_ui.c:6902
 msgid "Play Game"
 msgstr "Hrát hru"
 
 #. a chip under the game's name: 64-bit or 32-bit. Keep it short.
-#: title/pc5_ui.c:6742
+#: title/pc5_ui.c:6913
 #, c-format
 msgid "%d-bit"
 msgstr "%d bit"
 
-#: title/pc5_ui.c:6746
+#: title/pc5_ui.c:6917
 msgid "Frame gen"
 msgstr "Gen. snímků"
 
-#: title/pc5_ui.c:6747
+#: title/pc5_ui.c:6918
 #, c-format
 msgid "Controller: %s"
 msgstr "Ovladač: %s"
 
-#: title/pc5_ui.c:6836
+#: title/pc5_ui.c:7007
 msgid "No games yet."
 msgstr "Zatím žádné hry."
 
-#: title/pc5_ui.c:6836
+#: title/pc5_ui.c:7007
 msgid "Nothing played yet: games show here once you play them."
 msgstr "Zatím nic nehráno: hry se tu objeví, jakmile je budete hrát."
 
-#: title/pc5_ui.c:6837
+#: title/pc5_ui.c:7008
 msgid "No favourites yet: press Square on a game to add it."
 msgstr "Zatím žádné oblíbené: hru přidáte stisknutím Čtverce."
 
-#: title/pc5_ui.c:6838
+#: title/pc5_ui.c:7009
 msgid "No game is played from a USB drive."
 msgstr "Žádná hra se nehraje z USB disku."
 
-#: title/pc5_ui.c:6838
+#: title/pc5_ui.c:7009
 msgid "Every game can start."
 msgstr "Všechny hry lze spustit."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6862 title/pc5_ui.c:6907 title/pc5_ui.c:6983
-#: title/pc5_ui.c:7384 title/pc5_ui.c:7415 title/pc5_ui.c:7516
-#: title/pc5_ui.c:7545 title/pc5_ui.c:7599 title/pc5_ui.c:7646
-#: title/pc5_ui.c:7873 title/pc5_ui.c:7882 title/pc5_ui.c:7899
-#: title/pc5_ui.c:8129 title/pc5_ui.c:8145 title/pc5_ui.c:8354
-#: title/pc5_ui.c:8413 title/pc5_ui.c:8415 title/pc5_ui.c:8416
-#: title/pc5_ui.c:8432 title/pc5_ui.c:8497 title/pc5_ui.c:8529
-#: title/pc5_ui.c:8531 title/pc5_ui.c:8574 title/pc5_ui.c:8780
-#: title/pc5_ui.c:8879 title/pc5_ui.c:8890 title/pc5_ui.c:8917
-#: title/pc5_ui.c:8923 title/pc5_ui_enhancements_draw.h:120
+#: title/pc5_ui.c:7033 title/pc5_ui.c:7078 title/pc5_ui.c:7154
+#: title/pc5_ui.c:7564 title/pc5_ui.c:7595 title/pc5_ui.c:7696
+#: title/pc5_ui.c:7725 title/pc5_ui.c:7779 title/pc5_ui.c:7826
+#: title/pc5_ui.c:8053 title/pc5_ui.c:8062 title/pc5_ui.c:8079
+#: title/pc5_ui.c:8309 title/pc5_ui.c:8325 title/pc5_ui.c:8534
+#: title/pc5_ui.c:8593 title/pc5_ui.c:8595 title/pc5_ui.c:8596
+#: title/pc5_ui.c:8612 title/pc5_ui.c:8677 title/pc5_ui.c:8709
+#: title/pc5_ui.c:8711 title/pc5_ui.c:8754 title/pc5_ui.c:8960
+#: title/pc5_ui.c:9059 title/pc5_ui.c:9070 title/pc5_ui.c:9097
+#: title/pc5_ui.c:9103 title/pc5_ui_enhancements_draw.h:120
 #: title/pc5_ui_enhancements_draw.h:132 title/pc5_ui_enhancements_draw.h:158
 msgid "Back"
 msgstr "Zpět"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:6862 title/pc5_ui.c:6886 title/pc5_ui.c:6892
-#: title/pc5_ui.c:6997 title/pc5_ui.c:8890
+#: title/pc5_ui.c:7033 title/pc5_ui.c:7057 title/pc5_ui.c:7063
+#: title/pc5_ui.c:7168 title/pc5_ui.c:9070
 msgid "Play"
 msgstr "Hrát"
 
-#: title/pc5_ui.c:6872
+#: title/pc5_ui.c:7043
 msgid "No games yet"
 msgstr "Zatím žádné hry"
 
-#: title/pc5_ui.c:6874
+#: title/pc5_ui.c:7045
 msgid ""
 "Put a game's folder in PC5/INSTALL on a USB drive, then open Install › "
 "Install games from USB."
@@ -2872,7 +2951,7 @@ msgstr ""
 "Dejte složku hry do PC5/INSTALL na USB disku a pak otevřete Instalovat › "
 "Instalovat hry z USB."
 
-#: title/pc5_ui.c:6877
+#: title/pc5_ui.c:7048
 msgid ""
 "Or send it from a phone or PC: Settings › Network › Web page or FTP server."
 msgstr ""
@@ -2880,143 +2959,138 @@ msgstr ""
 "Server FTP."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6878
+#: title/pc5_ui.c:7049
 msgid "Tabs"
 msgstr "Karty"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6886 title/pc5_ui_enhancements_draw.h:56
+#: title/pc5_ui.c:7057 title/pc5_ui_enhancements_draw.h:56
 #: title/pc5_ui_enhancements_draw.h:101
 msgid "Filter"
 msgstr "Filtr"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6886 title/pc5_ui.c:6892
+#: title/pc5_ui.c:7057 title/pc5_ui.c:7063
 msgid "Game options"
 msgstr "Možnosti hry"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6886 title/pc5_ui.c:6892
+#: title/pc5_ui.c:7057 title/pc5_ui.c:7063
 msgid "Favourite"
 msgstr "Oblíbená"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6983 title/pc5_ui.c:7415 title/pc5_ui.c:7515
-#: title/pc5_ui.c:8530
+#: title/pc5_ui.c:7154 title/pc5_ui.c:7595 title/pc5_ui.c:7695
+#: title/pc5_ui.c:8710
 msgid "Change"
 msgstr "Změnit"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6983 title/pc5_ui.c:7415 title/pc5_ui.c:7545
-#: title/pc5_ui.c:7599 title/pc5_ui.c:7882 title/pc5_ui.c:8416
-#: title/pc5_ui.c:8497 title/pc5_ui.c:8574 title/pc5_ui.c:8879
+#: title/pc5_ui.c:7154 title/pc5_ui.c:7595 title/pc5_ui.c:7725
+#: title/pc5_ui.c:7779 title/pc5_ui.c:8062 title/pc5_ui.c:8596
+#: title/pc5_ui.c:8677 title/pc5_ui.c:8754 title/pc5_ui.c:9059
 msgid "Choose"
 msgstr "Vybrat"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:6983
+#: title/pc5_ui.c:7154
 msgid "QR code"
 msgstr "QR kód"
 
-#: title/pc5_ui.c:6998
+#: title/pc5_ui.c:7169
 msgid "To leave it, hold the touchpad and OPTIONS for 2 s"
 msgstr "Pro opuštění podržte dotykovou plochu a OPTIONS 2 s"
 
-#. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7002 title/pc5_ui_enhancements_draw.h:110
-msgid "Controller"
-msgstr "Ovladač"
-
-#: title/pc5_ui.c:7003
+#: title/pc5_ui.c:7174
 msgid "The game sees a DualSense, as one plugged into a PC"
 msgstr "Hra vidí DualSense, jako by byl připojený k PC"
 
-#: title/pc5_ui.c:7003
+#: title/pc5_ui.c:7174
 msgid "The buttons press keys, the sticks move the mouse"
 msgstr "Tlačítka mačkají klávesy, páčky hýbou myší"
 
-#: title/pc5_ui.c:7003
+#: title/pc5_ui.c:7174
 msgid "Games with controller support see an Xbox controller"
 msgstr "Hry s podporou ovladače vidí ovladač Xbox"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7007 title/pc5_ui.c:7436
+#: title/pc5_ui.c:7178 title/pc5_ui.c:7616
 msgid "Button mapping"
 msgstr "Přiřazení tlačítek"
 
-#: title/pc5_ui.c:7008
+#: title/pc5_ui.c:7179
 msgid "The key or mouse button each one sends"
 msgstr "Klávesa nebo tlačítko myši, které každé posílá"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7012
+#: title/pc5_ui.c:7183
 msgid "Create button"
 msgstr ""
 
-#: title/pc5_ui.c:7013
+#: title/pc5_ui.c:7184
 msgid "Kept from the game: safe for the PS5's screenshots"
 msgstr ""
 
-#: title/pc5_ui.c:7014
+#: title/pc5_ui.c:7185
 msgid "The game sees it, as a DualSense's Create"
 msgstr ""
 
-#: title/pc5_ui.c:7015
+#: title/pc5_ui.c:7186
 msgid "The game sees it as Back (Select)"
 msgstr ""
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7016
+#: title/pc5_ui.c:7187
 msgid "Not sent"
 msgstr ""
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7016
+#: title/pc5_ui.c:7187
 msgid "Sent"
 msgstr ""
 
-#: title/pc5_ui.c:7020
+#: title/pc5_ui.c:7191
 msgid "Hides when not moved or clicked for 5 s"
 msgstr "Skryje se, když 5 s nepohnete ani nekliknete"
 
-#: title/pc5_ui.c:7020
+#: title/pc5_ui.c:7191
 msgid "Stays as the game shows it"
 msgstr "Zůstává, jak ho hra zobrazí"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7021
+#: title/pc5_ui.c:7192
 msgid "Auto-hide"
 msgstr "Automaticky skrýt"
 
-#: title/pc5_ui.c:7025
+#: title/pc5_ui.c:7196
 msgid "Frames, resolution, aspect ratio, memory and CPU"
 msgstr "Snímky, rozlišení, poměr stran, paměť a CPU"
 
-#: title/pc5_ui.c:7025
+#: title/pc5_ui.c:7196
 msgid "Frame generation, resolution, aspect ratio and CPU"
 msgstr "Generování snímků, rozlišení, poměr stran a CPU"
 
-#: title/pc5_ui.c:7025
+#: title/pc5_ui.c:7196
 msgid "Frame generation, aspect ratio, memory and CPU"
 msgstr "Generování snímků, poměr stran, paměť a CPU"
 
-#: title/pc5_ui.c:7025
+#: title/pc5_ui.c:7196
 msgid "Frame generation, aspect ratio and CPU"
 msgstr "Generování snímků, poměr stran a CPU"
 
-#: title/pc5_ui.c:7030
+#: title/pc5_ui.c:7201
 msgid "Its cover, its background and a home screen tile"
 msgstr "Její obal, pozadí a dlaždice na domovské obrazovce"
 
-#: title/pc5_ui.c:7035
+#: title/pc5_ui.c:7206
 msgid "Its program, updating it and uninstalling it"
 msgstr "Její program, aktualizace a odinstalace"
 
-#: title/pc5_ui.c:7035
+#: title/pc5_ui.c:7206
 msgid "Its program and uninstalling it"
 msgstr "Její program a odinstalace"
 
-#: title/pc5_ui.c:7042
+#: title/pc5_ui.c:7213
 msgid ""
 "The usual way for older games like this; change it only if the picture is "
 "wrong"
@@ -3024,7 +3098,7 @@ msgstr ""
 "Obvyklý způsob pro starší hry, jako je tato; měňte jen, když je obraz "
 "špatně"
 
-#: title/pc5_ui.c:7043
+#: title/pc5_ui.c:7214
 msgid ""
 "Best for most games; change it only if the picture is wrong or it won't "
 "start"
@@ -3032,35 +3106,25 @@ msgstr ""
 "Nejlepší pro většinu her; měňte jen, když je obraz špatně nebo se hra "
 "nespustí"
 
-#: title/pc5_ui.c:7044
+#: title/pc5_ui.c:7215
 msgid "A slower way to draw it; set it back to Auto if it doesn't help"
 msgstr "Pomalejší způsob vykreslování; pokud nepomůže, vraťte Automaticky"
 
-#: title/pc5_ui.c:7045
+#: title/pc5_ui.c:7216
 msgid "Drawn in 2D only; set it back to Auto if it doesn't help"
 msgstr "Vykresleno jen ve 2D; pokud nepomůže, vraťte Automaticky"
 
-#: title/pc5_ui.c:7046
+#: title/pc5_ui.c:7217
 msgid "Another way to draw it; set it back to Auto if it doesn't help"
 msgstr "Jiný způsob vykreslování; pokud nepomůže, vraťte Automaticky"
 
-#: title/pc5_ui.c:7047
+#: title/pc5_ui.c:7218
 msgid ""
 "The slowest way, but it starts the most games; Auto if it doesn't help"
 msgstr ""
 "Nejpomalejší způsob, ale spustí nejvíc her; Automaticky, pokud nepomůže"
 
-#. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7048 title/pc5_ui.c:7581
-msgid "Graphics mode"
-msgstr "Grafický režim"
-
-#. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7054
-msgid "Frame generation"
-msgstr "Generování snímků"
-
-#: title/pc5_ui.c:7058
+#: title/pc5_ui.c:7229
 msgid ""
 "Held at 40 fps, two frames made between each two: for a game that can't "
 "hold 60"
@@ -3068,37 +3132,32 @@ msgstr ""
 "Drženo na 40 fps, mezi každé dva snímky se vytvoří dva: pro hru, která "
 "neudrží 60"
 
-#. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7059
-msgid "40 → 120 fps"
-msgstr "40 → 120 fps"
-
-#: title/pc5_ui.c:7061
+#: title/pc5_ui.c:7232
 msgid ""
 "Held at 60 fps, a frame made between each two: smoother on a 120 Hz TV"
 msgstr ""
 "Drženo na 60 fps, mezi každé dva snímky se vytvoří jeden: plynulejší na "
 "televizoru 120 Hz"
 
-#: title/pc5_ui.c:7062
+#: title/pc5_ui.c:7233
 msgid "Held at 30 fps and shown at 60: smoother where it runs below 60"
 msgstr "Drženo na 30 fps a zobrazeno v 60: plynulejší tam, kde běží pod 60"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7063
+#: title/pc5_ui.c:7234
 msgid "60 → 120 fps"
 msgstr "60 → 120 fps"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7063
+#: title/pc5_ui.c:7234
 msgid "30 → 60 fps"
 msgstr "30 → 60 fps"
 
-#: title/pc5_ui.c:7065
+#: title/pc5_ui.c:7236
 msgid "Off. Left and right: 60 → 120 or 40 → 120 fps"
 msgstr "Vypnuto. Vlevo a vpravo: 60 → 120 nebo 40 → 120 fps"
 
-#: title/pc5_ui.c:7066
+#: title/pc5_ui.c:7237
 msgid ""
 "Off. Left and right: 30 → 60 fps (with 120 Hz output on, 60 → 120 or 40 → "
 "120)"
@@ -3107,104 +3166,94 @@ msgstr ""
 "nebo 40 → 120)"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7071
+#: title/pc5_ui.c:7242
 msgid "Resolution"
 msgstr "Rozlišení"
 
-#: title/pc5_ui.c:7072
+#: title/pc5_ui.c:7243
 msgid "Drawn at 4K, as the console shows it; four times the work of 1080p"
 msgstr ""
 "Vykresleno ve 4K, jak to konzole zobrazuje; čtyřikrát víc práce než 1080p"
 
-#: title/pc5_ui.c:7072
+#: title/pc5_ui.c:7243
 msgid "Drawn at 1440p and shown at 4K; sharper than 1080p, slower"
 msgstr "Vykresleno v 1440p a zobrazeno ve 4K; ostřejší než 1080p, pomalejší"
 
-#: title/pc5_ui.c:7072
+#: title/pc5_ui.c:7243
 msgid "Drawn at 1080p and shown at 4K by the console"
 msgstr "Vykresleno v 1080p a do 4K převedeno konzolí"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7073
+#: title/pc5_ui.c:7244
 msgid "4K"
 msgstr "4K"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7076
+#: title/pc5_ui.c:7247
 msgid "Aspect ratio"
 msgstr "Poměr stran"
 
-#: title/pc5_ui.c:7077
+#: title/pc5_ui.c:7248
 msgid "Stretched to fill the screen: a 4:3 picture gets wider"
 msgstr "Roztaženo na celou obrazovku: obraz 4:3 se rozšíří"
 
-#: title/pc5_ui.c:7077
+#: title/pc5_ui.c:7248
 msgid "The picture's own shape, with bars beside a 4:3 one"
 msgstr "Vlastní tvar obrazu, s pruhy po stranách u 4:3"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7078 title/pc5_ui_enhancements_draw.h:145
+#: title/pc5_ui.c:7249 title/pc5_ui_enhancements_draw.h:145
 msgid "Stretch"
 msgstr "Roztáhnout"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7078
+#: title/pc5_ui.c:7249
 msgid "Keep"
 msgstr "Zachovat"
 
-#. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7081
-msgid "Game memory"
-msgstr "Paměť hry"
-
-#: title/pc5_ui.c:7082
+#: title/pc5_ui.c:7253
 msgid ""
 "4 GB even for a game not made for it: room for mods; Auto if it misbehaves"
 msgstr ""
 "4 GB i pro hru, která na to není dělaná: místo pro mody; Automaticky, "
 "pokud zlobí"
 
-#: title/pc5_ui.c:7083
+#: title/pc5_ui.c:7254
 msgid "2 GB, or 4 GB for a game made for it, as on Windows"
 msgstr "2 GB, nebo 4 GB pro hru, která je na to dělaná, jako ve Windows"
 
-#. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7084 title/pc5_ui.c:7105
-msgid "4 GB"
-msgstr "4 GB"
-
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7091
+#: title/pc5_ui.c:7262
 msgid "Graphics memory"
 msgstr "Grafická paměť"
 
-#: title/pc5_ui.c:7093
+#: title/pc5_ui.c:7264
 msgid "All the console's; Auto if the game says there is too little"
 msgstr "Všechna paměť konzole; Automaticky, pokud hra hlásí, že je jí málo"
 
-#: title/pc5_ui.c:7094
+#: title/pc5_ui.c:7265
 msgid "All 8 GB: the game may take memory the rest of it needs"
 msgstr "Všech 8 GB: hra může zabrat paměť, kterou potřebuje zbytek"
 
-#: title/pc5_ui.c:7096
+#: title/pc5_ui.c:7267
 msgid "2 GB at most, so older games don't get confused"
 msgstr "Nejvýš 2 GB, aby se starší hry nezmátly"
 
-#: title/pc5_ui.c:7097
+#: title/pc5_ui.c:7268
 msgid ""
 "4 GB, so the game leaves room for the rest: the console's memory is shared"
 msgstr "4 GB, aby hra nechala místo pro zbytek: paměť konzole je sdílená"
 
-#: title/pc5_ui.c:7099
+#: title/pc5_ui.c:7270
 msgid ""
 "Less for textures, more for the game: for one that runs out of memory"
 msgstr "Méně pro textury, víc pro hru: když jí dochází paměť"
 
-#: title/pc5_ui.c:7101
+#: title/pc5_ui.c:7272
 msgid "More for a game that says there is too little; Auto if it misbehaves"
 msgstr "Víc pro hru, která vidí příliš málo; Automaticky, když zlobí"
 
-#: title/pc5_ui.c:7102
+#: title/pc5_ui.c:7273
 msgid ""
 "More for the game's textures, less for the rest; Auto if it runs out of "
 "memory"
@@ -3212,126 +3261,111 @@ msgstr ""
 "Víc pro textury hry, míň pro zbytek; Automaticky, pokud jí dojde paměť"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7103
+#: title/pc5_ui.c:7274
 msgid "Maximum"
 msgstr "Maximum"
 
-#: title/pc5_ui.c:7105
+#: title/pc5_ui.c:7276
 #, c-format
 msgid "%s (%s)"
 msgstr "%s (%s)"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7105 title/pc5_ui.c:7108
+#: title/pc5_ui.c:7276 title/pc5_ui.c:7279
 msgid "2 GB"
 msgstr "2 GB"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7108
+#: title/pc5_ui.c:7279
 msgid "512 MB"
 msgstr "512 MB"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7108
+#: title/pc5_ui.c:7279
 msgid "1 GB"
 msgstr "1 GB"
 
-#: title/pc5_ui.c:7109
+#: title/pc5_ui.c:7280
 msgid "3 GB"
 msgstr "3 GB"
 
-#: title/pc5_ui.c:7109
+#: title/pc5_ui.c:7280
 msgid "5 GB"
 msgstr "5 GB"
 
-#: title/pc5_ui.c:7109
+#: title/pc5_ui.c:7280
 msgid "6 GB"
 msgstr "6 GB"
 
-#. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7113
-msgid "Sound output"
-msgstr "Zvukový výstup"
-
-#: title/pc5_ui.c:7114
+#: title/pc5_ui.c:7285
 msgid ""
 "Each sound on its own speaker of a surround system; Stereo if it is silent"
 msgstr ""
 "Každý zvuk ze svého reproduktoru prostorové soustavy; Stereo, když je ticho"
 
-#: title/pc5_ui.c:7115
+#: title/pc5_ui.c:7286
 msgid ""
 "Two speakers, for a TV or headphones; 5.1 or 7.1 for a surround system"
 msgstr ""
 "Dva reproduktory, pro TV nebo sluchátka; 5.1 nebo 7.1 pro prostorový zvuk"
 
-#. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7116
-msgid "Stereo"
-msgstr "Stereo"
-
-#. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7119
-msgid "Stutter fix"
-msgstr "Oprava trhání"
-
-#: title/pc5_ui.c:7120
+#: title/pc5_ui.c:7291
 msgid "The game's work takes turns, as on a PC: steadier for some games"
 msgstr "Práce hry se střídá jako na PC: u některých her stabilnější"
 
-#: title/pc5_ui.c:7120
+#: title/pc5_ui.c:7291
 msgid "Fastest for most games; turn on if it freezes or stutters"
 msgstr "Nejrychlejší pro většinu her; zapněte, pokud zamrzá nebo se trhá"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7124 title/pc5_ui.c:8175
+#: title/pc5_ui.c:7295 title/pc5_ui.c:8355
 msgid "Cover"
 msgstr "Obal"
 
-#: title/pc5_ui.c:7125
+#: title/pc5_ui.c:7296
 msgid "Another of those found, or search by another name"
 msgstr "Jiný z nalezených, nebo hledat podle jiného názvu"
 
-#: title/pc5_ui.c:7130
+#: title/pc5_ui.c:7301
 msgid "Choose a background image or a silent video"
 msgstr "Vyberte obrázek na pozadí nebo video bez zvuku"
 
-#: title/pc5_ui.c:7131
+#: title/pc5_ui.c:7302
 msgid "Another of those found, search by another name, or none"
 msgstr "Jiné z nalezených, hledat podle jiného názvu, nebo žádné"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7135 title/pc5_ui.c:8175
+#: title/pc5_ui.c:7306 title/pc5_ui.c:8355
 msgid "Background image"
 msgstr "Obrázek na pozadí"
 
-#: title/pc5_ui.c:7136
+#: title/pc5_ui.c:7307
 msgid ""
 "Choose a still image; it also appears when video playback is unavailable"
 msgstr ""
 "Vyberte statický obrázek; zobrazí se i tehdy, když video nelze přehrát"
 
-#: title/pc5_ui.c:7141
+#: title/pc5_ui.c:7312
 msgid "Choose or remove this game's silent background video"
 msgstr "Vyberte nebo odeberte video na pozadí této hry (bez zvuku)"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7145
+#: title/pc5_ui.c:7316
 msgid "Choose video file"
 msgstr "Vybrat soubor videa"
 
-#: title/pc5_ui.c:7146
+#: title/pc5_ui.c:7317
 msgid ""
 "Import H.264 video to console storage; experimental 1080p/60, without audio"
 msgstr ""
 "Import videa H.264 do úložiště konzole; experimentálně 1080p/60, bez zvuku"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7150
+#: title/pc5_ui.c:7321
 msgid "Remove background video"
 msgstr "Odebrat video na pozadí"
 
-#: title/pc5_ui.c:7151
+#: title/pc5_ui.c:7322
 msgid ""
 "Delete the imported video and return to the background image; keep the "
 "source file"
@@ -3339,98 +3373,98 @@ msgstr ""
 "Odstranit importované video a vrátit se k obrázku na pozadí; zdrojový "
 "soubor zůstane"
 
-#: title/pc5_ui.c:7156
+#: title/pc5_ui.c:7327
 msgid "Choose or remove the music that plays on this game's cover"
 msgstr "Vyberte nebo odeberte hudbu, která hraje u obalu této hry"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7160
+#: title/pc5_ui.c:7331
 msgid "Choose music file"
 msgstr "Vybrat hudební soubor"
 
-#: title/pc5_ui.c:7161
+#: title/pc5_ui.c:7332
 msgid ""
 "Import MP3 or WAV to console storage: plays on this cover, even without USB"
 msgstr ""
 "Import MP3 nebo WAV do úložiště konzole: hraje u tohoto obalu i bez USB"
 
-#: title/pc5_ui.c:7166
+#: title/pc5_ui.c:7337
 msgid ""
 "Its cover, background and loading screen, and its music and video settings"
 msgstr "Obal, pozadí a načítací obrazovka a nastavení hudby a videa"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7170
+#: title/pc5_ui.c:7341
 msgid "Music, video and backup"
 msgstr "Hudba, video a záloha"
 
-#: title/pc5_ui.c:7171
+#: title/pc5_ui.c:7342
 msgid ""
 "Music volume and start, video loop, framing, darkness and appearance backup"
 msgstr ""
 "Hlasitost a začátek hudby, smyčka videa, výřez, ztmavení a záloha vzhledu"
 
-#: title/pc5_ui.c:7177
+#: title/pc5_ui.c:7348
 msgid "The picture shown while it starts: PC5's own, or one of yours"
 msgstr "Obrázek při spuštění: PC5 nebo váš"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7178
+#: title/pc5_ui.c:7349
 #, fuzzy
 msgid "Own"
 msgstr "Zapnuto"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7178
+#: title/pc5_ui.c:7349
 msgid "PC5's"
 msgstr "PC5"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7182
+#: title/pc5_ui.c:7353
 #, fuzzy
 msgid "Choose image file"
 msgstr "Vybrat soubor videa"
 
-#: title/pc5_ui.c:7183
+#: title/pc5_ui.c:7354
 msgid ""
 "A JPEG or PNG from a USB drive or the console; Square: from your phone"
 msgstr "JPEG nebo PNG z USB nebo konzole; Čtverec: z telefonu"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7187
+#: title/pc5_ui.c:7358
 #, fuzzy
 msgid "Use its background"
 msgstr "Její pozadí"
 
-#: title/pc5_ui.c:7188
+#: title/pc5_ui.c:7359
 msgid "Its background picture, as its loading screen"
 msgstr "Obrázek pozadí jako načítací obrazovka"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7192
+#: title/pc5_ui.c:7363
 msgid "Use PC5's"
 msgstr "Použít PC5"
 
-#: title/pc5_ui.c:7193
+#: title/pc5_ui.c:7364
 msgid "Back to PC5's own loading screen for it"
 msgstr "Zpět na načítací obrazovku PC5"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7197
+#: title/pc5_ui.c:7368
 msgid "Remove library music"
 msgstr "Odebrat hudbu z knihovny"
 
-#: title/pc5_ui.c:7198
+#: title/pc5_ui.c:7369
 msgid "Delete this game's imported music; the original source file is kept"
 msgstr ""
 "Odstranit importovanou hudbu této hry; původní zdrojový soubor zůstane"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7202 title/pc5_ui.c:8175
+#: title/pc5_ui.c:7373 title/pc5_ui.c:8355
 msgid "Tile picture"
 msgstr "Obrázek dlaždice"
 
-#: title/pc5_ui.c:7203
+#: title/pc5_ui.c:7374
 msgid ""
 "Its home screen tile's picture: a square one found online, or one made "
 "from its cover"
@@ -3438,90 +3472,95 @@ msgstr ""
 "Obrázek její dlaždice na domovské obrazovce: čtvercový nalezený online, "
 "nebo vytvořený z obalu"
 
-#: title/pc5_ui.c:7207
+#: title/pc5_ui.c:7378
 #, c-format
 msgid "Its tile, %.40s, starts the game"
 msgstr "Její dlaždice, %.40s, spouští hru"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7208
+#: title/pc5_ui.c:7379
 msgid "Home screen tile"
 msgstr "Dlaždice na domovské obrazovce"
 
-#: title/pc5_ui.c:7209
+#: title/pc5_ui.c:7380
 msgid "A tile on the PS5's home screen that starts it"
 msgstr "Dlaždice na domovské obrazovce PS5, která ji spouští"
 
-#: title/pc5_ui.c:7214
+#: title/pc5_ui.c:7385
 #, c-format
 msgid "Now: %.150s"
 msgstr "Nyní: %.150s"
 
 #. A menu row's name (about 30 characters fit).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7215 title/pc5_ui.c:7872
+#: title/pc5_ui.c:7386 title/pc5_ui.c:8052
 msgid "Change program"
 msgstr "Změnit program"
 
-#. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7221
-msgid "Steam emulator"
-msgstr "Emulátor Steamu"
-
-#: title/pc5_ui.c:7222
+#: title/pc5_ui.c:7393
 msgid "Steam's own library: the game won't find Steam on the console"
 msgstr "Vlastní knihovna Steamu: hra na konzoli Steam nenajde"
 
-#: title/pc5_ui.c:7223
+#: title/pc5_ui.c:7394
 msgid "Stands in for Steam, which the game asks for; Off if it misbehaves"
 msgstr "Zastupuje Steam, který hra vyžaduje; Vypnuto, pokud zlobí"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7227 title/pc5_ui.c:8391
+#: title/pc5_ui.c:7398 title/pc5_ui.c:8571
 msgid "Game files"
 msgstr "Soubory hry"
 
-#: title/pc5_ui.c:7228
+#: title/pc5_ui.c:7399
 msgid "Its folder: copy, move, rename and delete its files"
 msgstr "Její složka: kopírování, přesun, přejmenování a odstranění souborů"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7232 title/pc5_ui.c:8817
+#: title/pc5_ui.c:7403 title/pc5_ui.c:8997
 msgid "Update"
 msgstr "Aktualizovat"
 
-#: title/pc5_ui.c:7233
+#: title/pc5_ui.c:7404
 msgid "A newer copy from USB; its saves and settings stay"
 msgstr "Novější kopie z USB; uložené hry a nastavení zůstanou"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7237
+#: title/pc5_ui.c:7408
 msgid "Report a problem"
 msgstr "Nahlásit problém"
 
-#: title/pc5_ui.c:7238
+#: title/pc5_ui.c:7409
 msgid "A QR code for GitHub's form, filled in from the game's newest log"
 msgstr ""
 "QR kód pro formulář na GitHubu, vyplněný z nejnovějšího protokolu hry"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7242
+#: title/pc5_ui.c:7413
 msgid "Report it works"
 msgstr ""
 
-#: title/pc5_ui.c:7243
+#: title/pc5_ui.c:7414
 msgid ""
 "A QR code for the game compatibility form, filled in: adds the game to the "
 "list"
 msgstr ""
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7247
+#: title/pc5_ui.c:7418
+#, fuzzy
+msgid "Settings that worked"
+msgstr "Nastavení, která pomohla"
+
+#: title/pc5_ui.c:7419
+msgid "A player's settings for it, from the game compatibility list"
+msgstr ""
+
+#. A menu row's name (about 30 characters fit).
+#: title/pc5_ui.c:7423
 msgid "Reset Windows"
 msgstr ""
 
-#: title/pc5_ui.c:7248
+#: title/pc5_ui.c:7424
 msgid ""
 "Makes its Windows new, as a fresh install's; its files, saves and settings "
 "stay"
@@ -3529,23 +3568,23 @@ msgstr ""
 
 #. A menu row's name (about 30 characters fit).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7252 title/pc5_ui.c:8917 title/pc5_ui.c:8945
+#: title/pc5_ui.c:7428 title/pc5_ui.c:9097 title/pc5_ui.c:9125
 msgid "Uninstall"
 msgstr "Odinstalovat"
 
-#: title/pc5_ui.c:7253
+#: title/pc5_ui.c:7429
 msgid "Deletes the game, or keeps its saves for later"
 msgstr "Odstraní hru, nebo ponechá její uložené hry na později"
 
-#: title/pc5_ui.c:7266
+#: title/pc5_ui.c:7442
 msgid "What the game sees when you play with the controller."
 msgstr "Co hra vidí, když hrajete s ovladačem."
 
-#: title/pc5_ui.c:7267
+#: title/pc5_ui.c:7443
 msgid "Xbox controller: what most PC games expect. Try this first."
 msgstr "Ovladač Xbox: co čeká většina her pro PC. Zkuste ho jako první."
 
-#: title/pc5_ui.c:7268
+#: title/pc5_ui.c:7444
 msgid ""
 "DualSense: a PS5 controller plugged into a PC, with PlayStation buttons in "
 "games that support it."
@@ -3553,7 +3592,7 @@ msgstr ""
 "DualSense: ovladač PS5 připojený k PC, s tlačítky PlayStation ve hrách, "
 "které je podporují."
 
-#: title/pc5_ui.c:7269
+#: title/pc5_ui.c:7445
 msgid ""
 "Keyboard & mouse: for games with no controller support. The buttons press "
 "keys and the sticks move the mouse; Button mapping changes which key each "
@@ -3563,7 +3602,7 @@ msgstr ""
 "páčky hýbou myší; v nabídce Přiřazení tlačítek zvolíte, jakou klávesu "
 "které tlačítko posílá."
 
-#: title/pc5_ui.c:7272
+#: title/pc5_ui.c:7448
 msgid ""
 "What each button, stick and the touchpad sends to the game with Keyboard & "
 "mouse."
@@ -3571,7 +3610,7 @@ msgstr ""
 "Co každé tlačítko, páčka a dotyková plocha posílá hře v režimu Klávesnice "
 "a myš."
 
-#: title/pc5_ui.c:7273
+#: title/pc5_ui.c:7449
 msgid ""
 "Touchpad: One button (a click sends one key), Halves and swipes (a key for "
 "each half's click and each quick swipe up, down, left or right), or Mouse "
@@ -3582,42 +3621,42 @@ msgstr ""
 "přejetí nahoru, dolů, doleva nebo doprava) nebo Myš (prst pohybuje "
 "ukazatelem jako na notebooku)."
 
-#: title/pc5_ui.c:7274
+#: title/pc5_ui.c:7450
 msgid "Two-finger click: PC5's on-screen keyboard, or a key of its own."
 msgstr ""
 "Kliknutí dvěma prsty: klávesnice na obrazovce v PC5, nebo vlastní klávesa."
 
-#: title/pc5_ui.c:7275
+#: title/pc5_ui.c:7451
 msgid "Save as my mapping keeps your layout for every game set up after it."
 msgstr ""
 "Uložit jako mé přiřazení zachová vaše rozložení pro každou hru nastavenou "
 "potom."
 
-#: title/pc5_ui.c:7278
+#: title/pc5_ui.c:7454
 msgid "Whether the game sees the Create button."
 msgstr ""
 
-#: title/pc5_ui.c:7279
+#: title/pc5_ui.c:7455
 msgid ""
 "Sent: the game sees it, as Back (Select) on an Xbox controller or as "
 "Create on a DualSense."
 msgstr ""
 
-#: title/pc5_ui.c:7280
+#: title/pc5_ui.c:7456
 msgid ""
 "Not sent: the game never sees it, so taking a screenshot with the PS5's "
 "Create button doesn't press anything in the game."
 msgstr ""
 
-#: title/pc5_ui.c:7283
+#: title/pc5_ui.c:7459
 msgid "Whether the mouse pointer shows over the game."
 msgstr "Zda se ukazatel myši zobrazuje nad hrou."
 
-#: title/pc5_ui.c:7284
+#: title/pc5_ui.c:7460
 msgid "Normal: the game decides, as on a PC."
 msgstr "Normální: rozhoduje hra, jako na PC."
 
-#: title/pc5_ui.c:7285
+#: title/pc5_ui.c:7461
 msgid ""
 "Auto-hide: hidden after 5 seconds without moving or clicking, for a game "
 "that leaves it on the screen."
@@ -3625,7 +3664,7 @@ msgstr ""
 "Automaticky skrýt: skryje se po 5 sekundách bez pohybu či kliknutí, pro "
 "hru, která ho nechává na obrazovce."
 
-#: title/pc5_ui.c:7288
+#: title/pc5_ui.c:7464
 msgid ""
 "How the game's pictures are made on the console. Auto is right for almost "
 "every game; the others are for a game that won't start or shows a wrong "
@@ -3635,7 +3674,7 @@ msgstr ""
 "každou hru; ostatní jsou pro hru, která se nespustí nebo ukazuje špatný "
 "obraz."
 
-#: title/pc5_ui.c:7290
+#: title/pc5_ui.c:7466
 msgid ""
 "Alternative: another way to draw the game. Try it if the picture is wrong "
 "with Auto."
@@ -3643,12 +3682,12 @@ msgstr ""
 "Alternativní: jiný způsob vykreslení hry. Zkuste ho, když je obraz s "
 "volbou Automaticky špatně."
 
-#: title/pc5_ui.c:7291
+#: title/pc5_ui.c:7467
 msgid ""
 "2D only: for a 2D game that flickers or shows only part of its screen."
 msgstr "Jen 2D: pro 2D hru, která bliká nebo ukazuje jen část své obrazovky."
 
-#: title/pc5_ui.c:7293
+#: title/pc5_ui.c:7469
 msgid ""
 "Alternative: slower than Auto. Try it if the game won't start or its "
 "picture is wrong."
@@ -3656,7 +3695,7 @@ msgstr ""
 "Alternativní: pomalejší než Automaticky. Zkuste ho, když se hra nespustí "
 "nebo má špatný obraz."
 
-#: title/pc5_ui.c:7295
+#: title/pc5_ui.c:7471
 msgid ""
 "Alternative: another way to draw the game. Try it if the picture is wrong "
 "with Auto. Some mods need it."
@@ -3664,15 +3703,15 @@ msgstr ""
 "Alternativní: jiný způsob vykreslení hry. Zkuste ho, když je obraz s "
 "volbou Automaticky špatně. Některé mody ho potřebují."
 
-#: title/pc5_ui.c:7296
+#: title/pc5_ui.c:7472
 msgid "Compatibility (slow): the slowest, but it starts the most games."
 msgstr "Kompatibilní (pomalý): nejpomalejší, ale spustí nejvíc her."
 
-#: title/pc5_ui.c:7298
+#: title/pc5_ui.c:7474
 msgid "Choose the row to see each one with what it does."
 msgstr "Vyberte řádek a uvidíte každou volbu s tím, co dělá."
 
-#: title/pc5_ui.c:7301
+#: title/pc5_ui.c:7477
 msgid ""
 "Makes extra frames between the game's own, so movement looks smoother. It "
 "can add a little delay to the controls."
@@ -3680,11 +3719,11 @@ msgstr ""
 "Vytváří další snímky mezi snímky hry, takže pohyb vypadá plynuleji. Může "
 "mírně zpozdit ovládání."
 
-#: title/pc5_ui.c:7302
+#: title/pc5_ui.c:7478
 msgid "30 → 60 fps: the game is held at 30 fps and shown at 60."
 msgstr "30 → 60 fps: hra se drží na 30 fps a zobrazuje v 60."
 
-#: title/pc5_ui.c:7303
+#: title/pc5_ui.c:7479
 msgid ""
 "60 → 120 fps: held at 60 and shown at 120, on a 120 Hz TV with 120 Hz "
 "output on in Settings."
@@ -3692,7 +3731,7 @@ msgstr ""
 "60 → 120 fps: drženo na 60 a zobrazeno ve 120, na televizoru 120 Hz s "
 "volbou Výstup 120 Hz zapnutou v Nastavení."
 
-#: title/pc5_ui.c:7304
+#: title/pc5_ui.c:7480
 msgid ""
 "40 → 120 fps: held at 40, two frames made between each two, for a game "
 "that can't hold 60."
@@ -3700,7 +3739,7 @@ msgstr ""
 "40 → 120 fps: drženo na 40, mezi každé dva snímky se vytvoří dva, pro hru, "
 "která neudrží 60."
 
-#: title/pc5_ui.c:7307
+#: title/pc5_ui.c:7483
 msgid ""
 "The size the game is drawn at. The console always shows 4K, so a smaller "
 "picture is scaled up."
@@ -3708,46 +3747,46 @@ msgstr ""
 "Velikost, ve které se hra vykresluje. Konzole vždy zobrazuje 4K, takže "
 "menší obraz se zvětší."
 
-#: title/pc5_ui.c:7308
+#: title/pc5_ui.c:7484
 msgid "1080p: the fastest, and right for most games."
 msgstr "1080p: nejrychlejší a vhodné pro většinu her."
 
-#: title/pc5_ui.c:7309
+#: title/pc5_ui.c:7485
 msgid "1440p: sharper, but slower."
 msgstr "1440p: ostřejší, ale pomalejší."
 
-#: title/pc5_ui.c:7310
+#: title/pc5_ui.c:7486
 msgid ""
 "4K: the sharpest, four times the work of 1080p: only for light games."
 msgstr ""
 "4K: nejostřejší, čtyřikrát víc práce než 1080p: jen pro nenáročné hry."
 
-#: title/pc5_ui.c:7313
+#: title/pc5_ui.c:7489
 msgid "The shape of the picture on the TV."
 msgstr "Tvar obrazu na televizoru."
 
-#: title/pc5_ui.c:7314
+#: title/pc5_ui.c:7490
 msgid ""
 "Keep: the picture's own shape. An older 4:3 game gets black bars at the "
 "sides."
 msgstr ""
 "Zachovat: vlastní tvar obrazu. Starší hra 4:3 má po stranách černé pruhy."
 
-#: title/pc5_ui.c:7315
+#: title/pc5_ui.c:7491
 msgid "Stretch: fills the whole screen, so a 4:3 picture gets wider."
 msgstr "Roztáhnout: vyplní celou obrazovku, takže obraz 4:3 se rozšíří."
 
-#: title/pc5_ui.c:7318
+#: title/pc5_ui.c:7494
 msgid "How much memory an older 32-bit game may use."
 msgstr "Kolik paměti smí použít starší 32bitová hra."
 
-#: title/pc5_ui.c:7319
+#: title/pc5_ui.c:7495
 msgid "Auto: as on Windows, 4 GB for a game made for it, otherwise 2 GB."
 msgstr ""
 "Automaticky: jako ve Windows, 4 GB pro hru, která je na to dělaná, jinak 2 "
 "GB."
 
-#: title/pc5_ui.c:7320
+#: title/pc5_ui.c:7496
 msgid ""
 "4 GB: for a game that runs out of memory, often with big mods. Set it back "
 "to Auto if the game misbehaves."
@@ -3755,7 +3794,7 @@ msgstr ""
 "4 GB: pro hru, které dochází paměť, často s velkými mody. Pokud hra zlobí, "
 "vraťte Automaticky."
 
-#: title/pc5_ui.c:7323
+#: title/pc5_ui.c:7499
 msgid ""
 "How much graphics memory the game is told the console has. The PS5's "
 "memory is shared by the game and its graphics, so more for graphics leaves "
@@ -3764,19 +3803,19 @@ msgstr ""
 "Kolik grafické paměti konzole hře hlásí. Paměť PS5 sdílí hra a její "
 "grafika, takže víc pro grafiku znamená méně pro hru."
 
-#: title/pc5_ui.c:7325
+#: title/pc5_ui.c:7501
 msgid ""
 "512 MB or 1 GB: less for textures, more for the game, for one that runs "
 "out of memory."
 msgstr ""
 "512 MB nebo 1 GB: méně pro textury, víc pro hru, když jí dochází paměť."
 
-#: title/pc5_ui.c:7326
+#: title/pc5_ui.c:7502
 msgid ""
 "Auto: 2 GB at most, so older games don't get confused by a large number."
 msgstr "Automaticky: nejvýš 2 GB, aby se starší hry nezmátly velkým číslem."
 
-#: title/pc5_ui.c:7327
+#: title/pc5_ui.c:7503
 msgid ""
 "3 GB or Maximum: for a game that says there is too little. Set it back to "
 "Auto if it misbehaves."
@@ -3784,40 +3823,40 @@ msgstr ""
 "3 GB nebo Maximum: pro hru, která vidí příliš málo. Když zlobí, vraťte "
 "Automaticky."
 
-#: title/pc5_ui.c:7329
+#: title/pc5_ui.c:7505
 msgid ""
 "2 GB or 3 GB: less for textures, more for the game, for one that runs out "
 "of memory."
 msgstr ""
 "2 GB nebo 3 GB: méně pro textury, víc pro hru, když jí dochází paměť."
 
-#: title/pc5_ui.c:7330
+#: title/pc5_ui.c:7506
 msgid "Auto: 4 GB, room for both."
 msgstr "Automaticky: 4 GB, místo pro obojí."
 
-#: title/pc5_ui.c:7331
+#: title/pc5_ui.c:7507
 msgid ""
 "5 GB or 6 GB: more for textures. Set it back to Auto if the game runs out "
 "of memory."
 msgstr ""
 "5 GB nebo 6 GB: víc pro textury. Pokud hře dojde paměť, vraťte Automaticky."
 
-#: title/pc5_ui.c:7332
+#: title/pc5_ui.c:7508
 msgid ""
 "Maximum: all of it, only for a game that won't start because it sees too "
 "little."
 msgstr ""
 "Maximum: všechna, jen pro hru, která se nespustí, protože jí vidí málo."
 
-#: title/pc5_ui.c:7336
+#: title/pc5_ui.c:7512
 msgid "How many speakers the game is told the console has."
 msgstr "Kolik reproduktorů má konzole podle hry."
 
-#: title/pc5_ui.c:7337
+#: title/pc5_ui.c:7513
 msgid "Stereo: two, right for a TV or headphones."
 msgstr "Stereo: dva, pro TV nebo sluchátka."
 
-#: title/pc5_ui.c:7338
+#: title/pc5_ui.c:7514
 msgid ""
 "5.1 or 7.1: the game plays each sound on its own speaker of a surround "
 "system, and the PS5 sends it on as it does its own games' sound."
@@ -3825,21 +3864,21 @@ msgstr ""
 "5.1 nebo 7.1: hra přehrává každý zvuk z jeho vlastního reproduktoru "
 "prostorové soustavy a PS5 ho posílá dál jako zvuk svých vlastních her."
 
-#: title/pc5_ui.c:7339
+#: title/pc5_ui.c:7515
 msgid ""
 "If the game is silent or plays only from the front, set it back to Stereo."
 msgstr "Když je hra potichu nebo hraje jen zepředu, vraťte Stereo."
 
-#: title/pc5_ui.c:7342
+#: title/pc5_ui.c:7518
 msgid ""
 "Changes how the game's work is shared out on the console's processor."
 msgstr "Mění, jak se práce hry rozděluje na procesoru konzole."
 
-#: title/pc5_ui.c:7343
+#: title/pc5_ui.c:7519
 msgid "Off: the fastest for most games."
 msgstr "Vypnuto: nejrychlejší pro většinu her."
 
-#: title/pc5_ui.c:7344
+#: title/pc5_ui.c:7520
 msgid ""
 "On: the game's work takes turns, as on a PC. Try it if the game freezes, "
 "stutters or hangs while loading; it can be a little slower."
@@ -3847,7 +3886,7 @@ msgstr ""
 "Zapnuto: práce hry se střídá jako na PC. Zkuste to, když hra zamrzá, trhá "
 "se nebo se zasekne při načítání; může být trochu pomalejší."
 
-#: title/pc5_ui.c:7347
+#: title/pc5_ui.c:7523
 msgid ""
 "Many PC games need Steam running to start. The console has no Steam, so "
 "PC5 stands in for it."
@@ -3855,11 +3894,11 @@ msgstr ""
 "Mnoho her pro PC potřebuje ke spuštění běžící Steam. Konzole Steam nemá, a "
 "tak ho PC5 zastoupí."
 
-#: title/pc5_ui.c:7348
+#: title/pc5_ui.c:7524
 msgid "Auto: the game starts as if Steam were running, offline."
 msgstr "Automaticky: hra se spustí, jako by Steam běžel, offline."
 
-#: title/pc5_ui.c:7349
+#: title/pc5_ui.c:7525
 msgid ""
 "Off: the game's own Steam files are used. It won't find Steam and may not "
 "start; only for a game that misbehaves with Auto."
@@ -3867,135 +3906,147 @@ msgstr ""
 "Vypnuto: použijí se vlastní soubory Steamu hry. Nenajde Steam a nemusí se "
 "spustit; jen pro hru, která s volbou Automaticky zlobí."
 
-#: title/pc5_ui.c:7352
+#: title/pc5_ui.c:7528
+msgid ""
+"A player who got this game running put their settings in the game "
+"compatibility list (Report it works)."
+msgstr ""
+
+#: title/pc5_ui.c:7529
+msgid ""
+"Choose it to see what they changed, and use the same settings. The game's "
+"other settings stay as they are."
+msgstr ""
+
+#: title/pc5_ui.c:7532
 msgid ""
 "Makes the game's Windows new, as a fresh install has it. Use it when a "
 "game that used to work stops starting."
 msgstr ""
 
-#: title/pc5_ui.c:7353
+#: title/pc5_ui.c:7533
 msgid ""
 "What stays: the game's files, its saves in its Windows user folders "
 "(AppData, Documents, Saved Games) and PC5's settings for it."
 msgstr ""
 
-#: title/pc5_ui.c:7354
+#: title/pc5_ui.c:7534
 msgid ""
 "What goes back to its default: the Windows settings the game kept in the "
 "registry. Some games keep options or saves there; the old registry is kept "
 "in the game's pc5/reset-backup folder."
 msgstr ""
 
-#: title/pc5_ui.c:7416
+#: title/pc5_ui.c:7596
 msgid "About"
 msgstr "Informace"
 
-#: title/pc5_ui.c:7416 title/pc5_ui.c:8180
+#: title/pc5_ui.c:7596 title/pc5_ui.c:8360
 msgid "Receive from phone"
 msgstr "Přijmout z telefonu"
 
-#: title/pc5_ui.c:7444
+#: title/pc5_ui.c:7624
 msgid "Touchpad + OPTIONS for 2 s still leaves the game"
 msgstr "Dotyková plocha + OPTIONS na 2 s hru stále opustí"
 
-#: title/pc5_ui.c:7446
+#: title/pc5_ui.c:7626
 msgid "Two fingers: PC5's on-screen keyboard, or a key of its own"
 msgstr "Dva prsty: klávesnice na obrazovce v PC5, nebo vlastní klávesa"
 
-#: title/pc5_ui.c:7449
+#: title/pc5_ui.c:7629
 msgid "A key for each half's click and each quick swipe"
 msgstr "Klávesa pro kliknutí na každou polovinu a každé rychlé přejetí"
 
-#: title/pc5_ui.c:7450
+#: title/pc5_ui.c:7630
 msgid "A finger moves the pointer; a click sends its key"
 msgstr "Prst pohybuje ukazatelem; kliknutí pošle svou klávesu"
 
-#: title/pc5_ui.c:7451
+#: title/pc5_ui.c:7631
 msgid "The whole touchpad is one button"
 msgstr "Celá dotyková plocha je jedno tlačítko"
 
-#: title/pc5_ui.c:7461
+#: title/pc5_ui.c:7641
 msgid "Right stick"
 msgstr "Pravá páčka"
 
-#: title/pc5_ui.c:7461
+#: title/pc5_ui.c:7641
 msgid "Left stick"
 msgstr "Levá páčka"
 
-#: title/pc5_ui.c:7469
+#: title/pc5_ui.c:7649
 msgid "Pointer speed"
 msgstr "Rychlost ukazatele"
 
 #. which picture is shown: 3 of 12.
-#: title/pc5_ui.c:7470 title/pc5_ui.c:7661 title/pc5_ui.c:8318
+#: title/pc5_ui.c:7650 title/pc5_ui.c:7841 title/pc5_ui.c:8498
 #, c-format
 msgid "%d of %d"
 msgstr "%d z %d"
 
-#: title/pc5_ui.c:7473
+#: title/pc5_ui.c:7653
 msgid "Slow pointer button"
 msgstr "Tlačítko pomalého ukazatele"
 
 #. Keep the space at the start or end: the text is joined to another.
-#: title/pc5_ui.c:7477
+#: title/pc5_ui.c:7657
 msgid "    Slower by"
 msgstr "    Zpomalení o"
 
-#: title/pc5_ui.c:7482
+#: title/pc5_ui.c:7662
 msgid "Click"
 msgstr "Kliknutí"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7485
+#: title/pc5_ui.c:7665
 msgid "Slows the pointer"
 msgstr "Zpomalí ukazatel"
 
-#: title/pc5_ui.c:7487
+#: title/pc5_ui.c:7667
 msgid "On-screen keyboard"
 msgstr "Klávesnice na obrazovce"
 
-#: title/pc5_ui.c:7495
+#: title/pc5_ui.c:7675
 msgid "Reset to default"
 msgstr "Obnovit výchozí"
 
-#: title/pc5_ui.c:7498
+#: title/pc5_ui.c:7678
 msgid "Save as my mapping"
 msgstr "Uložit jako mé přiřazení"
 
-#: title/pc5_ui.c:7501
+#: title/pc5_ui.c:7681
 msgid "Use my mapping"
 msgstr "Použít mé přiřazení"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7513
+#: title/pc5_ui.c:7693
 msgid "Choose a key"
 msgstr "Vybrat klávesu"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7513 title/pc5_ui.c:8958
+#: title/pc5_ui.c:7693 title/pc5_ui.c:9160
 msgid "Reset"
 msgstr "Obnovit"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7514 title/pc5_ui.c:8548 title/pc5_ui.c:8619
+#: title/pc5_ui.c:7694 title/pc5_ui.c:8728 title/pc5_ui.c:8799
 msgid "Save"
 msgstr "Uložit"
 
-#: title/pc5_ui.c:7514
+#: title/pc5_ui.c:7694
 msgid "Use"
 msgstr "Použít"
 
-#: title/pc5_ui.c:7535
+#: title/pc5_ui.c:7715
 #, c-format
 msgid "What %s sends"
 msgstr "Co posílá %s"
 
-#: title/pc5_ui.c:7553
+#: title/pc5_ui.c:7733
 msgid "The usual way for older games like this one, with their 2D and 3D."
 msgstr "Obvyklý způsob pro starší hry, jako je tato, s jejich 2D i 3D."
 
-#: title/pc5_ui.c:7554
+#: title/pc5_ui.c:7734
 msgid ""
 "The fastest, and what most games want. Leave it here unless the game won't "
 "start or its picture is wrong."
@@ -4003,7 +4054,7 @@ msgstr ""
 "Nejrychlejší a to, co chce většina her. Nechte ho, pokud se hra spouští a "
 "obraz je v pořádku."
 
-#: title/pc5_ui.c:7556
+#: title/pc5_ui.c:7736
 msgid ""
 "Another way to draw the game, slower than Auto. Try it if the game won't "
 "start or its picture is wrong."
@@ -4011,7 +4062,7 @@ msgstr ""
 "Jiný způsob vykreslení hry, pomalejší než Automaticky. Zkuste ho, když se "
 "hra nespustí nebo má špatný obraz."
 
-#: title/pc5_ui.c:7558
+#: title/pc5_ui.c:7738
 msgid ""
 "Draws everything in 2D, the way ordinary Windows programs are drawn. For a "
 "2D game that flickers or shows only part of its screen; a game with 3D "
@@ -4021,7 +4072,7 @@ msgstr ""
 "hru, která bliká nebo ukazuje jen část své obrazovky; hra se 3D scénami se "
 "s ním nespustí."
 
-#: title/pc5_ui.c:7560
+#: title/pc5_ui.c:7740
 msgid ""
 "Another way to draw the game. Try it if the picture is wrong with Auto; "
 "faster than Compatibility. Some mods need it."
@@ -4029,7 +4080,7 @@ msgstr ""
 "Jiný způsob vykreslení hry. Zkuste ho, když je obraz s volbou Automaticky "
 "špatně; rychlejší než Kompatibilní. Některé mody ho potřebují."
 
-#: title/pc5_ui.c:7561
+#: title/pc5_ui.c:7741
 msgid ""
 "The slowest, but it starts the most games. Try it if the game won't start "
 "with the others."
@@ -4037,16 +4088,16 @@ msgstr ""
 "Nejpomalejší, ale spustí nejvíc her. Zkuste ho, když se hra s ostatními "
 "nespustí."
 
-#: title/pc5_ui.c:7582
+#: title/pc5_ui.c:7762
 #, c-format
 msgid "The game uses %s"
 msgstr "Hra používá %s"
 
-#: title/pc5_ui.c:7594
+#: title/pc5_ui.c:7774
 msgid "In use"
 msgstr "Používá se"
 
-#: title/pc5_ui.c:7614
+#: title/pc5_ui.c:7794
 msgid ""
 "PC5 runs your PC games with prospero-win: Wine, DXVK for Direct3D 8 to 11, "
 "VKD3D-Proton for Direct3D 12, and Mesa (RADV for Vulkan, Zink for OpenGL)."
@@ -4054,7 +4105,7 @@ msgstr ""
 "PC5 spouští vaše PC hry pomocí prospero-win: Wine, DXVK pro Direct3D 8 až "
 "11, VKD3D-Proton pro Direct3D 12 a Mesa (RADV pro Vulkan, Zink pro OpenGL)."
 
-#: title/pc5_ui.c:7616
+#: title/pc5_ui.c:7796
 msgid ""
 "Covers come from Steam, GOG, PCGamingWiki and Wikidata, and SteamGridDB "
 "with your key. No game is part of PC5."
@@ -4062,213 +4113,213 @@ msgstr ""
 "Obaly pocházejí ze Steamu, GOG, PCGamingWiki a Wikidata a se SteamGridDB s "
 "vaším klíčem. Žádná hra není součástí PC5."
 
-#: title/pc5_ui.c:7617
+#: title/pc5_ui.c:7797
 msgid "Free software under the GNU LGPL 2.1 or later."
 msgstr "Svobodný software pod licencí GNU LGPL 2.1 nebo novější."
 
 #. About PC5: the version (2.0.7 · PPSA11018).
-#: title/pc5_ui.c:7626
+#: title/pc5_ui.c:7806
 #, c-format
 msgid "version %s"
 msgstr "verze %s"
 
-#: title/pc5_ui.c:7632
+#: title/pc5_ui.c:7812
 msgid "Like PC5?"
 msgstr "Líbí se vám PC5?"
 
-#: title/pc5_ui.c:7635
+#: title/pc5_ui.c:7815
 msgid "Buy me a coffee"
 msgstr "Kupte mi kávu"
 
-#: title/pc5_ui.c:7639
+#: title/pc5_ui.c:7819
 #, c-format
 msgid "Games are kept in %.150s"
 msgstr "Hry jsou uloženy v %.150s"
 
-#: title/pc5_ui.c:7643
+#: title/pc5_ui.c:7823
 #, c-format
 msgid "%s free on the console"
 msgstr "Volné místo v konzoli: %s"
 
-#: title/pc5_ui.c:7708
+#: title/pc5_ui.c:7888
 msgid "INSTALL folder"
 msgstr "Složka INSTALL"
 
-#: title/pc5_ui.c:7710
+#: title/pc5_ui.c:7890
 #, c-format
 msgid "INSTALL folder, %.20s"
 msgstr "Složka INSTALL, %.20s"
 
-#: title/pc5_ui.c:7726
+#: title/pc5_ui.c:7906
 msgid "No program found: it will be skipped"
 msgstr "Nenalezen žádný program: bude přeskočena"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7730
+#: title/pc5_ui.c:7910
 #, c-format
 msgid "%s · %d-bit · %s · %s"
 msgstr "%s · %d bit · %s · %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7743
+#: title/pc5_ui.c:7923
 #, c-format
 msgid "%d-bit · %s · %s%s"
 msgstr "%d bit · %s · %s%s"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7744 title/pc5_ui.c:7762
+#: title/pc5_ui.c:7924 title/pc5_ui.c:7942
 msgid " · chosen"
 msgstr " · vybráno"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7745
+#: title/pc5_ui.c:7925
 msgid " · offered at Play"
 msgstr " · nabízeno při hraní"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7761 title/pc5_ui.c:7839
+#: title/pc5_ui.c:7941 title/pc5_ui.c:8019
 #, c-format
 msgid "%d-bit · %s"
 msgstr "%d bit · %s"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7776
+#: title/pc5_ui.c:7956
 msgid "Jan"
 msgstr "led"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7776
+#: title/pc5_ui.c:7956
 msgid "Feb"
 msgstr "úno"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7776
+#: title/pc5_ui.c:7956
 msgid "Mar"
 msgstr "bře"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7776
+#: title/pc5_ui.c:7956
 msgid "Apr"
 msgstr "dub"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7776
+#: title/pc5_ui.c:7956
 msgid "May"
 msgstr "kvě"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7776
+#: title/pc5_ui.c:7956
 msgid "Jun"
 msgstr "čvn"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7777
+#: title/pc5_ui.c:7957
 msgid "Jul"
 msgstr "čvc"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7777
+#: title/pc5_ui.c:7957
 msgid "Aug"
 msgstr "srp"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7777
+#: title/pc5_ui.c:7957
 msgid "Sep"
 msgstr "zář"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7777
+#: title/pc5_ui.c:7957
 msgid "Oct"
 msgstr "říj"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7777
+#: title/pc5_ui.c:7957
 msgid "Nov"
 msgstr "lis"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:7777
+#: title/pc5_ui.c:7957
 msgid "Dec"
 msgstr "pro"
 
-#: title/pc5_ui.c:7779
+#: title/pc5_ui.c:7959
 #, c-format
 msgid "Saves of %s"
 msgstr "Uložené hry: %s"
 
 #. the day, the month (Jan to Dec, translated on their own) and the year: put them in your order with %1$d, %2$s, %3$d.
-#: title/pc5_ui.c:7788
+#: title/pc5_ui.c:7968
 #, c-format
 msgid "Kept %d %s %d; installing it again puts them back"
 msgstr "Ponecháno %d. %s %d; opětovná instalace je vrátí"
 
-#: title/pc5_ui.c:7791
+#: title/pc5_ui.c:7971
 msgid "Kept when it was uninstalled; installing it again puts them back"
 msgstr "Ponecháno při odinstalaci; opětovná instalace je vrátí"
 
-#: title/pc5_ui.c:7827
+#: title/pc5_ui.c:8007
 #, c-format
 msgid "Cover %d of %d"
 msgstr "Obal %d z %d"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7828
+#: title/pc5_ui.c:8008
 #, c-format
 msgid "Made from the game's icon · %d of %d"
 msgstr "Vytvořeno z ikony hry · %d z %d"
 
-#: title/pc5_ui.c:7836
+#: title/pc5_ui.c:8016
 msgid "Program"
 msgstr "Program"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7837
+#: title/pc5_ui.c:8017
 msgid "none found"
 msgstr "nenalezen"
 
-#: title/pc5_ui.c:7838
+#: title/pc5_ui.c:8018
 msgid "Runs as"
 msgstr "Běží jako"
 
-#: title/pc5_ui.c:7843
+#: title/pc5_ui.c:8023
 #, c-format
 msgid "%s in %u file"
 msgstr "%s (souborů: %u)"
 
-#: title/pc5_ui.c:7843
+#: title/pc5_ui.c:8023
 #, c-format
 msgid "%s in %u files"
 msgstr "%s (souborů: %u)"
 
-#: title/pc5_ui.c:7844
+#: title/pc5_ui.c:8024
 msgid "Space"
 msgstr "Místo"
 
-#: title/pc5_ui.c:7848
+#: title/pc5_ui.c:8028
 #, c-format
 msgid "%s free after installing"
 msgstr "Po instalaci volných %s"
 
-#: title/pc5_ui.c:7848
+#: title/pc5_ui.c:8028
 #, c-format
 msgid "not enough: %s free"
 msgstr "nestačí: volných %s"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7850
+#: title/pc5_ui.c:8030
 msgid "unknown"
 msgstr "neznámé"
 
-#: title/pc5_ui.c:7862
+#: title/pc5_ui.c:8042
 msgid ""
 "A .NET program: PC5 sets up what it needs the first time a .NET game "
 "starts."
 msgstr ""
 "Program .NET: PC5 připraví, co potřebuje, při prvním spuštění hry .NET."
 
-#: title/pc5_ui.c:7866
+#: title/pc5_ui.c:8046
 msgid ""
 "The game is copied once and checked, to the console or, with a USB drive "
 "plugged in, to its PC5 folder. Whether a game runs is only known by trying "
@@ -4278,35 +4329,36 @@ msgstr ""
 "disk, do jeho složky PC5. Zda hra běží, se pozná, až když ji vyzkoušíte."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7870 title/pc5_ui.c:8166
+#: title/pc5_ui.c:8050 title/pc5_ui.c:8346
 msgid "Done"
 msgstr "Hotovo"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7871 title/pc5_ui.c:8352
+#: title/pc5_ui.c:8051 title/pc5_ui.c:8532
 msgid "Other covers"
 msgstr "Jiné obaly"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7882 title/pc5_ui.c:7898
+#: title/pc5_ui.c:8062 title/pc5_ui.c:8078
 msgid "Look again"
 msgstr "Hledat znovu"
 
-#: title/pc5_ui.c:7883
+#: title/pc5_ui.c:8063
 #, c-format
 msgid "Update %s from USB"
 msgstr "Aktualizace z USB: %s"
 
-#: title/pc5_ui.c:7883 title/pc5_ui.c:8759 title/pc5_ui.c:8811
-#: title/pc5_ui.c:8926 title/pc5_ui.c:8952 title/pc5_ui.c:9027
+#: title/pc5_ui.c:8063 title/pc5_ui.c:8939 title/pc5_ui.c:8991
+#: title/pc5_ui.c:9106 title/pc5_ui.c:9141 title/pc5_ui.c:9154
+#: title/pc5_ui.c:9229
 msgid "the game"
 msgstr "hra"
 
-#: title/pc5_ui.c:7884 title/pc5_ui.c:7901
+#: title/pc5_ui.c:8064 title/pc5_ui.c:8081
 msgid "No game folders found"
 msgstr "Nenalezeny žádné složky her"
 
-#: title/pc5_ui.c:7885
+#: title/pc5_ui.c:8065
 msgid ""
 "Put the newer copy's folder (the one with the game's .exe in it) at the "
 "top of a USB drive formatted as exFAT, plug the drive into the PS5, then "
@@ -4315,26 +4367,26 @@ msgstr ""
 "Dejte složku novější kopie (tu, ve které je .exe hry) do kořene USB disku "
 "naformátovaného jako exFAT, připojte disk k PS5 a hledejte znovu."
 
-#: title/pc5_ui.c:7892
+#: title/pc5_ui.c:8072
 #, c-format
 msgid "Install ticked (%d)"
 msgstr "Instalovat zaškrtnuté (%d)"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7896
+#: title/pc5_ui.c:8076
 msgid "Install one"
 msgstr "Instalovat jednu"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7897 title/pc5_ui.c:8415
+#: title/pc5_ui.c:8077 title/pc5_ui.c:8595
 msgid "Tick"
 msgstr "Zaškrtnout"
 
-#: title/pc5_ui.c:7900
+#: title/pc5_ui.c:8080
 msgid "Install games from the INSTALL folder"
 msgstr "Instalovat hry ze složky INSTALL"
 
-#: title/pc5_ui.c:7902
+#: title/pc5_ui.c:8082
 msgid ""
 "Put each game's folder (the one with its .exe in it) at the top of a USB "
 "drive formatted as exFAT, plug the drive into the PS5, then look again."
@@ -4342,159 +4394,159 @@ msgstr ""
 "Dejte složku každé hry (tu, ve které je její .exe) do kořene USB disku "
 "naformátovaného jako exFAT, připojte disk k PS5 a hledejte znovu."
 
-#: title/pc5_ui.c:7917
+#: title/pc5_ui.c:8097
 msgid "Making a new Windows from PC5's template"
 msgstr ""
 
-#: title/pc5_ui.c:7918
+#: title/pc5_ui.c:8098
 #, fuzzy
 msgid "Deleting the old Windows"
 msgstr "Odstraňování starých souborů"
 
-#: title/pc5_ui.c:7918
+#: title/pc5_ui.c:8098
 msgid "Moving the game's files, saves and settings into it"
 msgstr ""
 
-#: title/pc5_ui.c:7921
+#: title/pc5_ui.c:8101
 msgid "Putting back its saves and settings"
 msgstr "Vracení uložených her a nastavení"
 
-#: title/pc5_ui.c:7921
+#: title/pc5_ui.c:8101
 msgid "Setting up the game's Windows"
 msgstr "Příprava Windows pro hru"
 
-#: title/pc5_ui.c:7924
+#: title/pc5_ui.c:8104
 msgid "Copying the newer version"
 msgstr "Kopírování novější verze"
 
-#: title/pc5_ui.c:7924
+#: title/pc5_ui.c:8104
 msgid "Copying the game"
 msgstr "Kopírování hry"
 
-#: title/pc5_ui.c:7925
+#: title/pc5_ui.c:8105
 msgid "Checking the copy against the USB drive"
 msgstr "Kontrola kopie podle USB disku"
 
-#: title/pc5_ui.c:7926 title/pc5_ui.c:8227
+#: title/pc5_ui.c:8106 title/pc5_ui.c:8407
 msgid "Putting the new files in place"
 msgstr "Umísťování nových souborů"
 
-#: title/pc5_ui.c:7926 title/pc5_ui.c:7928
+#: title/pc5_ui.c:8106 title/pc5_ui.c:8108
 msgid "Finishing"
 msgstr "Dokončování"
 
-#: title/pc5_ui.c:7929
+#: title/pc5_ui.c:8109
 msgid "Stopping: deleting what was copied"
 msgstr "Zastavování: odstraňuje se, co se zkopírovalo"
 
-#: title/pc5_ui.c:7929
+#: title/pc5_ui.c:8109
 msgid "Deleting what was copied"
 msgstr "Odstraňování toho, co se zkopírovalo"
 
-#: title/pc5_ui.c:7934
+#: title/pc5_ui.c:8114
 #, c-format
 msgid "Game %d of %d"
 msgstr "Hra %d z %d"
 
-#: title/pc5_ui.c:7937
+#: title/pc5_ui.c:8117
 #, c-format
 msgid "Resetting the Windows of %s"
 msgstr ""
 
-#: title/pc5_ui.c:7937
+#: title/pc5_ui.c:8117
 #, c-format
 msgid "Updating %s"
 msgstr "Aktualizace: %s"
 
-#: title/pc5_ui.c:7937
+#: title/pc5_ui.c:8117
 #, c-format
 msgid "Installing %s"
 msgstr "Instalace: %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7940
+#: title/pc5_ui.c:8120
 #, c-format, fuzzy
 msgid "Step %d of 2 · %s"
 msgstr "Krok %d ze 3 · %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7941 title/pc5_ui.c:8236
+#: title/pc5_ui.c:8121 title/pc5_ui.c:8416
 #, c-format
 msgid "Step %d of 3 · %s"
 msgstr "Krok %d ze 3 · %s"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7955 title/pc5_ui.c:8251
+#: title/pc5_ui.c:8135 title/pc5_ui.c:8431
 msgid " · under a minute left"
 msgstr " · zbývá méně než minuta"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7956 title/pc5_ui.c:8252
+#: title/pc5_ui.c:8136 title/pc5_ui.c:8432
 #, c-format
 msgid " · about %d min left"
 msgstr " · zbývá asi %d min"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7958 title/pc5_ui.c:8254
+#: title/pc5_ui.c:8138 title/pc5_ui.c:8434
 #, c-format
 msgid "%s of %s · %s/s%s"
 msgstr "%s z %s · %s/s%s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:7960 title/pc5_ui.c:8256
+#: title/pc5_ui.c:8140 title/pc5_ui.c:8436
 #, c-format
 msgid "%s of %s · measuring the speed"
 msgstr "%s z %s · měří se rychlost"
 
-#: title/pc5_ui.c:7963
+#: title/pc5_ui.c:8143
 #, c-format
 msgid "%u of %u files"
 msgstr "Soubory: %u z %u"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7967 title/pc5_ui.c:8267 title/pc5_ui.c:8604
-#: title/pc5_ui.c:8903 title/pc5_ui.c:8906 title/pc5_ui.c:8914
+#: title/pc5_ui.c:8147 title/pc5_ui.c:8447 title/pc5_ui.c:8784
+#: title/pc5_ui.c:9083 title/pc5_ui.c:9086 title/pc5_ui.c:9094
 msgid "Stop"
 msgstr "Zastavit"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8072
+#: title/pc5_ui.c:8252
 msgid "OK"
 msgstr "OK"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8072 title/pc5_ui.c:8111
+#: title/pc5_ui.c:8252 title/pc5_ui.c:8291
 msgid "Report on GitHub"
 msgstr "Nahlásit na GitHubu"
 
-#: title/pc5_ui.c:8118
+#: title/pc5_ui.c:8298
 #, c-format
 msgid ""
 "1. Scan the code with your phone. GitHub's game compatibility form opens, "
 "filled in with %s, PC5's version and the game's settings."
 msgstr ""
 
-#: title/pc5_ui.c:8121
+#: title/pc5_ui.c:8301
 #, c-format
 msgid ""
 "1. On your phone or computer, open %s and start a new Game compatibility "
 "discussion."
 msgstr ""
 
-#: title/pc5_ui.c:8126
+#: title/pc5_ui.c:8306
 msgid ""
 "2. Say how well it runs and anything that helped, then post it. You need a "
 "GitHub account."
 msgstr ""
 
-#: title/pc5_ui.c:8128
+#: title/pc5_ui.c:8308
 msgid ""
 "3. The game compatibility list adds it, so other players know it runs."
 msgstr ""
 
-#: title/pc5_ui.c:8134
+#: title/pc5_ui.c:8314
 #, c-format
 msgid ""
 "1. Scan the code with your phone. GitHub's form for a new issue opens, "
@@ -4503,30 +4555,30 @@ msgstr ""
 "1. Naskenujte kód telefonem. Otevře se formulář nového hlášení na GitHubu, "
 "vyplněný údaji o %s, verzí PC5 a tím, co PC5 zaznamenala."
 
-#: title/pc5_ui.c:8137
+#: title/pc5_ui.c:8317
 #, c-format
 msgid "1. On your phone or computer, open %s and choose New issue."
 msgstr "1. V telefonu nebo počítači otevřete %s a vyberte New issue."
 
-#: title/pc5_ui.c:8140
+#: title/pc5_ui.c:8320
 #, c-format
 msgid "2. Copy %s off the console, from %s/logs, as you copy files to it."
 msgstr ""
 "2. Zkopírujte %s z konzole, ze složky %s/logs, stejně jako do ní "
 "kopírujete soubory."
 
-#: title/pc5_ui.c:8144
+#: title/pc5_ui.c:8324
 msgid ""
 "3. Say what happened, attach the zip, and submit. You need a GitHub "
 "account."
 msgstr ""
 "3. Popište, co se stalo, přiložte zip a odešlete. Potřebujete účet GitHub."
 
-#: title/pc5_ui.c:8157
+#: title/pc5_ui.c:8337
 msgid "PC5's web page"
 msgstr "Webová stránka PC5"
 
-#: title/pc5_ui.c:8161
+#: title/pc5_ui.c:8341
 #, c-format
 msgid ""
 "Scan the code with your phone, or open %s in a browser on a PC on the same "
@@ -4535,7 +4587,7 @@ msgstr ""
 "Naskenujte kód telefonem, nebo otevřete %s v prohlížeči na PC ve stejné "
 "síti."
 
-#: title/pc5_ui.c:8164
+#: title/pc5_ui.c:8344
 msgid ""
 "From there: send a game's folder to install, report a problem with a game "
 "(its log and settings go with it), edit launch options and download logs. "
@@ -4545,7 +4597,7 @@ msgstr ""
 "(přiloží se její protokol a nastavení), upravit možnosti spuštění a "
 "stáhnout protokoly. Funguje, dokud je PC5 otevřená."
 
-#: title/pc5_ui.c:8185
+#: title/pc5_ui.c:8365
 msgid ""
 "Connect your phone and PS5 to the same network or phone hotspot. Scan this "
 "code and choose one file. Keep this screen open."
@@ -4553,7 +4605,7 @@ msgstr ""
 "Připojte telefon a PS5 ke stejné síti nebo hotspotu telefonu. Naskenujte "
 "tento kód a vyberte jeden soubor. Nechte tuto obrazovku otevřenou."
 
-#: title/pc5_ui.c:8188
+#: title/pc5_ui.c:8368
 msgid ""
 "This link expires after 10 minutes or when you leave. Your previous "
 "selection stays until import succeeds."
@@ -4561,30 +4613,30 @@ msgstr ""
 "Odkaz vyprší po 10 minutách nebo když odejdete. Předchozí výběr zůstane, "
 "dokud import neuspěje."
 
-#: title/pc5_ui.c:8189
+#: title/pc5_ui.c:8369
 #, c-format
 msgid "Receiving: %u%%"
 msgstr "Přijímání: %u%%"
 
-#: title/pc5_ui.c:8190
+#: title/pc5_ui.c:8370
 msgid "Waiting for a file"
 msgstr "Čekání na soubor"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8193 title/pc5_ui.c:8619 title/pc5_ui.c:8655
-#: title/pc5_ui.c:8795 title/pc5_ui.c:8798 title/pc5_ui.c:8817
-#: title/pc5_ui.c:8928 title/pc5_ui.c:8941 title/pc5_ui.c:8945
-#: title/pc5_ui.c:8958
+#: title/pc5_ui.c:8373 title/pc5_ui.c:8799 title/pc5_ui.c:8835
+#: title/pc5_ui.c:8975 title/pc5_ui.c:8978 title/pc5_ui.c:8997
+#: title/pc5_ui.c:9108 title/pc5_ui.c:9121 title/pc5_ui.c:9125
+#: title/pc5_ui.c:9160
 msgid "Cancel"
 msgstr "Zrušit"
 
-#: title/pc5_ui.c:8216
+#: title/pc5_ui.c:8396
 #, c-format
 msgid "PC5 %s is installed"
 msgstr "PC5 %s je nainstalována"
 
-#: title/pc5_ui.c:8219
+#: title/pc5_ui.c:8399
 msgid ""
 "PC5 restarts now with the new version. Your games, saves and settings are "
 "as they were."
@@ -4593,112 +4645,112 @@ msgstr ""
 "zůstaly beze změny."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8220
+#: title/pc5_ui.c:8400
 msgid "Restart PC5"
 msgstr "Restartovat PC5"
 
-#: title/pc5_ui.c:8225
+#: title/pc5_ui.c:8405
 msgid "Downloading it from GitHub"
 msgstr "Stahování z GitHubu"
 
-#: title/pc5_ui.c:8226
+#: title/pc5_ui.c:8406
 msgid "Unpacking it and checking every file"
 msgstr "Rozbalování a kontrola všech souborů"
 
-#: title/pc5_ui.c:8228
+#: title/pc5_ui.c:8408
 msgid "Deleting the old files"
 msgstr "Odstraňování starých souborů"
 
-#: title/pc5_ui.c:8229
+#: title/pc5_ui.c:8409
 msgid "Asking GitHub and finding PC5's folder"
 msgstr "Dotaz na GitHub a hledání složky PC5"
 
-#: title/pc5_ui.c:8232 title/pc5_ui.c:8587
+#: title/pc5_ui.c:8412 title/pc5_ui.c:8767
 msgid "Stopping"
 msgstr "Zastavování"
 
-#: title/pc5_ui.c:8233
+#: title/pc5_ui.c:8413
 #, c-format
 msgid "Updating PC5 to %s"
 msgstr "Aktualizace PC5 na %s"
 
-#: title/pc5_ui.c:8234
+#: title/pc5_ui.c:8414
 msgid "Updating PC5"
 msgstr "Aktualizace PC5"
 
-#: title/pc5_ui.c:8241
+#: title/pc5_ui.c:8421
 #, c-format
 msgid "%llu of %llu files"
 msgstr "Soubory: %llu z %llu"
 
-#: title/pc5_ui.c:8263
+#: title/pc5_ui.c:8443
 #, c-format
 msgid "Into %.280s"
 msgstr "Do %.280s"
 
-#: title/pc5_ui.c:8271
+#: title/pc5_ui.c:8451
 msgid "Don't turn the console off now. This takes a moment."
 msgstr "Teď konzoli nevypínejte. Chvíli to potrvá."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8284 title/pc5_ui.c:8634
+#: title/pc5_ui.c:8464 title/pc5_ui.c:8814
 msgid "Skip"
 msgstr "Přeskočit"
 
-#: title/pc5_ui.c:8323
+#: title/pc5_ui.c:8503
 msgid "Its cover"
 msgstr "Její obal"
 
-#: title/pc5_ui.c:8323
+#: title/pc5_ui.c:8503
 msgid "Its tile picture"
 msgstr "Obrázek její dlaždice"
 
-#: title/pc5_ui.c:8323
+#: title/pc5_ui.c:8503
 msgid "Its background"
 msgstr "Její pozadí"
 
-#: title/pc5_ui.c:8327
+#: title/pc5_ui.c:8507
 msgid "The cover it has now"
 msgstr "Současný obal"
 
-#: title/pc5_ui.c:8327
+#: title/pc5_ui.c:8507
 msgid "The tile picture it has now"
 msgstr "Současný obrázek dlaždice"
 
-#: title/pc5_ui.c:8327
+#: title/pc5_ui.c:8507
 msgid "The background it has now"
 msgstr "Současné pozadí"
 
-#: title/pc5_ui.c:8329
+#: title/pc5_ui.c:8509
 msgid "A cover found online"
 msgstr "Obal nalezený online"
 
-#: title/pc5_ui.c:8329
+#: title/pc5_ui.c:8509
 msgid "A square picture found online"
 msgstr "Čtvercový obrázek nalezený online"
 
-#: title/pc5_ui.c:8329
+#: title/pc5_ui.c:8509
 msgid "A background found online"
 msgstr "Pozadí nalezené online"
 
-#: title/pc5_ui.c:8331
+#: title/pc5_ui.c:8511
 msgid "Made from the game's icon and name"
 msgstr "Vytvořeno z ikony a názvu hry"
 
-#: title/pc5_ui.c:8332
+#: title/pc5_ui.c:8512
 msgid "Made from its cover"
 msgstr "Vytvořeno z jejího obalu"
 
-#: title/pc5_ui.c:8332
+#: title/pc5_ui.c:8512
 msgid "None: a backdrop made from its cover"
 msgstr "Žádné: pozadí vytvořené z jejího obalu"
 
-#: title/pc5_ui.c:8339
+#: title/pc5_ui.c:8519
 #, c-format
 msgid "Nothing found for “%s”."
 msgstr "Pro „%s“ nebylo nic nalezeno."
 
-#: title/pc5_ui.c:8341
+#: title/pc5_ui.c:8521
 msgid ""
 "Square pictures come from SteamGridDB: put your key in api_keys.txt "
 "(Covers on the wiki)."
@@ -4706,335 +4758,335 @@ msgstr ""
 "Čtvercové obrázky pocházejí ze SteamGridDB: vložte svůj klíč do "
 "api_keys.txt (Covers na wiki)."
 
-#: title/pc5_ui.c:8343
+#: title/pc5_ui.c:8523
 msgid "Nothing found for its name."
 msgstr "Pro její název nebylo nic nalezeno."
 
-#: title/pc5_ui.c:8346
+#: title/pc5_ui.c:8526
 #, c-format
 msgid "Found for “%s”"
 msgstr "Nalezeno pro „%s“"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8351
+#: title/pc5_ui.c:8531
 msgid "Use this"
 msgstr "Použít toto"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8352
+#: title/pc5_ui.c:8532
 msgid "Other pictures"
 msgstr "Jiné obrázky"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8352
+#: title/pc5_ui.c:8532
 msgid "Other backgrounds"
 msgstr "Jiná pozadí"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8353
+#: title/pc5_ui.c:8533
 msgid "Search by name"
 msgstr "Hledat podle názvu"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8367 title/pc5_ui.c:8407 title/pc5_ui.c:8527
+#: title/pc5_ui.c:8547 title/pc5_ui.c:8587 title/pc5_ui.c:8707
 msgid " · read-only"
 msgstr " · jen pro čtení"
 
-#: title/pc5_ui.c:8383
+#: title/pc5_ui.c:8563
 msgid "Folder"
 msgstr "Složka"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8408
+#: title/pc5_ui.c:8588
 #, c-format
 msgid " · %d ticked"
 msgstr " · zaškrtnuto: %d"
 
-#: title/pc5_ui.c:8410
+#: title/pc5_ui.c:8590
 msgid "△ Paste or New folder puts something in it."
 msgstr "△ Vložit nebo Nová složka do ní něco přidá."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8415 title/pc5_ui.c:8530
+#: title/pc5_ui.c:8595 title/pc5_ui.c:8710
 msgid "Actions"
 msgstr "Akce"
 
-#: title/pc5_ui.c:8419
+#: title/pc5_ui.c:8599
 msgid "Choose backup destination"
 msgstr "Vyberte cíl zálohy"
 
-#: title/pc5_ui.c:8420
+#: title/pc5_ui.c:8600
 msgid "Open a folder, then press OPTIONS to save the backup here."
 msgstr "Otevřete složku a stisknutím OPTIONS sem uložte zálohu."
 
-#: title/pc5_ui.c:8427
+#: title/pc5_ui.c:8607
 msgid "Choose a background video"
 msgstr "Vyberte video na pozadí"
 
-#: title/pc5_ui.c:8428
+#: title/pc5_ui.c:8608
 msgid "H.264 up to 1080p/60 and 1 GB; MP4 recommended. Playback is silent."
 msgstr "H.264 do 1080p/60 a 1 GB; doporučeno MP4. Přehrává se bez zvuku."
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8432
+#: title/pc5_ui.c:8612
 msgid "Open folder"
 msgstr "Otevřít složku"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8432
+#: title/pc5_ui.c:8612
 msgid "Save here"
 msgstr "Uložit sem"
 
-#: title/pc5_ui.c:8433
+#: title/pc5_ui.c:8613
 msgid "This folder is empty"
 msgstr "Tato složka je prázdná"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8445
+#: title/pc5_ui.c:8625
 msgid "Copy"
 msgstr "Kopírovat"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8445
+#: title/pc5_ui.c:8625
 msgid "Then Paste puts a copy in another folder"
 msgstr "Pak Vložit vloží kopii do jiné složky"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8446
+#: title/pc5_ui.c:8626
 msgid "Cut"
 msgstr "Vyjmout"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8446
+#: title/pc5_ui.c:8626
 msgid "Then Paste moves it to another folder"
 msgstr "Pak ji Vložit přesune do jiné složky"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8449
+#: title/pc5_ui.c:8629
 msgid "Paste"
 msgstr "Vložit"
 
-#: title/pc5_ui.c:8450
+#: title/pc5_ui.c:8630
 #, c-format
 msgid "Moves %d item from %.120s"
 msgstr "Přesune položky (%d) z %.120s"
 
-#: title/pc5_ui.c:8450
+#: title/pc5_ui.c:8630
 #, c-format
 msgid "Moves %d items from %.120s"
 msgstr "Přesune položky (%d) z %.120s"
 
-#: title/pc5_ui.c:8450
+#: title/pc5_ui.c:8630
 #, c-format
 msgid "Copies %d item from %.120s"
 msgstr "Zkopíruje položky (%d) z %.120s"
 
-#: title/pc5_ui.c:8450
+#: title/pc5_ui.c:8630
 #, c-format
 msgid "Copies %d items from %.120s"
 msgstr "Zkopíruje položky (%d) z %.120s"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8456
+#: title/pc5_ui.c:8636
 msgid "Type its new name"
 msgstr "Zadejte nový název"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8457
+#: title/pc5_ui.c:8637
 msgid "An empty folder in this one"
 msgstr "Prázdná složka v této"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8458 title/pc5_ui.c:8655 title/pc5_ui.c:8795
-#: title/pc5_ui.c:8917 title/pc5_ui.c:8923 title/pc5_ui.c:8928
+#: title/pc5_ui.c:8638 title/pc5_ui.c:8835 title/pc5_ui.c:8975
+#: title/pc5_ui.c:9097 title/pc5_ui.c:9103 title/pc5_ui.c:9108
 msgid "Delete"
 msgstr "Odstranit"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8458
+#: title/pc5_ui.c:8638
 msgid "Deleted for good: there is no undo"
 msgstr "Odstraní se natrvalo: nelze vrátit zpět"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8460
+#: title/pc5_ui.c:8640
 msgid "Untick all"
 msgstr "Zrušit zaškrtnutí všech"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8460
+#: title/pc5_ui.c:8640
 msgid "Tick all"
 msgstr "Zaškrtnout vše"
 
-#: title/pc5_ui.c:8461
+#: title/pc5_ui.c:8641
 msgid "Every item in this folder"
 msgstr "Všechny položky v této složce"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8465
+#: title/pc5_ui.c:8645
 msgid "Edit"
 msgstr "Upravit"
 
-#: title/pc5_ui.c:8466
+#: title/pc5_ui.c:8646
 msgid ""
 "A text file (.ini, .cfg, .txt and the like), changed a line at a time"
 msgstr "Textový soubor (.ini, .cfg, .txt a podobné), mění se po řádcích"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8468
+#: title/pc5_ui.c:8648
 msgid "View"
 msgstr "Zobrazit"
 
-#: title/pc5_ui.c:8469
+#: title/pc5_ui.c:8649
 msgid "A text file, shown: nothing here can be changed"
 msgstr "Textový soubor, jen zobrazený: tady nic změnit nejde"
 
-#: title/pc5_ui.c:8482
+#: title/pc5_ui.c:8662
 #, c-format
 msgid "%d items"
 msgstr "Položky: %d"
 
-#: title/pc5_ui.c:8484
+#: title/pc5_ui.c:8664
 msgid "This folder"
 msgstr "Tato složka"
 
-#: title/pc5_ui.c:8488
+#: title/pc5_ui.c:8668
 msgid "Read-only: PC5 changes nothing here"
 msgstr "Jen pro čtení: PC5 tu nic nemění"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8528
+#: title/pc5_ui.c:8708
 msgid " · not saved"
 msgstr " · neuloženo"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8529 title/pc5_ui.c:8531
+#: title/pc5_ui.c:8709 title/pc5_ui.c:8711
 msgid "Page"
 msgstr "Stránka"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8530
+#: title/pc5_ui.c:8710
 msgid "Add a line"
 msgstr "Přidat řádek"
 
-#: title/pc5_ui.c:8534
+#: title/pc5_ui.c:8714
 msgid "This file is empty"
 msgstr "Tento soubor je prázdný"
 
-#: title/pc5_ui.c:8535
+#: title/pc5_ui.c:8715
 msgid "There's nothing in it."
 msgstr "Nic v něm není."
 
-#: title/pc5_ui.c:8535
+#: title/pc5_ui.c:8715
 msgid "✕ puts a first line in it."
 msgstr "✕ do něj vloží první řádek."
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8544
+#: title/pc5_ui.c:8724
 msgid "Add a line below"
 msgstr "Přidat řádek pod"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8544
+#: title/pc5_ui.c:8724
 msgid "Typed with the keyboard, under the line chosen"
 msgstr "Napíše se klávesnicí pod vybraný řádek"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8545
+#: title/pc5_ui.c:8725
 msgid "Add a line above"
 msgstr "Přidat řádek nad"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8545
+#: title/pc5_ui.c:8725
 msgid "Typed with the keyboard, over the line chosen"
 msgstr "Napíše se klávesnicí nad vybraný řádek"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8546
+#: title/pc5_ui.c:8726
 msgid "Delete line"
 msgstr "Smazat řádek"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8546
+#: title/pc5_ui.c:8726
 msgid "The line chosen goes; nothing is saved until Save"
 msgstr "Vybraný řádek zmizí; nic se neuloží, dokud nedáte Uložit"
 
-#: title/pc5_ui.c:8549
+#: title/pc5_ui.c:8729
 msgid "Written back as it was: UTF-16, with its line ends"
 msgstr "Zapíše se zpět jako dřív: UTF-16, se svými konci řádků"
 
-#: title/pc5_ui.c:8550
+#: title/pc5_ui.c:8730
 msgid "Written back as it was: one byte a letter, with its line ends"
 msgstr ""
 "Zapíše se zpět jako dřív: jeden bajt na písmeno, se svými konci řádků"
 
-#: title/pc5_ui.c:8551
+#: title/pc5_ui.c:8731
 msgid "Written back as it was: UTF-8, with its line ends"
 msgstr "Zapíše se zpět jako dřív: UTF-8, se svými konci řádků"
 
-#: title/pc5_ui.c:8564
+#: title/pc5_ui.c:8744
 msgid "This file"
 msgstr "Tento soubor"
 
-#: title/pc5_ui.c:8588
+#: title/pc5_ui.c:8768
 msgid "Deleting"
 msgstr "Odstraňování"
 
-#: title/pc5_ui.c:8589
+#: title/pc5_ui.c:8769
 msgid "Moving"
 msgstr "Přesouvání"
 
-#: title/pc5_ui.c:8589
+#: title/pc5_ui.c:8769
 msgid "Copying"
 msgstr "Kopírování"
 
-#: title/pc5_ui.c:8591
+#: title/pc5_ui.c:8771
 msgid "Getting ready"
 msgstr "Příprava"
 
-#: title/pc5_ui.c:8598
+#: title/pc5_ui.c:8778
 #, c-format
 msgid "%s of %s"
 msgstr "%s z %s"
 
-#: title/pc5_ui.c:8600
+#: title/pc5_ui.c:8780
 #, c-format
 msgid "%u of %u"
 msgstr "%u z %u"
 
-#: title/pc5_ui.c:8618
+#: title/pc5_ui.c:8798
 #, c-format
 msgid "Save the changes to %.200s?"
 msgstr "Uložit změny v %.200s?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8619
+#: title/pc5_ui.c:8799
 msgid "Don't save leaves the file as it was before."
 msgstr "Neukládat nechá soubor, jak byl."
 
-#: title/pc5_ui.c:8620
+#: title/pc5_ui.c:8800
 msgid "Don't save"
 msgstr "Neukládat"
 
-#: title/pc5_ui.c:8629
+#: title/pc5_ui.c:8809
 #, c-format
 msgid "This folder has %.200s already"
 msgstr "Tato složka už obsahuje %.200s"
 
-#: title/pc5_ui.c:8629 title/pc5_ui.c:8644
+#: title/pc5_ui.c:8809 title/pc5_ui.c:8824
 msgid "it"
 msgstr "tuto položku"
 
-#: title/pc5_ui.c:8630
+#: title/pc5_ui.c:8810
 #, c-format
 msgid "This folder has %d of the %d items already"
 msgstr "Tato složka už obsahuje %d z %d položek"
 
-#: title/pc5_ui.c:8632
+#: title/pc5_ui.c:8812
 msgid ""
 "Skip leaves those as they are. Keep both gives the new ones a name like "
 "“name (2)”. Replace overwrites files and puts folders' contents together."
@@ -5042,50 +5094,50 @@ msgstr ""
 "Přeskočit je ponechá, jak jsou. Ponechat obě dá novým název jako „název "
 "(2)“. Nahradit přepíše soubory a sloučí obsah složek."
 
-#: title/pc5_ui.c:8634
+#: title/pc5_ui.c:8814
 msgid "Keep both"
 msgstr "Ponechat obě"
 
-#: title/pc5_ui.c:8634
+#: title/pc5_ui.c:8814
 msgid "Replace"
 msgstr "Nahradit"
 
-#: title/pc5_ui.c:8639
+#: title/pc5_ui.c:8819
 #, c-format
 msgid "Delete %d items?"
 msgstr "Odstranit položky (%d)?"
 
-#: title/pc5_ui.c:8644
+#: title/pc5_ui.c:8824
 #, c-format
 msgid "Delete %.200s?"
 msgstr "Odstranit %.200s?"
 
-#: title/pc5_ui.c:8645
+#: title/pc5_ui.c:8825
 msgid "Delete?"
 msgstr "Odstranit?"
 
-#: title/pc5_ui.c:8647
+#: title/pc5_ui.c:8827
 #, c-format
 msgid "%u file"
 msgstr "Soubory: %u"
 
-#: title/pc5_ui.c:8647
+#: title/pc5_ui.c:8827
 #, c-format
 msgid "%u files"
 msgstr "Soubory: %u"
 
-#: title/pc5_ui.c:8648
+#: title/pc5_ui.c:8828
 #, c-format
 msgid "%u folder"
 msgstr "Složky: %u"
 
-#: title/pc5_ui.c:8648
+#: title/pc5_ui.c:8828
 #, c-format
 msgid "%u folders"
 msgstr "Složky: %u"
 
 #. the first %s is a count of files ("3 files"), the second of folders, the third a size ("2.1 GB").
-#: title/pc5_ui.c:8651
+#: title/pc5_ui.c:8831
 #, c-format
 msgid ""
 "At least %s and %s, %s. They're deleted for good: there is no backup and "
@@ -5095,7 +5147,7 @@ msgstr ""
 "vrátit zpět."
 
 #. the first %s is a count of files ("3 files"), the second of folders, the third a size ("2.1 GB").
-#: title/pc5_ui.c:8651
+#: title/pc5_ui.c:8831
 #, c-format
 msgid ""
 "%s and %s, %s. They're deleted for good: there is no backup and no undo."
@@ -5103,30 +5155,30 @@ msgstr ""
 "%s a %s, %s. Odstraní se natrvalo: neexistuje záloha a nelze to vrátit "
 "zpět."
 
-#: title/pc5_ui.c:8718
+#: title/pc5_ui.c:8898
 msgid "Finishing an install or uninstall that was cut short"
 msgstr "Dokončování přerušené instalace nebo odinstalace"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8721
+#: title/pc5_ui.c:8901
 #, c-format
 msgid "Getting covers · %d of %d"
 msgstr "Získávání obalů · %d z %d"
 
-#: title/pc5_ui.c:8725 title/pc5_ui.c:8741 title/pc5_ui.c:9013
+#: title/pc5_ui.c:8905 title/pc5_ui.c:8921 title/pc5_ui.c:9215
 msgid "Checking for a newer PC5"
 msgstr "Hledání novější verze PC5"
 
-#: title/pc5_ui.c:8741
+#: title/pc5_ui.c:8921
 msgid "Asking GitHub"
 msgstr "Dotaz na GitHub"
 
-#: title/pc5_ui.c:8745
+#: title/pc5_ui.c:8925
 #, c-format
 msgid "PC5 %s is available"
 msgstr "Je k dispozici PC5 %s"
 
-#: title/pc5_ui.c:8746
+#: title/pc5_ui.c:8926
 #, c-format
 msgid ""
 "%s, installs it and restarts. Your games, saves and settings stay. Later: "
@@ -5136,66 +5188,66 @@ msgstr ""
 "zůstanou. Později: Nastavení › Systém."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8748 title/pc5_ui.c:9006
+#: title/pc5_ui.c:8928 title/pc5_ui.c:9208
 msgid "Later"
 msgstr "Později"
 
-#: title/pc5_ui.c:8759 title/pc5_ui.c:8806
+#: title/pc5_ui.c:8939 title/pc5_ui.c:8986
 #, c-format
 msgid "Reading %s"
 msgstr "Načítání: %s"
 
-#: title/pc5_ui.c:8760
+#: title/pc5_ui.c:8940
 msgid "Finding its programs"
 msgstr "Hledání jejích programů"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8765
+#: title/pc5_ui.c:8945
 #, c-format
 msgid "Getting ready · %d of %d"
 msgstr "Příprava · %d z %d"
 
-#: title/pc5_ui.c:8769
+#: title/pc5_ui.c:8949
 msgid "reading its files"
 msgstr "čtou se její soubory"
 
-#: title/pc5_ui.c:8769
+#: title/pc5_ui.c:8949
 msgid "looking for its cover"
 msgstr "hledá se její obal"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8778
+#: title/pc5_ui.c:8958
 #, c-format
 msgid "Install %d game · %s"
 msgstr "Instalovat hry: %d · %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8778
+#: title/pc5_ui.c:8958
 #, c-format
 msgid "Install %d games · %s"
 msgstr "Instalovat hry: %d · %s"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8780
+#: title/pc5_ui.c:8960
 msgid "Install all"
 msgstr "Instalovat vše"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8780
+#: title/pc5_ui.c:8960
 msgid "Review"
 msgstr "Zkontrolovat"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8792
+#: title/pc5_ui.c:8972
 msgid "Remove background video?"
 msgstr "Odebrat video na pozadí?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8792
+#: title/pc5_ui.c:8972
 msgid "Remove library music?"
 msgstr "Odebrat hudbu z knihovny?"
 
-#: title/pc5_ui.c:8793
+#: title/pc5_ui.c:8973
 msgid ""
 "Delete this game's imported video and return to the background image? The "
 "original source file is kept."
@@ -5203,18 +5255,18 @@ msgstr ""
 "Odstranit importované video této hry a vrátit se k obrázku na pozadí? "
 "Původní zdrojový soubor zůstane."
 
-#: title/pc5_ui.c:8794
+#: title/pc5_ui.c:8974
 msgid "Delete this game's imported music? The original source file is kept."
 msgstr ""
 "Odstranit importovanou hudbu této hry? Původní zdrojový soubor zůstane."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8798
+#: title/pc5_ui.c:8978
 msgid "Restore this appearance?"
 msgstr "Obnovit tento vzhled?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8798
+#: title/pc5_ui.c:8978
 msgid ""
 "This replaces this game's pictures, music, video and media settings. Game "
 "files and saves are kept."
@@ -5223,36 +5275,36 @@ msgstr ""
 "hry a uložené hry zůstanou."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8798
+#: title/pc5_ui.c:8978
 msgid "Restore"
 msgstr "Obnovit"
 
-#: title/pc5_ui.c:8800
+#: title/pc5_ui.c:8980
 msgid "Restoring appearance"
 msgstr "Obnovování vzhledu"
 
-#: title/pc5_ui.c:8800
+#: title/pc5_ui.c:8980
 msgid "Exporting appearance"
 msgstr "Export vzhledu"
 
-#: title/pc5_ui.c:8800
+#: title/pc5_ui.c:8980
 msgid "Keep the drive connected. Back cancels."
 msgstr "Nechte disk připojený. Zpět zruší."
 
-#: title/pc5_ui.c:8803
+#: title/pc5_ui.c:8983
 msgid "Looking at the USB drives"
 msgstr "Prohledávání USB disků"
 
-#: title/pc5_ui.c:8807
+#: title/pc5_ui.c:8987
 msgid "Counting its files and finding its program"
 msgstr "Počítání jejích souborů a hledání jejího programu"
 
-#: title/pc5_ui.c:8814
+#: title/pc5_ui.c:8994
 #, c-format
 msgid "Update %s?"
 msgstr "Aktualizovat: %s?"
 
-#: title/pc5_ui.c:8815
+#: title/pc5_ui.c:8995
 #, c-format
 msgid ""
 "PC5 copies %s (%s) from the USB drive over the game's folder: the files it "
@@ -5263,17 +5315,17 @@ msgstr ""
 "obsahuje, nahradí soubory hry, ostatní zůstanou. Uložené hry, nastavení a "
 "možnosti hry také zůstanou."
 
-#: title/pc5_ui.c:8827
+#: title/pc5_ui.c:9007
 #, c-format
 msgid "Where should the %d games go?"
 msgstr "Kam mají jít hry (%d)?"
 
-#: title/pc5_ui.c:8828
+#: title/pc5_ui.c:9008
 #, c-format
 msgid "Where should %s go?"
 msgstr "Kam má jít %s?"
 
-#: title/pc5_ui.c:8832
+#: title/pc5_ui.c:9012
 #, c-format
 msgid ""
 "The console has %s free. Extended storage (%.40s) has %s free: a game "
@@ -5283,7 +5335,7 @@ msgstr ""
 "spouští ze své složky PC5. Její uložené pozice zůstávají v každém případě "
 "v konzoli."
 
-#: title/pc5_ui.c:8837
+#: title/pc5_ui.c:9017
 #, c-format
 msgid ""
 "The console has %s free. The USB drive (%.40s) has %s free: a game there "
@@ -5294,27 +5346,27 @@ msgstr ""
 "hraje z jeho složky PC5, takže disk nechte připojený k rychlému portu. "
 "Její uložené hry zůstanou v každém případě v konzoli."
 
-#: title/pc5_ui.c:8847
+#: title/pc5_ui.c:9027
 #, c-format
 msgid "Left and right choose among the %d drives a game can go on."
 msgstr "Vlevo a vpravo vyberete z %d disků, na které může hra jít."
 
-#: title/pc5_ui.c:8849
+#: title/pc5_ui.c:9029
 msgid "Extended storage"
 msgstr "Rozšířené úložiště"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8852
+#: title/pc5_ui.c:9032
 msgid "Console"
 msgstr "Konzole"
 
-#: title/pc5_ui.c:8857
+#: title/pc5_ui.c:9037
 #, c-format
 msgid "Put back the saves of %s?"
 msgstr "Vrátit uložené hry: %s?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8859
+#: title/pc5_ui.c:9039
 msgid ""
 "They were kept when it was uninstalled: its saves, settings and options "
 "come back with it. Start fresh: they stay kept, for later."
@@ -5322,81 +5374,81 @@ msgstr ""
 "Byly ponechány při odinstalaci: její uložené hry, nastavení a možnosti se "
 "vrátí s ní. Začít znovu: zůstanou ponechány na později."
 
-#: title/pc5_ui.c:8860
+#: title/pc5_ui.c:9040
 msgid "Start fresh"
 msgstr "Začít znovu"
 
-#: title/pc5_ui.c:8860
+#: title/pc5_ui.c:9040
 msgid "Put them back"
 msgstr "Vrátit je"
 
-#: title/pc5_ui.c:8864
+#: title/pc5_ui.c:9044
 msgid "Looking for the cover"
 msgstr "Hledání obalu"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:8864 title/pc5_ui.c:8870
+#: title/pc5_ui.c:9044 title/pc5_ui.c:9050
 msgid "On Steam, GOG and others"
 msgstr "Na Steamu, GOG a jinde"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:8869
+#: title/pc5_ui.c:9049
 #, c-format
 msgid "“%s”, %s"
 msgstr "„%s“, %s"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:8869
+#: title/pc5_ui.c:9049
 msgid "on Steam, GOG and others"
 msgstr "na Steamu, GOG a jinde"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:8871
+#: title/pc5_ui.c:9051
 msgid "Looking for covers"
 msgstr "Hledání obalů"
 
-#: title/pc5_ui.c:8872
+#: title/pc5_ui.c:9052
 msgid "Looking for tile pictures"
 msgstr "Hledání obrázků dlaždic"
 
-#: title/pc5_ui.c:8872
+#: title/pc5_ui.c:9052
 msgid "Looking for backgrounds"
 msgstr "Hledání pozadí"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8879
+#: title/pc5_ui.c:9059
 msgid "Offer at Play"
 msgstr "Nabídnout při hraní"
 
-#: title/pc5_ui.c:8882 title/pc5_ui.c:8885
+#: title/pc5_ui.c:9062 title/pc5_ui.c:9065
 msgid "Which program is the game?"
 msgstr "Který program je hra?"
 
-#: title/pc5_ui.c:8895
+#: title/pc5_ui.c:9075
 msgid "Which program?"
 msgstr "Který program?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8902
+#: title/pc5_ui.c:9082
 msgid "Stop resetting?"
 msgstr ""
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8902
+#: title/pc5_ui.c:9082
 msgid "The new Windows made so far is deleted and the game stays as it was."
 msgstr ""
 
-#: title/pc5_ui.c:8903
+#: title/pc5_ui.c:9083
 msgid "Keep resetting"
 msgstr ""
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8905
+#: title/pc5_ui.c:9085
 msgid "Stop updating?"
 msgstr "Zastavit aktualizaci?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8905
+#: title/pc5_ui.c:9085
 msgid ""
 "The copy made so far is deleted and the game stays as it was. The USB "
 "drive isn't changed."
@@ -5404,16 +5456,16 @@ msgstr ""
 "Dosud vytvořená kopie se odstraní a hra zůstane jako dřív. USB disk se "
 "nezmění."
 
-#: title/pc5_ui.c:8906
+#: title/pc5_ui.c:9086
 msgid "Keep updating"
 msgstr "Pokračovat v aktualizaci"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8908 title/pc5_ui.c:8913
+#: title/pc5_ui.c:9088 title/pc5_ui.c:9093
 msgid "Stop installing?"
 msgstr "Zastavit instalaci?"
 
-#: title/pc5_ui.c:8909
+#: title/pc5_ui.c:9089
 msgid ""
 "What this game copied so far is deleted; games already installed stay. The "
 "USB drive isn't changed. Press the back button to keep installing."
@@ -5422,34 +5474,34 @@ msgstr ""
 "zůstanou. USB disk se nezmění. Pro pokračování v instalaci stiskněte "
 "tlačítko zpět."
 
-#: title/pc5_ui.c:8911
+#: title/pc5_ui.c:9091
 msgid "Stop this game"
 msgstr "Zastavit tuto hru"
 
-#: title/pc5_ui.c:8911
+#: title/pc5_ui.c:9091
 msgid "Stop all"
 msgstr "Zastavit vše"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8913
+#: title/pc5_ui.c:9093
 msgid "Everything copied so far is deleted. The USB drive isn't changed."
 msgstr "Vše, co se dosud zkopírovalo, se odstraní. USB disk se nezmění."
 
-#: title/pc5_ui.c:8914
+#: title/pc5_ui.c:9094
 msgid "Keep installing"
 msgstr "Pokračovat v instalaci"
 
-#: title/pc5_ui.c:8918
+#: title/pc5_ui.c:9098
 msgid "There are no games to uninstall"
 msgstr "Nejsou žádné hry k odinstalaci"
 
-#: title/pc5_ui.c:8926
+#: title/pc5_ui.c:9106
 #, c-format
 msgid "Delete the saves of %s?"
 msgstr "Odstranit uložené hry: %s?"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8927
+#: title/pc5_ui.c:9107
 msgid ""
 "Its saves and settings, kept when it was uninstalled, are deleted. There "
 "is no backup and no undo."
@@ -5457,12 +5509,12 @@ msgstr ""
 "Její uložené hry a nastavení, ponechané při odinstalaci, se odstraní. "
 "Neexistuje záloha a nelze to vrátit zpět."
 
-#: title/pc5_ui.c:8936
+#: title/pc5_ui.c:9116
 #, c-format
 msgid "Uninstall %s?"
 msgstr "Odinstalovat: %s?"
 
-#: title/pc5_ui.c:8939
+#: title/pc5_ui.c:9119
 msgid ""
 "Keep saves: the game goes, its saves and settings stay, and installing it "
 "again puts them back. Delete all: the game, its saves and settings go, "
@@ -5472,15 +5524,15 @@ msgstr ""
 "opětovná instalace je vrátí. Odstranit vše: hra, její uložené hry i "
 "nastavení zmizí, bez zálohy a bez možnosti vrátit zpět."
 
-#: title/pc5_ui.c:8941
+#: title/pc5_ui.c:9121
 msgid "Keep saves"
 msgstr "Ponechat uložené hry"
 
-#: title/pc5_ui.c:8941
+#: title/pc5_ui.c:9121
 msgid "Delete all"
 msgstr "Odstranit vše"
 
-#: title/pc5_ui.c:8944
+#: title/pc5_ui.c:9124
 msgid ""
 "This deletes the game and all its saves and settings. There is no backup "
 "and no undo."
@@ -5488,12 +5540,41 @@ msgstr ""
 "Tímto se odstraní hra a všechny její uložené hry a nastavení. Neexistuje "
 "záloha a nelze to vrátit zpět."
 
-#: title/pc5_ui.c:8952
+#: title/pc5_ui.c:9141
+#, c-format
+msgid "Settings that worked for %s"
+msgstr ""
+
+#: title/pc5_ui.c:9143
+#, c-format
+msgid ""
+"A player got it running with PC5 %s with these settings: %s. Its other "
+"settings stay as they are."
+msgstr ""
+
+#: title/pc5_ui.c:9146
+#, c-format
+msgid ""
+"A player got it running with these settings: %s. Its other settings stay "
+"as they are."
+msgstr ""
+
+#. In a question window: the title, its text, or a button's label (keep buttons short).
+#: title/pc5_ui.c:9147
+msgid "Not now"
+msgstr ""
+
+#. In a question window: the title, its text, or a button's label (keep buttons short).
+#: title/pc5_ui.c:9147
+msgid "Use them"
+msgstr ""
+
+#: title/pc5_ui.c:9154
 #, c-format
 msgid "Reset the Windows of %s?"
 msgstr ""
 
-#: title/pc5_ui.c:8954
+#: title/pc5_ui.c:9156
 msgid ""
 "Its Windows is made new, like a fresh install. The game's files, its saves "
 "(its Windows user folders) and PC5's settings for it stay. Windows "
@@ -5502,37 +5583,37 @@ msgid ""
 "stops starting."
 msgstr ""
 
-#: title/pc5_ui.c:8962
+#: title/pc5_ui.c:9164
 #, c-format
 msgid "Deleting the saves of %s"
 msgstr "Odstraňování uložených her: %s"
 
-#: title/pc5_ui.c:8962
+#: title/pc5_ui.c:9164
 #, c-format
 msgid "Uninstalling %s"
 msgstr "Odinstalace: %s"
 
-#: title/pc5_ui.c:8965
+#: title/pc5_ui.c:9167
 #, c-format
 msgid "%u files and folders deleted"
 msgstr "Odstraněné soubory a složky: %u"
 
-#: title/pc5_ui.c:8971
+#: title/pc5_ui.c:9173
 msgid "Importing library music"
 msgstr "Import hudby do knihovny"
 
-#: title/pc5_ui.c:8972
+#: title/pc5_ui.c:9174
 msgid ""
 "Preparing a copy on the console. Keep the source drive connected until "
 "this finishes."
 msgstr ""
 "Příprava kopie v konzoli. Nechte zdrojový disk připojený až do dokončení."
 
-#: title/pc5_ui.c:8975
+#: title/pc5_ui.c:9177
 msgid "Importing background video"
 msgstr "Import videa na pozadí"
 
-#: title/pc5_ui.c:8976
+#: title/pc5_ui.c:9178
 msgid ""
 "Copying video to the console. Keep the source drive connected until this "
 "finishes."
@@ -5540,7 +5621,7 @@ msgstr ""
 "Kopírování videa do konzole. Nechte zdrojový disk připojený až do "
 "dokončení."
 
-#: title/pc5_ui.c:8994
+#: title/pc5_ui.c:9196
 #, c-format
 msgid ""
 "%d game is waiting in PC5's INSTALL folders (its own, and PC5/INSTALL on "
@@ -5551,7 +5632,7 @@ msgstr ""
 "disku) čekají hry: %d. Nainstalovat nyní? Hra nainstalovaná odtud se "
 "přesune do knihovny PC5, pryč ze složky INSTALL."
 
-#: title/pc5_ui.c:8994
+#: title/pc5_ui.c:9196
 #, c-format
 msgid ""
 "%d games are waiting in PC5's INSTALL folders (its own, and PC5/INSTALL on "
@@ -5562,7 +5643,7 @@ msgstr ""
 "disku) čekají hry: %d. Nainstalovat je nyní? Hra nainstalovaná odtud se "
 "přesune do knihovny PC5, pryč ze složky INSTALL."
 
-#: title/pc5_ui.c:8994
+#: title/pc5_ui.c:9196
 #, c-format
 msgid ""
 "%d game is waiting in PC5's INSTALL folder. Install it now? A game "
@@ -5572,7 +5653,7 @@ msgstr ""
 "Ve složce INSTALL aplikace PC5 čekají hry: %d. Nainstalovat nyní? Hra "
 "nainstalovaná odtud se přesune do knihovny PC5, pryč ze složky INSTALL."
 
-#: title/pc5_ui.c:8994
+#: title/pc5_ui.c:9196
 #, c-format
 msgid ""
 "%d games are waiting in PC5's INSTALL folder. Install them now? A game "
@@ -5583,33 +5664,33 @@ msgstr ""
 "nainstalovaná odtud se přesune do knihovny PC5, pryč ze složky INSTALL."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9006
+#: title/pc5_ui.c:9208
 msgid "Games in PC5's INSTALL folder"
 msgstr "Hry ve složce INSTALL aplikace PC5"
 
-#: title/pc5_ui.c:9011
+#: title/pc5_ui.c:9213
 msgid "Updating the home screen tile"
 msgstr "Aktualizace dlaždice na domovské obrazovce"
 
-#: title/pc5_ui.c:9011
+#: title/pc5_ui.c:9213
 msgid "Its picture and background"
 msgstr "Její obrázek a pozadí"
 
-#: title/pc5_ui.c:9013
+#: title/pc5_ui.c:9215
 msgid "A newer one may have fixed it"
 msgstr "Novější verze to možná opravila"
 
-#: title/pc5_ui.c:9016
+#: title/pc5_ui.c:9218
 #, c-format
 msgid "Update to PC5 %s first?"
 msgstr "Nejdřív aktualizovat na PC5 %s?"
 
-#: title/pc5_ui.c:9018
+#: title/pc5_ui.c:9220
 #, c-format
 msgid "You have %s"
 msgstr "Máte %s"
 
-#: title/pc5_ui.c:9019
+#: title/pc5_ui.c:9221
 #, c-format
 msgid ""
 "This may already be fixed in it. Update, try the game again, and report it "
@@ -5619,21 +5700,21 @@ msgstr ""
 "to, pokud se to stále děje. %s."
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9022
+#: title/pc5_ui.c:9224
 msgid "Report anyway"
 msgstr "Přesto nahlásit"
 
-#: title/pc5_ui.c:9027
+#: title/pc5_ui.c:9229
 #, c-format
 msgid "Starting %s"
 msgstr "Spouštění: %s"
 
-#: title/pc5_ui.c:9030
+#: title/pc5_ui.c:9232
 #, c-format
 msgid "Installing %.80s for it, once"
 msgstr "Jednorázová instalace %.80s pro ni"
 
-#: title/pc5_ui.c:9034
+#: title/pc5_ui.c:9236
 #, c-format
 msgid "Setting up .NET for your games, once: %u of %u"
 msgstr "Jednorázová příprava .NET pro vaše hry: %u z %u"

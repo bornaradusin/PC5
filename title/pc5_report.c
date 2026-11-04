@@ -41,7 +41,8 @@ static int put_field(Pc5Buf *out, const char *id, const char *text)
 static const char *problem_choice(Pc5LogProblem problem)
 {
     switch (problem) {
-    case PC5_LOG_NO_PICTURE: return "Closes before showing anything";
+    case PC5_LOG_NO_PICTURE:
+    case PC5_LOG_CLOSED_EARLY: return "Closes before showing anything";
     case PC5_LOG_GAME_CRASHED:
     case PC5_LOG_CRASHED: return "Stops with an error";
     case PC5_LOG_FORCED: return "Freezes, or has to be closed";
@@ -60,8 +61,10 @@ int pc5_report_url_settings(const Pc5LogIssue *issue, const char *game, const ch
     int own = !(game && game[0]) && !strcmp(issue->profile, "launcher");   /* PC5's own session */
     const char *choice = own ? NULL : problem_choice(issue->problem), *file = pc5_report_file(issue);
     const char *name = game && game[0] ? game : own ? "PC5" : issue->profile;
-    char detail[161];
+    char detail[161], cause[260];
     int failed;
+
+    pc5_log_cause_text(issue, cause, sizeof(cause));
 
     /* The crash's own line, shortened so the code stays easy to scan. */
     pc5_copy(detail, sizeof(detail), issue->detail);
@@ -73,6 +76,7 @@ int pc5_report_url_settings(const Pc5LogIssue *issue, const char *game, const ch
     failed = pc5_buf_printf(&title, "%s: %s", name, pc5_log_problem_text(issue->problem)) ||
              pc5_buf_puts(&saw, pc5_log_problem_text(issue->problem)) ||
              (detail[0] && pc5_buf_printf(&saw, "\n`%s`", detail)) ||
+             (cause[0] && pc5_buf_printf(&saw, "\nLikely cause: %s", cause)) ||
              (file[0] && pc5_buf_printf(&saw, "\nLog: %s", file)) ||
              (settings && settings[0] && pc5_buf_printf(&saw, "\nSettings: %s", settings)) ||
              pc5_buf_terminate(&title) || pc5_buf_terminate(&saw) ||

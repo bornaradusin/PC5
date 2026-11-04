@@ -4460,6 +4460,30 @@ static void file_at(const char *file, const char *text, long long time)
     utimes(file, at);
 }
 
+/* A report's settings line (Report it works) on a game's controls: what it says, the rest the game's. */
+static void test_controls_from_report(void)
+{
+    Pc5Controls k;
+    pc5_controls_default(&k);
+    k.speed = 3;
+    int n = pc5_controls_from_report("Thanks! 64-bit, draws with DirectX 11; Graphics mode WineD3D on Vulkan; Controller "
+                                     "DualSense; Frame generation on; Memory 4 GB; CPU sharing on; Steam emulator off; "
+                                     "Sound 5.1; and -dx11 in launch.txt", PC5_API_D3D11, &k);
+    CHECK(n > 0 && k.graphics == PC5_GRAPHICS_WINE_VULKAN && k.mode == PC5_PAD_DUALSENSE && k.frame_generation == 1 &&
+          k.memory_4gb && k.cpu_sharing && k.steam_off && k.surround == 1 && k.speed == 3,
+          "the report's settings: %d %d %d %d", n, (int)k.graphics, (int)k.mode, k.surround);
+    /* A Direct3D 12 game's Wine's VKD3D; a choice the game doesn't have stays as it was. */
+    pc5_controls_default(&k);
+    CHECK(pc5_controls_from_report("64-bit, draws with DirectX 12; Graphics mode Wine's VKD3D; Controller Xbox controller; "
+                                   "Frame generation 40 -> 120 (MihawkGen); Memory Auto; CPU sharing off", PC5_API_D3D12, &k) > 0 &&
+          k.graphics == PC5_GRAPHICS_WINE && k.frame_generation == 2 && !k.steam_off && !k.surround, "Direct3D 12's");
+    pc5_controls_default(&k);
+    pc5_controls_from_report("Graphics mode WineD3D 2D only; Controller Keyboard & mouse", PC5_API_D3D11, &k);
+    CHECK(k.graphics == PC5_GRAPHICS_AUTO && k.mode == PC5_PAD_KEYBOARD, "2D only isn't a Direct3D 11 game's");
+    pc5_controls_default(&k);
+    CHECK(!pc5_controls_from_report("Set the resolution to 720p in the game", PC5_API_D3D11, &k), "no settings line");
+}
+
 static void test_logs(void)
 {
     char root_dir[PC5_PATH], logs[PC5_PATH], file[PC5_PATH], names[4096], drive[PC5_PATH];
@@ -4514,6 +4538,29 @@ static void test_logs(void)
     CHECK(CLASSIFY("launcher", pc5_problem) == PC5_LOG_PC5_PROBLEM && !strcmp(issue.detail, "install Blur: Not enough space"),
           "PC5's problem: %s", issue.detail);
     CHECK(!strcmp(pc5_log_problem_text(PC5_LOG_GAME_CRASHED), "stopped with an error"), "a problem in words");
+    /* Causes a player can act on: an installer it tried to start (RV There Yet's starter), files of a
+     * copy that aren't the game's, OpenGL that never started. */
+    {
+        char cause[260];
+        CHECK(CLASSIFY("rv", "REC seq=1 t=100.0 PW_WINE64 alive tick=60 sink_calls=49 frames_put=5 shown=1\n"
+                             "REC seq=2 t=103.9 WINESERVER wine-ps5: C:\\Games\\RV\\Engine\\Extras\\Redist\\en-us\\vc_redist.x64.exe is "
+                             "a helper: not handed off\nREC seq=3 t=104.3 PW_WINE64 session_end reason=wine-exit\n") ==
+                  PC5_LOG_CLOSED_EARLY && issue.cause == PC5_CAUSE_INSTALLER && !strcmp(issue.cause_what, "vc_redist.x64.exe"),
+              "an installer: %d %d %s", (int)issue.problem, (int)issue.cause, issue.cause_what);
+        pc5_log_cause_text(&issue, cause, sizeof(cause));
+        CHECK(strstr(cause, "vc_redist.x64.exe, an installer"), "in words: %s", cause);
+        CHECK(CLASSIFY("avp", "REC seq=1 t=1.0 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\\\Games\\\\AvP\\\\steam_api_o.dll\" "
+                              "at 3B400000: native\nREC seq=2 t=3.0 PW_WINE64 alive tick=180 sink_calls=106 frames_put=0 shown=0 "
+                              "vk_shown=0\nREC seq=3 t=3.6 PW_WINE64 session_end reason=wine-exit\n") == PC5_LOG_NO_PICTURE &&
+                  issue.cause == PC5_CAUSE_COPY_FILES && !strcmp(issue.cause_what, "steam_api_o.dll"),
+              "a copy's files: %d %s", (int)issue.cause, issue.cause_what);
+        CHECK(CLASSIFY("aitd", "REC seq=1 t=1.0 WINESERVER Mesa: error: GL User Error: glClear called without a rendering "
+                               "context\nREC seq=2 t=1.1 PW_WINE64 session_end reason=wine-exit\n") == PC5_LOG_NO_PICTURE &&
+                  issue.cause == PC5_CAUSE_NO_OPENGL, "no OpenGL context");
+        CHECK(CLASSIFY("blur", played) == PC5_LOG_FINE && issue.cause == PC5_CAUSE_NONE, "a game played: no cause");
+        CHECK(CLASSIFY("launcher", "REC seq=1 t=1.0 WINESERVER wine-ps5: C:\\x\\setup.exe is a helper: not handed off\n") ==
+                  PC5_LOG_FINE && issue.cause == PC5_CAUSE_NONE, "PC5's own session has none");
+    }
     /* The firmware a report names: the kernel's own, with the number libkernel answered beside it. */
     CHECK(CLASSIFY("gtaiv", "REC seq=1 t=1.0 PC5 system firmware=13.60 firmware_version=0x13590001 reported=13.59 "
                             "data_free=1.0GB version=1.8.3\n") != PC5_LOG_PC5_PROBLEM && !strcmp(issue.firmware, "13.60"),
@@ -9624,6 +9671,7 @@ int main(int argc, char **argv)
     test_upgrade_delta();
     test_backgrounds();
     test_zip();
+    test_controls_from_report();
     test_logs();
     test_cover_fill();
     test_prefix_media();

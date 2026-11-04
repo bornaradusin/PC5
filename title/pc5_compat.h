@@ -21,6 +21,15 @@ typedef struct Pc5Compat {
 const char *pc5_compat_status(int status);
 int pc5_compat_parse(const char *text, size_t length, Pc5CompatEntry **entries);
 int pc5_compat_matches(const Pc5CompatEntry *entry, const char *query, int filter);
+/* What two names of one game have the same, as the list's game_key has it
+ * (.github/scripts/compatibility_list.py): case, apostrophes, other punctuation, a leading
+ * "The", Roman numerals II to IX as words and a version number after the name ("v1.06") aside;
+ * "&" is "and". "Baldur's Gate II" and "baldurs gate 2" are "baldursgate2". */
+void pc5_compat_key(const char *name, char *out, size_t size);
+/* The row of the game named title that runs (works perfectly, or playable) and whose Settings
+ * that helped hold PC5's own settings line (Report it works writes it: "Graphics mode ..."): its
+ * index in entries, or -1. */
+int pc5_compat_with_settings(const Pc5CompatEntry *entries, int count, const char *title);
 void pc5_compat_init(Pc5Compat *list, const char *root, const Pc5Http *http);
 int pc5_compat_refresh(Pc5Compat *list);
 int pc5_compat_poll(Pc5Compat *list);

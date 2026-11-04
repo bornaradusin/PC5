@@ -159,7 +159,7 @@ if [[ -f $wine/dlls/ntdll/unix/file.c ]]; then
         grep -q '^+++ b/dlls/ntdll/unix/file\.c' "$patch" || continue
         GIT_CEILING_DIRECTORIES=$out git -C "$out/wine-system" apply --include=dlls/ntdll/unix/file.c "$patch"
     done
-    for func in "static NTSTATUS ps5_wine_system_file" "static BOOL ps5_is_wine_own" "static BOOL ps5_open_changes" \
+    for func in "static void ps5_log_missing" "static NTSTATUS ps5_wine_system_file" "static BOOL ps5_is_wine_own" "static BOOL ps5_open_changes" \
                 "static NTSTATUS ps5_copy_wine_own"; do
         awk -v head="^$func[(]" '$0 ~ head {p=1} p{print} p&&/^}/{exit}' "$out/wine-system/dlls/ntdll/unix/file.c"
     done > "$out/wine-system/system_func.c"

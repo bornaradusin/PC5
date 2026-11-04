@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 enum { W = 1920, H = 1080, FLOOR_Y = 750, MARGIN = 72 };
@@ -79,7 +80,7 @@ typedef enum Screen {
     S_FILES_TYPING, S_FILES_CONFLICT, S_FILES_DELETE, S_FILES_WORKING, S_TILE_ART, S_INSTALL_ASK, S_SETTINGS_TYPING, S_INSTALL_WHERE,
     S_PLAY_WHICH, S_FILES_EDIT, S_FILES_EDIT_MENU, S_FILES_EDIT_TYPING, S_FILES_EDIT_LEAVE,
     S_MUSIC_IMPORT, S_VIDEO_IMPORT, S_PHONE_QR, S_COMPAT_SEARCH, S_COMPAT_REPORT, S_MEDIA_OPTIONS, S_LOOK_CONFIRM, S_LOOK_WORK,
-    S_MEDIA_DELETE, S_COMPAT_SHARE, S_SETTING_ABOUT, S_RESET_CONFIRM
+    S_MEDIA_DELETE, S_COMPAT_SHARE, S_SETTING_ABOUT, S_RESET_CONFIRM, S_KNOWN_CONFIRM
 } Screen;
 
 static const char *const screen_names[] = { "start", "covers", "library", "settings", "about", "scan", "sources",
@@ -93,7 +94,7 @@ static const char *const screen_names[] = { "start", "covers", "library", "setti
                                             "files-working", "tile-art", "install-ask", "settings-typing", "install-where",
                                             "play-which", "files-edit", "files-edit-menu", "files-edit-typing",
                                             "files-edit-leave", "music-import", "video-import", "phone-qr", "compat-search", "compat-report", "media-options", "look-confirm", "look-work",
-                                            "media-delete", "compat-share", "setting-about", "reset-confirm" };
+                                            "media-delete", "compat-share", "setting-about", "reset-confirm", "known-confirm" };
 
 /* One game of several being installed in a row. */
 typedef enum QueueState { Q_WAITING, Q_INSTALLED, Q_FAILED, Q_STOPPED, Q_SKIPPED } QueueState;
@@ -199,7 +200,7 @@ static int page_rows(const Pc5Settings *set, int page, int offer_update, Setting
 typedef enum GameRow {
     GR_PLAY, GR_CONTROLLER, GR_BUTTONS, GR_CREATE, GR_POINTER, GR_GRAPHICS, GR_SOUND, GR_APPEARANCE, GR_MANAGE,
     GR_GRAPHICS_API, GR_FRAMEGEN, GR_RESOLUTION, GR_ASPECT, GR_MEMORY, GR_VIDEO_MEMORY, GR_CPU_SHARING,
-    GR_COVER, GR_BACKGROUND, GR_HOME, GR_ICON, GR_MUSIC, GR_MUSIC_CLEAR,
+    GR_KNOWN, GR_COVER, GR_BACKGROUND, GR_HOME, GR_ICON, GR_MUSIC, GR_MUSIC_CLEAR,
     GR_BACKGROUND_IMAGE, GR_BACKGROUND_VIDEO, GR_VIDEO_CLEAR, GR_MEDIA_OPTIONS, GR_MUSIC_FILE, GR_VIDEO_FILE,
     GR_MEDIA, GR_LOADING, GR_LOADING_FILE, GR_LOADING_BACKGROUND, GR_LOADING_CLEAR,
     GR_PROGRAM, GR_STEAM, GR_FILES, GR_UPDATE, GR_REPORT, GR_WORKS, GR_RESET, GR_UNINSTALL
@@ -214,7 +215,8 @@ static int setting_about(Pc5Ui *ui, GameRow row, const char *lines[6]);
 static const GameRow game_page_rows[GAME_PAGES] = { GR_PLAY, GR_GRAPHICS, GR_APPEARANCE, GR_MANAGE, GR_BACKGROUND,
                                                   GR_MUSIC, GR_BACKGROUND_VIDEO, GR_MEDIA, GR_LOADING };
 /* What a game is, for its menu's rows. */
-enum { GAME_32BIT = 1, GAME_VULKAN = 2, GAME_PC5 = 4, GAME_API = 8, GAME_STEAM = 16, GAME_DXGI = 32, GAME_MEDIA = 64 };
+enum { GAME_32BIT = 1, GAME_VULKAN = 2, GAME_PC5 = 4, GAME_API = 8, GAME_STEAM = 16, GAME_DXGI = 32, GAME_MEDIA = 64,
+       GAME_KNOWN = 128 };
 
 /* kind: GAME_32BIT for Memory, GAME_VULKAN for Resolution, GAME_PC5 (PC5 installed it) for Game files and Update,
  * GAME_API (it draws with DirectDraw or Direct3D) for Graphics API, GAME_STEAM (it has Steam's library) for
@@ -236,6 +238,8 @@ static int game_rows(const Pc5Controls *controls, int kind, int page, GameRow ro
         rows[n++] = GR_VIDEO_CLEAR;
         break;
     case GP_GRAPHICS:
+        /* Settings a player's report on the compatibility list gave it, when they differ (known_find). */
+        if (kind & GAME_KNOWN) rows[n++] = GR_KNOWN;
         if (kind & GAME_API) rows[n++] = GR_GRAPHICS_API;
         rows[n++] = GR_FRAMEGEN;
         if (kind & GAME_VULKAN) rows[n++] = GR_RESOLUTION;
@@ -475,6 +479,11 @@ struct Pc5Ui {
     Pc5Qr report_qr;
     Pc5Qr coffee_qr;                  /* About PC5: Buy Me a Coffee's page, made once */
     Pc5Compat compatibility;
+    /* Settings that worked for others (known_find): the game they are for, the list's row, its
+     * settings put on the game's own, and where Settings that worked goes back to. */
+    int known, known_entry, known_from_play, known_back;
+    char known_id[PC5_ID], known_report[256], known_version[96];
+    Pc5Controls known_controls;
     int compat_initialized, compat_at, compat_filter, compat_detail, compat_scroll;
     char compat_query[128];
     uint64_t compat_refresh_at;
@@ -655,7 +664,8 @@ static int ui_game_kind(const Pc5Ui *ui)
            (pc5_graphics_choices(ui->library.games[index].api, choices) > 1 ? GAME_API : 0) |
            (ui->steam_dlls > 0 ? GAME_STEAM : 0) |
            (ui->library.games[index].bits != 32 && ui->library.games[index].api >= PC5_API_D3D10 &&
-                    ui->library.games[index].api <= PC5_API_D3D12 ? GAME_DXGI : 0);
+                    ui->library.games[index].api <= PC5_API_D3D12 ? GAME_DXGI : 0) |
+           (ui->known && !strcmp(ui->known_id, ui->launch_id) ? GAME_KNOWN : 0);
 }
 
 /* What the game whose menu is open draws with (Pc5Api), PC5_API_GDI when it isn't found. */
@@ -2979,6 +2989,81 @@ static void redist_log(void *context, const char *line)
     say(context, "%s", line);
 }
 
+/* The game compatibility list as PC5 last saved it (Game maintenance shows it), refreshed in
+ * the background once it is a day old. */
+static void compat_ready(Pc5Ui *ui)
+{
+    if (!ui->compat_initialized) {
+        pc5_compat_init(&ui->compatibility, ui->root, &ui->platform.http);
+        ui->compat_initialized = 1;
+    }
+    /* Asked at most once an hour when it fails (offline). */
+    if (!ui->compatibility.running && (int64_t)time(NULL) - ui->compatibility.checked > 86400 &&
+        (!ui->compat_refresh_at || ui->now - ui->compat_refresh_at > 3600 * 1000)) {
+        pc5_compat_refresh(&ui->compatibility);
+        ui->compat_refresh_at = ui->now;
+    }
+}
+
+/* Settings that worked for others: the list's row for the game whose menu is open, when a player's
+ * report gave PC5's settings line (Report it works) and they differ from the game's own. ui->known
+ * says whether there are, with them in ui->known_controls. */
+static void known_find(Pc5Ui *ui, const Pc5Controls *current, int steam_dlls)
+{
+    int index = pc5_library_find(&ui->library, ui->launch_id);
+    ui->known = 0;
+    ui->known_entry = -1;
+    if (index < 0) return;
+    compat_ready(ui);
+    const Pc5Game *game = &ui->library.games[index];
+    int entry = pc5_compat_with_settings(ui->compatibility.entries, ui->compatibility.count, game->title);
+    if (entry < 0) return;
+    const Pc5CompatEntry *row = &ui->compatibility.entries[entry];
+    Pc5Controls known = *current;
+    if (pc5_controls_from_report(row->settings, game->api, &known) <= 0) return;
+    /* Only the settings the report gives: the sticks, keys and the rest stay the game's. */
+    if (steam_dlls <= 0) known.steam_off = current->steam_off;
+    if (game->bits != 32) known.memory_4gb = current->memory_4gb;
+    if (known.mode == current->mode && known.graphics == current->graphics &&
+        known.frame_generation == current->frame_generation && known.memory_4gb == current->memory_4gb &&
+        known.cpu_sharing == current->cpu_sharing && known.steam_off == current->steam_off &&
+        known.surround == current->surround)
+        return;
+    ui->known = 1;
+    ui->known_entry = entry;
+    ui->known_controls = known;
+    pc5_copy(ui->known_id, sizeof(ui->known_id), ui->launch_id);
+    pc5_copy(ui->known_report, sizeof(ui->known_report), row->report);
+    pc5_copy(ui->known_version, sizeof(ui->known_version), row->version);
+}
+
+/* Where the game notes the report whose settings it was offered at Play (once a report). */
+static int known_marker(const Pc5Ui *ui, char *out, size_t size)
+{
+    return pc5_format(out, size, "%s/prefixes/%s/pc5/known-settings.txt", ui->root, ui->launch_id);
+}
+
+/* What Settings that worked changes from current ("Graphics mode: Alternative; Stutter fix: On"), into out. */
+static void known_lines(Pc5Ui *ui, const Pc5Controls *now, char *out, size_t size)
+{
+    const Pc5Controls *k = &ui->known_controls;
+    int api = ui_game_api(ui);
+    size_t n = 0;
+    out[0] = 0;
+#define KNOWN_LINE(label, value) \
+    do { int w = snprintf(out + n, size - n, "%s%s: %s", n ? "; " : "", label, value); \
+         if (w > 0 && (size_t)w < size - n) n += (size_t)w; } while (0)
+    if (k->graphics != now->graphics) KNOWN_LINE(T("Graphics mode"), T(pc5_graphics_name(k->graphics, api)));
+    if (k->mode != now->mode) KNOWN_LINE(T("Controller"), T(pc5_pad_mode_name(k->mode)));
+    if (k->frame_generation != now->frame_generation)
+        KNOWN_LINE(T("Frame generation"), k->frame_generation == 2 ? T("40 \xe2\x86\x92 120 fps") : k->frame_generation ? T("On") : T("Off"));
+    if (k->memory_4gb != now->memory_4gb) KNOWN_LINE(T("Game memory"), k->memory_4gb ? T("4 GB") : T("Auto"));
+    if (k->cpu_sharing != now->cpu_sharing) KNOWN_LINE(T("Stutter fix"), k->cpu_sharing ? T("On") : T("Off"));
+    if (k->steam_off != now->steam_off) KNOWN_LINE(T("Steam emulator"), k->steam_off ? T("Off") : T("Auto"));
+    if (k->surround != now->surround) KNOWN_LINE(T("Sound output"), k->surround == 2 ? "7.1" : k->surround == 1 ? "5.1" : T("Stereo"));
+#undef KNOWN_LINE
+}
+
 /* A game's menu, with its controller as PC5 kept it. */
 static void game_menu_open(Pc5Ui *ui, const char *id)
 {
@@ -2997,6 +3082,7 @@ static void game_menu_open(Pc5Ui *ui, const char *id)
                                             found, PC5_STEAM_DLLS);
         pc5_free(found);
     }
+    known_find(ui, &ui->controls, ui->steam_dlls);
     ui->menu = 0;
     ui->game_page = GP_MAIN;
     go(ui, S_GAME_MENU);
@@ -3192,6 +3278,25 @@ static void issue_message(Pc5Ui *ui)
 
     ui->issue_pending = 0;
     pc5_copy(file, sizeof(file), slash ? slash + 1 : issue->file);
+    /* The likely cause, when the log shows it, before where the log is. */
+    char why[400] = "";
+    switch (issue->cause) {
+    case PC5_CAUSE_INSTALLER:
+        pc5_tf(why, sizeof(why), "It tried to start %s, an installer, which can't run on the console.", issue->cause_what);
+        break;
+    case PC5_CAUSE_COPY_FILES:
+        pc5_tf(why, sizeof(why), "Its copy has %s, which isn't one of the game's files as its store ships it: it is likely what "
+                 "closed it.", issue->cause_what);
+        break;
+    case PC5_CAUSE_NO_OPENGL:
+        pc5_copy(why, sizeof(why), T("Its OpenGL drawing never started."));
+        break;
+    case PC5_CAUSE_CRASH_REPORT:
+        pc5_tf(why, sizeof(why), "Its own crash report says: %.200s", issue->cause_what);
+        break;
+    default:
+        break;
+    }
     switch (issue->problem) {
     case PC5_LOG_GAME_CRASHED:
         pc5_tf(title, sizeof(title), "%s stopped with an error", name);
@@ -3207,6 +3312,10 @@ static void issue_message(Pc5Ui *ui)
         pc5_tf(body, sizeof(body), "It didn't close when asked, so PC5 ended it. Its log is kept as %.120s in %.120s.", file,
                  ui->root);
         break;
+    case PC5_LOG_CLOSED_EARLY:
+        pc5_tf(title, sizeof(title), "%s closed soon after starting", name);
+        pc5_tf(body, sizeof(body), "Its log is kept as %.120s in %.120s.", file, ui->root);
+        break;
     case PC5_LOG_CRASHED:
         if (index >= 0) pc5_tf(title, sizeof(title), "%s ended unexpectedly", name);
         else pc5_tf(title, sizeof(title), "PC5 ended unexpectedly last time");
@@ -3214,6 +3323,11 @@ static void issue_message(Pc5Ui *ui)
         break;
     default:
         return;
+    }
+    if (why[0]) {
+        char both[700 + 400];
+        snprintf(both, sizeof(both), "%s %s", why, body);
+        pc5_copy(body, sizeof(body), both);
     }
     message(ui, 0, title, body, S_LIBRARY);
     /* Triangle: Report on GitHub, with this log. */
@@ -4618,10 +4732,57 @@ static void files_update(Pc5Ui *ui, uint32_t k)
     }
 }
 
+static void play(Pc5Ui *ui, Screen back);
+
+/* Settings that worked, answered: used (saved as the game's own) or not, the report noted so Play
+ * doesn't offer it again; then back to the game's menu, or on to Play when Play offered it. */
+static void known_answer(Pc5Ui *ui, int use)
+{
+    char marker[PC5_PATH];
+    if (!known_marker(ui, marker, sizeof(marker)))
+        pc5_write_file(marker, ui->known_report, strlen(ui->known_report));
+    if (use) {
+        if (pc5_controls_save(ui->root, ui->launch_id, &ui->known_controls))
+            say(ui, "PC5 known settings not saved id=%s", ui->launch_id);
+        else
+            say(ui, "PC5 known settings used id=%s report=%s", ui->launch_id, ui->known_report);
+        pc5_controls_load(ui->root, ui->launch_id, &ui->controls);
+    } else {
+        say(ui, "PC5 known settings not now id=%s", ui->launch_id);
+    }
+    if (ui->known_from_play) {
+        ui->known_from_play = 2;   /* asked: play() goes on */
+        play(ui, (Screen)ui->known_back);
+        return;
+    }
+    known_find(ui, &ui->controls, ui->steam_dlls);
+    game_menu_at(ui, ui->known ? GR_KNOWN : GR_FRAMEGEN);
+    go(ui, S_GAME_MENU);
+}
+
 /* Plays the game in launch_id: its program, or with other programs offered at Play
- * (an expansion with a program of its own), a choice of them first. back: where Back goes. */
+ * (an expansion with a program of its own), a choice of them first. back: where Back goes.
+ * Settings that worked for others are offered first, once for each report (known_find). */
 static void play(Pc5Ui *ui, Screen back)
 {
+    if (ui->known_from_play != 2) {
+        Pc5Controls current;
+        char marker[PC5_PATH];
+        Pc5Buf noted = { 0 };
+        pc5_controls_load(ui->root, ui->launch_id, &current);
+        known_find(ui, &current, 1);
+        int asked = ui->known && !known_marker(ui, marker, sizeof(marker)) && !pc5_read_file(marker, &noted, 1024) &&
+                    noted.len == strlen(ui->known_report) && !memcmp(noted.data, ui->known_report, noted.len);
+        pc5_buf_free(&noted);
+        if (ui->known && !asked) {
+            ui->known_from_play = 1;
+            ui->known_back = (int)back;
+            ui->button = 1;
+            go(ui, S_KNOWN_CONFIRM);
+            return;
+        }
+    }
+    ui->known_from_play = 0;
     Pc5Info info;
     Pc5Offered offered[PC5_OFFERED];
     int count = pc5_programs_load(ui->root, ui->launch_id, offered, PC5_OFFERED);
@@ -5534,6 +5695,10 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 report_game_log(ui, &ui->library.games[ui->selected]);
             } else if (row == GR_WORKS) {
                 report_works(ui, &ui->library.games[ui->selected]);
+            } else if (row == GR_KNOWN) {
+                ui->known_from_play = 0;
+                ui->button = 1;   /* Use them first */
+                go(ui, S_KNOWN_CONFIRM);
             } else if (row == GR_RESET) {
                 ui->button = 0;   /* Cancel first */
                 go(ui, S_RESET_CONFIRM);
@@ -5823,6 +5988,12 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         }
         break;
     }
+    case S_KNOWN_CONFIRM:
+        /* Not now, Use them: back to where it came from (the row, or Play), the settings saved first. */
+        if ((k & PC5_KEY_LEFT) && ui->button > 0) { ui->button--; ui->dirty = 1; }
+        if ((k & PC5_KEY_RIGHT) && ui->button < 1) { ui->button++; ui->dirty = 1; }
+        if ((k & back) || ((k & accept) && ui->now - ui->entered > 400)) known_answer(ui, (k & accept) && ui->button == 1);
+        break;
     case S_RESET_CONFIRM:
         /* Cancel, Reset: back to its row, or the reset begun (begin_reset). */
         if ((k & PC5_KEY_LEFT) && ui->button > 0) { ui->button--; ui->dirty = 1; }
@@ -7243,6 +7414,11 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
         *text = T("A QR code for the game compatibility form, filled in: adds the game to the list");
         *value = more;
         break;
+    case GR_KNOWN:
+        *label = T("Settings that worked");
+        *text = T("A player's settings for it, from the game compatibility list");
+        *value = more;
+        break;
     case GR_RESET:
         *label = T("Reset Windows");
         *text = T("Makes its Windows new, as a fresh install's; its files, saves and settings stay");
@@ -7347,6 +7523,10 @@ static int setting_about(Pc5Ui *ui, GameRow row, const char *lines[6])
         lines[n++] = T("Many PC games need Steam running to start. The console has no Steam, so PC5 stands in for it.");
         lines[n++] = T("Auto: the game starts as if Steam were running, offline.");
         lines[n++] = T("Off: the game's own Steam files are used. It won't find Steam and may not start; only for a game that misbehaves with Auto.");
+        break;
+    case GR_KNOWN:
+        lines[n++] = T("A player who got this game running put their settings in the game compatibility list (Report it works).");
+        lines[n++] = T("Choose it to see what they changed, and use the same settings. The game's other settings stay as they are.");
         break;
     case GR_RESET:
         lines[n++] = T("Makes the game's Windows new, as a fresh install has it. Use it when a game that used to work stops starting.");
@@ -8943,6 +9123,28 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
             confirm_dialog(ui, c, line,
                            T("This deletes the game and all its saves and settings. There is no backup and no undo."),
                            T("Cancel"), T("Uninstall"), 1, thumb);
+        break;
+    }
+    case S_KNOWN_CONFIRM: {
+        int index = pc5_library_find(&ui->library, ui->launch_id);
+        const Pc5Picture *thumb = index >= 0 && ui->covers[index].state ? &ui->covers[index].picture : NULL;
+        char changes[600], body[900];
+        Pc5Controls now = ui->controls;
+        if (ui->known_from_play) {
+            if (ui->known_back == S_GAME_MENU) game_menu_screen(ui, c, game_row_find(&ui->controls, ui_game_kind(ui), GR_PLAY, NULL));
+            else library_screen(ui, c);
+            pc5_controls_load(ui->root, ui->launch_id, &now);
+        } else {
+            game_menu_screen(ui, c, game_row_find(&ui->controls, ui_game_kind(ui), GR_KNOWN, NULL));
+        }
+        known_lines(ui, &now, changes, sizeof(changes));
+        pc5_tf(line, sizeof(line), "Settings that worked for %s", index >= 0 ? ui->library.games[index].title : T("the game"));
+        if (ui->known_version[0])
+            pc5_tf(body, sizeof(body), "A player got it running with PC5 %s with these settings: %s. Its other settings stay as they are.",
+                   ui->known_version, changes);
+        else
+            pc5_tf(body, sizeof(body), "A player got it running with these settings: %s. Its other settings stay as they are.", changes);
+        confirm_dialog(ui, c, line, body, T("Not now"), T("Use them"), 0, thumb);
         break;
     }
     case S_RESET_CONFIRM: {

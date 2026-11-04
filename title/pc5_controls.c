@@ -438,6 +438,78 @@ int pc5_controls_input(const Pc5Controls *controls, char *out, size_t size)
     return status;
 }
 
+/* The text after name in the line's part at p ("Controller DualSense"): 1 and *value set when the
+ * part starts with name and a space. */
+static int report_part(const char *part, size_t length, const char *name, const char **value, size_t *value_length)
+{
+    size_t n = strlen(name);
+    if (length <= n + 1 || strncmp(part, name, n) || part[n] != ' ') return 0;
+    *value = part + n + 1;
+    *value_length = length - n - 1;
+    return 1;
+}
+
+static int report_is(const char *value, size_t length, const char *text)
+{
+    return strlen(text) == length && !strncmp(value, text, length);
+}
+
+int pc5_controls_from_report(const char *text, int api, Pc5Controls *controls)
+{
+    const char *at = text ? strstr(text, "Graphics mode ") : NULL;
+    if (!at && text) at = strstr(text, "Graphics API ");
+    if (!at) return 0;
+    /* The line runs from its first part ("64-bit, draws with ...") to the first part it doesn't know. */
+    const char *start = at;
+    while (start > text && start[-1] != '\n') start--;
+    int read = 0, steam = 0, sound = 0;
+    for (const char *p = start; *p && *p != '\n';) {
+        const char *end = strchr(p, ';'), *line_end = strchr(p, '\n');
+        if (!end || (line_end && line_end < end)) end = line_end ? line_end : p + strlen(p);
+        while (*p == ' ') p++;
+        size_t length = (size_t)(end - p), vn;
+        while (length && (p[length - 1] == ' ' || p[length - 1] == '\r' || p[length - 1] == '.')) length--;
+        const char *v;
+        if (report_part(p, length, "Graphics mode", &v, &vn) || report_part(p, length, "Graphics API", &v, &vn)) {
+            for (int g = 0; g < PC5_GRAPHICS_COUNT; g++)
+                if (report_is(v, vn, pc5_graphics_tech_name((Pc5Graphics)g, api))) {
+                    Pc5Graphics choices[PC5_GRAPHICS_COUNT];
+                    int n = pc5_graphics_choices(api, choices), offered = g == PC5_GRAPHICS_AUTO;
+                    for (int i = 0; i < n; i++) offered |= choices[i] == (Pc5Graphics)g;
+                    if (offered) { controls->graphics = (Pc5Graphics)g; read++; }
+                    break;
+                }
+        } else if (report_part(p, length, "Controller", &v, &vn)) {
+            for (int m = 0; m < PC5_PAD_MODES; m++)
+                if (report_is(v, vn, pc5_pad_mode_name((Pc5PadMode)m))) { controls->mode = (Pc5PadMode)m; read++; }
+        } else if (report_part(p, length, "Frame generation", &v, &vn)) {
+            if (report_is(v, vn, "off")) { controls->frame_generation = 0; read++; }
+            else if (report_is(v, vn, "on")) { controls->frame_generation = 1; read++; }
+            else if (vn >= 9 && strstr(v, "MihawkGen") && strstr(v, "MihawkGen") < v + vn) { controls->frame_generation = 2; read++; }
+        } else if (report_part(p, length, "Memory", &v, &vn)) {
+            if (report_is(v, vn, "Auto")) { controls->memory_4gb = 0; read++; }
+            else if (report_is(v, vn, "4 GB")) { controls->memory_4gb = 1; read++; }
+        } else if (report_part(p, length, "CPU sharing", &v, &vn)) {
+            if (report_is(v, vn, "on")) { controls->cpu_sharing = 1; read++; }
+            else if (report_is(v, vn, "off")) { controls->cpu_sharing = 0; read++; }
+        } else if (report_part(p, length, "Steam emulator", &v, &vn)) {
+            if (report_is(v, vn, "off")) steam = 1;
+        } else if (report_part(p, length, "Sound", &v, &vn)) {
+            if (report_is(v, vn, "5.1")) sound = 1;
+            else if (report_is(v, vn, "7.1")) sound = 2;
+        } else if (!(length > 4 && strstr(p, "-bit") && strstr(p, "-bit") < p + length)) {
+            break;   /* past PC5's line: a player's own words */
+        }
+        p = *end == ';' ? end + 1 : end;
+    }
+    if (read) {
+        controls->steam_off = steam;
+        controls->surround = sound;
+        read += 2;
+    }
+    return read;
+}
+
 const char *pc5_control_name(int control)
 {
     return control >= 0 && control < PC5_CONTROLS ? control_names[control] : "";
