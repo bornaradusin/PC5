@@ -420,7 +420,10 @@ int pc5_folder_inspect(const char *path, const char *name, Pc5Folder *folder)
             if (!strcmp(walk.dlls[k].dir, dir)) folder->exes[i].beside |= walk.dlls[k].imports;
         char on_disk[PC5_PATH];
         if (dir[0] ? !pc5_join(on_disk, sizeof(on_disk), path, dir) : !pc5_format(on_disk, sizeof(on_disk), "%s", path))
+        {
             folder->exes[i].java = pc5_java_beside(on_disk);
+            folder->exes[i].gl_framework = pc5_gl_framework_beside(on_disk);
+        }
     }
     /* A game whose programs and libraries import nothing they draw with loads it at run
      * time: what its likeliest programs name (pc5_pe_named_libraries), read only then. */
@@ -476,7 +479,7 @@ Pc5Api pc5_folder_api(const Pc5Folder *folder, int index)
     beside = folder->exes[index].beside;
     if (own & drawing) return pc5_api_from_imports(own);
     if (beside & drawing) return pc5_api_from_imports(beside);
-    if (folder->exes[index].java) return PC5_API_OPENGL;
+    if (folder->exes[index].java || folder->exes[index].gl_framework) return PC5_API_OPENGL;
     return pc5_api_from_imports(folder->imports);
 }
 
@@ -515,6 +518,30 @@ int pc5_java_beside(const char *dir)
     }
     closedir(folder);
     return found;
+}
+
+int pc5_gl_framework_beside(const char *dir)
+{
+    char file[PC5_PATH];
+    DIR *folder;
+    struct dirent *entry;
+    int sharpdx = 0;
+
+    if (!join_ci(dir, "FNA.dll", file, sizeof(file)) && pc5_is_file(file))
+        return join_ci(dir, "FNA3D.dll", file, sizeof(file)) != 0;
+    if (join_ci(dir, "MonoGame.Framework.dll", file, sizeof(file)) || !pc5_is_file(file) ||
+        join_ci(dir, "SDL2.dll", file, sizeof(file)) || !pc5_is_file(file))
+        return 0;
+    if (!(folder = opendir(dir))) return 0;
+    while (!sharpdx && (entry = readdir(folder))) {
+        char start[8];
+        size_t n = 0;
+        for (; n < 7 && entry->d_name[n]; n++) start[n] = entry->d_name[n];
+        start[n] = 0;
+        sharpdx = !pc5_casecmp(start, "SharpDX");
+    }
+    closedir(folder);
+    return !sharpdx;
 }
 
 uint32_t pc5_dll_imports_in(const char *dir)

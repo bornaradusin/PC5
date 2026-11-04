@@ -26,6 +26,7 @@ typedef struct Pc5Exe {
     Pc5PeInfo pe;
     uint32_t beside;          /* the imports of the libraries in its folder */
     int java;                 /* a Java runtime beside it (pc5_java_beside) */
+    int gl_framework;         /* an OpenGL game framework beside it (pc5_gl_framework_beside) */
     int godot;                /* a Godot Engine game's (pc5_pe_godot): it draws with OpenGL */
 } Pc5Exe;
 
@@ -60,6 +61,12 @@ Pc5Api pc5_folder_api(const Pc5Folder *folder, int exe);
  * its program: a folder (runtime, jre, jre64...) with bin/server/jvm.dll or
  * bin/client/jvm.dll, names in any case. */
 int pc5_java_beside(const char *dir);
+/* 1 when the folder dir (on disk) has a .NET game framework in it that draws with OpenGL, which
+ * it loads at run time, so nothing imports it: FNA without FNA3D (FNA.dll alone draws with
+ * OpenGL through SDL2; FNA3D picks for itself), or MonoGame's OpenGL build
+ * (MonoGame.Framework.dll beside SDL2.dll, without the Direct3D build's SharpDX). Names in any
+ * case. Such a game draws with OpenGL, as a Java game does. */
+int pc5_gl_framework_beside(const char *dir);
 /* What the libraries (.dll) in the folder dir import, together (PC5_IMPORT_*); not below it. */
 uint32_t pc5_dll_imports_in(const char *dir);
 

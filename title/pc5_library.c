@@ -891,15 +891,15 @@ int pc5_profile_refresh(const char *root, const char *id, char *error, size_t si
                                  : "# PC5 read the game's program: not a Godot game\nother\n";
         pc5_write_file(marker, note, strlen(note));
     }
-    /* A Java game installed before 1.8.2 as drawing with Windows itself (or what its runtime's
-     * libraries import): neither its program nor the libraries beside it import anything to
-     * draw with, and a Java runtime is beside it, so it draws with OpenGL (pc5_folder_api),
-     * kept in its notes. */
+    /* A Java game installed before 1.8.2, or an FNA or MonoGame OpenGL game before 2.3.1, as
+     * drawing with Windows itself (or what its runtime's libraries import): neither its program
+     * nor the libraries beside it import anything to draw with, and a Java runtime or such a
+     * framework is beside it, so it draws with OpenGL (pc5_folder_api), kept in its notes. */
     if (info.api != PC5_API_OPENGL) {
         char dir[PC5_PATH];
         Pc5PeInfo pe;
         program_folder(root, id, &program, dir, sizeof(dir));
-        if (dir[0] && pc5_java_beside(dir) &&
+        if (dir[0] && (pc5_java_beside(dir) || pc5_gl_framework_beside(dir)) &&
             top[0] && !pc5_format(path, sizeof(path), "%s/%s", top, program.exe) &&
             !pc5_pe_read(path, &pe) && !(pe.imports & PC5_IMPORT_DRAWING) && !(pc5_dll_imports_in(dir) & PC5_IMPORT_DRAWING)) {
             info.api = program.api = PC5_API_OPENGL;
@@ -1028,7 +1028,7 @@ static void handed_program(const char *path, const char *dir, Pc5Info *program)
     else if ((drawing = pe.imports & PC5_IMPORT_DRAWING) || (drawing = pc5_pe_named_libraries(path) & PC5_IMPORT_DRAWING) ||
         (dir[0] && (drawing = pc5_dll_imports_in(dir) & PC5_IMPORT_DRAWING)))
         program->api = pc5_api_from_imports(pc5_pe_unreal_d3d12(path, drawing) ? drawing | PC5_IMPORT_D3D12 : drawing);
-    else if (dir[0] && pc5_java_beside(dir))
+    else if (dir[0] && (pc5_java_beside(dir) || pc5_gl_framework_beside(dir)))
         program->api = PC5_API_OPENGL;
 }
 

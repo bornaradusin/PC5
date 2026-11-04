@@ -5054,6 +5054,32 @@ static void test_java(void)
               pc5_folder_api(folder, 0) == PC5_API_D3D12, "its library's Direct3D 12 first: %d", (int)pc5_folder_api(folder, 0));
         CHECK(pc5_dll_imports_in(beside) & PC5_IMPORT_D3D12, "the library's imports");
     }
+    /* A .NET game on FNA (Bastion's) or MonoGame's OpenGL build: SDL2 loads OpenGL at run
+     * time, so nothing imports it. FNA3D beside FNA, or MonoGame's Direct3D build (SharpDX),
+     * isn't. */
+    {
+        char fna[PC5_PATH];
+        path(fna, sizeof(fna), "%s/stubs/Framed", work);
+        path(file, sizeof(file), "%s/Framed.exe", fna);
+        copy_file(from, file);
+        path(file, sizeof(file), "%s/fna.DLL", fna);
+        copy_file(from, file);
+        CHECK(pc5_gl_framework_beside(fna) && !pc5_folder_inspect(fna, "Framed", folder) && folder->exe_count &&
+              folder->exes[0].gl_framework && pc5_folder_api(folder, 0) == PC5_API_OPENGL, "FNA: OpenGL");
+        path(file, sizeof(file), "%s/FNA3D.dll", fna);
+        copy_file(from, file);
+        CHECK(!pc5_gl_framework_beside(fna), "FNA with FNA3D: its own choice");
+        path(fna, sizeof(fna), "%s/stubs/MonoGamed", work);
+        path(file, sizeof(file), "%s/MonoGame.Framework.dll", fna);
+        copy_file(from, file);
+        CHECK(!pc5_gl_framework_beside(fna), "MonoGame without SDL2: not its OpenGL build");
+        path(file, sizeof(file), "%s/SDL2.dll", fna);
+        copy_file(from, file);
+        CHECK(pc5_gl_framework_beside(fna), "MonoGame with SDL2: OpenGL");
+        path(file, sizeof(file), "%s/SharpDX.Direct3D11.dll", fna);
+        copy_file(from, file);
+        CHECK(!pc5_gl_framework_beside(fna), "MonoGame with SharpDX: Direct3D");
+    }
     pc5_free(folder);
 
     path(root, sizeof(root), "%s/java-root", work);
