@@ -1,0 +1,163 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Wed, 4 Nov 2026 12:30:00 +0000
+Subject: [PATCH 125/125] PC5: a button tapped quickly doesn't leave its key down
+
+With Keyboard & mouse, a button pressed and let go between two reads of the
+controller (a quick tap, or a read that came late while the game kept the
+console busy) had both edges in one batch: its key was released first and
+then pressed, so the key stayed down until the button was pressed again (keys
+that stuck at random in Mega Man W-64). The release now goes after the press
+when the button is up at the end of the batch; a button let go and pressed
+again within one read still goes up and then down. Cross and the D-pad as a
+dialog's keys, with the other controller modes, do the same.
+---
+ native/pw_wine_display.c     | 24 +++++++++++++++++++-----
+ native/pw_wine_display.h     |  7 +++++++
+ native/wine64_main.c         | 14 +++++++++-----
+ tests/test_pw_wine_display.c | 16 ++++++++++++++++
+ 4 files changed, 51 insertions(+), 10 deletions(-)
+
+diff --git a/native/pw_wine_display.c b/native/pw_wine_display.c
+index 1d2d475..9c96245 100644
+--- a/native/pw_wine_display.c
++++ b/native/pw_wine_display.c
+@@ -93,11 +93,19 @@ static size_t add_edges(const PwGameInput *input, uint32_t edges, uint32_t down,
+ size_t pw_wine_game_inputs(const PwGameInput *input, uint32_t pressed, uint32_t released,
+                            PwWineInput *out, size_t max)
+ {
++    return pw_wine_game_inputs_held(input, pressed, released, pressed, out, max);
++}
++
++size_t pw_wine_game_inputs_held(const PwGameInput *input, uint32_t pressed, uint32_t released, uint32_t held,
++                                PwWineInput *out, size_t max)
++{
++    uint32_t taps = pressed & released & ~held;
+     size_t used;
+ 
+     if (!input || !out) return 0;
+-    used = add_edges(input, released, 0, out, 0, max);
+-    return add_edges(input, pressed, 1, out, used, max);
++    used = add_edges(input, released & ~taps, 0, out, 0, max);
++    used = add_edges(input, pressed, 1, out, used, max);
++    return add_edges(input, taps, 0, out, used, max);
+ }
+ 
+ /* Cross: Enter; the D-pad: the arrows (Windows virtual keys). */
+@@ -107,13 +115,19 @@ static const struct { uint32_t button, vk; } dialog_buttons[] = {
+ 
+ size_t pw_wine_dialog_inputs(uint32_t pressed, uint32_t released, PwWineInput *out, size_t max)
+ {
++    return pw_wine_dialog_inputs_held(pressed, released, pressed, out, max);
++}
++
++size_t pw_wine_dialog_inputs_held(uint32_t pressed, uint32_t released, uint32_t held, PwWineInput *out, size_t max)
++{
++    uint32_t taps = pressed & released & ~held, edges[3] = { released & ~taps, pressed, taps };
+     size_t used = 0;
+ 
+     if (!out) return 0;
+-    for (uint32_t down = 0; down <= 1; down++)
++    for (int pass = 0; pass < 3; pass++)
+         for (size_t i = 0; i < sizeof(dialog_buttons) / sizeof(dialog_buttons[0]) && used < max; i++)
+-            if ((down ? pressed : released) & dialog_buttons[i].button)
+-                out[used++] = (PwWineInput){ PW_WINE_INPUT_DIALOG_KEY, dialog_buttons[i].vk, 0, 0, down };
++            if (edges[pass] & dialog_buttons[i].button)
++                out[used++] = (PwWineInput){ PW_WINE_INPUT_DIALOG_KEY, dialog_buttons[i].vk, 0, 0, pass == 1 };
+     return used;
+ }
+ 
+diff --git a/native/pw_wine_display.h b/native/pw_wine_display.h
+index 5edbfe6..90e8611 100644
+--- a/native/pw_wine_display.h
++++ b/native/pw_wine_display.h
+@@ -52,6 +52,11 @@ int pw_wine_frame_box_take(PwWineFrameBox *box, uint64_t *seen, uint8_t *out,
+  * Returns how many were written (at most max). */
+ size_t pw_wine_game_inputs(const PwGameInput *input, uint32_t pressed, uint32_t released,
+                            PwWineInput *out, size_t max);
++/* The same, with the buttons held at the end of the batch: a button pressed and let go within
++ * one batch (a quick tap, or a read that came late) has both edges, and its release goes after
++ * its press, so its key isn't left down. pw_wine_game_inputs is this with held = pressed. */
++size_t pw_wine_game_inputs_held(const PwGameInput *input, uint32_t pressed, uint32_t released, uint32_t held,
++                                PwWineInput *out, size_t max);
+ 
+ /* xinput and dualsense modes, where the controller is no keyboard: Cross
+  * and the D-pad also answer a game's pop-up, as Enter and the arrow keys.
+@@ -59,6 +64,8 @@ size_t pw_wine_game_inputs(const PwGameInput *input, uint32_t pressed, uint32_t
+  * is in front, so the game never sees them as keys. Releases first, then
+  * presses; returns how many were written (at most max). */
+ size_t pw_wine_dialog_inputs(uint32_t pressed, uint32_t released, PwWineInput *out, size_t max);
++/* The same, a tap's release after its press (pw_wine_game_inputs_held). */
++size_t pw_wine_dialog_inputs_held(uint32_t pressed, uint32_t released, uint32_t held, PwWineInput *out, size_t max);
+ 
+ /* The DualSense as an XInput gamepad: its held buttons (Cross A, Circle B,
+  * Square X, Triangle Y, L1/R1 shoulders, L3/R3 thumbs, Options Start,
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 25ab5c5..8a9840e 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -2141,9 +2141,12 @@ int main(int argc, char **argv)
+                     pad_released &= ~(uint32_t)PW_WINE_TOUCHPAD_BUTTON;
+                 }
+             }
+-            size_t count = pw_wine_game_inputs(&game_input, pad_pressed | stick_pressed,
+-                                               pad_released | stick_released, events,
+-                                               sizeof(events) / sizeof(events[0]) - 2);
++            /* A button tapped within one read has both edges: its key goes down, then up (a key
++             * released first and then pressed stayed down until the button was pressed again). */
++            size_t count = pw_wine_game_inputs_held(&game_input, pad_pressed | stick_pressed,
++                                                    pad_released | stick_released,
++                                                    pad.core.previous_buttons | sticks, events,
++                                                    sizeof(events) / sizeof(events[0]) - 2);
+             count += pw_wine_touch_inputs(&game_input, touch_now & ~touch_held, touch_held & ~touch_now, &events[count],
+                                           sizeof(events) / sizeof(events[0]) - 2 - count);
+             touch_held = touch_now;
+@@ -2164,8 +2167,9 @@ int main(int argc, char **argv)
+              * answer its pop-ups too (a dialog box only). */
+             if (game_input.mode != PW_GAME_INPUT_KEYBOARD) {
+                 PwWineInput dialog[10];
+-                size_t keys = pw_wine_dialog_inputs(pad.core.pressed_edges, pad.core.released_edges, dialog,
+-                                                    sizeof(dialog) / sizeof(dialog[0]));
++                size_t keys = pw_wine_dialog_inputs_held(pad.core.pressed_edges, pad.core.released_edges,
++                                                         pad.core.previous_buttons, dialog,
++                                                         sizeof(dialog) / sizeof(dialog[0]));
+                 for (size_t i = 0; i < keys; i++) {
+                     if (post_input(&dialog[i]) == 0) posted++;
+                     else refused++;
+diff --git a/tests/test_pw_wine_display.c b/tests/test_pw_wine_display.c
+index a460afd..4ea7e5b 100644
+--- a/tests/test_pw_wine_display.c
++++ b/tests/test_pw_wine_display.c
+@@ -113,6 +113,18 @@ static void test_inputs(void)
+     assert(pw_wine_game_inputs(&input, R1 | L1, 0, events, 1) == 1 && events[0].code == 'Z');
+     assert(pw_wine_game_inputs(&input, 0, 0, events, 8) == 0);
+     assert(pw_wine_game_inputs(NULL, L1, 0, events, 8) == 0 && pw_wine_game_inputs(&input, L1, 0, NULL, 8) == 0);
++
++    /* A tap within one read (pressed and let go, up at the end): down, then up. */
++    assert(pw_wine_game_inputs_held(&input, L1, L1, 0, events, 8) == 2);
++    assert(events[0].code == 'Z' && events[0].down && events[1].code == 'Z' && !events[1].down);
++    /* Let go and pressed again (down at the end): up, then down, as before. */
++    assert(pw_wine_game_inputs_held(&input, L1, L1, L1, events, 8) == 2);
++    assert(events[0].code == 'Z' && !events[0].down && events[1].code == 'Z' && events[1].down);
++    /* A release beside a tap: the plain release first, the tap's last. */
++    assert(pw_wine_game_inputs_held(&input, L1, L1 | CROSS, 0, events, 8) == 3);
++    assert(events[0].code == 0x20 && !events[0].down && events[1].code == 'Z' && events[1].down);
++    assert(events[2].code == 'Z' && !events[2].down);
++    assert(pw_wine_game_inputs_held(NULL, L1, L1, 0, events, 8) == 0);
+ }
+ 
+ /* A button bound to the wheel turns it a notch as it is pressed (up away from the player),
+@@ -158,6 +170,10 @@ static void test_dialog_inputs(void)
+     assert(pw_wine_dialog_inputs(L1 | CIRCLE | SQUARE | R2, 0, events, 10) == 0);
+     assert(pw_wine_dialog_inputs(CROSS | UP, 0, events, 1) == 1 && events[0].code == 0x0d);
+     assert(pw_wine_dialog_inputs(CROSS, 0, NULL, 10) == 0);
++    /* A tap within one read: Enter down, then up. */
++    assert(pw_wine_dialog_inputs_held(CROSS, CROSS, 0, events, 10) == 2);
++    assert(events[0].code == 0x0d && events[0].down && events[1].code == 0x0d && !events[1].down);
++    assert(pw_wine_dialog_inputs_held(CROSS, CROSS, CROSS, events, 10) == 2 && !events[0].down && events[1].down);
+ }
+ 
+ static void test_pointer(void)
+-- 
+2.43.0
+
