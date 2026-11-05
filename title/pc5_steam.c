@@ -53,13 +53,21 @@ int pc5_steam_find(const char *root, const char *id, const char *game_dir, const
         char *line = (char *)text.data, *next = strchr(line, '\n');
         if (next) *next++ = 0;
         if (!strcmp(line, stamp)) {
+            /* ... and while every library it named is still there (one deleted since: looked for again). */
+            int gone = 0;
             for (line = next; line && *line && count < max; line = next) {
+                char full[PC5_PATH];
                 next = strchr(line, '\n');
                 if (next) *next++ = 0;
-                if (line[0]) pc5_copy(found[count++], PC5_PATH, line);
+                if (!line[0]) continue;
+                if (pc5_join(full, sizeof(full), game_dir, line) || !pc5_is_file(full)) { gone = 1; break; }
+                pc5_copy(found[count++], PC5_PATH, line);
             }
-            pc5_buf_free(&text);
-            return count;
+            if (!gone) {
+                pc5_buf_free(&text);
+                return count;
+            }
+            count = 0;
         }
     }
     pc5_buf_free(&text);
