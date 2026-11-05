@@ -1,0 +1,187 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Thu, 5 Nov 2026 13:30:00 +0000
+Subject: [PATCH 131/131] PC5: a front buffer drawn to on wined3d's Vulkan renderer is
+ shown (Wine patch 1003)
+
+---
+ ...-on-the-vulkan-renderer-is-presented.patch | 167 ++++++++++++++++++
+ 1 file changed, 167 insertions(+)
+ create mode 100644 wine/patches/1003-wined3d-a-front-buffer-drawn-to-on-the-vulkan-renderer-is-presented.patch
+
+diff --git a/wine/patches/1003-wined3d-a-front-buffer-drawn-to-on-the-vulkan-renderer-is-presented.patch b/wine/patches/1003-wined3d-a-front-buffer-drawn-to-on-the-vulkan-renderer-is-presented.patch
+new file mode 100644
+index 0000000..012833d
+--- /dev/null
++++ b/wine/patches/1003-wined3d-a-front-buffer-drawn-to-on-the-vulkan-renderer-is-presented.patch
+@@ -0,0 +1,167 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: bornaradusin <bornaradusin@users.noreply.github.com>
++Date: Thu, 5 Nov 2026 10:00:00 +0000
++Subject: [PATCH] wined3d: A front buffer drawn to on the Vulkan renderer is
++ presented.
++
++The Vulkan renderer has no drawable: a swapchain's front buffer is on the
++screen through WINED3D_LOCATION_DRAWABLE, which it couldn't prepare or
++load. A DirectDraw program in a window draws straight to its primary
++surface, the front buffer, and never presents, so its picture never left
++it: a DirectShow movie's VMR-7 in a game drawn with DXVK, whose DirectDraw
++gets the Vulkan renderer (Romance of the Three Kingdoms XI: "Failed to load
++the destination sub-resource into WINED3D_LOCATION_DRAWABLE" for each of
++its frames, and the movie was never seen).
++
++The front buffer's drawable is now its image: loading it presents the
++image through the swapchain as a present does with the back buffer,
++recreating a swapchain out of date, and the front buffer keeps its
++picture for the program's next drawing.
++---
++ dlls/wined3d/swapchain.c  | 53 +++++++++++++++++++++++++++++++++++----
++ dlls/wined3d/texture_vk.c | 16 ++++++++++++
++ dlls/wined3d/wined3d_vk.h |  2 ++
++ 3 files changed, 66 insertions(+), 5 deletions(-)
++
++diff --git a/dlls/wined3d/swapchain.c b/dlls/wined3d/swapchain.c
++index 03138a4..da2550e 100644
++--- a/dlls/wined3d/swapchain.c
+++++ b/dlls/wined3d/swapchain.c
++@@ -1083,9 +1083,11 @@ static void wined3d_swapchain_vk_set_swap_interval(struct wined3d_swapchain_vk *
++ }
++ 
++ static VkResult wined3d_swapchain_vk_blit(struct wined3d_swapchain_vk *swapchain_vk,
++-        struct wined3d_context_vk *context_vk, const RECT *src_rect, const RECT *dst_rect, unsigned int swap_interval)
+++        struct wined3d_context_vk *context_vk, struct wined3d_texture *source,
+++        const RECT *src_rect, const RECT *dst_rect, unsigned int swap_interval)
++ {
++-    struct wined3d_texture_vk *back_buffer_vk = wined3d_texture_vk(swapchain_vk->s.back_buffers[0]);
+++    struct wined3d_texture_vk *back_buffer_vk = wined3d_texture_vk(source);
+++    BOOL front = source == swapchain_vk->s.front_buffer;
++     struct wined3d_device_vk *device_vk = wined3d_device_vk(swapchain_vk->s.device);
++     const struct wined3d_swapchain_desc *desc = &swapchain_vk->s.state.desc;
++     const struct wined3d_vk_info *vk_info = context_vk->vk_info;
++@@ -1180,7 +1182,9 @@ static VkResult wined3d_swapchain_vk_blit(struct wined3d_swapchain_vk *swapchain
++             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
++             swapchain_vk->vk_images[image_idx], &vk_range);
++ 
++-    if (desc->swap_effect == WINED3D_SWAP_EFFECT_DISCARD || desc->swap_effect == WINED3D_SWAP_EFFECT_FLIP_DISCARD)
+++    /* The front buffer keeps its picture: the program draws on into it. */
+++    if (!front && (desc->swap_effect == WINED3D_SWAP_EFFECT_DISCARD
+++            || desc->swap_effect == WINED3D_SWAP_EFFECT_FLIP_DISCARD))
++         vk_layout = VK_IMAGE_LAYOUT_UNDEFINED;
++     else
++         vk_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
++@@ -1210,6 +1214,45 @@ static VkResult wined3d_swapchain_vk_blit(struct wined3d_swapchain_vk *swapchain
++     return vr;
++ }
++ 
+++/* The front buffer's picture on the screen: WINED3D_LOCATION_DRAWABLE on the Vulkan renderer,
+++ * which has no drawable of its own. A DirectDraw program in a window draws straight to its
+++ * primary surface, the swapchain's front buffer, and never presents (a DirectShow movie's
+++ * VMR-7: "Failed to load the destination sub-resource into WINED3D_LOCATION_DRAWABLE", and
+++ * the movie was never seen). The front buffer is presented as the back buffer is, and keeps
+++ * its picture. */
+++BOOL wined3d_swapchain_vk_present_front_buffer(struct wined3d_swapchain_vk *swapchain_vk,
+++        struct wined3d_context_vk *context_vk)
+++{
+++    struct wined3d_texture *front_buffer = swapchain_vk->s.front_buffer;
+++    RECT src_rect, dst_rect;
+++    VkResult vr;
+++    HRESULT hr;
+++
+++    if (!swapchain_vk->vk_swapchain)
+++        return FALSE;
+++
+++    SetRect(&src_rect, 0, 0, front_buffer->resource.width, front_buffer->resource.height);
+++    SetRect(&dst_rect, 0, 0, swapchain_vk->width, swapchain_vk->height);
+++    if ((vr = wined3d_swapchain_vk_blit(swapchain_vk, context_vk, front_buffer, &src_rect, &dst_rect,
+++            swapchain_vk->s.swap_interval)) == VK_ERROR_OUT_OF_DATE_KHR || vr == VK_SUBOPTIMAL_KHR)
+++    {
+++        if (FAILED(hr = wined3d_swapchain_vk_recreate(swapchain_vk)))
+++            ERR("Failed to recreate swapchain, hr %#lx.\n", hr);
+++        else if (vr == VK_ERROR_OUT_OF_DATE_KHR)
+++        {
+++            SetRect(&dst_rect, 0, 0, swapchain_vk->width, swapchain_vk->height);
+++            vr = wined3d_swapchain_vk_blit(swapchain_vk, context_vk, front_buffer, &src_rect, &dst_rect,
+++                    swapchain_vk->s.swap_interval);
+++        }
+++    }
+++    if (vr < 0)
+++    {
+++        WARN("Failed to present the front buffer, vr %s.\n", wined3d_debug_vkresult(vr));
+++        return FALSE;
+++    }
+++    return TRUE;
+++}
+++
++ static void wined3d_swapchain_vk_rotate(struct wined3d_swapchain *swapchain, struct wined3d_context_vk *context_vk)
++ {
++     struct wined3d_texture_sub_resource *sub_resource;
++@@ -1284,14 +1327,14 @@ static void swapchain_vk_present(struct wined3d_swapchain *swapchain, const RECT
++     {
++         wined3d_texture_load_location(back_buffer, 0, &context_vk->c, back_buffer->resource.draw_binding);
++ 
++-        if ((vr = wined3d_swapchain_vk_blit(swapchain_vk, context_vk, src_rect, dst_rect, swap_interval)))
+++        if ((vr = wined3d_swapchain_vk_blit(swapchain_vk, context_vk, back_buffer, src_rect, dst_rect, swap_interval)))
++         {
++             if (vr == VK_ERROR_OUT_OF_DATE_KHR || vr == VK_SUBOPTIMAL_KHR)
++             {
++                 if (FAILED(hr = wined3d_swapchain_vk_recreate(swapchain_vk)))
++                     ERR("Failed to recreate swapchain, hr %#lx.\n", hr);
++                 else if (vr == VK_ERROR_OUT_OF_DATE_KHR && (vr = wined3d_swapchain_vk_blit(
++-                        swapchain_vk, context_vk, src_rect, dst_rect, swap_interval)))
+++                        swapchain_vk, context_vk, back_buffer, src_rect, dst_rect, swap_interval)))
++                     ERR("Failed to blit image, vr %s.\n", wined3d_debug_vkresult(vr));
++             }
++             else
++diff --git a/dlls/wined3d/texture_vk.c b/dlls/wined3d/texture_vk.c
++index bde638e..0a7afb5 100644
++--- a/dlls/wined3d/texture_vk.c
+++++ b/dlls/wined3d/texture_vk.c
++@@ -952,6 +952,14 @@ static BOOL wined3d_texture_vk_prepare_location(struct wined3d_texture *texture,
++             return wined3d_texture_vk_prepare_buffer_object(wined3d_texture_vk(texture), sub_resource_idx,
++                     wined3d_context_vk(context));
++ 
+++        /* A swapchain's front buffer on the screen (wined3d_swapchain_vk_present_front_buffer): its
+++         * picture is its image's. */
+++        case WINED3D_LOCATION_DRAWABLE:
+++            if (texture->swapchain && texture == texture->swapchain->front_buffer)
+++                return wined3d_texture_vk_prepare_texture(wined3d_texture_vk(texture), wined3d_context_vk(context));
+++            FIXME("Unhandled location %s.\n", wined3d_debug_location(location));
+++            return FALSE;
+++
++         default:
++             FIXME("Unhandled location %s.\n", wined3d_debug_location(location));
++             return FALSE;
++@@ -973,6 +981,14 @@ static BOOL wined3d_texture_vk_load_location(struct wined3d_texture *texture,
++         case WINED3D_LOCATION_BUFFER:
++             return wined3d_texture_vk_load_sysmem(wined3d_texture_vk(texture), sub_resource_idx, context, location);
++ 
+++        /* The front buffer's picture, presented; its image keeps it. */
+++        case WINED3D_LOCATION_DRAWABLE:
+++            if (!(texture->sub_resources[sub_resource_idx].locations & WINED3D_LOCATION_TEXTURE_RGB)
+++                    && !wined3d_texture_load_location(texture, sub_resource_idx, context, WINED3D_LOCATION_TEXTURE_RGB))
+++                return FALSE;
+++            return wined3d_swapchain_vk_present_front_buffer(wined3d_swapchain_vk(texture->swapchain),
+++                    wined3d_context_vk(context));
+++
++         default:
++             FIXME("Unimplemented location %s.\n", wined3d_debug_location(location));
++             return FALSE;
++diff --git a/dlls/wined3d/wined3d_vk.h b/dlls/wined3d/wined3d_vk.h
++index 74a4f5c..1ae9e6d 100644
++--- a/dlls/wined3d/wined3d_vk.h
+++++ b/dlls/wined3d/wined3d_vk.h
++@@ -1199,6 +1199,8 @@ static inline struct wined3d_swapchain_vk *wined3d_swapchain_vk(struct wined3d_s
++ }
++ 
++ void wined3d_swapchain_vk_cleanup(struct wined3d_swapchain_vk *swapchain_vk);
+++BOOL wined3d_swapchain_vk_present_front_buffer(struct wined3d_swapchain_vk *swapchain_vk,
+++        struct wined3d_context_vk *context_vk);
++ HRESULT wined3d_swapchain_vk_init(struct wined3d_swapchain_vk *swapchain_vk,
++         struct wined3d_device *device, const struct wined3d_swapchain_desc *desc,
++         struct wined3d_swapchain_state_parent *state_parent, void *parent,
++-- 
++2.43.0
++
+-- 
+2.43.0
+

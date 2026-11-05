@@ -1,0 +1,215 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Thu, 5 Nov 2026 10:00:00 +0000
+Subject: [PATCH] wsi/videoout: A movie's window takes the display while the
+ game stands still
+
+Romance of the Three Kingdoms XI's 1920x1080 picture stood still while its
+opening movie played in a 1914x1048 window of its own, whose swapchain was
+never shown (patch 0010): nothing was seen, and the game waited for good.
+
+A never-shown swapchain is now out of date once the owner hasn't presented
+for half a second too, and a newer, smaller window's next one then takes
+the display, as a window's does from an owner that stopped. The game's own
+window, older and larger, takes it back as soon as it presents again, movie
+playing or not, so a game that draws on while its movie plays keeps its
+picture (Blade & Sword stopped with none when its movie kept the display).
+---
+ src/vulkan/wsi/wsi_common_videoout.c          | 49 +++++++++++++++----
+ src/vulkan/wsi/wsi_common_videoout_takeover.h | 31 ++++++++++--
+ 2 files changed, 67 insertions(+), 13 deletions(-)
+
+diff --git a/src/vulkan/wsi/wsi_common_videoout.c b/src/vulkan/wsi/wsi_common_videoout.c
+index 25a8521..c5414a7 100644
+--- a/src/vulkan/wsi/wsi_common_videoout.c
++++ b/src/vulkan/wsi/wsi_common_videoout.c
+@@ -47,10 +47,13 @@
+  * older one on a PC (a Clickteam Fusion game's menu or level opens a window
+  * of its own, and the screen stayed black), and one takes it from an owner
+  * that hasn't presented for half a second (a window hidden but not
+- * destroyed). A smaller window (a movie's inside the game's) is refused, as
+- * before. The owner it was taken from is retired; while the newer one has
+- * the display, the older window's new swapchains are refused, and once it is
+- * destroyed the older window's next one takes the display back.
++ * destroyed). A smaller, newer window (a movie's inside the game's) gets a
++ * swapchain never shown while the owner presents, and takes the display once
++ * the owner stopped presenting; the game's own window takes it back as soon
++ * as it presents again. The owner it was taken from is retired; while
++ * the newer one has the display, the older window's new swapchains are
++ * refused, and once it is destroyed the older window's next one takes the
++ * display back.
+  */
+ 
+ #include <assert.h>
+@@ -334,6 +337,10 @@ struct wsi_videoout_swapchain {
+     * another, which may then take it. */
+    bool hidden;
+    uint64_t hidden_serial;
++   /* It took the display as a newer, smaller window's picture from an owner that stopped
++    * presenting (a movie's inside the game's): the game's own window takes it back as soon as
++    * it presents (WSI_VIDEOOUT_BACK). */
++   bool inside;
+    uint32_t hidden_next;
+    struct wsi_image images[];
+ };
+@@ -1406,6 +1413,22 @@ videoout_free_buffer_locked(uint32_t first, uint32_t count, bool *vblank)
+    return best;
+ }
+ 
++/* A never-shown swapchain is out of date once the display changes hands, and once its owner
++ * stopped presenting (wsi_common_videoout_takeover.h): the program makes another, which may
++ * then take the display. */
++static bool
++videoout_hidden_out_of_date_locked(const struct wsi_videoout_swapchain *chain)
++{
++   const struct wsi_videoout_swapchain *current = videoout_output.current;
++   if (chain->retired || chain->hidden_serial != videoout_current_serial)
++      return true;
++   if (!current)
++      return false;
++   const struct wsi_videoout_window owner = { current->surface_age, current->extent.width, current->extent.height,
++                                              current->presented, current->present_ns, current->inside };
++   return wsi_videoout_owner_stale(&owner, os_time_get_nano());
++}
++
+ static VkResult
+ videoout_swapchain_acquire_next_image(struct wsi_swapchain *wsi_chain, const VkAcquireNextImageInfoKHR *info,
+                                       uint32_t *image_index)
+@@ -1418,7 +1441,7 @@ videoout_swapchain_acquire_next_image(struct wsi_swapchain *wsi_chain, const VkA
+       /* Any image the program doesn't hold: wsi_common_queue_present waits
+        * for an image's last present before it is drawn into again. */
+       mtx_lock(&out->lock);
+-      const bool out_of_date = chain->retired || chain->hidden_serial != videoout_current_serial;
++      const bool out_of_date = videoout_hidden_out_of_date_locked(chain);
+       mtx_unlock(&out->lock);
+       if (out_of_date)
+          return VK_ERROR_OUT_OF_DATE_KHR;
+@@ -1496,7 +1519,7 @@ videoout_swapchain_queue_present(struct wsi_swapchain *wsi_chain, uint32_t image
+ 
+    if (chain->hidden) {
+       mtx_lock(&out->lock);
+-      const bool out_of_date = chain->retired || chain->hidden_serial != videoout_current_serial;
++      const bool out_of_date = videoout_hidden_out_of_date_locked(chain);
+       if (!out_of_date)
+          chain->present_ns = os_time_get_nano();
+       mtx_unlock(&out->lock);
+@@ -1585,10 +1608,10 @@ videoout_display_free_locked(const struct wsi_videoout_swapchain *old, uint64_t
+                              const char **why, bool *hidden)
+ {
+    const struct wsi_videoout_swapchain *current = videoout_output.current;
+-   struct wsi_videoout_window owner = { 0 }, chain = { age, extent.width, extent.height, false, 0 };
++   struct wsi_videoout_window owner = { 0 }, chain = { age, extent.width, extent.height, false, 0, false };
+    if (current)
+       owner = (struct wsi_videoout_window){ current->surface_age, current->extent.width, current->extent.height,
+-                                            current->presented, current->present_ns };
++                                            current->presented, current->present_ns, current->inside };
+    *why = NULL;
+    *hidden = false;
+    switch (wsi_videoout_takeover(current ? &owner : NULL, current && current == old, &chain, os_time_get_nano())) {
+@@ -1598,7 +1621,10 @@ videoout_display_free_locked(const struct wsi_videoout_swapchain *old, uint64_t
+       *why = "a newer window's";
+       return true;
+    case WSI_VIDEOOUT_STALE:
+-      *why = "a window's";
++      *why = age > current->surface_age ? "a newer, smaller window's" : "a window's";
++      return true;
++   case WSI_VIDEOOUT_BACK:
++      *why = "an older, larger window's";
+       return true;
+    case WSI_VIDEOOUT_HIDDEN:
+       *hidden = true;
+@@ -1749,11 +1775,14 @@ videoout_surface_create_swapchain(VkIcdSurfaceBase *icd_surface, VkDevice device
+       if (why)
+          fprintf(stderr, "wsi/videoout: %s %ux%u swapchain takes the display from a %ux%u one%s\n", why, extent.width,
+                  extent.height, out->current->extent.width, out->current->extent.height,
+-                 age > out->current->surface_age ? "" : " that stopped presenting");
++                 !strcmp(why, "a window's") || !strcmp(why, "a newer, smaller window's") ? " that stopped presenting"
++                 : !strcmp(why, "an older, larger window's")                               ? " inside it"
++                                                                                            : "");
+       else if (out->current != old)
+          fprintf(stderr, "wsi/videoout: a swapchain that never presented gives the display to a new one\n");
+       out->current->retired = true;
+    }
++   chain->inside = why && !strcmp(why, "a newer, smaller window's");
+    out->current = chain;
+    videoout_current_serial++;
+    mtx_unlock(&out->lock);
+diff --git a/src/vulkan/wsi/wsi_common_videoout_takeover.h b/src/vulkan/wsi/wsi_common_videoout_takeover.h
+index 1a068a2..e4eb3d5 100644
+--- a/src/vulkan/wsi/wsi_common_videoout_takeover.h
++++ b/src/vulkan/wsi/wsi_common_videoout_takeover.h
+@@ -30,6 +30,17 @@
+  * then crashed: such a window now gets a swapchain of its own that is never
+  * shown, out of date once the display changes hands.
+  *
++ * Unless the owner stopped presenting: a game that waits for its movie to end
++ * draws nothing meanwhile (Romance of the Three Kingdoms XI: its 1920x1080
++ * picture stood still while the movie played in its 1914x1048 window, so
++ * nothing was seen and the game waited for good). The movie's picture then
++ * takes the display, as a window's does from an owner that stopped: a
++ * never-shown swapchain is out of date once the owner hasn't presented for
++ * half a second, and the movie's next one takes it. The game's own window,
++ * older and larger than the movie's, takes it back as soon as the game draws
++ * again, so a game that draws on while its movie plays (Blade & Sword: taking
++ * the display from it for good stopped it with no picture) keeps its picture.
++ *
+  * Except an older window's picture, of any window's size, once the owner on a
+  * newer window stopped presenting: that window was left behind and the game
+  * goes on in its own. Ruined King, changing its resolution, shows a 3840x2160
+@@ -53,6 +64,7 @@ struct wsi_videoout_window {
+    uint32_t width, height; /* its picture's size */
+    bool presented;        /* it has queued a present */
+    uint64_t present_ns;   /* when it last queued one */
++   bool inside;           /* it took the display as a newer, smaller window's picture (a movie's, WSI_VIDEOOUT_STALE) */
+ };
+ 
+ enum wsi_videoout_takeover {
+@@ -61,6 +73,7 @@ enum wsi_videoout_takeover {
+    WSI_VIDEOOUT_NEWER,    /* a newer window's picture covering the owner's */
+    WSI_VIDEOOUT_STALE,    /* a picture covering the owner's, or an older window's, the owner stopped presenting */
+    WSI_VIDEOOUT_HIDDEN,   /* a newer window's smaller picture: a swapchain of its own, never shown */
++   WSI_VIDEOOUT_BACK,     /* an older window's picture around a newer, smaller owner's: the game's, drawing again */
+ };
+ 
+ /* A window's picture, not a helper window's (wined3d's 10x10 probe, a 113x2 strip). */
+@@ -70,6 +83,13 @@ wsi_videoout_window_sized(uint32_t width, uint32_t height)
+    return width >= 320 && height >= 200;
+ }
+ 
++/* Whether the owner presented once and not for half a second since. */
++static inline bool
++wsi_videoout_owner_stale(const struct wsi_videoout_window *owner, uint64_t now_ns)
++{
++   return owner && owner->presented && now_ns - owner->present_ns >= WSI_VIDEOOUT_STALE_NS;
++}
++
+ /* owner: what has the display, or NULL; replaces: the new one is its oldSwapchain's; now_ns: the time. */
+ static inline enum wsi_videoout_takeover
+ wsi_videoout_takeover(const struct wsi_videoout_window *owner, bool replaces, const struct wsi_videoout_window *chain,
+@@ -79,15 +99,20 @@ wsi_videoout_takeover(const struct wsi_videoout_window *owner, bool replaces, co
+       return WSI_VIDEOOUT_FREE;
+    if (!wsi_videoout_window_sized(chain->width, chain->height))
+       return WSI_VIDEOOUT_REFUSED;
++   const bool stale = wsi_videoout_owner_stale(owner, now_ns);
+    if (chain->width < owner->width || chain->height < owner->height) {
+       if (chain->age < owner->age)
+-         return now_ns - owner->present_ns >= WSI_VIDEOOUT_STALE_NS ? WSI_VIDEOOUT_STALE : WSI_VIDEOOUT_REFUSED;
+-      return WSI_VIDEOOUT_HIDDEN;
++         return stale ? WSI_VIDEOOUT_STALE : WSI_VIDEOOUT_REFUSED;
++      return stale ? WSI_VIDEOOUT_STALE : WSI_VIDEOOUT_HIDDEN;
+    }
+    if (chain->age > owner->age)
+       return WSI_VIDEOOUT_NEWER;
+-   if (now_ns - owner->present_ns >= WSI_VIDEOOUT_STALE_NS)
++   if (stale)
+       return WSI_VIDEOOUT_STALE;
++   /* An older window around the picture of a newer, smaller one that took the display while the
++    * game stood still: the game's own, drawing again over its movie. */
++   if (owner->inside && (chain->width > owner->width || chain->height > owner->height))
++      return WSI_VIDEOOUT_BACK;
+    return WSI_VIDEOOUT_REFUSED;
+ }
+ 
+-- 
+2.43.0
+
