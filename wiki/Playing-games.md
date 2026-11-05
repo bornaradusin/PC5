@@ -169,6 +169,8 @@ Steam doesn't run on the console. A game that asks Steam's library (`steam_api.d
 
 A game whose program is wrapped in Steam's DRM (SteamStub) needs Steam itself, which the emulator can't stand in for: PC5 says so when you start it, instead of starting it. A copy of the game without it, such as one from GOG, can run.
 
+To play a game from your own Steam library, see [Games from your Steam library](Installing-games#games-from-your-steam-library).
+
 ## Frame generation
 
 Frame generation shows a game at 60 fps when it runs at 30. It is set for each game: **△ › Graphics › Frame generation**, **Off** by default.

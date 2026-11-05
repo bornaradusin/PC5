@@ -164,6 +164,37 @@ Good to know:
 
 With **Settings › Network › Web page** on, open the address it shows (for example `http://192.168.1.20:8125`) in a browser on a PC, and choose **Choose a folder** under **Send a game**. The game's folder goes to the INSTALL folder, and PC5 asks to install it, as after FTP. See [Web page](Web-page).
 
+## Games from your Steam library
+
+The best copy of a Steam game is the one Steam itself installs on a PC: every file is exactly as the store ships it. Many "the game says its files are damaged" problems come from copies that aren't.
+
+1. **Install the game on a PC with Steam.**
+2. **Find its folder.** In Steam's library, right-click the game › **Manage › Browse local files**. The folder that opens (inside `steamapps\common`) is the game.
+3. **Add its app ID.** Open the game's page on the Steam store; its link is `store.steampowered.com/app/<number>/`. In the game's folder, make a text file named `steam_appid.txt` with only that number in it. The Steam emulator uses it to tell the game which game it is. Steam doesn't put this file there itself, and some games won't start without it.
+4. **Send the folder to the console**: on a USB drive, [over FTP](#sending-games-over-ftp) or from the [web page](#sending-games-from-the-web-page).
+5. **Install it** as any other game. Leave **△ › Manage › Steam emulator** on **Auto**.
+
+### How it plays without Steam
+
+The console has no Steam. A Steam game asks Steam's library (`steam_api64.dll` or `steam_api.dll`) whether Steam is running, and quits when it isn't. Each time the game starts, PC5 puts the [Steam emulator](Playing-games#games-made-for-steam) in place of that library, and keeps Valve's beside it as `steam_api64.dll.pc5-valve`. The emulator answers the game as Steam would, offline, for a player called "Player". **Off** puts Valve's library back.
+
+What that means:
+
+- **Saves stay on the console**, in the game's own Windows. Steam Cloud doesn't sync them. To carry on from a PC save, copy the save into the game's Windows with the [file manager](File-manager), into the same folder the game uses on the PC.
+- **No online play, friends or Steam achievements.** The game plays as if Steam were offline.
+- **DLC**: the emulator says the game has no DLC, so DLC you own may not show in the game. Its files come with the folder. To turn one on, list it in the game's `steam_settings/configs.app.ini` (beside its Steam library), one `<DLC app ID>=<name>` line under `[app::dlcs]`. The DLC's app ID is in its own store link:
+  ```
+  [app::dlcs]
+  unlock_all=0
+  1234560=The DLC's name
+  ```
+- **Updates**: update the game with Steam on the PC, then use **△ › Manage › Update** with the new folder. Its saves and settings stay.
+
+What doesn't run, even from Steam:
+
+- A game whose program is wrapped in Steam's DRM (SteamStub). It checks for Steam itself, which the emulator can't answer. PC5 says so when you start it. A copy without it, such as one from GOG, can run.
+- Games that need another launcher (EA, Ubisoft, Rockstar, Epic), online DRM or anti-cheat. See [What runs and what doesn't](#what-runs-and-what-doesnt).
+
 ## Choosing the right program
 
 A game's folder often has several programs: the game, a launcher, a settings tool, an uninstaller. PC5 ranks them and starts the one most likely to be the game. It leaves out installers, uninstallers, crash reporters, redistributables and similar tools. A program named like its game's folder isn't taken for a tool because of a word in its name (`Crashlands2.exe` in `Crashlands 2`), and a folder with one program starts that program unless it is an installer.
