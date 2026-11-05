@@ -4,7 +4,7 @@
  * Steam emulator on (its menu, Auto by default) PC5 puts gbe_fork's library in its place before
  * the game starts (the app's pc5/steam, unchanged), keeps Valve's beside it as
  * <name>.pc5-valve, and writes steam_settings/ for it: the game's app ID when the game names it
- * (steam_appid.txt), the interfaces Valve's library has, a player called "Player", offline, no
+ * (steam_appid.txt), else the Steam ID PC5 knows for it (pc5_identity.h: its cover's, or the player's), the interfaces Valve's library has, a player called "Player", offline, no
  * DLC. Off puts Valve's back. A library that isn't Valve's (signed by Valve) is left alone.
  * Steam's DRM wrapper (SteamStub) is a different thing: a game's program wrapped in it needs
  * Steam itself, and PC5 says so rather than start it. */

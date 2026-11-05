@@ -9400,6 +9400,42 @@ static void test_steam(void)
                   file_holds_text(dll, "  Steam's DRM (SteamStub) in the program: yes, so PC5 didn't start it\n") &&
                   file_holds_text(dll, "  Other Steam stand-ins' or fixes' files: none\n"),
               "no app ID, Off, SteamStub");
+        /* A copy from the Steam app: no steam_appid.txt, but PC5 knows the game's ID (its cover's,
+         * pc5_identity.h): the emulator gets it, and a report says where it came from. */
+        Pc5Identity known;
+        memset(&known, 0, sizeof(known));
+        known.steam_appid = 480;
+        pc5_copy(known.source, sizeof(known.source), "installscript.vdf");
+        CHECK(!pc5_identity_write(root_steam, "steamgame", &known), "its ID kept");
+        CHECK(pc5_steam_prepare(root_steam, "steamgame", game, program, app, 1, error, sizeof(error)) >= 0 &&
+                  file_is(file, "480\n"),
+              "the emulator has the ID PC5 knows: %s", error);
+        CHECK(!pc5_steam_check_keep(root_steam, "steamgame", game, program, 1, 0, summary, sizeof(summary)) &&
+                  file_holds_text(dll, "  App ID the emulator has: 480 (PC5 gave it: no steam_appid.txt in the game's "
+                                       "folder; found in installscript.vdf)\n"),
+              "a report says PC5 gave it");
+        known.steam_appid = 730;
+        pc5_copy(known.source, sizeof(known.source), "you");
+        pc5_identity_write(root_steam, "steamgame", &known);
+        CHECK(pc5_steam_prepare(root_steam, "steamgame", game, program, app, 1, error, sizeof(error)) >= 0 &&
+                  file_is(file, "730\n"),
+              "another ID given on the web page: the emulator's changes too");
+        write_text(file, "999\n");
+        known.steam_appid = 440;
+        pc5_identity_write(root_steam, "steamgame", &known);
+        CHECK(pc5_steam_prepare(root_steam, "steamgame", game, program, app, 1, error, sizeof(error)) >= 0 &&
+                  file_is(file, "999\n"),
+              "one the player wrote there stays");
+        unlink(file);
+        CHECK(pc5_steam_prepare(root_steam, "steamgame", game, program, app, 0, error, sizeof(error)) >= 0 && !pc5_exists(file),
+              "Off: none given");
+        CHECK(pc5_steam_prepare(root_steam, "steamgame", game, program, app, 1, error, sizeof(error)) >= 0, "Auto again");
+        path(from, sizeof(from), "%s/prefixes/steamgame/pc5/identity.txt", root_steam);
+        unlink(from);
+        path(from, sizeof(from), "%s/prefixes/steamgame/pc5/steam-appid.txt", root_steam);
+        unlink(from);
+        path(from, sizeof(from), "%s/steam_appid.txt", game);
+        unlink(file);
         write_text(from, (const char *)id.data);
         pc5_buf_free(&id);
         write_text(file, "480\n");

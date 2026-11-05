@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 /* PC5: Steam's library swapped for gbe_fork's, and Steam's DRM wrapper recognised (pc5_steam.h). */
 #include "pc5_steam.h"
+#include "pc5_identity.h"
 #include "pc5_pe.h"
 
 #include <dirent.h>
@@ -208,8 +209,33 @@ static int write_if_missing(const char *dir, const char *name, const void *data,
     return pc5_write_file(path, data, size);
 }
 
-/* steam_settings/ beside the emulator in dll's folder; valve: Valve's library, for its interfaces. */
-static int write_settings(const char *dll, const char *valve, const char *game_dir, const char *program)
+/* The app ID PC5 knows for the game when its folder has no steam_appid.txt: the one the player
+ * gave on the web page, or the one Steam's own files in the folder name (pc5_identity.h, as for
+ * its cover). 0: none. Where it came from into source. */
+static uint32_t known_app_id(const char *root, const char *id, const char *game_dir, char *source, size_t size)
+{
+    Pc5Identity ident;
+    memset(&ident, 0, sizeof(ident));
+    if ((pc5_identity_read(root, id, &ident) || !ident.steam_appid) &&
+        (!game_dir || pc5_identity_scan(game_dir, &ident) || !ident.steam_appid))
+        return 0;
+    if (source && size) pc5_copy(source, size, ident.source[0] ? ident.source : "PC5's look at the folder");
+    return ident.steam_appid;
+}
+
+/* The game's note of the app ID PC5 gave the emulator from known_app_id (prefixes/<id>/pc5/steam-appid.txt):
+ * a steam_settings/steam_appid.txt that still says it is PC5's to change when the player gives
+ * another; one that says anything else is the player's own and stays. */
+static int app_id_note(const char *root, const char *id, char *path, size_t size)
+{
+    return pc5_format(path, size, "%s/prefixes/%s/pc5/steam-appid.txt", root, id);
+}
+
+/* steam_settings/ beside the emulator in dll's folder; valve: Valve's library, for its interfaces.
+ * known: the app ID for a game whose folder has none (known_app_id), 0 for none; note: where PC5
+ * keeps what it gave (app_id_note). */
+static int write_settings(const char *dll, const char *valve, const char *game_dir, const char *program, uint32_t known,
+                          const char *note)
 {
     char dir[PC5_PATH], settings[PC5_PATH], file[PC5_PATH], app_id[16] = "";
     static const char user[] = "# PC5: who plays, for the Steam emulator (gbe_fork)\n[user::general]\naccount_name=Player\n"
@@ -237,6 +263,19 @@ static int write_settings(const char *dll, const char *valve, const char *game_d
         char line[24];
         int n = snprintf(line, sizeof(line), "%s\n", app_id);
         if (write_if_missing(settings, "steam_appid.txt", line, (size_t)n)) return -1;
+    } else if (known && note) {
+        /* None in the folder (a copy from the Steam app has none): the one PC5 knows, written when
+         * there is none yet or the one there is PC5's from before (the player gave another since). */
+        char line[24], here[16] = "", before[16] = "";
+        int n = snprintf(line, sizeof(line), "%u\n", (unsigned)known);
+        if (pc5_join(file, sizeof(file), settings, "steam_appid.txt")) return -1;
+        app_id_from(file, here, sizeof(here));
+        app_id_from(note, before, sizeof(before));
+        if (!pc5_exists(file) || (here[0] && !strcmp(here, before) && strtoul(here, NULL, 10) != known)) {
+            if (pc5_write_file(file, line, (size_t)n)) return -1;
+        }
+        app_id_from(file, here, sizeof(here));
+        if (strtoul(here, NULL, 10) == known) pc5_write_file(note, line, (size_t)n);
     }
     if (write_if_missing(settings, "configs.user.ini", user, sizeof(user) - 1) ||
         write_if_missing(settings, "configs.main.ini", main_ini, sizeof(main_ini) - 1) ||
@@ -299,6 +338,9 @@ int pc5_steam_prepare(const char *root, const char *id, const char *game_dir, co
         pc5_free(found);
         return 0;
     }
+    char note[PC5_PATH];
+    uint32_t known = on && count ? known_app_id(root, id, game_dir, NULL, 0) : 0;
+    if (app_id_note(root, id, note, sizeof(note))) known = 0;
     for (int i = 0; i < count && !status; i++) {
         char dll[PC5_PATH], valve[PC5_PATH], emulator[PC5_PATH];
         const char *name = strrchr(found[i], '/');
@@ -343,7 +385,7 @@ int pc5_steam_prepare(const char *root, const char *id, const char *game_dir, co
             }
             changed++;
         }
-        if (write_settings(dll, valve, game_dir, program)) {
+        if (write_settings(dll, valve, game_dir, program, known, note)) {
             snprintf(error, size, "PC5 can't write the Steam emulator's settings beside %s.", name);
             status = -1;
         }
@@ -482,7 +524,12 @@ int pc5_steam_check(const char *root, const char *id, const char *game_dir, cons
             if (!pc5_join(file, sizeof(file), game_dir, "steam_appid.txt")) app_id_from(file, app_id, sizeof(app_id));
             if (app_id[0]) pc5_copy(app_id_from_where, sizeof(app_id_from_where), "steam_appid.txt at the top of the game's folder");
         }
-        if (app_id[0]) failed |= pc5_buf_printf(out, "  App ID the emulator has: %s (%s)\n", app_id, app_id_from_where);
+        char note[PC5_PATH], given[16] = "", source[64] = "";
+        if (app_id[0] && !app_id_note(root, id, note, sizeof(note))) app_id_from(note, given, sizeof(given));
+        if (app_id[0] && given[0] && !strcmp(given, app_id) && known_app_id(root, id, game_dir, source, sizeof(source)))
+            failed |= pc5_buf_printf(out, "  App ID the emulator has: %s (PC5 gave it: no steam_appid.txt in the game's "
+                                          "folder; found in %s)\n", app_id, source);
+        else if (app_id[0]) failed |= pc5_buf_printf(out, "  App ID the emulator has: %s (%s)\n", app_id, app_id_from_where);
         else failed |= pc5_buf_puts(out, "  App ID the emulator has: none (no steam_appid.txt in the game's folder)\n");
     }
     failed |= pc5_buf_printf(out, "  Other Steam stand-ins' or fixes' files: %s%s\n", w.stand_in_count ? (char *)stand_ins.data : "none",

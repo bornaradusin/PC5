@@ -170,9 +170,10 @@ The best copy of a Steam game is the one Steam itself installs on a PC: every fi
 
 1. **Install the game on a PC with Steam.**
 2. **Find its folder.** In Steam's library, right-click the game › **Manage › Browse local files**. The folder that opens (inside `steamapps\common`) is the game.
-3. **Add its app ID.** Open the game's page on the Steam store; its link is `store.steampowered.com/app/<number>/`. In the game's folder, make a text file named `steam_appid.txt` with only that number in it. The Steam emulator uses it to tell the game which game it is. Steam doesn't put this file there itself, and some games won't start without it.
-4. **Send the folder to the console**: on a USB drive, [over FTP](#sending-games-over-ftp) or from the [web page](#sending-games-from-the-web-page).
-5. **Install it** as any other game. Leave **△ › Manage › Steam emulator** on **Auto**.
+3. **Send the folder to the console**: on a USB drive, [over FTP](#sending-games-over-ftp) or from the [web page](#sending-games-from-the-web-page).
+4. **Install it** as any other game. Leave **△ › Manage › Steam emulator** on **Auto**.
+
+The Steam emulator tells the game which game it is by its Steam app ID, and some games won't start without it. Steam doesn't put a `steam_appid.txt` in the folder, so PC5 gives the emulator the ID it found for the game's cover (from Steam's own files in the folder). If the game's cover is another game's, the ID is wrong too: give the right one on the [web page](Web-page) (the number in the game's `store.steampowered.com/app/<number>/` link), and the emulator gets it at the next start. A `steam_appid.txt` with that number in the game's folder works too, and goes first.
 
 ### How it plays without Steam
 
