@@ -124,7 +124,7 @@ typedef enum SettingRow {
     SR_OVERLAY_SIZE, SR_VIBRATION, SR_LIGHT, SR_TRIGGERS, SR_TRIGGER_RUMBLE, SR_TRIGGER_RESISTANCE,
     SR_STARTUP_SOUND, SR_STARTUP_VOLUME, SR_KEEP_LOGS, SR_PICTURES, SR_CHECK_ON_OPEN, SR_CHECK_NOW, SR_UPDATE_NOW,
     SR_FILES, SR_FTP, SR_WEB, SR_PHONE_LIBRARY, SR_NETWORK, SR_REMOTE_USER, SR_REMOTE_PASSWORD, SR_LANGUAGE, SR_KEYBOARD,
-    SR_HIGH_REFRESH, SR_CHECK_COPIES,
+    SR_HIGH_REFRESH, SR_CHECK_COPIES, SR_OTHER_PROGRAMS,
     SR_SOURCE   /* a picture source: SR_SOURCE + its index (pc5_cover.h) */
 } SettingRow;
 
@@ -164,6 +164,7 @@ static int page_rows(const Pc5Settings *set, int page, int offer_update, Setting
         if (set->triggers == PC5_TRIGGERS_RESISTANCE || set->triggers == PC5_TRIGGERS_BOTH)
             rows[n++] = SR_TRIGGER_RESISTANCE;
         rows[n++] = SR_HIGH_REFRESH;
+        rows[n++] = SR_OTHER_PROGRAMS;
     } else if (page == PAGE_SYSTEM) {
         rows[n++] = SR_STARTUP_SOUND;
         if (strcmp(set->startup_sound, "off")) rows[n++] = SR_STARTUP_VOLUME;
@@ -2556,6 +2557,13 @@ static void setting_text(Pc5Ui *ui, SettingRow row, const char **label, char *ab
                                                       : T("Off: games show up to 60 fps"));
         pc5_copy(value, value_size, set->high_refresh ? T("On") : T("Off"));
         break;
+    case SR_OTHER_PROGRAMS:
+        *label = T("Programs a game starts");
+        pc5_copy(about, about_size, set->other_programs
+                                        ? T("New: a game's setups and built-in browser run hidden. If a game waits for one forever, turn it off")
+                                        : T("Off: a game can't start its setups or other programs, as before"));
+        pc5_copy(value, value_size, set->other_programs ? T("On (new)") : T("Off"));
+        break;
     case SR_KEYBOARD:
         *label = T("Keyboard layout");
         pc5_copy(about, about_size, set->keyboard_us ? T("A USB keyboard types as a US one in games")
@@ -2876,6 +2884,7 @@ static int setting_change(Pc5Ui *ui, SettingRow row, int step)
     case SR_KEEP_LOGS: set->keep_logs = !set->keep_logs; break;
     case SR_KEYBOARD: set->keyboard_us = !set->keyboard_us; break;
     case SR_HIGH_REFRESH: set->high_refresh = !set->high_refresh; break;
+    case SR_OTHER_PROGRAMS: set->other_programs = !set->other_programs; break;
     case SR_CHECK_COPIES: set->copy_check = (Pc5CopyCheck)((set->copy_check + PC5_CHECKS + step) % PC5_CHECKS); break;
     case SR_FTP:
         set->ftp_server = !set->ftp_server;
@@ -7176,7 +7185,7 @@ static void settings_screen(Pc5Ui *ui, Pc5Canvas *c)
                    i == ui->menu, label, about, value);
     }
     SettingRow row = rows[ui->menu < count ? ui->menu : 0];
-    int changes = row == SR_KEEP_LOGS || row == SR_KEYBOARD || row == SR_HIGH_REFRESH || row == SR_CHECK_COPIES || row == SR_FTP || row == SR_WEB || (row >= SR_FPS && row <= SR_TRIGGER_RESISTANCE) || row == SR_CHECK_ON_OPEN ||
+    int changes = row == SR_KEEP_LOGS || row == SR_KEYBOARD || row == SR_HIGH_REFRESH || row == SR_OTHER_PROGRAMS || row == SR_CHECK_COPIES || row == SR_FTP || row == SR_WEB || (row >= SR_FPS && row <= SR_TRIGGER_RESISTANCE) || row == SR_CHECK_ON_OPEN ||
                   row == SR_STARTUP_SOUND || row == SR_STARTUP_VOLUME || row >= SR_SOURCE;
     Hint list[] = { { accept_glyph(ui), changes ? T("Change") : T("Choose") }, { back_glyph(ui), T("Back") }, { G_TRIANGLE, T("QR code") } };
     Pc5WebStatus web = { 0 };

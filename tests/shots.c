@@ -600,6 +600,13 @@ int main(int argc, char **argv)
     step(ui, PC5_KEY_LEFT, 1);             /* trigger rumble: 75 % */
     settle(ui);
     save("07d-settings-trigger-strengths");
+    for (int i = 0; i < 3; i++) step(ui, PC5_KEY_DOWN, 1);   /* Resistance, 120 Hz, Programs a game starts */
+    settle(ui);
+    save("07da-settings-other-programs");
+    step(ui, PC5_KEY_ACCEPT, 1);           /* on */
+    settle(ui);
+    save("07db-settings-other-programs-on");
+    step(ui, PC5_KEY_ACCEPT, 1);           /* and off again */
     step(ui, PC5_KEY_BACK, 1);
     step(ui, PC5_KEY_DOWN, 1);             /* Overlay */
     step(ui, PC5_KEY_ACCEPT, 1);

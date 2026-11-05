@@ -852,6 +852,8 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
     /* 120 Hz output: RADV opens the display at 119.88 Hz where the TV takes it (patches/radv 0004),
      * the title tells Wine (WINE_PS5_REFRESH); "0" keeps it at 60 Hz. */
     setenv("PW_PC5_HIGH_REFRESH", game->settings.high_refresh ? "1" : "0", 1);
+    /* Programs a game starts (Settings › In games): the title starts them for Wine (pc5_children.h). */
+    setenv("PW_PC5_CHILDREN", game->settings.other_programs ? "1" : "0", 1);
     if (stretch) setenv("PW_PC5_STRETCH", "1", 1);
     else unsetenv("PW_PC5_STRETCH");
     /* A launcher that starts the game: Wine hands that program to PC5 (Wine patch 0923,

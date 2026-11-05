@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Thu, 5 Nov 2026 07:40:00 +0000
+Subject: [PATCH 129/129] PC5: programs a game starts follow PC5's setting
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The title reads Programs a game starts (PW_PC5_CHILDREN, which PC5 sets
+from Settings › In games as the game starts) after the game's settings
+are in its environment, not before.
+---
+ native/wine64_main.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 02e5094..9136e65 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -1602,8 +1602,8 @@ static void dualsense_effects(PwPadPs5 *pad, const PwDualSenseOutput *out, uint6
+ static void children_log(const char *line) { PS5LOG_LOG("%s", line); }
+ 
+ /* Programs a game starts, each a process of its own (title/pc5_children.h): its installers,
+- * hidden. In a test version, or with PW_PC5_CHILDREN=1 in the game's launch settings; =0
+- * turns it off. The loader and Wine's files are given as other processes see them: the
++ * hidden. With Settings › In games › Programs a game starts on (PW_PC5_CHILDREN=1, which a
++ * game's env.txt can set too), or in a test version of PC5; PW_PC5_CHILDREN=0 turns it off. The loader and Wine's files are given as other processes see them: the
+  * sandbox's app0, not /app0. */
+ static void pc5_children_start(const PwWineStart *start, const char *root)
+ {
+@@ -1975,9 +1975,6 @@ int main(int argc, char **argv)
+             (uintptr_t)pw_prx_lookup(start.descriptor, "__wine_ps5_set_output_sink");
+         PS5LOG_LOG("PW_WINE64 output_sink=%d", set_sink != NULL);
+         if (set_sink) set_sink(wine_output_sink);
+-#ifdef PW_PC5
+-        pc5_children_start(&start, runtime_root);
+-#endif
+         void (*set_present)(PwWinePresentSink, void *) = (void (*)(PwWinePresentSink, void *))
+             (uintptr_t)pw_prx_lookup(start.descriptor, "pw_wine_set_present_sink");
+         post_input = (int (*)(const PwWineInput *))
+@@ -2034,6 +2031,8 @@ int main(int argc, char **argv)
+         }
+ #ifdef PW_PC5
+         pc5_game_start(game, launch.executable);
++        /* After the game's settings are in the environment (pc5_game_start): Programs a game starts. */
++        pc5_children_start(&start, runtime_root);
+         /* 120 Hz output (PC5's Settings: PW_PC5_HIGH_REFRESH=1): where the TV takes it, RADV opens
+          * the display at 119.88 Hz (patches/radv 0004) and Wine offers games 120 Hz modes (Wine
+          * patches 0946 and 0947, WINE_PS5_REFRESH). Off, or a TV without it: 60 Hz, as before. */
+-- 
+2.43.0
+

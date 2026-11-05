@@ -85,6 +85,10 @@ typedef struct Pc5Settings {
     /* 120 Hz output (Settings › In games): 1 asks for 119.88 Hz where the TV takes it (the console's
      * own 120 Hz setting on), for every game; 0 (the default) 60 Hz. "high_refresh = on|off". */
     int high_refresh;
+    /* Programs a game starts (Settings › In games): 1 starts a game's setups and its built-in web
+     * browser's programs, each a process of its own, hidden (pc5_children.h); 0 (the default) refuses
+     * them, as before. "other_programs = on|off". */
+    int other_programs;
     /* Installs' copies checked (Pc5CopyCheck): "check_copies = off|big|always", off by default. */
     Pc5CopyCheck copy_check;
 } Pc5Settings;
