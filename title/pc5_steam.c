@@ -333,6 +333,13 @@ static int own_emulator(const char *game_dir, char found[][PC5_PATH], int count)
     return 0;
 }
 
+/* 1 when the program imports Steam's library (not only delay-loads it). */
+static int imports_steam(const char *program)
+{
+    Pc5PeInfo pe;
+    return !pc5_pe_read(program, &pe) && !pe.dll && (pe.imports & PC5_IMPORT_STEAM);
+}
+
 /* The program imports Steam's library and none is beside it: the app's emulator put there as
  * the one it imports (steam_api64.dll for a 64-bit program), with <name>.pc5-added beside it.
  * 1 when one was put there, 0 when none was needed, -1 with why in error. */
@@ -341,7 +348,7 @@ static int add_missing(const char *game_dir, const char *program, const char *ap
     Pc5PeInfo pe;
     char dir[PC5_PATH], dll[PC5_PATH], added[PC5_PATH], emulator[PC5_PATH];
     (void)game_dir;
-    if (pc5_pe_read(program, &pe) || pe.dll || !(pe.imports & PC5_IMPORT_STEAM)) return 0;
+    if (!imports_steam(program) || pc5_pe_read(program, &pe)) return 0;
     const char *name = pe.bits == 64 ? "steam_api64.dll" : "steam_api.dll";
     pc5_copy(dir, sizeof(dir), program);
     char *slash = strrchr(dir, '/');
@@ -418,8 +425,18 @@ int pc5_steam_prepare(const char *root, const char *id, const char *game_dir, co
         char added[PC5_PATH];
         if (pc5_format(added, sizeof(added), "%s.pc5-added", dll)) continue;
         int valve_signed = pc5_pe_signed_by(dll, "Valve"), valve_kept = pc5_is_file(valve) || pc5_is_file(added);
+        /* One PC5 put there where there was none: taken away again with Off, and for a program
+         * that only delay-loads Steam's library (2.3.4 put one there for it too). */
+        if (!valve_signed && pc5_is_file(added) && !pc5_is_file(valve) && on && program && !imports_steam(program)) {
+            if (unlink(dll) || unlink(added)) {
+                snprintf(error, size, "PC5 can't take its Steam emulator away from %s.", name);
+                status = -1;
+            } else {
+                changed++;
+            }
+            continue;
+        }
         if (!on) {
-            /* One PC5 put there where there was none: taken away again. */
             if (!valve_signed && pc5_is_file(added) && !pc5_is_file(valve)) {
                 if (unlink(dll) || unlink(added)) {
                     snprintf(error, size, "PC5 can't take its Steam emulator away from %s.", name);

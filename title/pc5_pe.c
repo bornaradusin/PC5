@@ -198,7 +198,9 @@ static uint32_t read_imports(const Pe *pe)
             if (!u32(d + 4)) break;
             at = u32(d + 4);
             if (!(u32(d) & 1)) at = (uint32_t)((uint64_t)at - pe->image_base);
-            if (!read_name(pe, at, name, sizeof(name))) bits |= import_bit(name);
+            /* Steam's library delay-loaded is only loaded when the game asks for it, and a game
+             * that does copes without it (an Unreal Engine game from another store): not counted. */
+            if (!read_name(pe, at, name, sizeof(name))) bits |= import_bit(name) & ~(uint32_t)PC5_IMPORT_STEAM;
         }
     }
     /* A CLR header (directory 14) is a .NET program, whatever it imports. */

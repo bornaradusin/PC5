@@ -18,7 +18,7 @@ enum {
     PC5_IMPORT_VULKAN = 1u << 7,   /* vulkan-1 */
     PC5_IMPORT_DDRAW = 1u << 8,
     PC5_IMPORT_DOTNET = 1u << 9,   /* mscoree: a .NET Framework program */
-    PC5_IMPORT_STEAM = 1u << 10,   /* steam_api, steam_api64: Steam's library (pc5_steam.h) */
+    PC5_IMPORT_STEAM = 1u << 10,   /* steam_api, steam_api64 imported (not delay-loaded): Steam's library (pc5_steam.h) */
     /* the libraries a program draws with */
     PC5_IMPORT_DRAWING = PC5_IMPORT_D3D8 | PC5_IMPORT_D3D9 | PC5_IMPORT_D3D10 | PC5_IMPORT_D3D11 | PC5_IMPORT_DXGI |
                          PC5_IMPORT_D3D12 | PC5_IMPORT_OPENGL | PC5_IMPORT_VULKAN | PC5_IMPORT_DDRAW,

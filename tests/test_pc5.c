@@ -9514,6 +9514,20 @@ static void test_steam(void)
         pe_variant(from, file, "Valve", "SteamUser021", 13, NULL);
         CHECK(pc5_steam_prepare(root_steam, "lone", lone, exe, app, 1, error, sizeof(error)) >= 0 && !pc5_exists(mark),
               "the game's own: none put there");
+        /* A program that doesn't import it (one that only delay-loads it, as an Unreal Engine game
+         * from another store does, is read as not importing it): one 2.3.4 put there is taken away. */
+        path(file, sizeof(file), "%s/Binaries/Win32/Steam_API64.DLL", lone);
+        unlink(file);
+        path(from, sizeof(from), "%s/game64.exe", programs);
+        copy_file(from, exe);
+        path(from, sizeof(from), "%s/pc5/steam/steam_api64.dll", app);
+        copy_file(from, put);
+        write_text(mark, "PC5 put its Steam emulator here\n");
+        path(file, sizeof(file), "%s/prefixes/lone/pc5/steam.txt", root_steam);
+        unlink(file);
+        CHECK(pc5_steam_prepare(root_steam, "lone", lone, exe, app, 1, error, sizeof(error)) == 1 && !pc5_exists(put) &&
+                  !pc5_exists(mark),
+              "one put there before: taken away: %s", error);
         /* A program that doesn't import it: nothing either. */
         unlink(file);
         path(from, sizeof(from), "%s/game64.exe", programs);
