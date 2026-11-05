@@ -1,0 +1,111 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Thu, 5 Nov 2026 13:00:00 +0000
+Subject: [PATCH 130/130] PC5: socket buffer sizes the console refuses are granted as
+ on Linux (Wine patch 1002)
+
+---
+ ...rnel-refuses-are-granted-as-on-linux.patch | 91 +++++++++++++++++++
+ 1 file changed, 91 insertions(+)
+ create mode 100644 wine/patches/1002-server-ps5-socket-buffer-sizes-the-kernel-refuses-are-granted-as-on-linux.patch
+
+diff --git a/wine/patches/1002-server-ps5-socket-buffer-sizes-the-kernel-refuses-are-granted-as-on-linux.patch b/wine/patches/1002-server-ps5-socket-buffer-sizes-the-kernel-refuses-are-granted-as-on-linux.patch
+new file mode 100644
+index 0000000..25dd30c
+--- /dev/null
++++ b/wine/patches/1002-server-ps5-socket-buffer-sizes-the-kernel-refuses-are-granted-as-on-linux.patch
+@@ -0,0 +1,91 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Thu, 5 Nov 2026 12:40:00 +0000
++Subject: [PATCH] server: PS5: socket buffer sizes the kernel refuses are granted as on Linux.
++
++The console's kernel refuses a socket buffer bigger than it allows with
++ENOBUFS, where Linux sets the most it allows and Windows grants it. A
++game that asks for a big one fails: Cinderia starts its own co-op server
++when a save is picked, even playing alone, and its Unity networking asks
++for large buffers; the request failed, the world was never set up and
++the screen stayed black. A size refused is now halved until the kernel
++takes one, the game is told its size was set and reads back what it
++asked for, as on Linux, and the log says so (a few times at most).
++ENOBUFS is also mapped (STATUS_INSUFFICIENT_RESOURCES, WSAENOBUFS) in the
++server and in ntdll instead of failing as unknown.
++---
++diff --git a/dlls/ntdll/unix/socket.c b/dlls/ntdll/unix/socket.c
++--- a/dlls/ntdll/unix/socket.c
+++++ b/dlls/ntdll/unix/socket.c
++@@ -191,6 +191,7 @@
++         case ECONNRESET:        return STATUS_CONNECTION_RESET;
++         case ECONNABORTED:      return STATUS_CONNECTION_ABORTED;
++         case EISCONN:           return STATUS_CONNECTION_ACTIVE;
+++        case ENOBUFS:           return STATUS_INSUFFICIENT_RESOURCES;   /* PS5: the kernel is out of room for it */
++ 
++         case 0:                 return STATUS_SUCCESS;
++         default:
++diff --git a/server/sock.c b/server/sock.c
++--- a/server/sock.c
+++++ b/server/sock.c
++@@ -2437,6 +2437,31 @@
++     }
++ }
++ 
+++/* PS5: the console's kernel refuses a socket buffer bigger than it allows with ENOBUFS (FreeBSD's
+++ * kern.ipc.maxsockbuf), where Linux sets the most it allows and Windows grants it. A game that asks
+++ * for a big one (Unity's networking for a game's own co-op server, even playing alone) then fails.
+++ * A size refused is halved until the kernel takes one; the game is told its size was set, and
+++ * reads back the size it asked for, as on Linux. 0, or -1 with errno when even a small one is
+++ * refused. */
+++static int sock_set_buffer_size( int fd, int option, unsigned int size )
+++{
+++    static unsigned int notes;
+++    unsigned int try = size;
+++
+++    for (;;)
+++    {
+++        if (!setsockopt( fd, SOL_SOCKET, option, (char *)&try, sizeof(try) ))
+++        {
+++            if (try != size && notes++ < 8)
+++                fprintf( stderr, "wine-ps5: socket %s of %u bytes refused by the kernel, %u set\n",
+++                         option == SO_RCVBUF ? "receive buffer" : "send buffer", size, try );
+++            return 0;
+++        }
+++        if ((errno != ENOBUFS && errno != EINVAL) || try <= 4096) return -1;
+++        try /= 2;
+++    }
+++}
+++
++ static int sock_get_ntstatus( int err )
++ {
++     switch ( err )
++@@ -2478,6 +2503,7 @@
++         case ECONNRESET:        return STATUS_CONNECTION_RESET;
++         case ECONNABORTED:      return STATUS_CONNECTION_ABORTED;
++         case EISCONN:           return STATUS_CONNECTION_ACTIVE;
+++        case ENOBUFS:           return STATUS_INSUFFICIENT_RESOURCES;
++ 
++         case 0:                 return STATUS_SUCCESS;
++         default:
++@@ -3296,7 +3322,7 @@
++         rcvbuf = *(DWORD *)get_req_data();
++         set_rcvbuf = max( rcvbuf, MIN_RCVBUF );
++ 
++-        if (!setsockopt( unix_fd, SOL_SOCKET, SO_RCVBUF, (char *)&set_rcvbuf, sizeof(set_rcvbuf) ))
+++        if (!sock_set_buffer_size( unix_fd, SO_RCVBUF, set_rcvbuf ))
++             sock->rcvbuf = rcvbuf;
++         else
++             set_error( sock_get_ntstatus( errno ) );
++@@ -3419,7 +3445,7 @@
++         }
++ #endif
++ 
++-        if (!setsockopt( unix_fd, SOL_SOCKET, SO_SNDBUF, (char *)&sndbuf, sizeof(sndbuf) ))
+++        if (!sock_set_buffer_size( unix_fd, SO_SNDBUF, sndbuf ))
++             sock->sndbuf = sndbuf;
++         else
++             set_error( sock_get_ntstatus( errno ) );
++-- 
++2.43.0
++
+-- 
+2.43.0
+

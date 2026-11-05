@@ -424,6 +424,11 @@ int pc5_folder_inspect(const char *path, const char *name, Pc5Folder *folder)
             folder->exes[i].java = pc5_java_beside(on_disk);
             folder->exes[i].gl_framework = pc5_gl_framework_beside(on_disk);
         }
+        /* An old Unity game's program: it imports OpenGL, but draws with Direct3D. */
+        char file[PC5_PATH * 2], program[PC5_PATH];
+        program_of(path, folder->exes[i].path, batch, program, sizeof(program));
+        if (!pc5_format(file, sizeof(file), "%s/%s", path, program))
+            folder->exes[i].pe.imports |= pc5_pe_unity_direct3d(file, folder->exes[i].pe.imports);
     }
     /* A game whose programs and libraries import nothing they draw with loads it at run
      * time: what its likeliest programs name (pc5_pe_named_libraries), read only then. */

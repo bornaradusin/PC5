@@ -18,6 +18,7 @@ enum {
     PC5_IMPORT_VULKAN = 1u << 7,   /* vulkan-1 */
     PC5_IMPORT_DDRAW = 1u << 8,
     PC5_IMPORT_DOTNET = 1u << 9,   /* mscoree: a .NET Framework program */
+    PC5_IMPORT_STEAM = 1u << 10,   /* steam_api, steam_api64: Steam's library (pc5_steam.h) */
     /* the libraries a program draws with */
     PC5_IMPORT_DRAWING = PC5_IMPORT_D3D8 | PC5_IMPORT_D3D9 | PC5_IMPORT_D3D10 | PC5_IMPORT_D3D11 | PC5_IMPORT_DXGI |
                          PC5_IMPORT_D3D12 | PC5_IMPORT_OPENGL | PC5_IMPORT_VULKAN | PC5_IMPORT_DDRAW,
@@ -67,6 +68,11 @@ int pc5_pe_unreal_d3d12(const char *path, uint32_t imports);
  * the engine's name in it ("Godot Engine"). Its imports name Direct3D, but a Godot game
  * draws with OpenGL or Vulkan; PC5 gives it OpenGL (Zink), which has Vulkan too. */
 int pc5_pe_godot(const char *path);
+/* An old Unity game's program (Unity 5.5 and before: the player in the program itself, its
+ * <name>_Data folder beside it) imports OpenGL but draws with Direct3D, which it loads at run
+ * time by name: the Direct3D libraries it names (PC5_IMPORT_D3D*, DXGI), for its imports to
+ * say so; 0 for any other program, or one whose imports aren't OpenGL's alone. imports: its own. */
+uint32_t pc5_pe_unity_direct3d(const char *path, uint32_t imports);
 /* 1 when the program starts in its section of that name: ".bind", Steam's DRM wrapper (SteamStub),
  * still in place. A copy with the wrapper taken off (Steamless) may keep the section, with its
  * start back in its own code. */

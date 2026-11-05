@@ -9484,6 +9484,43 @@ static void test_steam(void)
         pc5_buf_free(&data);
         CHECK(sections > 1 && !pc5_steam_stub(file), "a .bind section it doesn't start in: not wrapped");
     }
+    /* A copy without Steam's library (an antivirus on a PC deleted it): its program imports it,
+     * so the emulator is put there as PC5's, and Off takes it away again. */
+    {
+        char lone[PC5_PATH], exe[PC5_PATH], put[PC5_PATH], mark[PC5_PATH], summary[PC5_ERROR * 4];
+        path(lone, sizeof(lone), "%s/lone", base);
+        path(exe, sizeof(exe), "%s/Binaries/Win32/Lone.exe", lone);
+        path(from, sizeof(from), "%s/steam64.exe", programs);
+        copy_file(from, exe);
+        path(put, sizeof(put), "%s/Binaries/Win32/steam_api64.dll", lone);
+        path(mark, sizeof(mark), "%s.pc5-added", put);
+        CHECK(pc5_steam_prepare(root_steam, "lone", lone, exe, app, 1, error, sizeof(error)) == 1 && pc5_is_file(mark),
+              "the emulator put there: %s", error);
+        path(file, sizeof(file), "%s/pc5/steam/steam_api64.dll", app);
+        CHECK(same_files(put, file), "as the app's");
+        path(file, sizeof(file), "%s/Binaries/Win32/steam_settings/configs.main.ini", lone);
+        CHECK(file_holds_text(file, "offline=1\n"), "with its settings");
+        CHECK(pc5_steam_prepare(root_steam, "lone", lone, exe, app, 1, error, sizeof(error)) == 0, "again: nothing to do");
+        CHECK(!pc5_steam_check_keep(root_steam, "lone", lone, exe, 1, 0, summary, sizeof(summary)) &&
+                  strstr(summary, "Binaries/Win32/steam_api64.dll: PC5's Steam emulator, put there: the game's copy had no "
+                                  "Steam library"),
+              "a report says so: %s", summary);
+        CHECK(pc5_steam_prepare(root_steam, "lone", lone, exe, app, 0, error, sizeof(error)) == 1 && !pc5_exists(put) &&
+                  !pc5_exists(mark),
+              "Off: taken away");
+        /* One of its own (any case) beside the program: nothing put there. */
+        path(file, sizeof(file), "%s/Binaries/Win32/Steam_API64.DLL", lone);
+        path(from, sizeof(from), "%s/engine.dll", programs);
+        pe_variant(from, file, "Valve", "SteamUser021", 13, NULL);
+        CHECK(pc5_steam_prepare(root_steam, "lone", lone, exe, app, 1, error, sizeof(error)) >= 0 && !pc5_exists(mark),
+              "the game's own: none put there");
+        /* A program that doesn't import it: nothing either. */
+        unlink(file);
+        path(from, sizeof(from), "%s/game64.exe", programs);
+        copy_file(from, exe);
+        CHECK(pc5_steam_prepare(root_steam, "lone", lone, exe, app, 1, error, sizeof(error)) == 0 && !pc5_exists(put),
+              "no Steam: nothing put there");
+    }
     /* Its menu's setting. */
     Pc5Controls controls;
     pc5_controls_load(root_steam, "steamgame", &controls);
@@ -9492,6 +9529,29 @@ static void test_steam(void)
     pc5_controls_save(root_steam, "steamgame", &controls);
     pc5_controls_load(root_steam, "steamgame", &controls);
     CHECK(controls.steam_off, "Off kept");
+}
+
+/* An old Unity game: its program imports OpenGL, names d3d9.dll and has its _Data folder
+ * beside it, so it draws with Direct3D 9; without the folder, or with Direct3D imported, nothing
+ * changes. */
+static void test_unity_direct3d(void)
+{
+    char dir[PC5_PATH], exe[PC5_PATH], from[PC5_PATH], data[PC5_PATH];
+    Pc5PeInfo pe;
+    static const char names[] = "d3d9.dll";
+
+    path(dir, sizeof(dir), "%s/unity", work);
+    path(exe, sizeof(exe), "%s/Old Game.exe", dir);
+    path(from, sizeof(from), "%s/gl32.exe", programs);
+    pe_variant(from, exe, NULL, names, sizeof(names), NULL);
+    CHECK(!pc5_pe_read(exe, &pe) && (pe.imports & PC5_IMPORT_DRAWING) == PC5_IMPORT_OPENGL, "it imports OpenGL alone");
+    CHECK(!pc5_pe_unity_direct3d(exe, pe.imports), "no _Data folder: not Unity's");
+    path(data, sizeof(data), "%s/Old Game_Data", dir);
+    pc5_mkdirs(data);
+    uint32_t added = pc5_pe_unity_direct3d(exe, pe.imports);
+    CHECK(added == PC5_IMPORT_D3D9 && pc5_api_from_imports(pe.imports | added) == PC5_API_D3D9,
+          "Unity's: Direct3D 9: %#x", (unsigned)added);
+    CHECK(!pc5_pe_unity_direct3d(exe, PC5_IMPORT_OPENGL | PC5_IMPORT_D3D11), "Direct3D imported: as it was");
 }
 
 /* Starting a game: its PhysX installed the first time, the Steam emulator in place, the game's
@@ -9920,6 +9980,7 @@ int main(int argc, char **argv)
     test_msi();
     test_identity();
     test_steam();
+    test_unity_direct3d();
     test_keyboard();
     test_named_libraries();
     test_java();

@@ -167,6 +167,7 @@ static uint32_t import_bit(const char *name)
         { "dxgi.dll", PC5_IMPORT_DXGI },       { "d3d12.dll", PC5_IMPORT_D3D12 },
         { "opengl32.dll", PC5_IMPORT_OPENGL }, { "vulkan-1.dll", PC5_IMPORT_VULKAN },
         { "ddraw.dll", PC5_IMPORT_DDRAW },     { "mscoree.dll", PC5_IMPORT_DOTNET },
+        { "steam_api.dll", PC5_IMPORT_STEAM }, { "steam_api64.dll", PC5_IMPORT_STEAM },
     };
     for (size_t i = 0; i < sizeof(known) / sizeof(known[0]); i++)
         if (!strcmp(name, known[i].name)) return known[i].bit;
@@ -553,6 +554,21 @@ int pc5_pe_godot(const char *path)
         if (!stat(pck, &st) && S_ISREG(st.st_mode)) return 1;
     }
     return file_has_text(path, "Godot Engine");
+}
+
+uint32_t pc5_pe_unity_direct3d(const char *path, uint32_t imports)
+{
+    const uint32_t direct3d = PC5_IMPORT_D3D8 | PC5_IMPORT_D3D9 | PC5_IMPORT_D3D10 | PC5_IMPORT_D3D11 | PC5_IMPORT_DXGI;
+    char data[PC5_PATH];
+    size_t n = strlen(path);
+    struct stat st;
+
+    if ((imports & PC5_IMPORT_DRAWING) != PC5_IMPORT_OPENGL) return 0;
+    if (n <= 4 || n + 1 >= sizeof(data) || pc5_casecmp(path + n - 4, ".exe")) return 0;
+    memcpy(data, path, n - 4);
+    memcpy(data + n - 4, "_Data", 6);
+    if (stat(data, &st) || !S_ISDIR(st.st_mode)) return 0;
+    return pc5_pe_named_libraries(path) & direct3d;
 }
 
 int pc5_pe_section(const char *path, const char *name)

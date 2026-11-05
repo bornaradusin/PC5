@@ -838,9 +838,12 @@ int pc5_profile_refresh(const char *root, const char *id, char *error, size_t si
     if (!work[0]) unreal_starter(top, &program);
     /* A game installed as drawing with Windows itself may load Direct3D or Vulkan at run
      * time (before 1.6.1 PC5 didn't look): what its program names, kept in its notes. */
-    if (info.api == PC5_API_GDI &&
+    /* ... and one installed as drawing with OpenGL may be an old Unity game's, which draws with
+     * Direct3D (before 2.3.4 PC5 didn't tell): its Direct3D, kept in its notes too. */
+    if ((info.api == PC5_API_GDI || info.api == PC5_API_OPENGL) &&
         top[0] && !pc5_format(path, sizeof(path), "%s/%s", top, program.exe)) {
-        uint32_t named = pc5_pe_named_libraries(path) & PC5_IMPORT_DRAWING;
+        uint32_t named = info.api == PC5_API_GDI ? pc5_pe_named_libraries(path) & PC5_IMPORT_DRAWING
+                                                 : pc5_pe_unity_direct3d(path, PC5_IMPORT_OPENGL);
         if (named) {
             info.api = program.api = pc5_api_from_imports(named);
             if (!pc5_info_text(&info, text, sizeof(text)) &&
@@ -1030,7 +1033,8 @@ static void handed_program(const char *path, const char *dir, Pc5Info *program)
     if (pc5_pe_read(path, &pe) || pe.dll) return;
     if (pe.bits == 32 || pe.bits == 64) program->bits = pe.bits;
     if (pc5_pe_godot(path)) program->api = PC5_API_OPENGL;   /* a Godot game: OpenGL, whatever it imports */
-    else if ((drawing = pe.imports & PC5_IMPORT_DRAWING) || (drawing = pc5_pe_named_libraries(path) & PC5_IMPORT_DRAWING) ||
+    else if ((drawing = (pe.imports | pc5_pe_unity_direct3d(path, pe.imports)) & PC5_IMPORT_DRAWING) ||
+             (drawing = pc5_pe_named_libraries(path) & PC5_IMPORT_DRAWING) ||
         (dir[0] && (drawing = pc5_dll_imports_in(dir) & PC5_IMPORT_DRAWING)))
         program->api = pc5_api_from_imports(pc5_pe_unreal_d3d12(path, drawing) ? drawing | PC5_IMPORT_D3D12 : drawing);
     else if (dir[0] && (pc5_java_beside(dir) || pc5_gl_framework_beside(dir)))

@@ -322,13 +322,54 @@ static int own_emulator(const char *game_dir, char found[][PC5_PATH], int count)
         if (pc5_join(dll, sizeof(dll), game_dir, found[i]) || pc5_format(valve, sizeof(valve), "%s.pc5-valve", dll) ||
             !pc5_is_file(dll))
             continue;
-        if (!pc5_pe_signed_by(dll, "Valve") && !pc5_is_file(valve)) return 1;
+        char added[PC5_PATH];
+        if (pc5_format(added, sizeof(added), "%s.pc5-added", dll)) continue;
+        if (!pc5_pe_signed_by(dll, "Valve") && !pc5_is_file(valve) && !pc5_is_file(added)) return 1;
         pc5_copy(dir, sizeof(dir), dll);
         char *slash = strrchr(dir, '/');
         if (slash) *slash = 0;
         if (emulator_marker_in(dir)) return 1;
     }
     return 0;
+}
+
+/* The program imports Steam's library and none is beside it: the app's emulator put there as
+ * the one it imports (steam_api64.dll for a 64-bit program), with <name>.pc5-added beside it.
+ * 1 when one was put there, 0 when none was needed, -1 with why in error. */
+static int add_missing(const char *game_dir, const char *program, const char *app, char *error, size_t size)
+{
+    Pc5PeInfo pe;
+    char dir[PC5_PATH], dll[PC5_PATH], added[PC5_PATH], emulator[PC5_PATH];
+    (void)game_dir;
+    if (pc5_pe_read(program, &pe) || pe.dll || !(pe.imports & PC5_IMPORT_STEAM)) return 0;
+    const char *name = pe.bits == 64 ? "steam_api64.dll" : "steam_api.dll";
+    pc5_copy(dir, sizeof(dir), program);
+    char *slash = strrchr(dir, '/');
+    if (!slash) return 0;
+    *slash = 0;
+    /* Any case, and either library: one there already is the game's. */
+    DIR *d = opendir(dir);
+    struct dirent *e;
+    int there = 0;
+    if (!d) return 0;
+    while (!there && (e = readdir(d)))
+        there = !strcasecmp(e->d_name, "steam_api.dll") || !strcasecmp(e->d_name, "steam_api64.dll");
+    closedir(d);
+    if (there) return 0;
+    if (pc5_join(dll, sizeof(dll), dir, name) || pc5_format(added, sizeof(added), "%s.pc5-added", dll) ||
+        pc5_format(emulator, sizeof(emulator), "%s/pc5/steam/%s", app, name))
+        return 0;
+    if (!pc5_is_file(emulator)) {
+        pc5_copy(error, size, "This PC5 has no Steam emulator (pc5/steam).");
+        return -1;
+    }
+    static const char note[] = "PC5 put its Steam emulator here: the game's copy had no Steam library.\n";
+    if (pc5_write_file(added, note, sizeof(note) - 1) || copy_file(emulator, dll)) {
+        unlink(added);
+        snprintf(error, size, "PC5 can't put the Steam emulator beside the game's program as %s.", name);
+        return -1;
+    }
+    return 1;
 }
 
 int pc5_steam_prepare(const char *root, const char *id, const char *game_dir, const char *program, const char *app,
@@ -340,6 +381,21 @@ int pc5_steam_prepare(const char *root, const char *id, const char *game_dir, co
     error[0] = 0;
     if (!found) return -1;
     count = pc5_steam_find(root, id, game_dir, program, found, PC5_STEAM_DLLS);
+    /* A program that needs Steam's library when its copy has none beside it (an antivirus on a
+     * PC deleted it, or the copy came without): the emulator put there, marked as PC5's. */
+    if (on && program && !emulator_marker_in(game_dir) && !own_emulator(game_dir, found, count)) {
+        int added = add_missing(game_dir, program, app, error, size);
+        if (added < 0) {
+            pc5_free(found);
+            return -1;
+        }
+        if (added) {
+            char cache[PC5_PATH];
+            if (!pc5_format(cache, sizeof(cache), "%s/prefixes/%s/pc5/steam.txt", root, id)) unlink(cache);
+            count = pc5_steam_find(root, id, game_dir, program, found, PC5_STEAM_DLLS);
+            changed++;
+        }
+    }
     /* A game with an emulator of its own keeps it: PC5 puts none beside it (SuperLeiyan: Auto
      * gave such a game another user and other settings, and its saves were lost to it). */
     if (on && own_emulator(game_dir, found, count)) {
@@ -359,9 +415,21 @@ int pc5_steam_prepare(const char *root, const char *id, const char *game_dir, co
             continue;
         /* Valve's (signed by Valve: a new one after an update too), or PC5's emulator with Valve's
          * kept beside it (an earlier PC5's emulator among them), or another one, left alone. */
-        int valve_signed = pc5_pe_signed_by(dll, "Valve"), valve_kept = pc5_is_file(valve);
+        char added[PC5_PATH];
+        if (pc5_format(added, sizeof(added), "%s.pc5-added", dll)) continue;
+        int valve_signed = pc5_pe_signed_by(dll, "Valve"), valve_kept = pc5_is_file(valve) || pc5_is_file(added);
         if (!on) {
-            if (!valve_signed && valve_kept) {
+            /* One PC5 put there where there was none: taken away again. */
+            if (!valve_signed && pc5_is_file(added) && !pc5_is_file(valve)) {
+                if (unlink(dll) || unlink(added)) {
+                    snprintf(error, size, "PC5 can't take its Steam emulator away from %s.", name);
+                    status = -1;
+                } else {
+                    changed++;
+                }
+                continue;
+            }
+            if (!valve_signed && pc5_is_file(valve)) {
                 if (rename(valve, dll)) {
                     snprintf(error, size, "PC5 can't put Steam's %s back.", name);
                     status = -1;
@@ -492,11 +560,15 @@ int pc5_steam_check(const char *root, const char *id, const char *game_dir, cons
     for (int i = 0; i < count; i++) {
         char dll[PC5_PATH], valve[PC5_PATH], dir[PC5_PATH], file[PC5_PATH];
         if (pc5_join(dll, sizeof(dll), game_dir, found[i]) || pc5_format(valve, sizeof(valve), "%s.pc5-valve", dll)) continue;
-        int signed_valve = pc5_is_file(dll) && pc5_pe_signed_by(dll, "Valve"), kept = pc5_is_file(valve);
+        char added[PC5_PATH];
+        if (pc5_format(added, sizeof(added), "%s.pc5-added", dll)) continue;
+        int signed_valve = pc5_is_file(dll) && pc5_pe_signed_by(dll, "Valve"), kept = pc5_is_file(valve),
+            added_here = pc5_is_file(added);
         const char *whose = !pc5_is_file(dll) ? "missing"
                             : signed_valve    ? (on ? "Valve's: the emulator isn't in its place (another stand-in in the folder, or PC5 couldn't put it there)"
                                                     : "Valve's (emulator Off)")
                             : kept            ? "PC5's Steam emulator, Valve's kept beside it"
+                            : added_here      ? "PC5's Steam emulator, put there: the game's copy had no Steam library"
                                               : "not Valve's and not PC5's: another Steam stand-in";
         failed |= pc5_buf_printf(out, "  %s: %s\n", found[i], whose);
         /* The app ID as the emulator finds it: its steam_settings first, then beside it. */
