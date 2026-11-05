@@ -455,6 +455,24 @@ static int game_folder(const char *exe, char *out, size_t size)
     return parts >= 1 && n && !strstr(out, "..") ? 0 : -1;
 }
 
+/* What PC5 saw of Steam when the game started (pc5_steam_check_keep: the game's
+ * pc5/steam-check.txt), for about.txt. */
+static void steam_check(const char *root, const Pc5LogIssue *issue, Pc5Buf *about)
+{
+    char drive[PC5_PATH], path[PC5_PATH];
+    Pc5Buf text = { 0 };
+    if (game_drive(root, issue, drive, sizeof(drive)) || strlen(drive) < 9) return;
+    drive[strlen(drive) - 8] = 0;   /* "/drive_c" off: the game's prefix */
+    if (pc5_format(path, sizeof(path), "%s/pc5/steam-check.txt", drive) || !pc5_is_file(path) ||
+        pc5_read_file(path, &text, 16 * 1024) || !text.len) {
+        pc5_buf_free(&text);
+        return;
+    }
+    pc5_buf_puts(about, "\nSteam, as PC5 saw it when the game started:\n");
+    pc5_buf_put(about, text.data, text.len);
+    pc5_buf_free(&text);
+}
+
 static void collect_game_files(const char *root, Pc5LogIssue *issue, Pc5Zip *zip, Pc5Buf *about, int offset_s)
 {
     char drive[PC5_PATH], dir[PC5_PATH], folder[PC5_PATH];
@@ -552,6 +570,7 @@ static int keep(const char *root, const char *logs, int session, const char *kin
             Pc5Buf files = { 0 };
             if (strcmp(issue->profile, "launcher")) collect_game_files(root, issue, &zip, &files, offset_s);
             about_page(&about, issue, when_text, base);
+            if (strcmp(issue->profile, "launcher")) steam_check(root, issue, &about);
             if (files.len) pc5_buf_put(&about, files.data, files.len);
             pc5_buf_free(&files);
             failed = pc5_zip_add(&zip, "about.txt", about.data, about.len, now + offset_s);

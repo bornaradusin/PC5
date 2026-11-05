@@ -6297,6 +6297,9 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                         say(ui, "PC5 vkd3d cache in=%s none", dir);
                 }
                 if (pc5_steam_stub(program)) {
+                    char steam[PC5_ERROR * 4];
+                    if (!pc5_steam_check_keep(ui->root, ui->launch_id, game_dir, program, 1, 1, steam, sizeof(steam)))
+                        say(ui, "PC5 steam check: %s", steam);
                     pc5_tf(title, sizeof(title), "%s needs Steam", ui->library.games[index].title);
                     say(ui, "PC5 problem play %s: SteamStub (.bind) in %s", ui->launch_id, program);
                     message(ui, 0, title,
@@ -6312,6 +6315,11 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                                                 sizeof(why));
                 if (changed < 0) say(ui, "PC5 problem steam %s: %s", ui->launch_id, why);
                 else if (changed) say(ui, "PC5 steam emulator %s changed=%d", chosen.steam_off ? "off" : "on", changed);
+                /* What the game meets of Steam, for a report's about.txt (pc5/steam-check.txt). */
+                char steam[PC5_ERROR * 4];
+                if (!pc5_steam_check_keep(ui->root, ui->launch_id, game_dir, program, !chosen.steam_off, 0, steam,
+                                          sizeof(steam)))
+                    say(ui, "PC5 steam check: %s", steam);
             }
             if (index >= 0 && ui->library.games[index].pc5 &&
                 pc5_profile_refresh(ui->root, ui->launch_id, error, sizeof(error))) {

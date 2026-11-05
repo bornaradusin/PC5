@@ -8,7 +8,7 @@ When a game doesn't work, its log is how the cause is found. This page gathers w
 
 - `issue-<when>_<game>.zip`: a session that went wrong (a crash, a game that closed before showing anything, or one that had to be closed).
 - `log-<when>_<game>.zip`: each game's newest session, kept even when nothing went wrong. Playing the game again replaces it, so copy it first.
-- Each zip holds PC5's log of the session, `about.txt` (what PC5 saw, the program, the console's firmware) and the game's own logs and crash files (`game/…`). You don't need to look for the game's own logs: PC5 collects them.
+- Each zip holds PC5's log of the session, `about.txt` (what PC5 saw, the program, the console's firmware, and for a game made for Steam how it meets Steam: the Steam emulator, its app ID, Steam's DRM, other Steam stand-ins in the folder) and the game's own logs and crash files (`game/…`). You don't need to look for the game's own logs: PC5 collects them.
 - Nothing is kept longer than seven days.
 
 See [Finding the log](Reporting-a-problem#finding-the-log) for the details.

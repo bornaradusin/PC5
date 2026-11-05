@@ -26,6 +26,18 @@ int pc5_steam_prepare(const char *root, const char *id, const char *game_dir, co
 /* 1 when the program is wrapped in SteamStub: it starts in its section named .bind (one with the
  * wrapper taken off may keep the section, starting in its own code: not wrapped). */
 int pc5_steam_stub(const char *program);
+/* What a report needs to tell how the game meets Steam, as text into out (lines starting with
+ * two spaces): the emulator's setting (on), whether the program is in SteamStub (stub), each
+ * steam_api DLL and whose it is, the app ID the emulator has and where from, the DLC listed for
+ * it, other Steam stand-ins' or fixes' files in the folder, and Steam's own install files. Taken
+ * after pc5_steam_prepare, so it is what the game meets. 0, or -1 out of memory. */
+int pc5_steam_check(const char *root, const char *id, const char *game_dir, const char *program, int on, int stub,
+                    Pc5Buf *out);
+/* The same written to root/prefixes/<id>/pc5/steam-check.txt (a report's about.txt shows it),
+ * and its one-line summary into summary: 0, or -1. */
+int pc5_steam_check_keep(const char *root, const char *id, const char *game_dir, const char *program, int on, int stub,
+                         char *summary, size_t size);
+#define PC5_STEAM_CHECK_FILE "steam-check.txt"
 /* For the tests: the Steam interfaces named in a steam_api DLL's bytes, one a line, as
  * gbe_fork's generate_interfaces finds them. */
 int pc5_steam_interfaces(const uint8_t *data, size_t size, Pc5Buf *out);

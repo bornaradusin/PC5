@@ -4478,6 +4478,39 @@ static void test_background_screen(const char *fonts)
 }
 
 /* The names in a zip's directory, one per line (its central directory, read as unzip does). */
+/* One file's text in a zip PC5 wrote (stored or deflated), into out (0-terminated): 0, or -1. */
+static int zip_text(const char *file, const char *wanted, char *out, size_t size)
+{
+    Pc5Buf zip = { 0 };
+    int status = -1;
+    out[0] = 0;
+    if (pc5_read_file(file, &zip, 64u << 20) || zip.len < 22) { pc5_buf_free(&zip); return -1; }
+    const uint8_t *z = zip.data, *end = z + zip.len - 22;
+    while (end > z && !(end[0] == 0x50 && end[1] == 0x4b && end[2] == 5 && end[3] == 6)) end--;
+    uint32_t count = end[10] | end[11] << 8, at = end[16] | end[17] << 8 | end[18] << 16 | (uint32_t)end[19] << 24;
+    for (uint32_t i = 0; i < count && at + 46 <= zip.len; i++) {
+        const uint8_t *c = z + at;
+        uint32_t name = c[28] | c[29] << 8, extra = c[30] | c[31] << 8, comment = c[32] | c[33] << 8;
+        uint32_t method = c[10] | c[11] << 8, packed = c[20] | c[21] << 8 | c[22] << 16 | (uint32_t)c[23] << 24;
+        uint32_t plain = c[24] | c[25] << 8 | c[26] << 16 | (uint32_t)c[27] << 24;
+        uint32_t local = c[42] | c[43] << 8 | c[44] << 16 | (uint32_t)c[45] << 24;
+        if (at + 46 + name > zip.len) break;
+        if (name == strlen(wanted) && !memcmp(c + 46, wanted, name) && local + 30 <= zip.len && plain < size) {
+            const uint8_t *l = z + local;
+            uint32_t data = local + 30 + (uint32_t)(l[26] | l[27] << 8) + (uint32_t)(l[28] | l[29] << 8);
+            if (data + packed <= zip.len) {
+                if (method == 0) { memcpy(out, z + data, plain); status = 0; }
+                else if (method == 8 && pc5_inflate(z + data, packed, NULL, 0, (uint8_t *)out, plain) == (long)plain) status = 0;
+                out[status ? 0 : plain] = 0;
+            }
+            break;
+        }
+        at += 46 + name + extra + comment;
+    }
+    pc5_buf_free(&zip);
+    return status;
+}
+
 static int zip_names(const char *file, char *out, size_t size)
 {
     Pc5Buf zip = { 0 };
@@ -4698,6 +4731,9 @@ static void test_logs(void)
     file_at(file, "MDMP", now - 580);
     path(file, sizeof(file), "%s/Games/Other/other.log", drive);
     file_at(file, "another game's\n", now - 590);
+    /* What PC5 saw of Steam when it started (pc5_steam_check_keep): in about.txt. */
+    path(file, sizeof(file), "%s/prefixes/gtaiv/pc5/steam-check.txt", root_dir);
+    write_text(file, "  App ID the emulator has: none (no steam_appid.txt in the game's folder)\n");
     /* A long session: its newest part alone looks like a game that closed within a
      * minute without a picture; how it began says otherwise. */
     log_file(logs, "session-2.start.log", "longplay", now - 4000, "REC seq=1 t=1.0 display released to vulkan\n");
@@ -4755,6 +4791,13 @@ static void test_logs(void)
     CHECK(strstr(names, "game/users/prospero/Documents/Rockstar Games/GTA IV/log.txt\n") &&
           strstr(names, "game/users/prospero/AppData/Local/Temp/1234/crash.xml\n") && strstr(names, "game/Games/GTA IV/crash.dmp\n"),
           "and the game's own log, crash report and dump: %s", names);
+    {
+        static char about[64 * 1024];
+        CHECK(!zip_text(file, "about.txt", about, sizeof(about)) &&
+                  strstr(about, "\nSteam, as PC5 saw it when the game started:\n"
+                                "  App ID the emulator has: none (no steam_appid.txt in the game's folder)\n"),
+              "about.txt says what PC5 saw of Steam: %s", about);
+    }
     CHECK(!strstr(names, "old.log") && !strstr(names, "save.dat") && !strstr(names, "other.log"),
           "not what it wrote another time, a save, or another game's");
     path(file, sizeof(file), "%s/session-0.start.log", logs);
@@ -9322,6 +9365,46 @@ static void test_steam(void)
     CHECK(file_holds_text(file, "offline=1\ndisable_networking=1\n"), "offline");
     path(file, sizeof(file), "%s/Binaries/Win64/steam_settings/configs.app.ini", game);
     CHECK(file_holds_text(file, "unlock_all=0\n"), "no DLC it doesn't have");
+    /* What a report says of it: the emulator in place, the app ID and where from, no DLC listed,
+     * another stand-in's file and Steam's own install file in the folder. */
+    {
+        char summary[PC5_ERROR * 4];
+        path(file, sizeof(file), "%s/platform/steam/coldloader.dll", game);
+        write_text(file, "x");
+        path(from, sizeof(from), "%s/installscript.vdf", game);
+        write_text(from, "\"InstallScript\" { }\n");
+        CHECK(!pc5_steam_check_keep(root_steam, "steamgame", game, program, 1, 0, summary, sizeof(summary)), "checked");
+        path(dll, sizeof(dll), "%s/prefixes/steamgame/pc5/steam-check.txt", root_steam);
+        CHECK(file_holds_text(dll, "  Steam emulator setting: Auto\n") &&
+                  file_holds_text(dll, "  Steam's DRM (SteamStub) in the program: no\n") &&
+                  file_holds_text(dll, "  Binaries/Win64/steam_api64.dll: PC5's Steam emulator, Valve's kept beside it\n") &&
+                  file_holds_text(dll, "  App ID the emulator has: 480 (Binaries/Win64/steam_api64.dll's steam_settings)\n") &&
+                  file_holds_text(dll, "  DLC for Binaries/Win64/steam_api64.dll: 0 listed, unlock_all=0\n") &&
+                  file_holds_text(dll, "  Other Steam stand-ins' or fixes' files: platform/steam/coldloader.dll\n") &&
+                  file_holds_text(dll, "  Steam's own install files: installscript.vdf\n"),
+              "the report's lines");
+        CHECK(!strncmp(summary, "Steam emulator setting: Auto | Steam's DRM", 42) && !strchr(summary, '\n'),
+              "its summary in a line: %s", summary);
+        unlink(file);
+        unlink(from);
+        /* Without an app ID anywhere, and with Off: said so. */
+        path(file, sizeof(file), "%s/Binaries/Win64/steam_settings/steam_appid.txt", game);
+        path(from, sizeof(from), "%s/steam_appid.txt", game);
+        Pc5Buf id = { 0 };
+        pc5_read_file(from, &id, 4096);
+        unlink(file);
+        unlink(from);
+        CHECK(!pc5_steam_check_keep(root_steam, "steamgame", game, program, 0, 1, summary, sizeof(summary)) &&
+                  file_holds_text(dll, "  App ID the emulator has: none (no steam_appid.txt in the game's folder)\n") &&
+                  file_holds_text(dll, "  Steam emulator setting: Off\n") &&
+                  file_holds_text(dll, "  Steam's DRM (SteamStub) in the program: yes, so PC5 didn't start it\n") &&
+                  file_holds_text(dll, "  Other Steam stand-ins' or fixes' files: none\n"),
+              "no app ID, Off, SteamStub");
+        write_text(from, (const char *)id.data);
+        pc5_buf_free(&id);
+        write_text(file, "480\n");
+        path(dll, sizeof(dll), "%s/Binaries/Win64/steam_api64.dll", game);
+    }
     CHECK(pc5_steam_prepare(root_steam, "steamgame", game, program, app, 1, error, sizeof(error)) == 0, "again: nothing to do");
     /* An earlier PC5's emulator: the app's in its place. */
     write_text(dll, "an earlier gbe_fork");

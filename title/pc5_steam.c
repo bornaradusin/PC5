@@ -351,3 +351,175 @@ int pc5_steam_prepare(const char *root, const char *id, const char *game_dir, co
     pc5_free(found);
     return status ? -1 : changed;
 }
+
+/* ---- what a report says about Steam (pc5_steam_check) ------------------------------------------ */
+
+enum { CHECK_DEPTH = 4, CHECK_ENTRIES = 20000, CHECK_SHOWN = 8 };
+
+/* Files other Steam stand-ins and fixes keep in a game's folder; and Steam's own install file. */
+static const char *const stand_in_files[] = {
+    "steam_emu.ini", "OnlineFix.ini", "OnlineFix64.dll", "OnlineFix.dll", "ColdClientLoader.ini", "coldloader.dll",
+    "SmartSteamEmu.ini", "steam_api64_o.dll", "steam_api_o.dll", "cream_api.ini", "ALI213.ini", "valve.ini", "CPY.ini",
+    "CODEX.ini", "steamclient.dll", "steamclient64.dll",
+};
+
+typedef struct CheckWalk {
+    Pc5Buf *stand_ins, *steam_files;
+    int stand_in_count, steam_count, visited;
+} CheckWalk;
+
+static void check_walk(CheckWalk *w, const char *dir, const char *relative, int depth)
+{
+    DIR *d = opendir(dir);
+    struct dirent *e;
+    if (!d) return;
+    while ((e = readdir(d)) && ++w->visited < CHECK_ENTRIES) {
+        char path[PC5_PATH], rel[PC5_PATH];
+        struct stat st;
+        if (e->d_name[0] == '.' || !strcasecmp(e->d_name, "steam_settings")) continue;
+        if (pc5_join(path, sizeof(path), dir, e->d_name) ||
+            pc5_format(rel, sizeof(rel), "%s%s%s", relative, relative[0] ? "/" : "", e->d_name) || lstat(path, &st))
+            continue;
+        if (S_ISDIR(st.st_mode)) {
+            if (depth < CHECK_DEPTH) check_walk(w, path, rel, depth + 1);
+            continue;
+        }
+        if (!S_ISREG(st.st_mode)) continue;
+        for (size_t i = 0; i < sizeof(stand_in_files) / sizeof(stand_in_files[0]); i++) {
+            if (strcasecmp(e->d_name, stand_in_files[i])) continue;
+            if (w->stand_in_count++ < CHECK_SHOWN)
+                pc5_buf_printf(w->stand_ins, "%s%s", w->stand_in_count > 1 ? ", " : "", rel);
+            break;
+        }
+        if (!strcasecmp(e->d_name, "installscript.vdf") ||
+            (!strncasecmp(e->d_name, "appmanifest_", 12) && pc5_ends_with_ci(e->d_name, ".acf"))) {
+            if (w->steam_count++ < CHECK_SHOWN)
+                pc5_buf_printf(w->steam_files, "%s%s", w->steam_count > 1 ? ", " : "", rel);
+        }
+    }
+    closedir(d);
+}
+
+/* The DLC lines and unlock_all of a configs.app.ini's [app::dlcs]. */
+static void dlc_listed(const char *ini, int *listed_count, int *unlock_all)
+{
+    Pc5Buf text = { 0 };
+    int in_dlcs = 0;
+    *listed_count = 0;
+    *unlock_all = -1;
+    if (!pc5_is_file(ini) || pc5_read_file(ini, &text, 256 * 1024) || pc5_buf_terminate(&text)) {
+        pc5_buf_free(&text);
+        return;
+    }
+    for (char *line = (char *)text.data, *next; line && *line; line = next) {
+        next = strchr(line, '\n');
+        if (next) *next++ = 0;
+        while (*line == ' ' || *line == '\t') line++;
+        if (*line == '[') { in_dlcs = !strncasecmp(line, "[app::dlcs]", 11); continue; }
+        if (!in_dlcs || *line == '#' || *line == ';') continue;
+        if (!strncasecmp(line, "unlock_all=", 11)) *unlock_all = atoi(line + 11);
+        else if (*line >= '0' && *line <= '9' && strchr(line, '=')) ++*listed_count;
+    }
+    pc5_buf_free(&text);
+}
+
+int pc5_steam_check(const char *root, const char *id, const char *game_dir, const char *program, int on, int stub,
+                    Pc5Buf *out)
+{
+    char (*found)[PC5_PATH] = pc5_alloc(sizeof(*found) * PC5_STEAM_DLLS);
+    Pc5Buf stand_ins = { 0 }, steam_files = { 0 };
+    int failed = 0;
+
+    if (!found) return -1;
+    int count = pc5_steam_find(root, id, game_dir, program, found, PC5_STEAM_DLLS);
+    CheckWalk w = { &stand_ins, &steam_files, 0, 0, 0 };
+    check_walk(&w, game_dir, "", 0);
+
+    failed |= pc5_buf_printf(out, "  Steam emulator setting: %s\n", on ? "Auto" : "Off");
+    failed |= pc5_buf_printf(out, "  Steam's DRM (SteamStub) in the program: %s\n", stub ? "yes, so PC5 didn't start it" : "no");
+    if (!count) failed |= pc5_buf_puts(out, "  Steam's library (steam_api.dll, steam_api64.dll): none in the game's folder\n");
+    char app_id[16] = "", app_id_from_where[PC5_PATH + 64] = "";
+    for (int i = 0; i < count; i++) {
+        char dll[PC5_PATH], valve[PC5_PATH], dir[PC5_PATH], file[PC5_PATH];
+        if (pc5_join(dll, sizeof(dll), game_dir, found[i]) || pc5_format(valve, sizeof(valve), "%s.pc5-valve", dll)) continue;
+        int signed_valve = pc5_is_file(dll) && pc5_pe_signed_by(dll, "Valve"), kept = pc5_is_file(valve);
+        const char *whose = !pc5_is_file(dll) ? "missing"
+                            : signed_valve    ? (on ? "Valve's: the emulator isn't in its place (another stand-in in the folder, or PC5 couldn't put it there)"
+                                                    : "Valve's (emulator Off)")
+                            : kept            ? "PC5's Steam emulator, Valve's kept beside it"
+                                              : "not Valve's and not PC5's: another Steam stand-in";
+        failed |= pc5_buf_printf(out, "  %s: %s\n", found[i], whose);
+        /* The app ID as the emulator finds it: its steam_settings first, then beside it. */
+        pc5_copy(dir, sizeof(dir), dll);
+        char *slash = strrchr(dir, '/');
+        if (slash) *slash = 0;
+        if (!app_id[0] && !pc5_format(file, sizeof(file), "%s/steam_settings/steam_appid.txt", dir)) {
+            app_id_from(file, app_id, sizeof(app_id));
+            if (app_id[0]) snprintf(app_id_from_where, sizeof(app_id_from_where), "%s's steam_settings", found[i]);
+        }
+        if (!app_id[0] && !pc5_join(file, sizeof(file), dir, "steam_appid.txt")) {
+            app_id_from(file, app_id, sizeof(app_id));
+            if (app_id[0]) snprintf(app_id_from_where, sizeof(app_id_from_where), "steam_appid.txt beside %s", found[i]);
+        }
+        int listed_count, unlock_all;
+        if (!pc5_format(file, sizeof(file), "%s/steam_settings/configs.app.ini", dir)) {
+            dlc_listed(file, &listed_count, &unlock_all);
+            if (unlock_all >= 0 || listed_count)
+                failed |= pc5_buf_printf(out, "  DLC for %s: %d listed, unlock_all=%d\n", found[i], listed_count, unlock_all);
+        }
+    }
+    if (count) {
+        if (!app_id[0] && program) {
+            char dir[PC5_PATH], file[PC5_PATH];
+            pc5_copy(dir, sizeof(dir), program);
+            char *slash = strrchr(dir, '/');
+            if (slash) *slash = 0;
+            if (!pc5_join(file, sizeof(file), dir, "steam_appid.txt")) app_id_from(file, app_id, sizeof(app_id));
+            if (app_id[0]) pc5_copy(app_id_from_where, sizeof(app_id_from_where), "steam_appid.txt beside the program");
+        }
+        if (!app_id[0] && game_dir) {
+            char file[PC5_PATH];
+            if (!pc5_join(file, sizeof(file), game_dir, "steam_appid.txt")) app_id_from(file, app_id, sizeof(app_id));
+            if (app_id[0]) pc5_copy(app_id_from_where, sizeof(app_id_from_where), "steam_appid.txt at the top of the game's folder");
+        }
+        if (app_id[0]) failed |= pc5_buf_printf(out, "  App ID the emulator has: %s (%s)\n", app_id, app_id_from_where);
+        else failed |= pc5_buf_puts(out, "  App ID the emulator has: none (no steam_appid.txt in the game's folder)\n");
+    }
+    failed |= pc5_buf_printf(out, "  Other Steam stand-ins' or fixes' files: %s%s\n", w.stand_in_count ? (char *)stand_ins.data : "none",
+                             w.stand_in_count > CHECK_SHOWN ? ", and more" : "");
+    failed |= pc5_buf_printf(out, "  Steam's own install files: %s%s\n", w.steam_count ? (char *)steam_files.data : "none",
+                             w.steam_count > CHECK_SHOWN ? ", and more" : "");
+    pc5_buf_free(&stand_ins);
+    pc5_buf_free(&steam_files);
+    pc5_free(found);
+    return failed ? -1 : 0;
+}
+
+int pc5_steam_check_keep(const char *root, const char *id, const char *game_dir, const char *program, int on, int stub,
+                         char *summary, size_t size)
+{
+    char path[PC5_PATH];
+    Pc5Buf text = { 0 };
+    if (summary && size) summary[0] = 0;
+    if (pc5_steam_check(root, id, game_dir, program, on, stub, &text) || pc5_buf_terminate(&text)) {
+        pc5_buf_free(&text);
+        return -1;
+    }
+    /* The summary: the lines joined with " | ", their leading spaces left out. */
+    if (summary && size) {
+        size_t n = 0;
+        for (const char *p = (const char *)text.data; *p && n + 4 < size; p++) {
+            if (*p == '\n') {
+                if (p[1]) { summary[n++] = ' '; summary[n++] = '|'; summary[n++] = ' '; }
+                while (p[1] == ' ') p++;
+            } else if (!(n == 0 && *p == ' ')) {
+                summary[n++] = *p;
+            }
+        }
+        summary[n] = 0;
+    }
+    int status = pc5_format(path, sizeof(path), "%s/prefixes/%s/pc5/%s", root, id, PC5_STEAM_CHECK_FILE) ||
+                 pc5_write_file(path, text.data, text.len);
+    pc5_buf_free(&text);
+    return status ? -1 : 0;
+}
