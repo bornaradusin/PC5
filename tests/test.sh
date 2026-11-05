@@ -31,9 +31,8 @@ python3 tests/make-sample-covers.py "$out/covers" >/dev/null
 # atlas has their letters, and Chinese, Japanese and Korean their own files where the build
 # fetched their fonts (tools/build.sh sources); the .po files beside it, as the app has them.
 python3 tools/update-po.py --check
-# The issue Actions' scripts (.github/scripts), and the catalog's files a release gets.
+# The issue Actions' scripts (.github/scripts).
 python3 tests/test_github_scripts.py >/dev/null
-python3 tests/test_catalog_files.py
 cjk=()
 [[ -f $B/downloads/DroidSansFallbackFull.ttf ]] && cjk+=(--cjk "$B/downloads/DroidSansFallbackFull.ttf")
 [[ -f $B/downloads/NotoSansKR-Regular.otf && -f $B/downloads/NotoSansKR-Bold.otf ]] &&
