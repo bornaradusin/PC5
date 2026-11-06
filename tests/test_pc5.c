@@ -4602,6 +4602,81 @@ static void test_controls_from_report(void)
     CHECK(!pc5_controls_from_report("Set the resolution to 720p in the game", PC5_API_D3D11, &k), "no settings line");
 }
 
+/* What a game's log shows, for about.txt (pc5_log_notes): each of the problems reports had. */
+static void test_log_notes(void)
+{
+    const char *text =
+        "PW_REPORT/1 build=abc profile=game cycle=2 pid=276 time=1792700000\n"
+        "REC seq=1 t=10.000 PW_WINE64 pc5 locale=tr_TR.UTF-8 shader_cache=/data/x\n"
+        "REC seq=2 t=10.100 PC5 tile game=game app=/data/homebrew/PPSA11018\n"
+        "REC seq=3 t=10.200 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\Games\\Game\\Game.exe\" at 0000000140000000: native\n"
+        "REC seq=4 t=10.300 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\windows\\system32\\d3d11.dll\" at 00006FFFF0000000: native\n"
+        "REC seq=5 t=10.310 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\windows\\system32\\wined3d.dll\" at 00006FFFE0000000: builtin\n"
+        "REC seq=6 t=10.320 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\Games\\Game\\D3D9.dll\" at 00006FFFD0000000: native\n"
+        "REC seq=7 t=10.330 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\windows\\system32\\d3d11.dll\" at 00006FFFF0000000: native\n"
+        "REC seq=8 t=10.400 WINE info:  DXVK: 2.6.2\n"
+        "REC seq=9 t=10.500 WINE 0024:err:module:import_dll Library mfc140u.dll (which is needed by L\"C:\\Games\\Game\\Effects.dll\") not found\n"
+        "REC seq=10 t=10.600 WINE 0024:err:environ:run_wineboot failed to start wineboot c00000bb\n"
+        "REC seq=11 t=10.700 WINE 0024:err:virtual:map_file_into_view failed\n"
+        "REC seq=12 t=10.710 WINE 0030:err:virtual:map_file_into_view failed\n"
+        "REC seq=13 t=10.800 WINE 0024:trace:process:NtCreateUserProcess L\"\\\\??\\\\C:\\\\windows\\\\system32\\\\wineboot.exe\" image L\"C:\\windows\\system32\\wineboot.exe\" cmdline L\"x\"\n"
+        "REC seq=14 t=10.810 WINE 0024:trace:process:NtCreateUserProcess process creation is not supported on PS5\n"
+        "REC seq=15 t=10.900 WINE 0024:trace:process:NtCreateUserProcess L\"\\\\??\\\\Z:\\\\x\\\\Real.exe\" image L\"Z:\\mnt\\usb0\\Game\\Real.exe\" cmdline L\"x\"\n"
+        "REC seq=16 t=10.910 WINE 0024:trace:process:NtCreateUserProcess process creation is not supported on PS5\n"
+        "REC seq=17 t=11.000 WINESERVER wine-ps5: C:\\Games\\Game\\UnityCrashHandler64.exe is a helper: not handed off\n"
+        "REC seq=18 t=11.100 WINE wine-ps5: hand-off to C:\\Games\\Game\\Game2.exe: this program ends and the title starts it\n"
+        "REC seq=19 t=11.200 WINESERVER wine-ps5: can't map error 55\n"
+        "REC seq=20 t=11.300 STDOUT Could not allocate memory: System out of memory!\n"
+        "REC seq=21 t=11.310 STDOUT Could not allocate memory: System out of memory!\n"
+        "REC seq=22 t=20.000 PW_WINE64 memory flexible_free=314368K dmem=2487776K dmem_peak=2487776K dmem_failures=0\n"
+        "REC seq=23 t=30.000 PW_WINE64 memory flexible_free=258048K dmem=5949712K dmem_peak=5969040K dmem_failures=2\n"
+        "REC seq=24 t=40.000 PW_WINE64 alive tick=60 sink_calls=1 frames_put=1 shown=5 rejected=0 last=1920x1080 inputs=2 "
+        "refused=0 vk_shown=300 vk_busy=0 audio=100 audible=40 peak=3\n"
+        "REC seq=25 t=95.000 WINE wine: Unhandled exception 0xc0000094 in thread 24 at address 0000000140001234 (thread 0024), "
+        "handed to the program's own crash handler\n";
+    Pc5Buf out = { 0 };
+    pc5_log_notes(text, strlen(text), &out);
+    pc5_buf_puts(&out, "");
+    const char *notes = out.data ? (const char *)out.data : "";
+    CHECK(strstr(notes, "\nWhat the log shows:\n  It ran for 1 min 25 s.\n"), "how long it ran: %s", notes);
+    CHECK(strstr(notes, "  Its crash was an integer division by zero.\n") &&
+              strstr(notes, "  The crash address is 0x1234 past the start of C:\\Games\\Game\\Game.exe, the nearest module below it.\n"),
+          "the crash, what it was and where: %s", notes);
+    CHECK(strstr(notes, "  A DLL it needs isn't there: mfc140u.dll, needed by C:\\Games\\Game\\Effects.dll.\n"),
+          "a missing DLL (Resident Evil 2's mfc140u.dll): %s", notes);
+    CHECK(strstr(notes, "  It started Real.exe: it couldn't start, the console runs one program at a time.\n") &&
+              strstr(notes, "  It started UnityCrashHandler64.exe: a helper PC5 leaves out.\n") &&
+              strstr(notes, "  It started Game2.exe: handed over, PC5 started it in the game's place.\n") &&
+              !strstr(notes, "wineboot"),
+          "the programs it started, Wine's own left out: %s", notes);
+    CHECK(strstr(notes, "  Drawing: d3d11.dll (native), wined3d.dll (builtin), d3d9.dll (the game's own: C:\\Games\\Game\\D3D9.dll); "
+                        "DXVK 2.6.2.\n"),
+          "what it drew with, a library of the game's own named: %s", notes);
+    CHECK(strstr(notes, "  The game said: Could not allocate memory: System out of memory! (and more like it)\n"),
+          "what the game said of memory (Silica's Unity): %s", notes);
+    CHECK(strstr(notes, "  Memory: flexible memory free at least 252 MB, direct memory in use at most 5829 MB, "
+                        "2 direct memory requests refused.\n"),
+          "the memory: %s", notes);
+    CHECK(strstr(notes, "  At its last check: pictures shown 5 (Vulkan 300), the last 1920x1080; sound blocks 100, 40 of them audible.\n"),
+          "the picture and sound: %s", notes);
+    CHECK(strstr(notes, "  The language it was given: tr_TR.UTF-8.\n") &&
+              strstr(notes, "  Started from its tile on the console's home screen.\n"),
+          "its language (Bastion's) and how it was started: %s", notes);
+    CHECK(strstr(notes, "  Wine's errors (those every start has left out):\n    err:virtual:map_file_into_view failed (2 times)\n"
+                        "    wine-ps5: can't map error 55\n") &&
+              !strstr(notes, "run_wineboot") && !strstr(notes, "err:module:import_dll"),
+          "Wine's unusual errors, the most seen first: %s", notes);
+    pc5_buf_free(&out);
+    /* A page fault at address 0 is a null pointer; a log with nothing to say adds only how it started. */
+    const char *fault = "REC seq=1 t=1.0 WINE wine: Unhandled page fault on read access to 0000000000000000 at address 0000000140003C1D\n";
+    pc5_log_notes(fault, strlen(fault), &out);
+    pc5_buf_puts(&out, "");
+    CHECK(out.data && strstr((const char *)out.data, "  Its crash was a page fault near address 0: a null pointer.\n") &&
+              strstr((const char *)out.data, "  Started from PC5's library.\n") && !strstr((const char *)out.data, "crash address"),
+          "a null pointer, no module named without a module list: %s", out.data ? (const char *)out.data : "");
+    pc5_buf_free(&out);
+}
+
 static void test_logs(void)
 {
     char root_dir[PC5_PATH], logs[PC5_PATH], file[PC5_PATH], names[4096], drive[PC5_PATH];
@@ -4723,6 +4798,19 @@ static void test_logs(void)
     file_at(file, "GTA IV's own log\n", now - 590);
     path(file, sizeof(file), "%s/users/prospero/AppData/Local/Temp/1234/crash.xml", drive);
     file_at(file, "<crashreport/>\n", now - 575);
+    /* A game's log larger than PC5 keeps: how it began and how it ended (Cinderia's Player.log
+     * named its graphics at its start). */
+    {
+        size_t big = 3u << 20;
+        char *text = malloc(big + 1);
+        memset(text, 'x', big);
+        memcpy(text, "BEGIN\n", 6);
+        memcpy(text + big - 4, "END\n", 4);
+        text[big] = 0;
+        path(file, sizeof(file), "%s/users/prospero/AppData/LocalLow/Studio/Game/Player.log", drive);
+        file_at(file, text, now - 585);
+        free(text);
+    }
     path(file, sizeof(file), "%s/users/prospero/Documents/Rockstar Games/GTA IV/old.log", drive);
     file_at(file, "from yesterday\n", now - 86400);
     path(file, sizeof(file), "%s/users/prospero/Documents/Rockstar Games/GTA IV/save.dat", drive);
@@ -4797,6 +4885,14 @@ static void test_logs(void)
                   strstr(about, "\nSteam, as PC5 saw it when the game started:\n"
                                 "  App ID the emulator has: none (no steam_appid.txt in the game's folder)\n"),
               "about.txt says what PC5 saw of Steam: %s", about);
+        CHECK(strstr(about, "\nWhat the log shows:\n") && strstr(about, "  Its crash was a page fault near address 0: a null pointer.\n"),
+              "and what its log shows: %s", about);
+        CHECK(strstr(about, "Player.log (") && strstr(about, ", its first 256 KB and last 1.75 MB)\n"), "a big log's start and end: %s", about);
+        static char player[(2u << 20) + 256];
+        CHECK(!zip_text(file, "game/users/prospero/AppData/LocalLow/Studio/Game/Player.log", player, sizeof(player)) &&
+                  !strncmp(player, "BEGIN\n", 6) && strstr(player, "\n[... PC5 left out ") &&
+                  strlen(player) > (2u << 20) && strlen(player) < (2u << 20) + 128 && !strcmp(player + strlen(player) - 4, "END\n"),
+              "its first 256 KB and last 1.75 MB kept: %zu", strlen(player));
     }
     CHECK(!strstr(names, "old.log") && !strstr(names, "save.dat") && !strstr(names, "other.log"),
           "not what it wrote another time, a save, or another game's");
@@ -10047,6 +10143,7 @@ int main(int argc, char **argv)
     test_backgrounds();
     test_zip();
     test_controls_from_report();
+    test_log_notes();
     test_logs();
     test_cover_fill();
     test_prefix_media();

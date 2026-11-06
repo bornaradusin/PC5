@@ -25,11 +25,12 @@ static const char *const PARTS[][2] = {
 };
 enum { PART_COUNT = 4, NEWEST = PART_COUNT - 1 };
 
-/* The game's own files kept with its log: a log's last 2 MiB, a dump of up
+/* The game's own files kept with its log: a log's first 256 KiB and last 1.75 MiB (how it
+ * began, Unity's Player.log naming the graphics and the memory, and how it ended), a dump of up
  * to 16 MiB, 32 files and 40 MiB in all, found among 20000 entries at most,
  * written from just before the session began to a minute after it ended. */
 enum {
-    GAME_TEXT_MAX = 2 << 20, GAME_DUMP_MAX = 16 << 20, GAME_FILES_MAX = 32, GAME_DEPTH_MAX = 8,
+    GAME_TEXT_MAX = 2 << 20, GAME_TEXT_HEAD = 256 << 10, GAME_DUMP_MAX = 16 << 20, GAME_FILES_MAX = 32, GAME_DEPTH_MAX = 8,
     GAME_ENTRIES_MAX = 20000, GAME_BEFORE_S = 2, GAME_AFTER_S = 60,
 };
 #define GAME_BYTES_MAX (40ull << 20)
@@ -38,8 +39,13 @@ enum {
 static const char *after(const char *line, const char *end, const char *needle)
 {
     size_t n = strlen(needle);
-    for (const char *p = line; p + n <= end; p++)
+    const char *p = line;
+    /* memchr finds the needle's first letter quickly: a session's log is read through for
+     * a few dozen needles a line. */
+    while (n && p + n <= end && (p = memchr(p, needle[0], (size_t)(end - p) - n + 1))) {
         if (!memcmp(p, needle, n)) return p + n;
+        p++;
+    }
     return NULL;
 }
 
@@ -226,6 +232,303 @@ const char *pc5_log_problem_text(Pc5LogProblem problem)
     return "nothing went wrong that PC5 could see";
 }
 
+/* ---- what the log shows ------------------------------------------------------------- */
+
+/* What pc5_log_notes keeps: a few of each, so a long log costs no more than a short one. */
+enum { NOTE_MISSING = 6, NOTE_STARTED = 6, NOTE_LIBS = 16, NOTE_ERRORS = 32, NOTE_ERRORS_SHOWN = 6,
+       NOTE_MODULES = 1024, NOTE_SAID = 160 };
+
+typedef struct { char path[160]; unsigned long long base; } NoteModule;
+typedef struct { char text[112]; size_t key; int count; } NoteError;
+typedef struct { char name[64]; int how; } NoteProgram;   /* how: STARTED_ */
+enum { STARTED_NOT, STARTED_HELPER, STARTED_HANDED };
+
+/* Wine's errors that every start on the console has, which say nothing about a game. */
+static const char *const USUAL_ERRORS[] = {
+    "err:environ:run_wineboot", "err:wgl:internal_context_create", "err:dnsapi:DllMain", "err:ps5audio:",
+    "err:secur32:", "err:service:device_notify_proc", "err:winediag:wined3d_dll_init", "err:winediag:MIDIMAP_drvOpen",
+};
+
+/* The drawing libraries a game loads: what it drew with, as far as a log can say. */
+static const char *const DRAWING[] = {
+    "d3d8.dll", "d3d9.dll", "d3d10.dll", "d3d10_1.dll", "d3d10core.dll", "d3d11.dll", "d3d12.dll", "d3d12core.dll",
+    "dxgi.dll", "ddraw.dll", "opengl32.dll", "wined3d.dll", "vulkan-1.dll",
+};
+
+static const char *exception_text(unsigned long code)
+{
+    switch (code) {
+    case 0xc0000005ul: return "an access violation: it used memory it doesn't have";
+    case 0xc0000094ul: return "an integer division by zero";
+    case 0xc000008eul: return "a floating-point division by zero";
+    case 0xc00000fdul: return "a stack overflow";
+    case 0xc0000409ul: return "a fast fail: the game stopped itself (a failed check, or a stack buffer overrun)";
+    case 0xc000001dul: return "an instruction the console's processor doesn't have";
+    case 0xc0000096ul: return "a privileged instruction";
+    case 0x80000003ul: return "a breakpoint: the game's own check stopped it";
+    case 0xe06d7363ul: return "a C++ exception the game didn't catch";
+    case 0x40000015ul: return "the game called abort()";
+    case 0xc0000135ul: return "a DLL it needs is missing";
+    case 0xc0000017ul: return "it ran out of memory";
+    }
+    return NULL;
+}
+
+/* A path in a Wine trace (L"C:\\Games\\x.dll"): its backslashes single, up to the closing quote. */
+static void wine_path(const char *from, const char *end, char *out, size_t size)
+{
+    size_t n = 0;
+    for (const char *p = from; p < end && *p != '"' && n + 1 < size; p++) {
+        if (*p == '\\' && p + 1 < end && p[1] == '\\') p++;
+        out[n++] = *p;
+    }
+    out[n] = 0;
+}
+
+static const char *base_name(const char *path)
+{
+    const char *name = path;
+    for (const char *p = path; *p; p++)
+        if (*p == '\\' || *p == '/') name = p + 1;
+    return name;
+}
+
+static int equal_ci(const char *a, const char *b)
+{
+    while (*a && pc5_lower((unsigned char)*a) == pc5_lower((unsigned char)*b)) a++, b++;
+    return !*a && !*b;
+}
+
+static int is_windows_file(const char *path)
+{
+    return contains_ci_range(path, path + strlen(path), ":\\windows\\");
+}
+
+static void note_program(NoteProgram *programs, int *count, const char *path, int how)
+{
+    const char *name = base_name(path);
+    for (int i = 0; i < *count; i++)
+        if (!strcmp(programs[i].name, name)) {
+            if (how > programs[i].how) programs[i].how = how;
+            return;
+        }
+    if (*count < NOTE_STARTED) {
+        pc5_copy(programs[*count].name, sizeof(programs[*count].name), name);
+        programs[(*count)++].how = how;
+    }
+}
+
+static void note_error(NoteError *errors, int *count, const char *from, const char *end)
+{
+    size_t key = 0;
+    while (from + key < end && from[key] != ' ' && from[key] != '\r') key++;
+    if (key >= 21 && !memcmp(from, "err:module:import_dll", 21)) return;   /* a line of its own */
+    for (size_t i = 0; i < sizeof(USUAL_ERRORS) / sizeof(USUAL_ERRORS[0]); i++) {
+        size_t n = strlen(USUAL_ERRORS[i]);
+        if (key >= n && !memcmp(from, USUAL_ERRORS[i], n)) return;
+    }
+    for (int i = 0; i < *count; i++)
+        if (errors[i].key == key && !memcmp(errors[i].text, from, key < sizeof(errors[i].text) ? key : sizeof(errors[i].text) - 1)) {
+            errors[i].count++;
+            return;
+        }
+    if (*count < NOTE_ERRORS) {
+        line_text(from, end, errors[*count].text, sizeof(errors[*count].text));
+        errors[*count].key = key;
+        errors[(*count)++].count = 1;
+    }
+}
+
+/* A field of a status line (" dmem_peak=5248384K"): its number, or -1. */
+static long long field(const char *line, const char *end, const char *name)
+{
+    const char *found = after(line, end, name);
+    return found && found < end && *found >= '0' && *found <= '9' ? strtoll(found, NULL, 10) : -1;
+}
+
+void pc5_log_notes(const char *text, size_t length, Pc5Buf *out)
+{
+    const char *end_of_text = text + length, *line = text, *alive = NULL, *alive_end = NULL;
+    char missing[NOTE_MISSING][64], needed_by[NOTE_MISSING][160], crash[200] = "", said[NOTE_SAID] = "", locale[48] = "", dxvk[24] = "";
+    char pending[160] = "", libs[NOTE_LIBS][200];
+    NoteProgram programs[NOTE_STARTED];
+    NoteError errors[NOTE_ERRORS];
+    NoteModule *modules = calloc(NOTE_MODULES, sizeof(*modules));
+    int missing_n = 0, programs_n = 0, errors_n = 0, libs_n = 0, modules_n = 0, said_n = 0;
+    int tile = 0, vkd3d = 0, zink = 0;
+    long long free_low = -1, dmem_peak = -1, dmem_failures = -1;
+    double first_t = -1, last_t = -1;
+
+    while (text && line < end_of_text) {
+        const char *end = memchr(line, '\n', (size_t)(end_of_text - line)), *found;
+        if (!end) end = end_of_text;
+        if ((found = after(line, end, " t="))) {
+            double t = strtod(found, NULL);
+            if (first_t < 0) first_t = t;
+            last_t = t;
+        }
+        if ((found = after(line, end, "err:module:import_dll Library ")) && missing_n < NOTE_MISSING) {
+            const char *needed = after(found, end, "needed by L\"");
+            int seen = 0;
+            word(found, end, missing[missing_n], sizeof(missing[0]));
+            for (int i = 0; i < missing_n; i++) seen |= equal_ci(missing[i], missing[missing_n]);
+            needed_by[missing_n][0] = 0;
+            if (needed) wine_path(needed, end, needed_by[missing_n], sizeof(needed_by[0]));
+            if (!seen) missing_n++;
+        }
+        if ((found = after(line, end, "trace:loaddll:build_module Loaded L\""))) {
+            char path[160];
+            const char *at = after(found, end, "\" at ");
+            wine_path(found, end, path, sizeof(path));
+            if (at && modules && modules_n < NOTE_MODULES) {
+                pc5_copy(modules[modules_n].path, sizeof(modules[0].path), path);
+                modules[modules_n++].base = strtoull(at, NULL, 16);
+            }
+            const char *name = base_name(path);
+            for (size_t i = 0; i < sizeof(DRAWING) / sizeof(DRAWING[0]); i++) {
+                if (!equal_ci(name, DRAWING[i])) continue;
+                int seen = 0;
+                for (int j = 0; j < libs_n; j++) seen |= !strncmp(libs[j], DRAWING[i], strlen(DRAWING[i]));
+                if (seen || libs_n >= NOTE_LIBS) break;
+                if (!is_windows_file(path)) snprintf(libs[libs_n++], sizeof(libs[0]), "%s (the game's own: %s)", DRAWING[i], path);
+                else snprintf(libs[libs_n++], sizeof(libs[0]), "%s (%s)", DRAWING[i],
+                              after(found, end, ": native") ? "native" : "builtin");
+                break;
+            }
+        }
+        if (!dxvk[0] && (found = after(line, end, "DXVK: ")) && *found >= '0' && *found <= '9')
+            word(found, end, dxvk, sizeof(dxvk));
+        if (after(line, end, ":vkd3d-proton:")) vkd3d = 1;
+        if (after(line, end, "OpenGL Device: zink") || after(line, end, "PW_WINE64 zink provider=ok")) zink = 1;
+        if (!locale[0] && (found = after(line, end, "PW_WINE64 pc5 locale="))) word(found, end, locale, sizeof(locale));
+        if (after(line, end, " PC5 tile game=")) tile = 1;
+        /* The programs it started: the console runs one at a time. */
+        if ((found = after(line, end, "trace:process:NtCreateUserProcess L\""))) {
+            const char *image = after(found, end, "image L\"");
+            wine_path(image ? image : found, end, pending, sizeof(pending));
+            if (is_windows_file(pending)) pending[0] = 0;
+        }
+        if (pending[0] && after(line, end, "process creation is not supported")) {
+            note_program(programs, &programs_n, pending, STARTED_NOT);
+            pending[0] = 0;
+        }
+        if ((found = after(line, end, "wine-ps5: hand-off to ")) && after(line, end, ": this program ends")) {
+            char path[160];
+            line_text(found, after(line, end, ": this program ends") - strlen(": this program ends"), path, sizeof(path));
+            note_program(programs, &programs_n, path, STARTED_HANDED);
+        }
+        if ((found = after(line, end, "wine-ps5: ")) && after(line, end, " is a helper")) {
+            char path[160];
+            line_text(found, after(line, end, " is a helper") - strlen(" is a helper"), path, sizeof(path));
+            note_program(programs, &programs_n, path, STARTED_HELPER);
+        }
+        if (!crash[0] && (found = after(line, end, "Unhandled ")) &&
+            (!strncmp(found, "exception", 9) || !strncmp(found, "page fault", 10) || !strncmp(found, "division by zero", 16)))
+            line_text(found - 10, end, crash, sizeof(crash));
+        /* What the game itself printed about memory (Unity's "Could not allocate memory"). */
+        if (after(line, end, " STDOUT ") || after(line, end, " STDERR ")) {
+            static const char *const phrases[] = { "out of memory", "could not allocate", "failed to allocate",
+                                                   "allocation failed", "e_outofmemory", "bad_alloc" };
+            for (size_t i = 0; i < sizeof(phrases) / sizeof(phrases[0]); i++)
+                if (contains_ci_range(line, end, phrases[i])) {
+                    const char *from = after(line, end, " STDOUT ");
+                    if (!from) from = after(line, end, " STDERR ");
+                    if (!said_n++) line_text(from, end, said, sizeof(said));
+                    break;
+                }
+        }
+        if (after(line, end, "PW_WINE64 memory flexible_free=")) {
+            long long v = field(line, end, "flexible_free=");
+            if (v >= 0 && (free_low < 0 || v < free_low)) free_low = v;
+            if ((v = field(line, end, " dmem_peak=")) > dmem_peak) dmem_peak = v;
+            if ((v = field(line, end, " dmem_failures=")) > dmem_failures) dmem_failures = v;
+        }
+        if (after(line, end, "PW_WINE64 alive ")) { alive = line; alive_end = end; }
+        if ((found = after(line, end, "WINE ")) && (found = after(found, end, ":err:")))
+            note_error(errors, &errors_n, found - 4, end);
+        else if ((found = after(line, end, "WINESERVER ")) && (after(found, end, "can't ") || after(found, end, "failed")))
+            note_error(errors, &errors_n, found, end);
+        line = end + 1;
+    }
+
+    size_t before = out->len;
+    pc5_buf_puts(out, "\nWhat the log shows:\n");
+    size_t heading = out->len;
+    if (first_t >= 0 && last_t >= first_t) {
+        long long s = (long long)(last_t - first_t);
+        if (s < 60) pc5_buf_printf(out, "  It ran for %lld s.\n", s);
+        else pc5_buf_printf(out, "  It ran for %lld min %lld s.\n", s / 60, s % 60);
+    }
+    if (crash[0]) {
+        const char *code = strstr(crash, "exception 0x"), *at = strstr(crash, " at address ");
+        const char *meaning = code ? exception_text(strtoul(code + 10, NULL, 16)) : NULL;
+        if (strstr(crash, "division by zero")) meaning = "a division by zero";
+        else if (strstr(crash, "page fault on ")) {
+            const char *to = strstr(crash, " access to ");
+            unsigned long long address = to ? strtoull(to + 11, NULL, 16) : 1ull << 40;
+            meaning = address < 0x10000 ? "a page fault near address 0: a null pointer" : "a page fault: it used memory it doesn't have";
+        }
+        if (meaning) pc5_buf_printf(out, "  Its crash was %s.\n", meaning);
+        if (at && modules) {
+            unsigned long long pc = strtoull(at + 12, NULL, 16), best = 0;
+            int found = -1;
+            for (int i = 0; i < modules_n; i++)
+                if (modules[i].base <= pc && modules[i].base >= best) { best = modules[i].base; found = i; }
+            /* A module is rarely larger than 256 MiB: further away, the address is in no module. */
+            if (found >= 0 && pc - best < (256ull << 20))
+                pc5_buf_printf(out, "  The crash address is %#llx past the start of %s, the nearest module below it.\n",
+                               pc - best, modules[found].path);
+        }
+    }
+    for (int i = 0; i < missing_n; i++)
+        pc5_buf_printf(out, "  A DLL it needs isn't there: %s, needed by %s.\n", missing[i], needed_by[i][0] ? needed_by[i] : "?");
+    for (int i = 0; i < programs_n; i++)
+        pc5_buf_printf(out, "  It started %s: %s.\n", programs[i].name,
+                       programs[i].how == STARTED_HANDED   ? "handed over, PC5 started it in the game's place"
+                       : programs[i].how == STARTED_HELPER ? "a helper PC5 leaves out"
+                                                           : "it couldn't start, the console runs one program at a time");
+    if (libs_n || dxvk[0] || vkd3d || zink) {
+        pc5_buf_puts(out, "  Drawing:");
+        for (int i = 0; i < libs_n; i++) pc5_buf_printf(out, "%s %s", i ? "," : "", libs[i]);
+        if (dxvk[0]) pc5_buf_printf(out, "%s DXVK %s", libs_n ? ";" : "", dxvk);
+        if (vkd3d) pc5_buf_printf(out, "%s vkd3d-proton", libs_n || dxvk[0] ? ";" : "");
+        if (zink) pc5_buf_printf(out, "%s zink (OpenGL on Vulkan)", libs_n || dxvk[0] || vkd3d ? ";" : "");
+        pc5_buf_puts(out, ".\n");
+    }
+    if (said_n) pc5_buf_printf(out, "  The game said: %s%s\n", said, said_n > 1 ? " (and more like it)" : "");
+    if (free_low >= 0 || dmem_peak >= 0) {
+        pc5_buf_puts(out, "  Memory:");
+        if (free_low >= 0) pc5_buf_printf(out, " flexible memory free at least %lld MB", free_low / 1024);
+        if (dmem_peak >= 0) pc5_buf_printf(out, "%s direct memory in use at most %lld MB", free_low >= 0 ? "," : "", dmem_peak / 1024);
+        if (dmem_failures > 0) pc5_buf_printf(out, ", %lld direct memory requests refused", dmem_failures);
+        pc5_buf_puts(out, ".\n");
+    }
+    if (alive) {
+        long long shown = field(alive, alive_end, " shown="), vk = field(alive, alive_end, " vk_shown=");
+        long long audio = field(alive, alive_end, " audio="), audible = field(alive, alive_end, " audible=");
+        char size[24] = "";
+        const char *last = after(alive, alive_end, " last=");
+        if (last) word(last, alive_end, size, sizeof(size));
+        pc5_buf_printf(out, "  At its last check: pictures shown %lld (Vulkan %lld), the last %s; sound blocks %lld, %lld of them audible.\n",
+                       shown, vk, size[0] ? size : "?", audio, audible);
+    }
+    if (locale[0]) pc5_buf_printf(out, "  The language it was given: %s.\n", locale);
+    pc5_buf_printf(out, "  Started from %s.\n", tile ? "its tile on the console's home screen" : "PC5's library");
+    /* The errors seen most, those every start has left out. */
+    for (int shown = 0; shown < NOTE_ERRORS_SHOWN && errors_n; shown++) {
+        int top = 0;
+        for (int i = 1; i < errors_n; i++)
+            if (errors[i].count > errors[top].count) top = i;
+        if (!errors[top].count) break;
+        if (!shown) pc5_buf_puts(out, "  Wine's errors (those every start has left out):\n");
+        pc5_buf_printf(out, "    %s%s", errors[top].text, errors[top].count > 1 ? "" : "\n");
+        if (errors[top].count > 1) pc5_buf_printf(out, " (%d times)\n", errors[top].count);
+        errors[top].count = 0;
+    }
+    if (out->len == heading) out->len = before;
+    free(modules);
+}
+
 /* ---- tidying ------------------------------------------------------------------------ */
 
 /* Days since 1970-01-01 to a date (Howard Hinnant's civil_from_days). */
@@ -342,6 +645,31 @@ static int read_end(const char *path, uint64_t size, size_t max, Pc5Buf *out, in
     return 0;
 }
 
+/* A text log larger than max: its first head bytes, a line saying what was left out, and its
+ * last bytes, max in all. */
+static int read_ends(const char *path, uint64_t size, size_t max, size_t head, Pc5Buf *out)
+{
+    char gap[96], amount[32];
+    int fd = open(path, O_RDONLY), failed = 0;
+    if (fd < 0) return -1;
+    pc5_size_text(size - max, amount, sizeof(amount));
+    snprintf(gap, sizeof(gap), "\n[... PC5 left out %s here: the log's start and end are kept ...]\n", amount);
+    size_t tail = max - head;
+    failed = pc5_buf_reserve(out, max + strlen(gap));
+    for (int part = 0; part < 2 && !failed; part++) {
+        size_t want = part ? tail : head, got = 0;
+        if (part && (pc5_buf_puts(out, gap) || lseek(fd, (off_t)(size - tail), SEEK_SET) < 0)) { failed = 1; break; }
+        while (got < want) {
+            ssize_t n = read(fd, out->data + out->len, want - got);
+            if (n <= 0) break;
+            out->len += (size_t)n;
+            got += (size_t)n;
+        }
+    }
+    close(fd);
+    return failed ? -1 : 0;
+}
+
 static void windows_path(const char *rel, char *out, size_t size)
 {
     size_t n = 0;
@@ -407,7 +735,9 @@ static void walk(Collect *c, const char *dir, const char *rel, int depth)
         Pc5Buf data = { 0 };
         char name[PC5_PATH + 8];
         int cut = 0;
-        if (!read_end(full, size, kind == 1 ? GAME_TEXT_MAX : GAME_DUMP_MAX, &data, &cut) &&
+        int unread = kind == 1 && size > GAME_TEXT_MAX ? (cut = 1, read_ends(full, size, GAME_TEXT_MAX, GAME_TEXT_HEAD, &data))
+                                                     : read_end(full, size, kind == 1 ? GAME_TEXT_MAX : GAME_DUMP_MAX, &data, &cut);
+        if (!unread &&
             !pc5_format(name, sizeof(name), "game/%s", inner) &&
             !pc5_zip_add(c->zip, name, data.data, data.len, (int64_t)st.st_mtime + c->offset_s)) {
             c->files++;
@@ -416,7 +746,7 @@ static void walk(Collect *c, const char *dir, const char *rel, int depth)
              * writing address 0x0..."): the likely cause when the log showed none. */
             if (!c->issue->cause && pc5_ends_with_ci(entry->d_name, "CrashContext.runtime-xml"))
                 crash_message(&data, c->issue);
-            pc5_buf_printf(c->about, "  %s (%s%s)\n", shown, amount, cut ? ", its last 2 MB" : "");
+            pc5_buf_printf(c->about, "  %s (%s%s)\n", shown, amount, cut ? ", its first 256 KB and last 1.75 MB" : "");
         }
         pc5_buf_free(&data);
     }
@@ -534,7 +864,7 @@ static int keep_plain(const char *logs, int session, const char *base, char *out
 /* Keeps session N as kind-<when>_<profile>.zip: its log's parts, the files the game wrote
  * while it ran, and a page saying what PC5 saw. The path in issue->file. */
 static int keep(const char *root, const char *logs, int session, const char *kind, Pc5LogIssue *issue, int offset_s,
-                int64_t now)
+                int64_t now, const Pc5Buf *notes)
 {
     char when[32], base[PC5_PATH], zip_path[PC5_PATH], log_path[PC5_PATH], when_text[48];
     Pc5Buf about = { 0 };
@@ -570,6 +900,7 @@ static int keep(const char *root, const char *logs, int session, const char *kin
             Pc5Buf files = { 0 };
             if (strcmp(issue->profile, "launcher")) collect_game_files(root, issue, &zip, &files, offset_s);
             about_page(&about, issue, when_text, base);
+            if (notes && notes->len) pc5_buf_put(&about, notes->data, notes->len);
             if (strcmp(issue->profile, "launcher")) steam_check(root, issue, &about);
             if (files.len) pc5_buf_put(&about, files.data, files.len);
             pc5_buf_free(&files);
@@ -677,27 +1008,31 @@ int pc5_logs_tidy(const char *root, int keep_all, int64_t now, int offset_s, Pc5
             continue;
         }
         pc5_log_classify((const char *)text.data, text.len, &issue);
+        /* What the log shows, for about.txt: a game's session only, and only one that is kept. */
+        Pc5Buf notes = { 0 };
+        int game = strcmp(issue.profile, "launcher") != 0;
+        if (game) pc5_log_notes((const char *)text.data, text.len, &notes);
         pc5_buf_free(&text);
         /* PC5's own crash (pc5_console.c leaves crash-<session>.txt behind). */
         if (!pc5_format(marker, sizeof(marker), "%s/pc5/crash-%d.txt", root, session) && pc5_exists(marker)) {
             if (!issue.problem) issue.problem = PC5_LOG_CRASHED;
             unlink(marker);
         }
-        int game = strcmp(issue.profile, "launcher") != 0;
         if (issue.problem) {
-            if (!keep(root, logs, session, "issue", &issue, offset_s, now)) {
+            if (!keep(root, logs, session, "issue", &issue, offset_s, now, &notes)) {
                 issues++;
                 if (newest && issue.time >= newest->time) *newest = issue;
             }
         } else if (keep_all || game) {
             /* A game's newest session stays even when it went well: a problem without a
              * crash (no sound, a wrong picture) still has its log. */
-            if (!keep(root, logs, session, "log", &issue, offset_s, now) && game && !keep_all && games < SESSIONS)
+            if (!keep(root, logs, session, "log", &issue, offset_s, now, &notes) && game && !keep_all && games < SESSIONS)
                 pc5_copy(played[games++], PC5_ID, issue.profile);
         } else {
             for (int i = 0; i < PART_COUNT; i++)
                 if (!part_path(logs, session, PARTS[i][0], path, sizeof(path))) unlink(path);
         }
+        pc5_buf_free(&notes);
     }
     for (int i = 0; i < games; i++) keep_newest(logs, played[i]);
     /* Anything older than a week, but the session running now. */

@@ -55,6 +55,11 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
 
 /* What PC5 saw, in a few words ("stopped with an error"), for a report. */
 const char *pc5_log_problem_text(Pc5LogProblem problem);
+
+/* What a session's log shows that a report needs, a line each ("A DLL it needs isn't there: ..."),
+ * added to out under "What the log shows:" for about.txt. Read when the log is kept, after the
+ * game has closed: nothing while it runs. */
+void pc5_log_notes(const char *text, size_t length, Pc5Buf *out);
 /* The likely cause in a sentence, for a report and about.txt ("the game tried to start
  * vc_redist.x64.exe, an installer, which can't run on the console"); "" for none. */
 void pc5_log_cause_text(const Pc5LogIssue *issue, char *out, size_t size);

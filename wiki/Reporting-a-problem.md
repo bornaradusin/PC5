@@ -43,7 +43,7 @@ The zip holds everything a report needs:
 | In the zip | What it is |
 | --- | --- |
 | `issue-…_<game>.log` (with `-earlier` and `-start` for a long session, and `-crash` when it went on long after a crash) | PC5's log of the session; `-crash` is the part with the crash |
-| `about.txt` | what PC5 saw, the program, the console's firmware, how the game meets Steam (the Steam emulator, its app ID, Steam's DRM), and the list of the game's files below |
+| `about.txt` | what PC5 saw, the program, the console's firmware, what the log shows (what the crash was, a DLL the game needs that isn't there, programs it tried to start, what it drew with, its memory, the language it was given), how the game meets Steam (the Steam emulator, its app ID, Steam's DRM), and the list of the game's files below |
 | `game/…` | the files the game itself wrote while it ran: its own logs, crash reports and crash dumps (Unity's `Player.log`, a `log.txt` in My Games, `crash.xml`, `.dmp` files), from its folders under `C:\users` and its own folder |
 
 Attach the zip as it is. You don't need to look for the game's own logs.
