@@ -80,7 +80,7 @@ cc "${common[@]}" -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all 
     title/pc5_image.c title/pc5_json.c title/pc5_library.c title/pc5_logs.c title/pc5_matrix.c title/pc5_pe.c title/pc5_settings.c \
     title/pc5_source.c title/pc5_stb.c title/pc5_update.c title/pc5_home.c title/pc5_psfwd.c title/pc5_zip.c title/pc5_qr.c \
     title/pc5_report.c title/pc5_upgrade.c title/pc5_sound.c title/pc5_video.c title/pc5_appearance.c title/pc5_compat.c title/pc5_look.c title/pc5_backgrounds.c title/pc5_tile.c title/pc5_dds.c \
-    title/pc5_files.c title/pc5_textdoc.c title/pc5_identity.c title/pc5_i18n.c "${upstream[@]}" "${text_sources[@]}" -lm -lpthread -o "$out/web-serve"
+    title/pc5_files.c title/pc5_textdoc.c title/pc5_cab.c title/pc5_msi.c title/pc5_steam.c title/pc5_identity.c title/pc5_i18n.c "${upstream[@]}" "${text_sources[@]}" -lm -lpthread -o "$out/web-serve"
 timeout 300 python3 -I tests/test_web.py "$out/web-serve" "$out" "$out/work/data/prospero-win"
 python3 tests/test_arabic_web.py "$out/web-serve" "$out" "$out/work/data/prospero-win" "$out/arabic-web"
 # The zip PC5 wrote (pc5_zip.c) opens as any zip does, with what was put in it.
