@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Fri, 6 Nov 2026 11:00:00 +0000
+Subject: [PATCH 134/134] PC5: a game's language is PC5's Language setting, the
+ console's with System default
+
+---
+ native/wine64_main.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 9136e65..bf0a229 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -1785,7 +1785,9 @@ int main(int argc, char **argv)
+      * launches and go when the game is uninstalled. */
+     snprintf(radv_cache, sizeof(radv_cache), "%s/pc5-cache/radv", prefix);
+     {
+-        const char *locale = pc5_console_locale();
++        /* The game's language is PC5's (its Language setting, PW_PC5_LOCALE), or the console's with System default. */
++        const char *chosen = getenv("PW_PC5_LOCALE");
++        const char *locale = chosen && *chosen ? chosen : pc5_console_locale();
+         if (locale) snprintf(pc5_locale, sizeof(pc5_locale), "%s", locale);
+         PS5LOG_LOG("PW_WINE64 pc5 locale=%s shader_cache=%s", pc5_locale, radv_cache);
+     }
+-- 
+2.43.0
+

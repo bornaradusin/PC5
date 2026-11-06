@@ -57,6 +57,24 @@ int pc5_language_find(const char *code)
     return -1;
 }
 
+const char *pc5_language_locale(const char *code)
+{
+    /* Each language's Windows locale (LC_ALL), as the console's own are (pc5_console_locale). */
+    static const struct { const char *code, *locale; } locales[] = {
+        { "en", "en_US.UTF-8" }, { "ar", "ar_SA.UTF-8" }, { "id", "id_ID.UTF-8" }, { "cs", "cs_CZ.UTF-8" },
+        { "da", "da_DK.UTF-8" }, { "de", "de_DE.UTF-8" }, { "es", "es_ES.UTF-8" }, { "es-419", "es_MX.UTF-8" },
+        { "fr", "fr_FR.UTF-8" }, { "fr-CA", "fr_CA.UTF-8" }, { "it", "it_IT.UTF-8" }, { "hu", "hu_HU.UTF-8" },
+        { "nl", "nl_NL.UTF-8" }, { "no", "nb_NO.UTF-8" }, { "pl", "pl_PL.UTF-8" }, { "pt-BR", "pt_BR.UTF-8" },
+        { "pt-PT", "pt_PT.UTF-8" }, { "ro", "ro_RO.UTF-8" }, { "fi", "fi_FI.UTF-8" }, { "sv", "sv_SE.UTF-8" },
+        { "vi", "vi_VN.UTF-8" }, { "tr", "tr_TR.UTF-8" }, { "el", "el_GR.UTF-8" }, { "ru", "ru_RU.UTF-8" },
+        { "uk", "uk_UA.UTF-8" }, { "ja", "ja_JP.UTF-8" }, { "ko", "ko_KR.UTF-8" }, { "zh-Hans", "zh_CN.UTF-8" },
+        { "zh-Hant", "zh_TW.UTF-8" },
+    };
+    for (size_t i = 0; code && i < sizeof(locales) / sizeof(locales[0]); i++)
+        if (!pc5_casecmp(code, locales[i].code)) return locales[i].locale;
+    return NULL;
+}
+
 const char *pc5_language_of_console(int ps5_language)
 {
     /* SCE_SYSTEM_PARAM_LANG_*: 0 Japanese, 1 English (US), ... 18 English (UK), 20 Spanish

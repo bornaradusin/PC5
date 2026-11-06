@@ -6421,6 +6421,27 @@ static void test_game(const char *fonts_path)
             high.high_refresh = 0;
             pc5_settings_save(game_root, &high);
         }
+        /* A game's language is PC5's (Settings › Language): the console's while that is System
+         * default (the title takes it, PW_PC5_LOCALE empty), else the chosen one's (Bastion in
+         * English on a Turkish console, which it has no text for). */
+        env = getenv("PW_PC5_LOCALE");
+        CHECK(env && !env[0], "the console's language with System default");
+        {
+            Pc5Settings chosen;
+            pc5_settings_load(game_root, &chosen);
+            pc5_copy(chosen.language, sizeof(chosen.language), "en");
+            pc5_settings_save(game_root, &chosen);
+            pc5_game_begin(&game, &ops, game_root, app, "liberty", "Liberty Town");
+            env = getenv("PW_PC5_LOCALE");
+            CHECK(env && !strcmp(env, "en_US.UTF-8"), "PC5 in English: the game too: %s", env ? env : "-");
+            pc5_copy(chosen.language, sizeof(chosen.language), "zh-Hant");
+            pc5_settings_save(game_root, &chosen);
+            pc5_game_begin(&game, &ops, game_root, app, "liberty", "Liberty Town");
+            env = getenv("PW_PC5_LOCALE");
+            CHECK(env && !strcmp(env, "zh_TW.UTF-8"), "PC5 in Traditional Chinese: the game too: %s", env ? env : "-");
+            chosen.language[0] = 0;
+            pc5_settings_save(game_root, &chosen);
+        }
         /* A 32-bit game's Memory, which Wine reads (patch 0921): Auto by default, 4 GB only
          * for a program whose large-address flag asks for it, as on Windows; 4 GB for any. */
         env = getenv("PW_LARGE_ADDRESS_AWARE");

@@ -73,7 +73,7 @@ These follow the settings in every game, whatever its [controller mode](Controll
 | Check now | | Asks GitHub straight away. The answer shows under the row. |
 | Update now | | Shows while a newer release is out: downloads it from GitHub, puts it in place of this PC5 and restarts PC5. |
 | Keyboard layout | **Auto**, US | How a USB keyboard types in games. Auto follows PC5's language (an AZERTY keyboard on a French console types as marked); US keeps a US keyboard, as before 2.1.0. See [Controllers](Controllers). |
-| Language | **System default**, English and the other languages, each in its own name | The language of PC5's screens and its web page. System default follows the console's language (Thai shows in English). The change shows at once. See [Translations](Translations). |
+| Language | **System default**, English and the other languages, each in its own name | The language of PC5's screens, its web page and the games: a game starts in it (its Windows language), and picks its own text by it. System default follows the console's language (Thai shows in English). A game that doesn't have your language may show the names of its text instead of the text (Bastion on a Turkish console): set this to English for it. The change shows at once; a game takes it at its next start. See [Translations](Translations). |
 
 When a newer PC5 is out, PC5 asks when it opens whether to update now or later. PC5 never updates without asking. See [Updating PC5](Installing-and-updating#updating-pc5).
 

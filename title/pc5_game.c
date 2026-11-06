@@ -854,6 +854,14 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
     setenv("PW_PC5_HIGH_REFRESH", game->settings.high_refresh ? "1" : "0", 1);
     /* Programs a game starts (Settings › In games): the title starts them for Wine (pc5_children.h). */
     setenv("PW_PC5_CHILDREN", game->settings.other_programs ? "1" : "0", 1);
+    /* A game's Windows language is PC5's (Settings › Language): the chosen one's, or with System
+     * default the console's, which the title takes itself (PW_PC5_LOCALE empty). A game without
+     * the console's language may show its text's names instead (Bastion in Turkish): PC5 set to
+     * English starts it in English. */
+    {
+        const char *locale = game->settings.language[0] ? pc5_language_locale(game->settings.language) : NULL;
+        setenv("PW_PC5_LOCALE", locale ? locale : "", 1);
+    }
     if (stretch) setenv("PW_PC5_STRETCH", "1", 1);
     else unsetenv("PW_PC5_STRETCH");
     /* A launcher that starts the game: Wine hands that program to PC5 (Wine patch 0923,
