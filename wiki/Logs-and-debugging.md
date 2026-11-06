@@ -41,7 +41,7 @@ These are the lines most often asked for:
 | The sound | `err+all,+loaddll,+process,+mmdevapi,+xaudio2,+dsound` |
 | Videos | `err+all,+loaddll,+process,+mfplat,+quartz,+wmvcore` |
 
-The line takes the place of PC5's own (`err+all,+loaddll,+process`), so keep those three at its start. It can only have letters, digits and `_ + - , = .`, 127 characters at most; PC5 leaves out a line with anything else. Lines starting with `#` or `;` are notes, so you can keep other lines there for later:
+The line takes the place of PC5's own (`err+all,+loaddll,+process`), so keep those three at its start. With PC5's own line, two kinds of trace a game makes many times a second (`NtQueryInformationProcess` and `GetEnvironmentVariable`) are counted, not logged; with a line of your own they are logged. It can only have letters, digits and `_ + - , = .`, 127 characters at most; PC5 leaves out a line with anything else. Lines starting with `#` or `;` are notes, so you can keep other lines there for later:
 
 ```text
 # err+all,+loaddll,+process,+relay

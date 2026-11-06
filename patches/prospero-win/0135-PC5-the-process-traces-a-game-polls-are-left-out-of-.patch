@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Fri, 6 Nov 2026 12:00:00 +0000
+Subject: [PATCH 135/135] PC5: the process traces a game polls are left out of the log,
+ counted
+
+With the default WINEDEBUG, Wine's NtQueryInformationProcess and
+GetEnvironmentVariable traces (Unity's and Unreal's polling, over half of some
+games' logs) are counted, not logged: the exit line's quiet=. A profile's own
+[debug] line keeps them.
+---
+ native/wine64_main.c | 25 +++++++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index bf0a229..5ff88ec 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -436,14 +436,35 @@ static const PwGameInput *held_input;
+ static volatile uint32_t held_buttons, held_touch;
+ static volatile unsigned long long held_taps;
+ 
++/* Traces of the default channels a game makes many times a second that say nothing about a
++ * problem: the process information Unity and Unreal games poll (over half of some games' logs,
++ * pushing out what came before) and the environment variables a game reads. Left out of the
++ * log and counted (the exit line's quiet=), with the default WINEDEBUG only: a profile's own
++ * [debug] line keeps them. -1 until the first line, when WINEDEBUG is set. */
++static int quiet_traces = -1;
++static unsigned long long quiet_count;
++
++static int is_quiet(const char *line)
++{
++    const char *trace = strstr(line, ":trace:process:");
++    if (!trace) return 0;
++    trace += 15;
++    return !strncmp(trace, "NtQueryInformationProcess", 25) || !strncmp(trace, "GetEnvironmentVariable", 22);
++}
++
+ static void wine_output_sink(const char *str, size_t len)
+ {
+     sink_calls++;
+     pthread_mutex_lock(&sink_lock);
++    if (quiet_traces < 0) {
++        const char *debug = getenv("WINEDEBUG");
++        quiet_traces = debug && !strcmp(debug, PW_WINE64_DEBUG);
++    }
+     for (size_t i = 0; i < len; i++) {
+         if (str[i] == '\n' || sink_used == sizeof(sink_line) - 1) {
+             sink_line[sink_used] = 0;
+-            PS5LOG_LOG("WINE %s", sink_line);
++            if (quiet_traces && is_quiet(sink_line)) quiet_count++;
++            else PS5LOG_LOG("WINE %s", sink_line);
+             sink_used = 0;
+             if (str[i] == '\n') continue;
+         }
+@@ -885,7 +906,7 @@ static void on_exit_report(void)
+         pw_wine_held_names(held_input, held_buttons, held_touch, held, sizeof(held));
+         PS5LOG_LOG("PW_WINE64 keys held at exit: %s (taps=%llu)", held, held_taps);
+     }
+-    PS5LOG_LOG("PW_WINE64 exit sink_calls=%lu", sink_calls);
++    PS5LOG_LOG("PW_WINE64 exit sink_calls=%lu quiet=%llu", sink_calls, quiet_count);
+ #ifdef PW_PC5
+     /* The game's launcher started the game (Wine patch 0923): PC5 writes the game's profile
+      * for that program, and the title starts it, as the launcher would have, back to PC5
+-- 
+2.43.0
+
