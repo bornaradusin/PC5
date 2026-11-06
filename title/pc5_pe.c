@@ -565,12 +565,30 @@ uint32_t pc5_pe_unity_direct3d(const char *path, uint32_t imports)
     size_t n = strlen(path);
     struct stat st;
 
-    if ((imports & PC5_IMPORT_DRAWING) != PC5_IMPORT_OPENGL) return 0;
+    uint32_t drawing = imports & PC5_IMPORT_DRAWING;
+    if (drawing && drawing != PC5_IMPORT_OPENGL) return 0;
     if (n <= 4 || n + 1 >= sizeof(data) || pc5_casecmp(path + n - 4, ".exe")) return 0;
     memcpy(data, path, n - 4);
     memcpy(data + n - 4, "_Data", 6);
     if (stat(data, &st) || !S_ISDIR(st.st_mode)) return 0;
-    return pc5_pe_named_libraries(path) & direct3d;
+    /* Unity 5.5 and before: the player is the program itself. */
+    if (drawing) return pc5_pe_named_libraries(path) & direct3d;
+    /* Unity 2017 and after: the program only starts UnityPlayer.dll beside it, which imports
+     * OpenGL and loads Direct3D 11 at run time (Direct3D 12 or Vulkan only when the game asks
+     * for them); its libraries beside it say OpenGL, or Direct3D 12 with the D3D12 folder. */
+    char dir[PC5_PATH], player[PC5_PATH];
+    DIR *d;
+    struct dirent *e;
+    int found = 0;
+    memcpy(dir, path, n + 1);
+    char *slash = strrchr(dir, '/');
+    if (!slash) return 0;
+    *slash = 0;
+    if (!(d = opendir(dir))) return 0;
+    while (!found && (e = readdir(d)))
+        found = !pc5_casecmp(e->d_name, "UnityPlayer.dll") && !pc5_join(player, sizeof(player), dir, e->d_name);
+    closedir(d);
+    return found && (pc5_pe_named_libraries(player) & PC5_IMPORT_D3D11) ? PC5_IMPORT_D3D11 : 0;
 }
 
 int pc5_pe_section(const char *path, const char *name)

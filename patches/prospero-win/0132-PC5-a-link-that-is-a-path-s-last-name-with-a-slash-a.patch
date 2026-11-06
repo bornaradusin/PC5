@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Fri, 6 Nov 2026 10:00:00 +0000
+Subject: [PATCH 132/132] PC5: a link that is a path's last name, with a slash after
+ it, is followed as a directory
+
+---
+ tests/test_pw_wine_cwd.c | 4 ++++
+ wine/ps5/pw_wine_cwd.c   | 6 +++++-
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/tests/test_pw_wine_cwd.c b/tests/test_pw_wine_cwd.c
+index 8f4c732..6529356 100644
+--- a/tests/test_pw_wine_cwd.c
++++ b/tests/test_pw_wine_cwd.c
+@@ -201,6 +201,10 @@ static void test_links(void)
+     assert(!pw_cwd_follow("/v/a/x/y", 1, out, sizeof(out)) && !strcmp(out, "/t/x/y"));
+     assert(!pw_cwd_follow("/v/a", 1, out, sizeof(out)) && !strcmp(out, "/t"));
+     assert(!pw_cwd_follow("/v/a", 0, out, sizeof(out)) && !strcmp(out, "/v/a"));
++    /* A link as the last name with a slash after it is followed as a directory, as the kernel
++     * does: "dosdevices/c:/" is C:'s folder (GetVolumePathNameW asks for it). */
++    assert(!pw_cwd_follow("/v/a/", 0, out, sizeof(out)) && !strcmp(out, "/t"));
++    assert(!pw_cwd_follow("/v/a//", 0, out, sizeof(out)) && !strcmp(out, "/t"));
+     assert(!pw_cwd_follow("/v/z/usr", 1, out, sizeof(out)) && !strcmp(out, "/usr"));
+     assert(!pw_cwd_follow("/v/ab//x", 1, out, sizeof(out)) && !strcmp(out, "/v/ab//x"));
+     assert(!pw_cwd_follow("/v//./a/../x", 1, out, sizeof(out)) && !strcmp(out, "/x"));
+diff --git a/wine/ps5/pw_wine_cwd.c b/wine/ps5/pw_wine_cwd.c
+index a65d1f8..d5430b8 100644
+--- a/wine/ps5/pw_wine_cwd.c
++++ b/wine/ps5/pw_wine_cwd.c
+@@ -276,8 +276,12 @@ int pw_cwd_follow(const char *absolute, int follow_last, char *out, size_t size)
+         memcpy(done + used, name, length);
+         used += length;
+         done[used] = 0;
++        /* The last name followed by a slash ("c:/") is a directory's, so a link there is
++         * followed even when the last link isn't, as the kernel does for a real one (Wine's
++         * GetVolumePathNameW looks at "...dosdevices/c:/": Dead Space 2 saved with no drive). */
++        int slash = *p == '/';
+         while (*p == '/') p++;
+-        if ((!*p && !follow_last) || (i = find_link_locked(done)) < 0) continue;
++        if ((!*p && !follow_last && !slash) || (i = find_link_locked(done)) < 0) continue;
+         if (++hops > PW_CWD_MAX_HOPS) { errno = ELOOP; status = -1; break; }
+         {
+             const char *target = links[i].target;
+-- 
+2.43.0
+

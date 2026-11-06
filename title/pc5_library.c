@@ -838,12 +838,15 @@ int pc5_profile_refresh(const char *root, const char *id, char *error, size_t si
     if (!work[0]) unreal_starter(top, &program);
     /* A game installed as drawing with Windows itself may load Direct3D or Vulkan at run
      * time (before 1.6.1 PC5 didn't look): what its program names, kept in its notes. */
-    /* ... and one installed as drawing with OpenGL may be an old Unity game's, which draws with
-     * Direct3D (before 2.3.4 PC5 didn't tell): its Direct3D, kept in its notes too. */
-    if ((info.api == PC5_API_GDI || info.api == PC5_API_OPENGL) &&
+    /* ... and one installed as drawing with OpenGL may be a Unity game's, which draws with
+     * Direct3D (before 2.3.4 PC5 didn't tell for an old one, before 2.3.5 for a newer one, which
+     * may also have been taken for Direct3D 12): its Direct3D, kept in its notes too. */
+    if ((info.api == PC5_API_GDI || info.api == PC5_API_OPENGL || info.api == PC5_API_D3D12) &&
         top[0] && !pc5_format(path, sizeof(path), "%s/%s", top, program.exe)) {
+        Pc5PeInfo pe;
         uint32_t named = info.api == PC5_API_GDI ? pc5_pe_named_libraries(path) & PC5_IMPORT_DRAWING
-                                                 : pc5_pe_unity_direct3d(path, PC5_IMPORT_OPENGL);
+                         : pc5_pe_read(path, &pe)  ? 0
+                                                   : pc5_pe_unity_direct3d(path, pe.imports);
         if (named) {
             info.api = program.api = pc5_api_from_imports(named);
             if (!pc5_info_text(&info, text, sizeof(text)) &&

@@ -1,6 +1,9 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 /* PC5: a home screen tile that is an app of its own (pc5_tile.h). */
 #include "pc5_tile.h"
+#include "pc5_controls.h"
+#include "pc5_msi.h"
+#include "pc5_steam.h"
 #include "pc5_i18n.h"
 #include "pc5_dds.h"
 #include "pc5_home.h"
@@ -683,7 +686,27 @@ int pc5_tile_prepare_step(Pc5TilePrep *prep, int budget_ms)
             prep->stage = STAGE_PROFILE;
             break;
         case STAGE_PROFILE: {
-            char error[PC5_ERROR] = "", path[PC5_PATH];
+            char error[PC5_ERROR] = "", path[PC5_PATH], game_dir[PC5_PATH], program[PC5_PATH];
+            /* What PC5 does before a game starts from its library, from a tile too: PhysX
+             * registered, a program in Steam's DRM refused, and the Steam emulator put in place
+             * or taken away as the game's menu says (a tile start skipped it before 2.3.5, and a
+             * game that needs Steam closed at once). */
+            if (prep->pc5 && !pc5_game_folder(prep->root, prep->id, game_dir, sizeof(game_dir)) &&
+                !pc5_game_program(prep->root, prep->id, program, sizeof(program))) {
+                Pc5Controls chosen;
+                char why[PC5_ERROR];
+                pc5_physx_register(prep->root, prep->id, NULL, NULL);
+                if (pc5_steam_stub(program)) {
+                    pc5_steam_check_keep(prep->root, prep->id, game_dir, program, 1, 1, NULL, 0);
+                    return fail(prep, N_("Its program is wrapped in Steam's DRM (SteamStub), which starts only with Steam "
+                                         "running, and Steam doesn't run on the console. A copy of the game without it can "
+                                         "start."));
+                }
+                pc5_controls_load(prep->root, prep->id, &chosen);
+                if (prep->app[0])
+                    pc5_steam_prepare(prep->root, prep->id, game_dir, program, prep->app, !chosen.steam_off, why, sizeof(why));
+                pc5_steam_check_keep(prep->root, prep->id, game_dir, program, !chosen.steam_off, 0, NULL, 0);
+            }
             /* Its profile from PC5's notes and its settings, as every start of a PC5 game. */
             if (prep->pc5 && pc5_profile_refresh(prep->root, prep->id, error, sizeof(error))) return fail(prep, error);
             /* The game PC5's library shows first next time. */

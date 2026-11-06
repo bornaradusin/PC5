@@ -5803,6 +5803,25 @@ static void test_tile(void)
     CHECK(!pc5_read_file(file, &text, 256) && text.len == 8 && !memcmp(text.data, "tilegame", 8), "the last game played");
     pc5_buf_free(&text);
 
+    /* A Steam game started from its tile: the Steam emulator put in place as from PC5's library
+     * (Alien Breed: a tile start skipped it, and the game closed at once), and what it met of
+     * Steam kept for a report. */
+    {
+        char emulator[PC5_PATH], put[PC5_PATH];
+        path(emulator, sizeof(emulator), "%s/pc5/steam/steam_api64.dll", app);
+        path(file, sizeof(file), "%s/engine.dll", programs);
+        copy_file(file, emulator);
+        make_tile_game(root, "tilesteam", "Tile Steam", "steam64.exe", 0);
+        pc5_tile_prepare_begin(prep, root, app, "tilesteam");
+        for (steps = 0; !(step = pc5_tile_prepare_step(prep, 5)) && steps < 1000; steps++) {}
+        CHECK(step == 1, "a Steam game readied: %d %s", step, prep->error);
+        pc5_tile_prepare_end(prep);
+        path(put, sizeof(put), "%s/prefixes/tilesteam/drive_c/Games/Tile Steam/steam_api64.dll", root);
+        CHECK(same_files(put, emulator), "the Steam emulator beside its program");
+        path(file, sizeof(file), "%s/prefixes/tilesteam/pc5/steam-check.txt", root);
+        CHECK(file_holds_text(file, "PC5's Steam emulator, put there"), "what it met of Steam kept");
+    }
+
     /* Its controls changed in PC5 since: the profile follows at the tile's next start. */
     {
         Pc5Controls controls;
@@ -9494,8 +9513,13 @@ static void test_steam(void)
         copy_file(from, exe);
         path(put, sizeof(put), "%s/Binaries/Win32/steam_api64.dll", lone);
         path(mark, sizeof(mark), "%s.pc5-added", put);
+        /* Another stand-in elsewhere in the folder (a copy's own, to copy over the game's) isn't
+         * the one the program loads: the emulator still put beside it. */
+        path(file, sizeof(file), "%s/Wrapper/SinglePlayer/Binaries/Win32/steam_api.dll", lone);
+        write_text(file, "not Valve's\n");
         CHECK(pc5_steam_prepare(root_steam, "lone", lone, exe, app, 1, error, sizeof(error)) == 1 && pc5_is_file(mark),
               "the emulator put there: %s", error);
+        CHECK(file_holds_text(file, "not Valve's\n"), "the other stand-in left alone");
         path(file, sizeof(file), "%s/pc5/steam/steam_api64.dll", app);
         CHECK(same_files(put, file), "as the app's");
         path(file, sizeof(file), "%s/Binaries/Win32/steam_settings/configs.main.ini", lone);
@@ -9566,6 +9590,28 @@ static void test_unity_direct3d(void)
     CHECK(added == PC5_IMPORT_D3D9 && pc5_api_from_imports(pe.imports | added) == PC5_API_D3D9,
           "Unity's: Direct3D 9: %#x", (unsigned)added);
     CHECK(!pc5_pe_unity_direct3d(exe, PC5_IMPORT_OPENGL | PC5_IMPORT_D3D11), "Direct3D imported: as it was");
+
+    /* A newer Unity game: its program imports nothing that draws, and UnityPlayer.dll beside it
+     * names d3d11.dll (it imports OpenGL, and a D3D12 folder may be beside it too): Direct3D 11. */
+    static const char player_names[] = "d3d11.dll\0d3d12.dll";
+    char player[PC5_PATH];
+    path(dir, sizeof(dir), "%s/unity2", work);
+    path(exe, sizeof(exe), "%s/New Game.exe", dir);
+    path(from, sizeof(from), "%s/launcher.exe", programs);
+    copy_file(from, exe);
+    CHECK(!pc5_pe_read(exe, &pe) && !(pe.imports & PC5_IMPORT_DRAWING), "its program draws with nothing");
+    path(data, sizeof(data), "%s/New Game_Data", dir);
+    pc5_mkdirs(data);
+    CHECK(!pc5_pe_unity_direct3d(exe, pe.imports), "no UnityPlayer.dll: not Unity's");
+    path(player, sizeof(player), "%s/UnityPlayer.dll", dir);
+    path(from, sizeof(from), "%s/gl32.exe", programs);
+    pe_variant(from, player, NULL, player_names, sizeof(player_names), NULL);
+    added = pc5_pe_unity_direct3d(exe, pe.imports);
+    CHECK(added == PC5_IMPORT_D3D11 && pc5_api_from_imports(pe.imports | added) == PC5_API_D3D11,
+          "Unity's player beside it: Direct3D 11: %#x", (unsigned)added);
+    path(from, sizeof(from), "%s/gl32.exe", programs);
+    copy_file(from, player);
+    CHECK(!pc5_pe_unity_direct3d(exe, pe.imports), "a player that names no Direct3D 11: as it was");
 }
 
 /* Starting a game: its PhysX installed the first time, the Steam emulator in place, the game's

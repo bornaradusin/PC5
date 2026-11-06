@@ -340,6 +340,19 @@ static int imports_steam(const char *program)
     return !pc5_pe_read(program, &pe) && !pe.dll && (pe.imports & PC5_IMPORT_STEAM);
 }
 
+/* 1 when the program has the emulator PC5 put beside it (add_missing). */
+static int added_beside(const char *program)
+{
+    char dir[PC5_PATH], mark[PC5_PATH];
+    if (!program) return 0;
+    pc5_copy(dir, sizeof(dir), program);
+    char *slash = strrchr(dir, '/');
+    if (!slash) return 0;
+    *slash = 0;
+    return (!pc5_format(mark, sizeof(mark), "%s/steam_api64.dll.pc5-added", dir) && pc5_is_file(mark)) ||
+           (!pc5_format(mark, sizeof(mark), "%s/steam_api.dll.pc5-added", dir) && pc5_is_file(mark));
+}
+
 /* The program imports Steam's library and none is beside it: the app's emulator put there as
  * the one it imports (steam_api64.dll for a 64-bit program), with <name>.pc5-added beside it.
  * 1 when one was put there, 0 when none was needed, -1 with why in error. */
@@ -389,8 +402,11 @@ int pc5_steam_prepare(const char *root, const char *id, const char *game_dir, co
     if (!found) return -1;
     count = pc5_steam_find(root, id, game_dir, program, found, PC5_STEAM_DLLS);
     /* A program that needs Steam's library when its copy has none beside it (an antivirus on a
-     * PC deleted it, or the copy came without): the emulator put there, marked as PC5's. */
-    if (on && program && !emulator_marker_in(game_dir) && !own_emulator(game_dir, found, count)) {
+     * PC deleted it, or the copy came without): the emulator put there, marked as PC5's. Only
+     * the program's own folder counts: without one there it can't start at all, and a stand-in
+     * elsewhere in the folder (one a copy keeps in a folder of its own to copy over) isn't the
+     * one it loads. */
+    if (on && program) {
         int added = add_missing(game_dir, program, app, error, size);
         if (added < 0) {
             pc5_free(found);
@@ -404,8 +420,9 @@ int pc5_steam_prepare(const char *root, const char *id, const char *game_dir, co
         }
     }
     /* A game with an emulator of its own keeps it: PC5 puts none beside it (SuperLeiyan: Auto
-     * gave such a game another user and other settings, and its saves were lost to it). */
-    if (on && own_emulator(game_dir, found, count)) {
+     * gave such a game another user and other settings, and its saves were lost to it). Unless
+     * its program has PC5's beside it (add_missing): another one elsewhere isn't what it loads. */
+    if (on && !added_beside(program) && own_emulator(game_dir, found, count)) {
         pc5_free(found);
         return 0;
     }

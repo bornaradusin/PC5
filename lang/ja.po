@@ -302,7 +302,7 @@ msgstr "コピーの準備中にメモリーが不足しました。"
 msgid "Nothing is chosen."
 msgstr "何も選ばれていません。"
 
-#: title/pc5_files.c:284 title/pc5_files.c:289 title/pc5_tile.c:631
+#: title/pc5_files.c:284 title/pc5_files.c:289 title/pc5_tile.c:634
 #: title/pc5_upgrade.c:637
 msgid "PC5 ran out of memory."
 msgstr "メモリーが不足しました。"
@@ -341,8 +341,8 @@ msgid "PC5 ran out of memory planning the work."
 msgstr "作業の準備中にメモリーが不足しました。"
 
 #: title/pc5_files.c:385 title/pc5_files.c:406 title/pc5_files.c:419
-#: title/pc5_library.c:2831 title/pc5_library.c:3085 title/pc5_library.c:3095
-#: title/pc5_library.c:3108
+#: title/pc5_library.c:2834 title/pc5_library.c:3088 title/pc5_library.c:3098
+#: title/pc5_library.c:3111
 #, c-format
 msgid "PC5 can't write %s: %s."
 msgstr "%sに書き込めません：%s。"
@@ -352,7 +352,7 @@ msgstr "%sに書き込めません：%s。"
 msgid "PC5 ran out of memory copying %s."
 msgstr "%sのコピー中にメモリーが不足しました。"
 
-#: title/pc5_files.c:427 title/pc5_library.c:1944
+#: title/pc5_files.c:427 title/pc5_library.c:1947
 #, c-format
 msgid "PC5 can't put %s in place: %s."
 msgstr "%sを配置できません：%s。"
@@ -444,7 +444,7 @@ msgid ""
 "Plug in the USB drive with %.100s: it plays from the folder %.200s on it."
 msgstr "%.100sが入ったUSBドライブをつないでください。そのドライブのフォルダー%.200sからプレイします。"
 
-#: title/pc5_library.c:175 title/pc5_library.c:3623 title/pc5_library.c:3674
+#: title/pc5_library.c:175 title/pc5_library.c:3626 title/pc5_library.c:3677
 #, c-format
 msgid "PC5 can't make the game's folder: %s."
 msgstr "ゲームのフォルダーを作成できません：%s。"
@@ -458,7 +458,7 @@ msgstr "USBドライブ上のゲームのフォルダーをリンクできませ
 msgid "Choose one of the game's programs."
 msgstr "ゲームのプログラムを1つ選んでください。"
 
-#: title/pc5_library.c:613 title/pc5_library.c:828 title/pc5_library.c:1057
+#: title/pc5_library.c:613 title/pc5_library.c:828 title/pc5_library.c:1060
 msgid "PC5's notes on this game are missing."
 msgstr "このゲームについてのPC5の記録がありません。"
 
@@ -466,9 +466,9 @@ msgstr "このゲームについてのPC5の記録がありません。"
 msgid "That program is too deep in the game's folder for Windows."
 msgstr "そのプログラムはゲームのフォルダーの深い階層にありすぎて、Windowsで扱えません。"
 
-#: title/pc5_library.c:630 title/pc5_library.c:1961 title/pc5_library.c:3272
-#: title/pc5_library.c:3275 title/pc5_library.c:3284 title/pc5_library.c:3358
-#: title/pc5_library.c:3510 title/pc5_library.c:3636
+#: title/pc5_library.c:630 title/pc5_library.c:1964 title/pc5_library.c:3275
+#: title/pc5_library.c:3278 title/pc5_library.c:3287 title/pc5_library.c:3361
+#: title/pc5_library.c:3513 title/pc5_library.c:3639
 #, c-format
 msgid "PC5 can't write its notes: %s."
 msgstr "記録を書き込めません：%s。"
@@ -482,166 +482,166 @@ msgstr "メモリーが不足しています。"
 msgid "%.200s doesn't start any of the game's programs."
 msgstr "%.200sはゲームのどのプログラムも起動しません。"
 
-#: title/pc5_library.c:924
+#: title/pc5_library.c:927
 msgid "The game's launch options are too long: 511 characters at most."
 msgstr "ゲームの起動オプションが長すぎます（511文字まで）。"
 
-#: title/pc5_library.c:941
+#: title/pc5_library.c:944
 msgid "The game's path is too long for Windows."
 msgstr "ゲームのパスがWindowsには長すぎます。"
 
-#: title/pc5_library.c:957 title/pc5_library.c:1136
+#: title/pc5_library.c:960 title/pc5_library.c:1139
 #, c-format
 msgid "PC5 can't write the game's profile: %s."
 msgstr "ゲームのプロファイルを書き込めません：%s。"
 
-#: title/pc5_library.c:1082
+#: title/pc5_library.c:1085
 #, c-format
 msgid "The program its launcher started isn't one of the game's: %.200s"
 msgstr "ランチャーが起動したプログラムは、このゲームのものではありません：%.200s"
 
-#: title/pc5_library.c:1096
+#: title/pc5_library.c:1099
 msgid "The arguments its launcher gave are too long."
 msgstr "ランチャーが渡した引数が長すぎます。"
 
-#: title/pc5_library.c:1118
+#: title/pc5_library.c:1121
 #, c-format
 msgid "Its programs kept starting each other: %d hand-offs in a row."
 msgstr "プログラムどうしが起動し合い続けました（%d回連続）。"
 
-#: title/pc5_library.c:1132
+#: title/pc5_library.c:1135
 msgid "The program's path is too long for Windows."
 msgstr "プログラムのパスがWindowsには長すぎます。"
 
-#: title/pc5_library.c:1194
+#: title/pc5_library.c:1197
 #, c-format
 msgid "Its profile has a mistake (%s)."
 msgstr "プロファイルに誤りがあります（%s）。"
 
-#: title/pc5_library.c:1211
+#: title/pc5_library.c:1214
 msgid "Its Windows folder is missing."
 msgstr "Windowsフォルダーがありません。"
 
-#: title/pc5_library.c:1215
+#: title/pc5_library.c:1218
 msgid "Resetting its Windows isn't finished: close PC5 and open it again."
 msgstr ""
 
-#: title/pc5_library.c:1357
+#: title/pc5_library.c:1360
 #, c-format
 msgid "PC5 can't delete %s: %s."
 msgstr "%sを削除できません：%s。"
 
-#: title/pc5_library.c:1456 title/pc5_library.c:1731 title/pc5_library.c:1786
-#: title/pc5_library.c:2257
+#: title/pc5_library.c:1459 title/pc5_library.c:1734 title/pc5_library.c:1789
+#: title/pc5_library.c:2260
 #, c-format
 msgid "PC5 can't move the game's folder: %s."
 msgstr "ゲームのフォルダーを移動できません：%s。"
 
-#: title/pc5_library.c:1465 title/pc5_library.c:1736
+#: title/pc5_library.c:1468 title/pc5_library.c:1739
 #, c-format
 msgid "PC5 can't delete the game's profile: %s."
 msgstr "ゲームのプロファイルを削除できません：%s。"
 
-#: title/pc5_library.c:1479 title/pc5_library.c:1723 title/pc5_library.c:2178
-#: title/pc5_library.c:2204 title/pc5_library.c:2213 title/pc5_library.c:2253
-#: title/pc5_library.c:3423 title/pc5_library.c:3431 title/pc5_library.c:3477
-#: title/pc5_library.c:3513
+#: title/pc5_library.c:1482 title/pc5_library.c:1726 title/pc5_library.c:2181
+#: title/pc5_library.c:2207 title/pc5_library.c:2216 title/pc5_library.c:2256
+#: title/pc5_library.c:3426 title/pc5_library.c:3434 title/pc5_library.c:3480
+#: title/pc5_library.c:3516
 msgid "A path is too long."
 msgstr "パスが長すぎます。"
 
-#: title/pc5_library.c:1682
+#: title/pc5_library.c:1685
 msgid "PC5 can't read the game's folder."
 msgstr "ゲームのフォルダーを読み込めません。"
 
-#: title/pc5_library.c:1690 title/pc5_library.c:1941 title/pc5_library.c:3021
+#: title/pc5_library.c:1693 title/pc5_library.c:1944 title/pc5_library.c:3024
 #, c-format
 msgid "A path in the game is too long: %s."
 msgstr "ゲーム内のパスが長すぎます：%s。"
 
-#: title/pc5_library.c:1699
+#: title/pc5_library.c:1702
 #, c-format
 msgid "PC5 can't keep %s: %s."
 msgstr "%sを残せません：%s。"
 
-#: title/pc5_library.c:1755
+#: title/pc5_library.c:1758
 #, c-format
 msgid "PC5 can't put the saves in place: %s."
 msgstr "セーブデータを配置できません：%s。"
 
-#: title/pc5_library.c:1769
+#: title/pc5_library.c:1772
 msgid "This game's saves can't be kept apart from it."
 msgstr "このゲームのセーブデータは、ゲームと分けて残すことはできません。"
 
-#: title/pc5_library.c:1775
+#: title/pc5_library.c:1778
 #, c-format
 msgid "PC5 can't make its saves folder: %s."
 msgstr "セーブデータのフォルダーを作成できません：%s。"
 
-#: title/pc5_library.c:1779
+#: title/pc5_library.c:1782
 msgid "PC5 is still keeping this game's saves from before: start PC5 again."
 msgstr "このゲームの以前のセーブデータを、まだ保管している途中です。PC5をもう一度起動してください。"
 
-#: title/pc5_library.c:1812
+#: title/pc5_library.c:1815
 #, c-format
 msgid "PC5 can't move the saves: %s."
 msgstr "セーブデータを移動できません：%s。"
 
-#: title/pc5_library.c:1899
+#: title/pc5_library.c:1902
 #, c-format
 msgid "A path in the update is too long: %s."
 msgstr "アップデート内のパスが長すぎます：%s。"
 
-#: title/pc5_library.c:1981
+#: title/pc5_library.c:1984
 #, c-format
 msgid "PC5 can't write the game's list of files: %s."
 msgstr "ゲームのファイル一覧を書き込めません：%s。"
 
-#: title/pc5_library.c:2047 title/pc5_library.c:2078 title/pc5_library.c:2128
-#: title/pc5_library.c:2136 title/pc5_library.c:2167 title/pc5_library.c:2187
-#: title/pc5_library.c:2784 title/pc5_library.c:2858 title/pc5_library.c:2894
-#: title/pc5_library.c:3171 title/pc5_library.c:3439 title/pc5_library.c:3493
+#: title/pc5_library.c:2050 title/pc5_library.c:2081 title/pc5_library.c:2131
+#: title/pc5_library.c:2139 title/pc5_library.c:2170 title/pc5_library.c:2190
+#: title/pc5_library.c:2787 title/pc5_library.c:2861 title/pc5_library.c:2897
+#: title/pc5_library.c:3174 title/pc5_library.c:3442 title/pc5_library.c:3496
 msgid "Out of memory."
 msgstr "メモリーが不足しています。"
 
-#: title/pc5_library.c:2106 title/pc5_library.c:2143
+#: title/pc5_library.c:2109 title/pc5_library.c:2146
 #, c-format
 msgid "PC5 can't move %.150s into the new Windows: %s."
 msgstr ""
 
-#: title/pc5_library.c:2223 title/pc5_library.c:2229 title/pc5_library.c:2235
+#: title/pc5_library.c:2226 title/pc5_library.c:2232 title/pc5_library.c:2238
 #, c-format
 msgid "PC5 can't keep the old registry: %s."
 msgstr ""
 
-#: title/pc5_library.c:2261 title/pc5_library.c:3295
+#: title/pc5_library.c:2264 title/pc5_library.c:3298
 #, c-format
 msgid "PC5 can't put the game in place: %s."
 msgstr "ゲームを配置できません：%s。"
 
-#: title/pc5_library.c:2600
+#: title/pc5_library.c:2603
 msgid ""
 "PC5's Windows template is missing from the app: copy the PC5 folder again."
 msgstr "アプリにPC5のWindowsテンプレートがありません。PC5フォルダーをもう一度コピーしてください。"
 
-#: title/pc5_library.c:2624
+#: title/pc5_library.c:2627
 msgid "PC5's Windows template is damaged: copy the PC5 folder again."
 msgstr "PC5のWindowsテンプレートが壊れています。PC5フォルダーをもう一度コピーしてください。"
 
-#: title/pc5_library.c:2706 title/pc5_library.c:2766
+#: title/pc5_library.c:2709 title/pc5_library.c:2769
 #, c-format
 msgid "PC5 can't make its folders in %s: %s."
 msgstr "%sにフォルダーを作成できません：%s。"
 
-#: title/pc5_library.c:2717
+#: title/pc5_library.c:2720
 #, c-format
 msgid "PC5 can't make its folder on the USB drive: %s."
 msgstr "USBドライブにフォルダーを作成できません：%s。"
 
-#: title/pc5_library.c:2720
+#: title/pc5_library.c:2723
 msgid "PC5 can't name the game's folder on the USB drive."
 msgstr "USBドライブ上のゲームのフォルダーに名前を付けられません。"
 
-#: title/pc5_library.c:2738
+#: title/pc5_library.c:2741
 #, c-format
 msgid ""
 "The drive reads at %.0f MB/s here, too slow to play from (%.0f needed). "
@@ -651,22 +651,22 @@ msgstr ""
 "このポートではドライブの読み込み速度が%.0f "
 "MB/sで、ここからプレイするには遅すぎます（%.0f必要）。背面のポートか、前面のUSB-Cポートにつないでください。本体へのインストールはこのままでもできます。"
 
-#: title/pc5_library.c:2746
+#: title/pc5_library.c:2749
 #, c-format
 msgid ""
 "Not enough space on the USB drive: the game needs %s and it has %s free."
 msgstr "USBドライブの空き容量が足りません：ゲームには%s必要ですが、空きは%sです。"
 
-#: title/pc5_library.c:2750
+#: title/pc5_library.c:2753
 msgid ""
 "Only a game on a USB drive can play from it: this folder isn't on one."
 msgstr "USBドライブからプレイできるのは、USBドライブ上のゲームだけです。このフォルダーはUSBドライブ上にありません。"
 
-#: title/pc5_library.c:2752
+#: title/pc5_library.c:2755
 msgid "A game in PC5's INSTALL folder is installed, not played from there."
 msgstr "PC5のINSTALLフォルダーにあるゲームは、そこからプレイするのではなく、インストールします。"
 
-#: title/pc5_library.c:2757
+#: title/pc5_library.c:2760
 #, c-format
 msgid ""
 "The drive reads at %.0f MB/s in this USB port, too slow to play from (at "
@@ -677,162 +677,162 @@ msgstr ""
 "このUSBポートではドライブの読み込み速度が%.0f "
 "MB/sで、ここからプレイするには遅すぎます（最低%.0f必要）。初代PS5では前面のUSB-Aポートが低速です。背面のポートか、前面のUSB-Cポートにドライブをつないでください。インストールはこのポートからでもできます。"
 
-#: title/pc5_library.c:2763
+#: title/pc5_library.c:2766
 msgid "The game's program is too deep in its folder for Windows."
 msgstr "ゲームのプログラムがフォルダーの深い階層にありすぎて、Windowsで扱えません。"
 
-#: title/pc5_library.c:2771
+#: title/pc5_library.c:2774
 #, c-format
 msgid "Not enough space: the game needs %s and the console has %s free."
 msgstr "空き容量が足りません：ゲームには%s必要ですが、本体の空きは%sです。"
 
-#: title/pc5_library.c:2774
+#: title/pc5_library.c:2777
 msgid "PC5 can't name the game."
 msgstr "ゲームに名前を付けられません。"
 
-#: title/pc5_library.c:2777 title/pc5_library.c:3187
+#: title/pc5_library.c:2780 title/pc5_library.c:3190
 #, c-format
 msgid "PC5 can't start the install: %s."
 msgstr "インストールを開始できません：%s。"
 
-#: title/pc5_library.c:2817
+#: title/pc5_library.c:2820
 msgid "A path in the Windows template is too long."
 msgstr "Windowsテンプレート内のパスが長すぎます。"
 
-#: title/pc5_library.c:2820 title/pc5_library.c:2825 title/pc5_library.c:3029
-#: title/pc5_tile.c:519
+#: title/pc5_library.c:2823 title/pc5_library.c:2828 title/pc5_library.c:3032
+#: title/pc5_tile.c:522
 #, c-format
 msgid "PC5 can't make %s: %s."
 msgstr "%sを作成できません：%s。"
 
-#: title/pc5_library.c:2828
+#: title/pc5_library.c:2831
 #, c-format
 msgid "PC5's Windows template is missing %s."
 msgstr "PC5のWindowsテンプレートに%sがありません。"
 
-#: title/pc5_library.c:2847
+#: title/pc5_library.c:2850
 #, c-format
 msgid "PC5 can't copy %s: %s."
 msgstr "%sをコピーできません：%s。"
 
-#: title/pc5_library.c:2872
+#: title/pc5_library.c:2875
 #, c-format
 msgid "PC5 can't read %s on the USB drive: %s."
 msgstr "USBドライブ上の%sを読み込めません：%s。"
 
-#: title/pc5_library.c:3036 title/pc5_library.c:3048
+#: title/pc5_library.c:3039 title/pc5_library.c:3051
 #, c-format
 msgid "PC5 can't read back %s: %s."
 msgstr "書き込んだ%sを確認のために読み込めません：%s。"
 
-#: title/pc5_library.c:3036
+#: title/pc5_library.c:3039
 #, c-format
 msgid "PC5 can't open %s on the USB drive: %s."
 msgstr "USBドライブ上の%sを開けません：%s。"
 
-#: title/pc5_library.c:3049
+#: title/pc5_library.c:3052
 #, c-format
 msgid "The USB drive stopped answering while PC5 copied %s (%s)."
 msgstr "%sのコピー中にUSBドライブが応答しなくなりました（%s）。"
 
-#: title/pc5_library.c:3118
+#: title/pc5_library.c:3121
 #, c-format
 msgid ""
 "The copy of %s doesn't match the USB drive. The drive or its cable may be "
 "failing; nothing was kept."
 msgstr "%sのコピーがUSBドライブ上のものと一致しません。ドライブかケーブルが故障しているかもしれません。何も残していません。"
 
-#: title/pc5_library.c:3237 title/pc5_library.c:3249
+#: title/pc5_library.c:3240 title/pc5_library.c:3252
 #, c-format
 msgid ""
 "The game couldn't be put back in the INSTALL folder: it is in %.180s."
 msgstr "ゲームをINSTALLフォルダーに戻せませんでした。ゲームは%.180sにあります。"
 
-#: title/pc5_library.c:3288
+#: title/pc5_library.c:3291
 #, c-format
 msgid "PC5 can't save the cover: %s."
 msgstr "カバーを保存できません：%s。"
 
-#: title/pc5_library.c:3404
+#: title/pc5_library.c:3407
 msgid "PC5 didn't install this game, so it can't update it."
 msgstr "このゲームはPC5でインストールしたものではないため、アップデートできません。"
 
-#: title/pc5_library.c:3406
+#: title/pc5_library.c:3409
 #, c-format
 msgid ""
 "%s plays from its USB drive: copy the newer version over its folder %s "
 "there."
 msgstr "%sはUSBドライブからプレイするゲームです。新しいバージョンを、そのドライブのフォルダー%sに上書きコピーしてください。"
 
-#: title/pc5_library.c:3411 title/pc5_library.c:3473
+#: title/pc5_library.c:3414 title/pc5_library.c:3476
 msgid "The game's folder is missing: uninstall it and install it again."
 msgstr "ゲームのフォルダーがありません。アンインストールしてから、もう一度インストールしてください。"
 
-#: title/pc5_library.c:3414
+#: title/pc5_library.c:3417
 #, c-format
 msgid ""
 "This folder doesn't have %s, the program %s starts. Choose the folder of a "
 "newer copy of %s."
 msgstr "このフォルダーには、%2$sが起動するプログラム%1$sがありません。%3$sの新しいコピーのフォルダーを選んでください。"
 
-#: title/pc5_library.c:3428
+#: title/pc5_library.c:3431
 #, c-format
 msgid "Not enough space: the update needs %s and the console has %s free."
 msgstr "空き容量が足りません：アップデートには%s必要ですが、本体の空きは%sです。"
 
-#: title/pc5_library.c:3434
+#: title/pc5_library.c:3437
 msgid ""
 "An earlier update of this game isn't finished: close PC5 and open it again "
 "to finish it."
 msgstr "このゲームの前回のアップデートが完了していません。PC5を閉じてもう一度開くと、完了します。"
 
-#: title/pc5_library.c:3436
+#: title/pc5_library.c:3439
 #, c-format
 msgid "PC5 can't start the update: %s."
 msgstr "アップデートを開始できません：%s。"
 
-#: title/pc5_library.c:3471
+#: title/pc5_library.c:3474
 msgid ""
 "PC5 didn't install this game in a Windows of its own, so its Windows can't "
 "be reset."
 msgstr ""
 
-#: title/pc5_library.c:3476
+#: title/pc5_library.c:3479
 #, fuzzy
 msgid ""
 "An update or a reset of this game isn't finished: close PC5 and open it "
 "again to finish it."
 msgstr "このゲームの前回のアップデートが完了していません。PC5を閉じてもう一度開くと、完了します。"
 
-#: title/pc5_library.c:3482
+#: title/pc5_library.c:3485
 #, c-format, fuzzy
 msgid ""
 "Not enough space: a new Windows needs %s and the console has %s free."
 msgstr "空き容量が足りません：アップデートには%s必要ですが、本体の空きは%sです。"
 
-#: title/pc5_library.c:3486
+#: title/pc5_library.c:3489
 #, c-format
 msgid "PC5 can't start resetting its Windows: %s."
 msgstr ""
 
-#: title/pc5_library.c:3545
+#: title/pc5_library.c:3548
 msgid ""
 "Kept saves can't be put back for a game that plays from its USB drive."
 msgstr "USBドライブからプレイするゲームには、残しておいたセーブデータを戻せません。"
 
-#: title/pc5_library.c:3549
+#: title/pc5_library.c:3552
 msgid "The install has begun already."
 msgstr "インストールはすでに始まっています。"
 
-#: title/pc5_library.c:3565
+#: title/pc5_library.c:3568
 msgid "PC5 can't read the kept saves."
 msgstr "残しておいたセーブデータを読み込めません。"
 
-#: title/pc5_library.c:3565
+#: title/pc5_library.c:3568
 msgid "The kept saves are damaged: they have no registry."
 msgstr "残しておいたセーブデータが壊れています（レジストリーがありません）。"
 
-#: title/pc5_library.c:3648
+#: title/pc5_library.c:3651
 #, c-format
 msgid "PC5 can't make the game's folder on the USB drive: %s."
 msgstr "USBドライブにゲームのフォルダーを作成できません：%s。"
@@ -974,122 +974,130 @@ msgstr "このファイルは西欧の文字しか使えない古い文字コー
 msgid "There isn't memory enough to save it."
 msgstr "保存するためのメモリーが足りません。"
 
-#: title/pc5_tile.c:55
+#: title/pc5_tile.c:58
 msgid "The tile's folder path is too long."
 msgstr "タイルのフォルダーのパスが長すぎます。"
 
-#: title/pc5_tile.c:60
+#: title/pc5_tile.c:63
 #, c-format
 msgid "The tile's %s can't be read."
 msgstr "タイルの%sを読み込めません。"
 
-#: title/pc5_tile.c:66
+#: title/pc5_tile.c:69
 msgid "The tile was made by a PC5 this one doesn't know: make it again."
 msgstr "このタイルは、このPC5が知らないPC5で作られています。作り直してください。"
 
-#: title/pc5_tile.c:73
+#: title/pc5_tile.c:76
 msgid "The tile doesn't say which game it starts: make it again."
 msgstr "タイルに起動するゲームが書かれていません。作り直してください。"
 
-#: title/pc5_tile.c:82
+#: title/pc5_tile.c:85
 msgid "The tile doesn't say where PC5 is: make it again."
 msgstr "タイルにPC5の場所が書かれていません。作り直してください。"
 
-#: title/pc5_tile.c:116
+#: title/pc5_tile.c:119
 msgid "A tile's ID is PPSA and five digits."
 msgstr "タイルのIDは「PPSA」と5桁の数字です。"
 
-#: title/pc5_tile.c:140
+#: title/pc5_tile.c:143
 #, c-format
 msgid ""
 "PC5's lapy.elf isn't the one this PC5 can make tiles from (%d compares, %d "
 "names)."
 msgstr "PC5のlapy.elfは、このPC5がタイルを作れるものではありません（比較%d件、名前%d件）。"
 
-#: title/pc5_tile.c:249
+#: title/pc5_tile.c:252
 #, c-format
 msgid "PC5's folder path is too long for a tile (%d characters at most)."
 msgstr "PC5のフォルダーのパスがタイルには長すぎます（%d文字まで）。"
 
-#: title/pc5_tile.c:254
+#: title/pc5_tile.c:257
 msgid "PC5 can't read its own program to copy into the tile."
 msgstr "タイルにコピーするPC5自身のプログラムを読み込めません。"
 
-#: title/pc5_tile.c:259
+#: title/pc5_tile.c:262
 msgid "PC5's folder has no lapy.elf."
 msgstr "PC5のフォルダーにlapy.elfがありません。"
 
-#: title/pc5_tile.c:270
+#: title/pc5_tile.c:273
 msgid "PC5 ran out of memory making the tile."
 msgstr "タイルの作成中にメモリーが不足しました。"
 
-#: title/pc5_tile.c:274
+#: title/pc5_tile.c:277
 msgid "PC5 can't make the tile's folders."
 msgstr "タイルのフォルダーを作成できません。"
 
-#: title/pc5_tile.c:279
+#: title/pc5_tile.c:282
 msgid "PC5 can't copy its sce_module/libc.prx into the tile."
 msgstr "PC5のsce_module/libc.prxをタイルにコピーできません。"
 
-#: title/pc5_tile.c:283
+#: title/pc5_tile.c:286
 msgid "PC5 can't write the tile's lapy.elf."
 msgstr "タイルのlapy.elfを書き込めません。"
 
-#: title/pc5_tile.c:287
+#: title/pc5_tile.c:290
 #, c-format
 msgid "PC5 can't write the tile's %s."
 msgstr "タイルの%sを書き込めません。"
 
-#: title/pc5_tile.c:291
+#: title/pc5_tile.c:294
 msgid "PC5 can't copy its eboot.bin into the tile."
 msgstr "PC5のeboot.binをタイルにコピーできません。"
 
-#: title/pc5_tile.c:394 title/pc5_tile.c:437
+#: title/pc5_tile.c:397 title/pc5_tile.c:440
 msgid "PC5 can't make the tile's sce_sys."
 msgstr "タイルのsce_sysを作成できません。"
 
-#: title/pc5_tile.c:398
+#: title/pc5_tile.c:401
 msgid "PC5 can't make the tile's picture."
 msgstr "タイルの画像を作成できません。"
 
-#: title/pc5_tile.c:412
+#: title/pc5_tile.c:415
 msgid "PC5 can't write the tile's pictures."
 msgstr "タイルの画像を書き込めません。"
 
-#: title/pc5_tile.c:444
+#: title/pc5_tile.c:447
 msgid "PC5 can't write the tile's param.json from its own."
 msgstr "PC5自身のparam.jsonから、タイルのparam.jsonを書き込めません。"
 
-#: title/pc5_tile.c:496
+#: title/pc5_tile.c:499
 msgid "PC5 doesn't know where to make the tile."
 msgstr "タイルをどこに作ればよいかわかりません。"
 
-#: title/pc5_tile.c:501
+#: title/pc5_tile.c:504
 #, c-format
 msgid "PC5 can't find a free title ID for the tile in %s."
 msgstr "%sに、タイル用の空いているタイトルIDが見つかりません。"
 
-#: title/pc5_tile.c:511
+#: title/pc5_tile.c:514
 msgid "The tiles' folder path is too long."
 msgstr "タイルのフォルダーのパスが長すぎます。"
 
-#: title/pc5_tile.c:527
+#: title/pc5_tile.c:530
 #, c-format
 msgid "PC5 can't replace the tile: %s."
 msgstr "タイルを置き換えられません：%s。"
 
-#: title/pc5_tile.c:533
+#: title/pc5_tile.c:536
 #, c-format
 msgid "PC5 can't put the tile in place: %s."
 msgstr "タイルを配置できません：%s。"
 
-#: title/pc5_tile.c:636 title/pc5_ui.c:4982
+#: title/pc5_tile.c:639 title/pc5_ui.c:4982
 msgid ""
 "It isn't in PC5 any more. Take the tile off the home screen, or install "
 "the game again."
 msgstr "このゲームはもうPC5にありません。ホーム画面からタイルを削除するか、ゲームをもう一度インストールしてください。"
 
-#: title/pc5_tile.c:697
+#: title/pc5_tile.c:701 title/pc5_ui.c:6306
+msgid ""
+"Its program is wrapped in Steam's DRM (SteamStub), which starts only with "
+"Steam running, and Steam doesn't run on the console. A copy of the game "
+"without it can start."
+msgstr ""
+"このゲームのプログラムはSteamのDRM（SteamStub）で保護されていて、Steamが動いているときしか起動しません。Steamは本体では動きません。DRMのないゲームのコピーなら起動できます。"
+
+#: title/pc5_tile.c:720
 msgid "PC5 lost its place readying the game."
 msgstr "ゲームの準備中に、処理の途中で迷ってしまいました。"
 
@@ -2816,14 +2824,6 @@ msgstr "PC5で動画の選択を保存できませんでした。もう一度試
 #, c-format
 msgid "%s needs Steam"
 msgstr "%sにはSteamが必要です"
-
-#: title/pc5_ui.c:6306
-msgid ""
-"Its program is wrapped in Steam's DRM (SteamStub), which starts only with "
-"Steam running, and Steam doesn't run on the console. A copy of the game "
-"without it can start."
-msgstr ""
-"このゲームのプログラムはSteamのDRM（SteamStub）で保護されていて、Steamが動いているときしか起動しません。Steamは本体では動きません。DRMのないゲームのコピーなら起動できます。"
 
 #: title/pc5_ui.c:6936 title/pc5_ui.c:6946
 msgid "Play Game"
