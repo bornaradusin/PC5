@@ -566,6 +566,8 @@ controller's speaker.
 | 324 | Marvel's Spider-Man Remastered past Play | its picture after the black of its first frames, not a black screen for good | no `radv/ps5: a submission holds more words between two splits`, no `Failed to submit queue(s), vr -4` |
 | 325 | Sacred 2 Remastered past its splash, a cutscene (#441) | the videos play, not black (Esc no longer needed to see the game) | no `err:dmo:color_convert_init ret -11` |
 | 326 | A game whose intro videos played before (any Media Foundation video) | they still play, as smoothly | no `color_convert_init` or `video_processor` errors |
+| 327 | Mini Ninjas (#533), a game made for OpenAL that doesn't bring OpenAL32.dll | it starts, with sound | `Loaded L"C:\\windows\\syswow64\\openal32.dll" … native`, no `not in syswow64: openal32.dll` |
+| 328 | A game installed before this version that uses OpenAL | it gets openal32.dll on its next start and plays sound | `PC5 prefix system files added` once |
 
 ## Custom media navigation changes (pending on PS5)
 

@@ -102,6 +102,12 @@ MBEDTLS_SHA256=a7e8bcbec0e6f761b4af24f25677626b35f762f68eef79c08677a363212d11f6
 DXVK_URL=https://github.com/mpereiraesaa/dxvk.git
 DXVK_COMMIT=4228f2e06b410df7ea3f552f07c2fd7c9d368df6      # tag v2.6.2-prospero3
 DXVK_NAME=2.6.2-prospero3-pc5.1
+# OpenAL Soft (LGPL 2.0 or later), built with DXVK (piece dxvk) as OpenAL32.dll for the
+# template's system32 and syswow64: Wine no longer has an openal32 of its own, and a game
+# made for OpenAL that doesn't bring the DLL crashed (Mini Ninjas, #533). It plays through
+# Wine's WASAPI.
+OPENAL_URL=https://github.com/kcat/openal-soft.git
+OPENAL_COMMIT=dc7d7054a5b4f3bec1dc23a42fd616a0847af948    # tag 1.24.3
 # gbe_fork, a Steamworks emulator (LGPL 3.0), its release build unchanged: PC5 puts its
 # steam_api.dll or steam_api64.dll in place of Valve's in a game that has it
 # (title/pc5_steam.c). The DLLs are pinned by SHA-256 too; its source, at the release's
@@ -263,6 +269,7 @@ patched() { # dir url commit patches-dir
     echo "$want $(git -C "$1" rev-parse HEAD)" > "$stamp"
 }
 src_dxvk() { patched "$B/dxvk-source" "$DXVK_URL" "$DXVK_COMMIT" "$here/patches/dxvk"; }
+src_openal() { fetch "$B/openal-soft" "$OPENAL_URL" "$OPENAL_COMMIT"; }
 src_vkd3d() { patched "$B/vkd3d-proton-source" "$VKD3D_SOURCE_URL" "$VKD3D_SOURCE_COMMIT" "$here/patches/vkd3d-proton"; }
 # The home screen tiles: psfwd in title/third_party must be the format's own, unchanged.
 src_forwarder() {
@@ -332,7 +339,7 @@ src_venv() {
 }
 # What bundle archives, besides prospero-win.
 SOURCES="src_wine src_ffmpeg src_framegen src_foundation src_prxfoundation src_vulkan src_lapy src_dxvk
- src_vkd3d src_forwarder src_qrcodegen src_zink src_mbedtls src_freetype src_gbe_source"
+ src_openal src_vkd3d src_forwarder src_qrcodegen src_zink src_mbedtls src_freetype src_gbe_source"
 
 # The PS5 payload SDK the title's boilerplate pins, and the module tool the Wine PS5 build
 # signs its PRX modules with (from the PRX boilerplate).
@@ -574,7 +581,33 @@ step_dxvk() {
     rm -f "$out"/x*/*.dll.a
     cp "$B/dxvk-source/LICENSE" "$out/LICENSE"
     echo "$DXVK_NAME" > "$out/NAME"
-    ls -l "$out"/x64 "$out"/x32
+    # OpenAL Soft beside it: $out/openal/x64 and x32 hold OpenAL32.dll, its runtimes linked in.
+    src_openal
+    local cpu
+    for arch in 64 32; do
+        stage "OpenAL Soft $arch-bit ($([[ $arch == 64 ]] && echo 1 || echo 2) of 2)"
+        [[ $arch == 64 ]] && cpu=x86_64 || cpu=i686
+        printf '%s\n' "set(CMAKE_SYSTEM_NAME Windows)" "set(CMAKE_SYSTEM_PROCESSOR $cpu)" \
+            "set(CMAKE_C_COMPILER $cpu-w64-mingw32-gcc-posix)" "set(CMAKE_CXX_COMPILER $cpu-w64-mingw32-g++-posix)" \
+            "set(CMAKE_RC_COMPILER $cpu-w64-mingw32-windres)" "set(CMAKE_FIND_ROOT_PATH /usr/$cpu-w64-mingw32)" \
+            "set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)" "set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)" \
+            "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)" > "$B/openal-win$arch.cmake"
+        rm -rf "$B/openal-build.w$arch"
+        cmake -S "$B/openal-soft" -B "$B/openal-build.w$arch" -G Ninja -DCMAKE_TOOLCHAIN_FILE="$B/openal-win$arch.cmake" \
+            -DCMAKE_BUILD_TYPE=Release -DLIBTYPE=SHARED -DALSOFT_UTILS=OFF -DALSOFT_EXAMPLES=OFF -DALSOFT_INSTALL=OFF \
+            -DALSOFT_EMBED_HRTF_DATA=ON -DALSOFT_REQUIRE_WASAPI=ON -DALSOFT_STATIC_LIBGCC=ON -DALSOFT_STATIC_STDCXX=ON \
+            -DALSOFT_STATIC_WINPTHREAD=ON
+        ninja -C "$B/openal-build.w$arch" -j"$jobs" OpenAL
+        mkdir -p "$out/openal/x$arch"
+        cp "$B/openal-build.w$arch/OpenAL32.dll" "$out/openal/x$arch/OpenAL32.dll"
+        "$cpu-w64-mingw32-strip" "$out/openal/x$arch/OpenAL32.dll"
+        # Nothing but Windows' own DLLs: a MinGW runtime left out would be missing on the console.
+        if "$cpu-w64-mingw32-objdump" -p "$out/openal/x$arch/OpenAL32.dll" | grep -i "DLL Name:" | grep -qi "libgcc\|libstdc\|libwinpthread"; then
+            echo "build.sh: OpenAL32.dll ($arch-bit) needs a MinGW runtime DLL" >&2; return 1
+        fi
+    done
+    cp "$B/openal-soft/COPYING" "$out/openal/COPYING"
+    ls -l "$out"/x64 "$out"/x32 "$out"/openal/x64 "$out"/openal/x32
 }
 
 step_vkd3d() {
@@ -712,8 +745,9 @@ EOF_SOURCES
     # to raise DXVK_NAME or VKD3D_NAME (2.1.4's DXVK patch 0006 didn't reach them).
     printf '%s vkd3d-proton-%s patches-%s\n' "$(cat "$B/dxvk/NAME")" "$(cat "$B/vkd3d/NAME")" \
         "$(printf '%s %s' "$(patches_id dxvk)" "$(patches_id vkd3d-proton)" | sha256sum | cut -c1-12)" > "$app/pc5/dxvk.txt"
-    mkdir -p "$app/LICENSES/dxvk" "$app/LICENSES/wine-mono"
+    mkdir -p "$app/LICENSES/dxvk" "$app/LICENSES/wine-mono" "$app/LICENSES/openal-soft"
     cp "$B/dxvk/LICENSE" "$app/LICENSES/dxvk/LICENSE"
+    cp "$B/dxvk/openal/COPYING" "$app/LICENSES/openal-soft/COPYING"
     cp "$B/downloads/wine-mono-$MONO_VERSION-COPYING" "$app/LICENSES/wine-mono/COPYING"
     # The fonts, beside Wine's own: Wine loads every font in that folder for every game.
     local fonts=$app/win/wine/share/wine/fonts unpacked=$B/fonts-liberation
@@ -823,6 +857,9 @@ step_bundle() {
     tar -C "$B/dxvk-source" --exclude=.git -cf - . | tar -x -C "$stage/dxvk"
     printf '%-28s %s at %s (tag v2.6.2-prospero3), with its submodules and PC5'"'"'s patches/dxvk applied\n' \
         "dxvk/" "$DXVK_URL" "$DXVK_COMMIT" >> "$stage/PARTS.txt"
+    mkdir -p "$stage/openal-soft"
+    tar -C "$B/openal-soft" --exclude=.git -cf - . | tar -x -C "$stage/openal-soft"
+    printf '%-28s %s at %s (tag 1.24.3), built as it is\n' "openal-soft/" "$OPENAL_URL" "$OPENAL_COMMIT" >> "$stage/PARTS.txt"
     printf 'PC5/README.md says how to build the app from these with PC5/tools/build.sh.\n' >> "$stage/PARTS.txt"
     rm -f "$out" "$out.part"
     # xz on every CPU, in the 24 MiB blocks it used on two (three times -6's dictionary).
@@ -859,7 +896,7 @@ key_of() { # piece
     hostwine) hash=$(printf '%s\n' "$WINE_URL" "$(pwid wine)" "$(pwid tools)" "$(commands step_hostwine)") ;;
     wineps5) hash=$(printf '%s\n' "$WINE_URL" "$(pwid wine)" "$(pwid tools)" "$(key_of radv)" "$(key_of tools)" \
                     "$BOILERPLATE_URL" "$(commands step_wineps5 need_sdk need_native_tool)") ;;
-    dxvk) hash=$(printf '%s\n' "$DXVK_URL" "$DXVK_COMMIT" "$DXVK_NAME" "$(patches_id dxvk)" \
+    dxvk) hash=$(printf '%s\n' "$DXVK_URL" "$DXVK_COMMIT" "$DXVK_NAME" "$(patches_id dxvk)" "$OPENAL_URL" "$OPENAL_COMMIT" \
                  "$(pwid tools/mesa_zink_requirements.txt)" "$(commands step_dxvk)") ;;
     vkd3d) hash=$(printf '%s\n' "$VKD3D_SOURCE_URL" "$VKD3D_SOURCE_COMMIT" "$VKD3D_VERSION" "$VKD3D_NAME" \
                   "$(patches_id vkd3d-proton)" "$(pwid tools/mesa_zink_requirements.txt)" "$(commands step_vkd3d)") ;;

@@ -14,7 +14,8 @@ console reads.
 2. VKD3D-Proton's d3d12.dll and d3d12core.dll go beside DXVK (x64 in system32, x86 in
    syswow64): Direct3D 12 on Vulkan. Profiles load them with d3d12,d3d12core=n. DXVK's own
    DLLs are then replaced by the ones tools/build.sh built (DXVK_DIR/x64 and x32):
-   2.6.2-prospero3 with PC5's patches/dxvk.
+   2.6.2-prospero3 with PC5's patches/dxvk. OpenAL Soft's OpenAL32.dll, built with them
+   (DXVK_DIR/openal/x64 and x32), goes in both as openal32.dll: Wine has no OpenAL of its own.
 3. It is written to APP_DIR/pc5/prefix the way prospero-win's tools/pw_prefix.py pushes a
    prefix to the console (its own functions are used for that): links become
    .pw-symlinks tables (a title can't make links), the registry names the console's WoW64
@@ -348,6 +349,11 @@ def main() -> int:
             if key not in files or not built.is_file():
                 sys.exit(f"make-prefix: no DXVK {dll}.dll to replace in {folder}, or none built at {built}")
             files[key] = built
+        # OpenAL Soft, which tools/build.sh builds with DXVK (DXVK_DIR/openal): Wine has none.
+        key, built = f"drive_c/windows/{folder}/openal32.dll", args.dxvk / "openal" / bits / "OpenAL32.dll"
+        if key in files or not built.is_file():
+            sys.exit(f"make-prefix: {folder} has an openal32.dll already, or none is built at {built}")
+        files[key] = built
     user = f"drive_c/users/{pw_prefix.CONSOLE_USER}"
     for folder in pw_prefix.CONSOLE_USER_DIRS:
         path = ""
