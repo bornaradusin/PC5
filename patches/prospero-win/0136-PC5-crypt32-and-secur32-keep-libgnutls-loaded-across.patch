@@ -1,0 +1,105 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: youss17x <a.fzc17@gmail.com>
+Date: Sun, 8 Nov 2026 02:49:31 +0100
+Subject: [PATCH 136/136] PC5: crypt32 and secur32 keep libgnutls loaded across
+ PE unloads (Wine patch 1005)
+
+---
+ ...p-libgnutls-loaded-across-pe-unloads.patch | 85 +++++++++++++++++++
+ 1 file changed, 85 insertions(+)
+ create mode 100644 wine/patches/1005-crypt32-secur32-ps5-keep-libgnutls-loaded-across-pe-unloads.patch
+
+diff --git a/wine/patches/1005-crypt32-secur32-ps5-keep-libgnutls-loaded-across-pe-unloads.patch b/wine/patches/1005-crypt32-secur32-ps5-keep-libgnutls-loaded-across-pe-unloads.patch
+new file mode 100644
+index 0000000..3198765
+--- /dev/null
++++ b/wine/patches/1005-crypt32-secur32-ps5-keep-libgnutls-loaded-across-pe-unloads.patch
+@@ -0,0 +1,85 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: youss17x <a.fzc17@gmail.com>
++Date: Sun, 8 Nov 2026 02:49:31 +0100
++Subject: [PATCH] crypt32, secur32: PS5: keep libgnutls loaded across PE
++ unloads.
++
++When a game repeatedly calls CryptAcquireContextW and CryptReleaseContext without holding a reference to rsaenh.dll (Spec Ops: The Line calls the pair 207 times at startup), advapi32 loads and unloads rsaenh.dll and its dependency crypt32.dll on every cycle. Each DLL_PROCESS_ATTACH/DETACH calls crypt32.prx's process_attach and process_detach, which dlopen and dlclose libgnutls.prx.
++
++On the console, libgnutls.prx's .init_array constructor runs gnutls_global_init (creating 121 ScePthread mutexes and setting _gnutls_global_init_count to 1) before process_attach calls pgnutls_global_init a second time (count 2). On process_detach, pgnutls_global_deinit only decrements the count to 1, and dlclose unloads libgnutls.prx with a no-op module_stop without running .fini_array, leaking all 121 kernel mutexes per cycle. On the 107th cycle (~12,947 leaked mutexes) the PS5 ScePthread internal memory pool runs out ('[ScePthread/System] Internal Memory is running out.') and the game freezes when DXVK resets the D3D9 swapchain.
++
++Keep libgnutls_handle open across PE unloads in crypt32 and secur32 so libgnutls.prx is initialized once for the lifetime of the process.
++---
++ dlls/crypt32/unixlib.c         | 10 ++++++++++
++ dlls/secur32/schannel_gnutls.c |  6 ++++++
++ 2 files changed, 16 insertions(+)
++
++diff --git a/dlls/crypt32/unixlib.c b/dlls/crypt32/unixlib.c
++index 1df568f..eba117f 100644
++--- a/dlls/crypt32/unixlib.c
+++++ b/dlls/crypt32/unixlib.c
++@@ -98,6 +98,14 @@ static NTSTATUS process_attach( void *args )
++     const char *env_str;
++     int ret;
++ 
+++    /* PS5: crypt32.prx stays loaded for the life of the process while its PE
+++     * side is loaded and unloaded with each CryptAcquireContext/CryptReleaseContext
+++     * pair that loads rsaenh.dll. Unloading libgnutls.prx on detach runs a no-op
+++     * module_stop without GnuTLS's destructor, leaking the 121 ScePthread mutexes
+++     * its constructor created until the kernel's pthread pool runs out (Spec Ops:
+++     * The Line). Keep libgnutls.prx open once initialized. */
+++    if (libgnutls_handle) return TRUE;
+++
++     if ((env_str = getenv("GNUTLS_SYSTEM_PRIORITY_FILE")))
++     {
++         WARN("GNUTLS_SYSTEM_PRIORITY_FILE is %s.\n", debugstr_a(env_str));
++@@ -178,6 +186,7 @@ fail:
++ 
++ static NTSTATUS process_detach( void *args )
++ {
+++#ifndef __PROSPERO__
++     if (libgnutls_handle)
++     {
++         if (TRACE_ON( crypt ))
++@@ -186,6 +195,7 @@ static NTSTATUS process_detach( void *args )
++         dlclose( libgnutls_handle );
++         libgnutls_handle = NULL;
++     }
+++#endif
++     return STATUS_SUCCESS;
++ }
++ #define RSA_MAGIC_KEY  ('R' | ('S' << 8) | ('A' << 16) | ('2' << 24))
++diff --git a/dlls/secur32/schannel_gnutls.c b/dlls/secur32/schannel_gnutls.c
++index 05640c8..0dbe02e 100644
++--- a/dlls/secur32/schannel_gnutls.c
+++++ b/dlls/secur32/schannel_gnutls.c
++@@ -1485,6 +1485,10 @@ static NTSTATUS process_attach( void *args )
++ {
++     int ret;
++ 
+++    /* PS5: keep libgnutls.prx loaded across PE unloads so its constructor's
+++     * ScePthread mutexes are not leaked on dlclose (see crypt32/unixlib.c). */
+++    if (libgnutls_handle) return STATUS_SUCCESS;
+++
++     if ((system_priority_file = getenv("GNUTLS_SYSTEM_PRIORITY_FILE")))
++     {
++         TRACE("GNUTLS_SYSTEM_PRIORITY_FILE is %s.\n", debugstr_a(system_priority_file));
++@@ -1620,6 +1624,7 @@ fail:
++ 
++ static NTSTATUS process_detach( void *args )
++ {
+++#ifndef __PROSPERO__
++     if (libgnutls_handle)
++     {
++         if (TRACE_ON(secur32))
++@@ -1628,6 +1633,7 @@ static NTSTATUS process_detach( void *args )
++         dlclose(libgnutls_handle);
++         libgnutls_handle = NULL;
++     }
+++#endif
++     return STATUS_SUCCESS;
++ }
++ 
++-- 
++2.43.0
++
+-- 
+2.43.0
+
