@@ -564,6 +564,8 @@ controller's speaker.
 | 322 | Marvel's Spider-Man Remastered installed before 2.1.4 (PC5 had it as DirectX 11), Graphics API Auto | it starts with Direct3D 12, not "D3D12 not supported" in its log | `dll_overrides=d3d8,d3d9,d3d10core,d3d11,d3d12,d3d12core,dxgi=n;amd_ags_x64=b`, `vkd3d-proton` lines |
 | 323 | Marvel's Spider-Man Remastered with Controller DualSense and no USB keyboard: its launch window (Play, Settings, Quit) | the D-pad moves between them and ✕ picks Play; in the game the D-pad and ✕ do only what the controller does | (Wine patch 0979) |
 | 324 | Marvel's Spider-Man Remastered past Play | its picture after the black of its first frames, not a black screen for good | no `radv/ps5: a submission holds more words between two splits`, no `Failed to submit queue(s), vr -4` |
+| 325 | Sacred 2 Remastered past its splash, a cutscene (#441) | the videos play, not black (Esc no longer needed to see the game) | no `err:dmo:color_convert_init ret -11` |
+| 326 | A game whose intro videos played before (any Media Foundation video) | they still play, as smoothly | no `color_convert_init` or `video_processor` errors |
 
 ## Custom media navigation changes (pending on PS5)
 

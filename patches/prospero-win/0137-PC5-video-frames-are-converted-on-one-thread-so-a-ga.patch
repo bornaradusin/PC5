@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 8 Nov 2026 12:00:00 +0000
+Subject: [PATCH 137/137] PC5: video frames are converted on one thread, so a game's
+ videos aren't black when the converter's threads can't start (Wine patch
+ 1006)
+
+---
+ ...c-convert-video-frames-on-one-thread.patch | 45 +++++++++++++++++++
+ 1 file changed, 45 insertions(+)
+ create mode 100644 wine/patches/1006-colorcnv-msvproc-convert-video-frames-on-one-thread.patch
+
+diff --git a/wine/patches/1006-colorcnv-msvproc-convert-video-frames-on-one-thread.patch b/wine/patches/1006-colorcnv-msvproc-convert-video-frames-on-one-thread.patch
+new file mode 100644
+index 0000000..a023df0
+--- /dev/null
++++ b/wine/patches/1006-colorcnv-msvproc-convert-video-frames-on-one-thread.patch
+@@ -0,0 +1,45 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sun, 8 Nov 2026 12:00:00 +0000
++Subject: [PATCH] colorcnv, msvproc: Convert video frames on one thread.
++
++The color converter and the video processor set swscale's "threads"
++option to 0, which starts a thread for each CPU (up to 16) each time an
++input or output format is set. On a PS5 title those threads fail to
++start, so sws_init_context returns AVERROR(EAGAIN) from the Windows
++pthread wrapper and every conversion fails: Sacred 2 Remastered logged
++"color_convert_init ret -11" 643 times and showed its videos black.
++One thread converts a frame fast enough, and starts nothing.
++---
++diff --git a/dlls/colorcnv/color_converter.c b/dlls/colorcnv/color_converter.c
++index 38981e4..3c7c239 100644
++--- a/dlls/colorcnv/color_converter.c
+++++ b/dlls/colorcnv/color_converter.c
++@@ -592,7 +592,10 @@ static HRESULT color_convert_init(struct color_convert *impl)
++     video_frame_init_aperture(&impl->output_frame, &impl->output_format);
++ 
++     av_opt_set(impl->context, "sws_flags", "neighbor", 0);
++-    av_opt_set_int(impl->context, "threads", 0, 0);
+++    /* One thread: with 0, swscale starts a thread for each CPU each time the format is set,
+++     * and on a PS5 title those threads fail to start (EAGAIN), so every frame stayed black
+++     * (Sacred 2 Remastered's videos). A frame is converted fast enough without them. */
+++    av_opt_set_int(impl->context, "threads", 1, 0);
++     av_opt_set_int(impl->context, "srcw", impl->input_frame.width, 0);
++     av_opt_set_int(impl->context, "srch", impl->input_frame.height, 0);
++     av_opt_set_pixel_fmt(impl->context, "src_format", impl->input_frame.format, 0);
++diff --git a/dlls/msvproc/video_processor.c b/dlls/msvproc/video_processor.c
++index f2ad3e0..ef238c7 100644
++--- a/dlls/msvproc/video_processor.c
+++++ b/dlls/msvproc/video_processor.c
++@@ -557,7 +557,10 @@ static HRESULT video_processor_init(struct video_processor *impl)
++     video_frame_init_aperture(&impl->output_frame, impl->input_format);
++ 
++     av_opt_set(impl->context, "sws_flags", "neighbor", 0);
++-    av_opt_set_int(impl->context, "threads", 0, 0);
+++    /* One thread: with 0, swscale starts a thread for each CPU each time the format is set,
+++     * and on a PS5 title those threads fail to start (EAGAIN), so every frame stayed black
+++     * (Sacred 2 Remastered's videos). A frame is converted fast enough without them. */
+++    av_opt_set_int(impl->context, "threads", 1, 0);
++     av_opt_set_int(impl->context, "srcw", impl->input_frame.width, 0);
++     av_opt_set_int(impl->context, "srch", impl->input_frame.height, 0);
++     av_opt_set_pixel_fmt(impl->context, "src_format", impl->input_frame.format, 0);
+-- 
+2.43.0
+

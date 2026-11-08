@@ -148,6 +148,25 @@ else
     echo "test_wine_fs: left out, no Wine source at $wine (tools/build.sh sources fetches it)"
 fi
 
+# Wine patch 1006: the color converter and the video processor convert on one thread, so a
+# game's videos aren't black when swscale's threads can't start (Sacred 2 Remastered, #441).
+if [[ -f $wine/dlls/colorcnv/color_converter.c ]]; then
+    video=(dlls/colorcnv/color_converter.c dlls/msvproc/video_processor.c)
+    for file in "${video[@]}"; do mkdir -p "$out/wine-video/$(dirname "$file")"; cp "$wine/$file" "$out/wine-video/$file"; done
+    for patch in "$PW"/wine/patches/*.patch; do
+        grep -q '^+++ b/dlls/\(colorcnv/color_converter\|msvproc/video_processor\)\.c' "$patch" || continue
+        GIT_CEILING_DIRECTORIES=$out git -C "$out/wine-video" apply --include="${video[0]}" --include="${video[1]}" "$patch"
+    done
+    for file in "${video[@]}"; do
+        grep -q 'av_opt_set_int(impl->context, "threads", 1, 0);' "$out/wine-video/$file" &&
+            ! grep -q '"threads", 0' "$out/wine-video/$file" ||
+            { echo "test_wine_video: $file converts on more than one thread (Wine patch 1006, #441)" >&2; exit 1; }
+    done
+    echo "test_wine_video: the color converter and the video processor convert on one thread: passed"
+else
+    echo "test_wine_video: left out, no Wine source at $wine (tools/build.sh sources fetches it)"
+fi
+
 # Wine patches 0985 and 0986: a name missing from a game's system32 or syswow64 is Wine's own
 # file, and an open that changes it copies it in first, taken from Wine's file.c with
 # prospero-win's patches applied (as for 0935 above).
