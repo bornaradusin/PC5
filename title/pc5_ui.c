@@ -3323,6 +3323,27 @@ static void issue_message(Pc5Ui *ui)
     case PC5_CAUSE_CRASH_REPORT:
         pc5_tf(why, sizeof(why), "Its own crash report says: %.200s", issue->cause_what);
         break;
+    case PC5_CAUSE_MISSING_DLL: {
+        /* Where to look for it: a PC's Windows folder of the game's kind. */
+        char from[40];
+        const char *folder = index >= 0 && ui->library.games[index].bits == 32 ? "C:\\Windows\\SysWOW64"
+                                                                                 : "C:\\Windows\\System32";
+        pc5_dll_from(issue->cause_what, from, sizeof(from));
+        if (from[0])
+            pc5_tf(why, sizeof(why), "It needs %s, part of %s, which the console doesn't have. Copy it from %s on a "
+                     "Windows PC that has it installed into the game's folder, beside its program.", issue->cause_what,
+                     from, folder);
+        else
+            pc5_tf(why, sizeof(why), "It needs %s, which isn't in its folder or the console's Windows. If the game came "
+                     "with it, copy it beside its program; on a Windows PC that runs the game it is in %s.",
+                     issue->cause_what, folder);
+        break;
+    }
+    case PC5_CAUSE_WRONG_DLL:
+        pc5_tf(why, sizeof(why), "%s beside the game is of the other kind: a 64-bit game needs the 64-bit DLL (from "
+                 "C:\\Windows\\System32 on a PC), a 32-bit game the 32-bit one (from C:\\Windows\\SysWOW64).",
+                 issue->cause_what);
+        break;
     default:
         break;
     }

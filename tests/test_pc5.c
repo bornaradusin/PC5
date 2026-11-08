@@ -4757,6 +4757,36 @@ static void test_logs(void)
                   issue.cause == PC5_CAUSE_NONE, "Unity's crash handler is no installer: %d", (int)issue.cause);
         CHECK(CLASSIFY("launcher", "REC seq=1 t=1.0 WINESERVER wine-ps5: C:\\x\\setup.exe is a helper: not handed off\n") ==
                   PC5_LOG_FINE && issue.cause == PC5_CAUSE_NONE, "PC5's own session has none");
+        /* A DLL the program can't load without (Kenshi's mfc100u.dll, #566), and one of the other
+         * kind beside a 64-bit game (Resident Evil 2's mfc140u.dll, 32-bit, #454). */
+        CHECK(CLASSIFY("kenshi", "REC seq=1 t=1.0 WINE 0024:err:module:import_dll Library mfc100u.dll (which is needed by "
+                                 "L\"C:\\\\Games\\\\Kenshi\\\\Kenshi\\\\kenshi_x64.exe\") not found\nREC seq=2 t=1.0 WINE "
+                                 "0024:err:module:loader_init Importing dlls for L\"C:\\\\Games\\\\Kenshi\\\\Kenshi\\\\"
+                                 "kenshi_x64.exe\" failed, status c0000135\nREC seq=3 t=1.1 PW_WINE64 session_end "
+                                 "reason=wine-exit\n") == PC5_LOG_NO_PICTURE &&
+                  issue.cause == PC5_CAUSE_MISSING_DLL && !strcmp(issue.cause_what, "mfc100u.dll"),
+              "a DLL it can't start without: %d %d %s", (int)issue.problem, (int)issue.cause, issue.cause_what);
+        pc5_log_cause_text(&issue, cause, sizeof(cause));
+        CHECK(strstr(cause, "mfc100u.dll, from Microsoft Visual C++ 2010's MFC"), "in words: %s", cause);
+        CHECK(CLASSIFY("gord", "REC seq=1 t=1.0 WINE 0024:err:module:import_dll Library mfc140u.dll (which is needed by "
+                               "L\"C:\\\\Games\\\\Gord\\\\CChromaEditorLibrary64.dll\") not found\nREC seq=2 t=2.0 "
+                               "PW_WINE64 alive tick=60 sink_calls=1 frames_put=2 shown=1\n") == PC5_LOG_FINE &&
+                  issue.cause == PC5_CAUSE_NONE, "a DLL only an extra needed, the game playing: no cause (Gord, #455)");
+        CHECK(CLASSIFY("re2", "REC seq=1 t=1.0 PW_WINE64 alive tick=60 sink_calls=1 frames_put=2 shown=1\nREC seq=2 t=9.0 WINE "
+                              "00f8:err:module:import_dll Loading library mfc140u.dll (which is needed by L\"C:\\\\Games\\\\"
+                              "RE2\\\\ISACEffect.dll\") failed (error c000007b).\nREC seq=3 t=9.5 WINE wine: Unhandled page "
+                              "fault on read access to 0000000000000000 at address 00000001421DE60C (thread 0098)\n") ==
+                  PC5_LOG_GAME_CRASHED && issue.cause == PC5_CAUSE_WRONG_DLL && !strcmp(issue.cause_what, "mfc140u.dll"),
+              "a DLL of the other kind: %d %d %s", (int)issue.problem, (int)issue.cause, issue.cause_what);
+        char from[40];
+        pc5_dll_from("MFC140U.DLL", from, sizeof(from));
+        CHECK(!strcmp(from, "Microsoft Visual C++ 2015-2022's MFC"), "MFC 14: %s", from);
+        pc5_dll_from("mfcm90u.dll", from, sizeof(from));
+        CHECK(!strcmp(from, "Microsoft Visual C++ 2008's MFC"), "MFC 9's managed part: %s", from);
+        pc5_dll_from("mfc1400.dll", from, sizeof(from));
+        CHECK(!from[0], "no such MFC: %s", from);
+        pc5_dll_from("d3dx9_43.dll", from, sizeof(from));
+        CHECK(!from[0], "not MFC: %s", from);
     }
     /* The firmware a report names: the kernel's own, with the number libkernel answered beside it. */
     CHECK(CLASSIFY("gtaiv", "REC seq=1 t=1.0 PC5 system firmware=13.60 firmware_version=0x13590001 reported=13.59 "

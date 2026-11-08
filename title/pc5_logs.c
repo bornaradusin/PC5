@@ -84,8 +84,9 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
     const char *end_of_text = text + length, *line = text;
     double first_t = -1, last_t = -1;
     int ended = 0, launch_failed = 0, unhandled = 0, forced = 0, pc5_problem = 0, picture = 0, asked = 0, handed_off = 0;
-    char crash[200] = "", problem[200] = "", installer[160] = "", copy_file[160] = "";
-    int no_opengl = 0;
+    char crash[200] = "", problem[200] = "", installer[160] = "", copy_file[160] = "", missing_dll[64] = "",
+         wrong_dll[64] = "";
+    int no_opengl = 0, imports_failed = 0;
 
     memset(issue, 0, sizeof(*issue));
     pc5_copy(issue->profile, sizeof(issue->profile), "launcher");
@@ -140,6 +141,14 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
                 if (contains_ci_range(line, end, others[i])) pc5_copy(copy_file, sizeof(copy_file), others[i]);
         }
         if (after(line, end, "called without a rendering context")) no_opengl = 1;
+        /* A DLL nowhere to be found, and the program that couldn't load for it ("Importing dlls for
+         * ... failed"), or one of the other kind (c000007b: a 32-bit DLL beside a 64-bit game). */
+        if (!missing_dll[0] && (found = after(line, end, "err:module:import_dll Library ")) && after(line, end, ") not found"))
+            word(found, end, missing_dll, sizeof(missing_dll));
+        if (after(line, end, "err:module:loader_init Importing dlls for ") && after(line, end, "failed")) imports_failed = 1;
+        if (!wrong_dll[0] && (found = after(line, end, "err:module:import_dll Loading library ")) &&
+            after(line, end, "failed (error c000007b)"))
+            word(found, end, wrong_dll, sizeof(wrong_dll));
         /* A game's own launcher that started the game itself (Warcraft III's Frozen Throne.exe
          * starting war3.exe): PC5 starts that program in its place, so no picture is expected. */
         if (after(line, end, "PW_WINE64 restart ") && after(line, end, " reason=handoff")) handed_off = 1;
@@ -156,7 +165,10 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
             word(found, end, issue->firmware, sizeof(issue->firmware));
         line = end + 1;
     }
-    if (installer[0]) {
+    if (missing_dll[0] && imports_failed) {
+        issue->cause = PC5_CAUSE_MISSING_DLL;
+        pc5_copy(issue->cause_what, sizeof(issue->cause_what), missing_dll);
+    } else if (installer[0]) {
         issue->cause = PC5_CAUSE_INSTALLER;
         pc5_copy(issue->cause_what, sizeof(issue->cause_what), installer);
     } else if (copy_file[0]) {
@@ -164,6 +176,9 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
         pc5_copy(issue->cause_what, sizeof(issue->cause_what), copy_file);
     } else if (no_opengl) {
         issue->cause = PC5_CAUSE_NO_OPENGL;
+    } else if (wrong_dll[0]) {
+        issue->cause = PC5_CAUSE_WRONG_DLL;
+        pc5_copy(issue->cause_what, sizeof(issue->cause_what), wrong_dll);
     }
     issue->closed = ended;
     issue->ended = issue->time;
@@ -197,6 +212,28 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
     return issue->problem;
 }
 
+void pc5_dll_from(const char *dll, char *out, size_t size)
+{
+    /* MFC by its number: mfc140u.dll, mfcm90.dll, mfc42.dll. */
+    static const struct { const char *number, *visual_cpp; } mfc[] = {
+        { "42", "6.0" }, { "70", ".NET 2002" }, { "71", ".NET 2003" }, { "80", "2005" }, { "90", "2008" },
+        { "100", "2010" }, { "110", "2012" }, { "120", "2013" }, { "140", "2015-2022" },
+    };
+    const char *p = dll;
+    if (size) out[0] = 0;
+    if (pc5_lower((unsigned char)p[0]) != 'm' || pc5_lower((unsigned char)p[1]) != 'f' || pc5_lower((unsigned char)p[2]) != 'c')
+        return;
+    p += 3;
+    if (pc5_lower((unsigned char)*p) == 'm') p++;   /* mfcm: MFC's managed part */
+    for (size_t i = 0; i < sizeof(mfc) / sizeof(mfc[0]); i++) {
+        size_t n = strlen(mfc[i].number);
+        if (!strncmp(p, mfc[i].number, n) && !(p[n] >= '0' && p[n] <= '9')) {
+            snprintf(out, size, "Microsoft Visual C++ %s's MFC", mfc[i].visual_cpp);
+            return;
+        }
+    }
+}
+
 void pc5_log_cause_text(const Pc5LogIssue *issue, char *out, size_t size)
 {
     switch (issue->cause) {
@@ -211,6 +248,16 @@ void pc5_log_cause_text(const Pc5LogIssue *issue, char *out, size_t size)
         break;
     case PC5_CAUSE_CRASH_REPORT:
         snprintf(out, size, "the game's own crash report says: %s", issue->cause_what);
+        break;
+    case PC5_CAUSE_MISSING_DLL: {
+        char from[40];
+        pc5_dll_from(issue->cause_what, from, sizeof(from));
+        snprintf(out, size, "its program couldn't load: it needs %s%s%s, which isn't there", issue->cause_what,
+                 from[0] ? ", from " : "", from);
+        break;
+    }
+    case PC5_CAUSE_WRONG_DLL:
+        snprintf(out, size, "%s beside it is of the other kind (32-bit for a 64-bit game, or the reverse)", issue->cause_what);
         break;
     default:
         if (size) out[0] = 0;

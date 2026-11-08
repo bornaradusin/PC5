@@ -32,6 +32,8 @@ typedef enum Pc5LogCause {
     PC5_CAUSE_COPY_FILES,     /* its copy loaded files that aren't the game's as its store ships it (OnlineFix64.dll) */
     PC5_CAUSE_NO_OPENGL,      /* its OpenGL never started: it drew with no rendering context */
     PC5_CAUSE_CRASH_REPORT,   /* the game's own crash report (Unreal's CrashContext) says what it was */
+    PC5_CAUSE_MISSING_DLL,    /* its program couldn't load: a DLL it needs is nowhere (mfc100u.dll, Kenshi) */
+    PC5_CAUSE_WRONG_DLL,      /* a DLL it loads is of the other kind, 32-bit for a 64-bit game (c000007b) */
 } Pc5LogCause;
 
 typedef struct Pc5LogIssue {
@@ -52,6 +54,10 @@ typedef struct Pc5LogIssue {
 
 /* What a session's log says: the problem, if any. */
 Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *issue);
+
+/* Where a DLL Wine doesn't have comes from, for a player to look for it: "Microsoft Visual C++
+ * 2010's MFC" for mfc100u.dll; "" when PC5 doesn't know. */
+void pc5_dll_from(const char *dll, char *out, size_t size);
 
 /* What PC5 saw, in a few words ("stopped with an error"), for a report. */
 const char *pc5_log_problem_text(Pc5LogProblem problem);
