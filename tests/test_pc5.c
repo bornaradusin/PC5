@@ -5505,6 +5505,21 @@ static void test_dotnet(void)
     }
     CHECK(pc5_prefix_versions(root, "missing") == 0, "no Windows yet: nothing done, done at its next start");
 
+    /* The processor's keys wineboot makes on a PC: one a processor, its name (Unity's
+     * SystemInfo.processorType: Shadow Gambit's video settings needed it), once. */
+    path(file, sizeof(file), "%s/prefixes/game/system.reg", root);
+    if (!pc5_is_file(file)) write_text(file, "WINE REGISTRY Version 2\n");
+    CHECK(pc5_prefix_hardware(root, "game", "AMD Test 8-Core Processor", 2) == 1, "the processor's keys added");
+    CHECK(pc5_prefix_hardware(root, "game", "", 2) == 0, "only once");
+    CHECK(!pc5_read_file(file, &text, 1u << 20) && !pc5_buf_terminate(&text) &&
+              strstr((char *)text.data, "\n[Hardware\\\\Description\\\\System\\\\CentralProcessor\\\\1]\n") &&
+              strstr((char *)text.data, "\"ProcessorNameString\"=\"AMD Test 8-Core Processor\"\n") &&
+              strstr((char *)text.data, "\"Identifier\"=\"AMD64 Family ") &&
+              !strstr((char *)text.data, "CentralProcessor\\\\2]"),
+          "two processors, named");
+    pc5_buf_free(&text);
+    CHECK(pc5_prefix_hardware(root, "missing", "", 2) == 0, "no Windows yet: nothing done");
+
     /* Installer keys: Pro Evolution Soccer 6 (or its settings.exe) gets its folder and the
      * languages it has, once, and never a CD key; another game nothing. */
     {
@@ -9514,8 +9529,13 @@ static void test_steam(void)
     CHECK(pc5_steam_prepare(root_steam, "steamgame", game, program, app, 1, error, sizeof(error)) == 0,
           "another emulator's settings: nothing changed: %s", error);
     unlink(file);
+    /* ColdClientLoader's settings don't count: its loader can't start the game on the console,
+     * so the game has only Valve's library (Cooking Simulator). */
+    path(file, sizeof(file), "%s/ColdClientLoader.ini", game);
+    write_text(file, "[SteamClient]\nExe=Game.exe\nAppId=480\n");
     CHECK(pc5_steam_prepare(root_steam, "steamgame", game, program, app, 1, error, sizeof(error)) == 1,
-          "Auto: Valve's replaced: %s", error);
+          "Auto: Valve's replaced, ColdClientLoader's settings beside it or not: %s", error);
+    unlink(file);
     path(file, sizeof(file), "%s/pc5/steam/steam_api64.dll", app);
     CHECK(same_files(dll, file), "the emulator in its place");
     path(file, sizeof(file), "%s.pc5-valve", dll);

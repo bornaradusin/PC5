@@ -299,11 +299,14 @@ static int write_settings(const char *dll, const char *valve, const char *game_d
     return status;
 }
 
-/* The files another Steam emulator or fix keeps beside the game's Steam library, in dir. */
+/* The files another Steam emulator or fix keeps beside the game's Steam library, in dir. Not
+ * ColdClientLoader's: its loader starts the game as a second program with its own Steam client,
+ * which the console can't, so the game it leaves with Valve's library finds no Steam (Cooking
+ * Simulator's "SteamAPI_Init failed"); PC5's emulator takes Valve's place as in any copy. */
 static int emulator_marker_in(const char *dir)
 {
     static const char *const markers[] = { "steam_emu.ini", "OnlineFix.ini", "OnlineFix64.dll", "OnlineFix.dll",
-                                           "ColdClientLoader.ini", "SmartSteamEmu.ini", "SmartSteamEmu", "steam_api64_o.dll",
+                                           "SmartSteamEmu.ini", "SmartSteamEmu", "steam_api64_o.dll",
                                            "steam_api_o.dll", "cream_api.ini", "ALI213.ini", "valve.ini", "CPY.ini" };
     char path[PC5_PATH];
     for (size_t i = 0; i < sizeof(markers) / sizeof(markers[0]); i++)

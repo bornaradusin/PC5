@@ -148,6 +148,12 @@ int pc5_prefix_media(const char *root, const char *prefix, const char *app);
 /* The Visual C++ 2010-2013 runtimes recorded as installed in system.reg (once): 1 added, 0 already or
  * no Windows yet, -1 failed. */
 int pc5_prefix_runtimes(const char *root, const char *prefix);
+/* The processor's keys under HKLM\Hardware\Description\System, which wineboot makes on a PC at
+ * each start and can't on the console: a game that reads its processor's name there (Unity's
+ * SystemInfo.processorType, "Unknown" without them) finds it. One key for each of count
+ * processors, named name ("" for the console's own, from the processor), in system.reg, once:
+ * 1 added, 0 already or no Windows yet, -1 failed. */
+int pc5_prefix_hardware(const char *root, const char *prefix, const char *name, int count);
 /* A game's Windows made by an older PC5 lacks the system files later ones added to the
  * template (winegstreamer.dll for videos and music, among them): a 32-bit game then can't
  * load them at all. The DLLs in the app's template (pc5/prefix.list, system32 and

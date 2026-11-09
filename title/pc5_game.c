@@ -396,6 +396,64 @@ int pc5_prefix_versions(const char *root, const char *prefix)
     return added;
 }
 
+/* The processor's name, family, model and stepping, as Windows' Identifier shows them, from
+ * the processor itself; the console's when it doesn't say. */
+static void processor(char *name, size_t size, unsigned *family, unsigned *model, unsigned *stepping)
+{
+    pc5_copy(name, size, "AMD Zen 2 8-Core Processor");
+    *family = 23, *model = 71, *stepping = 0;
+#if defined(__x86_64__) || defined(__i386__)
+    unsigned regs[12] = { 0 }, a, b, c, d;
+    __asm__ volatile("cpuid" : "=a"(a), "=b"(b), "=c"(c), "=d"(d) : "a"(0x80000000u), "c"(0));
+    if (a >= 0x80000004u) {
+        for (unsigned i = 0; i < 3; i++)
+            __asm__ volatile("cpuid" : "=a"(regs[i * 4]), "=b"(regs[i * 4 + 1]), "=c"(regs[i * 4 + 2]), "=d"(regs[i * 4 + 3])
+                             : "a"(0x80000002u + i), "c"(0));
+        char brand[49] = { 0 };
+        memcpy(brand, regs, 48);
+        char *start = brand;
+        while (*start == ' ') start++;
+        size_t n = strlen(start);
+        while (n && start[n - 1] == ' ') start[--n] = 0;
+        if (n) pc5_copy(name, size, start);
+    }
+    __asm__ volatile("cpuid" : "=a"(a), "=b"(b), "=c"(c), "=d"(d) : "a"(1u), "c"(0));
+    unsigned base = (a >> 8) & 0xf, ext = (a >> 20) & 0xff;
+    *family = base == 0xf ? base + ext : base;
+    *model = ((a >> 4) & 0xf) | (base >= 0x6 ? ((a >> 16) & 0xf) << 4 : 0);
+    *stepping = a & 0xf;
+#endif
+}
+
+int pc5_prefix_hardware(const char *root, const char *prefix, const char *name, int count)
+{
+    char system[PC5_PATH], brand[64];
+    unsigned family, model, stepping;
+
+    if (!prefix || !prefix[0] || !strcmp(prefix, "default")
+            ? pc5_format(system, sizeof(system), "%s/prefix/system.reg", root)
+            : pc5_format(system, sizeof(system), "%s/prefixes/%s/system.reg", root, prefix))
+        return -1;
+    if (!pc5_is_file(system)) return 0;   /* no Windows yet: the next start adds them */
+    int held = file_holds(system, "[Hardware\\\\Description\\\\System\\\\CentralProcessor\\\\0]");
+    if (held) return held > 0 ? 0 : -1;
+    processor(brand, sizeof(brand), &family, &model, &stepping);
+    if (name && name[0]) pc5_copy(brand, sizeof(brand), name);
+    if (count < 1) count = 1;
+    if (count > 64) count = 64;
+    Pc5Buf text = { 0 };
+    int failed = pc5_buf_printf(&text, "\n[Hardware\\\\Description\\\\System]\n\"Identifier\"=\"AT compatible\"\n");
+    for (int i = 0; i < count && !failed; i++)
+        failed = pc5_buf_printf(&text,
+                                "\n[Hardware\\\\Description\\\\System\\\\CentralProcessor\\\\%d]\n"
+                                "\"~MHz\"=dword:00000dac\n\"Identifier\"=\"AMD64 Family %u Model %u Stepping %u\"\n"
+                                "\"ProcessorNameString\"=\"%s\"\n\"VendorIdentifier\"=\"AuthenticAMD\"\n",
+                                i, family, model, stepping, brand);
+    failed = failed || pc5_buf_terminate(&text) || append_text(system, (const char *)text.data);
+    pc5_buf_free(&text);
+    return failed ? -1 : 1;
+}
+
 /* The Visual C++ 2010, 2012 and 2013 runtimes, as their redistributables record them, at the
  * versions of Wine's own msvcr100, msvcr110 and msvcr120 (wine.inf records only 2015 and later).
  * A launcher or setup that checks for them (and would start their installer, which can't run
@@ -774,6 +832,9 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         if (versions) say(game, "PC5 prefix Windows versions %s", versions > 0 ? "added" : "failed");
         int runtimes = pc5_prefix_runtimes(root, prefix);
         if (runtimes) say(game, "PC5 prefix Visual C++ 2010-2013 runtimes %s", runtimes > 0 ? "recorded" : "failed");
+        long processors = sysconf(_SC_NPROCESSORS_ONLN);
+        int hardware = pc5_prefix_hardware(root, prefix, "", processors > 0 ? (int)processors : 8);
+        if (hardware) say(game, "PC5 prefix processor keys %s", hardware > 0 ? "added" : "failed");
         char started[PC5_PATH];
         if (!pc5_game_program(root, prefix, started, sizeof(started))) {
             int installs = pc5_prefix_installs(root, prefix, started);

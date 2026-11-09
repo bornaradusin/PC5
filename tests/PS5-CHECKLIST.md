@@ -568,6 +568,10 @@ controller's speaker.
 | 326 | A game whose intro videos played before (any Media Foundation video) | they still play, as smoothly | no `color_convert_init` or `video_processor` errors |
 | 327 | Mini Ninjas (#533), a game made for OpenAL that doesn't bring OpenAL32.dll | it starts, with sound | `Loaded L"C:\\windows\\syswow64\\openal32.dll" … native`, no `not in syswow64: openal32.dll` |
 | 328 | A game installed before this version that uses OpenAL | it gets openal32.dll on its next start and plays sound | `PC5 prefix system files added` once |
+| 329 | Sacred 2 Remastered, a cutscene played to its end (#441) | it doesn't crash during the video | no crash in `MFPlat.DLL` |
+| 330 | The on-screen keyboard in a game (two-finger touchpad click), a word of several letters (#589) | every letter reaches the game, in order | `PC5 keyboard typed N characters` with N the word's length |
+| 331 | Shadow Gambit: The Cursed Crew (Unity), a level loaded with its first settings (#482) | Player.log names the processor (not "Processor: Unknown"), no `SystemAnalyzer.getSysInfo` exception | `PC5 prefix processor keys added` |
+| 332 | Cooking Simulator, a copy with ColdClientLoader.ini (#512) | it starts, no "SteamAPI_Init failed" | about.txt: `PC5's Steam emulator, Valve's kept beside it` |
 
 ## Custom media navigation changes (pending on PS5)
 
