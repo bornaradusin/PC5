@@ -572,6 +572,7 @@ controller's speaker.
 | 330 | The on-screen keyboard in a game (two-finger touchpad click), a word of several letters (#589) | every letter reaches the game, in order | `PC5 keyboard typed N characters` with N the word's length |
 | 331 | Shadow Gambit: The Cursed Crew (Unity), a level loaded with its first settings (#482) | Player.log names the processor (not "Processor: Unknown"), no `SystemAnalyzer.getSysInfo` exception | `PC5 prefix processor keys added` |
 | 332 | Cooking Simulator, a copy with ColdClientLoader.ini (#512) | it starts, no "SteamAPI_Init failed" | about.txt: `PC5's Steam emulator, Valve's kept beside it` |
+| 333 | Settings › In games › Programs a game starts On, a game built on a web browser (Fear & Hunger, NW.js) or one that runs a setup (#534) | its helper programs start | no `no hand-over socket (Operation not supported)`; `PC5 programs: hand-over sockets in ...` when /data refused one |
 
 ## Custom media navigation changes (pending on PS5)
 

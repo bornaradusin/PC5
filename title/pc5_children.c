@@ -84,6 +84,9 @@ static void program_name(const char *const *argv, char *out, size_t size)
     snprintf(out, size, "%s", *p ? p : "program");
 }
 
+/* The folder the hand-over sockets are made in, once one took: "" until then. */
+static char socket_dir[160];
+
 int pc5_children_init(const Pc5ChildrenConfig *c)
 {
     struct stat st;
@@ -453,20 +456,40 @@ int pc5_children_spawn(const char *const *argv, const char *const *envp, int ser
     if (!(child = take_slot())) { error = EAGAIN; step = "8 programs already running"; goto done; }
     starts++;
     make_token(token);
-    snprintf(path, sizeof(path), "%s/c%d-%u.sock", config.run_dir, (int)getpid(), starts);
-    boot_size = pc5_child_boot_encode(boot, sizeof(boot), token, 0, path, config.app0, config.ntdll, argv, envp);
-    if (!boot_size) { error = E2BIG; step = "its start doesn't fit"; goto done; }
-
-    /* The socket the loader connects back to, first: elfldr may start it at once. */
-    memset(&address, 0, sizeof(address));
-    address.sun_family = AF_UNIX;
-    memcpy(address.sun_path, path, strlen(path) + 1);
-    (void)unlink(path);
-    if ((listener = socket(AF_UNIX, SOCK_STREAM, 0)) < 0 ||
-        bind(listener, (struct sockaddr *)&address, sizeof(address)) || listen(listener, 1)) {
-        error = errno; step = "no hand-over socket"; goto done;
+    /* The socket the loader connects back to, first: elfldr may start it at once. Its folder:
+     * the run folder, or the first of the console's own that takes one (/data refused a socket
+     * on a 9.00 console: "Operation not supported"), kept for the run's next starts. */
+    {
+        static const char *const others[] = { "/tmp", "/user/temp", "/system_tmp" };
+        const char *dirs[4] = { socket_dir[0] ? socket_dir : config.run_dir, NULL, NULL, NULL };
+        int tries = 1, refused[4] = { 0 };
+        if (!socket_dir[0])
+            for (size_t i = 0; i < sizeof(others) / sizeof(others[0]); i++) dirs[tries++] = others[i];
+        for (int i = 0; i < tries && listener < 0; i++) {
+            snprintf(path, sizeof(path), "%s/c%d-%u.sock", dirs[i], (int)getpid(), starts);
+            memset(&address, 0, sizeof(address));
+            address.sun_family = AF_UNIX;
+            memcpy(address.sun_path, path, strlen(path) + 1);
+            (void)unlink(path);
+            if ((listener = socket(AF_UNIX, SOCK_STREAM, 0)) >= 0 &&
+                (bind(listener, (struct sockaddr *)&address, sizeof(address)) || listen(listener, 1))) {
+                refused[i] = errno;
+                close(listener);
+                listener = -1;
+            } else if (listener < 0) {
+                refused[i] = errno;
+            } else if (!socket_dir[0]) {
+                snprintf(socket_dir, sizeof(socket_dir), "%s", dirs[i]);
+                if (i) say("PC5 programs: hand-over sockets in %s (%s refused one: %s)", dirs[i], dirs[0], strerror(refused[0]));
+            }
+        }
+        if (listener < 0) {
+            error = refused[0]; step = "no hand-over socket"; goto done;
+        }
     }
     (void)chmod(path, 0777);
+    boot_size = pc5_child_boot_encode(boot, sizeof(boot), token, 0, path, config.app0, config.ntdll, argv, envp);
+    if (!boot_size) { error = E2BIG; step = "its start doesn't fit"; goto done; }
     if ((stream = connect_elfldr()) < 0) { error = errno; step = "no elfldr on port 9021"; goto done; }
     if (net_send_all(stream, loader, loader_size) || net_send_all(stream, boot, boot_size)) {
         error = errno; step = "elfldr didn't take the loader"; goto done;
