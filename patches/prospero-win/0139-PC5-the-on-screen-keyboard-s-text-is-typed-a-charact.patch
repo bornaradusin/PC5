@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 9 Nov 2026 12:10:00 +0000
+Subject: [PATCH 139/139] PC5: the on-screen keyboard's text is typed a
+ character a tick
+
+A game that reads one character a frame kept only the first of a word
+sent at once.
+---
+ native/wine64_main.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 5ff88ec..66b5ff3 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -2359,10 +2359,13 @@ int main(int argc, char **argv)
+         }
+ #ifdef PW_PC5
+         pad.core.previous_buttons = pc5_held;
+-        /* The keyboard's text, typed into the game as fast as Wine's queue takes it. */
++        /* The keyboard's text, typed into the game a character a tick, as a person types:
++         * a game that reads one character a frame kept only the first of a word sent at
++         * once (#589). */
+         if (pc5_game_on && post_input) {
+             size_t count = 0, sent = 0;
+             const uint16_t *text = pc5_game_keyboard_text(&pc5_game, &count);
++            if (count > 1) count = 1;
+             while (sent < count) {
+                 PwWineInput unit = { PW_WINE_INPUT_CHAR, text[sent], 0, 0, 1 };
+                 if (post_input(&unit)) break;
+-- 
+2.43.0
+
