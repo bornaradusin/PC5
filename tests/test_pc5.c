@@ -4623,6 +4623,8 @@ static void test_log_notes(void)
         "REC seq=14 t=10.810 WINE 0024:trace:process:NtCreateUserProcess process creation is not supported on PS5\n"
         "REC seq=15 t=10.900 WINE 0024:trace:process:NtCreateUserProcess L\"\\\\??\\\\Z:\\\\x\\\\Real.exe\" image L\"Z:\\mnt\\usb0\\Game\\Real.exe\" cmdline L\"x\"\n"
         "REC seq=16 t=10.910 WINE 0024:trace:process:NtCreateUserProcess process creation is not supported on PS5\n"
+        "REC seq=16 t=10.920 WINE 0024:trace:process:NtCreateUserProcess L\"\\\\??\\\\c:\\\\windows\\\\system32\\\\cmd.exe\" image L\"c:\\windows\\system32\\cmd.exe\" cmdline L\"x\"\n"
+        "REC seq=16 t=10.930 WINE 0024:trace:process:NtCreateUserProcess process creation is not supported on PS5\n"
         "REC seq=17 t=11.000 WINESERVER wine-ps5: C:\\Games\\Game\\UnityCrashHandler64.exe is a helper: not handed off\n"
         "REC seq=18 t=11.100 WINE wine-ps5: hand-off to C:\\Games\\Game\\Game2.exe: this program ends and the title starts it\n"
         "REC seq=19 t=11.200 WINESERVER wine-ps5: can't map error 55\n"
@@ -4647,6 +4649,7 @@ static void test_log_notes(void)
     CHECK(strstr(notes, "  It started Real.exe: it couldn't start, the console runs one program at a time.\n") &&
               strstr(notes, "  It started UnityCrashHandler64.exe: a helper PC5 leaves out.\n") &&
               strstr(notes, "  It started Game2.exe: handed over, PC5 started it in the game's place.\n") &&
+              strstr(notes, "  It started cmd.exe: it couldn't start, the console runs one program at a time.\n") &&
               !strstr(notes, "wineboot"),
           "the programs it started, Wine's own left out: %s", notes);
     CHECK(strstr(notes, "  Drawing: d3d11.dll (native), wined3d.dll (builtin), d3d9.dll (the game's own: C:\\Games\\Game\\D3D9.dll); "

@@ -453,7 +453,12 @@ void pc5_log_notes(const char *text, size_t length, Pc5Buf *out)
         if ((found = after(line, end, "trace:process:NtCreateUserProcess L\""))) {
             const char *image = after(found, end, "image L\"");
             wine_path(image ? image : found, end, pending, sizeof(pending));
-            if (is_windows_file(pending)) pending[0] = 0;
+            /* Wine's own programs, started at each start, left out; Windows' own a game starts
+             * (cmd.exe running wmic for Metro Exodus) are the game's. */
+            static const char *const wine_own[] = { "wineboot.exe", "winedevice.exe", "services.exe", "plugplay.exe",
+                                                    "explorer.exe", "rpcss.exe", "winemenubuilder.exe", "svchost.exe" };
+            for (size_t i = 0; i < sizeof(wine_own) / sizeof(wine_own[0]); i++)
+                if (is_windows_file(pending) && equal_ci(base_name(pending), wine_own[i])) pending[0] = 0;
         }
         if (pending[0] && after(line, end, "process creation is not supported")) {
             note_program(programs, &programs_n, pending, STARTED_NOT);
