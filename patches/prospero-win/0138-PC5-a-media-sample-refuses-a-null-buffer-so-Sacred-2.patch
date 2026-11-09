@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 9 Nov 2026 12:00:00 +0000
+Subject: [PATCH 138/138] PC5: a media sample refuses a null buffer, so Sacred
+ 2 Remastered doesn't crash in its videos (Wine patch 1007)
+
+---
+ ...fplat-a-sample-refuses-a-null-buffer.patch | 26 +++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+ create mode 100644 wine/patches/1007-mfplat-a-sample-refuses-a-null-buffer.patch
+
+diff --git a/wine/patches/1007-mfplat-a-sample-refuses-a-null-buffer.patch b/wine/patches/1007-mfplat-a-sample-refuses-a-null-buffer.patch
+new file mode 100644
+index 0000000..61089bf
+--- /dev/null
++++ b/wine/patches/1007-mfplat-a-sample-refuses-a-null-buffer.patch
+@@ -0,0 +1,26 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Mon, 9 Nov 2026 12:00:00 +0000
++Subject: [PATCH] mfplat: A sample refuses a null buffer.
++
++IMFSample::AddBuffer stored a null buffer and crashed taking its
++reference. Sacred 2 Remastered adds one during its videos when it
++couldn't make a frame's buffer, and crashed in mfplat. It now gets
++E_POINTER and goes on.
++---
++diff --git a/dlls/mfplat/sample.c b/dlls/mfplat/sample.c
++index 4d75924..d4ddba2 100644
++--- a/dlls/mfplat/sample.c
+++++ b/dlls/mfplat/sample.c
++@@ -723,6 +723,11 @@ static HRESULT WINAPI sample_AddBuffer(IMFSample *iface, IMFMediaBuffer *buffer)
++ 
++     TRACE("%p, %p.\n", iface, buffer);
++ 
+++    /* A null buffer is refused, not added: its reference crashed. Sacred 2
+++     * Remastered adds one when it couldn't make a video frame's buffer. */
+++    if (!buffer)
+++        return E_POINTER;
+++
++     EnterCriticalSection(&sample->attributes.cs);
++     if (!mf_array_reserve((void **)&sample->buffers, &sample->capacity, sample->buffer_count + 1,
++             sizeof(*sample->buffers)))
+-- 
+2.43.0
+

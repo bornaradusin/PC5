@@ -167,6 +167,22 @@ else
     echo "test_wine_video: left out, no Wine source at $wine (tools/build.sh sources fetches it)"
 fi
 
+# Wine patch 1007: a media sample refuses a null buffer instead of crashing on its reference
+# (Sacred 2 Remastered's videos, #441).
+if [[ -f $wine/dlls/mfplat/sample.c ]]; then
+    mkdir -p "$out/wine-sample/dlls/mfplat"
+    cp "$wine/dlls/mfplat/sample.c" "$out/wine-sample/dlls/mfplat/sample.c"
+    for patch in "$PW"/wine/patches/*.patch; do
+        grep -q '^+++ b/dlls/mfplat/sample\.c' "$patch" || continue
+        GIT_CEILING_DIRECTORIES=$out git -C "$out/wine-sample" apply --include=dlls/mfplat/sample.c "$patch"
+    done
+    awk '/^static HRESULT WINAPI sample_AddBuffer/,/^}/' "$out/wine-sample/dlls/mfplat/sample.c" | grep -q 'if (!buffer)' ||
+        { echo "test_wine_sample: IMFSample::AddBuffer takes a null buffer (Wine patch 1007, #441)" >&2; exit 1; }
+    echo "test_wine_sample: a media sample refuses a null buffer: passed"
+else
+    echo "test_wine_sample: left out, no Wine source at $wine (tools/build.sh sources fetches it)"
+fi
+
 # Wine patches 0985 and 0986: a name missing from a game's system32 or syswow64 is Wine's own
 # file, and an open that changes it copies it in first, taken from Wine's file.c with
 # prospero-win's patches applied (as for 0935 above).
