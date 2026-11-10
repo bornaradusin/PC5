@@ -1,0 +1,226 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Tue, 10 Nov 2026 21:11:00 +0000
+Subject: [PATCH 143/143] PC5: the D3DX effect compiler compiles a shader function
+ (Wine patch 1011)
+
+Leo Lobato's prospero-win patch 1001 (88caebe). ID3DXEffectCompiler's GetFunctionByName and CompileShader were stubs, so games that build their shaders from effect source that way failed every compile.
+---
+ ...rce-in-effect-compiler-compileshader.patch | 205 ++++++++++++++++++
+ 1 file changed, 205 insertions(+)
+ create mode 100644 wine/patches/1011-d3dx9-compile-a-function-of-the-source-in-effect-compiler-compileshader.patch
+
+diff --git a/wine/patches/1011-d3dx9-compile-a-function-of-the-source-in-effect-compiler-compileshader.patch b/wine/patches/1011-d3dx9-compile-a-function-of-the-source-in-effect-compiler-compileshader.patch
+new file mode 100644
+index 0000000..ea1c91f
+--- /dev/null
++++ b/wine/patches/1011-d3dx9-compile-a-function-of-the-source-in-effect-compiler-compileshader.patch
+@@ -0,0 +1,205 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sun, 8 Nov 2026 19:10:00 +0100
++Subject: [PATCH] d3dx9: Compile a function of the source in
++ ID3DXEffectCompiler::CompileShader.
++
++ID3DXEffectCompiler was a stub: GetFunctionByName returned NULL and
++CompileShader E_NOTIMPL. A game that builds its shaders from effect
++source this way fails every compile. BIT.TRIP RUNNER compiles each of
++its .fx shaders with D3DXCreateEffectCompiler, GetFunctionByName
++("vs_main", "ps_main") and CompileShader, then stops with "shader:
++failed to compile vertex shader".
++
++The compiler now preprocesses the source when it is made, with its
++defines and include interface, and keeps the result: the include
++interface may not outlive D3DXCreateEffectCompiler, and the
++preprocessor's messages are returned there. GetFunctionByName returns a
++handle, kept for the compiler's life, for a name the source calls as a
++function, and NULL for any other. CompileShader takes that handle or
++the function's name and compiles the function for the target as
++D3DXCompileShader does, with its constant table when asked. The other
++methods are still stubs.
++---
++ dlls/d3dx9_36/effect.c | 123 +++++++++++++++++++++++++++++++++++++++--
++ 1 file changed, 117 insertions(+), 6 deletions(-)
++
++diff --git a/dlls/d3dx9_36/effect.c b/dlls/d3dx9_36/effect.c
++index 4c2c5f9..35b27a5 100644
++--- a/dlls/d3dx9_36/effect.c
+++++ b/dlls/d3dx9_36/effect.c
++@@ -214,10 +214,24 @@ struct d3dx_effect_pool
++     ULONG64 version_counter;
++ };
++ 
+++struct effect_compiler_function
+++{
+++    struct list entry;
+++    char name[1];
+++};
+++
++ struct ID3DXEffectCompilerImpl
++ {
++     ID3DXEffectCompiler ID3DXEffectCompiler_iface;
++     LONG ref;
+++
+++    /* The source, preprocessed when the compiler was made: its includes and
+++     * defines are resolved then, as the caller's include interface may not
+++     * outlive that call. */
+++    char *data;
+++    SIZE_T data_size;
+++    /* The names GetFunctionByName handed out: a handle is one of them. */
+++    struct list functions;
++ };
++ 
++ static HRESULT d3dx9_effect_init_from_binary(struct d3dx_effect *effect,
++@@ -4646,6 +4660,11 @@ static ULONG WINAPI ID3DXEffectCompilerImpl_Release(ID3DXEffectCompiler *iface)
++ 
++     if (!refcount)
++     {
+++        struct effect_compiler_function *function, *next;
+++
+++        LIST_FOR_EACH_ENTRY_SAFE(function, next, &compiler->functions, struct effect_compiler_function, entry)
+++            free(function);
+++        free(compiler->data);
++         free(compiler);
++     }
++ 
++@@ -4760,11 +4779,57 @@ static D3DXHANDLE WINAPI ID3DXEffectCompilerImpl_GetFunction(ID3DXEffectCompiler
++     return NULL;
++ }
++ 
+++/* Whether the preprocessed source names a function called name: the name as a
+++ * whole identifier followed by an opening parenthesis. */
+++static BOOL effect_compiler_has_function(const struct ID3DXEffectCompilerImpl *compiler, const char *name)
+++{
+++    size_t length = strlen(name), at;
+++    const char *data = compiler->data;
+++    SIZE_T size = compiler->data_size;
+++
+++    if (!length)
+++        return FALSE;
+++    for (at = 0; at + length <= size; ++at)
+++    {
+++        SIZE_T next = at + length;
+++
+++        if (memcmp(data + at, name, length))
+++            continue;
+++        if (at && (isalnum((unsigned char)data[at - 1]) || data[at - 1] == '_'))
+++            continue;
+++        if (next < size && (isalnum((unsigned char)data[next]) || data[next] == '_'))
+++            continue;
+++        while (next < size && (data[next] == ' ' || data[next] == '\t' || data[next] == '\r' || data[next] == '\n'))
+++            ++next;
+++        if (next < size && data[next] == '(')
+++            return TRUE;
+++    }
+++    return FALSE;
+++}
+++
++ static D3DXHANDLE WINAPI ID3DXEffectCompilerImpl_GetFunctionByName(ID3DXEffectCompiler *iface, const char *name)
++ {
++-    FIXME("iface %p, name %s stub!\n", iface, debugstr_a(name));
+++    struct ID3DXEffectCompilerImpl *compiler = impl_from_ID3DXEffectCompiler(iface);
+++    struct effect_compiler_function *function;
+++    size_t length;
++ 
++-    return NULL;
+++    TRACE("iface %p, name %s.\n", iface, debugstr_a(name));
+++
+++    if (!name || !effect_compiler_has_function(compiler, name))
+++        return NULL;
+++
+++    LIST_FOR_EACH_ENTRY(function, &compiler->functions, struct effect_compiler_function, entry)
+++    {
+++        if (!strcmp(function->name, name))
+++            return (D3DXHANDLE)function->name;
+++    }
+++
+++    length = strlen(name);
+++    if (!(function = malloc(offsetof(struct effect_compiler_function, name[length + 1]))))
+++        return NULL;
+++    memcpy(function->name, name, length + 1);
+++    list_add_tail(&compiler->functions, &function->entry);
+++    return (D3DXHANDLE)function->name;
++ }
++ 
++ static D3DXHANDLE WINAPI ID3DXEffectCompilerImpl_GetAnnotation(ID3DXEffectCompiler *iface,
++@@ -5100,10 +5165,29 @@ static HRESULT WINAPI ID3DXEffectCompilerImpl_CompileShader(ID3DXEffectCompiler
++         const char *target, DWORD flags, ID3DXBuffer **shader, ID3DXBuffer **error_msgs,
++         ID3DXConstantTable **constant_table)
++ {
++-    FIXME("iface %p, function %p, target %s, flags %#lx, shader %p, error_msgs %p, constant_table %p stub!\n",
+++    struct ID3DXEffectCompilerImpl *compiler = impl_from_ID3DXEffectCompiler(iface);
+++    struct effect_compiler_function *entry;
+++    const char *name = NULL;
+++
+++    TRACE("iface %p, function %p, target %s, flags %#lx, shader %p, error_msgs %p, constant_table %p.\n",
++             iface, function, debugstr_a(target), flags, shader, error_msgs, constant_table);
++ 
++-    return E_NOTIMPL;
+++    LIST_FOR_EACH_ENTRY(entry, &compiler->functions, struct effect_compiler_function, entry)
+++    {
+++        if ((const char *)function == entry->name)
+++            name = entry->name;
+++    }
+++    /* As elsewhere in D3DX, a handle may also be the function's name. */
+++    if (!name && function && effect_compiler_has_function(compiler, (const char *)function))
+++        name = (const char *)function;
+++    if (!name || !target || !shader)
+++    {
+++        WARN("Invalid function %p, target %s or shader %p.\n", function, debugstr_a(target), shader);
+++        return D3DERR_INVALIDCALL;
+++    }
+++
+++    return D3DXCompileShader(compiler->data, compiler->data_size, NULL, NULL,
+++            name, target, flags, shader, error_msgs, constant_table);
++ }
++ 
++ static const struct ID3DXEffectCompilerVtbl ID3DXEffectCompiler_Vtbl =
++@@ -6820,8 +6904,35 @@ static HRESULT d3dx9_effect_compiler_init(struct ID3DXEffectCompilerImpl *compil
++ 
++     compiler->ID3DXEffectCompiler_iface.lpVtbl = &ID3DXEffectCompiler_Vtbl;
++     compiler->ref = 1;
+++    list_init(&compiler->functions);
++ 
++-    FIXME("ID3DXEffectCompiler implementation is only a stub.\n");
+++    /* Only CompileShader and GetFunctionByName are implemented: they compile
+++     * one function of the source as D3DXCompileShader would. */
+++    FIXME("ID3DXEffectCompiler implementation is incomplete.\n");
+++
+++    {
+++        ID3DBlob *preprocessed = NULL, *errors = NULL;
+++        HRESULT hr;
+++
+++        hr = D3DPreprocess(data, data_size, NULL, defines, include, &preprocessed, &errors);
+++        if (messages)
+++            *messages = errors;
+++        else if (errors)
+++            ID3D10Blob_Release(errors);
+++        if (FAILED(hr))
+++        {
+++            WARN("Failed to preprocess the effect, hr %#lx.\n", hr);
+++            return hr;
+++        }
+++        compiler->data_size = ID3D10Blob_GetBufferSize(preprocessed);
+++        if (!(compiler->data = malloc(compiler->data_size)))
+++        {
+++            ID3D10Blob_Release(preprocessed);
+++            return E_OUTOFMEMORY;
+++        }
+++        memcpy(compiler->data, ID3D10Blob_GetBufferPointer(preprocessed), compiler->data_size);
+++        ID3D10Blob_Release(preprocessed);
+++    }
++ 
++     return D3D_OK;
++ }
++@@ -6850,7 +6961,7 @@ HRESULT WINAPI D3DXCreateEffectCompiler(const char *data, UINT data_size, const
++     if (FAILED(hr))
++     {
++         WARN("Failed to initialize effect compiler\n");
++-        free(object);
+++        ID3DXEffectCompilerImpl_Release(&object->ID3DXEffectCompiler_iface);
++         return hr;
++     }
++ 
+-- 
+2.43.0
+

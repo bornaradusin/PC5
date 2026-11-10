@@ -1,0 +1,203 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Tue, 10 Nov 2026 21:14:00 +0000
+Subject: [PATCH 146/146] PC5: the translator starts over when one address piles up
+ retired blocks
+
+Leo Lobato's prospero-win 74fa4b0. Code rewritten every time round (a movie player that generates its decoder) grew one address's probe chain without end; at 16 retired blocks the cache resets as for a full table.
+---
+ src/pw_x86_engine.c     | 15 +++++++++++
+ src/pw_x86_engine.h     | 11 +++++++-
+ tests/test_pw_x86_smc.c | 60 ++++++++++++++++++++++++++++++++++++++++-
+ wine/wowprospero/unix.c |  5 ++--
+ 4 files changed, 87 insertions(+), 4 deletions(-)
+
+diff --git a/src/pw_x86_engine.c b/src/pw_x86_engine.c
+index 92c877a..4617be9 100644
+--- a/src/pw_x86_engine.c
++++ b/src/pw_x86_engine.c
+@@ -131,6 +131,18 @@ static void retire_stale(PwX86Engine *engine, uint32_t pc)
+     entry->retired = 1;
+     engine->retired_blocks++;
+     engine->retired_total++;
++    if(!engine->flush_wanted) {
++        uint32_t cursor = 0, count = 0;
++        PwX86CacheEntry *sibling;
++
++        while(count < PW_X86_ENGINE_RETIRED_PER_PC &&
++              pw_x86_cache_next_retired(&engine->cache, pc, &cursor, &sibling) == PW_OK)
++            count++;
++        if(count >= PW_X86_ENGINE_RETIRED_PER_PC) {
++            engine->flush_wanted = 1;
++            engine->retired_flushes++;
++        }
++    }
+ }
+ 
+ /* A retired block of pc whose source holds its bytes again, brought back. */
+@@ -754,6 +766,8 @@ static uint64_t compile_clock(void)
+ 
+ static int compile(PwX86Engine *engine,uint32_t pc,const PwX86CacheEntry **entry)
+ {
++    /* Too many retired blocks of one PC: start over before translating more. */
++    if(engine->flush_wanted)return PW_ERR_LIMIT;
+     uint64_t start=compile_clock();
+     int status=compile_block(engine,pc,entry);
+     engine->compile_cycles+=compile_clock()-start;
+@@ -1038,6 +1052,7 @@ int pw_x86_engine_reset(PwX86Engine *engine,uint32_t generation)
+                ((discarded_bytes+PW_X86_ENGINE_FAULT_GRANULE-1)/PW_X86_ENGINE_FAULT_GRANULE)*sizeof(uint32_t));
+     engine->last_published=0;
+     engine->retired_blocks=0;
++    engine->flush_wanted=0;
+     /* The published extent is now writable. Stub emission or the next
+      * compile seals its own pages; no live entry survives a successful reset. */
+     engine->sealed=0;
+diff --git a/src/pw_x86_engine.h b/src/pw_x86_engine.h
+index e1642b6..0649501 100644
+--- a/src/pw_x86_engine.h
++++ b/src/pw_x86_engine.h
+@@ -6,7 +6,11 @@
+ 
+ enum { PW_X86_ENGINE_MAX_SOURCE=15*32, PW_X86_ENGINE_MAX_CODE=16384,
+        PW_X86_ENGINE_INDIRECT_SLOTS=8192, PW_X86_ENGINE_FAULT_GRANULE=256,
+-       PW_X86_ENGINE_CALL_STACK_GUARD=0x10000 };
++       PW_X86_ENGINE_CALL_STACK_GUARD=0x10000,
++       /* Retired blocks one guest PC may hold before the cache starts over:
++        * each keeps its slot, so code rewritten every time round would make
++        * that PC's probe chain as long as the number of rewrites. */
++       PW_X86_ENGINE_RETIRED_PER_PC=16 };
+ 
+ /* Return one immutable executable source span beginning at guest_pc. The span
+  * remains alive and unchanged for the engine generation. */
+@@ -56,6 +60,11 @@ typedef struct PwX86Engine {
+     /* TSC ticks spent translating and publishing (x86 hosts; 0 elsewhere). */
+     uint64_t compile_cycles;
+     uint32_t retired_blocks;
++    /* A PC reached PW_X86_ENGINE_RETIRED_PER_PC retired blocks: the next
++     * translation returns PW_ERR_LIMIT, so the caller resets the cache as for
++     * a full table; and how often that happened (survives resets). */
++    unsigned flush_wanted;
++    uint64_t retired_flushes;
+     uint64_t dispatches,retired_instructions,compiles;
+     PwX86ExecutionClock execution_clock;
+     void *execution_clock_opaque;
+diff --git a/tests/test_pw_x86_smc.c b/tests/test_pw_x86_smc.c
+index 11950d1..3637365 100644
+--- a/tests/test_pw_x86_smc.c
++++ b/tests/test_pw_x86_smc.c
+@@ -174,6 +174,9 @@ typedef struct Run {
+     /* With protecting: pages protected, write faults, pages sent back to
+      * the checks, and engine resets the faults caused. */
+     uint64_t protects, faults, demotions, resets;
++    /* Engine resets asked for with PW_ERR_LIMIT, and the longest lookup. */
++    uint64_t limit_resets;
++    uint32_t max_probe;
+ } Run;
+ 
+ /* Run the guest from low + CODE until it returns to SENTINEL, with no memory
+@@ -223,7 +226,17 @@ static Run run(unsigned config)
+             pw_x86_engine_fp_sync(&engine, &r.state);
+             r.status = PW_OK;
+         }
++        /* As wowprospero's run(): a full table, or too many retired blocks,
++         * starts the cache over and the step runs again. */
++        if (r.status == PW_ERR_LIMIT) {
++            if (engine.cache.max_probe > r.max_probe) r.max_probe = engine.cache.max_probe;
++            pw_x86_engine_fp_sync(&engine, &r.state);
++            assert(pw_x86_engine_reset(&engine, ++generation) == PW_OK);
++            r.limit_resets++;
++            r.status = PW_OK;
++        }
+     }
++    if (engine.cache.max_probe > r.max_probe) r.max_probe = engine.cache.max_probe;
+     current = NULL;
+     current_state = NULL;
+     if (protecting) {
+@@ -578,6 +591,50 @@ static void test_reaching_writable(void)
+     }
+ }
+ 
++/* Code that writes new code over itself every time round (Fallout's movie
++ * player): each version is new, so none comes back, and each retires the one
++ * before at the same address. Retired blocks keep their slots, so the
++ * address's probe chain would grow with every rewrite; the engine starts the
++ * cache over before it gets long. */
++static void test_rewritten_every_time(void)
++{
++    enum { ROUNDS = 600 };
++    const uint32_t f = low + WRITABLE;
++
++    for (unsigned config = 0; config < CONFIGS; config++) {
++        static const uint8_t f1[] = { 0xb8, 0, 0, 0, 0, 0xc3 };    /* mov eax, imm; ret */
++        uint8_t main[64];
++        size_t n = 0, loop;
++
++        trusting = 0;
++        protecting = 0;
++        reset_code();
++        place(WRITABLE, f1, sizeof(f1));
++        main[n++] = 0x31; main[n++] = 0xc9;                                    /* xor ecx, ecx */
++        main[n++] = 0x31; main[n++] = 0xdb;                                    /* xor ebx, ebx */
++        loop = n;
++        main[n++] = 0x89; main[n++] = 0x0d; put32(main + n, f + 1); n += 4;   /* mov [f+1], ecx */
++        main[n++] = 0xe8; put32(main + n, f - (low + CODE + n + 4)); n += 4;   /* call f */
++        main[n++] = 0x01; main[n++] = 0xc3;                                    /* add ebx, eax */
++        main[n++] = 0x41;                                                      /* inc ecx */
++        main[n++] = 0x81; main[n++] = 0xf9; put32(main + n, ROUNDS); n += 4;  /* cmp ecx, ROUNDS */
++        main[n++] = 0x0f; main[n++] = 0x85;
++        put32(main + n, (uint32_t)(loop - (n + 4))); n += 4;                   /* jne loop */
++        main[n++] = 0xc3;                                                      /* ret */
++        place(CODE, main, n);
++        Run r = run(config);
++        if (r.status != PW_OK || r.state.eip != SENTINEL || r.max_probe > 64)
++            fprintf(stderr, "%s: status %d eip +%x ebx %u stale %llu retired %llu limit resets %llu max probe %u\n",
++                    names[config], r.status, r.state.eip - low, r.state.gpr[3], (unsigned long long)r.stale,
++                    (unsigned long long)r.retired, (unsigned long long)r.limit_resets, r.max_probe);
++        assert(r.status == PW_OK && r.state.eip == SENTINEL);
++        assert(r.state.gpr[3] == ROUNDS * (ROUNDS - 1) / 2);
++        assert(r.stale >= ROUNDS - 1);
++        assert(r.max_probe <= 64);
++        assert(r.limit_resets >= 2);
++    }
++}
++
+ int main(void)
+ {
+     /* Aligned to the host page write protection uses. */
+@@ -607,8 +664,9 @@ int main(void)
+     test_written_once();
+     test_data_next_to_code();
+     test_reaching_writable();
++    test_rewritten_every_time();
+     printf("x86 self-modifying code passed: rewritten functions, Mod Loader's hook toggle, "
+            "blocks reaching writable code, read-only code unchecked, write-protected code "
+-           "(written once, toggled, next to data)\n");
++           "(written once, toggled, next to data), code rewritten every time round\n");
+     return 0;
+ }
+diff --git a/wine/wowprospero/unix.c b/wine/wowprospero/unix.c
+index 01d21a5..9a52f45 100644
+--- a/wine/wowprospero/unix.c
++++ b/wine/wowprospero/unix.c
+@@ -1286,7 +1286,7 @@ static void cache_report( struct pw_thread *thread, uint64_t wall, unsigned fina
+              "generation=%u capacity=%u occupied=%llu arena_used=%zu arena_bytes=%zu "
+              "hits=%llu misses=%llu probes=%llu max_probe=%u publishes=%llu resets=%llu "
+              "stale=%llu retired=%llu revived=%llu smc_protects=%llu smc_faults=%llu smc_flushes=%llu "
+-             "smc_demotions=%llu jump_tables=%llu\n",
++             "smc_demotions=%llu jump_tables=%llu retired_flushes=%llu\n",
+              (unsigned)(uintptr_t)NtCurrentTeb()->ClientId.UniqueThread,
+              (unsigned long long)thread->cache_report_id, (unsigned long long)wall, final,
+              cache->generation, cache->capacity,
+@@ -1299,7 +1299,8 @@ static void cache_report( struct pw_thread *thread, uint64_t wall, unsigned fina
+              (unsigned long long)smc.protects, (unsigned long long)__atomic_load_n( &smc.faults, __ATOMIC_RELAXED ),
+              (unsigned long long)__atomic_load_n( &smc.flushes, __ATOMIC_RELAXED ),
+              (unsigned long long)__atomic_load_n( &smc.demotions, __ATOMIC_RELAXED ),
+-             (unsigned long long)thread->engine.jump_table_blocks );
++             (unsigned long long)thread->engine.jump_table_blocks,
++             (unsigned long long)thread->engine.retired_flushes );
+     /* The host pages whose translations check their source on every entry
+      * (smc_pages.h CHECKED), once per report from the first thread only:
+      * hot code there pays for the check. */
+-- 
+2.43.0
+

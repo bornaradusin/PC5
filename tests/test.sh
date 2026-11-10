@@ -200,6 +200,28 @@ else
     echo "test_wine_decommit: left out, no Wine source at $wine (tools/build.sh sources fetches it)"
 fi
 
+# Wine patches 1010-1012 (Leo Lobato's 1006, 1001 and fc7f6ba): raw input lists a mouse and a
+# keyboard (Unreal Engine sees the pointer), the D3DX effect compiler compiles a function, and
+# msvcp80/90's ctype<char>::narrow is native's vtable jump (games with rebuilt imports).
+if [[ -f $wine/dlls/win32u/rawinput.c ]]; then
+    leo=(dlls/win32u/rawinput.c dlls/d3dx9_36/effect.c dlls/msvcp90/locale.c dlls/msvcp90/msvcp90.spec dlls/msvcp80/msvcp80.spec)
+    for file in "${leo[@]}"; do mkdir -p "$out/wine-leo/$(dirname "$file")"; cp "$wine/$file" "$out/wine-leo/$file"; done
+    for patch in "$PW"/wine/patches/*.patch; do
+        grep -q '^+++ b/dlls/\(win32u/rawinput\.c\|d3dx9_36/effect\.c\|msvcp90/locale\.c\|msvcp90/msvcp90\.spec\|msvcp80/msvcp80\.spec\)' "$patch" || continue
+        GIT_CEILING_DIRECTORIES=$out git -C "$out/wine-leo" apply $(printf -- '--include=%s ' "${leo[@]}") "$patch"
+    done
+    grep -q 'add_driver_device( WINE_MOUSE_HANDLE, RIM_TYPEMOUSE' "$out/wine-leo/dlls/win32u/rawinput.c" ||
+        { echo "test_wine_leo: raw input lists no mouse on the console (Wine patch 1010)" >&2; exit 1; }
+    grep -q 'effect_compiler_has_function' "$out/wine-leo/dlls/d3dx9_36/effect.c" ||
+        { echo "test_wine_leo: the D3DX effect compiler's CompileShader is a stub (Wine patch 1011)" >&2; exit 1; }
+    grep -q 'ctype_char_narrow_vtbl' "$out/wine-leo/dlls/msvcp90/msvcp90.spec" &&
+        grep -q 'ctype_char_narrow_vtbl' "$out/wine-leo/dlls/msvcp80/msvcp80.spec" ||
+        { echo "test_wine_leo: ctype<char>::narrow isn't native's vtable jump (Wine patch 1012)" >&2; exit 1; }
+    echo "test_wine_leo: raw input's mouse and keyboard, the effect compiler and narrow(): passed"
+else
+    echo "test_wine_leo: left out, no Wine source at $wine (tools/build.sh sources fetches it)"
+fi
+
 # Wine patch 1007: a media sample refuses a null buffer instead of crashing on its reference
 # (Sacred 2 Remastered's videos, #441).
 if [[ -f $wine/dlls/mfplat/sample.c ]]; then

@@ -1,0 +1,185 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Tue, 10 Nov 2026 21:13:00 +0000
+Subject: [PATCH 145/145] PC5: the translator runs the decimal-adjust instructions
+
+Leo Lobato's prospero-win ab6fc6e. AAM, AAD, AAA, AAS, DAA and DAS, which 64-bit mode lacks, run on the guest's state in the host-exec fallback instead of stopping a 32-bit game with an illegal instruction (Watcom's runtime prints numbers with AAM).
+---
+ src/pw_x86_hostexec.c        | 84 +++++++++++++++++++++++++++++++++++-
+ tests/test_pw_x86_hostexec.c | 48 ++++++++++++++++++++-
+ 2 files changed, 130 insertions(+), 2 deletions(-)
+
+diff --git a/src/pw_x86_hostexec.c b/src/pw_x86_hostexec.c
+index 89cb99f..cf7149e 100644
+--- a/src/pw_x86_hostexec.c
++++ b/src/pw_x86_hostexec.c
+@@ -687,6 +687,88 @@ static int ecx_branch_form(PwX86State *s, const uint8_t *src, size_t n)
+     return PW_OK;
+ }
+ 
++/* The decimal-adjust instructions, which 64-bit mode does not have: AAM ib
++ * (D4), AAD ib (D5), AAA (37), AAS (3F), DAA (27) and DAS (2F), on AL/AH and
++ * the committed EFLAGS. AAM and AAD set SF, ZF and PF from AL and clear OF,
++ * AF and CF (undefined); AAA and AAS set AF and CF and clear the rest of the
++ * arithmetic flags; DAA and DAS set CF, AF, SF, ZF and PF. AAM 0 raises #DE
++ * on hardware, so it is refused. Watcom's runtime turns numbers into text
++ * with AAM (Fallout, at its start). */
++enum { F_CF = 0x1u, F_PF = 0x4u, F_AF = 0x10u, F_ZF = 0x40u, F_SF = 0x80u, F_OF = 0x800u,
++       F_ARITH = F_CF | F_PF | F_AF | F_ZF | F_SF | F_OF };
++static uint32_t al_flags(uint8_t al)
++{
++    uint32_t flags = (al & 0x80u) ? F_SF : 0;
++    unsigned bits = al;
++
++    if (!al) flags |= F_ZF;
++    bits ^= bits >> 4; bits ^= bits >> 2; bits ^= bits >> 1;
++    if (!(bits & 1u)) flags |= F_PF;
++    return flags;
++}
++
++static int bcd_form(PwX86State *s, const uint8_t *src, size_t n)
++{
++    uint8_t al = (uint8_t)s->gpr[0], ah = (uint8_t)(s->gpr[0] >> 8);
++    const unsigned af = !!(s->eflags & F_AF), cf = !!(s->eflags & F_CF);
++    uint32_t flags = 0;
++    unsigned len = 1;
++
++    if (!n) return PW_ERR_UNSUPPORTED;
++    switch (src[0]) {
++    case 0xd4:                                    /* AAM ib */
++        if (n < 2 || !src[1]) return PW_ERR_UNSUPPORTED;
++        ah = (uint8_t)(al / src[1]);
++        al = (uint8_t)(al % src[1]);
++        flags = al_flags(al);
++        len = 2;
++        break;
++    case 0xd5:                                    /* AAD ib */
++        if (n < 2) return PW_ERR_UNSUPPORTED;
++        al = (uint8_t)(al + ah * src[1]);
++        ah = 0;
++        flags = al_flags(al);
++        len = 2;
++        break;
++    case 0x37:                                    /* AAA */
++    case 0x3f: {                                  /* AAS */
++        if ((al & 0x0fu) > 9 || af) {
++            const uint16_t ax = (uint16_t)(((unsigned)ah << 8 | al) + (src[0] == 0x37 ? 0x106 : -0x106));
++            al = (uint8_t)ax; ah = (uint8_t)(ax >> 8);
++            flags = F_AF | F_CF;
++        }
++        al &= 0x0fu;
++        break;
++    }
++    case 0x27:                                    /* DAA */
++    case 0x2f: {                                  /* DAS */
++        const uint8_t old = al;
++        if ((al & 0x0fu) > 9 || af) {
++            if (src[0] == 0x27) {
++                if (al > 0xf9u) flags |= F_CF;
++                al = (uint8_t)(al + 6);
++            } else {
++                if (al < 6) flags |= F_CF;
++                al = (uint8_t)(al - 6);
++            }
++            flags |= F_AF;
++        }
++        if (old > 0x99u || cf) {
++            al = (uint8_t)(src[0] == 0x27 ? al + 0x60 : al - 0x60);
++            flags |= F_CF;
++        }
++        flags |= al_flags(al);
++        break;
++    }
++    default:
++        return PW_ERR_UNSUPPORTED;
++    }
++    s->gpr[0] = (s->gpr[0] & 0xffff0000u) | (uint32_t)ah << 8 | al;
++    s->eflags = (s->eflags & ~F_ARITH) | flags;
++    s->eip += len;
++    return PW_OK;
++}
++
+ /* PUSH and POP of ES, CS, SS and DS (06 07 0E 16 17 1E 1F), which 64-bit
+  * mode does not have, so the host cannot run them. A push stores the
+  * selector the guest sees (selector_of), zero-extended to 32 bits, or 16
+@@ -893,7 +975,7 @@ int pw_x86_hostexec_step(PwX86HostExec *h, PwX86State *s, const uint8_t *src, si
+          segment_stack_form(s, src, n) == PW_OK || segment_load_form(s, src, n) == PW_OK ||
+          enter_form(s, src, n) == PW_OK || word_register_stack_form(s, src, n) == PW_OK ||
+          all_registers_form(s, src, n) == PW_OK ||
+-         ecx_branch_form(s, src, n) == PW_OK)) {
++         ecx_branch_form(s, src, n) == PW_OK || bcd_form(s, src, n) == PW_OK)) {
+         h->executed++;
+         return PW_OK;
+     }
+diff --git a/tests/test_pw_x86_hostexec.c b/tests/test_pw_x86_hostexec.c
+index 1f50f95..e2e1277 100644
+--- a/tests/test_pw_x86_hostexec.c
++++ b/tests/test_pw_x86_hostexec.c
+@@ -570,6 +570,51 @@ static void test_cpuid(void)
+     assert(!(regs[2] & ((1u << 11) | (1u << 16) | (1u << 21))) && (regs[2] & 1u));
+ }
+ 
++/* AAM, AAD, AAA, AAS, DAA and DAS: AL/AH and the flags as the processor
++ * leaves them; AAM 0 (#DE) stays refused. Watcom's runtime prints numbers
++ * with AAM. */
++static void test_decimal_adjust(void)
++{
++    PwX86State s;
++
++    reset_state(&s);
++    s.gpr[0] = 0xabcd0000u | 47;                                               /* AL 47 */
++    assert(run(&s, (const uint8_t[]){0xd4, 0x0a}, 2) == PW_OK);               /* aam 10 */
++    assert(s.gpr[0] == (0xabcd0000u | 0x0407) && s.eip == 0x1002);
++    assert(!(s.eflags & (0x40u | 0x80u | 0x4u)));                              /* AL 7: odd parity */
++    s.gpr[0] = 0x0000ff00u;                                                    /* AH 255, AL 0 */
++    s.eflags |= 0x801u;
++    assert(run(&s, (const uint8_t[]){0xd4, 0x0a}, 2) == PW_OK);               /* AL 0 -> ZF, PF */
++    assert((s.gpr[0] & 0xffffu) == 0 && (s.eflags & 0x44u) == 0x44u && !(s.eflags & 0x801u));
++    assert(run(&s, (const uint8_t[]){0xd4, 0x00}, 2) == PW_ERR_UNSUPPORTED);  /* aam 0: #DE */
++    reset_state(&s);
++    s.gpr[0] = 0x0407;
++    assert(run(&s, (const uint8_t[]){0xd5, 0x0a}, 2) == PW_OK);               /* aad 10 */
++    assert((s.gpr[0] & 0xffffu) == 47);
++    reset_state(&s);
++    s.gpr[0] = 0x000b;                                                         /* AL 0x0b */
++    assert(run(&s, (const uint8_t[]){0x37}, 1) == PW_OK);                      /* aaa */
++    assert((s.gpr[0] & 0xffffu) == 0x0101 && (s.eflags & 0x11u) == 0x11u && s.eip == 0x1001);
++    s.gpr[0] = 0x0105;
++    s.eflags &= ~0x11u;
++    assert(run(&s, (const uint8_t[]){0x37}, 1) == PW_OK);                      /* nothing to adjust */
++    assert((s.gpr[0] & 0xffffu) == 0x0105 && !(s.eflags & 0x11u));
++    s.gpr[0] = 0x020f;
++    assert(run(&s, (const uint8_t[]){0x3f}, 1) == PW_OK);                      /* aas */
++    assert((s.gpr[0] & 0xffffu) == 0x0109 && (s.eflags & 0x11u) == 0x11u);
++    reset_state(&s);
++    s.gpr[0] = 0x9b;                                                           /* 0x79 + 0x22 in binary */
++    assert(run(&s, (const uint8_t[]){0x27}, 1) == PW_OK);                      /* daa: 101 decimal */
++    assert((s.gpr[0] & 0xffu) == 0x01 && (s.eflags & 0x11u) == 0x11u);
++    reset_state(&s);
++    s.gpr[0] = 0x26;                                                           /* 0x47 - 0x21 */
++    assert(run(&s, (const uint8_t[]){0x2f}, 1) == PW_OK);                      /* das: 26, no adjust */
++    assert((s.gpr[0] & 0xffu) == 0x26 && !(s.eflags & 0x11u));
++    s.gpr[0] = 0x1e;                                                           /* 0x25 - 0x07 */
++    assert(run(&s, (const uint8_t[]){0x2f}, 1) == PW_OK);                      /* das: 18 */
++    assert((s.gpr[0] & 0xffu) == 0x18 && (s.eflags & 0x10u) && !(s.eflags & 0x1u));
++}
++
+ static void test_refusals_and_cache(void)
+ {
+     PwX86State s;
+@@ -626,10 +671,11 @@ int main(void)
+     test_watcom_forms();
+     test_all_registers();
+     test_ecx_branches();
++    test_decimal_adjust();
+     test_cpuid();
+     test_refusals_and_cache();
+     assert(pw_x86_hostexec_destroy(&hx) == PW_OK);
+-    printf("host-exec fallback passed: integer, x87, SSE, FS and SIB forms, the guest's MXCSR, segment stores, segment push and pop, segment loads, ENTER, 16-bit register push and pop, PUSHAD and POPAD, JECXZ and LOOP, CPUID; %llu stubs\n",
++    printf("host-exec fallback passed: integer, x87, SSE, FS and SIB forms, the guest's MXCSR, segment stores, segment push and pop, segment loads, ENTER, 16-bit register push and pop, PUSHAD and POPAD, JECXZ and LOOP, decimal adjust, CPUID; %llu stubs\n",
+            (unsigned long long)hx.compiled);
+     return 0;
+ }
+-- 
+2.43.0
+

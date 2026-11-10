@@ -576,6 +576,11 @@ controller's speaker.
 | 334 | Resident Evil 2 (2019), past the gas station to the title movie (#454) | the movie plays, no crash | its WMV movie's media types have a frame rate (`MF_MT_FRAME_RATE` not 1) |
 | 335 | A Steam copy with ColdClientLoader's folder and SmartSteamEmu.ini in it (Dying Light: The Beast, #597) | it starts, no "Steam client application is required" | about.txt: `PC5's Steam emulator, Valve's kept beside it` for that folder's library |
 | 336 | Summer Memories (NW.js), or OMORI, from start to its title (#610) | it reaches the title, no "Check failed: SetSystemPagesAccess" | no `syscall fault 0xc0000005` in the log |
+| 337 | An Unreal Engine game with a mouse-driven menu (Chained Together), its main menu with the touchpad pointer | the buttons light up under the pointer and a click opens them | the game's log doesn't say no mouse is attached |
+| 338 | A Direct3D 9 game that builds shaders from .fx effect files (BIT.TRIP RUNNER) | it gets past its loading screen, no "failed to compile vertex shader" | no `ID3DXEffectCompiler` stub message in the log |
+| 339 | A 32-bit game that writes numbers with old instructions (Fallout 1 or 2, Watcom-built) | it starts, no illegal-instruction stop | no `illegal instruction` for AAM/AAD/DAA in the log |
+| 340 | A 32-bit game with a movie player that rewrites its own code (an old FMV game), a movie played through | the movie plays smoothly, the game stays responsive after it | the translator's cache report shows `retired_flushes` above 0 if it hit the limit |
+| 341 | Any 32-bit game, start to menu and back (regression check for 337-340) | nothing changed from 2.3.8 | no new errors in the log |
 
 ## Custom media navigation changes (pending on PS5)
 

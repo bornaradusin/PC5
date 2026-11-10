@@ -1,0 +1,110 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Tue, 10 Nov 2026 21:10:00 +0000
+Subject: [PATCH 142/142] PC5: raw input lists a mouse and a keyboard, so Unreal games
+ see the pointer (Wine patch 1010)
+
+Leo Lobato's prospero-win patch 1006 (b0656ab). GetRawInputDeviceList had no mouse on the console, so Unreal Engine gave its scene no cursor: menu objects ignored every click.
+---
+ ...a-mouse-and-a-keyboard-for-raw-input.patch | 89 +++++++++++++++++++
+ 1 file changed, 89 insertions(+)
+ create mode 100644 wine/patches/1010-win32u-ps5-list-a-mouse-and-a-keyboard-for-raw-input.patch
+
+diff --git a/wine/patches/1010-win32u-ps5-list-a-mouse-and-a-keyboard-for-raw-input.patch b/wine/patches/1010-win32u-ps5-list-a-mouse-and-a-keyboard-for-raw-input.patch
+new file mode 100644
+index 0000000..9619d68
+--- /dev/null
++++ b/wine/patches/1010-win32u-ps5-list-a-mouse-and-a-keyboard-for-raw-input.patch
+@@ -0,0 +1,89 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Mon, 9 Nov 2026 07:00:00 +0100
++Subject: [PATCH] win32u: List a mouse and a keyboard for raw input on PS5.
++
++A PS5 title has no mouse or keyboard device: the pointer and keys reach
++Wine through the user driver, and winebus creates no virtual mouse or
++keyboard there (patch 0951). GetRawInputDeviceList returned no mouse,
++so a program that checks for one decided none was attached. Unreal
++Engine does: without a mouse it reports no cursor position to the game,
++so objects in the scene never see the pointer over them or a click on
++them, while its UI widgets still do. Chained Together's main menu
++buttons are such objects and ignored every click.
++
++The list now has a mouse and a keyboard when no device of that type was
++found, with the handles the server already gives the user driver's raw
++input (1 and 2), a device name, and the same device information Wine
++gives its virtual devices. They have no file to read from or to close.
++---
++ dlls/win32u/rawinput.c | 35 +++++++++++++++++++++++++++++++++--
++ 1 file changed, 33 insertions(+), 2 deletions(-)
++
++diff --git a/dlls/win32u/rawinput.c b/dlls/win32u/rawinput.c
++index f33a9b5..1791351 100644
++--- a/dlls/win32u/rawinput.c
+++++ b/dlls/win32u/rawinput.c
++@@ -281,6 +281,31 @@ static void enumerate_devices( DWORD type, const WCHAR *class )
++     NtClose( class_key );
++ }
++ 
+++#ifdef WINE_PS5_USER_DRIVER
+++/* A PS5 title has no mouse or keyboard device: its pointer and keys reach
+++ * Wine through the user driver, and winebus creates no virtual ones there.
+++ * Programs that ask whether a mouse is attached look for a mouse in this
+++ * list, so list the two devices the server already sends raw input from. */
+++static void add_driver_device( HANDLE handle, DWORD type, const char *path )
+++{
+++    static const RID_DEVICE_INFO_KEYBOARD keyboard_info = {0, 0, 1, 12, 3, 101};
+++    static const RID_DEVICE_INFO_MOUSE mouse_info = {1, 5, 0, FALSE};
+++    struct device *device;
+++
+++    LIST_FOR_EACH_ENTRY( device, &devices, struct device, entry )
+++        if (device->info.dwType == type) return;
+++
+++    if (!(device = calloc( 1, sizeof(*device) ))) return;
+++    asciiz_to_unicode( device->path, path );
+++    device->handle = handle;
+++    device->info.cbSize = sizeof(device->info);
+++    device->info.dwType = type;
+++    if (type == RIM_TYPEMOUSE) device->info.mouse = mouse_info;
+++    else device->info.keyboard = keyboard_info;
+++    list_add_tail( &devices, &device->entry );
+++}
+++#endif
+++
++ static void rawinput_update_device_list( BOOL force )
++ {
++     unsigned int ticks = NtGetTickCount();
++@@ -295,7 +320,7 @@ static void rawinput_update_device_list( BOOL force )
++     LIST_FOR_EACH_ENTRY_SAFE( device, next, &devices, struct device, entry )
++     {
++         list_remove( &device->entry );
++-        NtClose( device->file );
+++        if (device->file) NtClose( device->file );
++         free( device->data );
++         free( device );
++     }
++@@ -303,6 +328,12 @@ static void rawinput_update_device_list( BOOL force )
++     enumerate_devices( RIM_TYPEMOUSE, guid_devinterface_mouseW );
++     enumerate_devices( RIM_TYPEKEYBOARD, guid_devinterface_keyboardW );
++     enumerate_devices( RIM_TYPEHID, guid_devinterface_hidW );
+++#ifdef WINE_PS5_USER_DRIVER
+++    add_driver_device( WINE_MOUSE_HANDLE, RIM_TYPEMOUSE,
+++                       "\\\\?\\WINE#MOUSE#0&0&0#{378de44c-56ef-11d1-bc8c-00a0c91405dd}" );
+++    add_driver_device( WINE_KEYBOARD_HANDLE, RIM_TYPEKEYBOARD,
+++                       "\\\\?\\WINE#KEYBOARD#0&0&0#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}" );
+++#endif
++ }
++ 
++ static struct device *find_device_from_handle( HANDLE handle, BOOL refresh )
++@@ -580,7 +611,7 @@ BOOL process_rawinput_message( MSG *msg, UINT hw_id, const struct hardware_msg_d
++             if (msg->wParam == GIDC_REMOVAL)
++             {
++                 list_remove( &device->entry );
++-                NtClose( device->file );
+++                if (device->file) NtClose( device->file );
++                 free( device->data );
++                 free( device );
++             }
+-- 
+2.43.0
+

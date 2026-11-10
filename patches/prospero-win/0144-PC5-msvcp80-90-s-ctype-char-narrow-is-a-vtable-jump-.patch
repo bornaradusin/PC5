@@ -1,0 +1,87 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Tue, 10 Nov 2026 21:12:00 +0000
+Subject: [PATCH 144/144] PC5: msvcp80/90's ctype<char>::narrow is a vtable jump like
+ native (Wine patch 1012)
+
+Leo Lobato's prospero-win fc7f6ba. A program whose imports were rebuilt from addresses can call it as basic_streambuf::sputn; Wine's version left the stack 8 bytes off and the game crashed.
+---
+ ...arrow-a-vtable-tail-call-like-native.patch | 66 +++++++++++++++++++
+ 1 file changed, 66 insertions(+)
+ create mode 100644 wine/patches/1012-msvcp90-make-ctype-char-narrow-a-vtable-tail-call-like-native.patch
+
+diff --git a/wine/patches/1012-msvcp90-make-ctype-char-narrow-a-vtable-tail-call-like-native.patch b/wine/patches/1012-msvcp90-make-ctype-char-narrow-a-vtable-tail-call-like-native.patch
+new file mode 100644
+index 0000000..f0b3592
+--- /dev/null
++++ b/wine/patches/1012-msvcp90-make-ctype-char-narrow-a-vtable-tail-call-like-native.patch
+@@ -0,0 +1,66 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Thu, 5 Nov 2026 17:00:00 +0100
++Subject: [PATCH] msvcp90: Make ctype<char>::narrow() a vtable tail call, like
++ native.
++
++Native msvcp80 and msvcp90 compile narrow(first, last, dflt, dest) to
++"mov eax, [ecx]; jmp [eax + 0x20]": it only forwards to do_narrow().
++basic_streambuf<char>::sputn(ptr, count) compiles to the same bytes, with
++xsputn() in that vtable slot, and the linker keeps one copy for both.
++A program whose import table was rebuilt from addresses can therefore
++import narrow() where its code calls sputn() with two arguments.
++
++Wine's narrow() is a thiscall function that removes four arguments from
++the stack. Called as sputn(), it left the stack 8 bytes off, and the
++caller restored its saved registers from the wrong place: Spider-Man: Web
++of Shadows went on with a garbage register and crashed in its save-slot
++scan. The export is now the same tail call as native, which serves both
++callers.
++---
++diff --git a/dlls/msvcp80/msvcp80.spec b/dlls/msvcp80/msvcp80.spec
++index e0c1beb..70c0b60 100644
++--- a/dlls/msvcp80/msvcp80.spec
+++++ b/dlls/msvcp80/msvcp80.spec
++@@ -6137,7 +6137,7 @@
++ @ thiscall -arch=i386 ?narrow@?$ctype@D@std@@QBEDDD@Z(ptr long long) ctype_char_narrow_ch
++ @ cdecl -arch=win64 ?narrow@?$ctype@D@std@@QEBADDD@Z(ptr long long) ctype_char_narrow_ch
++ @ cdecl -arch=arm ?narrow@?$ctype@D@std@@QBAPBDPBD0DPAD@Z(ptr ptr ptr long ptr) ctype_char_narrow
++-@ thiscall -arch=i386 ?narrow@?$ctype@D@std@@QBEPBDPBD0DPAD@Z(ptr ptr ptr long ptr) ctype_char_narrow
+++@ stdcall -arch=i386 -norelay ?narrow@?$ctype@D@std@@QBEPBDPBD0DPAD@Z() ctype_char_narrow_vtbl
++ @ cdecl -arch=win64 ?narrow@?$ctype@D@std@@QEBAPEBDPEBD0DPEAD@Z(ptr ptr ptr long ptr) ctype_char_narrow
++ @ cdecl -arch=arm ?narrow@?$ctype@G@std@@QBADGD@Z(ptr long long) ctype_wchar_narrow_ch
++ @ thiscall -arch=i386 ?narrow@?$ctype@G@std@@QBEDGD@Z(ptr long long) ctype_wchar_narrow_ch
++diff --git a/dlls/msvcp90/locale.c b/dlls/msvcp90/locale.c
++index 5ff2ad3..b46ab2b 100644
++--- a/dlls/msvcp90/locale.c
+++++ b/dlls/msvcp90/locale.c
++@@ -1804,6 +1804,15 @@ char __thiscall ctype_char_narrow_ch(const ctype_char *this, char ch, char dflt)
++ 
++ /* ?narrow@?$ctype@D@std@@QBEPBDPBD0DPAD@Z */
++ /* ?narrow@?$ctype@D@std@@QEBAPEBDPEBD0DPEAD@Z */
+++#if defined(__i386__) && _MSVCP_VER >= 80 && _MSVCP_VER <= 90
+++/* Native narrow() only jumps to do_narrow() through the vtable. basic_streambuf::sputn()
+++ * compiles to the same code, with xsputn() in that slot, and native shares one copy:
+++ * programs whose imports were rebuilt from addresses call sputn() through this export. */
+++__ASM_STDCALL_FUNC(ctype_char_narrow_vtbl, 0,
+++        "movl (%ecx), %eax\n\t"
+++        "jmp *32(%eax)")
+++#endif
+++
++ DEFINE_THISCALL_WRAPPER(ctype_char_narrow, 20)
++ const char* __thiscall ctype_char_narrow(const ctype_char *this,
++         const char *first, const char *last, char dflt, char *dest)
++diff --git a/dlls/msvcp90/msvcp90.spec b/dlls/msvcp90/msvcp90.spec
++index 9a76733..4f84c02 100644
++--- a/dlls/msvcp90/msvcp90.spec
+++++ b/dlls/msvcp90/msvcp90.spec
++@@ -6169,7 +6169,7 @@
++ @ thiscall -arch=i386 ?narrow@?$ctype@D@std@@QBEDDD@Z(ptr long long) ctype_char_narrow_ch
++ @ cdecl -arch=win64 ?narrow@?$ctype@D@std@@QEBADDD@Z(ptr long long) ctype_char_narrow_ch
++ @ cdecl -arch=arm ?narrow@?$ctype@D@std@@QBAPBDPBD0DPAD@Z(ptr ptr ptr long ptr) ctype_char_narrow
++-@ thiscall -arch=i386 ?narrow@?$ctype@D@std@@QBEPBDPBD0DPAD@Z(ptr ptr ptr long ptr) ctype_char_narrow
+++@ stdcall -arch=i386 -norelay ?narrow@?$ctype@D@std@@QBEPBDPBD0DPAD@Z() ctype_char_narrow_vtbl
++ @ cdecl -arch=win64 ?narrow@?$ctype@D@std@@QEBAPEBDPEBD0DPEAD@Z(ptr ptr ptr long ptr) ctype_char_narrow
++ @ cdecl -arch=arm ?narrow@?$ctype@G@std@@QBADGD@Z(ptr long long) ctype_wchar_narrow_ch
++ @ thiscall -arch=i386 ?narrow@?$ctype@G@std@@QBEDGD@Z(ptr long long) ctype_wchar_narrow_ch
+-- 
+2.43.0
+
