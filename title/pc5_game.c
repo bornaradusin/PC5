@@ -913,8 +913,10 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
     /* 120 Hz output: RADV opens the display at 119.88 Hz where the TV takes it (patches/radv 0004),
      * the title tells Wine (WINE_PS5_REFRESH); "0" keeps it at 60 Hz. */
     setenv("PW_PC5_HIGH_REFRESH", game->settings.high_refresh ? "1" : "0", 1);
-    /* Programs a game starts (Settings › In games): the title starts them for Wine (pc5_children.h). */
-    setenv("PW_PC5_CHILDREN", game->settings.other_programs ? "1" : "0", 1);
+    /* Programs a game starts: off for every game until a started program no longer takes PC5
+     * down with it (2.3.7 on a 9.00 console); its setting is kept but not shown. The title would
+     * start them for Wine (pc5_children.h). */
+    setenv("PW_PC5_CHILDREN", "0", 1);
     /* A game's Windows language is PC5's (Settings › Language): the chosen one's, or with System
      * default the console's, which the title takes itself (PW_PC5_LOCALE empty). A game without
      * the console's language may show its text's names instead (Bastion in Turkish): PC5 set to

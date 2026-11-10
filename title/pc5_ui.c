@@ -164,7 +164,7 @@ static int page_rows(const Pc5Settings *set, int page, int offer_update, Setting
         if (set->triggers == PC5_TRIGGERS_RESISTANCE || set->triggers == PC5_TRIGGERS_BOTH)
             rows[n++] = SR_TRIGGER_RESISTANCE;
         rows[n++] = SR_HIGH_REFRESH;
-        rows[n++] = SR_OTHER_PROGRAMS;
+        /* SR_OTHER_PROGRAMS not shown: Programs a game starts is off until it works (pc5_game.c). */
     } else if (page == PAGE_SYSTEM) {
         rows[n++] = SR_STARTUP_SOUND;
         if (strcmp(set->startup_sound, "off")) rows[n++] = SR_STARTUP_VOLUME;
