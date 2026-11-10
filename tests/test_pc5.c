@@ -9534,6 +9534,27 @@ static void test_steam(void)
     unlink(file);
     /* ColdClientLoader's settings don't count: its loader can't start the game on the console,
      * so the game has only Valve's library (Cooking Simulator). */
+    /* ColdClientLoader's folder with SmartSteamEmu's settings in it too, beside Valve's: still
+     * the loader's, so Valve's is replaced (Dying Light: The Beast). */
+    {
+        char loader[PC5_PATH], sse[PC5_PATH], at[PC5_PATH];
+        pc5_copy(at, sizeof(at), dll);
+        *strrchr(at, '/') = 0;
+        path(loader, sizeof(loader), "%s/ColdClientLoader.ini", at);
+        path(sse, sizeof(sse), "%s/SmartSteamEmu.ini", at);
+        write_text(loader, "[SteamClient]\n");
+        write_text(sse, "[Launcher]\n");
+        path(from, sizeof(from), "%s/prefixes/steamgame/pc5/steam.txt", root_steam);
+        unlink(from);
+        CHECK(pc5_steam_prepare(root_steam, "steamgame", game, program, app, 1, error, sizeof(error)) == 1,
+              "ColdClientLoader's folder, SmartSteamEmu.ini in it too: Valve's replaced: %s", error);
+        /* Valve's back in its place for what follows. */
+        path(file, sizeof(file), "%s.pc5-valve", dll);
+        rename(file, dll);
+        unlink(from);
+        unlink(loader);
+        unlink(sse);
+    }
     path(file, sizeof(file), "%s/ColdClientLoader.ini", game);
     write_text(file, "[SteamClient]\nExe=Game.exe\nAppId=480\n");
     /* ... and the DLC it lists in its own steam_settings are kept for PC5's emulator (Cooking

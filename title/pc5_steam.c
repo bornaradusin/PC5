@@ -328,6 +328,9 @@ static int emulator_marker_in(const char *dir)
                                            "SmartSteamEmu.ini", "SmartSteamEmu", "steam_api64_o.dll",
                                            "steam_api_o.dll", "cream_api.ini", "ALI213.ini", "valve.ini", "CPY.ini" };
     char path[PC5_PATH];
+    /* A folder ColdClientLoader runs from is its loader's, whatever else is in it (Dying Light:
+     * The Beast's has SmartSteamEmu.ini beside it too): none of it runs on the console. */
+    if (!pc5_join(path, sizeof(path), dir, "ColdClientLoader.ini") && pc5_exists(path)) return 0;
     for (size_t i = 0; i < sizeof(markers) / sizeof(markers[0]); i++)
         if (!pc5_join(path, sizeof(path), dir, markers[i]) && pc5_exists(path)) return 1;
     return 0;
