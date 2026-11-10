@@ -167,6 +167,22 @@ else
     echo "test_wine_video: left out, no Wine source at $wine (tools/build.sh sources fetches it)"
 fi
 
+# Wine patch 1008: a video stream without an average frame rate gets FFmpeg's (Resident Evil 2's
+# WMV movies, #454).
+if [[ -f $wine/dlls/winedmo/unix_demuxer.c ]]; then
+    mkdir -p "$out/wine-demuxer/dlls/winedmo"
+    cp "$wine/dlls/winedmo/unix_demuxer.c" "$out/wine-demuxer/dlls/winedmo/unix_demuxer.c"
+    for patch in "$PW"/wine/patches/*.patch; do
+        grep -q '^+++ b/dlls/winedmo/unix_demuxer\.c' "$patch" || continue
+        GIT_CEILING_DIRECTORIES=$out git -C "$out/wine-demuxer" apply --include=dlls/winedmo/unix_demuxer.c "$patch"
+    done
+    grep -q 'fps = stream->r_frame_rate' "$out/wine-demuxer/dlls/winedmo/unix_demuxer.c" ||
+        { echo "test_wine_demuxer: a video's frame rate is 0 when its container gives none (Wine patch 1008, #454)" >&2; exit 1; }
+    echo "test_wine_demuxer: a video without an average frame rate gets FFmpeg's: passed"
+else
+    echo "test_wine_demuxer: left out, no Wine source at $wine (tools/build.sh sources fetches it)"
+fi
+
 # Wine patch 1007: a media sample refuses a null buffer instead of crashing on its reference
 # (Sacred 2 Remastered's videos, #441).
 if [[ -f $wine/dlls/mfplat/sample.c ]]; then

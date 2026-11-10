@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Tue, 10 Nov 2026 19:20:00 +0000
+Subject: [PATCH 140/140] PC5: a video without an average frame rate gets FFmpeg's
+ (Wine patch 1008)
+
+---
+ ...-an-average-frame-rate-gets-ffmpeg-s.patch | 31 +++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+ create mode 100644 wine/patches/1008-winedmo-a-video-without-an-average-frame-rate-gets-ffmpeg-s.patch
+
+diff --git a/wine/patches/1008-winedmo-a-video-without-an-average-frame-rate-gets-ffmpeg-s.patch b/wine/patches/1008-winedmo-a-video-without-an-average-frame-rate-gets-ffmpeg-s.patch
+new file mode 100644
+index 0000000..f22742c
+--- /dev/null
++++ b/wine/patches/1008-winedmo-a-video-without-an-average-frame-rate-gets-ffmpeg-s.patch
+@@ -0,0 +1,31 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Tue, 10 Nov 2026 19:20:00 +0000
++Subject: [PATCH] winedmo: A video without an average frame rate gets FFmpeg's.
++
++An ASF file's video stream has no average frame rate in FFmpeg, so its
++media types said 0 frames a second, where Windows' ASF source gives
++the stream's rate. Resident Evil 2 crashes as its WMV movies start.
++---
++diff --git a/dlls/winedmo/unix_demuxer.c b/dlls/winedmo/unix_demuxer.c
++index fdc4fa4..3dcc501 100644
++--- a/dlls/winedmo/unix_demuxer.c
+++++ b/dlls/winedmo/unix_demuxer.c
++@@ -388,12 +388,15 @@ NTSTATUS demuxer_stream_type( void *arg )
++     struct demuxer *demuxer = get_demuxer( params->demuxer );
++     AVStream *stream = demuxer->ctx->streams[params->stream];
++     AVCodecParameters *par = demuxer->streams[params->stream].filter->par_out;
++-    AVRational sar = stream->sample_aspect_ratio;
+++    AVRational sar = stream->sample_aspect_ratio, fps = stream->avg_frame_rate;
++ 
++     TRACE( "demuxer %p, stream %u, stream %p, index %u\n", demuxer, params->stream, stream, stream->index );
++ 
++     if (!sar.den || !sar.num) sar = stream->codecpar->sample_aspect_ratio;
++-    return media_type_from_codec_params( par, &sar, &stream->avg_frame_rate, 0, &params->media_type );
+++    /* A container that gives no average frame rate (an ASF file's video, Resident Evil 2's
+++     * WMV movies): the rate FFmpeg found in the stream, as Windows' source gives one. */
+++    if (!fps.num || !fps.den) fps = stream->r_frame_rate;
+++    return media_type_from_codec_params( par, &sar, &fps, 0, &params->media_type );
++ }
++ 
++ #endif /* HAVE_FFMPEG */
+-- 
+2.43.0
+
