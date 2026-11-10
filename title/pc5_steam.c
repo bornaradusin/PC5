@@ -25,13 +25,18 @@ static void find_in(const char *dir, const char *relative, int depth, int *visit
         char path[PC5_PATH], rel[PC5_PATH];
         struct stat st;
         if (e->d_name[0] == '.' || !strcasecmp(e->d_name, "steam_settings")) continue;
+        /* The entry's kind from the folder's listing: a stat for each of a game's tens of thousands of
+         * files took seconds on a USB hard drive when its menu first opened. A stat only for a name
+         * that matters, or where the listing doesn't say. */
+        int steam = !strcasecmp(e->d_name, "steam_api.dll") || !strcasecmp(e->d_name, "steam_api64.dll");
+        if (e->d_type != DT_DIR && e->d_type != DT_UNKNOWN && e->d_type != DT_LNK && !steam) continue;
+        if (e->d_type == DT_DIR && depth >= FIND_DEPTH) continue;
         if (pc5_join(path, sizeof(path), dir, e->d_name) ||
             pc5_format(rel, sizeof(rel), "%s%s%s", relative, relative[0] ? "/" : "", e->d_name) || lstat(path, &st))
             continue;
         if (S_ISDIR(st.st_mode)) {
             if (depth < FIND_DEPTH) find_in(path, rel, depth + 1, visited, found, max, count);
-        } else if (S_ISREG(st.st_mode) &&
-                   (!strcasecmp(e->d_name, "steam_api.dll") || !strcasecmp(e->d_name, "steam_api64.dll"))) {
+        } else if (S_ISREG(st.st_mode) && steam) {
             pc5_copy(found[(*count)++], PC5_PATH, rel);
         }
     }
@@ -284,6 +289,20 @@ static int write_settings(const char *dll, const char *valve, const char *game_d
         }
         app_id_from(file, here, sizeof(here));
         if (strtoul(here, NULL, 10) == known) pc5_write_file(note, line, (size_t)n);
+    }
+    /* The DLC the copy lists for its own Steam stand-in (ColdClientLoader keeps its steam_settings
+     * at the top of the game's folder): kept for PC5's emulator, which owns no DLC otherwise. */
+    if (game_dir && strcmp(game_dir, dir)) {
+        static const char *const lists[] = { "configs.app.ini", "DLC.txt" };
+        for (size_t i = 0; i < sizeof(lists) / sizeof(lists[0]); i++) {
+            char theirs[PC5_PATH], ours[PC5_PATH];
+            Pc5Buf data = { 0 };
+            if (!pc5_format(theirs, sizeof(theirs), "%s/steam_settings/%s", game_dir, lists[i]) &&
+                !pc5_join(ours, sizeof(ours), settings, lists[i]) && pc5_is_file(theirs) && !pc5_exists(ours) &&
+                !pc5_read_file(theirs, &data, 1u << 20))
+                (void)pc5_write_file(ours, data.data ? data.data : (const void *)"", data.len);
+            pc5_buf_free(&data);
+        }
     }
     if (write_if_missing(settings, "configs.user.ini", user, sizeof(user) - 1) ||
         write_if_missing(settings, "configs.main.ini", main_ini, sizeof(main_ini) - 1) ||

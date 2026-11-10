@@ -9536,9 +9536,31 @@ static void test_steam(void)
      * so the game has only Valve's library (Cooking Simulator). */
     path(file, sizeof(file), "%s/ColdClientLoader.ini", game);
     write_text(file, "[SteamClient]\nExe=Game.exe\nAppId=480\n");
-    CHECK(pc5_steam_prepare(root_steam, "steamgame", game, program, app, 1, error, sizeof(error)) == 1,
-          "Auto: Valve's replaced, ColdClientLoader's settings beside it or not: %s", error);
+    /* ... and the DLC it lists in its own steam_settings are kept for PC5's emulator (Cooking
+     * Simulator's showed "buy"). */
+    path(from, sizeof(from), "%s/steam_settings", game);
+    mkdir(from, 0755);
+    path(from, sizeof(from), "%s/steam_settings/configs.app.ini", game);
+    write_text(from, "[app::dlcs]\nunlock_all=0\n1001=First DLC\n");
+    {
+        char ours[PC5_PATH], at[PC5_PATH];
+        pc5_copy(at, sizeof(at), dll);
+        *strrchr(at, '/') = 0;
+        path(ours, sizeof(ours), "%s/steam_settings/configs.app.ini", at);
+        unlink(ours);
+        CHECK(pc5_steam_prepare(root_steam, "steamgame", game, program, app, 1, error, sizeof(error)) == 1,
+              "Auto: Valve's replaced, ColdClientLoader's settings beside it or not: %s", error);
+        Pc5Buf dlc = { 0 };
+        CHECK(!pc5_read_file(ours, &dlc, 4096) && !pc5_buf_terminate(&dlc) && strstr((char *)dlc.data, "1001=First DLC"),
+              "the copy's DLC list kept for PC5's emulator");
+        pc5_buf_free(&dlc);
+        unlink(from);
+        path(from, sizeof(from), "%s/steam_settings", game);
+        rmdir(from);
+        unlink(ours);
+    }
     unlink(file);
+    CHECK(pc5_steam_prepare(root_steam, "steamgame", game, program, app, 1, error, sizeof(error)) >= 0, "again: %s", error);
     path(file, sizeof(file), "%s/pc5/steam/steam_api64.dll", app);
     CHECK(same_files(dll, file), "the emulator in its place");
     path(file, sizeof(file), "%s.pc5-valve", dll);
