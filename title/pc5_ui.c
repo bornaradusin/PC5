@@ -827,13 +827,18 @@ static void cover_load(Pc5Ui *ui, int index)
     pc5_image_free(&image);
 }
 
+/* As far from the chosen game as Home's row shows a cover: eight and a bit to its right, and
+ * up to three to its left towards the end, so every cover in view is loaded (#590: the last
+ * two on the right kept PC5's own cover until the choice came near them). */
+enum { COVERS_NEAR = 10 };
+
 /* The covers near the chosen game, two a frame. */
 static int covers_near(Pc5Ui *ui)
 {
     /* One a frame while the chosen one is there, so moving along stays smooth. */
     int loaded = 0, most = ui->library.count && ui->covers[ui->selected].state ? 1 : 2;
 
-    for (int d = 0; d <= 6 && loaded < most; d++)
+    for (int d = 0; d <= COVERS_NEAR && loaded < most; d++)
         for (int side = -1; side <= 1 && loaded < most; side += 2) {
             int i = ui->selected + d * side;
             if (i < 0 || i >= ui->library.count || ui->covers[i].state) continue;
@@ -843,7 +848,7 @@ static int covers_near(Pc5Ui *ui)
         }
     /* Far ones are let go. */
     for (int i = 0; i < ui->library.count; i++)
-        if (ui->covers[i].state && abs(i - ui->selected) > 14) {
+        if (ui->covers[i].state && abs(i - ui->selected) > COVERS_NEAR + 8) {
             pc5_picture_free(&ui->covers[i].picture);
             ui->covers[i].state = 0;
         }
