@@ -321,12 +321,35 @@ static const char *exception_text(unsigned long code)
     return NULL;
 }
 
-/* A path in a Wine trace (L"C:\\Games\\x.dll"): its backslashes single, up to the closing quote. */
+static int hex_digit(char c)
+{
+    return c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 : c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1;
+}
+
+/* A path in a Wine trace (L"C:\\Games\\x.dll"): its backslashes single, a letter Wine wrote as
+ * \c751 (Korean, Chinese) as its UTF-8, up to the closing quote. */
 static void wine_path(const char *from, const char *end, char *out, size_t size)
 {
     size_t n = 0;
     for (const char *p = from; p < end && *p != '"' && n + 1 < size; p++) {
-        if (*p == '\\' && p + 1 < end && p[1] == '\\') p++;
+        if (*p == '\\' && p + 1 < end && p[1] == '\\') {
+            out[n++] = *++p;
+            continue;
+        }
+        if (*p == '\\' && end - p >= 5) {
+            int a = hex_digit(p[1]), b = hex_digit(p[2]), c = hex_digit(p[3]), d = hex_digit(p[4]);
+            unsigned code = a >= 0 && b >= 0 && c >= 0 && d >= 0 ? (unsigned)a << 12 | (unsigned)b << 8 | (unsigned)c << 4 | (unsigned)d : 0;
+            if (code >= 0x80 && (code < 0xd800 || code > 0xdfff)) {
+                if (code < 0x800 && n + 3 < size) {
+                    out[n++] = (char)(0xc0 | code >> 6), out[n++] = (char)(0x80 | (code & 0x3f));
+                } else if (code >= 0x800 && n + 4 < size) {
+                    out[n++] = (char)(0xe0 | code >> 12), out[n++] = (char)(0x80 | ((code >> 6) & 0x3f));
+                    out[n++] = (char)(0x80 | (code & 0x3f));
+                }
+                p += 4;
+                continue;
+            }
+        }
         out[n++] = *p;
     }
     out[n] = 0;

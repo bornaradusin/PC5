@@ -4609,21 +4609,21 @@ static void test_log_notes(void)
         "PW_REPORT/1 build=abc profile=game cycle=2 pid=276 time=1792700000\n"
         "REC seq=1 t=10.000 PW_WINE64 pc5 locale=tr_TR.UTF-8 shader_cache=/data/x\n"
         "REC seq=2 t=10.100 PC5 tile game=game app=/data/homebrew/PPSA11018\n"
-        "REC seq=3 t=10.200 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\Games\\Game\\Game.exe\" at 0000000140000000: native\n"
-        "REC seq=4 t=10.300 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\windows\\system32\\d3d11.dll\" at 00006FFFF0000000: native\n"
-        "REC seq=5 t=10.310 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\windows\\system32\\wined3d.dll\" at 00006FFFE0000000: builtin\n"
-        "REC seq=6 t=10.320 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\Games\\Game\\D3D9.dll\" at 00006FFFD0000000: native\n"
-        "REC seq=7 t=10.330 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\windows\\system32\\d3d11.dll\" at 00006FFFF0000000: native\n"
+        "REC seq=3 t=10.200 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\\\Games\\\\Game\\\\Game.exe\" at 0000000140000000: native\n"
+        "REC seq=4 t=10.300 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\\\windows\\\\system32\\\\d3d11.dll\" at 00006FFFF0000000: native\n"
+        "REC seq=5 t=10.310 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\\\windows\\\\system32\\\\wined3d.dll\" at 00006FFFE0000000: builtin\n"
+        "REC seq=6 t=10.320 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\\\Games\\\\Game\\\\D3D9.dll\" at 00006FFFD0000000: native\n"
+        "REC seq=7 t=10.330 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\\\windows\\\\system32\\\\d3d11.dll\" at 00006FFFF0000000: native\n"
         "REC seq=8 t=10.400 WINE info:  DXVK: 2.6.2\n"
-        "REC seq=9 t=10.500 WINE 0024:err:module:import_dll Library mfc140u.dll (which is needed by L\"C:\\Games\\Game\\Effects.dll\") not found\n"
+        "REC seq=9 t=10.500 WINE 0024:err:module:import_dll Library mfc140u.dll (which is needed by L\"C:\\\\Games\\\\Game\\\\Effects.dll\") not found\n"
         "REC seq=10 t=10.600 WINE 0024:err:environ:run_wineboot failed to start wineboot c00000bb\n"
         "REC seq=11 t=10.700 WINE 0024:err:virtual:map_file_into_view failed\n"
         "REC seq=12 t=10.710 WINE 0030:err:virtual:map_file_into_view failed\n"
-        "REC seq=13 t=10.800 WINE 0024:trace:process:NtCreateUserProcess L\"\\\\??\\\\C:\\\\windows\\\\system32\\\\wineboot.exe\" image L\"C:\\windows\\system32\\wineboot.exe\" cmdline L\"x\"\n"
+        "REC seq=13 t=10.800 WINE 0024:trace:process:NtCreateUserProcess L\"\\\\??\\\\C:\\\\windows\\\\system32\\\\wineboot.exe\" image L\"C:\\\\windows\\\\system32\\\\wineboot.exe\" cmdline L\"x\"\n"
         "REC seq=14 t=10.810 WINE 0024:trace:process:NtCreateUserProcess process creation is not supported on PS5\n"
-        "REC seq=15 t=10.900 WINE 0024:trace:process:NtCreateUserProcess L\"\\\\??\\\\Z:\\\\x\\\\Real.exe\" image L\"Z:\\mnt\\usb0\\Game\\Real.exe\" cmdline L\"x\"\n"
+        "REC seq=15 t=10.900 WINE 0024:trace:process:NtCreateUserProcess L\"\\\\??\\\\Z:\\\\x\\\\Real.exe\" image L\"Z:\\\\mnt\\\\usb0\\\\Game\\\\Real.exe\" cmdline L\"x\"\n"
         "REC seq=16 t=10.910 WINE 0024:trace:process:NtCreateUserProcess process creation is not supported on PS5\n"
-        "REC seq=16 t=10.920 WINE 0024:trace:process:NtCreateUserProcess L\"\\\\??\\\\c:\\\\windows\\\\system32\\\\cmd.exe\" image L\"c:\\windows\\system32\\cmd.exe\" cmdline L\"x\"\n"
+        "REC seq=16 t=10.920 WINE 0024:trace:process:NtCreateUserProcess L\"\\\\??\\\\c:\\\\windows\\\\system32\\\\cmd.exe\" image L\"c:\\\\windows\\\\system32\\\\cmd.exe\" cmdline L\"x\"\n"
         "REC seq=16 t=10.930 WINE 0024:trace:process:NtCreateUserProcess process creation is not supported on PS5\n"
         "REC seq=17 t=11.000 WINESERVER wine-ps5: C:\\Games\\Game\\UnityCrashHandler64.exe is a helper: not handed off\n"
         "REC seq=18 t=11.100 WINE wine-ps5: hand-off to C:\\Games\\Game\\Game2.exe: this program ends and the title starts it\n"
@@ -4670,6 +4670,16 @@ static void test_log_notes(void)
               !strstr(notes, "run_wineboot") && !strstr(notes, "err:module:import_dll"),
           "Wine's unusual errors, the most seen first: %s", notes);
     pc5_buf_free(&out);
+    /* A folder Wine wrote in \xxxx escapes (Korean, Chinese): its name as its letters. */
+    {
+        const char *korean = "REC seq=1 t=1.0 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\\\Games\\\\\\c751\\c11d\\\\nw.dll\" at 0000000076000000: native\n"
+                             "REC seq=2 t=2.0 WINE wine: Unhandled exception 0x80000003 in thread cc at address 0000000076000010 (thread 00cc)\n";
+        pc5_log_notes(korean, strlen(korean), &out);
+        pc5_buf_puts(&out, "");
+        CHECK(out.data && strstr((const char *)out.data, "C:\\Games\\\xec\x9d\x91\xec\x84\x9d\\nw.dll"),
+              "a Korean folder's name as its letters: %s", out.data ? (const char *)out.data : "");
+        pc5_buf_free(&out);
+    }
     /* A page fault at address 0 is a null pointer; a log with nothing to say adds only how it started. */
     const char *fault = "REC seq=1 t=1.0 WINE wine: Unhandled page fault on read access to 0000000000000000 at address 0000000140003C1D\n";
     pc5_log_notes(fault, strlen(fault), &out);
