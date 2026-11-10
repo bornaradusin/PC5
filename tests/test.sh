@@ -183,6 +183,23 @@ else
     echo "test_wine_demuxer: left out, no Wine source at $wine (tools/build.sh sources fetches it)"
 fi
 
+# Wine patch 1009 (Leo Lobato's 0975): a decommitted page beside protected ones is cleared through
+# its whole host page, so VirtualFree doesn't fault inside the system call (NW.js games, #610).
+if [[ -f $wine/dlls/ntdll/unix/virtual.c ]]; then
+    mkdir -p "$out/wine-virtual/dlls/ntdll/unix"
+    cp "$wine/dlls/ntdll/unix/virtual.c" "$out/wine-virtual/dlls/ntdll/unix/virtual.c"
+    for patch in "$PW"/wine/patches/*.patch; do
+        grep -q '^+++ b/dlls/ntdll/unix/virtual\.c' "$patch" || continue
+        GIT_CEILING_DIRECTORIES=$out git -C "$out/wine-virtual" apply --include=dlls/ntdll/unix/virtual.c "$patch"
+    done
+    awk '/^static NTSTATUS clear_committed_pages/,/^}/' "$out/wine-virtual/dlls/ntdll/unix/virtual.c" |
+        grep -q 'host_page = ROUND_ADDR( page, host_page_mask );' ||
+        { echo "test_wine_decommit: a decommitted page beside protected ones isn't opened through its host page (Wine patch 1009, #610)" >&2; exit 1; }
+    echo "test_wine_decommit: a decommitted page beside protected ones is cleared: passed"
+else
+    echo "test_wine_decommit: left out, no Wine source at $wine (tools/build.sh sources fetches it)"
+fi
+
 # Wine patch 1007: a media sample refuses a null buffer instead of crashing on its reference
 # (Sacred 2 Remastered's videos, #441).
 if [[ -f $wine/dlls/mfplat/sample.c ]]; then

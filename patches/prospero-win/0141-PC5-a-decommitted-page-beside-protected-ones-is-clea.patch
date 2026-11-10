@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Tue, 10 Nov 2026 21:00:00 +0000
+Subject: [PATCH 141/141] PC5: a decommitted page beside protected ones is cleared, so
+ NW.js games don't stop at start (Wine patch 1009)
+
+Leo Lobato's prospero-win patch 0975 (1abcbab): clear_committed_pages opens the host page itself, since a protected neighbour keeps it closed and VirtualFree faulted inside the system call. Old Chromium (NW.js) stops when that decommit fails.
+---
+ ...ommitted-pages-beside-protected-ones.patch | 45 +++++++++++++++++++
+ 1 file changed, 45 insertions(+)
+ create mode 100644 wine/patches/1009-ntdll-clear-decommitted-pages-beside-protected-ones.patch
+
+diff --git a/wine/patches/1009-ntdll-clear-decommitted-pages-beside-protected-ones.patch b/wine/patches/1009-ntdll-clear-decommitted-pages-beside-protected-ones.patch
+new file mode 100644
+index 0000000..7ac7848
+--- /dev/null
++++ b/wine/patches/1009-ntdll-clear-decommitted-pages-beside-protected-ones.patch
+@@ -0,0 +1,45 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Tue, 3 Nov 2026 13:30:00 +0100
++Subject: [PATCH] ntdll: Clear decommitted pages beside protected ones.
++
++Decommitting a page in a host page that keeps other committed pages clears
++it, with the page made writable for the moment. Since host pages lose access
++for the sake of a protected page in them, asking for one page no longer opens
++the host page. The clear then faulted inside the system call when the page
++was protected itself, because no step over a neighbour's protection applies,
++and VirtualFree failed with an access violation. An old Chromium (OMORI's
++NW.js) decommits so in its allocator and stops the program when that fails.
++
++Open the host page itself for the clear. decommit_pages already gives it the
++protection its remaining pages need afterwards.
++
++ dlls/ntdll/unix/virtual.c | 9 +++++++--
++ 1 file changed, 7 insertions(+), 2 deletions(-)
++
++diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
++index 843fb1e..4590686 100644
++--- a/dlls/ntdll/unix/virtual.c
+++++ b/dlls/ntdll/unix/virtual.c
++@@ -2958,12 +2958,17 @@ static SIZE_T get_committed_size( struct file_view *view, void *base, size_t max
++  */
++ static NTSTATUS clear_committed_pages( char *start, char *end )
++ {
++-    char *page;
+++    char *page, *host_page;
++ 
++     for (page = start; page < end; page += page_size)
++     {
++         if (!(get_page_vprot( page ) & VPROT_COMMITTED)) continue;
++-        if (mprotect_range( page, page_size, VPROT_READ | VPROT_WRITE, VPROT_GUARD | VPROT_WRITEWATCH ))
+++        /* A protected page beside this one keeps the host page closed whatever this page
+++         * asks for (get_host_page_unix_prot), so open the host page itself. The caller
+++         * gives it the protection its remaining pages need. */
+++        host_page = ROUND_ADDR( page, host_page_mask );
+++        if (mprotect_exec( host_page, host_page_size,
+++                           get_unix_prot( get_host_page_vprot( host_page ) ) | PROT_READ | PROT_WRITE ))
++             return STATUS_ACCESS_DENIED;
++         memset( page, 0, page_size );
++     }
++-- 
++2.43.0
+-- 
+2.43.0
+

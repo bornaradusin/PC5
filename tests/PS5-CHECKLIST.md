@@ -575,6 +575,7 @@ controller's speaker.
 | 333 | Settings › In games › Programs a game starts On, a game built on a web browser (Fear & Hunger, NW.js) or one that runs a setup (#534) | its helper programs start | no `no hand-over socket (Operation not supported)`; `PC5 programs: hand-over sockets in ...` when /data refused one |
 | 334 | Resident Evil 2 (2019), past the gas station to the title movie (#454) | the movie plays, no crash | its WMV movie's media types have a frame rate (`MF_MT_FRAME_RATE` not 1) |
 | 335 | A Steam copy with ColdClientLoader's folder and SmartSteamEmu.ini in it (Dying Light: The Beast, #597) | it starts, no "Steam client application is required" | about.txt: `PC5's Steam emulator, Valve's kept beside it` for that folder's library |
+| 336 | Summer Memories (NW.js), or OMORI, from start to its title (#610) | it reaches the title, no "Check failed: SetSystemPagesAccess" | no `syscall fault 0xc0000005` in the log |
 
 ## Custom media navigation changes (pending on PS5)
 
