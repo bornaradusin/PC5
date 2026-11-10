@@ -80,7 +80,6 @@ STORE = "needs store app"   # "needs steam" before 2.0.3: the label was renamed,
 STORE_ABOUT = "This copy needs its store's app (Steam, Xbox app, EA app...) running: another copy may run"
 ANTI_CHEAT = "🛡️ Anti-cheat: can't run"   # an issue labelled CHEAT_LABEL: the game itself, any copy
 CHEAT_LABEL = "anti-cheat"
-SUMMARY_LABEL = "summary"   # the weekly summary's issue (weekly_summary.py): about no game, never listed
 CHEAT_ABOUT = "Runs anti-cheat (Easy Anti-Cheat, BattlEye...), which needs Windows' kernel: no copy runs"   # 100 at most
 CHEATED = "<!-- pc5-compatibility: anti-cheat -->"   # its comment when it closes such an issue
 STORED = "<!-- pc5-compatibility: needs steam -->"   # its comment when it closes such an issue (unchanged: it marks the old ones too)
@@ -396,7 +395,7 @@ def issue_reports(owner: str, name: str, named: dict) -> list:
             issue = {"number": node["number"], "title": node["title"], "body": body,
                      "labels": [label["name"].casefold() for label in node["labels"]["nodes"]]}
             fields = answers(body)
-            if node["stateReason"] == "DUPLICATE" or SUMMARY_LABEL in issue["labels"]:
+            if node["stateReason"] == "DUPLICATE":
                 continue
             if CHEAT_LABEL in issue["labels"]:
                 shown = ANTI_CHEAT
