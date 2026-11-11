@@ -4700,6 +4700,7 @@ static void test_logs(void)
         "REC seq=2 t=100.100 PW_WINE64 profile id=gtaiv prefix=/data/prospero-win/prefixes/gtaiv desktop=1920x1080\n"
         "REC seq=3 t=100.200 PW_WINE64 ntdll=/app0/ntdll.prx prefix=/data/prospero-win/prefixes/gtaiv exe=C:\\Games\\GTA IV\\GTAIV.exe\n"
         "REC seq=4 t=100.300 PC5 system firmware=12.40 data_free=200GB\n"
+        "REC seq=5 t=100.350 PW_WINE64 arguments words=2 line=-dx11 -nointro\n"
         "REC seq=5 t=100.400 WINE wine: Unhandled page fault on read access to 0000002C at address 7985D308 (thread 0024), starting debugger...\n"
         "REC seq=6 t=130.500 PW_WINE64 session_end reason=wine-exit\n";
     const char *played =
@@ -4731,6 +4732,7 @@ static void test_logs(void)
     CHECK(!strcmp(issue.prefix, "/data/prospero-win/prefixes/gtaiv") && !strcmp(issue.exe, "C:\\Games\\GTA IV\\GTAIV.exe") &&
           !strcmp(issue.firmware, "12.40") && issue.closed && issue.ended == 35,
           "where it ran: %s %s %s %d %lld", issue.prefix, issue.exe, issue.firmware, issue.closed, (long long)issue.ended);
+    CHECK(!strcmp(issue.arguments, "-dx11 -nointro"), "its launch options: %s", issue.arguments);
     CHECK(CLASSIFY("grim", handed) == PC5_LOG_GAME_CRASHED && !issue.closed, "a crash the game's own handler took");
     CHECK(CLASSIFY("launcher", crash) == PC5_LOG_FINE, "PC5's own session isn't a game's");
     CHECK(CLASSIFY("blur", played) == PC5_LOG_FINE, "a game played");
@@ -4928,6 +4930,7 @@ static void test_logs(void)
                   strstr(about, "\nSteam, as PC5 saw it when the game started:\n"
                                 "  App ID the emulator has: none (no steam_appid.txt in the game's folder)\n"),
               "about.txt says what PC5 saw of Steam: %s", about);
+        CHECK(strstr(about, "\nLaunch options: "), "and the launch options it was given: %s", about);
         CHECK(strstr(about, "\nWhat the log shows:\n") && strstr(about, "  Its crash was a page fault near address 0: a null pointer.\n"),
               "and what its log shows: %s", about);
         CHECK(strstr(about, "Player.log (") && strstr(about, ", its first 256 KB and last 1.75 MB)\n"), "a big log's start and end: %s", about);

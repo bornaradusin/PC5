@@ -46,6 +46,7 @@ typedef struct Pc5LogIssue {
     int closed;               /* it has its end line (it didn't stop half-way) */
     char prefix[PC5_PATH];    /* the game's Wine prefix, as its log names it, or "" */
     char exe[PC5_PATH];       /* the program Wine ran (C:\Games\...), or "" */
+    char arguments[512];      /* the launch options it was given (launch.txt or PC5's own), or "" */
     char firmware[32];        /* the console's, as the log names it, or "" */
     int files;                /* the game's own files kept with the log */
     Pc5LogCause cause;

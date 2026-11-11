@@ -161,6 +161,10 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
             word(found, end, issue->prefix, sizeof(issue->prefix));
         if (!issue->exe[0] && after(line, end, "PW_WINE64 ntdll=") && (found = after(line, end, " exe=")))
             line_text(found, end, issue->exe, sizeof(issue->exe));
+        /* The launch options, so a report shows whether launch.txt was read (#574: -dx11 asked for,
+         * but the file wasn't beside the program PC5 starts). */
+        if (!issue->arguments[0] && after(line, end, "PW_WINE64 arguments words=") && (found = after(line, end, " line=")))
+            line_text(found, end, issue->arguments, sizeof(issue->arguments));
         if (!issue->firmware[0] && after(line, end, "PC5 system ") && (found = after(line, end, " firmware=")))
             word(found, end, issue->firmware, sizeof(issue->firmware));
         line = end + 1;
@@ -902,6 +906,8 @@ static void about_page(Pc5Buf *about, const Pc5LogIssue *issue, const char *when
     if (!strcmp(issue->profile, "launcher")) pc5_buf_printf(about, "PC5's own session, begun %s.\n", when);
     else pc5_buf_printf(about, "The game %s, begun %s (the console's clock).\n", issue->profile, when);
     if (issue->exe[0]) pc5_buf_printf(about, "Program: %s\n", issue->exe);
+    if (issue->exe[0])
+        pc5_buf_printf(about, "Launch options: %s\n", issue->arguments[0] ? issue->arguments : "none (no launch.txt beside the program)");
     if (issue->firmware[0]) pc5_buf_printf(about, "Console firmware: %s\n", issue->firmware);
     pc5_buf_printf(about, "What PC5 saw: %s%s%s\n", pc5_log_problem_text(issue->problem), issue->detail[0] ? ": " : "",
                    issue->detail);
