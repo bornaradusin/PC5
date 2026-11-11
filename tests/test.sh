@@ -222,6 +222,22 @@ else
     echo "test_wine_leo: left out, no Wine source at $wine (tools/build.sh sources fetches it)"
 fi
 
+# Wine patch 1013: an ASF (WMV) video keeps the frame rate its file states, or FFmpeg's guess
+# while it is a real one, instead of 0/1 (Resident Evil 2 crashed reading it at its films, #454).
+if [[ -f $wine/dlls/winegstreamer/main.c ]]; then
+    mkdir -p "$out/wine-gst/dlls/winegstreamer"
+    for patch in "$PW"/wine/patches/*.patch; do
+        grep -q '^+++ b/dlls/winegstreamer/ffmpeg_parser\.c' "$patch" || continue
+        GIT_CEILING_DIRECTORIES=$out git -C "$out/wine-gst" apply --include=dlls/winegstreamer/ffmpeg_parser.c "$patch"
+    done
+    awk '/^static struct wg_parser_stream \*create_stream/,/^}/' "$out/wine-gst/dlls/winegstreamer/ffmpeg_parser.c" |
+        grep -q 'av_q2d(fps) <= 240.0' ||
+        { echo "test_wine_asf_rate: an ASF video's frame rate is still 0/1 (Wine patch 1013, #454)" >&2; exit 1; }
+    echo "test_wine_asf_rate: an ASF video keeps its frame rate: passed"
+else
+    echo "test_wine_asf_rate: left out, no Wine source at $wine (tools/build.sh sources fetches it)"
+fi
+
 # Wine patch 1007: a media sample refuses a null buffer instead of crashing on its reference
 # (Sacred 2 Remastered's videos, #441).
 if [[ -f $wine/dlls/mfplat/sample.c ]]; then

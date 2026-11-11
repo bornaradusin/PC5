@@ -581,6 +581,7 @@ controller's speaker.
 | 339 | A 32-bit game that writes numbers with old instructions (Fallout 1 or 2, Watcom-built) | it starts, no illegal-instruction stop | no `illegal instruction` for AAM/AAD/DAA in the log |
 | 340 | A 32-bit game with a movie player that rewrites its own code (an old FMV game), a movie played through | the movie plays smoothly, the game stays responsive after it | the translator's cache report shows `retired_flushes` above 0 if it hit the limit |
 | 341 | Any 32-bit game, start to menu and back (regression check for 337-340) | nothing changed from 2.3.8 | no new errors in the log |
+| 342 | Resident Evil 2 (non-RT), without DisableGstByteStreamHandler in user.reg: the RE logo and the first film (#454) | the films play, the game doesn't close at the logo | `MF_MT_FRAME_RATE` of the WMV stream isn't 1 (0/1) in a log with `+mfplat` |
 
 ## Custom media navigation changes (pending on PS5)
 

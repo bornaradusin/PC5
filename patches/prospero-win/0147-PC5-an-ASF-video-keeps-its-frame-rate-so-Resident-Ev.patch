@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Wed, 11 Nov 2026 09:00:00 +0000
+Subject: [PATCH 147/147] PC5: an ASF video keeps its frame rate, so Resident Evil 2's
+ films play (Wine patch 1013)
+
+PC5's FFmpeg parser gave every ASF stream a frame rate of 0/1, as GStreamer's did; native's gives one, and Resident Evil 2 crashed reading it at its first film. The file's own rate is kept, or FFmpeg's guess while it is a real frame rate.
+---
+ ...keeps-the-frame-rate-its-file-states.patch | 31 +++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+ create mode 100644 wine/patches/1013-winegstreamer-an-asf-video-keeps-the-frame-rate-its-file-states.patch
+
+diff --git a/wine/patches/1013-winegstreamer-an-asf-video-keeps-the-frame-rate-its-file-states.patch b/wine/patches/1013-winegstreamer-an-asf-video-keeps-the-frame-rate-its-file-states.patch
+new file mode 100644
+index 0000000..1cbcd71
+--- /dev/null
++++ b/wine/patches/1013-winegstreamer-an-asf-video-keeps-the-frame-rate-its-file-states.patch
+@@ -0,0 +1,31 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Wed, 11 Nov 2026 09:00:00 +0000
++Subject: [PATCH] winegstreamer: An ASF video keeps the frame rate its file
++ states, or FFmpeg's guess when it is one.
++
++Native's ASF source gives a WMV stream a frame rate; this one gave every ASF stream 0/1, and Resident Evil 2 crashes reading the frame rate of its films (its cutscenes played once the WMV went to winedmo with DisableGstByteStreamHandler). FFmpeg's average comes from the file's extended stream properties; without it, its guess is kept up to 240 frames a second, so the millisecond clock's 1000 is still none.
++---
++ dlls/winegstreamer/ffmpeg_parser.c | 9 +++++++--
++ 1 file changed, 7 insertions(+), 2 deletions(-)
++
++diff --git a/dlls/winegstreamer/ffmpeg_parser.c b/dlls/winegstreamer/ffmpeg_parser.c
++index ec3506f..b39d495 100644
++--- a/dlls/winegstreamer/ffmpeg_parser.c
+++++ b/dlls/winegstreamer/ffmpeg_parser.c
++@@ -340,8 +340,13 @@ static struct wg_parser_stream *create_stream(struct wg_parser *parser, AVStream
++     stream->skip_until = INT64_MIN;
++ 
++     fps = av->avg_frame_rate.num > 0 && av->avg_frame_rate.den > 0 ? av->avg_frame_rate : av->r_frame_rate;
++-    /* An ASF file states no frame rate; FFmpeg's is a guess. */
++-    if (!strcmp(parser->format->iformat->name, "asf"))
+++    /* An ASF file states its frame rate only in its extended stream properties (FFmpeg's
+++     * average); without them FFmpeg's guess is kept while it is a frame rate a video has, as
+++     * native's ASF source gives one: Resident Evil 2 reads the rate of its WMV films and
+++     * crashes on 0/1. A guess from the file's millisecond clock (1000) is still none. */
+++    if (!strcmp(parser->format->iformat->name, "asf")
+++            && !(av->avg_frame_rate.num > 0 && av->avg_frame_rate.den > 0)
+++            && !(fps.num > 0 && fps.den > 0 && av_q2d(fps) <= 240.0))
++         fps = (AVRational){0, 1};
++     stream->has_codec_format = !is_raw_codec(par->codec_id) && wg_format_from_codec(&stream->codec_format, par, fps);
++ 
+-- 
+2.43.0
+
