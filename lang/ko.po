@@ -341,8 +341,8 @@ msgid "PC5 ran out of memory planning the work."
 msgstr "작업을 준비하는 중에 메모리가 부족해졌습니다."
 
 #: title/pc5_files.c:385 title/pc5_files.c:406 title/pc5_files.c:419
-#: title/pc5_library.c:2834 title/pc5_library.c:3088 title/pc5_library.c:3098
-#: title/pc5_library.c:3111
+#: title/pc5_library.c:2857 title/pc5_library.c:3111 title/pc5_library.c:3121
+#: title/pc5_library.c:3134
 #, c-format
 msgid "PC5 can't write %s: %s."
 msgstr "%s에 쓸 수 없습니다: %s."
@@ -352,7 +352,7 @@ msgstr "%s에 쓸 수 없습니다: %s."
 msgid "PC5 ran out of memory copying %s."
 msgstr "%s을(를) 복사하는 중에 메모리가 부족해졌습니다."
 
-#: title/pc5_files.c:427 title/pc5_library.c:1947
+#: title/pc5_files.c:427 title/pc5_library.c:1970
 #, c-format
 msgid "PC5 can't put %s in place: %s."
 msgstr "%s을(를) 제자리에 놓을 수 없습니다: %s."
@@ -444,7 +444,7 @@ msgid ""
 "Plug in the USB drive with %.100s: it plays from the folder %.200s on it."
 msgstr "%.100s이(가) 있는 USB 드라이브를 연결하세요. 드라이브의 %.200s 폴더에서 플레이합니다."
 
-#: title/pc5_library.c:175 title/pc5_library.c:3626 title/pc5_library.c:3677
+#: title/pc5_library.c:175 title/pc5_library.c:3649 title/pc5_library.c:3700
 #, c-format
 msgid "PC5 can't make the game's folder: %s."
 msgstr "게임 폴더를 만들 수 없습니다: %s."
@@ -454,194 +454,194 @@ msgstr "게임 폴더를 만들 수 없습니다: %s."
 msgid "PC5 can't link the game's folder on the USB drive: %s."
 msgstr "USB 드라이브의 게임 폴더를 연결할 수 없습니다: %s."
 
-#: title/pc5_library.c:600 title/pc5_library.c:617
+#: title/pc5_library.c:623 title/pc5_library.c:640
 msgid "Choose one of the game's programs."
 msgstr "게임 프로그램 중 하나를 선택하세요."
 
-#: title/pc5_library.c:613 title/pc5_library.c:828 title/pc5_library.c:1060
+#: title/pc5_library.c:636 title/pc5_library.c:851 title/pc5_library.c:1083
 msgid "PC5's notes on this game are missing."
 msgstr "이 게임에 대한 PC5의 기록이 없습니다."
 
-#: title/pc5_library.c:625
+#: title/pc5_library.c:648
 msgid "That program is too deep in the game's folder for Windows."
 msgstr "그 프로그램은 게임 폴더 안에 너무 깊이 있어서 Windows에서 쓸 수 없습니다."
 
-#: title/pc5_library.c:630 title/pc5_library.c:1964 title/pc5_library.c:3275
-#: title/pc5_library.c:3278 title/pc5_library.c:3287 title/pc5_library.c:3361
-#: title/pc5_library.c:3513 title/pc5_library.c:3639
+#: title/pc5_library.c:653 title/pc5_library.c:1987 title/pc5_library.c:3298
+#: title/pc5_library.c:3301 title/pc5_library.c:3310 title/pc5_library.c:3384
+#: title/pc5_library.c:3536 title/pc5_library.c:3662
 #, c-format
 msgid "PC5 can't write its notes: %s."
 msgstr "기록을 쓸 수 없습니다: %s."
 
-#: title/pc5_library.c:651
+#: title/pc5_library.c:674
 msgid "PC5 is out of memory."
 msgstr "메모리가 부족합니다."
 
-#: title/pc5_library.c:655
+#: title/pc5_library.c:678
 #, c-format
 msgid "%.200s doesn't start any of the game's programs."
 msgstr "%.200s은(는) 게임 프로그램을 하나도 시작하지 않습니다."
 
-#: title/pc5_library.c:927
+#: title/pc5_library.c:950
 msgid "The game's launch options are too long: 511 characters at most."
 msgstr "게임 실행 옵션이 너무 깁니다. 최대 511자입니다."
 
-#: title/pc5_library.c:944
+#: title/pc5_library.c:967
 msgid "The game's path is too long for Windows."
 msgstr "게임 경로가 Windows에서 쓰기에 너무 깁니다."
 
-#: title/pc5_library.c:960 title/pc5_library.c:1139
+#: title/pc5_library.c:983 title/pc5_library.c:1162
 #, c-format
 msgid "PC5 can't write the game's profile: %s."
 msgstr "게임 프로필을 쓸 수 없습니다: %s."
 
-#: title/pc5_library.c:1085
+#: title/pc5_library.c:1108
 #, c-format
 msgid "The program its launcher started isn't one of the game's: %.200s"
 msgstr "런처가 시작한 프로그램이 이 게임의 것이 아닙니다: %.200s"
 
-#: title/pc5_library.c:1099
+#: title/pc5_library.c:1122
 msgid "The arguments its launcher gave are too long."
 msgstr "런처가 넘긴 인수가 너무 깁니다."
 
-#: title/pc5_library.c:1121
+#: title/pc5_library.c:1144
 #, c-format
 msgid "Its programs kept starting each other: %d hand-offs in a row."
 msgstr "프로그램들이 서로를 계속 시작했습니다: %d번 연속."
 
-#: title/pc5_library.c:1135
+#: title/pc5_library.c:1158
 msgid "The program's path is too long for Windows."
 msgstr "프로그램 경로가 Windows에서 쓰기에 너무 깁니다."
 
-#: title/pc5_library.c:1197
+#: title/pc5_library.c:1220
 #, c-format
 msgid "Its profile has a mistake (%s)."
 msgstr "프로필에 오류가 있습니다(%s)."
 
-#: title/pc5_library.c:1214
+#: title/pc5_library.c:1237
 msgid "Its Windows folder is missing."
 msgstr "Windows 폴더가 없습니다."
 
-#: title/pc5_library.c:1218
+#: title/pc5_library.c:1241
 msgid "Resetting its Windows isn't finished: close PC5 and open it again."
 msgstr ""
 
-#: title/pc5_library.c:1360
+#: title/pc5_library.c:1383
 #, c-format
 msgid "PC5 can't delete %s: %s."
 msgstr "%s을(를) 삭제할 수 없습니다: %s."
 
-#: title/pc5_library.c:1459 title/pc5_library.c:1734 title/pc5_library.c:1789
-#: title/pc5_library.c:2260
+#: title/pc5_library.c:1482 title/pc5_library.c:1757 title/pc5_library.c:1812
+#: title/pc5_library.c:2283
 #, c-format
 msgid "PC5 can't move the game's folder: %s."
 msgstr "게임 폴더를 이동할 수 없습니다: %s."
 
-#: title/pc5_library.c:1468 title/pc5_library.c:1739
+#: title/pc5_library.c:1491 title/pc5_library.c:1762
 #, c-format
 msgid "PC5 can't delete the game's profile: %s."
 msgstr "게임 프로필을 삭제할 수 없습니다: %s."
 
-#: title/pc5_library.c:1482 title/pc5_library.c:1726 title/pc5_library.c:2181
-#: title/pc5_library.c:2207 title/pc5_library.c:2216 title/pc5_library.c:2256
-#: title/pc5_library.c:3426 title/pc5_library.c:3434 title/pc5_library.c:3480
-#: title/pc5_library.c:3516
+#: title/pc5_library.c:1505 title/pc5_library.c:1749 title/pc5_library.c:2204
+#: title/pc5_library.c:2230 title/pc5_library.c:2239 title/pc5_library.c:2279
+#: title/pc5_library.c:3449 title/pc5_library.c:3457 title/pc5_library.c:3503
+#: title/pc5_library.c:3539
 msgid "A path is too long."
 msgstr "경로가 너무 깁니다."
 
-#: title/pc5_library.c:1685
+#: title/pc5_library.c:1708
 msgid "PC5 can't read the game's folder."
 msgstr "게임 폴더를 읽을 수 없습니다."
 
-#: title/pc5_library.c:1693 title/pc5_library.c:1944 title/pc5_library.c:3024
+#: title/pc5_library.c:1716 title/pc5_library.c:1967 title/pc5_library.c:3047
 #, c-format
 msgid "A path in the game is too long: %s."
 msgstr "게임 안의 경로가 너무 깁니다: %s."
 
-#: title/pc5_library.c:1702
+#: title/pc5_library.c:1725
 #, c-format
 msgid "PC5 can't keep %s: %s."
 msgstr "%s을(를) 보관할 수 없습니다: %s."
 
-#: title/pc5_library.c:1758
+#: title/pc5_library.c:1781
 #, c-format
 msgid "PC5 can't put the saves in place: %s."
 msgstr "저장 데이터를 제자리에 놓을 수 없습니다: %s."
 
-#: title/pc5_library.c:1772
+#: title/pc5_library.c:1795
 msgid "This game's saves can't be kept apart from it."
 msgstr "이 게임의 저장 데이터는 게임과 따로 보관할 수 없습니다."
 
-#: title/pc5_library.c:1778
+#: title/pc5_library.c:1801
 #, c-format
 msgid "PC5 can't make its saves folder: %s."
 msgstr "저장 데이터 폴더를 만들 수 없습니다: %s."
 
-#: title/pc5_library.c:1782
+#: title/pc5_library.c:1805
 msgid "PC5 is still keeping this game's saves from before: start PC5 again."
 msgstr "이 게임의 이전 저장 데이터를 아직 보관하는 중입니다. PC5를 다시 시작하세요."
 
-#: title/pc5_library.c:1815
+#: title/pc5_library.c:1838
 #, c-format
 msgid "PC5 can't move the saves: %s."
 msgstr "저장 데이터를 이동할 수 없습니다: %s."
 
-#: title/pc5_library.c:1902
+#: title/pc5_library.c:1925
 #, c-format
 msgid "A path in the update is too long: %s."
 msgstr "업데이트 안의 경로가 너무 깁니다: %s."
 
-#: title/pc5_library.c:1984
+#: title/pc5_library.c:2007
 #, c-format
 msgid "PC5 can't write the game's list of files: %s."
 msgstr "게임 파일 목록을 쓸 수 없습니다: %s."
 
-#: title/pc5_library.c:2050 title/pc5_library.c:2081 title/pc5_library.c:2131
-#: title/pc5_library.c:2139 title/pc5_library.c:2170 title/pc5_library.c:2190
-#: title/pc5_library.c:2787 title/pc5_library.c:2861 title/pc5_library.c:2897
-#: title/pc5_library.c:3174 title/pc5_library.c:3442 title/pc5_library.c:3496
+#: title/pc5_library.c:2073 title/pc5_library.c:2104 title/pc5_library.c:2154
+#: title/pc5_library.c:2162 title/pc5_library.c:2193 title/pc5_library.c:2213
+#: title/pc5_library.c:2810 title/pc5_library.c:2884 title/pc5_library.c:2920
+#: title/pc5_library.c:3197 title/pc5_library.c:3465 title/pc5_library.c:3519
 msgid "Out of memory."
 msgstr "메모리가 부족합니다."
 
-#: title/pc5_library.c:2109 title/pc5_library.c:2146
+#: title/pc5_library.c:2132 title/pc5_library.c:2169
 #, c-format
 msgid "PC5 can't move %.150s into the new Windows: %s."
 msgstr ""
 
-#: title/pc5_library.c:2226 title/pc5_library.c:2232 title/pc5_library.c:2238
+#: title/pc5_library.c:2249 title/pc5_library.c:2255 title/pc5_library.c:2261
 #, c-format
 msgid "PC5 can't keep the old registry: %s."
 msgstr ""
 
-#: title/pc5_library.c:2264 title/pc5_library.c:3298
+#: title/pc5_library.c:2287 title/pc5_library.c:3321
 #, c-format
 msgid "PC5 can't put the game in place: %s."
 msgstr "게임을 제자리에 놓을 수 없습니다: %s."
 
-#: title/pc5_library.c:2603
+#: title/pc5_library.c:2626
 msgid ""
 "PC5's Windows template is missing from the app: copy the PC5 folder again."
 msgstr "앱에 PC5의 Windows 템플릿이 없습니다. PC5 폴더를 다시 복사하세요."
 
-#: title/pc5_library.c:2627
+#: title/pc5_library.c:2650
 msgid "PC5's Windows template is damaged: copy the PC5 folder again."
 msgstr "PC5의 Windows 템플릿이 손상되었습니다. PC5 폴더를 다시 복사하세요."
 
-#: title/pc5_library.c:2709 title/pc5_library.c:2769
+#: title/pc5_library.c:2732 title/pc5_library.c:2792
 #, c-format
 msgid "PC5 can't make its folders in %s: %s."
 msgstr "%s에 폴더를 만들 수 없습니다: %s."
 
-#: title/pc5_library.c:2720
+#: title/pc5_library.c:2743
 #, c-format
 msgid "PC5 can't make its folder on the USB drive: %s."
 msgstr "USB 드라이브에 폴더를 만들 수 없습니다: %s."
 
-#: title/pc5_library.c:2723
+#: title/pc5_library.c:2746
 msgid "PC5 can't name the game's folder on the USB drive."
 msgstr "USB 드라이브의 게임 폴더 이름을 정할 수 없습니다."
 
-#: title/pc5_library.c:2741
+#: title/pc5_library.c:2764
 #, c-format
 msgid ""
 "The drive reads at %.0f MB/s here, too slow to play from (%.0f needed). "
@@ -651,22 +651,22 @@ msgstr ""
 "이 포트에서 드라이브 읽기 속도가 %.0f MB/s로, 여기서 플레이하기에는 너무 느립니다(%.0f 필요). 뒷면 포트나 앞면 "
 "USB-C 포트에 연결하세요. 본체에 설치하는 것은 그대로 할 수 있습니다."
 
-#: title/pc5_library.c:2749
+#: title/pc5_library.c:2772
 #, c-format
 msgid ""
 "Not enough space on the USB drive: the game needs %s and it has %s free."
 msgstr "USB 드라이브 공간이 부족합니다. 게임에 필요한 공간: %s, 여유 공간: %s."
 
-#: title/pc5_library.c:2753
+#: title/pc5_library.c:2776
 msgid ""
 "Only a game on a USB drive can play from it: this folder isn't on one."
 msgstr "USB 드라이브에서 플레이할 수 있는 것은 USB 드라이브에 있는 게임뿐입니다. 이 폴더는 USB 드라이브에 없습니다."
 
-#: title/pc5_library.c:2755
+#: title/pc5_library.c:2778
 msgid "A game in PC5's INSTALL folder is installed, not played from there."
 msgstr "PC5의 INSTALL 폴더에 있는 게임은 거기서 플레이하지 않고 설치합니다."
 
-#: title/pc5_library.c:2760
+#: title/pc5_library.c:2783
 #, c-format
 msgid ""
 "The drive reads at %.0f MB/s in this USB port, too slow to play from (at "
@@ -678,65 +678,65 @@ msgstr ""
 "PS5에서는 앞면 USB-A 포트가 느린 포트입니다. 뒷면 포트나 앞면 USB-C 포트에 드라이브를 연결하세요. 설치는 이 포트에서도 "
 "할 수 있습니다."
 
-#: title/pc5_library.c:2766
+#: title/pc5_library.c:2789
 msgid "The game's program is too deep in its folder for Windows."
 msgstr "게임 프로그램이 폴더 안에 너무 깊이 있어서 Windows에서 쓸 수 없습니다."
 
-#: title/pc5_library.c:2774
+#: title/pc5_library.c:2797
 #, c-format
 msgid "Not enough space: the game needs %s and the console has %s free."
 msgstr "공간이 부족합니다. 게임에 필요한 공간: %s, 본체 여유 공간: %s."
 
-#: title/pc5_library.c:2777
+#: title/pc5_library.c:2800
 msgid "PC5 can't name the game."
 msgstr "게임 이름을 정할 수 없습니다."
 
-#: title/pc5_library.c:2780 title/pc5_library.c:3190
+#: title/pc5_library.c:2803 title/pc5_library.c:3213
 #, c-format
 msgid "PC5 can't start the install: %s."
 msgstr "설치를 시작할 수 없습니다: %s."
 
-#: title/pc5_library.c:2820
+#: title/pc5_library.c:2843
 msgid "A path in the Windows template is too long."
 msgstr "Windows 템플릿 안의 경로가 너무 깁니다."
 
-#: title/pc5_library.c:2823 title/pc5_library.c:2828 title/pc5_library.c:3032
+#: title/pc5_library.c:2846 title/pc5_library.c:2851 title/pc5_library.c:3055
 #: title/pc5_tile.c:522
 #, c-format
 msgid "PC5 can't make %s: %s."
 msgstr "%s을(를) 만들 수 없습니다: %s."
 
-#: title/pc5_library.c:2831
+#: title/pc5_library.c:2854
 #, c-format
 msgid "PC5's Windows template is missing %s."
 msgstr "PC5의 Windows 템플릿에 %s이(가) 없습니다."
 
-#: title/pc5_library.c:2850
+#: title/pc5_library.c:2873
 #, c-format
 msgid "PC5 can't copy %s: %s."
 msgstr "%s을(를) 복사할 수 없습니다: %s."
 
-#: title/pc5_library.c:2875
+#: title/pc5_library.c:2898
 #, c-format
 msgid "PC5 can't read %s on the USB drive: %s."
 msgstr "USB 드라이브의 %s을(를) 읽을 수 없습니다: %s."
 
-#: title/pc5_library.c:3039 title/pc5_library.c:3051
+#: title/pc5_library.c:3062 title/pc5_library.c:3074
 #, c-format
 msgid "PC5 can't read back %s: %s."
 msgstr "쓴 %s을(를) 다시 읽을 수 없습니다: %s."
 
-#: title/pc5_library.c:3039
+#: title/pc5_library.c:3062
 #, c-format
 msgid "PC5 can't open %s on the USB drive: %s."
 msgstr "USB 드라이브의 %s을(를) 열 수 없습니다: %s."
 
-#: title/pc5_library.c:3052
+#: title/pc5_library.c:3075
 #, c-format
 msgid "The USB drive stopped answering while PC5 copied %s (%s)."
 msgstr "%s을(를) 복사하는 중에 USB 드라이브가 응답하지 않게 되었습니다(%s)."
 
-#: title/pc5_library.c:3121
+#: title/pc5_library.c:3144
 #, c-format
 msgid ""
 "The copy of %s doesn't match the USB drive. The drive or its cable may be "
@@ -744,97 +744,97 @@ msgid ""
 msgstr ""
 "%s의 사본이 USB 드라이브의 원본과 일치하지 않습니다. 드라이브나 케이블에 문제가 있을 수 있습니다. 아무것도 보관하지 않았습니다."
 
-#: title/pc5_library.c:3240 title/pc5_library.c:3252
+#: title/pc5_library.c:3263 title/pc5_library.c:3275
 #, c-format
 msgid ""
 "The game couldn't be put back in the INSTALL folder: it is in %.180s."
 msgstr "게임을 INSTALL 폴더로 되돌리지 못했습니다. 게임은 %.180s에 있습니다."
 
-#: title/pc5_library.c:3291
+#: title/pc5_library.c:3314
 #, c-format
 msgid "PC5 can't save the cover: %s."
 msgstr "커버를 저장할 수 없습니다: %s."
 
-#: title/pc5_library.c:3407
+#: title/pc5_library.c:3430
 msgid "PC5 didn't install this game, so it can't update it."
 msgstr "이 게임은 PC5로 설치하지 않았기 때문에 업데이트할 수 없습니다."
 
-#: title/pc5_library.c:3409
+#: title/pc5_library.c:3432
 #, c-format
 msgid ""
 "%s plays from its USB drive: copy the newer version over its folder %s "
 "there."
 msgstr "%s은(는) USB 드라이브에서 플레이하는 게임입니다. 새 버전을 그 드라이브의 %s 폴더에 덮어 복사하세요."
 
-#: title/pc5_library.c:3414 title/pc5_library.c:3476
+#: title/pc5_library.c:3437 title/pc5_library.c:3499
 msgid "The game's folder is missing: uninstall it and install it again."
 msgstr "게임 폴더가 없습니다. 게임을 제거한 뒤 다시 설치하세요."
 
-#: title/pc5_library.c:3417
+#: title/pc5_library.c:3440
 #, c-format
 msgid ""
 "This folder doesn't have %s, the program %s starts. Choose the folder of a "
 "newer copy of %s."
 msgstr "이 폴더에는 %2$s이(가) 시작하는 프로그램인 %1$s이(가) 없습니다. %3$s의 새 사본이 있는 폴더를 선택하세요."
 
-#: title/pc5_library.c:3431
+#: title/pc5_library.c:3454
 #, c-format
 msgid "Not enough space: the update needs %s and the console has %s free."
 msgstr "공간이 부족합니다. 업데이트에 필요한 공간: %s, 본체 여유 공간: %s."
 
-#: title/pc5_library.c:3437
+#: title/pc5_library.c:3460
 msgid ""
 "An earlier update of this game isn't finished: close PC5 and open it again "
 "to finish it."
 msgstr "이 게임의 이전 업데이트가 끝나지 않았습니다. PC5를 닫았다가 다시 열면 마무리됩니다."
 
-#: title/pc5_library.c:3439
+#: title/pc5_library.c:3462
 #, c-format
 msgid "PC5 can't start the update: %s."
 msgstr "업데이트를 시작할 수 없습니다: %s."
 
-#: title/pc5_library.c:3474
+#: title/pc5_library.c:3497
 msgid ""
 "PC5 didn't install this game in a Windows of its own, so its Windows can't "
 "be reset."
 msgstr ""
 
-#: title/pc5_library.c:3479
+#: title/pc5_library.c:3502
 #, fuzzy
 msgid ""
 "An update or a reset of this game isn't finished: close PC5 and open it "
 "again to finish it."
 msgstr "이 게임의 이전 업데이트가 끝나지 않았습니다. PC5를 닫았다가 다시 열면 마무리됩니다."
 
-#: title/pc5_library.c:3485
+#: title/pc5_library.c:3508
 #, c-format, fuzzy
 msgid ""
 "Not enough space: a new Windows needs %s and the console has %s free."
 msgstr "공간이 부족합니다. 업데이트에 필요한 공간: %s, 본체 여유 공간: %s."
 
-#: title/pc5_library.c:3489
+#: title/pc5_library.c:3512
 #, c-format
 msgid "PC5 can't start resetting its Windows: %s."
 msgstr ""
 
-#: title/pc5_library.c:3548
+#: title/pc5_library.c:3571
 msgid ""
 "Kept saves can't be put back for a game that plays from its USB drive."
 msgstr "USB 드라이브에서 플레이하는 게임에는 보관한 저장 데이터를 되돌릴 수 없습니다."
 
-#: title/pc5_library.c:3552
+#: title/pc5_library.c:3575
 msgid "The install has begun already."
 msgstr "설치가 이미 시작되었습니다."
 
-#: title/pc5_library.c:3568
+#: title/pc5_library.c:3591
 msgid "PC5 can't read the kept saves."
 msgstr "보관한 저장 데이터를 읽을 수 없습니다."
 
-#: title/pc5_library.c:3568
+#: title/pc5_library.c:3591
 msgid "The kept saves are damaged: they have no registry."
 msgstr "보관한 저장 데이터가 손상되었습니다. 레지스트리가 없습니다."
 
-#: title/pc5_library.c:3651
+#: title/pc5_library.c:3674
 #, c-format
 msgid "PC5 can't make the game's folder on the USB drive: %s."
 msgstr "USB 드라이브에 게임 폴더를 만들 수 없습니다: %s."

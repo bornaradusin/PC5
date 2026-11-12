@@ -523,33 +523,56 @@ const char *pc5_recipe_name(const char *program, const char *program_dir)
     return NULL;
 }
 
+/* An NW.js game (a web browser inside the game: RPG Maker MV and MZ, and others) has nw.dll
+ * beside its program, or a package.nw. Chromium runs as several programs, and the console
+ * can start only one, so without the one-process flags the game waits on its launch screen
+ * for helpers that never start (#534 Fear & Hunger, #610 Summer Memories). */
+static int nwjs_dir(const char *dir)
+{
+    return dir && dir[0] && (has_file_any_case(dir, "nw.dll") || has_file_any_case(dir, "nw_elf.dll") ||
+                             has_file_any_case(dir, "package.nw"));
+}
+static const char NWJS_LAUNCH[] = "--single-process --in-process-gpu --no-sandbox --disable-gpu-sandbox\n";
+
 int pc5_recipe_apply(const char *root, const char *id)
 {
     Pc5Info info;
     Pc5Controls controls;
     char dir[PC5_PATH], path[PC5_PATH];
     const char *name;
+    int applied = 0;
     size_t i;
 
     if (pc5_info_read(root, id, &info)) return -1;
     program_folder(root, id, &info, dir, sizeof(dir));
-    if (!(name = pc5_recipe_name(info.exe, dir[0] ? dir : NULL))) return 0;
-    for (i = 0; strcmp(recipes[i].name, name); i++) {}
-    if (pc5_format(path, sizeof(path), "%s/prefixes/%s/pc5/controls.txt", root, id)) return -1;
-    if (recipes[i].settings[0] && !pc5_exists(path)) {
-        pc5_controls_load(root, id, &controls);
-        pc5_controls_apply_text(recipes[i].settings, &controls);
-        if (pc5_controls_save(root, id, &controls)) return -1;
+    if ((name = pc5_recipe_name(info.exe, dir[0] ? dir : NULL))) {
+        for (i = 0; strcmp(recipes[i].name, name); i++) {}
+        if (pc5_format(path, sizeof(path), "%s/prefixes/%s/pc5/controls.txt", root, id)) return -1;
+        if (recipes[i].settings[0] && !pc5_exists(path)) {
+            pc5_controls_load(root, id, &controls);
+            pc5_controls_apply_text(recipes[i].settings, &controls);
+            if (pc5_controls_save(root, id, &controls)) return -1;
+        }
+        if (recipes[i].launch && dir[0] && !pc5_format(path, sizeof(path), "%s/launch.txt", dir) && !pc5_exists(path) &&
+            pc5_write_file(path, recipes[i].launch, strlen(recipes[i].launch)))
+            return -1;
+        applied = 1;
     }
-    if (recipes[i].launch && dir[0] && !pc5_format(path, sizeof(path), "%s/launch.txt", dir) && !pc5_exists(path) &&
-        pc5_write_file(path, recipes[i].launch, strlen(recipes[i].launch)))
-        return -1;
-    if (!pc5_format(path, sizeof(path), "%s/prefixes/%s/pc5/recipe.txt", root, id)) {
+    /* A web game with no launch options of its own gets the one-process flags; a named recipe's
+     * launch.txt, or the player's own, is left as it is. */
+    else if (nwjs_dir(dir)) {
+        if (!pc5_format(path, sizeof(path), "%s/launch.txt", dir) && !pc5_exists(path) &&
+            pc5_write_file(path, NWJS_LAUNCH, strlen(NWJS_LAUNCH)))
+            return -1;
+        name = "Web game (NW.js)";
+        applied = 1;
+    }
+    if (applied && !pc5_format(path, sizeof(path), "%s/prefixes/%s/pc5/recipe.txt", root, id)) {
         char text[160];
         snprintf(text, sizeof(text), "%s\n", name);
         pc5_write_file(path, text, strlen(text));
     }
-    return 1;
+    return applied;
 }
 
 /* The first line of launch.txt that says something: launch options. */

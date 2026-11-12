@@ -3092,6 +3092,33 @@ static void test_recipes(void)
             CHECK(!pc5_exists(file), "%s: no settings in its recipe, none written", ids[k]);
         }
     }
+    /* A web game (NW.js): nw.dll beside the program gets the one-process launch options, unless
+     * the game already has a launch.txt of its own. */
+    {
+        const char *ids[] = { "webgame", "webgame-own" };
+        for (int k = 0; k < 2; k++) {
+            memset(&info, 0, sizeof(info));
+            pc5_copy(info.title, sizeof(info.title), "Web Game");
+            pc5_copy(info.folder, sizeof(info.folder), ids[k]);
+            pc5_copy(info.exe, sizeof(info.exe), "Game.exe");
+            info.bits = 64;
+            info.api = PC5_API_D3D11;
+            pc5_info_text(&info, text, sizeof(text));
+            path(file, sizeof(file), "%s/prefixes/%s/pc5/info.txt", base, ids[k]);
+            write_text(file, text);
+            path(file, sizeof(file), "%s/prefixes/%s/drive_c/Games/%s/Game.exe", base, ids[k], ids[k]);
+            write_text(file, "MZ");
+            path(file, sizeof(file), "%s/prefixes/%s/drive_c/Games/%s/nw.dll", base, ids[k], ids[k]);
+            write_text(file, "MZ");
+            path(file, sizeof(file), "%s/prefixes/%s/drive_c/Games/%s/launch.txt", base, ids[k], ids[k]);
+            if (k) write_text(file, "--foo\n");
+            CHECK(pc5_recipe_apply(base, ids[k]) == 1, "%s: detected as a web game", ids[k]);
+            CHECK(file_is(file, k ? "--foo\n" : "--single-process --in-process-gpu --no-sandbox --disable-gpu-sandbox\n"),
+                  "%s: launch.txt %s", ids[k], k ? "kept" : "the one-process flags");
+            path(file, sizeof(file), "%s/prefixes/%s/pc5/recipe.txt", base, ids[k]);
+            CHECK(file_holds_text(file, "Web game (NW.js)"), "%s: recipe.txt names the web game", ids[k]);
+        }
+    }
 }
 
 static void test_known_games(void)

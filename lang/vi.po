@@ -341,8 +341,8 @@ msgid "PC5 ran out of memory planning the work."
 msgstr "PC5 hết bộ nhớ khi chuẩn bị thao tác."
 
 #: title/pc5_files.c:385 title/pc5_files.c:406 title/pc5_files.c:419
-#: title/pc5_library.c:2834 title/pc5_library.c:3088 title/pc5_library.c:3098
-#: title/pc5_library.c:3111
+#: title/pc5_library.c:2857 title/pc5_library.c:3111 title/pc5_library.c:3121
+#: title/pc5_library.c:3134
 #, c-format
 msgid "PC5 can't write %s: %s."
 msgstr "PC5 không ghi được %s: %s."
@@ -352,7 +352,7 @@ msgstr "PC5 không ghi được %s: %s."
 msgid "PC5 ran out of memory copying %s."
 msgstr "PC5 hết bộ nhớ khi sao chép %s."
 
-#: title/pc5_files.c:427 title/pc5_library.c:1947
+#: title/pc5_files.c:427 title/pc5_library.c:1970
 #, c-format
 msgid "PC5 can't put %s in place: %s."
 msgstr "PC5 không đặt được %s vào chỗ: %s."
@@ -447,7 +447,7 @@ msgid ""
 msgstr ""
 "Hãy cắm ổ USB chứa %.100s: trò chơi chạy từ thư mục %.200s trên ổ đó."
 
-#: title/pc5_library.c:175 title/pc5_library.c:3626 title/pc5_library.c:3677
+#: title/pc5_library.c:175 title/pc5_library.c:3649 title/pc5_library.c:3700
 #, c-format
 msgid "PC5 can't make the game's folder: %s."
 msgstr "PC5 không tạo được thư mục của trò chơi: %s."
@@ -457,196 +457,196 @@ msgstr "PC5 không tạo được thư mục của trò chơi: %s."
 msgid "PC5 can't link the game's folder on the USB drive: %s."
 msgstr "PC5 không liên kết được thư mục trò chơi trên ổ USB: %s."
 
-#: title/pc5_library.c:600 title/pc5_library.c:617
+#: title/pc5_library.c:623 title/pc5_library.c:640
 msgid "Choose one of the game's programs."
 msgstr "Hãy chọn một chương trình của trò chơi."
 
-#: title/pc5_library.c:613 title/pc5_library.c:828 title/pc5_library.c:1060
+#: title/pc5_library.c:636 title/pc5_library.c:851 title/pc5_library.c:1083
 msgid "PC5's notes on this game are missing."
 msgstr "Ghi chú của PC5 về trò chơi này bị thiếu."
 
-#: title/pc5_library.c:625
+#: title/pc5_library.c:648
 msgid "That program is too deep in the game's folder for Windows."
 msgstr "Chương trình đó nằm quá sâu trong thư mục trò chơi đối với Windows."
 
-#: title/pc5_library.c:630 title/pc5_library.c:1964 title/pc5_library.c:3275
-#: title/pc5_library.c:3278 title/pc5_library.c:3287 title/pc5_library.c:3361
-#: title/pc5_library.c:3513 title/pc5_library.c:3639
+#: title/pc5_library.c:653 title/pc5_library.c:1987 title/pc5_library.c:3298
+#: title/pc5_library.c:3301 title/pc5_library.c:3310 title/pc5_library.c:3384
+#: title/pc5_library.c:3536 title/pc5_library.c:3662
 #, c-format
 msgid "PC5 can't write its notes: %s."
 msgstr "PC5 không ghi được ghi chú: %s."
 
-#: title/pc5_library.c:651
+#: title/pc5_library.c:674
 msgid "PC5 is out of memory."
 msgstr "PC5 hết bộ nhớ."
 
-#: title/pc5_library.c:655
+#: title/pc5_library.c:678
 #, c-format
 msgid "%.200s doesn't start any of the game's programs."
 msgstr "%.200s không khởi động chương trình nào của trò chơi."
 
-#: title/pc5_library.c:927
+#: title/pc5_library.c:950
 msgid "The game's launch options are too long: 511 characters at most."
 msgstr "Tùy chọn khởi chạy của trò chơi quá dài: tối đa 511 ký tự."
 
-#: title/pc5_library.c:944
+#: title/pc5_library.c:967
 msgid "The game's path is too long for Windows."
 msgstr "Đường dẫn của trò chơi quá dài đối với Windows."
 
-#: title/pc5_library.c:960 title/pc5_library.c:1139
+#: title/pc5_library.c:983 title/pc5_library.c:1162
 #, c-format
 msgid "PC5 can't write the game's profile: %s."
 msgstr "PC5 không ghi được hồ sơ của trò chơi: %s."
 
-#: title/pc5_library.c:1085
+#: title/pc5_library.c:1108
 #, c-format
 msgid "The program its launcher started isn't one of the game's: %.200s"
 msgstr "Chương trình mà trình khởi chạy mở không thuộc trò chơi: %.200s"
 
-#: title/pc5_library.c:1099
+#: title/pc5_library.c:1122
 msgid "The arguments its launcher gave are too long."
 msgstr "Các tham số trình khởi chạy đưa ra quá dài."
 
-#: title/pc5_library.c:1121
+#: title/pc5_library.c:1144
 #, c-format
 msgid "Its programs kept starting each other: %d hand-offs in a row."
 msgstr ""
 "Các chương trình của nó cứ khởi động lẫn nhau: %d lần chuyển tiếp liên tục."
 
-#: title/pc5_library.c:1135
+#: title/pc5_library.c:1158
 msgid "The program's path is too long for Windows."
 msgstr "Đường dẫn của chương trình quá dài đối với Windows."
 
-#: title/pc5_library.c:1197
+#: title/pc5_library.c:1220
 #, c-format
 msgid "Its profile has a mistake (%s)."
 msgstr "Hồ sơ của nó có lỗi (%s)."
 
-#: title/pc5_library.c:1214
+#: title/pc5_library.c:1237
 msgid "Its Windows folder is missing."
 msgstr "Thiếu thư mục Windows của nó."
 
-#: title/pc5_library.c:1218
+#: title/pc5_library.c:1241
 msgid "Resetting its Windows isn't finished: close PC5 and open it again."
 msgstr ""
 
-#: title/pc5_library.c:1360
+#: title/pc5_library.c:1383
 #, c-format
 msgid "PC5 can't delete %s: %s."
 msgstr "PC5 không xóa được %s: %s."
 
-#: title/pc5_library.c:1459 title/pc5_library.c:1734 title/pc5_library.c:1789
-#: title/pc5_library.c:2260
+#: title/pc5_library.c:1482 title/pc5_library.c:1757 title/pc5_library.c:1812
+#: title/pc5_library.c:2283
 #, c-format
 msgid "PC5 can't move the game's folder: %s."
 msgstr "PC5 không di chuyển được thư mục của trò chơi: %s."
 
-#: title/pc5_library.c:1468 title/pc5_library.c:1739
+#: title/pc5_library.c:1491 title/pc5_library.c:1762
 #, c-format
 msgid "PC5 can't delete the game's profile: %s."
 msgstr "PC5 không xóa được hồ sơ của trò chơi: %s."
 
-#: title/pc5_library.c:1482 title/pc5_library.c:1726 title/pc5_library.c:2181
-#: title/pc5_library.c:2207 title/pc5_library.c:2216 title/pc5_library.c:2256
-#: title/pc5_library.c:3426 title/pc5_library.c:3434 title/pc5_library.c:3480
-#: title/pc5_library.c:3516
+#: title/pc5_library.c:1505 title/pc5_library.c:1749 title/pc5_library.c:2204
+#: title/pc5_library.c:2230 title/pc5_library.c:2239 title/pc5_library.c:2279
+#: title/pc5_library.c:3449 title/pc5_library.c:3457 title/pc5_library.c:3503
+#: title/pc5_library.c:3539
 msgid "A path is too long."
 msgstr "Đường dẫn quá dài."
 
-#: title/pc5_library.c:1685
+#: title/pc5_library.c:1708
 msgid "PC5 can't read the game's folder."
 msgstr "PC5 không đọc được thư mục của trò chơi."
 
-#: title/pc5_library.c:1693 title/pc5_library.c:1944 title/pc5_library.c:3024
+#: title/pc5_library.c:1716 title/pc5_library.c:1967 title/pc5_library.c:3047
 #, c-format
 msgid "A path in the game is too long: %s."
 msgstr "Một đường dẫn trong trò chơi quá dài: %s."
 
-#: title/pc5_library.c:1702
+#: title/pc5_library.c:1725
 #, c-format
 msgid "PC5 can't keep %s: %s."
 msgstr "PC5 không giữ lại được %s: %s."
 
-#: title/pc5_library.c:1758
+#: title/pc5_library.c:1781
 #, c-format
 msgid "PC5 can't put the saves in place: %s."
 msgstr "PC5 không đặt lại được dữ liệu lưu: %s."
 
-#: title/pc5_library.c:1772
+#: title/pc5_library.c:1795
 msgid "This game's saves can't be kept apart from it."
 msgstr "Không thể giữ riêng dữ liệu lưu của trò chơi này."
 
-#: title/pc5_library.c:1778
+#: title/pc5_library.c:1801
 #, c-format
 msgid "PC5 can't make its saves folder: %s."
 msgstr "PC5 không tạo được thư mục dữ liệu lưu: %s."
 
-#: title/pc5_library.c:1782
+#: title/pc5_library.c:1805
 msgid "PC5 is still keeping this game's saves from before: start PC5 again."
 msgstr ""
 "PC5 vẫn đang giữ dữ liệu lưu trước đây của trò chơi này: hãy mở lại PC5."
 
-#: title/pc5_library.c:1815
+#: title/pc5_library.c:1838
 #, c-format
 msgid "PC5 can't move the saves: %s."
 msgstr "PC5 không di chuyển được dữ liệu lưu: %s."
 
-#: title/pc5_library.c:1902
+#: title/pc5_library.c:1925
 #, c-format
 msgid "A path in the update is too long: %s."
 msgstr "Một đường dẫn trong bản cập nhật quá dài: %s."
 
-#: title/pc5_library.c:1984
+#: title/pc5_library.c:2007
 #, c-format
 msgid "PC5 can't write the game's list of files: %s."
 msgstr "PC5 không ghi được danh sách tệp của trò chơi: %s."
 
-#: title/pc5_library.c:2050 title/pc5_library.c:2081 title/pc5_library.c:2131
-#: title/pc5_library.c:2139 title/pc5_library.c:2170 title/pc5_library.c:2190
-#: title/pc5_library.c:2787 title/pc5_library.c:2861 title/pc5_library.c:2897
-#: title/pc5_library.c:3174 title/pc5_library.c:3442 title/pc5_library.c:3496
+#: title/pc5_library.c:2073 title/pc5_library.c:2104 title/pc5_library.c:2154
+#: title/pc5_library.c:2162 title/pc5_library.c:2193 title/pc5_library.c:2213
+#: title/pc5_library.c:2810 title/pc5_library.c:2884 title/pc5_library.c:2920
+#: title/pc5_library.c:3197 title/pc5_library.c:3465 title/pc5_library.c:3519
 msgid "Out of memory."
 msgstr "Hết bộ nhớ."
 
-#: title/pc5_library.c:2109 title/pc5_library.c:2146
+#: title/pc5_library.c:2132 title/pc5_library.c:2169
 #, c-format
 msgid "PC5 can't move %.150s into the new Windows: %s."
 msgstr ""
 
-#: title/pc5_library.c:2226 title/pc5_library.c:2232 title/pc5_library.c:2238
+#: title/pc5_library.c:2249 title/pc5_library.c:2255 title/pc5_library.c:2261
 #, c-format
 msgid "PC5 can't keep the old registry: %s."
 msgstr ""
 
-#: title/pc5_library.c:2264 title/pc5_library.c:3298
+#: title/pc5_library.c:2287 title/pc5_library.c:3321
 #, c-format
 msgid "PC5 can't put the game in place: %s."
 msgstr "PC5 không đặt được trò chơi vào chỗ: %s."
 
-#: title/pc5_library.c:2603
+#: title/pc5_library.c:2626
 msgid ""
 "PC5's Windows template is missing from the app: copy the PC5 folder again."
 msgstr "Ứng dụng thiếu mẫu Windows của PC5: hãy chép lại thư mục PC5."
 
-#: title/pc5_library.c:2627
+#: title/pc5_library.c:2650
 msgid "PC5's Windows template is damaged: copy the PC5 folder again."
 msgstr "Mẫu Windows của PC5 bị hỏng: hãy chép lại thư mục PC5."
 
-#: title/pc5_library.c:2709 title/pc5_library.c:2769
+#: title/pc5_library.c:2732 title/pc5_library.c:2792
 #, c-format
 msgid "PC5 can't make its folders in %s: %s."
 msgstr "PC5 không tạo được thư mục trong %s: %s."
 
-#: title/pc5_library.c:2720
+#: title/pc5_library.c:2743
 #, c-format
 msgid "PC5 can't make its folder on the USB drive: %s."
 msgstr "PC5 không tạo được thư mục trên ổ USB: %s."
 
-#: title/pc5_library.c:2723
+#: title/pc5_library.c:2746
 msgid "PC5 can't name the game's folder on the USB drive."
 msgstr "PC5 không đặt tên được cho thư mục trò chơi trên ổ USB."
 
-#: title/pc5_library.c:2741
+#: title/pc5_library.c:2764
 #, c-format
 msgid ""
 "The drive reads at %.0f MB/s here, too slow to play from (%.0f needed). "
@@ -657,26 +657,26 @@ msgstr ""
 "Hãy cắm vào một cổng phía sau hoặc cổng USB-C phía trước. Vẫn cài vào máy "
 "được."
 
-#: title/pc5_library.c:2749
+#: title/pc5_library.c:2772
 #, c-format
 msgid ""
 "Not enough space on the USB drive: the game needs %s and it has %s free."
 msgstr "Ổ USB không đủ chỗ: trò chơi cần %s nhưng ổ chỉ còn trống %s."
 
-#: title/pc5_library.c:2753
+#: title/pc5_library.c:2776
 msgid ""
 "Only a game on a USB drive can play from it: this folder isn't on one."
 msgstr ""
 "Chỉ trò chơi trên ổ USB mới chơi trực tiếp từ ổ được: thư mục này không "
 "nằm trên ổ USB."
 
-#: title/pc5_library.c:2755
+#: title/pc5_library.c:2778
 msgid "A game in PC5's INSTALL folder is installed, not played from there."
 msgstr ""
 "Trò chơi trong thư mục INSTALL của PC5 sẽ được cài đặt, không chơi trực "
 "tiếp từ đó."
 
-#: title/pc5_library.c:2760
+#: title/pc5_library.c:2783
 #, c-format
 msgid ""
 "The drive reads at %.0f MB/s in this USB port, too slow to play from (at "
@@ -689,65 +689,65 @@ msgstr ""
 "hãy cắm ổ vào một cổng phía sau hoặc cổng USB-C phía trước. Vẫn cài đặt "
 "được từ cổng này."
 
-#: title/pc5_library.c:2766
+#: title/pc5_library.c:2789
 msgid "The game's program is too deep in its folder for Windows."
 msgstr "Chương trình của trò chơi nằm quá sâu trong thư mục đối với Windows."
 
-#: title/pc5_library.c:2774
+#: title/pc5_library.c:2797
 #, c-format
 msgid "Not enough space: the game needs %s and the console has %s free."
 msgstr "Không đủ chỗ: trò chơi cần %s nhưng máy chỉ còn trống %s."
 
-#: title/pc5_library.c:2777
+#: title/pc5_library.c:2800
 msgid "PC5 can't name the game."
 msgstr "PC5 không đặt tên được cho trò chơi."
 
-#: title/pc5_library.c:2780 title/pc5_library.c:3190
+#: title/pc5_library.c:2803 title/pc5_library.c:3213
 #, c-format
 msgid "PC5 can't start the install: %s."
 msgstr "PC5 không bắt đầu cài đặt được: %s."
 
-#: title/pc5_library.c:2820
+#: title/pc5_library.c:2843
 msgid "A path in the Windows template is too long."
 msgstr "Một đường dẫn trong mẫu Windows quá dài."
 
-#: title/pc5_library.c:2823 title/pc5_library.c:2828 title/pc5_library.c:3032
+#: title/pc5_library.c:2846 title/pc5_library.c:2851 title/pc5_library.c:3055
 #: title/pc5_tile.c:522
 #, c-format
 msgid "PC5 can't make %s: %s."
 msgstr "PC5 không tạo được %s: %s."
 
-#: title/pc5_library.c:2831
+#: title/pc5_library.c:2854
 #, c-format
 msgid "PC5's Windows template is missing %s."
 msgstr "Mẫu Windows của PC5 thiếu %s."
 
-#: title/pc5_library.c:2850
+#: title/pc5_library.c:2873
 #, c-format
 msgid "PC5 can't copy %s: %s."
 msgstr "PC5 không sao chép được %s: %s."
 
-#: title/pc5_library.c:2875
+#: title/pc5_library.c:2898
 #, c-format
 msgid "PC5 can't read %s on the USB drive: %s."
 msgstr "PC5 không đọc được %s trên ổ USB: %s."
 
-#: title/pc5_library.c:3039 title/pc5_library.c:3051
+#: title/pc5_library.c:3062 title/pc5_library.c:3074
 #, c-format
 msgid "PC5 can't read back %s: %s."
 msgstr "PC5 không đọc lại được %s: %s."
 
-#: title/pc5_library.c:3039
+#: title/pc5_library.c:3062
 #, c-format
 msgid "PC5 can't open %s on the USB drive: %s."
 msgstr "PC5 không mở được %s trên ổ USB: %s."
 
-#: title/pc5_library.c:3052
+#: title/pc5_library.c:3075
 #, c-format
 msgid "The USB drive stopped answering while PC5 copied %s (%s)."
 msgstr "Ổ USB ngừng phản hồi khi PC5 đang sao chép %s (%s)."
 
-#: title/pc5_library.c:3121
+#: title/pc5_library.c:3144
 #, c-format
 msgid ""
 "The copy of %s doesn't match the USB drive. The drive or its cable may be "
@@ -756,22 +756,22 @@ msgstr ""
 "Bản sao của %s không khớp với ổ USB. Ổ hoặc cáp có thể đang hỏng; không "
 "giữ lại gì cả."
 
-#: title/pc5_library.c:3240 title/pc5_library.c:3252
+#: title/pc5_library.c:3263 title/pc5_library.c:3275
 #, c-format
 msgid ""
 "The game couldn't be put back in the INSTALL folder: it is in %.180s."
 msgstr "Không thể đặt trò chơi lại vào thư mục INSTALL: nó đang ở %.180s."
 
-#: title/pc5_library.c:3291
+#: title/pc5_library.c:3314
 #, c-format
 msgid "PC5 can't save the cover: %s."
 msgstr "PC5 không lưu được ảnh bìa: %s."
 
-#: title/pc5_library.c:3407
+#: title/pc5_library.c:3430
 msgid "PC5 didn't install this game, so it can't update it."
 msgstr "PC5 không cài trò chơi này nên không cập nhật được."
 
-#: title/pc5_library.c:3409
+#: title/pc5_library.c:3432
 #, c-format
 msgid ""
 "%s plays from its USB drive: copy the newer version over its folder %s "
@@ -780,11 +780,11 @@ msgstr ""
 "%s chạy từ ổ USB của nó: hãy chép phiên bản mới hơn đè lên thư mục %s trên "
 "ổ đó."
 
-#: title/pc5_library.c:3414 title/pc5_library.c:3476
+#: title/pc5_library.c:3437 title/pc5_library.c:3499
 msgid "The game's folder is missing: uninstall it and install it again."
 msgstr "Thư mục của trò chơi bị thiếu: hãy gỡ cài đặt rồi cài lại."
 
-#: title/pc5_library.c:3417
+#: title/pc5_library.c:3440
 #, c-format
 msgid ""
 "This folder doesn't have %s, the program %s starts. Choose the folder of a "
@@ -793,12 +793,12 @@ msgstr ""
 "Thư mục này không có %s, chương trình mà %s khởi động. Hãy chọn thư mục "
 "của bản %s mới hơn."
 
-#: title/pc5_library.c:3431
+#: title/pc5_library.c:3454
 #, c-format
 msgid "Not enough space: the update needs %s and the console has %s free."
 msgstr "Không đủ chỗ: bản cập nhật cần %s nhưng máy chỉ còn trống %s."
 
-#: title/pc5_library.c:3437
+#: title/pc5_library.c:3460
 msgid ""
 "An earlier update of this game isn't finished: close PC5 and open it again "
 "to finish it."
@@ -806,18 +806,18 @@ msgstr ""
 "Một bản cập nhật trước của trò chơi này chưa xong: hãy đóng PC5 rồi mở lại "
 "để hoàn tất."
 
-#: title/pc5_library.c:3439
+#: title/pc5_library.c:3462
 #, c-format
 msgid "PC5 can't start the update: %s."
 msgstr "PC5 không bắt đầu cập nhật được: %s."
 
-#: title/pc5_library.c:3474
+#: title/pc5_library.c:3497
 msgid ""
 "PC5 didn't install this game in a Windows of its own, so its Windows can't "
 "be reset."
 msgstr ""
 
-#: title/pc5_library.c:3479
+#: title/pc5_library.c:3502
 #, fuzzy
 msgid ""
 "An update or a reset of this game isn't finished: close PC5 and open it "
@@ -826,35 +826,35 @@ msgstr ""
 "Một bản cập nhật trước của trò chơi này chưa xong: hãy đóng PC5 rồi mở lại "
 "để hoàn tất."
 
-#: title/pc5_library.c:3485
+#: title/pc5_library.c:3508
 #, c-format, fuzzy
 msgid ""
 "Not enough space: a new Windows needs %s and the console has %s free."
 msgstr "Không đủ chỗ: bản cập nhật cần %s nhưng máy chỉ còn trống %s."
 
-#: title/pc5_library.c:3489
+#: title/pc5_library.c:3512
 #, c-format
 msgid "PC5 can't start resetting its Windows: %s."
 msgstr ""
 
-#: title/pc5_library.c:3548
+#: title/pc5_library.c:3571
 msgid ""
 "Kept saves can't be put back for a game that plays from its USB drive."
 msgstr "Không thể đặt lại dữ liệu lưu đã giữ cho trò chơi chạy từ ổ USB."
 
-#: title/pc5_library.c:3552
+#: title/pc5_library.c:3575
 msgid "The install has begun already."
 msgstr "Quá trình cài đặt đã bắt đầu rồi."
 
-#: title/pc5_library.c:3568
+#: title/pc5_library.c:3591
 msgid "PC5 can't read the kept saves."
 msgstr "PC5 không đọc được dữ liệu lưu đã giữ."
 
-#: title/pc5_library.c:3568
+#: title/pc5_library.c:3591
 msgid "The kept saves are damaged: they have no registry."
 msgstr "Dữ liệu lưu đã giữ bị hỏng: không có registry."
 
-#: title/pc5_library.c:3651
+#: title/pc5_library.c:3674
 #, c-format
 msgid "PC5 can't make the game's folder on the USB drive: %s."
 msgstr "PC5 không tạo được thư mục của trò chơi trên ổ USB: %s."

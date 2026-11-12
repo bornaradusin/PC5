@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define PC5_VERSION "2.3.10"
+#define PC5_VERSION "2.3.11"
 #ifndef PC5_TITLE_ID
 #define PC5_TITLE_ID "PPSA11018"
 #endif

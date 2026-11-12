@@ -341,8 +341,8 @@ msgid "PC5 ran out of memory planning the work."
 msgstr "A PC5-nek elfogyott a memóriája a művelet tervezése közben."
 
 #: title/pc5_files.c:385 title/pc5_files.c:406 title/pc5_files.c:419
-#: title/pc5_library.c:2834 title/pc5_library.c:3088 title/pc5_library.c:3098
-#: title/pc5_library.c:3111
+#: title/pc5_library.c:2857 title/pc5_library.c:3111 title/pc5_library.c:3121
+#: title/pc5_library.c:3134
 #, c-format
 msgid "PC5 can't write %s: %s."
 msgstr "A PC5 nem tudja írni: %s (%s)."
@@ -352,7 +352,7 @@ msgstr "A PC5 nem tudja írni: %s (%s)."
 msgid "PC5 ran out of memory copying %s."
 msgstr "A PC5-nek elfogyott a memóriája másolás közben: %s."
 
-#: title/pc5_files.c:427 title/pc5_library.c:1947
+#: title/pc5_files.c:427 title/pc5_library.c:1970
 #, c-format
 msgid "PC5 can't put %s in place: %s."
 msgstr "A PC5 nem tudja a helyére tenni: %s (%s)."
@@ -451,7 +451,7 @@ msgstr ""
 "Csatlakoztasd az USB-meghajtót, amelyen ez van: %.100s. A játék a meghajtó "
 "%.200s mappájából fut."
 
-#: title/pc5_library.c:175 title/pc5_library.c:3626 title/pc5_library.c:3677
+#: title/pc5_library.c:175 title/pc5_library.c:3649 title/pc5_library.c:3700
 #, c-format
 msgid "PC5 can't make the game's folder: %s."
 msgstr "A PC5 nem tudja létrehozni a játék mappáját: %s."
@@ -462,196 +462,196 @@ msgid "PC5 can't link the game's folder on the USB drive: %s."
 msgstr ""
 "A PC5 nem tudja összekapcsolni a játék mappáját az USB-meghajtón: %s."
 
-#: title/pc5_library.c:600 title/pc5_library.c:617
+#: title/pc5_library.c:623 title/pc5_library.c:640
 msgid "Choose one of the game's programs."
 msgstr "Válaszd ki a játék egyik programját."
 
-#: title/pc5_library.c:613 title/pc5_library.c:828 title/pc5_library.c:1060
+#: title/pc5_library.c:636 title/pc5_library.c:851 title/pc5_library.c:1083
 msgid "PC5's notes on this game are missing."
 msgstr "Hiányoznak a PC5 jegyzetei erről a játékról."
 
-#: title/pc5_library.c:625
+#: title/pc5_library.c:648
 msgid "That program is too deep in the game's folder for Windows."
 msgstr "Ez a program a Windowsnak túl mélyen van a játék mappájában."
 
-#: title/pc5_library.c:630 title/pc5_library.c:1964 title/pc5_library.c:3275
-#: title/pc5_library.c:3278 title/pc5_library.c:3287 title/pc5_library.c:3361
-#: title/pc5_library.c:3513 title/pc5_library.c:3639
+#: title/pc5_library.c:653 title/pc5_library.c:1987 title/pc5_library.c:3298
+#: title/pc5_library.c:3301 title/pc5_library.c:3310 title/pc5_library.c:3384
+#: title/pc5_library.c:3536 title/pc5_library.c:3662
 #, c-format
 msgid "PC5 can't write its notes: %s."
 msgstr "A PC5 nem tudja írni a jegyzeteit: %s."
 
-#: title/pc5_library.c:651
+#: title/pc5_library.c:674
 msgid "PC5 is out of memory."
 msgstr "A PC5-nek nincs elég memóriája."
 
-#: title/pc5_library.c:655
+#: title/pc5_library.c:678
 #, c-format
 msgid "%.200s doesn't start any of the game's programs."
 msgstr "Nem indítja el a játék egyik programját sem: %.200s."
 
-#: title/pc5_library.c:927
+#: title/pc5_library.c:950
 msgid "The game's launch options are too long: 511 characters at most."
 msgstr ""
 "A játék indítási beállításai túl hosszúak: legfeljebb 511 karakter lehet."
 
-#: title/pc5_library.c:944
+#: title/pc5_library.c:967
 msgid "The game's path is too long for Windows."
 msgstr "A játék elérési útja túl hosszú a Windowsnak."
 
-#: title/pc5_library.c:960 title/pc5_library.c:1139
+#: title/pc5_library.c:983 title/pc5_library.c:1162
 #, c-format
 msgid "PC5 can't write the game's profile: %s."
 msgstr "A PC5 nem tudja írni a játék profilját: %s."
 
-#: title/pc5_library.c:1085
+#: title/pc5_library.c:1108
 #, c-format
 msgid "The program its launcher started isn't one of the game's: %.200s"
 msgstr "Az indítója által elindított program nem a játék része: %.200s"
 
-#: title/pc5_library.c:1099
+#: title/pc5_library.c:1122
 msgid "The arguments its launcher gave are too long."
 msgstr "Az indítója által átadott argumentumok túl hosszúak."
 
-#: title/pc5_library.c:1121
+#: title/pc5_library.c:1144
 #, c-format
 msgid "Its programs kept starting each other: %d hand-offs in a row."
 msgstr "A programjai folyton egymást indították: %d átadás egymás után."
 
-#: title/pc5_library.c:1135
+#: title/pc5_library.c:1158
 msgid "The program's path is too long for Windows."
 msgstr "A program elérési útja túl hosszú a Windowsnak."
 
-#: title/pc5_library.c:1197
+#: title/pc5_library.c:1220
 #, c-format
 msgid "Its profile has a mistake (%s)."
 msgstr "A profiljában hiba van (%s)."
 
-#: title/pc5_library.c:1214
+#: title/pc5_library.c:1237
 msgid "Its Windows folder is missing."
 msgstr "Hiányzik a Windows-mappája."
 
-#: title/pc5_library.c:1218
+#: title/pc5_library.c:1241
 msgid "Resetting its Windows isn't finished: close PC5 and open it again."
 msgstr ""
 
-#: title/pc5_library.c:1360
+#: title/pc5_library.c:1383
 #, c-format
 msgid "PC5 can't delete %s: %s."
 msgstr "A PC5 nem tudja törölni: %s (%s)."
 
-#: title/pc5_library.c:1459 title/pc5_library.c:1734 title/pc5_library.c:1789
-#: title/pc5_library.c:2260
+#: title/pc5_library.c:1482 title/pc5_library.c:1757 title/pc5_library.c:1812
+#: title/pc5_library.c:2283
 #, c-format
 msgid "PC5 can't move the game's folder: %s."
 msgstr "A PC5 nem tudja áthelyezni a játék mappáját: %s."
 
-#: title/pc5_library.c:1468 title/pc5_library.c:1739
+#: title/pc5_library.c:1491 title/pc5_library.c:1762
 #, c-format
 msgid "PC5 can't delete the game's profile: %s."
 msgstr "A PC5 nem tudja törölni a játék profilját: %s."
 
-#: title/pc5_library.c:1482 title/pc5_library.c:1726 title/pc5_library.c:2181
-#: title/pc5_library.c:2207 title/pc5_library.c:2216 title/pc5_library.c:2256
-#: title/pc5_library.c:3426 title/pc5_library.c:3434 title/pc5_library.c:3480
-#: title/pc5_library.c:3516
+#: title/pc5_library.c:1505 title/pc5_library.c:1749 title/pc5_library.c:2204
+#: title/pc5_library.c:2230 title/pc5_library.c:2239 title/pc5_library.c:2279
+#: title/pc5_library.c:3449 title/pc5_library.c:3457 title/pc5_library.c:3503
+#: title/pc5_library.c:3539
 msgid "A path is too long."
 msgstr "Egy elérési út túl hosszú."
 
-#: title/pc5_library.c:1685
+#: title/pc5_library.c:1708
 msgid "PC5 can't read the game's folder."
 msgstr "A PC5 nem tudja olvasni a játék mappáját."
 
-#: title/pc5_library.c:1693 title/pc5_library.c:1944 title/pc5_library.c:3024
+#: title/pc5_library.c:1716 title/pc5_library.c:1967 title/pc5_library.c:3047
 #, c-format
 msgid "A path in the game is too long: %s."
 msgstr "A játék egyik elérési útja túl hosszú: %s."
 
-#: title/pc5_library.c:1702
+#: title/pc5_library.c:1725
 #, c-format
 msgid "PC5 can't keep %s: %s."
 msgstr "A PC5 nem tudja megtartani: %s (%s)."
 
-#: title/pc5_library.c:1758
+#: title/pc5_library.c:1781
 #, c-format
 msgid "PC5 can't put the saves in place: %s."
 msgstr "A PC5 nem tudja a helyükre tenni a mentéseket: %s."
 
-#: title/pc5_library.c:1772
+#: title/pc5_library.c:1795
 msgid "This game's saves can't be kept apart from it."
 msgstr "Ennek a játéknak a mentései nem tarthatók meg tőle külön."
 
-#: title/pc5_library.c:1778
+#: title/pc5_library.c:1801
 #, c-format
 msgid "PC5 can't make its saves folder: %s."
 msgstr "A PC5 nem tudja létrehozni a mentések mappáját: %s."
 
-#: title/pc5_library.c:1782
+#: title/pc5_library.c:1805
 msgid "PC5 is still keeping this game's saves from before: start PC5 again."
 msgstr "A PC5 még őrzi a játék korábbi mentéseit: indítsd újra a PC5-öt."
 
-#: title/pc5_library.c:1815
+#: title/pc5_library.c:1838
 #, c-format
 msgid "PC5 can't move the saves: %s."
 msgstr "A PC5 nem tudja áthelyezni a mentéseket: %s."
 
-#: title/pc5_library.c:1902
+#: title/pc5_library.c:1925
 #, c-format
 msgid "A path in the update is too long: %s."
 msgstr "A frissítés egyik elérési útja túl hosszú: %s."
 
-#: title/pc5_library.c:1984
+#: title/pc5_library.c:2007
 #, c-format
 msgid "PC5 can't write the game's list of files: %s."
 msgstr "A PC5 nem tudja írni a játék fájllistáját: %s."
 
-#: title/pc5_library.c:2050 title/pc5_library.c:2081 title/pc5_library.c:2131
-#: title/pc5_library.c:2139 title/pc5_library.c:2170 title/pc5_library.c:2190
-#: title/pc5_library.c:2787 title/pc5_library.c:2861 title/pc5_library.c:2897
-#: title/pc5_library.c:3174 title/pc5_library.c:3442 title/pc5_library.c:3496
+#: title/pc5_library.c:2073 title/pc5_library.c:2104 title/pc5_library.c:2154
+#: title/pc5_library.c:2162 title/pc5_library.c:2193 title/pc5_library.c:2213
+#: title/pc5_library.c:2810 title/pc5_library.c:2884 title/pc5_library.c:2920
+#: title/pc5_library.c:3197 title/pc5_library.c:3465 title/pc5_library.c:3519
 msgid "Out of memory."
 msgstr "Elfogyott a memória."
 
-#: title/pc5_library.c:2109 title/pc5_library.c:2146
+#: title/pc5_library.c:2132 title/pc5_library.c:2169
 #, c-format
 msgid "PC5 can't move %.150s into the new Windows: %s."
 msgstr ""
 
-#: title/pc5_library.c:2226 title/pc5_library.c:2232 title/pc5_library.c:2238
+#: title/pc5_library.c:2249 title/pc5_library.c:2255 title/pc5_library.c:2261
 #, c-format
 msgid "PC5 can't keep the old registry: %s."
 msgstr ""
 
-#: title/pc5_library.c:2264 title/pc5_library.c:3298
+#: title/pc5_library.c:2287 title/pc5_library.c:3321
 #, c-format
 msgid "PC5 can't put the game in place: %s."
 msgstr "A PC5 nem tudja a helyére tenni a játékot: %s."
 
-#: title/pc5_library.c:2603
+#: title/pc5_library.c:2626
 msgid ""
 "PC5's Windows template is missing from the app: copy the PC5 folder again."
 msgstr ""
 "A PC5 Windows-sablonja hiányzik az alkalmazásból: másold újra a PC5 mappát."
 
-#: title/pc5_library.c:2627
+#: title/pc5_library.c:2650
 msgid "PC5's Windows template is damaged: copy the PC5 folder again."
 msgstr "A PC5 Windows-sablonja sérült: másold újra a PC5 mappát."
 
-#: title/pc5_library.c:2709 title/pc5_library.c:2769
+#: title/pc5_library.c:2732 title/pc5_library.c:2792
 #, c-format
 msgid "PC5 can't make its folders in %s: %s."
 msgstr "A PC5 nem tudja létrehozni a mappáit itt: %s (%s)."
 
-#: title/pc5_library.c:2720
+#: title/pc5_library.c:2743
 #, c-format
 msgid "PC5 can't make its folder on the USB drive: %s."
 msgstr "A PC5 nem tudja létrehozni a mappáját az USB-meghajtón: %s."
 
-#: title/pc5_library.c:2723
+#: title/pc5_library.c:2746
 msgid "PC5 can't name the game's folder on the USB drive."
 msgstr "A PC5 nem tud nevet adni a játék mappájának az USB-meghajtón."
 
-#: title/pc5_library.c:2741
+#: title/pc5_library.c:2764
 #, c-format
 msgid ""
 "The drive reads at %.0f MB/s here, too slow to play from (%.0f needed). "
@@ -662,25 +662,25 @@ msgstr ""
 "játékhoz (%.0f kell). Csatlakoztasd egy hátsó porthoz vagy az elülső USB-C "
 "porthoz. A konzolra telepítés így is működik."
 
-#: title/pc5_library.c:2749
+#: title/pc5_library.c:2772
 #, c-format
 msgid ""
 "Not enough space on the USB drive: the game needs %s and it has %s free."
 msgstr "Nincs elég hely az USB-meghajtón: a játéknak %s kell, és %s szabad."
 
-#: title/pc5_library.c:2753
+#: title/pc5_library.c:2776
 msgid ""
 "Only a game on a USB drive can play from it: this folder isn't on one."
 msgstr ""
 "USB-meghajtóról csak olyan játék futhat, amely rajta van: ez a mappa nincs "
 "USB-meghajtón."
 
-#: title/pc5_library.c:2755
+#: title/pc5_library.c:2778
 msgid "A game in PC5's INSTALL folder is installed, not played from there."
 msgstr ""
 "A PC5 INSTALL mappájában lévő játék telepíthető, onnan nem futtatható."
 
-#: title/pc5_library.c:2760
+#: title/pc5_library.c:2783
 #, c-format
 msgid ""
 "The drive reads at %.0f MB/s in this USB port, too slow to play from (at "
@@ -693,65 +693,65 @@ msgstr ""
 "USB-A port a lassú: csatlakoztasd a meghajtót egy hátsó porthoz vagy az "
 "elülső USB-C porthoz. Telepíteni erről a portról is lehet."
 
-#: title/pc5_library.c:2766
+#: title/pc5_library.c:2789
 msgid "The game's program is too deep in its folder for Windows."
 msgstr "A játék programja a Windowsnak túl mélyen van a mappájában."
 
-#: title/pc5_library.c:2774
+#: title/pc5_library.c:2797
 #, c-format
 msgid "Not enough space: the game needs %s and the console has %s free."
 msgstr "Nincs elég hely: a játéknak %s kell, a konzolon %s szabad."
 
-#: title/pc5_library.c:2777
+#: title/pc5_library.c:2800
 msgid "PC5 can't name the game."
 msgstr "A PC5 nem tud nevet adni a játéknak."
 
-#: title/pc5_library.c:2780 title/pc5_library.c:3190
+#: title/pc5_library.c:2803 title/pc5_library.c:3213
 #, c-format
 msgid "PC5 can't start the install: %s."
 msgstr "A PC5 nem tudja elindítani a telepítést: %s."
 
-#: title/pc5_library.c:2820
+#: title/pc5_library.c:2843
 msgid "A path in the Windows template is too long."
 msgstr "A Windows-sablon egyik elérési útja túl hosszú."
 
-#: title/pc5_library.c:2823 title/pc5_library.c:2828 title/pc5_library.c:3032
+#: title/pc5_library.c:2846 title/pc5_library.c:2851 title/pc5_library.c:3055
 #: title/pc5_tile.c:522
 #, c-format
 msgid "PC5 can't make %s: %s."
 msgstr "A PC5 nem tudja létrehozni: %s (%s)."
 
-#: title/pc5_library.c:2831
+#: title/pc5_library.c:2854
 #, c-format
 msgid "PC5's Windows template is missing %s."
 msgstr "A PC5 Windows-sablonjából hiányzik: %s."
 
-#: title/pc5_library.c:2850
+#: title/pc5_library.c:2873
 #, c-format
 msgid "PC5 can't copy %s: %s."
 msgstr "A PC5 nem tudja másolni: %s (%s)."
 
-#: title/pc5_library.c:2875
+#: title/pc5_library.c:2898
 #, c-format
 msgid "PC5 can't read %s on the USB drive: %s."
 msgstr "A PC5 nem tudja olvasni az USB-meghajtón: %s (%s)."
 
-#: title/pc5_library.c:3039 title/pc5_library.c:3051
+#: title/pc5_library.c:3062 title/pc5_library.c:3074
 #, c-format
 msgid "PC5 can't read back %s: %s."
 msgstr "A PC5 nem tudja visszaolvasni: %s (%s)."
 
-#: title/pc5_library.c:3039
+#: title/pc5_library.c:3062
 #, c-format
 msgid "PC5 can't open %s on the USB drive: %s."
 msgstr "A PC5 nem tudja megnyitni az USB-meghajtón: %s (%s)."
 
-#: title/pc5_library.c:3052
+#: title/pc5_library.c:3075
 #, c-format
 msgid "The USB drive stopped answering while PC5 copied %s (%s)."
 msgstr "Az USB-meghajtó nem válaszolt, miközben a PC5 ezt másolta: %s (%s)."
 
-#: title/pc5_library.c:3121
+#: title/pc5_library.c:3144
 #, c-format
 msgid ""
 "The copy of %s doesn't match the USB drive. The drive or its cable may be "
@@ -760,23 +760,23 @@ msgstr ""
 "A másolat nem egyezik az USB-meghajtón lévővel: %s. Lehet, hogy a meghajtó "
 "vagy a kábele hibás; semmi sem maradt meg."
 
-#: title/pc5_library.c:3240 title/pc5_library.c:3252
+#: title/pc5_library.c:3263 title/pc5_library.c:3275
 #, c-format
 msgid ""
 "The game couldn't be put back in the INSTALL folder: it is in %.180s."
 msgstr ""
 "A játékot nem sikerült visszatenni az INSTALL mappába: itt van: %.180s."
 
-#: title/pc5_library.c:3291
+#: title/pc5_library.c:3314
 #, c-format
 msgid "PC5 can't save the cover: %s."
 msgstr "A PC5 nem tudja menteni a borítót: %s."
 
-#: title/pc5_library.c:3407
+#: title/pc5_library.c:3430
 msgid "PC5 didn't install this game, so it can't update it."
 msgstr "Ezt a játékot nem a PC5 telepítette, így nem is tudja frissíteni."
 
-#: title/pc5_library.c:3409
+#: title/pc5_library.c:3432
 #, c-format
 msgid ""
 "%s plays from its USB drive: copy the newer version over its folder %s "
@@ -785,11 +785,11 @@ msgstr ""
 "%s az USB-meghajtójáról fut: másold az újabb verziót a meghajtón lévő "
 "mappája (%s) fölé."
 
-#: title/pc5_library.c:3414 title/pc5_library.c:3476
+#: title/pc5_library.c:3437 title/pc5_library.c:3499
 msgid "The game's folder is missing: uninstall it and install it again."
 msgstr "A játék mappája hiányzik: távolítsd el, és telepítsd újra."
 
-#: title/pc5_library.c:3417
+#: title/pc5_library.c:3440
 #, c-format
 msgid ""
 "This folder doesn't have %s, the program %s starts. Choose the folder of a "
@@ -798,12 +798,12 @@ msgstr ""
 "Ebben a mappában nincs meg a(z) %s program, amelyet a(z) %s indít. Válaszd "
 "ki a(z) %s egy újabb példányának a mappáját."
 
-#: title/pc5_library.c:3431
+#: title/pc5_library.c:3454
 #, c-format
 msgid "Not enough space: the update needs %s and the console has %s free."
 msgstr "Nincs elég hely: a frissítésnek %s kell, a konzolon %s szabad."
 
-#: title/pc5_library.c:3437
+#: title/pc5_library.c:3460
 msgid ""
 "An earlier update of this game isn't finished: close PC5 and open it again "
 "to finish it."
@@ -811,18 +811,18 @@ msgstr ""
 "A játék egy korábbi frissítése nem fejeződött be: a befejezéshez zárd be a "
 "PC5-öt, és nyisd meg újra."
 
-#: title/pc5_library.c:3439
+#: title/pc5_library.c:3462
 #, c-format
 msgid "PC5 can't start the update: %s."
 msgstr "A PC5 nem tudja elindítani a frissítést: %s."
 
-#: title/pc5_library.c:3474
+#: title/pc5_library.c:3497
 msgid ""
 "PC5 didn't install this game in a Windows of its own, so its Windows can't "
 "be reset."
 msgstr ""
 
-#: title/pc5_library.c:3479
+#: title/pc5_library.c:3502
 #, fuzzy
 msgid ""
 "An update or a reset of this game isn't finished: close PC5 and open it "
@@ -831,37 +831,37 @@ msgstr ""
 "A játék egy korábbi frissítése nem fejeződött be: a befejezéshez zárd be a "
 "PC5-öt, és nyisd meg újra."
 
-#: title/pc5_library.c:3485
+#: title/pc5_library.c:3508
 #, c-format, fuzzy
 msgid ""
 "Not enough space: a new Windows needs %s and the console has %s free."
 msgstr "Nincs elég hely: a frissítésnek %s kell, a konzolon %s szabad."
 
-#: title/pc5_library.c:3489
+#: title/pc5_library.c:3512
 #, c-format
 msgid "PC5 can't start resetting its Windows: %s."
 msgstr ""
 
-#: title/pc5_library.c:3548
+#: title/pc5_library.c:3571
 msgid ""
 "Kept saves can't be put back for a game that plays from its USB drive."
 msgstr ""
 "A megtartott mentések nem tehetők vissza olyan játékhoz, amely az "
 "USB-meghajtójáról fut."
 
-#: title/pc5_library.c:3552
+#: title/pc5_library.c:3575
 msgid "The install has begun already."
 msgstr "A telepítés már elkezdődött."
 
-#: title/pc5_library.c:3568
+#: title/pc5_library.c:3591
 msgid "PC5 can't read the kept saves."
 msgstr "A PC5 nem tudja olvasni a megtartott mentéseket."
 
-#: title/pc5_library.c:3568
+#: title/pc5_library.c:3591
 msgid "The kept saves are damaged: they have no registry."
 msgstr "A megtartott mentések sérültek: nincs beállításjegyzékük."
 
-#: title/pc5_library.c:3651
+#: title/pc5_library.c:3674
 #, c-format
 msgid "PC5 can't make the game's folder on the USB drive: %s."
 msgstr "A PC5 nem tudja létrehozni a játék mappáját az USB-meghajtón: %s."
