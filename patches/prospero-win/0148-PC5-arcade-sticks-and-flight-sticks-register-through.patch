@@ -1,0 +1,1160 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Fri, 13 Nov 2026 09:00:00 +0000
+Subject: [PATCH 148/148] PC5: arcade sticks and flight sticks register through
+ Windows.Gaming.Input (Wine patch 1014)
+
+A title that enumerates an arcade stick or a flight stick through Windows.Gaming.Input could not get past its controller setup: the dll never registered either class, so RoGetActivationFactory failed and the title gave up before the pad it would have used. The two classes now register like RacingWheel, so the call succeeds and an empty collection comes back instead of a failure.
+---
+ ...tick-and-flightstick-runtime-classes.patch | 1139 +++++++++++++++++
+ 1 file changed, 1139 insertions(+)
+ create mode 100644 wine/patches/1014-windows.gaming.input-register-the-arcadestick-and-flightstick-runtime-classes.patch
+
+diff --git a/wine/patches/1014-windows.gaming.input-register-the-arcadestick-and-flightstick-runtime-classes.patch b/wine/patches/1014-windows.gaming.input-register-the-arcadestick-and-flightstick-runtime-classes.patch
+new file mode 100644
+index 0000000..249aa88
+--- /dev/null
++++ b/wine/patches/1014-windows.gaming.input-register-the-arcadestick-and-flightstick-runtime-classes.patch
+@@ -0,0 +1,1139 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Fri, 13 Nov 2026 09:00:00 +0000
++Subject: [PATCH] windows.gaming.input: Register the ArcadeStick and FlightStick
++ runtime classes.
++
++A title that looks for an arcade stick or a flight stick through Windows.Gaming.Input asks RoGetActivationFactory for Windows.Gaming.Input.ArcadeStick or .FlightStick; the dll never registered either class, so the call returned REGDB_E_CLASSNOTREG and the title's controller setup gave up before it reached the pad it would actually have used. The two classes now have a custom game controller factory each, built from the same stubs as RacingWheel, so the factory resolves and the collection comes back empty instead of failing. The mutable IVector the backing store needs was the one parametrized collection the idl had left out for both.
++diff --git a/dlls/windows.gaming.input/Makefile.in b/dlls/windows.gaming.input/Makefile.in
++index 034cfed..7c18806 100644
++--- a/dlls/windows.gaming.input/Makefile.in
+++++ b/dlls/windows.gaming.input/Makefile.in
++@@ -2,6 +2,7 @@ MODULE = windows.gaming.input.dll
++ IMPORTS = combase uuid user32 dinput8 setupapi hid
++ 
++ SOURCES = \
+++	arcade_stick.c \
++ 	async.c \
++ 	async_private.idl \
++ 	classes.idl \
++@@ -9,6 +10,7 @@ SOURCES = \
++ 	constant_effect.c \
++ 	controller.c \
++ 	event_handlers.c \
+++	flight_stick.c \
++ 	force_feedback.c \
++ 	gamepad.c \
++ 	main.c \
++diff --git a/dlls/windows.gaming.input/arcade_stick.c b/dlls/windows.gaming.input/arcade_stick.c
++new file mode 100644
++index 0000000..90e67e9
++--- /dev/null
+++++ b/dlls/windows.gaming.input/arcade_stick.c
++@@ -0,0 +1,529 @@
+++/* WinRT Windows.Gaming.Input implementation
+++ *
+++ * Copyright 2021 Rémi Bernon for CodeWeavers
+++ *
+++ * This library is free software; you can redistribute it and/or
+++ * modify it under the terms of the GNU Lesser General Public
+++ * License as published by the Free Software Foundation; either
+++ * version 2.1 of the License, or (at your option) any later version.
+++ *
+++ * This library is distributed in the hope that it will be useful,
+++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+++ * Lesser General Public License for more details.
+++ *
+++ * You should have received a copy of the GNU Lesser General Public
+++ * License along with this library; if not, write to the Free Software
+++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+++ */
+++
+++#include "private.h"
+++#include "provider.h"
+++
+++#include "wine/debug.h"
+++
+++WINE_DEFAULT_DEBUG_CHANNEL(input);
+++
+++static CRITICAL_SECTION arcade_stick_cs;
+++static CRITICAL_SECTION_DEBUG arcade_stick_cs_debug =
+++{
+++    0, 0, &arcade_stick_cs,
+++    { &arcade_stick_cs_debug.ProcessLocksList, &arcade_stick_cs_debug.ProcessLocksList },
+++      0, 0, { (DWORD_PTR)(__FILE__ ": arcade_stick_cs") }
+++};
+++static CRITICAL_SECTION arcade_stick_cs = { &arcade_stick_cs_debug, -1, 0, 0, 0, 0 };
+++
+++static IVector_ArcadeStick *arcade_sticks;
+++static struct list arcade_stick_added_handlers = LIST_INIT( arcade_stick_added_handlers );
+++static struct list arcade_stick_removed_handlers = LIST_INIT( arcade_stick_removed_handlers );
+++
+++static HRESULT init_arcade_sticks(void)
+++{
+++    static const struct vector_iids iids =
+++    {
+++        .vector = &IID_IVector_ArcadeStick,
+++        .view = &IID_IVectorView_ArcadeStick,
+++        .iterable = &IID_IIterable_ArcadeStick,
+++        .iterator = &IID_IIterator_ArcadeStick,
+++    };
+++    HRESULT hr;
+++
+++    EnterCriticalSection( &arcade_stick_cs );
+++    if (arcade_sticks) hr = S_OK;
+++    else hr = vector_create( &iids, (void **)&arcade_sticks );
+++    LeaveCriticalSection( &arcade_stick_cs );
+++
+++    return hr;
+++}
+++
+++struct arcade_stick
+++{
+++    IGameControllerImpl IGameControllerImpl_iface;
+++    IGameControllerInputSink IGameControllerInputSink_iface;
+++    IArcadeStick IArcadeStick_iface;
+++    IGameController *IGameController_outer;
+++    LONG ref;
+++
+++    IGameControllerProvider *provider;
+++};
+++
+++static inline struct arcade_stick *impl_from_IGameControllerImpl( IGameControllerImpl *iface )
+++{
+++    return CONTAINING_RECORD( iface, struct arcade_stick, IGameControllerImpl_iface );
+++}
+++
+++static HRESULT WINAPI controller_QueryInterface( IGameControllerImpl *iface, REFIID iid, void **out )
+++{
+++    struct arcade_stick *impl = impl_from_IGameControllerImpl( iface );
+++
+++    TRACE( "iface %p, iid %s, out %p.\n", iface, debugstr_guid( iid ), out );
+++
+++    if (IsEqualGUID( iid, &IID_IUnknown ) ||
+++        IsEqualGUID( iid, &IID_IInspectable ) ||
+++        IsEqualGUID( iid, &IID_IGameControllerImpl ))
+++    {
+++        IInspectable_AddRef( (*out = &impl->IGameControllerImpl_iface) );
+++        return S_OK;
+++    }
+++
+++    if (IsEqualGUID( iid, &IID_IGameControllerInputSink ))
+++    {
+++        IInspectable_AddRef( (*out = &impl->IGameControllerInputSink_iface) );
+++        return S_OK;
+++    }
+++
+++    if (IsEqualGUID( iid, &IID_IArcadeStick ))
+++    {
+++        IInspectable_AddRef( (*out = &impl->IArcadeStick_iface) );
+++        return S_OK;
+++    }
+++
+++    FIXME( "%s not implemented, returning E_NOINTERFACE.\n", debugstr_guid( iid ) );
+++    *out = NULL;
+++    return E_NOINTERFACE;
+++}
+++
+++static ULONG WINAPI controller_AddRef( IGameControllerImpl *iface )
+++{
+++    struct arcade_stick *impl = impl_from_IGameControllerImpl( iface );
+++    ULONG ref = InterlockedIncrement( &impl->ref );
+++    TRACE( "iface %p increasing refcount to %lu.\n", iface, ref );
+++    return ref;
+++}
+++
+++static ULONG WINAPI controller_Release( IGameControllerImpl *iface )
+++{
+++    struct arcade_stick *impl = impl_from_IGameControllerImpl( iface );
+++    ULONG ref = InterlockedDecrement( &impl->ref );
+++
+++    TRACE( "iface %p decreasing refcount to %lu.\n", iface, ref );
+++
+++    if (!ref)
+++    {
+++        IGameControllerProvider_Release( impl->provider );
+++        free( impl );
+++    }
+++
+++    return ref;
+++}
+++
+++static HRESULT WINAPI controller_GetIids( IGameControllerImpl *iface, ULONG *iid_count, IID **iids )
+++{
+++    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
+++    return E_NOTIMPL;
+++}
+++
+++static HRESULT WINAPI controller_GetRuntimeClassName( IGameControllerImpl *iface, HSTRING *class_name )
+++{
+++    return WindowsCreateString( RuntimeClass_Windows_Gaming_Input_ArcadeStick,
+++                                ARRAY_SIZE(RuntimeClass_Windows_Gaming_Input_ArcadeStick), class_name );
+++}
+++
+++static HRESULT WINAPI controller_GetTrustLevel( IGameControllerImpl *iface, TrustLevel *trust_level )
+++{
+++    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
+++    return E_NOTIMPL;
+++}
+++
+++static HRESULT WINAPI controller_Initialize( IGameControllerImpl *iface, IGameController *outer,
+++                                             IGameControllerProvider *provider )
+++{
+++    struct arcade_stick *impl = impl_from_IGameControllerImpl( iface );
+++    HRESULT hr;
+++
+++    TRACE( "iface %p, outer %p, provider %p.\n", iface, outer, provider );
+++
+++    impl->IGameController_outer = outer;
+++    IGameControllerProvider_AddRef( (impl->provider = provider) );
+++
+++    EnterCriticalSection( &arcade_stick_cs );
+++    if (SUCCEEDED(hr = init_arcade_sticks()))
+++        hr = IVector_ArcadeStick_Append( arcade_sticks, &impl->IArcadeStick_iface );
+++    LeaveCriticalSection( &arcade_stick_cs );
+++
+++    return hr;
+++}
+++
+++static const struct IGameControllerImplVtbl controller_vtbl =
+++{
+++    controller_QueryInterface,
+++    controller_AddRef,
+++    controller_Release,
+++    /* IInspectable methods */
+++    controller_GetIids,
+++    controller_GetRuntimeClassName,
+++    controller_GetTrustLevel,
+++    /* IGameControllerImpl methods */
+++    controller_Initialize,
+++};
+++
+++DEFINE_IINSPECTABLE_OUTER( input_sink, IGameControllerInputSink, struct arcade_stick, IGameController_outer )
+++
+++static HRESULT WINAPI input_sink_OnInputResumed( IGameControllerInputSink *iface, UINT64 timestamp )
+++{
+++    FIXME( "iface %p, timestamp %I64u stub!\n", iface, timestamp );
+++    return E_NOTIMPL;
+++}
+++
+++static HRESULT WINAPI input_sink_OnInputSuspended( IGameControllerInputSink *iface, UINT64 timestamp )
+++{
+++    FIXME( "iface %p, timestamp %I64u stub!\n", iface, timestamp );
+++    return E_NOTIMPL;
+++}
+++
+++static const struct IGameControllerInputSinkVtbl input_sink_vtbl =
+++{
+++    input_sink_QueryInterface,
+++    input_sink_AddRef,
+++    input_sink_Release,
+++    /* IInspectable methods */
+++    input_sink_GetIids,
+++    input_sink_GetRuntimeClassName,
+++    input_sink_GetTrustLevel,
+++    /* IGameControllerInputSink methods */
+++    input_sink_OnInputResumed,
+++    input_sink_OnInputSuspended,
+++};
+++
+++DEFINE_IINSPECTABLE_OUTER( arcade_stick, IArcadeStick, struct arcade_stick, IGameController_outer )
+++
+++static HRESULT WINAPI arcade_stick_GetButtonLabel( IArcadeStick *iface, enum ArcadeStickButtons button,
+++                                                   enum GameControllerButtonLabel *value )
+++{
+++    FIXME( "iface %p, button %d, value %p stub!\n", iface, button, value );
+++    return E_NOTIMPL;
+++}
+++
+++static HRESULT WINAPI arcade_stick_GetCurrentReading( IArcadeStick *iface, struct ArcadeStickReading *value )
+++{
+++    FIXME( "iface %p, value %p stub!\n", iface, value );
+++    return E_NOTIMPL;
+++}
+++
+++static const struct IArcadeStickVtbl arcade_stick_vtbl =
+++{
+++    arcade_stick_QueryInterface,
+++    arcade_stick_AddRef,
+++    arcade_stick_Release,
+++    /* IInspectable methods */
+++    arcade_stick_GetIids,
+++    arcade_stick_GetRuntimeClassName,
+++    arcade_stick_GetTrustLevel,
+++    /* IArcadeStick methods */
+++    arcade_stick_GetButtonLabel,
+++    arcade_stick_GetCurrentReading,
+++};
+++
+++struct arcade_stick_statics
+++{
+++    IActivationFactory IActivationFactory_iface;
+++    IArcadeStickStatics IArcadeStickStatics_iface;
+++    IArcadeStickStatics2 IArcadeStickStatics2_iface;
+++    ICustomGameControllerFactory ICustomGameControllerFactory_iface;
+++    LONG ref;
+++};
+++
+++static inline struct arcade_stick_statics *impl_from_IActivationFactory( IActivationFactory *iface )
+++{
+++    return CONTAINING_RECORD( iface, struct arcade_stick_statics, IActivationFactory_iface );
+++}
+++
+++static HRESULT WINAPI factory_QueryInterface( IActivationFactory *iface, REFIID iid, void **out )
+++{
+++    struct arcade_stick_statics *impl = impl_from_IActivationFactory( iface );
+++
+++    TRACE( "iface %p, iid %s, out %p.\n", iface, debugstr_guid( iid ), out );
+++
+++    if (IsEqualGUID( iid, &IID_IUnknown ) ||
+++        IsEqualGUID( iid, &IID_IInspectable ) ||
+++        IsEqualGUID( iid, &IID_IAgileObject ) ||
+++        IsEqualGUID( iid, &IID_IActivationFactory ))
+++    {
+++        IInspectable_AddRef( (*out = &impl->IActivationFactory_iface) );
+++        return S_OK;
+++    }
+++
+++    if (IsEqualGUID( iid, &IID_IArcadeStickStatics ))
+++    {
+++        IInspectable_AddRef( (*out = &impl->IArcadeStickStatics_iface) );
+++        return S_OK;
+++    }
+++
+++    if (IsEqualGUID( iid, &IID_IArcadeStickStatics2 ))
+++    {
+++        IInspectable_AddRef( (*out = &impl->IArcadeStickStatics2_iface) );
+++        return S_OK;
+++    }
+++
+++    if (IsEqualGUID( iid, &IID_ICustomGameControllerFactory ))
+++    {
+++        IInspectable_AddRef( (*out = &impl->ICustomGameControllerFactory_iface) );
+++        return S_OK;
+++    }
+++
+++    FIXME( "%s not implemented, returning E_NOINTERFACE.\n", debugstr_guid( iid ) );
+++    *out = NULL;
+++    return E_NOINTERFACE;
+++}
+++
+++static ULONG WINAPI factory_AddRef( IActivationFactory *iface )
+++{
+++    struct arcade_stick_statics *impl = impl_from_IActivationFactory( iface );
+++    ULONG ref = InterlockedIncrement( &impl->ref );
+++    TRACE( "iface %p increasing refcount to %lu.\n", iface, ref );
+++    return ref;
+++}
+++
+++static ULONG WINAPI factory_Release( IActivationFactory *iface )
+++{
+++    struct arcade_stick_statics *impl = impl_from_IActivationFactory( iface );
+++    ULONG ref = InterlockedDecrement( &impl->ref );
+++    TRACE( "iface %p decreasing refcount to %lu.\n", iface, ref );
+++    return ref;
+++}
+++
+++static HRESULT WINAPI factory_GetIids( IActivationFactory *iface, ULONG *iid_count, IID **iids )
+++{
+++    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
+++    return E_NOTIMPL;
+++}
+++
+++static HRESULT WINAPI factory_GetRuntimeClassName( IActivationFactory *iface, HSTRING *class_name )
+++{
+++    FIXME( "iface %p, class_name %p stub!\n", iface, class_name );
+++    return E_NOTIMPL;
+++}
+++
+++static HRESULT WINAPI factory_GetTrustLevel( IActivationFactory *iface, TrustLevel *trust_level )
+++{
+++    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
+++    return E_NOTIMPL;
+++}
+++
+++static HRESULT WINAPI factory_ActivateInstance( IActivationFactory *iface, IInspectable **instance )
+++{
+++    FIXME( "iface %p, instance %p stub!\n", iface, instance );
+++    return E_NOTIMPL;
+++}
+++
+++static const struct IActivationFactoryVtbl factory_vtbl =
+++{
+++    factory_QueryInterface,
+++    factory_AddRef,
+++    factory_Release,
+++    /* IInspectable methods */
+++    factory_GetIids,
+++    factory_GetRuntimeClassName,
+++    factory_GetTrustLevel,
+++    /* IActivationFactory methods */
+++    factory_ActivateInstance,
+++};
+++
+++DEFINE_IINSPECTABLE( statics, IArcadeStickStatics, struct arcade_stick_statics, IActivationFactory_iface )
+++
+++static HRESULT WINAPI statics_add_ArcadeStickAdded( IArcadeStickStatics *iface, IEventHandler_ArcadeStick *handler,
+++                                                    EventRegistrationToken *token )
+++{
+++    TRACE( "iface %p, handler %p, token %p.\n", iface, handler, token );
+++    if (!handler) return E_INVALIDARG;
+++    return event_handlers_append( &arcade_stick_added_handlers, (IEventHandler_IInspectable *)handler, token );
+++}
+++
+++static HRESULT WINAPI statics_remove_ArcadeStickAdded( IArcadeStickStatics *iface, EventRegistrationToken token )
+++{
+++    TRACE( "iface %p, token %#I64x.\n", iface, token.value );
+++    return event_handlers_remove( &arcade_stick_added_handlers, &token );
+++}
+++
+++static HRESULT WINAPI statics_add_ArcadeStickRemoved( IArcadeStickStatics *iface, IEventHandler_ArcadeStick *handler,
+++                                                      EventRegistrationToken *token )
+++{
+++    TRACE( "iface %p, handler %p, token %p.\n", iface, handler, token );
+++    if (!handler) return E_INVALIDARG;
+++    return event_handlers_append( &arcade_stick_removed_handlers, (IEventHandler_IInspectable *)handler, token );
+++}
+++
+++static HRESULT WINAPI statics_remove_ArcadeStickRemoved( IArcadeStickStatics *iface, EventRegistrationToken token )
+++{
+++    TRACE( "iface %p, token %#I64x.\n", iface, token.value );
+++    return event_handlers_remove( &arcade_stick_removed_handlers, &token );
+++}
+++
+++static HRESULT WINAPI statics_get_ArcadeSticks( IArcadeStickStatics *iface, IVectorView_ArcadeStick **value )
+++{
+++    HRESULT hr;
+++
+++    TRACE( "iface %p, value %p.\n", iface, value );
+++
+++    EnterCriticalSection( &arcade_stick_cs );
+++    if (SUCCEEDED(hr = init_arcade_sticks())) hr = IVector_ArcadeStick_GetView( arcade_sticks, value );
+++    LeaveCriticalSection( &arcade_stick_cs );
+++
+++    return hr;
+++}
+++
+++static const struct IArcadeStickStaticsVtbl statics_vtbl =
+++{
+++    statics_QueryInterface,
+++    statics_AddRef,
+++    statics_Release,
+++    /* IInspectable methods */
+++    statics_GetIids,
+++    statics_GetRuntimeClassName,
+++    statics_GetTrustLevel,
+++    /* IArcadeStickStatics methods */
+++    statics_add_ArcadeStickAdded,
+++    statics_remove_ArcadeStickAdded,
+++    statics_add_ArcadeStickRemoved,
+++    statics_remove_ArcadeStickRemoved,
+++    statics_get_ArcadeSticks,
+++};
+++
+++DEFINE_IINSPECTABLE( statics2, IArcadeStickStatics2, struct arcade_stick_statics, IActivationFactory_iface )
+++
+++static HRESULT WINAPI statics2_FromGameController( IArcadeStickStatics2 *iface, IGameController *game_controller, IArcadeStick **value )
+++{
+++    struct arcade_stick_statics *impl = impl_from_IArcadeStickStatics2( iface );
+++    IGameController *controller;
+++    HRESULT hr;
+++
+++    TRACE( "iface %p, game_controller %p, value %p.\n", iface, game_controller, value );
+++
+++    *value = NULL;
+++    hr = IGameControllerFactoryManagerStatics2_TryGetFactoryControllerFromGameController( manager_factory, &impl->ICustomGameControllerFactory_iface,
+++                                                                                          game_controller, &controller );
+++    if (FAILED(hr) || !controller) return hr;
+++
+++    hr = IGameController_QueryInterface( controller, &IID_IArcadeStick, (void **)value );
+++    IGameController_Release( controller );
+++    return hr;
+++}
+++
+++static const struct IArcadeStickStatics2Vtbl statics2_vtbl =
+++{
+++    statics2_QueryInterface,
+++    statics2_AddRef,
+++    statics2_Release,
+++    /* IInspectable methods */
+++    statics2_GetIids,
+++    statics2_GetRuntimeClassName,
+++    statics2_GetTrustLevel,
+++    /* IArcadeStickStatics2 methods */
+++    statics2_FromGameController,
+++};
+++
+++DEFINE_IINSPECTABLE( controller_factory, ICustomGameControllerFactory, struct arcade_stick_statics, IActivationFactory_iface )
+++
+++static HRESULT WINAPI controller_factory_CreateGameController( ICustomGameControllerFactory *iface, IGameControllerProvider *provider,
+++                                                               IInspectable **value )
+++{
+++    struct arcade_stick *impl;
+++
+++    TRACE( "iface %p, provider %p, value %p.\n", iface, provider, value );
+++
+++    if (!(impl = calloc( 1, sizeof(*impl) ))) return E_OUTOFMEMORY;
+++    impl->IGameControllerImpl_iface.lpVtbl = &controller_vtbl;
+++    impl->IGameControllerInputSink_iface.lpVtbl = &input_sink_vtbl;
+++    impl->IArcadeStick_iface.lpVtbl = &arcade_stick_vtbl;
+++    impl->ref = 1;
+++
+++    TRACE( "created ArcadeStick %p\n", impl );
+++
+++    *value = (IInspectable *)&impl->IGameControllerImpl_iface;
+++    return S_OK;
+++}
+++
+++static HRESULT WINAPI controller_factory_OnGameControllerAdded( ICustomGameControllerFactory *iface, IGameController *value )
+++{
+++    IArcadeStick *arcade_stick;
+++    HRESULT hr;
+++
+++    TRACE( "iface %p, value %p.\n", iface, value );
+++
+++    if (FAILED(hr = IGameController_QueryInterface( value, &IID_IArcadeStick, (void **)&arcade_stick )))
+++        return hr;
+++    event_handlers_notify( &arcade_stick_added_handlers, (IInspectable *)arcade_stick );
+++    IArcadeStick_Release( arcade_stick );
+++
+++    return S_OK;
+++}
+++
+++static HRESULT WINAPI controller_factory_OnGameControllerRemoved( ICustomGameControllerFactory *iface, IGameController *value )
+++{
+++    IArcadeStick *arcade_stick;
+++    BOOLEAN found;
+++    UINT32 index;
+++    HRESULT hr;
+++
+++    TRACE( "iface %p, value %p.\n", iface, value );
+++
+++    if (FAILED(hr = IGameController_QueryInterface( value, &IID_IArcadeStick, (void **)&arcade_stick )))
+++        return hr;
+++
+++    EnterCriticalSection( &arcade_stick_cs );
+++    if (SUCCEEDED(hr = init_arcade_sticks()))
+++    {
+++        if (FAILED(hr = IVector_ArcadeStick_IndexOf( arcade_sticks, arcade_stick, &index, &found )) || !found)
+++            WARN( "Could not find ArcadeStick %p, hr %#lx!\n", arcade_stick, hr );
+++        else
+++            hr = IVector_ArcadeStick_RemoveAt( arcade_sticks, index );
+++    }
+++    LeaveCriticalSection( &arcade_stick_cs );
+++
+++    if (FAILED(hr))
+++        WARN( "Failed to remove ArcadeStick %p, hr %#lx!\n", arcade_stick, hr );
+++    else if (found)
+++    {
+++        TRACE( "Removed ArcadeStick %p.\n", arcade_stick );
+++        event_handlers_notify( &arcade_stick_removed_handlers, (IInspectable *)arcade_stick );
+++    }
+++    IArcadeStick_Release( arcade_stick );
+++
+++    return S_OK;
+++}
+++
+++static const struct ICustomGameControllerFactoryVtbl controller_factory_vtbl =
+++{
+++    controller_factory_QueryInterface,
+++    controller_factory_AddRef,
+++    controller_factory_Release,
+++    /* IInspectable methods */
+++    controller_factory_GetIids,
+++    controller_factory_GetRuntimeClassName,
+++    controller_factory_GetTrustLevel,
+++    /* ICustomGameControllerFactory methods */
+++    controller_factory_CreateGameController,
+++    controller_factory_OnGameControllerAdded,
+++    controller_factory_OnGameControllerRemoved,
+++};
+++
+++static struct arcade_stick_statics arcade_stick_statics =
+++{
+++    {&factory_vtbl},
+++    {&statics_vtbl},
+++    {&statics2_vtbl},
+++    {&controller_factory_vtbl},
+++    1,
+++};
+++
+++ICustomGameControllerFactory *arcade_stick_factory = &arcade_stick_statics.ICustomGameControllerFactory_iface;
++diff --git a/dlls/windows.gaming.input/classes.idl b/dlls/windows.gaming.input/classes.idl
++index 4ad7b50..33f878d 100644
++--- a/dlls/windows.gaming.input/classes.idl
+++++ b/dlls/windows.gaming.input/classes.idl
++@@ -38,6 +38,8 @@ namespace Windows.Gaming.Input {
++     runtimeclass RawGameController;
++     runtimeclass Gamepad;
++     runtimeclass RacingWheel;
+++    runtimeclass ArcadeStick;
+++    runtimeclass FlightStick;
++ }
++ namespace Windows.Gaming.Input.Custom {
++     runtimeclass GameControllerFactoryManager;
++diff --git a/dlls/windows.gaming.input/flight_stick.c b/dlls/windows.gaming.input/flight_stick.c
++new file mode 100644
++index 0000000..bbe5b8d
++--- /dev/null
+++++ b/dlls/windows.gaming.input/flight_stick.c
++@@ -0,0 +1,514 @@
+++/* WinRT Windows.Gaming.Input implementation
+++ *
+++ * Copyright 2021 Rémi Bernon for CodeWeavers
+++ *
+++ * This library is free software; you can redistribute it and/or
+++ * modify it under the terms of the GNU Lesser General Public
+++ * License as published by the Free Software Foundation; either
+++ * version 2.1 of the License, or (at your option) any later version.
+++ *
+++ * This library is distributed in the hope that it will be useful,
+++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+++ * Lesser General Public License for more details.
+++ *
+++ * You should have received a copy of the GNU Lesser General Public
+++ * License along with this library; if not, write to the Free Software
+++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+++ */
+++
+++#include "private.h"
+++#include "provider.h"
+++
+++#include "wine/debug.h"
+++
+++WINE_DEFAULT_DEBUG_CHANNEL(input);
+++
+++static CRITICAL_SECTION flight_stick_cs;
+++static CRITICAL_SECTION_DEBUG flight_stick_cs_debug =
+++{
+++    0, 0, &flight_stick_cs,
+++    { &flight_stick_cs_debug.ProcessLocksList, &flight_stick_cs_debug.ProcessLocksList },
+++      0, 0, { (DWORD_PTR)(__FILE__ ": flight_stick_cs") }
+++};
+++static CRITICAL_SECTION flight_stick_cs = { &flight_stick_cs_debug, -1, 0, 0, 0, 0 };
+++
+++static IVector_FlightStick *flight_sticks;
+++static struct list flight_stick_added_handlers = LIST_INIT( flight_stick_added_handlers );
+++static struct list flight_stick_removed_handlers = LIST_INIT( flight_stick_removed_handlers );
+++
+++static HRESULT init_flight_sticks(void)
+++{
+++    static const struct vector_iids iids =
+++    {
+++        .vector = &IID_IVector_FlightStick,
+++        .view = &IID_IVectorView_FlightStick,
+++        .iterable = &IID_IIterable_FlightStick,
+++        .iterator = &IID_IIterator_FlightStick,
+++    };
+++    HRESULT hr;
+++
+++    EnterCriticalSection( &flight_stick_cs );
+++    if (flight_sticks) hr = S_OK;
+++    else hr = vector_create( &iids, (void **)&flight_sticks );
+++    LeaveCriticalSection( &flight_stick_cs );
+++
+++    return hr;
+++}
+++
+++struct flight_stick
+++{
+++    IGameControllerImpl IGameControllerImpl_iface;
+++    IGameControllerInputSink IGameControllerInputSink_iface;
+++    IFlightStick IFlightStick_iface;
+++    IGameController *IGameController_outer;
+++    LONG ref;
+++
+++    IGameControllerProvider *provider;
+++};
+++
+++static inline struct flight_stick *impl_from_IGameControllerImpl( IGameControllerImpl *iface )
+++{
+++    return CONTAINING_RECORD( iface, struct flight_stick, IGameControllerImpl_iface );
+++}
+++
+++static HRESULT WINAPI controller_QueryInterface( IGameControllerImpl *iface, REFIID iid, void **out )
+++{
+++    struct flight_stick *impl = impl_from_IGameControllerImpl( iface );
+++
+++    TRACE( "iface %p, iid %s, out %p.\n", iface, debugstr_guid( iid ), out );
+++
+++    if (IsEqualGUID( iid, &IID_IUnknown ) ||
+++        IsEqualGUID( iid, &IID_IInspectable ) ||
+++        IsEqualGUID( iid, &IID_IGameControllerImpl ))
+++    {
+++        IInspectable_AddRef( (*out = &impl->IGameControllerImpl_iface) );
+++        return S_OK;
+++    }
+++
+++    if (IsEqualGUID( iid, &IID_IGameControllerInputSink ))
+++    {
+++        IInspectable_AddRef( (*out = &impl->IGameControllerInputSink_iface) );
+++        return S_OK;
+++    }
+++
+++    if (IsEqualGUID( iid, &IID_IFlightStick ))
+++    {
+++        IInspectable_AddRef( (*out = &impl->IFlightStick_iface) );
+++        return S_OK;
+++    }
+++
+++    FIXME( "%s not implemented, returning E_NOINTERFACE.\n", debugstr_guid( iid ) );
+++    *out = NULL;
+++    return E_NOINTERFACE;
+++}
+++
+++static ULONG WINAPI controller_AddRef( IGameControllerImpl *iface )
+++{
+++    struct flight_stick *impl = impl_from_IGameControllerImpl( iface );
+++    ULONG ref = InterlockedIncrement( &impl->ref );
+++    TRACE( "iface %p increasing refcount to %lu.\n", iface, ref );
+++    return ref;
+++}
+++
+++static ULONG WINAPI controller_Release( IGameControllerImpl *iface )
+++{
+++    struct flight_stick *impl = impl_from_IGameControllerImpl( iface );
+++    ULONG ref = InterlockedDecrement( &impl->ref );
+++
+++    TRACE( "iface %p decreasing refcount to %lu.\n", iface, ref );
+++
+++    if (!ref)
+++    {
+++        IGameControllerProvider_Release( impl->provider );
+++        free( impl );
+++    }
+++
+++    return ref;
+++}
+++
+++static HRESULT WINAPI controller_GetIids( IGameControllerImpl *iface, ULONG *iid_count, IID **iids )
+++{
+++    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
+++    return E_NOTIMPL;
+++}
+++
+++static HRESULT WINAPI controller_GetRuntimeClassName( IGameControllerImpl *iface, HSTRING *class_name )
+++{
+++    return WindowsCreateString( RuntimeClass_Windows_Gaming_Input_FlightStick,
+++                                ARRAY_SIZE(RuntimeClass_Windows_Gaming_Input_FlightStick), class_name );
+++}
+++
+++static HRESULT WINAPI controller_GetTrustLevel( IGameControllerImpl *iface, TrustLevel *trust_level )
+++{
+++    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
+++    return E_NOTIMPL;
+++}
+++
+++static HRESULT WINAPI controller_Initialize( IGameControllerImpl *iface, IGameController *outer,
+++                                             IGameControllerProvider *provider )
+++{
+++    struct flight_stick *impl = impl_from_IGameControllerImpl( iface );
+++    HRESULT hr;
+++
+++    TRACE( "iface %p, outer %p, provider %p.\n", iface, outer, provider );
+++
+++    impl->IGameController_outer = outer;
+++    IGameControllerProvider_AddRef( (impl->provider = provider) );
+++
+++    EnterCriticalSection( &flight_stick_cs );
+++    if (SUCCEEDED(hr = init_flight_sticks()))
+++        hr = IVector_FlightStick_Append( flight_sticks, &impl->IFlightStick_iface );
+++    LeaveCriticalSection( &flight_stick_cs );
+++
+++    return hr;
+++}
+++
+++static const struct IGameControllerImplVtbl controller_vtbl =
+++{
+++    controller_QueryInterface,
+++    controller_AddRef,
+++    controller_Release,
+++    /* IInspectable methods */
+++    controller_GetIids,
+++    controller_GetRuntimeClassName,
+++    controller_GetTrustLevel,
+++    /* IGameControllerImpl methods */
+++    controller_Initialize,
+++};
+++
+++DEFINE_IINSPECTABLE_OUTER( input_sink, IGameControllerInputSink, struct flight_stick, IGameController_outer )
+++
+++static HRESULT WINAPI input_sink_OnInputResumed( IGameControllerInputSink *iface, UINT64 timestamp )
+++{
+++    FIXME( "iface %p, timestamp %I64u stub!\n", iface, timestamp );
+++    return E_NOTIMPL;
+++}
+++
+++static HRESULT WINAPI input_sink_OnInputSuspended( IGameControllerInputSink *iface, UINT64 timestamp )
+++{
+++    FIXME( "iface %p, timestamp %I64u stub!\n", iface, timestamp );
+++    return E_NOTIMPL;
+++}
+++
+++static const struct IGameControllerInputSinkVtbl input_sink_vtbl =
+++{
+++    input_sink_QueryInterface,
+++    input_sink_AddRef,
+++    input_sink_Release,
+++    /* IInspectable methods */
+++    input_sink_GetIids,
+++    input_sink_GetRuntimeClassName,
+++    input_sink_GetTrustLevel,
+++    /* IGameControllerInputSink methods */
+++    input_sink_OnInputResumed,
+++    input_sink_OnInputSuspended,
+++};
+++
+++DEFINE_IINSPECTABLE_OUTER( flight_stick, IFlightStick, struct flight_stick, IGameController_outer )
+++
+++static HRESULT WINAPI flight_stick_get_HatSwitchKind( IFlightStick *iface, enum GameControllerSwitchKind *value )
+++{
+++    FIXME( "iface %p, value %p stub!\n", iface, value );
+++    return E_NOTIMPL;
+++}
+++
+++static HRESULT WINAPI flight_stick_GetButtonLabel( IFlightStick *iface, enum FlightStickButtons button,
+++                                                   enum GameControllerButtonLabel *value )
+++{
+++    FIXME( "iface %p, button %d, value %p stub!\n", iface, button, value );
+++    return E_NOTIMPL;
+++}
+++
+++static HRESULT WINAPI flight_stick_GetCurrentReading( IFlightStick *iface, struct FlightStickReading *value )
+++{
+++    FIXME( "iface %p, value %p stub!\n", iface, value );
+++    return E_NOTIMPL;
+++}
+++
+++static const struct IFlightStickVtbl flight_stick_vtbl =
+++{
+++    flight_stick_QueryInterface,
+++    flight_stick_AddRef,
+++    flight_stick_Release,
+++    /* IInspectable methods */
+++    flight_stick_GetIids,
+++    flight_stick_GetRuntimeClassName,
+++    flight_stick_GetTrustLevel,
+++    /* IFlightStick methods */
+++    flight_stick_get_HatSwitchKind,
+++    flight_stick_GetButtonLabel,
+++    flight_stick_GetCurrentReading,
+++};
+++
+++struct flight_stick_statics
+++{
+++    IActivationFactory IActivationFactory_iface;
+++    IFlightStickStatics IFlightStickStatics_iface;
+++    ICustomGameControllerFactory ICustomGameControllerFactory_iface;
+++    LONG ref;
+++};
+++
+++static inline struct flight_stick_statics *impl_from_IActivationFactory( IActivationFactory *iface )
+++{
+++    return CONTAINING_RECORD( iface, struct flight_stick_statics, IActivationFactory_iface );
+++}
+++
+++static HRESULT WINAPI factory_QueryInterface( IActivationFactory *iface, REFIID iid, void **out )
+++{
+++    struct flight_stick_statics *impl = impl_from_IActivationFactory( iface );
+++
+++    TRACE( "iface %p, iid %s, out %p.\n", iface, debugstr_guid( iid ), out );
+++
+++    if (IsEqualGUID( iid, &IID_IUnknown ) ||
+++        IsEqualGUID( iid, &IID_IInspectable ) ||
+++        IsEqualGUID( iid, &IID_IAgileObject ) ||
+++        IsEqualGUID( iid, &IID_IActivationFactory ))
+++    {
+++        IInspectable_AddRef( (*out = &impl->IActivationFactory_iface) );
+++        return S_OK;
+++    }
+++
+++    if (IsEqualGUID( iid, &IID_IFlightStickStatics ))
+++    {
+++        IInspectable_AddRef( (*out = &impl->IFlightStickStatics_iface) );
+++        return S_OK;
+++    }
+++
+++    if (IsEqualGUID( iid, &IID_ICustomGameControllerFactory ))
+++    {
+++        IInspectable_AddRef( (*out = &impl->ICustomGameControllerFactory_iface) );
+++        return S_OK;
+++    }
+++
+++    FIXME( "%s not implemented, returning E_NOINTERFACE.\n", debugstr_guid( iid ) );
+++    *out = NULL;
+++    return E_NOINTERFACE;
+++}
+++
+++static ULONG WINAPI factory_AddRef( IActivationFactory *iface )
+++{
+++    struct flight_stick_statics *impl = impl_from_IActivationFactory( iface );
+++    ULONG ref = InterlockedIncrement( &impl->ref );
+++    TRACE( "iface %p increasing refcount to %lu.\n", iface, ref );
+++    return ref;
+++}
+++
+++static ULONG WINAPI factory_Release( IActivationFactory *iface )
+++{
+++    struct flight_stick_statics *impl = impl_from_IActivationFactory( iface );
+++    ULONG ref = InterlockedDecrement( &impl->ref );
+++    TRACE( "iface %p decreasing refcount to %lu.\n", iface, ref );
+++    return ref;
+++}
+++
+++static HRESULT WINAPI factory_GetIids( IActivationFactory *iface, ULONG *iid_count, IID **iids )
+++{
+++    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
+++    return E_NOTIMPL;
+++}
+++
+++static HRESULT WINAPI factory_GetRuntimeClassName( IActivationFactory *iface, HSTRING *class_name )
+++{
+++    FIXME( "iface %p, class_name %p stub!\n", iface, class_name );
+++    return E_NOTIMPL;
+++}
+++
+++static HRESULT WINAPI factory_GetTrustLevel( IActivationFactory *iface, TrustLevel *trust_level )
+++{
+++    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
+++    return E_NOTIMPL;
+++}
+++
+++static HRESULT WINAPI factory_ActivateInstance( IActivationFactory *iface, IInspectable **instance )
+++{
+++    FIXME( "iface %p, instance %p stub!\n", iface, instance );
+++    return E_NOTIMPL;
+++}
+++
+++static const struct IActivationFactoryVtbl factory_vtbl =
+++{
+++    factory_QueryInterface,
+++    factory_AddRef,
+++    factory_Release,
+++    /* IInspectable methods */
+++    factory_GetIids,
+++    factory_GetRuntimeClassName,
+++    factory_GetTrustLevel,
+++    /* IActivationFactory methods */
+++    factory_ActivateInstance,
+++};
+++
+++DEFINE_IINSPECTABLE( statics, IFlightStickStatics, struct flight_stick_statics, IActivationFactory_iface )
+++
+++static HRESULT WINAPI statics_add_FlightStickAdded( IFlightStickStatics *iface, IEventHandler_FlightStick *handler,
+++                                                    EventRegistrationToken *token )
+++{
+++    TRACE( "iface %p, handler %p, token %p.\n", iface, handler, token );
+++    if (!handler) return E_INVALIDARG;
+++    return event_handlers_append( &flight_stick_added_handlers, (IEventHandler_IInspectable *)handler, token );
+++}
+++
+++static HRESULT WINAPI statics_remove_FlightStickAdded( IFlightStickStatics *iface, EventRegistrationToken token )
+++{
+++    TRACE( "iface %p, token %#I64x.\n", iface, token.value );
+++    return event_handlers_remove( &flight_stick_added_handlers, &token );
+++}
+++
+++static HRESULT WINAPI statics_add_FlightStickRemoved( IFlightStickStatics *iface, IEventHandler_FlightStick *handler,
+++                                                      EventRegistrationToken *token )
+++{
+++    TRACE( "iface %p, handler %p, token %p.\n", iface, handler, token );
+++    if (!handler) return E_INVALIDARG;
+++    return event_handlers_append( &flight_stick_removed_handlers, (IEventHandler_IInspectable *)handler, token );
+++}
+++
+++static HRESULT WINAPI statics_remove_FlightStickRemoved( IFlightStickStatics *iface, EventRegistrationToken token )
+++{
+++    TRACE( "iface %p, token %#I64x.\n", iface, token.value );
+++    return event_handlers_remove( &flight_stick_removed_handlers, &token );
+++}
+++
+++static HRESULT WINAPI statics_get_FlightSticks( IFlightStickStatics *iface, IVectorView_FlightStick **value )
+++{
+++    HRESULT hr;
+++
+++    TRACE( "iface %p, value %p.\n", iface, value );
+++
+++    EnterCriticalSection( &flight_stick_cs );
+++    if (SUCCEEDED(hr = init_flight_sticks())) hr = IVector_FlightStick_GetView( flight_sticks, value );
+++    LeaveCriticalSection( &flight_stick_cs );
+++
+++    return hr;
+++}
+++
+++static HRESULT WINAPI statics_FromGameController( IFlightStickStatics *iface, IGameController *game_controller, IFlightStick **value )
+++{
+++    struct flight_stick_statics *impl = impl_from_IFlightStickStatics( iface );
+++    IGameController *controller;
+++    HRESULT hr;
+++
+++    TRACE( "iface %p, game_controller %p, value %p.\n", iface, game_controller, value );
+++
+++    *value = NULL;
+++    hr = IGameControllerFactoryManagerStatics2_TryGetFactoryControllerFromGameController( manager_factory, &impl->ICustomGameControllerFactory_iface,
+++                                                                                          game_controller, &controller );
+++    if (FAILED(hr) || !controller) return hr;
+++
+++    hr = IGameController_QueryInterface( controller, &IID_IFlightStick, (void **)value );
+++    IGameController_Release( controller );
+++    return hr;
+++}
+++
+++static const struct IFlightStickStaticsVtbl statics_vtbl =
+++{
+++    statics_QueryInterface,
+++    statics_AddRef,
+++    statics_Release,
+++    /* IInspectable methods */
+++    statics_GetIids,
+++    statics_GetRuntimeClassName,
+++    statics_GetTrustLevel,
+++    /* IFlightStickStatics methods */
+++    statics_add_FlightStickAdded,
+++    statics_remove_FlightStickAdded,
+++    statics_add_FlightStickRemoved,
+++    statics_remove_FlightStickRemoved,
+++    statics_get_FlightSticks,
+++    statics_FromGameController,
+++};
+++
+++DEFINE_IINSPECTABLE( controller_factory, ICustomGameControllerFactory, struct flight_stick_statics, IActivationFactory_iface )
+++
+++static HRESULT WINAPI controller_factory_CreateGameController( ICustomGameControllerFactory *iface, IGameControllerProvider *provider,
+++                                                               IInspectable **value )
+++{
+++    struct flight_stick *impl;
+++
+++    TRACE( "iface %p, provider %p, value %p.\n", iface, provider, value );
+++
+++    if (!(impl = calloc( 1, sizeof(*impl) ))) return E_OUTOFMEMORY;
+++    impl->IGameControllerImpl_iface.lpVtbl = &controller_vtbl;
+++    impl->IGameControllerInputSink_iface.lpVtbl = &input_sink_vtbl;
+++    impl->IFlightStick_iface.lpVtbl = &flight_stick_vtbl;
+++    impl->ref = 1;
+++
+++    TRACE( "created FlightStick %p\n", impl );
+++
+++    *value = (IInspectable *)&impl->IGameControllerImpl_iface;
+++    return S_OK;
+++}
+++
+++static HRESULT WINAPI controller_factory_OnGameControllerAdded( ICustomGameControllerFactory *iface, IGameController *value )
+++{
+++    IFlightStick *flight_stick;
+++    HRESULT hr;
+++
+++    TRACE( "iface %p, value %p.\n", iface, value );
+++
+++    if (FAILED(hr = IGameController_QueryInterface( value, &IID_IFlightStick, (void **)&flight_stick )))
+++        return hr;
+++    event_handlers_notify( &flight_stick_added_handlers, (IInspectable *)flight_stick );
+++    IFlightStick_Release( flight_stick );
+++
+++    return S_OK;
+++}
+++
+++static HRESULT WINAPI controller_factory_OnGameControllerRemoved( ICustomGameControllerFactory *iface, IGameController *value )
+++{
+++    IFlightStick *flight_stick;
+++    BOOLEAN found;
+++    UINT32 index;
+++    HRESULT hr;
+++
+++    TRACE( "iface %p, value %p.\n", iface, value );
+++
+++    if (FAILED(hr = IGameController_QueryInterface( value, &IID_IFlightStick, (void **)&flight_stick )))
+++        return hr;
+++
+++    EnterCriticalSection( &flight_stick_cs );
+++    if (SUCCEEDED(hr = init_flight_sticks()))
+++    {
+++        if (FAILED(hr = IVector_FlightStick_IndexOf( flight_sticks, flight_stick, &index, &found )) || !found)
+++            WARN( "Could not find FlightStick %p, hr %#lx!\n", flight_stick, hr );
+++        else
+++            hr = IVector_FlightStick_RemoveAt( flight_sticks, index );
+++    }
+++    LeaveCriticalSection( &flight_stick_cs );
+++
+++    if (FAILED(hr))
+++        WARN( "Failed to remove FlightStick %p, hr %#lx!\n", flight_stick, hr );
+++    else if (found)
+++    {
+++        TRACE( "Removed FlightStick %p.\n", flight_stick );
+++        event_handlers_notify( &flight_stick_removed_handlers, (IInspectable *)flight_stick );
+++    }
+++    IFlightStick_Release( flight_stick );
+++
+++    return S_OK;
+++}
+++
+++static const struct ICustomGameControllerFactoryVtbl controller_factory_vtbl =
+++{
+++    controller_factory_QueryInterface,
+++    controller_factory_AddRef,
+++    controller_factory_Release,
+++    /* IInspectable methods */
+++    controller_factory_GetIids,
+++    controller_factory_GetRuntimeClassName,
+++    controller_factory_GetTrustLevel,
+++    /* ICustomGameControllerFactory methods */
+++    controller_factory_CreateGameController,
+++    controller_factory_OnGameControllerAdded,
+++    controller_factory_OnGameControllerRemoved,
+++};
+++
+++static struct flight_stick_statics flight_stick_statics =
+++{
+++    {&factory_vtbl},
+++    {&statics_vtbl},
+++    {&controller_factory_vtbl},
+++    1,
+++};
+++
+++ICustomGameControllerFactory *flight_stick_factory = &flight_stick_statics.ICustomGameControllerFactory_iface;
++diff --git a/dlls/windows.gaming.input/main.c b/dlls/windows.gaming.input/main.c
++index aa8f8ab..6d4b25c 100644
++--- a/dlls/windows.gaming.input/main.c
+++++ b/dlls/windows.gaming.input/main.c
++@@ -192,6 +192,10 @@ HRESULT WINAPI DllGetActivationFactory( HSTRING class_str, IActivationFactory **
++         ICustomGameControllerFactory_QueryInterface( gamepad_factory, &IID_IActivationFactory, (void **)factory );
++     if (!wcscmp( buffer, RuntimeClass_Windows_Gaming_Input_RacingWheel ))
++         ICustomGameControllerFactory_QueryInterface( racing_wheel_factory, &IID_IActivationFactory, (void **)factory );
+++    if (!wcscmp( buffer, RuntimeClass_Windows_Gaming_Input_ArcadeStick ))
+++        ICustomGameControllerFactory_QueryInterface( arcade_stick_factory, &IID_IActivationFactory, (void **)factory );
+++    if (!wcscmp( buffer, RuntimeClass_Windows_Gaming_Input_FlightStick ))
+++        ICustomGameControllerFactory_QueryInterface( flight_stick_factory, &IID_IActivationFactory, (void **)factory );
++     if (!wcscmp( buffer, RuntimeClass_Windows_Gaming_Input_Custom_GameControllerFactoryManager ))
++         IGameControllerFactoryManagerStatics2_QueryInterface( manager_factory, &IID_IActivationFactory, (void **)factory );
++ 
++diff --git a/dlls/windows.gaming.input/private.h b/dlls/windows.gaming.input/private.h
++index 7aa236f..ae57b5d 100644
++--- a/dlls/windows.gaming.input/private.h
+++++ b/dlls/windows.gaming.input/private.h
++@@ -49,6 +49,8 @@ extern HINSTANCE windows_gaming_input;
++ extern ICustomGameControllerFactory *controller_factory;
++ extern ICustomGameControllerFactory *gamepad_factory;
++ extern ICustomGameControllerFactory *racing_wheel_factory;
+++extern ICustomGameControllerFactory *arcade_stick_factory;
+++extern ICustomGameControllerFactory *flight_stick_factory;
++ extern IGameControllerFactoryManagerStatics2 *manager_factory;
++ extern IInspectable *constant_effect_factory;
++ extern IInspectable *ramp_effect_factory;
++diff --git a/include/windows.gaming.input.idl b/include/windows.gaming.input.idl
++index a79cc07..01bc222 100644
++--- a/include/windows.gaming.input.idl
+++++ b/include/windows.gaming.input.idl
++@@ -77,9 +77,11 @@ namespace Windows.Gaming.Input {
++         interface Windows.Foundation.Collections.IIterator<Windows.Gaming.Input.ArcadeStick *>;
++         interface Windows.Foundation.Collections.IIterable<Windows.Gaming.Input.ArcadeStick *>;
++         interface Windows.Foundation.Collections.IVectorView<Windows.Gaming.Input.ArcadeStick *>;
+++        interface Windows.Foundation.Collections.IVector<Windows.Gaming.Input.ArcadeStick *>;
++         interface Windows.Foundation.Collections.IIterator<Windows.Gaming.Input.FlightStick *>;
++         interface Windows.Foundation.Collections.IIterable<Windows.Gaming.Input.FlightStick *>;
++         interface Windows.Foundation.Collections.IVectorView<Windows.Gaming.Input.FlightStick *>;
+++        interface Windows.Foundation.Collections.IVector<Windows.Gaming.Input.FlightStick *>;
++         interface Windows.Foundation.Collections.IIterator<Windows.Gaming.Input.Gamepad *>;
++         interface Windows.Foundation.Collections.IIterable<Windows.Gaming.Input.Gamepad *>;
++         interface Windows.Foundation.Collections.IVectorView<Windows.Gaming.Input.Gamepad *>;
+-- 
+2.43.0
+
