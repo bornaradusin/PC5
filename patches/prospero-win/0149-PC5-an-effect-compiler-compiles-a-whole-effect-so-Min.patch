@@ -1,0 +1,98 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Fri, 13 Nov 2026 09:00:00 +0000
+Subject: [PATCH 149/149] PC5: an effect compiler compiles a whole effect, so Mini Ninjas gets
+ past building its effects (Wine patch 1015)
+
+Mini Ninjas builds its effects with ID3DXEffectCompiler::CompileEffect, which was a stub: it got an empty result back and crashed reading it. The effect is now compiled to the binary D3DXCreateEffect takes, the way an effect written as text is compiled when it is created.
+---
+ ...ect-in-effect-compiler-compileeffect.patch | 77 +++++++++++++++++++
+ 1 file changed, 77 insertions(+)
+ create mode 100644 wine/patches/1015-d3dx9-compile-the-effect-in-effect-compiler-compileeffect.patch
+
+diff --git a/wine/patches/1015-d3dx9-compile-the-effect-in-effect-compiler-compileeffect.patch b/wine/patches/1015-d3dx9-compile-the-effect-in-effect-compiler-compileeffect.patch
+new file mode 100644
+index 0000000..8f2621c
+--- /dev/null
++++ b/wine/patches/1015-d3dx9-compile-the-effect-in-effect-compiler-compileeffect.patch
+@@ -0,0 +1,77 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Fri, 13 Nov 2026 09:00:00 +0000
++Subject: [PATCH] d3dx9: Compile the effect in
++ ID3DXEffectCompiler::CompileEffect.
++
++CompileEffect was a stub that returned E_NOTIMPL and left the output
++buffer unset. Mini Ninjas builds its effects with
++D3DXCreateEffectCompiler and CompileEffect, then reads the size of the
++buffer it gets back, and crashed reading address 0x10. The effect is
++now compiled to an fx_2_0 binary from the source the compiler kept, as
++d3dx9_effect_init compiles an ASCII effect for D3DXCreateEffect, with
++the same flags; a failed compile is logged with the compiler's
++messages and returned to the caller.
++---
++ dlls/d3dx9_36/effect.c | 47 +++++++++++++++++++++++++++++++++++++++++++++--
++ 1 file changed, 45 insertions(+), 2 deletions(-)
++
++diff --git a/dlls/d3dx9_36/effect.c b/dlls/d3dx9_36/effect.c
++index 35b27a5..7aa5c08 100644
++--- a/dlls/d3dx9_36/effect.c
+++++ b/dlls/d3dx9_36/effect.c
++@@ -5156,9 +5156,52 @@ static HRESULT WINAPI ID3DXEffectCompilerImpl_GetLiteral(ID3DXEffectCompiler *if
++ static HRESULT WINAPI ID3DXEffectCompilerImpl_CompileEffect(ID3DXEffectCompiler *iface, DWORD flags,
++         ID3DXBuffer **effect, ID3DXBuffer **error_msgs)
++ {
++-    FIXME("iface %p, flags %#lx, effect %p, error_msgs %p stub!\n", iface, flags, effect, error_msgs);
+++    struct ID3DXEffectCompilerImpl *compiler = impl_from_ID3DXEffectCompiler(iface);
+++#if D3DX_SDK_VERSION <= 36
+++    UINT compile_flags = D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY;
+++#else
+++    UINT compile_flags = 0;
+++#endif
+++    ID3DBlob *bytecode = NULL, *errors = NULL;
+++    HRESULT hr;
++ 
++-    return E_NOTIMPL;
+++    TRACE("iface %p, flags %#lx, effect %p, error_msgs %p.\n", iface, flags, effect, error_msgs);
+++
+++    if (!effect)
+++    {
+++        WARN("Invalid effect %p.\n", effect);
+++        return D3DERR_INVALIDCALL;
+++    }
+++    *effect = NULL;
+++    if (error_msgs)
+++        *error_msgs = NULL;
+++
+++    /* The binary effect D3DXCreateEffect takes, compiled as it compiles an ASCII
+++     * effect (d3dx9_effect_init) from the source kept when the compiler was made. */
+++    compile_flags |= flags & ~(D3DXFX_NOT_CLONEABLE | D3DXFX_LARGEADDRESSAWARE);
+++    hr = D3DCompile(compiler->data, compiler->data_size, NULL, NULL, NULL,
+++            NULL, "fx_2_0", compile_flags, 0, &bytecode, &errors);
+++    if (FAILED(hr))
+++        FIXME("Failed to compile the effect, hr %#lx: %s\n", hr,
+++                errors ? debugstr_a(ID3D10Blob_GetBufferPointer(errors)) : "no messages");
+++    if (error_msgs)
+++        *error_msgs = (ID3DXBuffer *)errors;
+++    else if (errors)
+++        ID3D10Blob_Release(errors);
+++    if (FAILED(hr))
+++    {
+++        if (bytecode)
+++            ID3D10Blob_Release(bytecode);
+++        return hr;
+++    }
+++    if (!bytecode)
+++    {
+++        FIXME("No output from effect compilation.\n");
+++        return D3DERR_INVALIDCALL;
+++    }
+++
+++    *effect = (ID3DXBuffer *)bytecode;
+++    return D3D_OK;
++ }
++ 
++ static HRESULT WINAPI ID3DXEffectCompilerImpl_CompileShader(ID3DXEffectCompiler *iface, D3DXHANDLE function,
+-- 
+2.43.0
+
