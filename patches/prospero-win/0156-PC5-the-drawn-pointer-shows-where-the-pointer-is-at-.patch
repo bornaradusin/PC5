@@ -1,0 +1,291 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 16 Nov 2026 18:46:48 +0000
+Subject: [PATCH 156/156] PC5: the drawn pointer shows where the pointer is at a
+ frame's edge, and windows keep their order on the screen (Wine patch 1029)
+
+The drawn cursor was kept whole inside the frame, so within a cursor's height of the bottom or right edge it stood still while the pointer went on: with a frame showing only a launcher's dialog, the arrow sat on OK while the click landed on the dialog's border. Only the last 8 pixels of an edge now move the image. A window's paint also went onto the one-layer screen whatever was above it, so a window repainting under a dialog erased the dialog, and nothing repainted what a closed or moved window uncovered, which stayed black: paint now stops at the windows above, and windows uncovered by a change, moved or raised repaint. From leolobato/prospero-win's 0995, without its visible-rect change for a fullscreen window under a smaller display mode, which 0932 and 0973 already place; its 0978 is PC5's 0932, and its 0950 and 0968 (the pointer held to a scaled swapchain's window) build on a cursor path PC5 has its own form of (0980).
+---
+ ...pointer-is-and-keep-windows-in-order.patch | 270 ++++++++++++++++++
+ 1 file changed, 270 insertions(+)
+ create mode 100644 wine/patches/1029-win32u-ps5-show-where-the-pointer-is-and-keep-windows-in-order.patch
+
+diff --git a/wine/patches/1029-win32u-ps5-show-where-the-pointer-is-and-keep-windows-in-order.patch b/wine/patches/1029-win32u-ps5-show-where-the-pointer-is-and-keep-windows-in-order.patch
+new file mode 100644
+index 0000000..2495157
+--- /dev/null
++++ b/wine/patches/1029-win32u-ps5-show-where-the-pointer-is-and-keep-windows-in-order.patch
+@@ -0,0 +1,270 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sun, 1 Nov 2026 13:00:00 +0100
++Subject: [PATCH] win32u: Show where the PS5 pointer is and keep windows in
++ order.
++
++A launcher's dialog could not be clicked and its window kept black parts.
++
++The drawn cursor was moved to stay whole in the frame, so within a cursor's
++height of the bottom or right edge it stood still while the pointer went on.
++When a frame shows only one dialog, its buttons are in that zone: the arrow
++sat on OK while the click landed on the dialog's border. Now only the last
++few pixels of an edge move the image, which keeps it in sight.
++
++The screen has one layer, and a window's paint went onto it whatever was
++above that window, so a window that repainted under a dialog erased the
++dialog. Nothing repainted what a closed or moved window uncovered, which
++stayed black, as each top-level window keeps its own surface and Windows
++asks only the compositor to redraw. Paint now stops at the windows above,
++and windows uncovered by a change, and those moved or raised, repaint. A
++window counts for the loading screen (0908) only when it is first shown,
++as before.
++
++From leolobato/prospero-win's 0995, without its visible-rect change for a
++fullscreen window under a smaller display mode: patches 0932 and 0973
++place that part here.
++---
++ dlls/win32u/ps5drv.c | 133 ++++++++++++++++++++++++++++++++++++-------
++ 1 file changed, 113 insertions(+), 20 deletions(-)
++
++diff --git a/dlls/win32u/ps5drv.c b/dlls/win32u/ps5drv.c
++index 64c6251..bd08cbb 100644
++--- a/dlls/win32u/ps5drv.c
+++++ b/dlls/win32u/ps5drv.c
++@@ -76,6 +76,8 @@ struct ps5_input
++ };
++ 
++ enum { PS5_MAX_WINDOWS = 64, PS5_INPUT_BATCH = 64 };
+++/* How much of the cursor image stays in the frame at its edges. */
+++enum { PS5_CURSOR_KEEP = 8 };
++ 
++ struct ps5_window
++ {
++@@ -101,6 +103,8 @@ static UINT32 *screen;
++ static struct ps5_window windows[PS5_MAX_WINDOWS];
++ static UINT window_count;
++ static POINT cursor;
+++/* Changes whenever a top-level window is shown, hidden, moved, restacked or destroyed */
+++static UINT layout_generation;
++ /* The cursor image, straight-alpha ARGB, NULL when hidden; frame is the
++  * screen with the cursor drawn over it, what the title is given. */
++ static UINT32 *cursor_image, *frame;
++@@ -181,8 +185,14 @@ static void draw_cursor( UINT32 *out, POINT origin, INT width, INT height )
++ {
++     INT left = cursor.x - cursor_hotspot.x - origin.x, top = cursor.y - cursor_hotspot.y - origin.y, x, y;
++ 
++-    left = max( min( left, width - cursor_box.right ), -cursor_box.left );
++-    top = max( min( top, height - cursor_box.bottom ), -cursor_box.top );
+++    /* The image may cross the edge, as on Windows, so it shows where the pointer
+++     * is: a dialog's buttons sit close to the bottom of a frame that shows only
+++     * that dialog. Enough of it stays in the frame to see, which moves it by
+++     * less than PS5_CURSOR_KEEP pixels, and only that close to the edge. */
+++    left = max( min( left, width - cursor_box.left - min( PS5_CURSOR_KEEP, cursor_box.right - cursor_box.left ) ),
+++                min( PS5_CURSOR_KEEP, cursor_box.right - cursor_box.left ) - cursor_box.right );
+++    top = max( min( top, height - cursor_box.top - min( PS5_CURSOR_KEEP, cursor_box.bottom - cursor_box.top ) ),
+++               min( PS5_CURSOR_KEEP, cursor_box.bottom - cursor_box.top ) - cursor_box.bottom );
++     for (y = max( top, 0 ); y < min( top + (INT)cursor_height, height ); y++)
++     {
++         const UINT32 *src = cursor_image + (y - top) * cursor_width;
++@@ -362,6 +372,34 @@ static LONG ps5_ChangeDisplaySettings( DEVMODEW *displays, const WCHAR *primary_
++ /***********************************************************************
++  *           window surfaces
++  */
+++/* screen_lock held: copy target, in screen coordinates, from a surface whose
+++ * origin is at visible, without touching the rectangles of the windows above */
+++static void blit_uncovered( const RECT *target, const BYTE *bits, UINT stride, const RECT *visible,
+++                            const RECT *above, UINT count )
+++{
+++    RECT over, part;
+++    INT y;
+++
+++    while (count && !intersect_rect( &over, target, above )) { above++; count--; }
+++    if (!count)
+++    {
+++        for (y = target->top; y < target->bottom; y++)
+++            memcpy( screen + y * screen_width + target->left,
+++                    bits + (y - visible->top) * stride + (target->left - visible->left) * 4,
+++                    (target->right - target->left) * 4 );
+++        return;
+++    }
+++    /* what the first one leaves, in up to four parts, against the others */
+++    SetRect( &part, target->left, target->top, target->right, over.top );
+++    if (!IsRectEmpty( &part )) blit_uncovered( &part, bits, stride, visible, above + 1, count - 1 );
+++    SetRect( &part, target->left, over.bottom, target->right, target->bottom );
+++    if (!IsRectEmpty( &part )) blit_uncovered( &part, bits, stride, visible, above + 1, count - 1 );
+++    SetRect( &part, target->left, over.top, over.left, over.bottom );
+++    if (!IsRectEmpty( &part )) blit_uncovered( &part, bits, stride, visible, above + 1, count - 1 );
+++    SetRect( &part, over.right, over.top, target->right, over.bottom );
+++    if (!IsRectEmpty( &part )) blit_uncovered( &part, bits, stride, visible, above + 1, count - 1 );
+++}
+++
++ static void ps5_surface_set_clip( struct window_surface *surface, const RECT *rects, UINT count )
++ {
++ }
++@@ -371,11 +409,28 @@ static BOOL ps5_surface_flush( struct window_surface *surface, const RECT *rect,
++                                const BITMAPINFO *shape_info, const void *shape_bits )
++ {
++     struct ps5_window *window;
++-    UINT stride = color_info->bmiHeader.biWidth * 4;
++-    RECT target, clip = {0, 0, screen_width, screen_height};
++-    INT y;
++-
++-    pthread_mutex_lock( &screen_lock );
+++    UINT stride = color_info->bmiHeader.biWidth * 4, above_count = 0, generation, shown, tries = 0, i;
+++    RECT target, clip = {0, 0, screen_width, screen_height}, above[PS5_MAX_WINDOWS];
+++    HWND *order = NULL;
+++
+++    /* The screen has one layer: the order comes from the server, outside the
+++     * lock, and only when another window is there to cover this one. If the
+++     * windows change meanwhile it is read again; a change that comes after the
+++     * copy repaints the windows it concerns. */
+++    for (;;)
+++    {
+++        pthread_mutex_lock( &screen_lock );
+++        if (tries && (generation == layout_generation || tries > 3)) break;
+++        generation = layout_generation;
+++        for (i = shown = 0; i < window_count; i++) if (windows[i].shown) shown++;
+++        pthread_mutex_unlock( &screen_lock );
+++        free( order );
+++        order = shown > 1 ? list_window_children( 0 ) : NULL;
+++        tries++;
+++    }
+++    /* the list has the top window first */
+++    for (i = 0; order && order[i] && order[i] != surface->hwnd && above_count < PS5_MAX_WINDOWS; i++)
+++        if ((window = find_window( order[i] )) && window->shown) above[above_count++] = window->visible;
++     if ((window = find_window( surface->hwnd )) && window->shown)
++     {
++         /* dirty is relative to the surface, whose origin is the visible rect's */
++@@ -383,16 +438,12 @@ static BOOL ps5_surface_flush( struct window_surface *surface, const RECT *rect,
++         OffsetRect( &target, window->visible.left, window->visible.top );
++         if (intersect_rect( &target, &target, &clip ) && intersect_rect( &target, &target, &window->visible ))
++         {
++-            for (y = target.top; y < target.bottom; y++)
++-            {
++-                const BYTE *src = (const BYTE *)color_bits + (y - window->visible.top) * stride +
++-                                  (target.left - window->visible.left) * 4;
++-                memcpy( screen + y * screen_width + target.left, src, (target.right - target.left) * 4 );
++-            }
+++            blit_uncovered( &target, color_bits, stride, &window->visible, above, above_count );
++             present_screen();
++         }
++     }
++     pthread_mutex_unlock( &screen_lock );
+++    free( order );
++     return TRUE;
++ }
++ 
++@@ -464,6 +515,25 @@ static void register_input_fd(void)
++     NtClose( handle );
++ }
++ 
+++/* screen_lock held: the other shown windows that rect touches. Their paint is
+++ * all the screen has of them: no one repaints what a closed or moved window
+++ * uncovers, since each top-level window keeps its own surface. */
+++static UINT windows_under( HWND hwnd, const RECT *rect, HWND *found )
+++{
+++    RECT overlap;
+++    UINT i, count = 0;
+++
+++    for (i = 0; i < window_count; i++)
+++        if (windows[i].hwnd != hwnd && windows[i].shown && intersect_rect( &overlap, rect, &windows[i].visible ))
+++            found[count++] = windows[i].hwnd;
+++    return count;
+++}
+++
+++static void repaint_window( HWND hwnd )
+++{
+++    NtUserRedrawWindow( hwnd, NULL, 0, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN );
+++}
+++
++ static BOOL ps5_CreateWindow( HWND hwnd )
++ {
++     register_input_fd();
++@@ -476,7 +546,10 @@ static void ps5_WindowPosChanged( HWND hwnd, HWND insert_after, HWND owner_hint,
++     struct ps5_window *window;
++     BOOL shown = (NtUserGetWindowLongW( hwnd, GWL_STYLE ) & WS_VISIBLE) &&
++                  NtUserGetAncestor( hwnd, GA_PARENT ) == get_desktop_window();
++-    BOOL repaint = FALSE;
+++    BOOL repaint = FALSE, just_shown = FALSE;
+++    HWND uncovered[PS5_MAX_WINDOWS];
+++    UINT uncovered_count = 0, i;
+++    const RECT *visible = &new_rects->visible;
++ 
++     pthread_mutex_lock( &screen_lock );
++     if (!(window = find_window( hwnd )) && shown && window_count < PS5_MAX_WINDOWS)
++@@ -487,20 +560,34 @@ static void ps5_WindowPosChanged( HWND hwnd, HWND insert_after, HWND owner_hint,
++     }
++     if (window)
++     {
++-        if (window->shown && (!shown || !EqualRect( &window->visible, &new_rects->visible )))
+++        BOOL moved = window->shown && shown && !EqualRect( &window->visible, visible );
+++
+++        layout_generation++;
+++        if (window->shown && (!shown || moved))
++         {
+++            RECT touched = window->visible;
+++
++             clear_screen_rect( &window->visible );
+++            if (moved) union_rect( &touched, &touched, visible );
+++            uncovered_count = windows_under( hwnd, &touched, uncovered );
++             present_screen();
++         }
++-        /* a window just shown may have painted before it had this surface */
++-        repaint = shown && !window->shown;
++-        window->visible = new_rects->visible;
+++        else if (window->shown && shown && !(swp_flags & SWP_NOZORDER))
+++        {
+++            /* restacked: whichever is now above owes the overlap its paint */
+++            uncovered_count = windows_under( hwnd, &window->visible, uncovered );
+++        }
+++        /* a window just shown may have painted before it had this surface, one moved has only
+++         * its old place on the screen, and one restacked over others has their paint there */
+++        just_shown = shown && !window->shown;
+++        repaint = just_shown || (shown && (moved || uncovered_count));
+++        window->visible = *visible;
++         window->shown = shown;
++     }
++     pthread_mutex_unlock( &screen_lock );
++     /* A top-level window of a window's size shown (not a 10x10 probe or a strip): the game
++      * runs. ntdll counts it for the title's loading screen (how far the start is). */
++-    if (repaint && new_rects->visible.right - new_rects->visible.left >= 320 &&
+++    if (just_shown && new_rects->visible.right - new_rects->visible.left >= 320 &&
++         new_rects->visible.bottom - new_rects->visible.top >= 200)
++     {
++         static void (*note_window)(void);
++@@ -508,24 +595,30 @@ static void ps5_WindowPosChanged( HWND hwnd, HWND insert_after, HWND owner_hint,
++         if (!looked) note_window = dlsym( RTLD_DEFAULT, "__wine_ps5_note_window" ), looked = TRUE;
++         if (note_window) note_window();
++     }
++-    if (repaint) NtUserRedrawWindow( hwnd, NULL, 0, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN );
+++    if (repaint) repaint_window( hwnd );
+++    for (i = 0; i < uncovered_count; i++) repaint_window( uncovered[i] );
++ }
++ 
++ static void ps5_DestroyWindow( HWND hwnd )
++ {
++     struct ps5_window *window;
+++    HWND uncovered[PS5_MAX_WINDOWS];
+++    UINT uncovered_count = 0, i;
++ 
++     pthread_mutex_lock( &screen_lock );
++     if ((window = find_window( hwnd )))
++     {
+++        layout_generation++;
++         if (window->shown)
++         {
++             clear_screen_rect( &window->visible );
+++            uncovered_count = windows_under( hwnd, &window->visible, uncovered );
++             present_screen();
++         }
++         *window = windows[--window_count];
++     }
++     pthread_mutex_unlock( &screen_lock );
+++    for (i = 0; i < uncovered_count; i++) repaint_window( uncovered[i] );
++ }
++ 
++ /* No explorer sizes the desktop the server created: make it the monitor. */
++-- 
++2.43.0
++
+-- 
+2.43.0
+
