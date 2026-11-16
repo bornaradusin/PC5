@@ -587,6 +587,15 @@ controller's speaker.
 | 345 | Mini Ninjas from start to its menu (#533) | the log names the effect compiler's errors | each error of a failed `CompileEffect` on a line of its own after `Failed to compile the effect` |
 | 346 | An Unreal Development Kit game (UDK.exe, Binaries/InstallInfo.xml: Them & Us #664) | it starts without UnSetup.exe's EULA, no "Failed to launch UnSetup.exe" | `PC5 udk eula accepted UDK-<GUID>` the first time, not again |
 | 347 | Install a fresh Electron game (resources/app.asar beside its program: Noreya #693), then start it | it reaches its first screen instead of "GPU process isn't usable" or a page "launch-failed" | about.txt Launch options shows `--single-process ...`; recipe.txt says `Web game (Electron)` |
+| 348 | A 32-bit game built with Watcom on the translator (Need for Speed III with the Modern Patch) | it gets past its renderer's load instead of stopping about a second in | no illegal instruction at the game's code (`push word [...]`, 66 FF /6) |
+| 349 | A 32-bit game that loads a lot (Wanted: Weapons of Fate, unpatched) | it reaches its menu | `wine-ps5: 32-bit address space 4 GiB, N MiB of it reserved above 2 GiB` with N near 2000; no `out of memory for allocation` (if one comes, the `32-bit out of address space` lines after it say what fills the space) |
+| 350 | Any 32-bit game, start to menu and back (regression check for 349) | nothing changed from 2.4.0 | the reservation line once; no new errors |
+| 351 | A game whose memory runs out on purpose or by accident (Counter-Strike 2's UI, a game with many high-resolution textures) | no "Check failed: 1455L == error." | `wine-ps5: direct memory ... refused` lines name the step and the pool's largest free block |
+| 352 | Modded Minecraft with Distant Horizons, load a world; Project Zomboid, load a world; ETS2 with many mods | each loads without "Too many open files" | no `wineserver: EMFILE`; if one comes, its line counts what holds the files (write=, live=, busy=) |
+| 353 | Any game that saves, save and load (regression check for 352: files written to are put away and opened again) | saves and loads as before | no `wine-ps5: parked ... can't be opened again` or `is no longer that file` |
+| 354 | A game with its own copy of Steam's networking library, start an online session | it gets past its connection setup | no "Unable to set default socket options, error 10022", "No control data returned even though we asked for TOS?" or "GetAdaptersAddresses failed" |
+| 355 | A launcher with a dialog over its window: point at the dialog's OK near the bottom edge and press ✕; close the dialog | the arrow is on OK and the click presses it; the window under the dialog shows again where the dialog was, no black parts | |
+| 356 | A game showing a smaller display mode and a 2D game drawn with GDI (Sacred Underworld, Heroes of Might and Magic IV in 2D) (regression check for 355) | the picture and the pointer's reach as in 2.4.0 | |
 
 ## Custom media navigation changes (pending on PS5)
 
