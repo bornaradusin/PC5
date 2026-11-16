@@ -1,0 +1,1965 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 16 Nov 2026 18:43:20 +0000
+Subject: [PATCH 154/154] PC5: fewer "too many open files": files opened for writing,
+ locked files and files bound to a completion port are parked, many folders
+ can be watched, and an open that runs out says why (Wine patches 1022 to
+ 1025)
+
+A PS5 title can hold about 249 open files. 0993 parks read-only files past a budget, but not a file opened for writing, a locked one or one bound to a completion port, and every watched folder kept one, so games holding many of those still ran out: modded Minecraft's SQLite databases (Distant Horizons), Project Zomboid watching the 1704 folders of its media tree as Java does, a game reading through a completion port. Those files are now parked too (1023, 1025), descriptors handed to a program uncached are lent until it closes them so a parked file never saves a stale position (1025, a new server request kept last), a parked folder shares the files' budget and one timer polls all watched folders within a time budget (1024), and an open that still runs out logs what holds the descriptors (1022). PC5's own rule from 0994 stays: a parked file or folder opened again under another number by its file system is taken and logged. From leolobato/prospero-win's 1002, 1009, 1019 and 1021.
+---
+ ...olds-the-files-when-an-open-runs-out.patch |  117 ++
+ ...ark-files-bound-to-a-completion-port.patch |   49 +
+ ...24-server-ps5-watch-many-directories.patch |  537 ++++++++
+ ...er-ps5-park-files-opened-for-writing.patch | 1215 +++++++++++++++++
+ 4 files changed, 1918 insertions(+)
+ create mode 100644 wine/patches/1022-server-ps5-say-what-holds-the-files-when-an-open-runs-out.patch
+ create mode 100644 wine/patches/1023-server-ps5-park-files-bound-to-a-completion-port.patch
+ create mode 100644 wine/patches/1024-server-ps5-watch-many-directories.patch
+ create mode 100644 wine/patches/1025-server-ps5-park-files-opened-for-writing.patch
+
+diff --git a/wine/patches/1022-server-ps5-say-what-holds-the-files-when-an-open-runs-out.patch b/wine/patches/1022-server-ps5-say-what-holds-the-files-when-an-open-runs-out.patch
+new file mode 100644
+index 0000000..30a03f4
+--- /dev/null
++++ b/wine/patches/1022-server-ps5-say-what-holds-the-files-when-an-open-runs-out.patch
+@@ -0,0 +1,117 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sun, 8 Nov 2026 19:20:00 +0100
++Subject: [PATCH] server: Say what holds the files when an open runs out of
++ them on PS5.
++
++Patch 0993 parks read-only files to keep a PS5 title under its limit of
++about 249 open files, and parks every live one when open() still fails
++with EMFILE. When even that leaves no slot, every file is held by an fd
++the pool doesn't park, and nothing said which.
++
++That failure now logs the server's descriptors by class: pinned (cached
++by the client), live (parkable), held by a section (a dup of the file's
++descriptor, which keeps the open file even when the file is parked),
++opened for writing, busy (asyncs, a completion port, locks or a poll),
++other, and closed (a handle closed while its locks remain), with the
++parked files, directories, inodes and the two limits. The first four
++failures are logged, then one in 64.
++---
++ server/fd.c | 67 +++++++++++++++++++++++++++++++++++++++++++++++++++++
++ 1 file changed, 67 insertions(+)
++
++diff --git a/server/fd.c b/server/fd.c
++index 8aed7b1..f2e0e84 100644
++--- a/server/fd.c
+++++ b/server/fd.c
++@@ -2136,6 +2136,71 @@ static void ps5_trim_live_files( unsigned int limit, struct fd *keep, int force
++     if (!force && ps5_live_count > limit + limit / 2) ps5_trim_live_files( limit + limit / 2, keep, 1 );
++ }
++ 
+++/* open() failed with EMFILE, even after parking what could be: say what
+++ * holds the server's descriptors, by class, so the reason is in the log.
+++ * Each fd is counted once, in the first class that fits; a section's fd is
+++ * a dup() of its file's, which keeps the open file alive even when that
+++ * file is parked. The first few failures are logged, then one in 64. */
+++static void ps5_log_file_slots( const char *name )
+++{
+++    static unsigned int failures;
+++    unsigned int pinned = 0, live = 0, section = 0, writable = 0, busy = 0, other = 0, open_fds = 0;
+++    unsigned int parked = 0, inodes = 0, kept = 0, i, j;
+++    struct device *device;
+++    struct inode *inode;
+++    struct fd *fd;
+++    int saved = errno;
+++
+++    failures++;
+++    if (failures > 4 && failures % 64) goto done;
+++    for (i = 0; i < DEVICE_HASH_SIZE; i++)
+++    {
+++        if (!device_hash[i].next) continue;
+++        LIST_FOR_EACH_ENTRY( device, &device_hash[i], struct device, entry )
+++        {
+++            for (j = 0; j < INODE_HASH_SIZE; j++)
+++            {
+++                LIST_FOR_EACH_ENTRY( inode, &device->inode_hash[j], struct inode, entry )
+++                {
+++                    struct closed_fd *closed;
+++                    int held = 0;
+++
+++                    LIST_FOR_EACH_ENTRY( fd, &inode->open, struct fd, inode_entry )
+++                    {
+++                        if (fd->ps5_file && fd->ps5_parked) parked++;
+++                        if (fd->unix_fd == -1) continue;
+++                        held = 1;
+++                        open_fds++;
+++                        if (fd->ps5_pinned) pinned++;
+++                        else if (fd->ps5_live) live++;
+++                        else if (fd->user && fd->user->ops->type == &mapping_type) section++;
+++                        else if (fd->access & (FILE_WRITE_DATA | FILE_APPEND_DATA)) writable++;
+++                        else if (fd->completion || !list_empty( &fd->locks ) || async_queued( &fd->read_q ) ||
+++                                 async_queued( &fd->write_q ) || async_queued( &fd->wait_q ) ||
+++                                 (fd->poll_index != -1 && pollfd[fd->poll_index].fd != -1))
+++                            busy++;
+++                        else other++;
+++                    }
+++                    /* a handle closed while its locks remain keeps its descriptor here */
+++                    LIST_FOR_EACH_ENTRY( closed, &inode->closed, struct closed_fd, entry )
+++                    {
+++                        if (closed->unix_fd == -1) continue;
+++                        held = 1;
+++                        kept++;
+++                    }
+++                    inodes += held;
+++                }
+++            }
+++        }
+++    }
+++    fprintf( stderr, "wineserver: EMFILE #%u opening %s: inodes=%u fds=%u pinned=%u live=%u parked=%u section=%u "
+++             "write=%u busy=%u other=%u closed=%u directories=%u (limits: cached=%u live=%u)\n",
+++             failures, name, inodes, open_fds, pinned, live, parked, section, writable, busy, other, kept,
+++             ps5_directory_fds, ps5_cached_files_limit(), ps5_live_files_limit() );
+++done:
+++    errno = saved;
+++}
+++
++ /* open() failed with EMFILE: park every live file that can be, so that a
++  * budget set too high for what else the title holds costs reopens instead
++  * of failing; non-zero when one was parked and the open is worth a retry */
++@@ -2202,6 +2267,7 @@ static int ps5_reopen_file( struct fd *fd )
++     ps5_trim_live_files( ps5_live_files_limit() ? ps5_live_files_limit() - 1 : 0, fd, 0 );
++     if ((unix_fd = open( fd->unix_name, fd->ps5_park_flags )) == -1 && errno == EMFILE && ps5_free_files( fd ))
++         unix_fd = open( fd->unix_name, fd->ps5_park_flags );
+++    if (unix_fd == -1 && errno == EMFILE) ps5_log_file_slots( fd->unix_name );
++     if (unix_fd == -1)
++     {
++         static int told;
++@@ -2630,6 +2696,7 @@ struct fd *open_fd( struct fd *root, const char *name, struct unicode_str nt_nam
++ #ifdef PS5_PARK_FILES
++     if (fd->unix_fd == -1 && errno == EMFILE && ps5_free_files( NULL ))
++         fd->unix_fd = open( name, rw_mode | (flags & ~O_TRUNC), *mode );
+++    if (fd->unix_fd == -1 && errno == EMFILE) ps5_log_file_slots( name );
++ #endif
++     if (fd->unix_fd == -1)
++     {
++-- 
++2.43.0
++
+diff --git a/wine/patches/1023-server-ps5-park-files-bound-to-a-completion-port.patch b/wine/patches/1023-server-ps5-park-files-bound-to-a-completion-port.patch
+new file mode 100644
+index 0000000..051e05f
+--- /dev/null
++++ b/wine/patches/1023-server-ps5-park-files-bound-to-a-completion-port.patch
+@@ -0,0 +1,49 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Mon, 9 Nov 2026 22:00:00 +0100
++Subject: [PATCH] server: Park files bound to a completion port on PS5.
++
++Patch 0993 left every file with a completion port live. A game that reads
++its archives with overlapped I/O through one port binds each of them, so
++none could be parked: Euro Truck Simulator 2 opens every archive in its
++mod folder that way at start, and with a few hundred of them the title
++ran out of files (patch 1022's log: live=183 parked=0) and the game
++crashed, or failed to create or load a profile.
++
++The port, its key and the completion flags belong to the fd, which stays;
++parking closes only the unix descriptor. A read through such a handle on a
++regular file is done by the client with a descriptor it asks the server
++for, which opens a parked file again, and then posts its completion
++through the handle. A file with an async queued in the server still keeps
++its descriptor.
++---
++ server/fd.c | 6 +++++-
++ 1 file changed, 5 insertions(+), 1 deletion(-)
++
++diff --git a/server/fd.c b/server/fd.c
++index f2e0e84..2a3bd89 100644
++--- a/server/fd.c
+++++ b/server/fd.c
++@@ -2095,6 +2095,10 @@ static unsigned long long ps5_now_ms(void)
++     return (unsigned long long)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
++ }
++ 
+++/* A file bound to a completion port is parked like any other: the port, its
+++ * key and flags stay with the fd, and a read through such a handle is done by
+++ * the client with a descriptor it asks for, which opens a parked file again.
+++ * Only an async queued here needs the descriptor kept, checked below. */
++ static int ps5_park_file( struct fd *fd, int force )
++ {
++     struct stat st;
++@@ -2103,7 +2107,7 @@ static int ps5_park_file( struct fd *fd, int force )
++     if (fd->unix_fd == -1 || !fd->closed || fd->closed->unix_fd != fd->unix_fd ||
++         !list_empty( &fd->inode->locks ) || !list_empty( &fd->locks ) ||
++         async_queued( &fd->read_q ) || async_queued( &fd->write_q ) || async_queued( &fd->wait_q ) ||
++-        fd->completion || ps5_inode_deleting( fd->inode ))
+++        ps5_inode_deleting( fd->inode ))
++         return 0;
++     if (!force && fd->ps5_lent_ms && ps5_now_ms() - fd->ps5_lent_ms < PS5_LENT_GRACE_MS) return 0;
++     /* every fd has a poll slot; one that is polled keeps its descriptor */
++-- 
++2.43.0
++
+diff --git a/wine/patches/1024-server-ps5-watch-many-directories.patch b/wine/patches/1024-server-ps5-watch-many-directories.patch
+new file mode 100644
+index 0000000..260001f
+--- /dev/null
++++ b/wine/patches/1024-server-ps5-watch-many-directories.patch
+@@ -0,0 +1,537 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Wed, 11 Nov 2026 18:00:00 +0100
++Subject: [PATCH] server: Watch many directories on PS5.
++
++A PS5 title can hold about 256 open files, and every watched directory
++kept one. Java's watch service opens each folder it watches for
++overlapped I/O, reads its file information, binds it to a completion port
++and keeps a ReadDirectoryChangesW pending on it. Project Zomboid watches
++the 1704 folders of its media tree that way, and its title ran out of
++files at about the 240th. Patch 0871 parks a directory past the first 64,
++but opens it again for good the first time it is used, and patch 0993
++keeps every fd with an async queued, which a pending change watch is.
++
++- A directory parked past that threshold now shares patch 0993's budget
++  for read-only files: once it is opened again it is live, the client
++  gets its descriptor uncached, and the least recently used is parked
++  again. A directory has no position to restore; the name must still lead
++  to a directory with the same device and inode. With
++  WINE_PS5_PARK_FILES=0 it stays open once used, as before.
++- Patch 0884 lists a watched directory by its name, so the change watches
++  queued on a directory it polls do not keep the descriptor.
++- One timer lists every watch in turn, instead of one timer each: every
++  25 ms it lists the watches that are due, least recently listed first,
++  for at most 1 ms (WINE_PS5_POLL_BUDGET_US), and the others wait for the
++  next tick. A watch is still listed at most every 25 ms, and less often
++  when its listing takes long. On a PC, 1500 watches with a timer each
++  took 31% of a core while nothing changed; under the budget they take
++  about 4%, and a change is reported in about 200 ms.
++- A listing that fails for want of a descriptor or of memory is dropped
++  rather than compared, which reported every entry missing from it as
++  removed.
++- -DPS5_POLL_CHANGES builds the polling on a PC, in place of inotify, so
++  the console's code can be tested there.
++
++tests/test_wine_directory_watch.py watches 1500 folders as Java does and
++checks that a created and a renamed file are reported, and nothing else.
++Under a host Wine and a 512-descriptor limit, the server without this
++patch, built with PS5_PARK_DIRECTORIES and PS5_PARK_FILES, fails it with
++STATUS_TOO_MANY_OPENED_FILES at the 244th folder; with this patch and
++PS5_POLL_CHANGES as well it passes.
++---
++ server/change.c | 195 +++++++++++++++++++++++++++++++++++++-----------
++ server/fd.c     |  49 +++++++++---
++ server/file.h   |   1 +
++ 3 files changed, 191 insertions(+), 54 deletions(-)
++
++diff --git a/server/change.c b/server/change.c
++index fdc2188..aef717f 100644
++--- a/server/change.c
+++++ b/server/change.c
++@@ -21,6 +21,16 @@
++ 
++ #include "config.h"
++ 
+++/* Changes found by listing watched directories (see poll_tick): always on the
+++ * console, which has no inotify; -DPS5_POLL_CHANGES uses them elsewhere too,
+++ * in place of inotify, so the console's code can be tested on a PC. */
+++#if defined(__PROSPERO__) && !defined(PS5_POLL_CHANGES)
+++#define PS5_POLL_CHANGES
+++#endif
+++#ifdef PS5_POLL_CHANGES
+++#undef HAVE_SYS_INOTIFY_H
+++#endif
+++
++ #include <assert.h>
++ #include <fcntl.h>
++ #include <stdio.h>
++@@ -71,7 +81,7 @@ static void free_inode( struct inode *inode );
++ 
++ static struct fd *inotify_fd;
++ 
++-#ifdef __PROSPERO__
+++#ifdef PS5_POLL_CHANGES
++ struct poll_watch;
++ #endif
++ 
++@@ -98,12 +108,12 @@ struct dir
++     struct process *client_process;  /* client process that has a cache for this directory */
++     int             client_entry;    /* entry in client process cache */
++     struct list    kernel_object;    /* list of kernel object pointers */
++-#ifdef __PROSPERO__
+++#ifdef PS5_POLL_CHANGES
++     struct poll_watch *poll; /* notifications by polling, where there is no inotify */
++ #endif
++ };
++ 
++-#ifdef __PROSPERO__
+++#ifdef PS5_POLL_CHANGES
++ static void poll_watch_free( struct dir *dir );
++ #endif
++ 
++@@ -429,7 +439,7 @@ static void dir_destroy( struct object *obj )
++     if (dir->filter)
++         remove_change( dir );
++ 
++-#ifdef __PROSPERO__
+++#ifdef PS5_POLL_CHANGES
++     poll_watch_free( dir );
++ #endif
++ 
++@@ -1118,7 +1128,7 @@ static int init_inotify( void )
++     return 0;
++ }
++ 
++-#ifdef __PROSPERO__
+++#ifdef PS5_POLL_CHANGES
++ /* The console has no inotify, no dnotify and no kqueue. A directory that is watched is polled: its entries
++  * (and those below it, when the whole subtree is watched) are listed with their identity, size and times,
++  * the list is compared with the last one, and what differs is reported the way inotify would: a name that
++@@ -1132,6 +1142,16 @@ static int init_inotify( void )
++ #define POLL_MAX_ITEMS      200000
++ #define POLL_MAX_DEPTH      32
++ 
+++/* Every watch is listed by one timer, in turn, instead of each by its own: a
+++ * tick every POLL_MIN_INTERVAL lists the watches that are due, in the order
+++ * they were last listed, until it has spent its budget (WINE_PS5_POLL_BUDGET_US,
+++ * 1 ms by default), and those left wait for the next tick. Java's watch service
+++ * keeps a watch on each folder it is given, and Project Zomboid gives it the
+++ * 1704 folders of its media tree: listed every 25 ms each, they would take
+++ * the server's thread. With the budget, many watches are each listed less
+++ * often instead, and a change takes longer to be reported. */
+++#define POLL_TICK_BUDGET_US 1000
+++
++ struct poll_item
++ {
++     char   *path;        /* relative to the watched directory, '/' separated */
++@@ -1145,13 +1165,19 @@ struct poll_item
++ 
++ struct poll_watch
++ {
++-    struct timeout_user *timeout;
++-    struct poll_item    *items;
+++    struct list          entry;     /* entry in poll_watches, least recently listed first */
+++    struct dir          *dir;       /* the directory watched */
+++    struct poll_item    *items;     /* its last listing, sorted by path */
++     unsigned int         count;
++-    timeout_t            interval;
+++    unsigned int         listed;    /* has a listing to compare the next one with */
+++    timeout_t            interval;  /* time between two listings */
+++    timeout_t            due;       /* when it is next to be listed */
++     unsigned int         cookie;
++ };
++ 
+++static struct list poll_watches = LIST_INIT( poll_watches );
+++static struct timeout_user *poll_timer;
+++
++ static void poll_free_items( struct poll_item *items, unsigned int count )
++ {
++     unsigned int i;
++@@ -1189,22 +1215,27 @@ static int poll_add_item( struct poll_item **items, unsigned int *count, unsigne
++     return 1;
++ }
++ 
++-static void poll_scan( const char *base, const char *rel, int subtree, int depth,
++-                       struct poll_item **items, unsigned int *count, unsigned int *size )
+++/* -1 when a directory could not be listed for want of a descriptor or of
+++ * memory: the listing is then incomplete, and comparing it would report
+++ * every entry missing from it as removed */
+++static int poll_scan( const char *base, const char *rel, int subtree, int depth,
+++                      struct poll_item **items, unsigned int *count, unsigned int *size )
++ {
++     DIR *dp;
++     struct dirent *entry;
++     char *path;
++     size_t len = strlen( base ) + strlen( rel ) + 2;
+++    int ret = 0;
++ 
++-    if (!(path = malloc( len + 1 ))) return;
+++    if (!(path = malloc( len + 1 ))) return -1;
++     snprintf( path, len + 1, "%s%s%s", base, rel[0] ? "/" : "", rel );
++     if (!(dp = opendir( path )))
++     {
+++        ret = errno == EMFILE || errno == ENFILE || errno == ENOMEM ? -1 : 0;
++         free( path );
++-        return;
+++        return ret;
++     }
++-    while ((entry = readdir( dp )))
+++    while (!ret && (entry = readdir( dp )))
++     {
++         char *child, *full;
++         struct stat st;
++@@ -1212,18 +1243,19 @@ static void poll_scan( const char *base, const char *rel, int subtree, int depth
++ 
++         if (!strcmp( entry->d_name, "." ) || !strcmp( entry->d_name, ".." )) continue;
++         child_len = strlen( rel ) + strlen( entry->d_name ) + 2;
++-        if (!(child = malloc( child_len + 1 ))) break;
+++        if (!(child = malloc( child_len + 1 ))) { ret = -1; break; }
++         snprintf( child, child_len + 1, "%s%s%s", rel, rel[0] ? "/" : "", entry->d_name );
++-        if (!(full = malloc( strlen( base ) + child_len + 2 ))) { free( child ); break; }
+++        if (!(full = malloc( strlen( base ) + child_len + 2 ))) { free( child ); ret = -1; break; }
++         sprintf( full, "%s/%s", base, child );
++         if (!lstat( full, &st ) && poll_add_item( items, count, size, child, &st ) &&
++             subtree && S_ISDIR(st.st_mode) && depth < POLL_MAX_DEPTH)
++-            poll_scan( base, child, subtree, depth + 1, items, count, size );
+++            ret = poll_scan( base, child, subtree, depth + 1, items, count, size );
++         free( full );
++         free( child );
++     }
++     closedir( dp );
++     free( path );
+++    return ret;
++ }
++ 
++ static int poll_compare( const void *a, const void *b )
++@@ -1318,38 +1350,104 @@ done:
++     free( new_added );
++ }
++ 
++-static void poll_timeout( void *private );
+++/* the directory's entries, sorted by path; -1 when they could not all be listed */
+++static int poll_list( struct dir *dir, struct poll_item **items, unsigned int *count )
+++{
+++    const char *base = get_fd_unix_name( dir->fd );
+++    unsigned int size = 0;
+++
+++    *items = NULL;
+++    *count = 0;
+++    if (!base || poll_scan( base, "", dir->subtree, 0, items, count, &size ) == -1)
+++    {
+++        poll_free_items( *items, *count );
+++        *items = NULL;
+++        *count = 0;
+++        return -1;
+++    }
+++    if (*items) qsort( *items, *count, sizeof(**items), poll_compare );
+++    return 0;
+++}
++ 
++-static void poll_arm( struct dir *dir )
+++static long long poll_elapsed_us( const struct timespec *since )
++ {
++-    dir->poll->timeout = add_timeout_user( current_time + dir->poll->interval, poll_timeout, dir );
+++    struct timespec now;
+++
+++    clock_gettime( CLOCK_MONOTONIC, &now );
+++    return ((long long)(now.tv_sec - since->tv_sec) * 1000000000 + (now.tv_nsec - since->tv_nsec)) / 1000;
++ }
++ 
++-static void poll_timeout( void *private )
+++/* list a watch again, report what changed and set when it is next due */
+++static void poll_watch_list( struct poll_watch *watch )
++ {
++-    struct dir *dir = private;
++-    struct poll_watch *watch = dir->poll;
++-    struct poll_item *items = NULL;
++-    unsigned int count = 0, size = 0;
++-    struct timespec before, after;
++-    const char *base;
+++    struct dir *dir = watch->dir;
+++    struct poll_item *items;
+++    unsigned int count;
+++    struct timespec before;
++     long long took;
++ 
++-    watch->timeout = NULL;
++-    if (!(base = get_fd_unix_name( dir->fd ))) return;
++     clock_gettime( CLOCK_MONOTONIC, &before );
++-    poll_scan( base, "", dir->subtree, 0, &items, &count, &size );
++-    clock_gettime( CLOCK_MONOTONIC, &after );
++-    if (items) qsort( items, count, sizeof(*items), poll_compare );
++-    poll_compare_lists( dir, watch->items, watch->count, items, count );
++-    poll_free_items( watch->items, watch->count );
++-    watch->items = items;
++-    watch->count = count;
+++    if (!poll_list( dir, &items, &count ))
+++    {
+++        if (watch->listed) poll_compare_lists( dir, watch->items, watch->count, items, count );
+++        poll_free_items( watch->items, watch->count );
+++        watch->items = items;
+++        watch->count = count;
+++        watch->listed = 1;
+++    }
++     /* a listing that takes long is made less often: eight times as long between two */
++-    took = ((long long)(after.tv_sec - before.tv_sec) * 1000000000 + (after.tv_nsec - before.tv_nsec)) / 100;
+++    took = poll_elapsed_us( &before ) * 10;
++     watch->interval = took * 8 < POLL_MIN_INTERVAL ? POLL_MIN_INTERVAL
++                       : took * 8 > POLL_MAX_INTERVAL ? POLL_MAX_INTERVAL : took * 8;
++-    poll_arm( dir );
+++    watch->due = current_time + watch->interval;
+++}
+++
+++static long long poll_budget_us(void)
+++{
+++    static long long budget = -1;
+++
+++    if (budget == -1)
+++    {
+++        const char *value = getenv( "WINE_PS5_POLL_BUDGET_US" );
+++        budget = value && *value ? atoll( value ) : POLL_TICK_BUDGET_US;
+++        if (budget < 0) budget = POLL_TICK_BUDGET_US;
+++    }
+++    return budget;
+++}
+++
+++static void poll_tick( void *private )
+++{
+++    unsigned int turns = list_count( &poll_watches ), listed = 0;
+++    struct timespec start;
+++
+++    poll_timer = NULL;
+++    clock_gettime( CLOCK_MONOTONIC, &start );
+++    /* a directory released below may take its watch off the list */
+++    while (turns-- && !list_empty( &poll_watches ))
+++    {
+++        struct poll_watch *watch = LIST_ENTRY( list_head( &poll_watches ), struct poll_watch, entry );
+++        struct dir *dir = watch->dir;
+++
+++        if (watch->due <= current_time)
+++        {
+++            /* the watches left are listed first at the next tick */
+++            if (listed && poll_elapsed_us( &start ) >= poll_budget_us()) break;
+++            /* a report may complete the watch's last request and release its directory */
+++            grab_object( dir );
+++            poll_watch_list( watch );
+++            listed++;
+++            list_remove( &watch->entry );
+++            list_add_tail( &poll_watches, &watch->entry );
+++            release_object( dir );
+++        }
+++        else
+++        {
+++            list_remove( &watch->entry );
+++            list_add_tail( &poll_watches, &watch->entry );
+++        }
+++    }
+++    if (!list_empty( &poll_watches ))
+++        poll_timer = add_timeout_user( current_time + POLL_MIN_INTERVAL, poll_tick, NULL );
++ }
++ 
++ static void poll_watch_free( struct dir *dir )
++@@ -1357,26 +1455,33 @@ static void poll_watch_free( struct dir *dir )
++     struct poll_watch *watch = dir->poll;
++ 
++     if (!watch) return;
++-    if (watch->timeout) remove_timeout_user( watch->timeout );
+++    list_remove( &watch->entry );
++     poll_free_items( watch->items, watch->count );
++     free( watch );
++     dir->poll = NULL;
+++    if (list_empty( &poll_watches ) && poll_timer)
+++    {
+++        remove_timeout_user( poll_timer );
+++        poll_timer = NULL;
+++    }
++ }
++ 
++ static int inotify_adjust_changes( struct dir *dir )
++ {
++     struct poll_watch *watch;
++-    const char *base;
++-    unsigned int size = 0;
++ 
++     if (dir->poll) return 1;
++-    if (!(base = get_fd_unix_name( dir->fd )) || !(watch = calloc( 1, sizeof(*watch) ))) return 0;
+++    if (!get_fd_unix_name( dir->fd ) || !(watch = calloc( 1, sizeof(*watch) ))) return 0;
++     dir->poll = watch;
+++    watch->dir = dir;
++     watch->interval = POLL_MIN_INTERVAL;
++     /* the list the next ones are compared with is made now, before the caller can change anything */
++-    poll_scan( base, "", dir->subtree, 0, &watch->items, &watch->count, &size );
++-    if (watch->items) qsort( watch->items, watch->count, sizeof(*watch->items), poll_compare );
++-    poll_arm( dir );
+++    watch->listed = !poll_list( dir, &watch->items, &watch->count );
+++    watch->due = current_time + watch->interval;
+++    list_add_tail( &poll_watches, &watch->entry );
+++    if (!poll_timer) poll_timer = add_timeout_user( watch->due, poll_tick, NULL );
+++    /* the watch lists the directory by name: its descriptor may be parked */
+++    set_fd_watched_by_name( dir->fd );
++     return 1;
++ }
++ #else
++@@ -1416,7 +1521,7 @@ struct object *create_dir_obj( struct fd *fd, unsigned int access, mode_t mode )
++     dir->mode = mode;
++     dir->uid  = ~(uid_t)0;
++     dir->client_process = NULL;
++-#ifdef __PROSPERO__
+++#ifdef PS5_POLL_CHANGES
++     dir->poll = NULL;
++ #endif
++     set_fd_user( fd, &dir_fd_ops, &dir->obj );
++diff --git a/server/fd.c b/server/fd.c
++index 2a3bd89..f55d6f6 100644
++--- a/server/fd.c
+++++ b/server/fd.c
++@@ -178,7 +178,9 @@ struct fd
++     int                  ps5_park_flags; /* open() flags to open it again with */
++ #endif
++ #ifdef PS5_PARK_FILES
++-    unsigned int         ps5_file :1;    /* a read-only regular file that may be parked */
+++    unsigned int         ps5_file :1;    /* a read-only regular file, or a directory, that may be parked */
+++    unsigned int         ps5_dir :1;     /* that is a directory past the threshold (ps5_track_directory) */
+++    unsigned int         ps5_watched :1; /* its change watch lists it by name (set_fd_watched_by_name) */
++     unsigned int         ps5_pinned :1;  /* handed to the client to cache: never parked */
++     unsigned int         ps5_live :1;    /* in ps5_live_files */
++     struct list          ps5_lru_entry;  /* entry in ps5_live_files */
++@@ -191,6 +193,7 @@ struct fd
++ static unsigned int ps5_directory_fds;  /* directory fds alive, parked or not (see ps5_park_directory) */
++ static int ps5_reopen_directory( struct fd *fd );
++ #ifdef PS5_PARK_FILES
+++static void ps5_track_directory( struct fd *fd );
++ static struct list ps5_live_files = LIST_INIT( ps5_live_files ); /* parkable files with a unix_fd, most recent first */
++ static unsigned int ps5_live_count;    /* entries in ps5_live_files */
++ static unsigned int ps5_pinned_count;  /* files handed to the client to cache */
++@@ -1876,7 +1879,7 @@ static struct fd *alloc_fd_object(void)
++     fd->ps5_park_flags = 0;
++ #endif
++ #ifdef PS5_PARK_FILES
++-    fd->ps5_file = fd->ps5_pinned = fd->ps5_live = 0;
+++    fd->ps5_file = fd->ps5_dir = fd->ps5_watched = fd->ps5_pinned = fd->ps5_live = 0;
++     fd->ps5_offset = 0;
++     fd->ps5_lent_ms = 0;
++ #endif
++@@ -1931,7 +1934,7 @@ struct fd *alloc_pseudo_fd( const struct fd_ops *fd_user_ops, struct object *use
++     fd->ps5_park_flags = 0;
++ #endif
++ #ifdef PS5_PARK_FILES
++-    fd->ps5_file = fd->ps5_pinned = fd->ps5_live = 0;
+++    fd->ps5_file = fd->ps5_dir = fd->ps5_watched = fd->ps5_pinned = fd->ps5_live = 0;
++     fd->ps5_offset = 0;
++     fd->ps5_lent_ms = 0;
++ #endif
++@@ -1999,6 +2002,9 @@ static void ps5_park_directory( struct fd *fd, int flags )
++     fd->ps5_park_flags |= O_DIRECTORY;  /* never block on, or open, whatever took the name */
++ #endif
++     fd->ps5_parked = 1;
+++#ifdef PS5_PARK_FILES
+++    ps5_track_directory( fd );
+++#endif
++ }
++ 
++ #ifdef PS5_PARK_FILES
++@@ -2102,11 +2108,13 @@ static unsigned long long ps5_now_ms(void)
++ static int ps5_park_file( struct fd *fd, int force )
++ {
++     struct stat st;
++-    off_t offset;
+++    off_t offset = 0;
++ 
+++    /* a directory's change watch waits in wait_q, but it is listed by name */
++     if (fd->unix_fd == -1 || !fd->closed || fd->closed->unix_fd != fd->unix_fd ||
++         !list_empty( &fd->inode->locks ) || !list_empty( &fd->locks ) ||
++-        async_queued( &fd->read_q ) || async_queued( &fd->write_q ) || async_queued( &fd->wait_q ) ||
+++        async_queued( &fd->read_q ) || async_queued( &fd->write_q ) ||
+++        (async_queued( &fd->wait_q ) && !fd->ps5_watched) ||
++         ps5_inode_deleting( fd->inode ))
++         return 0;
++     if (!force && fd->ps5_lent_ms && ps5_now_ms() - fd->ps5_lent_ms < PS5_LENT_GRACE_MS) return 0;
++@@ -2114,7 +2122,7 @@ static int ps5_park_file( struct fd *fd, int force )
++     if (fd->poll_index != -1 && (pollfd[fd->poll_index].fd != -1 || pollfd[fd->poll_index].events)) return 0;
++     /* a file deleted under its name cannot be opened again */
++     if (fstat( fd->unix_fd, &st ) == -1 || !st.st_nlink) return 0;
++-    if ((offset = lseek( fd->unix_fd, 0, SEEK_CUR )) == -1) return 0;
+++    if (!fd->ps5_dir && (offset = lseek( fd->unix_fd, 0, SEEK_CUR )) == -1) return 0;
++     close( fd->unix_fd );
++     fd->unix_fd = fd->closed->unix_fd = -1;
++     fd->ps5_offset = offset;
++@@ -2233,7 +2241,7 @@ static void ps5_track_file( struct fd *fd, int flags )
++ static void ps5_set_file_cacheable( struct fd *fd )
++ {
++     if (!fd->ps5_file || fd->ps5_pinned || !fd->cacheable) return;
++-    if (ps5_pinned_count < ps5_cached_files_limit())
+++    if (!fd->ps5_dir && ps5_pinned_count < ps5_cached_files_limit())
++     {
++         fd->ps5_pinned = 1;
++         ps5_pinned_count++;
++@@ -2258,7 +2266,7 @@ static int ps5_untrack_inode_files( struct inode *inode )
++         if (!fd_ptr->ps5_file) continue;
++         if (fd_ptr->ps5_parked && ps5_reopen_file( fd_ptr ) == -1) return -1;
++         if (fd_ptr->ps5_live) ps5_remove_live_file( fd_ptr );
++-        fd_ptr->ps5_file = 0;
+++        fd_ptr->ps5_file = fd_ptr->ps5_dir = 0;
++     }
++     return 0;
++ }
++@@ -2279,7 +2287,8 @@ static int ps5_reopen_file( struct fd *fd )
++         file_set_error();
++         return -1;
++     }
++-    if (fstat( unix_fd, &st ) == -1 || !S_ISREG( st.st_mode ) || lseek( unix_fd, fd->ps5_offset, SEEK_SET ) == -1)
+++    if (fstat( unix_fd, &st ) == -1 || (fd->ps5_dir ? !S_ISDIR( st.st_mode ) : !S_ISREG( st.st_mode )) ||
+++        (!fd->ps5_dir && lseek( unix_fd, fd->ps5_offset, SEEK_SET ) == -1))
++     {
++         static int told;
++         if (told++ < 8) fprintf( stderr, "wine-ps5: parked %s is no longer that file\n", fd->unix_name );
++@@ -2302,6 +2311,19 @@ static int ps5_reopen_file( struct fd *fd )
++     if (!fd->ps5_pinned) ps5_add_live_file( fd );
++     return 0;
++ }
+++
+++/* A directory past the threshold, just parked, shares the files' budget
+++ * from now on: once it is opened again it is live, the client gets its
+++ * descriptor uncached, and as the least recently used it is parked again.
+++ * Before, it stayed open for good once used, and Java's watch service, which
+++ * reads each watched folder's file information, kept one per folder. With
+++ * no files budget it stays open once used, as before. */
+++static void ps5_track_directory( struct fd *fd )
+++{
+++    if (!ps5_live_files_limit()) return;
+++    fd->ps5_file = 1;
+++    fd->ps5_dir = 1;
+++}
++ #endif
++ 
++ /* a parked fd's unix_fd, opened again by its name (see ps5_unpark_directory) */
++@@ -3858,6 +3880,15 @@ const char *get_fd_unix_name( struct fd *fd )
++     return fd->unix_name;
++ }
++ 
+++/* a directory whose changes are found by listing it by name: its pending
+++ * change watches need no descriptor, so they do not keep it from being parked */
+++void set_fd_watched_by_name( struct fd *fd )
+++{
+++#ifdef PS5_PARK_FILES
+++    fd->ps5_watched = 1;
+++#endif
+++}
+++
++ /* get a Unix fd to access a file */
++ DECL_HANDLER(get_handle_fd)
++ {
++diff --git a/server/file.h b/server/file.h
++index c46f95e..910121d 100644
++--- a/server/file.h
+++++ b/server/file.h
++@@ -151,6 +151,7 @@ static inline timeout_t abstime_to_timeout( abstime_t abstime )
++ extern void set_current_time( void );
++ extern struct timeout_user *add_timeout_user( timeout_t when, timeout_callback func, void *private );
++ extern const char *get_fd_unix_name( struct fd *fd );
+++extern void set_fd_watched_by_name( struct fd *fd );
++ extern void remove_timeout_user( struct timeout_user *user );
++ extern const char *get_timeout_str( timeout_t timeout );
++ 
++-- 
++2.43.0
++
+diff --git a/wine/patches/1025-server-ps5-park-files-opened-for-writing.patch b/wine/patches/1025-server-ps5-park-files-opened-for-writing.patch
+new file mode 100644
+index 0000000..da61603
+--- /dev/null
++++ b/wine/patches/1025-server-ps5-park-files-opened-for-writing.patch
+@@ -0,0 +1,1215 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sat, 14 Nov 2026 12:00:00 +0100
++Subject: [PATCH] server, ntdll: Park files opened for writing, and locked
++ files, on PS5, and lend descriptors only until they are closed.
++
++Patch 0993 parks read-only files to keep a PS5 title under its limit of
++about 249 open files, but not a file opened for writing or a file that
++any handle has locked. A Minecraft mod (Distant Horizons) keeps a SQLite
++database per dimension and opens it once per thread and repository. Each
++connection holds the database and its WAL file open for reading and
++writing, and in WAL mode it keeps a shared lock on the database for as
++long as it is open. While a world loaded, 157 of the title's 239 files
++were held that way (1022's log: write=157 live=0), and the game closed
++with "Too many open files".
++
++- A regular file opened for writing is tracked like a read-only one, and
++  opened again with its access mode but without O_CREAT, O_EXCL or
++  O_TRUNC. One that can no longer be opened for writing by its name (a
++  file created with the read-only attribute, for one) is not parked.
++- Locks no longer keep a descriptor. Every Wine process of a title runs
++  in the title's host process or on its server (patch 1000), and only
++  the server takes host locks. Host record locks belong to a process, so
++  they never exclude anyone there, and closing any descriptor of a file
++  drops all of them. The server now takes none, and its own list of
++  locks, which stays with the fd, decides who may lock what. A handle
++  closed while others hold locks on its file is closed at once instead
++  of being kept until the last lock goes.
++- A descriptor handed to the client uncached shares its file position
++  with the server's. 0993 left one handed out in the last 100 ms live,
++  but only measured from the first time, and a call can take longer: a
++  parked file then saved a stale position, and with files opened for
++  writing the next write would overwrite data. Each such descriptor is
++  now a loan: get_handle_fd returns its number, and ntdll gives it back
++  with the new release_fd_loan request when it closes its copy
++  (server_put_unix_fd, at every place that closed one), or at once when
++  the descriptor didn't arrive. A loan holds a reference to its fd, so a
++  handle closed or reused in the meantime gives back nothing else, and a
++  file with a loan out is never parked. A descriptor
++  wine_server_handle_to_fd hands to its caller is never given back,
++  which keeps that file open, as does a loan of a second process (patch
++  1000) that exits holding it.
++- A handle opened for writing keeps the access it was opened with only
++  while it is live: one parked after its file was made read-only by
++  another handle fails to open it again.
++- release_fd_loan is the last request in protocol.def. A request added
++  in the middle renumbers every request after it, and a module built
++  without this patch (ntoskrnl.exe, conhost.exe) would send the wrong
++  ones: ntoskrnl.exe asked for get_kernel_object_ptr and got another
++  request, and every game that hosts the controller's HID crashed at
++  start.
++
++tests/test_wine_written_files.py opens one database 300 times for
++reading and writing with a shared lock through each handle, writes 400
++files through their file pointers in rounds and 40 created read-only,
++maps a file for writing, checks that locks of parked handles still
++conflict, also after another handle of the file is closed, and has
++eight threads append records through their file pointers while two
++others keep opening files. Under a host Wine and a 512-descriptor
++limit, a server with 0993 fails at the 244th connection with
++STATUS_TOO_MANY_OPENED_FILES (write=244); one that parks files opened
++for writing but keeps the lock checks fails there too (live=244); one
++without the write-access check fails to write a read-only file again
++(error 5). With a 100 ms grace in place of the loans and budgets of 4
++files, one run in nine lost records; with the loans, twelve runs passed,
++nine of them with those budgets.
++---
++ dlls/ntdll/unix/cdrom.c        |   6 +-
++ dlls/ntdll/unix/file.c         |  56 +++++++--------
++ dlls/ntdll/unix/process.c      |   2 +-
++ dlls/ntdll/unix/serial.c       |  10 +--
++ dlls/ntdll/unix/server.c       |  66 ++++++++++++++++-
++ dlls/ntdll/unix/socket.c       |  42 +++++------
++ dlls/ntdll/unix/tape.c         |   2 +-
++ dlls/ntdll/unix/unix_private.h |   1 +
++ dlls/ntdll/unix/virtual.c      |  12 ++--
++ include/wine/server_protocol.h |  20 +++++-
++ server/fd.c                    | 126 +++++++++++++++++++++++++--------
++ server/protocol.def            |   8 +++
++ server/request_handlers.h      |   7 +-
++ server/request_trace.h         |  10 +++
++ 14 files changed, 272 insertions(+), 96 deletions(-)
++
++diff --git a/dlls/ntdll/unix/cdrom.c b/dlls/ntdll/unix/cdrom.c
++index 2ed5b5d..d009987 100644
++--- a/dlls/ntdll/unix/cdrom.c
+++++ b/dlls/ntdll/unix/cdrom.c
++@@ -2911,7 +2911,7 @@ NTSTATUS cdrom_DeviceIoControl( HANDLE device, HANDLE event, PIO_APC_ROUTINE apc
++ 
++     if ((status = CDROM_Open(fd, &dev)))
++     {
++-        if (needs_close) close( fd );
+++        if (needs_close) server_put_unix_fd( fd );
++         return status;
++     }
++ 
++@@ -2929,7 +2929,7 @@ NTSTATUS cdrom_DeviceIoControl( HANDLE device, HANDLE event, PIO_APC_ROUTINE apc
++         if ((status = get_parent_device( fd, name, sizeof(name) ))) return status;
++         if (code == IOCTL_STORAGE_EJECT_MEDIA)
++             NtClose( device );
++-        if (needs_close) close( fd );
+++        if (needs_close) server_put_unix_fd( fd );
++         TRACE("opening parent %s\n", name );
++         if ((fd = open( name, O_RDONLY )) == -1)
++             return errno_to_status( errno );
++@@ -3243,7 +3243,7 @@ NTSTATUS cdrom_DeviceIoControl( HANDLE device, HANDLE event, PIO_APC_ROUTINE apc
++     default:
++         status = STATUS_NOT_SUPPORTED;
++     }
++-    if (needs_close) close( fd );
+++    if (needs_close) server_put_unix_fd( fd );
++     if (!NT_ERROR(status))
++         file_complete_async( device, options, event, apc, apc_user, io, status, sz );
++     return status;
++diff --git a/dlls/ntdll/unix/file.c b/dlls/ntdll/unix/file.c
++index f97fbe3..66ae0d1 100644
++--- a/dlls/ntdll/unix/file.c
+++++ b/dlls/ntdll/unix/file.c
++@@ -3173,7 +3173,7 @@ NTSTATUS WINAPI NtQueryDirectoryFile( HANDLE handle, HANDLE event, PIO_APC_ROUTI
++ 
++     if (type != FD_TYPE_DIR)
++     {
++-        if (needs_close) close( fd );
+++        if (needs_close) server_put_unix_fd( fd );
++ #ifdef __PROSPERO__
++         ps5_dir_failed( handle, "it isn't a directory", STATUS_INVALID_PARAMETER );
++ #endif
++@@ -3215,7 +3215,7 @@ NTSTATUS WINAPI NtQueryDirectoryFile( HANDLE handle, HANDLE event, PIO_APC_ROUTI
++ 
++     mutex_unlock( &dir_mutex );
++ 
++-    if (needs_close) close( fd );
+++    if (needs_close) server_put_unix_fd( fd );
++     if (cwd != -1) close( cwd );
++     TRACE( "=> %x (%ld)\n", status, io->Information );
++     return status;
++@@ -3546,7 +3546,7 @@ static void get_redirect( OBJECT_ATTRIBUTES *attr, UNICODE_STRING *redir )
++         if (!len) return;
++         if (server_get_unix_fd( attr->RootDirectory, 0, &fd, &needs_close, NULL, NULL )) return;
++         fstat( fd, &st );
++-        if (needs_close) close( fd );
+++        if (needs_close) server_put_unix_fd( fd );
++         if (!is_same_file( &windir, &st ))
++         {
++             if (!is_same_file( &sysdir, &st )) return;
++@@ -3867,7 +3867,7 @@ done:
++         TRACE( "%s not found in dir %p\n", wine_dbgstr_longlong(file_id), attr->RootDirectory );
++         free( unix_name );
++     }
++-    if (needs_close) close( root_fd );
+++    if (needs_close) server_put_unix_fd( root_fd );
++     return status;
++ }
++ 
++@@ -4458,14 +4458,14 @@ static NTSTATUS nt_to_unix_file_name( OBJECT_ATTRIBUTES *attr, UNICODE_STRING *n
++     {
++         if (type != FD_TYPE_DIR)
++         {
++-            if (needs_close) close( root_fd );
+++            if (needs_close) server_put_unix_fd( root_fd );
++             status = STATUS_BAD_DEVICE_TYPE;
++         }
++         else
++         {
++             status = lookup_unix_name( root_fd, attr, nt_name, 0, &unix_name, unix_len,
++                                        1, disposition, open_reparse, FALSE, 0 );
++-            if (needs_close) close( root_fd );
+++            if (needs_close) server_put_unix_fd( root_fd );
++             /* The descriptor came from the in-process server, and this module's
++              * working-directory emulation knows no path for it, so a name can't be
++              * looked up in it (EBADF), as patch 0936 found for listing it: the name is
++@@ -5231,7 +5231,7 @@ static NTSTATUS unmount_device( HANDLE handle )
++                 usleep( 100000 );
++             }
++         }
++-        if (needs_close) close( unix_fd );
+++        if (needs_close) server_put_unix_fd( unix_fd );
++     }
++     return status;
++ }
++@@ -5526,7 +5526,7 @@ NTSTATUS WINAPI NtCreateFile( HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBU
++                 if (fd_set_dos_attrib( fd, attributes, TRUE ) == -1 && errno != ENOTSUP)
++                     WARN( "Failed to set extended attribute " SAMBA_XATTR_DOS_ATTRIB ". errno %d (%s)",
++                           errno, strerror( errno ) );
++-                if (needs_close) close( fd );
+++                if (needs_close) server_put_unix_fd( fd );
++             }
++         }
++     }
++@@ -5997,7 +5997,7 @@ NTSTATUS WINAPI NtQueryInformationFile( HANDLE handle, IO_STATUS_BLOCK *io,
++         status = STATUS_NOT_IMPLEMENTED;
++         break;
++     }
++-    if (needs_close) close( fd );
+++    if (needs_close) server_put_unix_fd( fd );
++     if (status == STATUS_SUCCESS && !io->Information) io->Information = info_sizes[class];
++     return io->Status = status;
++ }
++@@ -6045,7 +6045,7 @@ NTSTATUS WINAPI NtSetInformationFile( HANDLE handle, IO_STATUS_BLOCK *io,
++                 status = fd_set_file_info( fd, info->FileAttributes,
++                                            unix_name && is_hidden_file( unix_name ));
++ 
++-            if (needs_close) close( fd );
+++            if (needs_close) server_put_unix_fd( fd );
++             free( unix_name );
++         }
++         else status = STATUS_INVALID_PARAMETER_3;
++@@ -6062,7 +6062,7 @@ NTSTATUS WINAPI NtSetInformationFile( HANDLE handle, IO_STATUS_BLOCK *io,
++             if (lseek( fd, info->CurrentByteOffset.QuadPart, SEEK_SET ) == (off_t)-1)
++                 status = errno_to_status( errno );
++ 
++-            if (needs_close) close( fd );
+++            if (needs_close) server_put_unix_fd( fd );
++         }
++         else status = STATUS_INVALID_PARAMETER_3;
++         break;
++@@ -6198,7 +6198,7 @@ NTSTATUS WINAPI NtSetInformationFile( HANDLE handle, IO_STATUS_BLOCK *io,
++                 WARN( "setting valid data length not supported\n" );
++ #endif
++             }
++-            if (needs_close) close( fd );
+++            if (needs_close) server_put_unix_fd( fd );
++         }
++         else status = STATUS_INVALID_PARAMETER_3;
++         break;
++@@ -6440,7 +6440,7 @@ static BOOL async_read_proc( void *user, ULONG_PTR *info, unsigned int *status )
++             break;
++ 
++         result = virtual_locked_read(fd, &fileio->buffer[fileio->already], fileio->count-fileio->already);
++-        if (needs_close) close( fd );
+++        if (needs_close) server_put_unix_fd( fd );
++ 
++         if (result < 0)
++         {
++@@ -6492,7 +6492,7 @@ static BOOL async_write_proc( void *user, ULONG_PTR *info, unsigned int *status
++ 
++         result = write( fd, &fileio->buffer[fileio->already], fileio->count - fileio->already );
++ 
++-        if (needs_close) close( fd );
+++        if (needs_close) server_put_unix_fd( fd );
++ 
++         if (result < 0)
++         {
++@@ -7143,7 +7143,7 @@ NTSTATUS WINAPI NtReadFile( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, vo
++     else if (type == FD_TYPE_SOCKET)
++     {
++         status = sock_read( handle, unix_handle, event, apc, apc_user, io, buffer, length );
++-        if (needs_close) close( unix_handle );
+++        if (needs_close) server_put_unix_fd( unix_handle );
++         return status;
++     }
++ 
++@@ -7252,7 +7252,7 @@ done:
++     send_completion = cvalue != 0;
++ 
++ err:
++-    if (needs_close) close( unix_handle );
+++    if (needs_close) server_put_unix_fd( unix_handle );
++     if (status == STATUS_SUCCESS || (status == STATUS_END_OF_FILE && (!async_read || type == FD_TYPE_FILE)))
++     {
++         set_sync_iosb( io, status, total, options );
++@@ -7335,7 +7335,7 @@ NTSTATUS WINAPI NtReadFileScatter( HANDLE file, HANDLE event, PIO_APC_ROUTINE ap
++ 
++     send_completion = cvalue != 0;
++ 
++-    if (needs_close) close( unix_handle );
+++    if (needs_close) server_put_unix_fd( unix_handle );
++     set_sync_iosb( io, status, total, options );
++     TRACE("= 0x%08x (%u)\n", status, total);
++     if (event) NtSetEvent( event, NULL );
++@@ -7345,7 +7345,7 @@ NTSTATUS WINAPI NtReadFileScatter( HANDLE file, HANDLE event, PIO_APC_ROUTINE ap
++     return STATUS_PENDING;
++ 
++ error:
++-    if (needs_close) close( unix_handle );
+++    if (needs_close) server_put_unix_fd( unix_handle );
++     if (event) NtResetEvent( event, NULL );
++     TRACE("= 0x%08x\n", status);
++     return status;
++@@ -7484,7 +7484,7 @@ NTSTATUS WINAPI NtWriteFile( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, v
++     else if (type == FD_TYPE_SOCKET)
++     {
++         status = sock_write( handle, unix_handle, event, apc, apc_user, io, buffer, length );
++-        if (needs_close) close( unix_handle );
+++        if (needs_close) server_put_unix_fd( unix_handle );
++         return status;
++     }
++ 
++@@ -7587,7 +7587,7 @@ done:
++     send_completion = cvalue != 0;
++ 
++ err:
++-    if (needs_close) close( unix_handle );
+++    if (needs_close) server_put_unix_fd( unix_handle );
++ 
++     if (type == FD_TYPE_SERIAL && (status == STATUS_SUCCESS || status == STATUS_PENDING))
++         set_pending_write( handle );
++@@ -7678,7 +7678,7 @@ NTSTATUS WINAPI NtWriteFileGather( HANDLE file, HANDLE event, PIO_APC_ROUTINE ap
++     }
++ 
++  done:
++-    if (needs_close) close( unix_handle );
+++    if (needs_close) server_put_unix_fd( unix_handle );
++     if (status == STATUS_SUCCESS)
++     {
++         file_complete_async( file, options, event, apc, apc_user, io, status, total );
++@@ -7800,7 +7800,7 @@ NTSTATUS WINAPI NtFsControlFile( HANDLE handle, HANDLE event, PIO_APC_ROUTINE ap
++     status = server_get_unix_fd( handle, 0, &fd, &needs_close, NULL, &options );
++     if (status && status != STATUS_BAD_DEVICE_TYPE)
++         return status;
++-    if (needs_close) close( fd );
+++    if (needs_close) server_put_unix_fd( fd );
++ 
++     ignore_server_ioctl_struct_holes( code, in_buffer, in_size );
++ 
++@@ -7858,7 +7858,7 @@ NTSTATUS WINAPI NtFsControlFile( HANDLE handle, HANDLE event, PIO_APC_ROUTINE ap
++             status = server_get_unix_fd( handle, 0, &fd, &needs_close, NULL, NULL );
++             if (status) break;
++             fstat( fd, &st );
++-            if (needs_close) close( fd );
+++            if (needs_close) server_put_unix_fd( fd );
++             memset( info, 0, sizeof(*info) );
++             memcpy( info->ObjectId, &st.st_dev, sizeof(st.st_dev) );
++             memcpy( info->ObjectId + 8, &st.st_ino, sizeof(st.st_ino) );
++@@ -7950,7 +7950,7 @@ NTSTATUS WINAPI NtFlushBuffersFileEx( HANDLE handle, ULONG flags, void *params,
++         if (wait_handle) ret = wait_async( wait_handle, FALSE );
++     }
++ 
++-    if (needs_close) close( fd );
+++    if (needs_close) server_put_unix_fd( fd );
++     return ret;
++ }
++ 
++@@ -8699,7 +8699,7 @@ NTSTATUS WINAPI NtQueryVolumeInformationFile( HANDLE handle, IO_STATUS_BLOCK *io
++         status = STATUS_INVALID_PARAMETER;
++         break;
++     }
++-    if (needs_close) close( fd );
+++    if (needs_close) server_put_unix_fd( fd );
++     return io->Status = status;
++ }
++ 
++@@ -8719,12 +8719,12 @@ static NTSTATUS set_volume_label( HANDLE handle, const FILE_FS_LABEL_INFORMATION
++ 
++     if ((status = get_mountmgr_fs_info( handle, fd, drive, sizeof(data) )))
++     {
++-        if (needs_close) close( fd );
+++        if (needs_close) server_put_unix_fd( fd );
++         return status;
++     }
++     mount_point = (const char *)data + drive->mount_point_offset;
++ 
++-    if (needs_close) close( fd );
+++    if (needs_close) server_put_unix_fd( fd );
++ 
++     if (drive->fs_type != MOUNTMGR_FS_TYPE_NTFS)
++         return STATUS_ACCESS_DENIED;
++@@ -8792,7 +8792,7 @@ NTSTATUS WINAPI NtQueryEaFile( HANDLE handle, IO_STATUS_BLOCK *io, void *buffer,
++     if (buffer && length)
++         memset( buffer, 0, length );
++ 
++-    if (needs_close) close( fd );
+++    if (needs_close) server_put_unix_fd( fd );
++     return STATUS_NO_EAS_ON_FILE;
++ }
++ 
++diff --git a/dlls/ntdll/unix/process.c b/dlls/ntdll/unix/process.c
++index 6e24253..f087861 100644
++--- a/dlls/ntdll/unix/process.c
+++++ b/dlls/ntdll/unix/process.c
++@@ -297,7 +297,7 @@ static unsigned int get_pe_file_info( OBJECT_ATTRIBUTES *attr, UNICODE_STRING *n
++         if (!server_get_unix_fd( *handle, FILE_READ_DATA, &unix_fd, &needs_close, NULL, NULL ))
++         {
++             status = get_non_pe_file_info( unix_fd, info );
++-            if (needs_close) close( unix_fd );
+++            if (needs_close) server_put_unix_fd( unix_fd );
++         }
++     }
++ 
++diff --git a/dlls/ntdll/unix/serial.c b/dlls/ntdll/unix/serial.c
++index a20c3cb..6d11c06 100644
++--- a/dlls/ntdll/unix/serial.c
+++++ b/dlls/ntdll/unix/serial.c
++@@ -1110,12 +1110,12 @@ static BOOL async_wait_proc( void *user, ULONG_PTR *info, unsigned int *status )
++             else
++             {
++                 get_wait_mask( commio->io.handle, &dummy, (commio->evtmask & EV_TXEMPTY) ? &commio->pending_write : NULL );
++-                if (needs_close) close( fd );
+++                if (needs_close) server_put_unix_fd( fd );
++                 return FALSE;
++             }
++         }
++ 
++-        if (needs_close) close( fd );
+++        if (needs_close) server_put_unix_fd( fd );
++     }
++     release_fileio( &commio->io );
++     return TRUE;
++@@ -1264,7 +1264,7 @@ NTSTATUS serial_DeviceIoControl( HANDLE device, HANDLE event, PIO_APC_ROUTINE ap
++         return status;
++     if (type != FD_TYPE_SERIAL)
++     {
++-        if (needs_close) close( fd );
+++        if (needs_close) server_put_unix_fd( fd );
++         return STATUS_OBJECT_TYPE_MISMATCH;
++     }
++ 
++@@ -1437,7 +1437,7 @@ NTSTATUS serial_DeviceIoControl( HANDLE device, HANDLE event, PIO_APC_ROUTINE ap
++         if (out_buffer && out_size == sizeof(DWORD))
++         {
++             status = wait_on( device, fd, event, apc, apc_user, io, out_buffer );
++-            if (needs_close) close( fd );
+++            if (needs_close) server_put_unix_fd( fd );
++             return status;
++         }
++         else
++@@ -1453,7 +1453,7 @@ NTSTATUS serial_DeviceIoControl( HANDLE device, HANDLE event, PIO_APC_ROUTINE ap
++         break;
++     }
++ 
++-    if (needs_close) close( fd );
+++    if (needs_close) server_put_unix_fd( fd );
++ 
++     if (!NT_ERROR(status))
++         file_complete_async( device, options, event, apc, apc_user, io, status, sz );
++diff --git a/dlls/ntdll/unix/server.c b/dlls/ntdll/unix/server.c
++index cd94e0e..e35cb79 100644
++--- a/dlls/ntdll/unix/server.c
+++++ b/dlls/ntdll/unix/server.c
++@@ -1649,6 +1649,60 @@ static int remove_fd_from_cache( HANDLE handle )
++ }
++ 
++ 
+++#if defined(__PROSPERO__) || defined(PS5_PARK_FILES)
+++/* A descriptor the server lends (get_handle_fd's loan) shares its file
+++ * position with the server's own, so the server won't close its descriptor
+++ * to keep to its budget of open files (see server/fd.c) until the copy is
+++ * closed and the loan given back. The loans are kept by descriptor; one past
+++ * the table is never given back, which only keeps that file open. */
+++#define PS5_LENT_FDS 16384
+++static LONG ps5_lent_fds[PS5_LENT_FDS];  /* loan of that descriptor, or 0 */
+++
+++static void ps5_give_back( unsigned int loan )
+++{
+++    SERVER_START_REQ( release_fd_loan )
+++    {
+++        req->loan = loan;
+++        wine_server_call( req );
+++    }
+++    SERVER_END_REQ;
+++}
+++
+++static void ps5_take_loan( int fd, unsigned int loan )
+++{
+++    LONG old;
+++
+++    if (fd < 0 || fd >= PS5_LENT_FDS) return;
+++    /* a copy closed without server_put_unix_fd had this number before */
+++    if ((old = InterlockedExchange( &ps5_lent_fds[fd], loan ))) ps5_give_back( old );
+++}
+++
+++/* the caller keeps the descriptor: its loan is never given back */
+++static void ps5_keep_loan( int fd )
+++{
+++    if (fd >= 0 && fd < PS5_LENT_FDS) InterlockedExchange( &ps5_lent_fds[fd], 0 );
+++}
+++#endif
+++
+++
+++/***********************************************************************
+++ *           server_put_unix_fd
+++ *
+++ * Close a descriptor from server_get_unix_fd that needs closing.
+++ */
+++void server_put_unix_fd( int fd )
+++{
+++#if defined(__PROSPERO__) || defined(PS5_PARK_FILES)
+++    LONG loan = (fd >= 0 && fd < PS5_LENT_FDS) ? InterlockedExchange( &ps5_lent_fds[fd], 0 ) : 0;
+++
+++    close( fd );
+++    if (loan) ps5_give_back( loan );
+++#else
+++    close( fd );
+++#endif
+++}
+++
+++
++ /***********************************************************************
++  *           server_get_unix_fd
++  *
++@@ -1660,6 +1714,7 @@ int server_get_unix_fd( HANDLE handle, unsigned int wanted_access, int *unix_fd,
++     sigset_t sigset;
++     obj_handle_t fd_handle;
++     int ret, fd = -1;
+++    unsigned int loan = 0;
++     unsigned int access = 0;
++ 
++ #ifdef __PROSPERO__
++@@ -1684,6 +1739,7 @@ int server_get_unix_fd( HANDLE handle, unsigned int wanted_access, int *unix_fd,
++                 if (type) *type = reply->type;
++                 if (options) *options = reply->options;
++                 access = reply->access;
+++                loan = reply->loan;
++                 if ((fd = wine_server_receive_fd( &fd_handle )) != -1)
++                 {
++                     assert( wine_server_ptr_handle(fd_handle) == handle );
++@@ -1699,6 +1755,11 @@ int server_get_unix_fd( HANDLE handle, unsigned int wanted_access, int *unix_fd,
++             }
++         }
++         SERVER_END_REQ;
+++#if defined(__PROSPERO__) || defined(PS5_PARK_FILES)
+++        /* a descriptor that didn't arrive is given back at once */
+++        if (loan && fd != -1) ps5_take_loan( fd, loan );
+++        else if (loan) ps5_give_back( loan );
+++#endif
++     }
++     server_leave_uninterrupted_section( &fd_cache_mutex, &sigset );
++ 
++@@ -1706,7 +1767,7 @@ done:
++     if (!ret && ((access & wanted_access) != wanted_access))
++     {
++         ret = STATUS_ACCESS_DENIED;
++-        if (*needs_close) close( fd );
+++        if (*needs_close) server_put_unix_fd( fd );
++     }
++     if (!ret) *unix_fd = fd;
++     return ret;
++@@ -1761,6 +1822,9 @@ NTSTATUS CDECL wine_server_handle_to_fd( HANDLE handle, unsigned int access, int
++     {
++         if ((*unix_fd = dup(*unix_fd)) == -1) ret = STATUS_TOO_MANY_OPENED_FILES;
++     }
+++#if defined(__PROSPERO__) || defined(PS5_PARK_FILES)
+++    else if (!ret) ps5_keep_loan( *unix_fd );
+++#endif
++     return ret;
++ }
++ 
++diff --git a/dlls/ntdll/unix/socket.c b/dlls/ntdll/unix/socket.c
++index f9b563b..121dc0a 100644
++--- a/dlls/ntdll/unix/socket.c
+++++ b/dlls/ntdll/unix/socket.c
++@@ -886,7 +886,7 @@ static BOOL async_recv_proc( void *user, ULONG_PTR *info, unsigned int *status )
++ 
++         *status = try_recv( fd, async, info );
++         TRACE( "got status %#x, %#lx bytes read\n", *status, *info );
++-        if (needs_close) close( fd );
+++        if (needs_close) server_put_unix_fd( fd );
++ 
++         if (*status == STATUS_DEVICE_NOT_READY)
++             return FALSE;
++@@ -1143,7 +1143,7 @@ static BOOL async_send_proc( void *user, ULONG_PTR *info, unsigned int *status )
++         *status = try_send( fd, async );
++         TRACE( "got status %#x\n", *status );
++ 
++-        if (needs_close) close( fd );
+++        if (needs_close) server_put_unix_fd( fd );
++ 
++         if (*status == STATUS_DEVICE_NOT_READY)
++             return FALSE;
++@@ -1442,15 +1442,15 @@ static BOOL async_transmit_proc( void *user, ULONG_PTR *info, unsigned int *stat
++ 
++         if (async->file && (*status = server_get_unix_fd( async->file, 0, &file_fd, &file_needs_close, NULL, NULL )))
++         {
++-            if (sock_needs_close) close( sock_fd );
+++            if (sock_needs_close) server_put_unix_fd( sock_fd );
++             return TRUE;
++         }
++ 
++         *status = try_transmit( sock_fd, file_fd, async );
++         TRACE( "got status %#x\n", *status );
++ 
++-        if (sock_needs_close) close( sock_fd );
++-        if (file_needs_close) close( file_fd );
+++        if (sock_needs_close) server_put_unix_fd( sock_fd );
+++        if (file_needs_close) server_put_unix_fd( file_fd );
++ 
++         if (*status == STATUS_DEVICE_NOT_READY)
++             return FALSE;
++@@ -1480,7 +1480,7 @@ static NTSTATUS sock_transmit( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc,
++     {
++         if ((status = server_get_unix_fd( ULongToHandle( params->file ), 0, &file_fd, &file_needs_close, &file_type, NULL )))
++             return status;
++-        if (file_needs_close) close( file_fd );
+++        if (file_needs_close) server_put_unix_fd( file_fd );
++ 
++         if (file_type != FD_TYPE_FILE)
++         {
++@@ -1565,7 +1565,7 @@ static NTSTATUS do_getsockopt( HANDLE handle, IO_STATUS_BLOCK *io, int level,
++         return status;
++ 
++     ret = getsockopt( fd, level, option, out_buffer, &len );
++-    if (needs_close) close( fd );
+++    if (needs_close) server_put_unix_fd( fd );
++     if (ret) return sock_errno_to_status( errno );
++ #ifdef __PROSPERO__
++     /* The console's FreeBSD kernel reads a boolean option back as its flag bit (SO_BROADCAST as 0x20, TCP_NODELAY as
++@@ -1599,7 +1599,7 @@ static NTSTATUS do_setsockopt( HANDLE handle, IO_STATUS_BLOCK *io, int level,
++         return status;
++ 
++     ret = setsockopt( fd, level, option, optval, optlen );
++-    if (needs_close) close( fd );
+++    if (needs_close) server_put_unix_fd( fd );
++     if (ret) return sock_errno_to_status( errno );
++     if (io) io->Status = STATUS_SUCCESS;
++     return STATUS_SUCCESS;
++@@ -1687,7 +1687,7 @@ NTSTATUS sock_ioctl( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc
++ 
++             if ((status = server_get_unix_fd( handle, 0, &fd, &needs_close, NULL, &options )))
++                 return status;
++-            if (needs_close) close( fd );
+++            if (needs_close) server_put_unix_fd( fd );
++ 
++             SERVER_START_REQ( socket_get_events )
++             {
++@@ -1763,7 +1763,7 @@ NTSTATUS sock_ioctl( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc
++                 FIXME( "MSG_WAITALL is not supported\n" );
++             status = sock_ioctl_recv( handle, event, apc, apc_user, io, fd, params.buffers, params.count, NULL,
++                                       NULL, NULL, NULL, unix_flags, !!(params.recv_flags & AFD_RECV_FORCE_ASYNC) );
++-            if (needs_close) close( fd );
+++            if (needs_close) server_put_unix_fd( fd );
++             return status;
++         }
++ 
++@@ -1792,7 +1792,7 @@ NTSTATUS sock_ioctl( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc
++                                       params->count, u64_to_user_ptr(params->control_ptr),
++                                       u64_to_user_ptr(params->addr_ptr), u64_to_user_ptr(params->addr_len_ptr),
++                                       ws_flags, unix_flags, params->force_async );
++-            if (needs_close) close( fd );
+++            if (needs_close) server_put_unix_fd( fd );
++             return status;
++         }
++ 
++@@ -1819,7 +1819,7 @@ NTSTATUS sock_ioctl( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc
++             status = sock_ioctl_send( handle, event, apc, apc_user, io, fd, u64_to_user_ptr( params->buffers_ptr ),
++                                       params->count, u64_to_user_ptr( params->addr_ptr ), params->addr_len,
++                                       unix_flags, params->force_async );
++-            if (needs_close) close( fd );
+++            if (needs_close) server_put_unix_fd( fd );
++             return status;
++         }
++ 
++@@ -1836,7 +1836,7 @@ NTSTATUS sock_ioctl( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc
++                 break;
++             }
++             status = sock_transmit( handle, event, apc, apc_user, io, fd, params );
++-            if (needs_close) close( fd );
+++            if (needs_close) server_put_unix_fd( fd );
++             return status;
++         }
++ 
++@@ -1849,7 +1849,7 @@ NTSTATUS sock_ioctl( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc
++ 
++             if ((status = server_get_unix_fd( handle, 0, &fd, &needs_close, &type, &options )))
++                 return status;
++-            if (needs_close) close( fd );
+++            if (needs_close) server_put_unix_fd( fd );
++             if (type != FD_TYPE_SOCKET)
++                 return STATUS_INVALID_DEVICE_REQUEST;
++ 
++@@ -1879,7 +1879,7 @@ NTSTATUS sock_ioctl( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc
++                 if (!getsockopt( fd, SOL_SOCKET, SO_ACCEPTCONN, &value, &len ) && value)
++                 {
++                     *(int *)out_buffer = 0;
++-                    if (needs_close) close( fd );
+++                    if (needs_close) server_put_unix_fd( fd );
++                     file_complete_async( handle, options, event, apc, apc_user, io, STATUS_SUCCESS, 0 );
++                     return STATUS_SUCCESS;
++                 }
++@@ -1892,7 +1892,7 @@ NTSTATUS sock_ioctl( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc
++                 break;
++             }
++             *(int *)out_buffer = value;
++-            if (needs_close) close( fd );
+++            if (needs_close) server_put_unix_fd( fd );
++             file_complete_async( handle, options, event, apc, apc_user, io, STATUS_SUCCESS, 0 );
++             return STATUS_SUCCESS;
++         }
++@@ -1932,7 +1932,7 @@ NTSTATUS sock_ioctl( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc
++                 /* windows is reversed with respect to unix */
++                 *(int *)out_buffer = !value;
++             }
++-            if (needs_close) close( fd );
+++            if (needs_close) server_put_unix_fd( fd );
++             file_complete_async( handle, options, event, apc, apc_user, io, STATUS_SUCCESS, 0 );
++             return STATUS_SUCCESS;
++         }
++@@ -1947,7 +1947,7 @@ NTSTATUS sock_ioctl( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc
++ 
++             if ((status = server_get_unix_fd( handle, 0, &fd, &needs_close, NULL, &options )))
++                 return status;
++-            if (needs_close) close( fd );
+++            if (needs_close) server_put_unix_fd( fd );
++ 
++             if (getifaddrs( &ifaddrs ) < 0)
++             {
++@@ -2067,7 +2067,7 @@ NTSTATUS sock_ioctl( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc
++ #endif
++             }
++ 
++-            if (needs_close) close( fd );
+++            if (needs_close) server_put_unix_fd( fd );
++             file_complete_async( handle, options, event, apc, apc_user, io, STATUS_SUCCESS, 0 );
++             return STATUS_SUCCESS;
++         }
++@@ -2609,7 +2609,7 @@ NTSTATUS sock_ioctl( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc
++                 return status;
++ 
++             ret = getsockopt( fd, SOL_IRLMP, IRLMP_ENUMDEVICES, buffer, &len );
++-            if (needs_close) close( fd );
+++            if (needs_close) server_put_unix_fd( fd );
++             if (ret) return sock_errno_to_status( errno );
++ 
++             io->Information = offsetof( DEVICELIST, Device[unix_list->len] );
++@@ -2687,7 +2687,7 @@ NTSTATUS sock_ioctl( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc
++         }
++     }
++ 
++-    if (needs_close) close( fd );
+++    if (needs_close) server_put_unix_fd( fd );
++ 
++     return status;
++ }
++diff --git a/dlls/ntdll/unix/tape.c b/dlls/ntdll/unix/tape.c
++index b9dadff..c2687b8 100644
++--- a/dlls/ntdll/unix/tape.c
+++++ b/dlls/ntdll/unix/tape.c
++@@ -577,7 +577,7 @@ NTSTATUS tape_DeviceIoControl( HANDLE device, HANDLE event, PIO_APC_ROUTINE apc,
++         break;
++     }
++ 
++-    if (needs_close) close( fd );
+++    if (needs_close) server_put_unix_fd( fd );
++ 
++     if (!NT_ERROR(status))
++         file_complete_async( device, options, event, apc, apc_user, io, status, sz );
++diff --git a/dlls/ntdll/unix/unix_private.h b/dlls/ntdll/unix/unix_private.h
++index 70861c2..34344ac 100644
++--- a/dlls/ntdll/unix/unix_private.h
+++++ b/dlls/ntdll/unix/unix_private.h
++@@ -273,6 +273,7 @@ extern int server_get_unix_fd( HANDLE handle, unsigned int wanted_access, int *u
++ extern void write_gather_flush(void);
++ #endif
++ extern int wine_server_receive_fd( obj_handle_t *handle );
+++extern void server_put_unix_fd( int fd );
++ extern void process_exit_wrapper( int status ) DECLSPEC_NORETURN;
++ extern size_t server_init_process(void);
++ extern void server_init_process_done(void);
++diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
++index 2eb45fb..025b604 100644
++--- a/dlls/ntdll/unix/virtual.c
+++++ b/dlls/ntdll/unix/virtual.c
++@@ -4157,7 +4157,7 @@ static NTSTATUS virtual_map_image( HANDLE mapping, void **addr_ptr, SIZE_T *size
++         ((status = server_get_unix_fd( pe_mapping->shared_file, FILE_READ_DATA|FILE_WRITE_DATA,
++                                        &shared_fd, &shared_needs_close, NULL, NULL ))))
++     {
++-        if (needs_close) close( unix_fd );
+++        if (needs_close) server_put_unix_fd( unix_fd );
++         return status;
++     }
++ 
++@@ -4212,8 +4212,8 @@ static NTSTATUS virtual_map_image( HANDLE mapping, void **addr_ptr, SIZE_T *size
++ 
++ done:
++     server_leave_uninterrupted_section( &virtual_mutex, &sigset );
++-    if (needs_close) close( unix_fd );
++-    if (shared_needs_close) close( shared_fd );
+++    if (needs_close) server_put_unix_fd( unix_fd );
+++    if (shared_needs_close) server_put_unix_fd( shared_fd );
++     return status;
++ }
++ 
++@@ -4350,7 +4350,7 @@ static unsigned int virtual_map_section( HANDLE handle, PVOID *addr_ptr, ULONG_P
++ 
++ done:
++     server_leave_uninterrupted_section( &virtual_mutex, &sigset );
++-    if (needs_close) close( unix_handle );
+++    if (needs_close) server_put_unix_fd( unix_handle );
++     return res;
++ }
++ 
++@@ -5270,7 +5270,7 @@ void virtual_map_user_shared_data(void)
++         ERR( "failed to remap the process USD: %d\n", res );
++         exit(1);
++     }
++-    if (needs_close) close( fd );
+++    if (needs_close) server_put_unix_fd( fd );
++     NtClose( section );
++ }
++ 
++@@ -5301,7 +5301,7 @@ void virtual_init_user_shared_data(void)
++         ERR( "failed to remap the process USD: %d\n", res );
++         exit(1);
++     }
++-    if (needs_close) close( fd );
+++    if (needs_close) server_put_unix_fd( fd );
++     NtClose( section );
++ 
++     virtual_get_system_info( &info, FALSE );
++diff --git a/include/wine/server_protocol.h b/include/wine/server_protocol.h
++index 6f30cf0..c54b367 100644
++--- a/include/wine/server_protocol.h
+++++ b/include/wine/server_protocol.h
++@@ -1963,6 +1963,8 @@ struct get_handle_fd_reply
++     int          cacheable;
++     unsigned int access;
++     unsigned int options;
+++    unsigned int loan;
+++    char __pad_28[4];
++ };
++ enum server_fd_type
++ {
++@@ -6243,6 +6245,19 @@ struct alpc_create_port_reply
++ };
++ 
++ 
+++/* Give back a descriptor that get_handle_fd lent, once it is closed. Kept last: a request added in the
+++   middle would renumber the ones after it, and modules built without this patch would send the wrong ones */
+++struct release_fd_loan_request
+++{
+++    struct request_header __header;
+++    unsigned int loan;
+++};
+++struct release_fd_loan_reply
+++{
+++    struct reply_header __header;
+++};
+++
+++
++ enum request
++ {
++     REQ_new_process,
++@@ -6553,6 +6568,7 @@ enum request
++     REQ_d3dkmt_mutex_acquire,
++     REQ_d3dkmt_mutex_release,
++     REQ_alpc_create_port,
+++    REQ_release_fd_loan,
++     REQ_NB_REQUESTS
++ };
++ 
++@@ -6868,6 +6884,7 @@ union generic_request
++     struct d3dkmt_mutex_acquire_request d3dkmt_mutex_acquire_request;
++     struct d3dkmt_mutex_release_request d3dkmt_mutex_release_request;
++     struct alpc_create_port_request alpc_create_port_request;
+++    struct release_fd_loan_request release_fd_loan_request;
++ };
++ union generic_reply
++ {
++@@ -7181,8 +7198,9 @@ union generic_reply
++     struct d3dkmt_mutex_acquire_reply d3dkmt_mutex_acquire_reply;
++     struct d3dkmt_mutex_release_reply d3dkmt_mutex_release_reply;
++     struct alpc_create_port_reply alpc_create_port_reply;
+++    struct release_fd_loan_reply release_fd_loan_reply;
++ };
++ 
++-#define SERVER_PROTOCOL_VERSION 961
+++#define SERVER_PROTOCOL_VERSION 963
++ 
++ #endif /* __WINE_WINE_SERVER_PROTOCOL_H */
++diff --git a/server/fd.c b/server/fd.c
++index f55d6f6..2102239 100644
++--- a/server/fd.c
+++++ b/server/fd.c
++@@ -178,14 +178,14 @@ struct fd
++     int                  ps5_park_flags; /* open() flags to open it again with */
++ #endif
++ #ifdef PS5_PARK_FILES
++-    unsigned int         ps5_file :1;    /* a read-only regular file, or a directory, that may be parked */
+++    unsigned int         ps5_file :1;    /* a regular file, or a directory, that may be parked */
++     unsigned int         ps5_dir :1;     /* that is a directory past the threshold (ps5_track_directory) */
++     unsigned int         ps5_watched :1; /* its change watch lists it by name (set_fd_watched_by_name) */
++     unsigned int         ps5_pinned :1;  /* handed to the client to cache: never parked */
++     unsigned int         ps5_live :1;    /* in ps5_live_files */
++     struct list          ps5_lru_entry;  /* entry in ps5_live_files */
++     off_t                ps5_offset;     /* file position, kept while parked */
++-    unsigned long long   ps5_lent_ms;    /* when its descriptor last went to the client uncached */
+++    unsigned int         ps5_loans;      /* descriptors lent to the client uncached, not yet given back */
++ #endif
++ };
++ 
++@@ -1319,10 +1319,21 @@ static int inode_has_pending_close( struct inode *inode, const char *path )
++     return 0;
++ }
++ 
+++/* whether closing a descriptor of the inode would drop host locks that
+++ * its other handles hold */
+++static inline int inode_has_host_locks( struct inode *inode )
+++{
+++#ifdef PS5_PARK_FILES
+++    return 0;  /* the server takes none (see alloc_fd_object) */
+++#else
+++    return !list_empty( &inode->locks );
+++#endif
+++}
+++
++ /* add fd to the inode list of file descriptors to close */
++ static void inode_add_closed_fd( struct inode *inode, struct closed_fd *fd )
++ {
++-    if (!list_empty( &inode->locks ))
+++    if (inode_has_host_locks( inode ))
++     {
++         list_add_head( &inode->closed, &fd->entry );
++     }
++@@ -1871,7 +1882,17 @@ static struct fd *alloc_fd_object(void)
++     fd->nt_name    = NULL;
++     fd->nt_namelen = 0;
++     fd->cacheable  = 0;
+++#ifdef PS5_PARK_FILES
+++    /* Every Wine process of a title runs in the title's own host process or
+++     * on its server (patch 1000), and only the server takes host locks. Host
+++     * record locks belong to a process, so they never exclude anyone there,
+++     * and closing any descriptor of a file drops all of them. The server's
+++     * own list of locks decides who may lock what, so the files a handle has
+++     * locked can be parked like any other. */
+++    fd->fs_locks   = 0;
+++#else
++     fd->fs_locks   = 1;
+++#endif
++     fd->poll_index = -1;
++ #ifdef PS5_PARK_DIRECTORIES
++     fd->ps5_parked = 0;
++@@ -1881,7 +1902,7 @@ static struct fd *alloc_fd_object(void)
++ #ifdef PS5_PARK_FILES
++     fd->ps5_file = fd->ps5_dir = fd->ps5_watched = fd->ps5_pinned = fd->ps5_live = 0;
++     fd->ps5_offset = 0;
++-    fd->ps5_lent_ms = 0;
+++    fd->ps5_loans = 0;
++ #endif
++     fd->completion = NULL;
++     fd->comp_flags = 0;
++@@ -1936,7 +1957,7 @@ struct fd *alloc_pseudo_fd( const struct fd_ops *fd_user_ops, struct object *use
++ #ifdef PS5_PARK_FILES
++     fd->ps5_file = fd->ps5_dir = fd->ps5_watched = fd->ps5_pinned = fd->ps5_live = 0;
++     fd->ps5_offset = 0;
++-    fd->ps5_lent_ms = 0;
+++    fd->ps5_loans = 0;
++ #endif
++     init_async_queue( &fd->read_q );
++     init_async_queue( &fd->write_q );
++@@ -2082,42 +2103,68 @@ static int ps5_inode_deleting( struct inode *inode )
++ 
++ /* close a live file's descriptor until it is needed again; 0 when it is
++  * not one that can be opened again as it was */
++-/* A descriptor handed to the client uncached is closed by the client after
++- * its call, but the server is not told when. A synchronous handle's read or
++- * seek moves the file position it shares with the server's descriptor, so
++- * parking one the client may still be using would save a stale position.
++- * One handed out within the last PS5_LENT_GRACE_MS is therefore not parked
++- * to keep to the budget, which the live files may then exceed for a moment.
++- * Only when open() fails with EMFILE may it be (ps5_free_files): a call
++- * that takes longer between receiving the descriptor and using it, or one
++- * caught by that, could still lose its position. */
++-#define PS5_LENT_GRACE_MS 100
++-
++-static unsigned long long ps5_now_ms(void)
+++/* A descriptor handed to the client uncached is used by the client for one
+++ * call and then closed. A synchronous handle's read, write or seek moves the
+++ * file position it shares with the server's descriptor, so parking the file
+++ * while the client still holds its copy would save a stale position: a
+++ * reader would read the wrong bytes and a writer would overwrite data. Each
+++ * such descriptor is therefore a loan (get_handle_fd), which the client gives
+++ * back when it closes its copy (release_fd_loan), and a file with a loan
+++ * out is never parked. A loan the client never gives back, from a descriptor
+++ * a caller keeps (wine_server_handle_to_fd), keeps the file live. */
+++static inline int ps5_file_writable( struct fd *fd )
++ {
++-    struct timespec ts;
++-
++-    clock_gettime( CLOCK_MONOTONIC, &ts );
++-    return (unsigned long long)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+++    return !fd->ps5_dir && (fd->ps5_park_flags & O_ACCMODE) != O_RDONLY;
++ }
++ 
++ /* A file bound to a completion port is parked like any other: the port, its
++  * key and flags stay with the fd, and a read through such a handle is done by
++  * the client with a descriptor it asks for, which opens a parked file again.
++  * Only an async queued here needs the descriptor kept, checked below. */
+++/* A loan holds a reference to its fd: it is given back by its number, which,
+++ * unlike the handle it was lent through, can't be closed or reused for
+++ * another file in the meantime. */
+++struct ps5_loan
+++{
+++    struct list   entry;
+++    unsigned int  id;
+++    struct fd    *fd;
+++};
+++static struct list ps5_loans_out = LIST_INIT( ps5_loans_out );
+++
+++/* the number the client gives the loan back with; when there is no memory
+++ * for it, the loan is never given back and the file stays live */
+++static unsigned int ps5_lend_fd( struct fd *fd )
+++{
+++    static unsigned int last_id;
+++    struct ps5_loan *loan;
+++
+++    fd->ps5_loans++;
+++    if (!(loan = malloc( sizeof(*loan) ))) return 0;
+++    if (!++last_id) ++last_id;  /* 0 is no loan */
+++    loan->id = last_id;
+++    loan->fd = (struct fd *)grab_object( fd );
+++    list_add_head( &ps5_loans_out, &loan->entry );
+++    return loan->id;
+++}
+++
++ static int ps5_park_file( struct fd *fd, int force )
++ {
++     struct stat st;
++     off_t offset = 0;
++ 
++-    /* a directory's change watch waits in wait_q, but it is listed by name */
+++    /* a directory's change watch waits in wait_q, but it is listed by name;
+++     * locks are the server's alone (see alloc_fd_object) and stay with the fd */
++     if (fd->unix_fd == -1 || !fd->closed || fd->closed->unix_fd != fd->unix_fd ||
++-        !list_empty( &fd->inode->locks ) || !list_empty( &fd->locks ) ||
++         async_queued( &fd->read_q ) || async_queued( &fd->write_q ) ||
++         (async_queued( &fd->wait_q ) && !fd->ps5_watched) ||
++         ps5_inode_deleting( fd->inode ))
++         return 0;
++-    if (!force && fd->ps5_lent_ms && ps5_now_ms() - fd->ps5_lent_ms < PS5_LENT_GRACE_MS) return 0;
+++    if (fd->ps5_loans) return 0;
+++    /* a file opened for writing must be one it can be opened for writing again */
+++    if (ps5_file_writable( fd ) &&
+++        access( fd->unix_name, (fd->ps5_park_flags & O_ACCMODE) == O_RDWR ? R_OK | W_OK : W_OK ) == -1)
+++        return 0;
++     /* every fd has a poll slot; one that is polled keeps its descriptor */
++     if (fd->poll_index != -1 && (pollfd[fd->poll_index].fd != -1 || pollfd[fd->poll_index].events)) return 0;
++     /* a file deleted under its name cannot be opened again */
++@@ -2224,14 +2271,15 @@ static int ps5_free_files( struct fd *keep )
++     return ps5_live_count < count;
++ }
++ 
++-/* a read-only regular file just opened: from now on it can be parked */
+++/* a regular file just opened: from now on it can be parked. One opened for
+++ * writing is opened again for writing, without creating or truncating it. */
++ static void ps5_track_file( struct fd *fd, int flags )
++ {
++     unsigned int limit = ps5_live_files_limit();
++ 
++     if (!limit || !fd->cacheable || !fd->inode || !fd->closed || !fd->unix_name || fd->closed->disp_flags) return;
++     fd->ps5_file = 1;
++-    fd->ps5_park_flags = O_RDONLY | (flags & ~(O_ACCMODE | O_CREAT | O_EXCL | O_TRUNC));
+++    fd->ps5_park_flags = flags & ~(O_CREAT | O_EXCL | O_TRUNC);
++     ps5_add_live_file( fd );
++     ps5_trim_live_files( limit, fd, 0 );
++ }
++@@ -2248,7 +2296,6 @@ static void ps5_set_file_cacheable( struct fd *fd )
++         if (fd->ps5_live) ps5_remove_live_file( fd );
++     }
++     else fd->cacheable = 0;
++-    if (!fd->cacheable) fd->ps5_lent_ms = ps5_now_ms();
++ }
++ 
++ static int ps5_reopen_file( struct fd *fd );
++@@ -2846,7 +2893,7 @@ struct fd *open_fd( struct fd *root, const char *name, struct unicode_str nt_nam
++     {
++         if (ps5_untrack_inode_files( fd->inode ) == -1) goto error;
++     }
++-    else if (S_ISREG( st.st_mode ) && rw_mode == O_RDONLY) ps5_track_file( fd, flags );
+++    else if (S_ISREG( st.st_mode )) ps5_track_file( fd, rw_mode | (flags & ~O_ACCMODE) );
++ #endif
++     if (root_fd != -1) fchdir( server_dir_fd ); /* go back to the server dir */
++     return fd;
++@@ -3906,12 +3953,35 @@ DECL_HANDLER(get_handle_fd)
++             reply->type = fd->fd_ops->get_fd_type( fd );
++             reply->options = fd->options;
++             reply->access = get_handle_access( current->process, req->handle );
+++#ifdef PS5_PARK_FILES
+++            if (!send_client_fd( current->process, unix_fd, req->handle ) && fd->ps5_file && !fd->cacheable)
+++                reply->loan = ps5_lend_fd( fd );
+++#else
++             send_client_fd( current->process, unix_fd, req->handle );
+++#endif
++         }
++         release_object( fd );
++     }
++ }
++ 
+++/* the client closed a descriptor it was lent */
+++DECL_HANDLER(release_fd_loan)
+++{
+++#ifdef PS5_PARK_FILES
+++    struct ps5_loan *loan;
+++
+++    LIST_FOR_EACH_ENTRY( loan, &ps5_loans_out, struct ps5_loan, entry )
+++    {
+++        if (loan->id != req->loan) continue;
+++        list_remove( &loan->entry );
+++        loan->fd->ps5_loans--;
+++        release_object( loan->fd );
+++        free( loan );
+++        return;
+++    }
+++#endif
+++}
+++
++ /* perform a read on a file object */
++ DECL_HANDLER(read)
++ {
++diff --git a/server/protocol.def b/server/protocol.def
++index a9be0a1..cc9c95e 100644
++--- a/server/protocol.def
+++++ b/server/protocol.def
++@@ -1681,6 +1681,7 @@ enum event_op { PULSE_EVENT, SET_EVENT, RESET_EVENT };
++     int          cacheable;     /* can fd be cached in the client? */
++     unsigned int access;        /* file access rights */
++     unsigned int options;       /* file open options */
+++    unsigned int loan;          /* non-zero: give the descriptor back with release_fd_loan once closed */
++ @END
++ enum server_fd_type
++ {
++@@ -4338,3 +4339,10 @@ enum inproc_sync_type
++ @REPLY
++     obj_handle_t        handle;         /* handle to the ALPC port */
++ @END
+++
+++
+++/* Give back a descriptor that get_handle_fd lent, once it is closed. Kept last: a request added in the
+++   middle would renumber the ones after it, and modules built without this patch would send the wrong ones */
+++@REQ(release_fd_loan)
+++    unsigned int loan;          /* the loan get_handle_fd returned */
+++@END
++diff --git a/server/request_handlers.h b/server/request_handlers.h
++index e73242d..8d95c2f 100644
++--- a/server/request_handlers.h
+++++ b/server/request_handlers.h
++@@ -315,6 +315,7 @@ DECL_HANDLER(d3dkmt_object_open_name);
++ DECL_HANDLER(d3dkmt_mutex_acquire);
++ DECL_HANDLER(d3dkmt_mutex_release);
++ DECL_HANDLER(alpc_create_port);
+++DECL_HANDLER(release_fd_loan);
++ 
++ typedef void (*req_handler)( const void *req, void *reply );
++ static const req_handler req_handlers[REQ_NB_REQUESTS] =
++@@ -627,6 +628,7 @@ static const req_handler req_handlers[REQ_NB_REQUESTS] =
++     (req_handler)req_d3dkmt_mutex_acquire,
++     (req_handler)req_d3dkmt_mutex_release,
++     (req_handler)req_alpc_create_port,
+++    (req_handler)req_release_fd_loan,
++ };
++ 
++ C_ASSERT( sizeof(abstime_t) == 8 );
++@@ -1002,7 +1004,8 @@ C_ASSERT( offsetof(struct get_handle_fd_reply, type) == 8 );
++ C_ASSERT( offsetof(struct get_handle_fd_reply, cacheable) == 12 );
++ C_ASSERT( offsetof(struct get_handle_fd_reply, access) == 16 );
++ C_ASSERT( offsetof(struct get_handle_fd_reply, options) == 20 );
++-C_ASSERT( sizeof(struct get_handle_fd_reply) == 24 );
+++C_ASSERT( offsetof(struct get_handle_fd_reply, loan) == 24 );
+++C_ASSERT( sizeof(struct get_handle_fd_reply) == 32 );
++ C_ASSERT( offsetof(struct get_directory_cache_entry_request, handle) == 12 );
++ C_ASSERT( sizeof(struct get_directory_cache_entry_request) == 16 );
++ C_ASSERT( offsetof(struct get_directory_cache_entry_reply, entry) == 8 );
++@@ -2392,3 +2395,5 @@ C_ASSERT( offsetof(struct alpc_create_port_request, max_msg_len) == 16 );
++ C_ASSERT( sizeof(struct alpc_create_port_request) == 24 );
++ C_ASSERT( offsetof(struct alpc_create_port_reply, handle) == 8 );
++ C_ASSERT( sizeof(struct alpc_create_port_reply) == 16 );
+++C_ASSERT( offsetof(struct release_fd_loan_request, loan) == 12 );
+++C_ASSERT( sizeof(struct release_fd_loan_request) == 16 );
++diff --git a/server/request_trace.h b/server/request_trace.h
++index 9c7518e..10d4fdd 100644
++--- a/server/request_trace.h
+++++ b/server/request_trace.h
++@@ -689,6 +689,7 @@ static void dump_get_handle_fd_reply( const struct get_handle_fd_reply *req )
++     fprintf( stderr, ", cacheable=%d", req->cacheable );
++     fprintf( stderr, ", access=%08x", req->access );
++     fprintf( stderr, ", options=%08x", req->options );
+++    fprintf( stderr, ", loan=%08x", req->loan );
++ }
++ 
++ static void dump_get_directory_cache_entry_request( const struct get_directory_cache_entry_request *req )
++@@ -3536,6 +3537,11 @@ static void dump_alpc_create_port_reply( const struct alpc_create_port_reply *re
++     fprintf( stderr, " handle=%04x", req->handle );
++ }
++ 
+++static void dump_release_fd_loan_request( const struct release_fd_loan_request *req )
+++{
+++    fprintf( stderr, " loan=%08x", req->loan );
+++}
+++
++ typedef void (*dump_func)( const void *req );
++ 
++ static const dump_func req_dumpers[REQ_NB_REQUESTS] =
++@@ -3848,6 +3854,7 @@ static const dump_func req_dumpers[REQ_NB_REQUESTS] =
++     (dump_func)dump_d3dkmt_mutex_acquire_request,
++     (dump_func)dump_d3dkmt_mutex_release_request,
++     (dump_func)dump_alpc_create_port_request,
+++    (dump_func)dump_release_fd_loan_request,
++ };
++ 
++ static const dump_func reply_dumpers[REQ_NB_REQUESTS] =
++@@ -4160,6 +4167,7 @@ static const dump_func reply_dumpers[REQ_NB_REQUESTS] =
++     (dump_func)dump_d3dkmt_mutex_acquire_reply,
++     NULL,
++     (dump_func)dump_alpc_create_port_reply,
+++    NULL,
++ };
++ 
++ static const char * const req_names[REQ_NB_REQUESTS] =
++@@ -4472,6 +4480,7 @@ static const char * const req_names[REQ_NB_REQUESTS] =
++     "d3dkmt_mutex_acquire",
++     "d3dkmt_mutex_release",
++     "alpc_create_port",
+++    "release_fd_loan",
++ };
++ 
++ static const struct
++@@ -4515,6 +4524,7 @@ static const struct
++     { "ERROR_INVALID_WINDOW_HANDLE", 0xc0010000 | ERROR_INVALID_WINDOW_HANDLE },
++     { "ERROR_NO_MORE_USER_HANDLES",  0xc0010000 | ERROR_NO_MORE_USER_HANDLES },
++     { "ERROR_WINDOW_OF_OTHER_THREAD", 0xc0010000 | ERROR_WINDOW_OF_OTHER_THREAD },
+++    { "FILE_CLOSED",                 STATUS_FILE_CLOSED },
++     { "FILE_DELETED",                STATUS_FILE_DELETED },
++     { "FILE_INVALID",                STATUS_FILE_INVALID },
++     { "FILE_IS_A_DIRECTORY",         STATUS_FILE_IS_A_DIRECTORY },
++-- 
++2.43.0
++
+-- 
+2.43.0
+
