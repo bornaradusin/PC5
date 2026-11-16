@@ -1,0 +1,126 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 16 Nov 2026 09:00:00 +0000
+Subject: [PATCH 150/150] PC5: a film played through the EVR starts, as the color
+ converter takes its sample's one buffer (Wine patch 1016)
+
+Catherine Classic's WMV films stopped before their first picture: the color converter between the source and the EVR asked the EVR's sample for a contiguous buffer, which those samples don't give (on Windows either), so it never asked the source for a picture. A sample with one buffer now has that buffer used, in the color converter and the video processor.
+---
+ ...er-of-a-sample-that-does-not-convert.patch | 108 ++++++++++++++++++
+ 1 file changed, 108 insertions(+)
+ create mode 100644 wine/patches/1016-colorcnv-msvproc-take-the-one-buffer-of-a-sample-that-does-not-convert.patch
+
+diff --git a/wine/patches/1016-colorcnv-msvproc-take-the-one-buffer-of-a-sample-that-does-not-convert.patch b/wine/patches/1016-colorcnv-msvproc-take-the-one-buffer-of-a-sample-that-does-not-convert.patch
+new file mode 100644
+index 0000000..77e2ec4
+--- /dev/null
++++ b/wine/patches/1016-colorcnv-msvproc-take-the-one-buffer-of-a-sample-that-does-not-convert.patch
+@@ -0,0 +1,108 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Mon, 16 Nov 2026 09:00:00 +0000
++Subject: [PATCH] colorcnv, msvproc: Take the one buffer of a sample that
++ doesn't convert to a contiguous one.
++
++The EVR's video samples don't implement ConvertToContiguousBuffer (they
++return E_NOTIMPL, as Windows' do), and a session hands them to the
++transform it put before the EVR's mixer. The color converter and the
++video processor asked every output sample for a contiguous buffer and
++failed on those: ProcessOutput returned E_NOTIMPL, the session never
++asked the source for a video sample, and a film played through the EVR
++(Catherine Classic's WMV films, YV12 converted to YUY2) never started.
++A sample with a single buffer has it contiguous already: that buffer is
++used when the sample can't convert.
++---
++ dlls/colorcnv/color_converter.c | 19 +++++++++++++++++--
++ dlls/msvproc/video_processor.c  | 19 +++++++++++++++++--
++ 2 files changed, 34 insertions(+), 4 deletions(-)
++
++diff --git a/dlls/colorcnv/color_converter.c b/dlls/colorcnv/color_converter.c
++index 3c7c239..25158f7 100644
++--- a/dlls/colorcnv/color_converter.c
+++++ b/dlls/colorcnv/color_converter.c
++@@ -956,6 +956,21 @@ static HRESULT WINAPI transform_ProcessMessage(IMFTransform *iface, MFT_MESSAGE_
++     return S_OK;
++ }
++ 
+++/* A sample's data as one buffer. The EVR's video samples, which a session hands a transform
+++ * that feeds the EVR's mixer, don't convert to a contiguous buffer (E_NOTIMPL, as on Windows),
+++ * but hold a single surface buffer, which is contiguous already: that buffer, then. */
+++static HRESULT get_contiguous_buffer(IMFSample *sample, IMFMediaBuffer **buffer)
+++{
+++    DWORD count;
+++    HRESULT hr;
+++
+++    if ((hr = IMFSample_ConvertToContiguousBuffer(sample, buffer)) != E_NOTIMPL)
+++        return hr;
+++    if (FAILED(IMFSample_GetBufferCount(sample, &count)) || count != 1)
+++        return hr;
+++    return IMFSample_GetBufferByIndex(sample, 0, buffer);
+++}
+++
++ static HRESULT WINAPI transform_ProcessInput(IMFTransform *iface, DWORD id, IMFSample *sample, DWORD flags)
++ {
++     struct color_convert *impl = impl_from_IMFTransform(iface);
++@@ -965,7 +980,7 @@ static HRESULT WINAPI transform_ProcessInput(IMFTransform *iface, DWORD id, IMFS
++ 
++     TRACE("converter %p, id %#lx, sample %p, flags %#lx.\n", impl, id, sample, flags);
++ 
++-    if (FAILED(hr = IMFSample_ConvertToContiguousBuffer(sample, &buffer)))
+++    if (FAILED(hr = get_contiguous_buffer(sample, &buffer)))
++         return hr;
++     if (SUCCEEDED(hr = MFCreateLegacyMediaBufferOnMFMediaBuffer(sample, buffer, 0, &dmo_buffer)))
++     {
++@@ -992,7 +1007,7 @@ static HRESULT WINAPI transform_ProcessOutput(IMFTransform *iface, DWORD flags,
++     if (count != 1)
++         return E_INVALIDARG;
++ 
++-    if (FAILED(hr = IMFSample_ConvertToContiguousBuffer(output->pSample, &buffer)))
+++    if (FAILED(hr = get_contiguous_buffer(output->pSample, &buffer)))
++         return hr;
++     if (SUCCEEDED(hr = MFCreateLegacyMediaBufferOnMFMediaBuffer(output->pSample, buffer, 0,
++             &dmo_output.pBuffer)))
++diff --git a/dlls/msvproc/video_processor.c b/dlls/msvproc/video_processor.c
++index ef238c7..2e41912 100644
++--- a/dlls/msvproc/video_processor.c
+++++ b/dlls/msvproc/video_processor.c
++@@ -1069,6 +1069,21 @@ static HRESULT WINAPI video_processor_ProcessMessage(IMFTransform *iface, MFT_ME
++     }
++ }
++ 
+++/* A sample's data as one buffer. The EVR's video samples, which a session hands a transform
+++ * that feeds the EVR's mixer, don't convert to a contiguous buffer (E_NOTIMPL, as on Windows),
+++ * but hold a single surface buffer, which is contiguous already: that buffer, then. */
+++static HRESULT get_contiguous_buffer(IMFSample *sample, IMFMediaBuffer **buffer)
+++{
+++    DWORD count;
+++    HRESULT hr;
+++
+++    if ((hr = IMFSample_ConvertToContiguousBuffer(sample, buffer)) != E_NOTIMPL)
+++        return hr;
+++    if (FAILED(IMFSample_GetBufferCount(sample, &count)) || count != 1)
+++        return hr;
+++    return IMFSample_GetBufferByIndex(sample, 0, buffer);
+++}
+++
++ static HRESULT WINAPI video_processor_ProcessInput(IMFTransform *iface, DWORD id, IMFSample *sample, DWORD flags)
++ {
++     struct video_processor *impl = impl_from_IMFTransform(iface);
++@@ -1078,7 +1093,7 @@ static HRESULT WINAPI video_processor_ProcessInput(IMFTransform *iface, DWORD id
++ 
++     TRACE("iface %p, id %#lx, sample %p, flags %#lx.\n", iface, id, sample, flags);
++ 
++-    if (FAILED(hr = IMFSample_ConvertToContiguousBuffer(sample, &buffer)))
+++    if (FAILED(hr = get_contiguous_buffer(sample, &buffer)))
++         return hr;
++     if (SUCCEEDED(hr = MFCreateLegacyMediaBufferOnMFMediaBuffer(sample, buffer, 0, &input.pBuffer)))
++     {
++@@ -1131,7 +1146,7 @@ static HRESULT WINAPI video_processor_ProcessOutput(IMFTransform *iface, DWORD f
++         IMFSample_AddRef(output_sample);
++     }
++ 
++-    if (FAILED(hr = IMFSample_ConvertToContiguousBuffer(output_sample, &buffer)))
+++    if (FAILED(hr = get_contiguous_buffer(output_sample, &buffer)))
++         goto done;
++     if (SUCCEEDED(hr = MFCreateLegacyMediaBufferOnMFMediaBuffer(output_sample, buffer, 0,
++                           &dmo_output.pBuffer)))
