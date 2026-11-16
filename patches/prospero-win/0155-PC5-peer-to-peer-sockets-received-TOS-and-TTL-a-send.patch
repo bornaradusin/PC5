@@ -1,0 +1,175 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 16 Nov 2026 18:44:33 +0000
+Subject: [PATCH 155/155] PC5: peer-to-peer sockets: received TOS and TTL, a send
+ buffer of 0, and adapters listed without DNS servers (Wine patches 1026 to
+ 1028)
+
+Steam's networking library failed three ways on the console: WSARecvMsg returned no TOS, as FreeBSD labels a received TOS and TTL IP_RECVTOS and IP_RECVTTL where Linux says IP_TOS and IP_TTL (1026, "No control data returned even though we asked for TOS?"); a send buffer size of 0, which Windows takes and FreeBSD's setsockopt refuses, came back as WSAEINVAL (1027, "Unable to set default socket options, error 10022"); and GetAdaptersAddresses failed for every caller because DnsQueryConfig fails without dnsapi's Unix side (0919), so no ICE candidates were gathered (1028). An adapter is now listed without DNS servers, as on a machine with none. From leolobato/prospero-win's 1016 to 1018; its 1003 (nsiproxy hosted in the game) needs the in-game driver hosting PC5 doesn't have, where 0934 and 0987 answer the network tables instead, and its 1004 is PC5's 0919.
+---
+ ...d-ttl-control-messages-the-bsds-send.patch | 67 +++++++++++++++++++
+ ...send-buffer-size-of-0-on-freebsd-too.patch | 31 +++++++++
+ ...ervers-out-when-dnsqueryconfig-fails.patch | 39 +++++++++++
+ 3 files changed, 137 insertions(+)
+ create mode 100644 wine/patches/1026-ntdll-convert-the-received-tos-and-ttl-control-messages-the-bsds-send.patch
+ create mode 100644 wine/patches/1027-server-accept-a-send-buffer-size-of-0-on-freebsd-too.patch
+ create mode 100644 wine/patches/1028-iphlpapi-leave-the-dns-servers-out-when-dnsqueryconfig-fails.patch
+
+diff --git a/wine/patches/1026-ntdll-convert-the-received-tos-and-ttl-control-messages-the-bsds-send.patch b/wine/patches/1026-ntdll-convert-the-received-tos-and-ttl-control-messages-the-bsds-send.patch
+new file mode 100644
+index 0000000..dbb9161
+--- /dev/null
++++ b/wine/patches/1026-ntdll-convert-the-received-tos-and-ttl-control-messages-the-bsds-send.patch
+@@ -0,0 +1,67 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Wed, 11 Nov 2026 09:00:00 +0100
++Subject: [PATCH] ntdll: Convert the received TOS and TTL control messages the
++ BSDs send.
++
++A socket that asked for IP_RECVTOS or IP_RECVTTL gets the value in a
++control message labelled IP_TOS or IP_TTL on Linux, but on FreeBSD and
++macOS it is labelled IP_RECVTOS or IP_RECVTTL and carries a single byte.
++convert_control_headers() knew only the Linux labels, so WSARecvMsg()
++dropped the message with a FIXME ("Unhandled IPPROTO_IP message header
++type 68" on a PS5) and returned no TOS. Steam's networking library asks
++for the TOS of every packet it reads and asserted "No control data
++returned even though we asked for TOS?".
++
++Both labels now become WS_IP_TOS and WS_IP_TTL with the byte as an INT,
++as the Linux ones do.
++---
++ dlls/ntdll/unix/socket.c | 25 +++++++++++++++++++++++++
++ 1 file changed, 25 insertions(+)
++
++diff --git a/dlls/ntdll/unix/socket.c b/dlls/ntdll/unix/socket.c
++index 121dc0a..6659097 100644
++--- a/dlls/ntdll/unix/socket.c
+++++ b/dlls/ntdll/unix/socket.c
++@@ -438,6 +438,19 @@ static int convert_control_headers(struct msghdr *hdr, WSABUF *control)
++                     }
++ #endif /* IP_TOS */
++ 
+++#if defined(IP_RECVTOS) && (!defined(IP_TOS) || IP_RECVTOS != IP_TOS)
+++                    /* The BSDs label the received TOS with the option that
+++                     * asked for it, and send it as one byte. */
+++                    case IP_RECVTOS:
+++                    {
+++                        INT tos = *(unsigned char *)CMSG_DATA(cmsg_unix);
+++                        ptr = fill_control_message( WS_IPPROTO_IP, WS_IP_TOS, ptr, &ctlsize,
+++                                                    &tos, sizeof(INT) );
+++                        if (!ptr) goto error;
+++                        break;
+++                    }
+++#endif /* IP_RECVTOS */
+++
++ #if defined(IP_TTL)
++                     case IP_TTL:
++                     {
++@@ -448,6 +461,18 @@ static int convert_control_headers(struct msghdr *hdr, WSABUF *control)
++                     }
++ #endif /* IP_TTL */
++ 
+++#if defined(IP_RECVTTL) && (!defined(IP_TTL) || IP_RECVTTL != IP_TTL)
+++                    /* The same for the TTL. */
+++                    case IP_RECVTTL:
+++                    {
+++                        INT ttl = *(unsigned char *)CMSG_DATA(cmsg_unix);
+++                        ptr = fill_control_message( WS_IPPROTO_IP, WS_IP_TTL, ptr, &ctlsize,
+++                                                    &ttl, sizeof(INT) );
+++                        if (!ptr) goto error;
+++                        break;
+++                    }
+++#endif /* IP_RECVTTL */
+++
++                     default:
++                         FIXME("Unhandled IPPROTO_IP message header type %d\n", cmsg_unix->cmsg_type);
++                         break;
++-- 
++2.43.0
++
+diff --git a/wine/patches/1027-server-accept-a-send-buffer-size-of-0-on-freebsd-too.patch b/wine/patches/1027-server-accept-a-send-buffer-size-of-0-on-freebsd-too.patch
+new file mode 100644
+index 0000000..242a1b4
+--- /dev/null
++++ b/wine/patches/1027-server-accept-a-send-buffer-size-of-0-on-freebsd-too.patch
+@@ -0,0 +1,31 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Wed, 11 Nov 2026 09:05:00 +0100
++Subject: [PATCH] server: Accept a send buffer size of 0 on FreeBSD too.
++
++Windows takes SO_SNDBUF = 0 (no send buffering). FreeBSD's setsockopt()
++refuses a value below 1 with EINVAL, as macOS's does, so on FreeBSD (and
++a PS5) WSAEINVAL came back. The server already keeps the value without
++calling setsockopt() on macOS; do the same on FreeBSD. Steam's common
++socket setup sets 0 on each socket and asserted "Unable to set default
++socket options, error 10022".
++---
++ server/sock.c | 2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++diff --git a/server/sock.c b/server/sock.c
++index caed5f8..7cd1fac 100644
++--- a/server/sock.c
+++++ b/server/sock.c
++@@ -3436,7 +3436,7 @@ static void sock_ioctl( struct fd *fd, ioctl_code_t code, struct async *async )
++         }
++         sndbuf = *(DWORD *)get_req_data();
++ 
++-#ifdef __APPLE__
+++#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__PROSPERO__)
++         if (!sndbuf)
++         {
++             /* setsockopt fails if a zero value is passed */
++-- 
++2.43.0
++
+diff --git a/wine/patches/1028-iphlpapi-leave-the-dns-servers-out-when-dnsqueryconfig-fails.patch b/wine/patches/1028-iphlpapi-leave-the-dns-servers-out-when-dnsqueryconfig-fails.patch
+new file mode 100644
+index 0000000..903570d
+--- /dev/null
++++ b/wine/patches/1028-iphlpapi-leave-the-dns-servers-out-when-dnsqueryconfig-fails.patch
+@@ -0,0 +1,39 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Wed, 11 Nov 2026 09:10:00 +0100
++Subject: [PATCH] iphlpapi: Leave the DNS servers out when DnsQueryConfig
++ fails.
++
++GetAdaptersAddresses() asks DnsQueryConfig() for each adapter's DNS
++servers and returned any error it got, so the whole call failed when
++there was no DNS configuration to read. On a PS5 dnsapi has no Unix side
++(no libresolv), and every DnsQueryConfig() call fails with
++ERROR_NOT_SUPPORTED, so GetAdaptersAddresses() failed for every caller
++even though nsiproxy listed the adapters: Steam's networking library
++logged "GetAdaptersAddresses failed" and could not gather ICE
++candidates.
++
++Such a failure now leaves the adapter without DNS servers; running out of
++memory still fails the call.
++---
++ dlls/iphlpapi/iphlpapi_main.c | 4 +++-
++ 1 file changed, 3 insertions(+), 1 deletion(-)
++
++diff --git a/dlls/iphlpapi/iphlpapi_main.c b/dlls/iphlpapi/iphlpapi_main.c
++index b315490..de359f5 100644
++--- a/dlls/iphlpapi/iphlpapi_main.c
+++++ b/dlls/iphlpapi/iphlpapi_main.c
++@@ -1222,7 +1222,9 @@ static DWORD dns_info_alloc( IP_ADAPTER_ADDRESSES *aa, ULONG family, ULONG flags
++                 }
++             }
++             if (servers != (DNS_ADDR_ARRAY *)buf) free( servers );
++-            if (err) return err;
+++            /* Without a DNS configuration (DnsQueryConfig failed) the
+++             * adapter has no DNS servers, as on a machine with none. */
+++            if (err == ERROR_NOT_ENOUGH_MEMORY) return err;
++         }
++ 
++         aa->DnsSuffix = HeapAlloc( GetProcessHeap(), 0, MAX_DNS_SUFFIX_STRING_LENGTH * sizeof(WCHAR) );
++-- 
++2.43.0
++
+-- 
+2.43.0
+
