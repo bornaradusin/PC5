@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 16 Nov 2026 19:28:51 +0000
+Subject: [PATCH 157/157] PC5: a 2D picture under a smaller display mode is drawn where
+ its window is (Wine patch 1030)
+
+Under a display mode smaller than the screen, win32u stretches a fullscreen window's visible rect over the whole monitor while its surface still holds the window, and the driver copied the surface from the visible rect's corner: Heroes of Might and Magic IV in 2D only at 1024x768 had its picture drawn from the screen's left edge while the frames showed the middle 1440x1080, its left side cut off and black on the right, which 0973 didn't catch as the window wasn't where it looked for one. The visible rect is now kept clipped to the window. From leolobato/prospero-win's 0995, the part 1029 left out.
+---
+ ...dow-s-visible-rect-inside-the-window.patch | 47 +++++++++++++++++++
+ 1 file changed, 47 insertions(+)
+ create mode 100644 wine/patches/1030-win32u-ps5-keep-a-window-s-visible-rect-inside-the-window.patch
+
+diff --git a/wine/patches/1030-win32u-ps5-keep-a-window-s-visible-rect-inside-the-window.patch b/wine/patches/1030-win32u-ps5-keep-a-window-s-visible-rect-inside-the-window.patch
+new file mode 100644
+index 0000000..e832edf
+--- /dev/null
++++ b/wine/patches/1030-win32u-ps5-keep-a-window-s-visible-rect-inside-the-window.patch
+@@ -0,0 +1,47 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Mon, 16 Nov 2026 19:40:00 +0000
++Subject: [PATCH] win32u: Keep a PS5 window's visible rect inside the window
++ under a smaller display mode.
++
++Under a display mode smaller than the screen, win32u maps a window's
++rects to the screen and stretches a fullscreen window's visible rect over
++the whole monitor (map_window_rects_virt_to_raw: "regardless of aspect
++ratio"), past the window, while its surface still holds the window. The
++driver copied that surface from the visible rect's corner, so a picture
++drawn with GDI landed at the screen's left edge while the frames showed
++the part the mode covers: Heroes of Might and Magic IV in 2D only at
++1024x768 on 1920x1080 had its window at 240,0 to 1680,1080 and its
++picture drawn from 0,0, the left of it cut off and black on the right.
++The visible rect is now kept clipped to the window, which is where the
++surface goes; a window's own rects are unchanged otherwise.
++
++From leolobato/prospero-win's 0995, the part 1029 left out.
++---
++ dlls/win32u/ps5drv.c | 8 ++++++++
++ 1 file changed, 8 insertions(+)
++
++diff --git a/dlls/win32u/ps5drv.c b/dlls/win32u/ps5drv.c
++index bd08cbb..904b854 100644
++--- a/dlls/win32u/ps5drv.c
+++++ b/dlls/win32u/ps5drv.c
++@@ -549,8 +549,16 @@ static void ps5_WindowPosChanged( HWND hwnd, HWND insert_after, HWND owner_hint,
++     BOOL repaint = FALSE, just_shown = FALSE;
++     HWND uncovered[PS5_MAX_WINDOWS];
++     UINT uncovered_count = 0, i;
+++    RECT clipped;
++     const RECT *visible = &new_rects->visible;
++ 
+++    /* win32u stretches a fullscreen window's visible rect over the whole monitor, past the
+++     * window, under a smaller display mode, but the window's surface still starts where the
+++     * window does: kept as the visible rect, it put the picture where the window isn't (Heroes
+++     * of Might and Magic IV in 2D only: drawn from the screen's left edge, the frames showing
+++     * the part the mode covers). The visible rect is kept clipped to the window. */
+++    if (intersect_rect( &clipped, &new_rects->visible, &new_rects->window )) visible = &clipped;
+++
++     pthread_mutex_lock( &screen_lock );
++     if (!(window = find_window( hwnd )) && shown && window_count < PS5_MAX_WINDOWS)
++     {
++-- 
++2.43.0
++
+-- 
+2.43.0
+
