@@ -596,6 +596,8 @@ controller's speaker.
 | 354 | A game with its own copy of Steam's networking library, start an online session | it gets past its connection setup | no "Unable to set default socket options, error 10022", "No control data returned even though we asked for TOS?" or "GetAdaptersAddresses failed" |
 | 355 | A launcher with a dialog over its window: point at the dialog's OK near the bottom edge and press ✕; close the dialog | the arrow is on OK and the click presses it; the window under the dialog shows again where the dialog was, no black parts | |
 | 356 | A game showing a smaller display mode and a 2D game drawn with GDI (Sacred Underworld, Heroes of Might and Magic IV in 2D) (regression check for 355) | the picture and the pointer's reach as in 2.4.0 | |
+| 357 | Heroes of Might and Magic IV with Graphics mode › 2D only (1024x768): its menu and a battle | the whole picture in the middle of the TV, nothing cut off on the left, no black on the right; the pointer reaches every edge | |
+| 358 | Mini Ninjas from start to where its gameplay begins | as before (its effects still fail) | `Saved the failed effect to ...failed-effects\\effect-N.log` up to eight times; the game's log zip has `game/users/.../AppData/Local/PC5/failed-effects/effect-N.log`, each with its errors and the numbered effect |
 
 ## Custom media navigation changes (pending on PS5)
 
