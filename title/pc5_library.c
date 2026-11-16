@@ -534,6 +534,21 @@ static int nwjs_dir(const char *dir)
 }
 static const char NWJS_LAUNCH[] = "--single-process --in-process-gpu --no-sandbox --disable-gpu-sandbox\n";
 
+/* An Electron game is the same web browser, its own program with the game in resources/app.asar
+ * (or a resources/app folder) and Chromium's files beside it; it takes the same command-line
+ * flags. Without them its GPU and page programs can't start, and it stops with "GPU process
+ * isn't usable" or its page "launch-failed" (#693 Noreya, #677 BaWang HD-2D). */
+static int electron_dir(const char *dir)
+{
+    char resources[PC5_PATH], app[PC5_PATH];
+    if (!dir || !dir[0] || pc5_join(resources, sizeof(resources), dir, "resources")) return 0;
+    if (!has_file_any_case(resources, "app.asar") &&
+        (pc5_join(app, sizeof(app), resources, "app") || !has_file_any_case(app, "package.json")))
+        return 0;
+    return has_file_any_case(dir, "icudtl.dat") || has_file_any_case(dir, "v8_context_snapshot.bin") ||
+           has_file_any_case(dir, "chrome_100_percent.pak") || has_file_any_case(dir, "resources.pak");
+}
+
 int pc5_recipe_apply(const char *root, const char *id)
 {
     Pc5Info info;
@@ -558,13 +573,13 @@ int pc5_recipe_apply(const char *root, const char *id)
             return -1;
         applied = 1;
     }
-    /* A web game with no launch options of its own gets the one-process flags; a named recipe's
-     * launch.txt, or the player's own, is left as it is. */
-    else if (nwjs_dir(dir)) {
+    /* A web game (NW.js or Electron) with no launch options of its own gets the one-process
+     * flags; a named recipe's launch.txt, or the player's own, is left as it is. */
+    else if (nwjs_dir(dir) || electron_dir(dir)) {
         if (!pc5_format(path, sizeof(path), "%s/launch.txt", dir) && !pc5_exists(path) &&
             pc5_write_file(path, NWJS_LAUNCH, strlen(NWJS_LAUNCH)))
             return -1;
-        name = "Web game (NW.js)";
+        name = nwjs_dir(dir) ? "Web game (NW.js)" : "Web game (Electron)";
         applied = 1;
     }
     if (applied && !pc5_format(path, sizeof(path), "%s/prefixes/%s/pc5/recipe.txt", root, id)) {

@@ -3119,6 +3119,44 @@ static void test_recipes(void)
             CHECK(file_holds_text(file, "Web game (NW.js)"), "%s: recipe.txt names the web game", ids[k]);
         }
     }
+    /* An Electron game (#693 Noreya): the game in resources/app.asar or resources/app, Chromium's
+     * files beside the program, gets the same flags; resources/app.asar alone isn't enough. */
+    {
+        const char *ids[] = { "electron-asar", "electron-folder", "not-electron" };
+        for (int k = 0; k < 3; k++) {
+            memset(&info, 0, sizeof(info));
+            pc5_copy(info.title, sizeof(info.title), "Electron Game");
+            pc5_copy(info.folder, sizeof(info.folder), ids[k]);
+            pc5_copy(info.exe, sizeof(info.exe), "Electron Game.exe");
+            info.bits = 64;
+            info.api = PC5_API_D3D11;
+            pc5_info_text(&info, text, sizeof(text));
+            path(file, sizeof(file), "%s/prefixes/%s/pc5/info.txt", base, ids[k]);
+            write_text(file, text);
+            path(file, sizeof(file), "%s/prefixes/%s/drive_c/Games/%s/Electron Game.exe", base, ids[k], ids[k]);
+            write_text(file, "MZ");
+            if (k == 1)
+                path(file, sizeof(file), "%s/prefixes/%s/drive_c/Games/%s/resources/app/package.json", base, ids[k], ids[k]);
+            else
+                path(file, sizeof(file), "%s/prefixes/%s/drive_c/Games/%s/resources/app.asar", base, ids[k], ids[k]);
+            write_text(file, "{}");
+            if (k < 2) {
+                path(file, sizeof(file), "%s/prefixes/%s/drive_c/Games/%s/%s", base, ids[k], ids[k],
+                     k ? "chrome_100_percent.pak" : "icudtl.dat");
+                write_text(file, "x");
+            }
+            path(file, sizeof(file), "%s/prefixes/%s/drive_c/Games/%s/launch.txt", base, ids[k], ids[k]);
+            if (k < 2) {
+                CHECK(pc5_recipe_apply(base, ids[k]) == 1, "%s: detected as a web game", ids[k]);
+                CHECK(file_is(file, "--single-process --in-process-gpu --no-sandbox --disable-gpu-sandbox\n"),
+                      "%s: launch.txt the one-process flags", ids[k]);
+                path(file, sizeof(file), "%s/prefixes/%s/pc5/recipe.txt", base, ids[k]);
+                CHECK(file_holds_text(file, "Web game (Electron)"), "%s: recipe.txt names the Electron game", ids[k]);
+            } else {
+                CHECK(pc5_recipe_apply(base, ids[k]) == 0 && !pc5_exists(file), "%s: not a web game, no launch.txt", ids[k]);
+            }
+        }
+    }
 }
 
 static void test_known_games(void)

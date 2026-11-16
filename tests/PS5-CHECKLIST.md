@@ -586,6 +586,7 @@ controller's speaker.
 | 344 | Catherine Classic, its main menu and a new game (#628): films played through the EVR (WMV, a color converter before the EVR) | the menu's background film plays, a new game's opening film plays with sound | with `+mfplat,+dmo` extra logging: the converter's `transform_ProcessOutput` followed by the video stream's `media_stream_RequestSample`, no endless `session_sa_ready_callback_Invoke Failed to node` |
 | 345 | Mini Ninjas from start to its menu (#533) | the log names the effect compiler's errors | each error of a failed `CompileEffect` on a line of its own after `Failed to compile the effect` |
 | 346 | An Unreal Development Kit game (UDK.exe, Binaries/InstallInfo.xml: Them & Us #664) | it starts without UnSetup.exe's EULA, no "Failed to launch UnSetup.exe" | `PC5 udk eula accepted UDK-<GUID>` the first time, not again |
+| 347 | Install a fresh Electron game (resources/app.asar beside its program: Noreya #693), then start it | it reaches its first screen instead of "GPU process isn't usable" or a page "launch-failed" | about.txt Launch options shows `--single-process ...`; recipe.txt says `Web game (Electron)` |
 
 ## Custom media navigation changes (pending on PS5)
 
