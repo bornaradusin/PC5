@@ -6303,6 +6303,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             /* Steam: a program in Steam's DRM wrapper can't start without it; Steam's library
              * gets the emulator in its place, or back, as the game's menu says. */
             if (own && !pc5_game_program(ui->root, ui->launch_id, program, sizeof(program))) {
+                pc5_udk_eula_register(ui->root, ui->launch_id, program, redist_log, ui);
                 /* VKD3D-Proton keeps a Direct3D 12 game's compiled pipelines in vkd3d-proton.cache in
                  * its working folder (the program's), written to vkd3d-proton.cache.write while it
                  * runs and merged at the next start: what the last run left, for the log. */

@@ -6,6 +6,7 @@
 #include "pc5_msi.h"
 #include "pc5_cab.h"
 
+#include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -1626,5 +1627,91 @@ int pc5_physx_register(const char *root, const char *prefix, void (*log)(void *c
                  changed & 4 ? " PhysX_A32_Engines 2.8.1" : "", changed & 2 ? " Common in PATH" : "",
                  changed & 8 ? " engine folders in PATH" : "");
     return changed;
+}
+
+/* ---- an Unreal Development Kit game's EULA ------------------------------------------------- */
+
+/* A file in dir by its name in any case: 0 and its path in out, -1 for none. */
+static int file_any_case(const char *dir, const char *name, char *out, size_t size)
+{
+    DIR *d = opendir(dir);
+    struct dirent *e;
+    int found = -1;
+    while (d && found && (e = readdir(d)))
+        if (!strcasecmp(e->d_name, name) && !pc5_join(out, size, dir, e->d_name) && pc5_is_file(out)) found = 0;
+    if (d) closedir(d);
+    return found;
+}
+
+/* The install GUID in an InstallInfo.xml (<InstallGuidString>), checked: 0, or -1 for none. */
+static int udk_guid(const char *path, char *out, size_t size)
+{
+    static const char open_tag[] = "<InstallGuidString>";
+    Pc5Buf data = { 0 };
+    const char *text, *start, *end;
+    size_t n = 0;
+    int bad = 0;
+    if (pc5_read_file(path, &data, 1u << 20) || pc5_buf_terminate(&data)) {
+        pc5_buf_free(&data);
+        return -1;
+    }
+    text = (const char *)data.data;
+    start = strstr(text, open_tag);
+    end = start ? strstr(start, "</InstallGuidString>") : NULL;
+    if (start && end) {
+        start += sizeof(open_tag) - 1;
+        while (start < end && (*start == ' ' || *start == '\t' || *start == '\r' || *start == '\n' || *start == '{'))
+            start++;
+        while (end > start && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\r' || end[-1] == '\n' || end[-1] == '}'))
+            end--;
+        n = (size_t)(end - start);
+        for (const char *c = start; c < end; c++)
+            if (!isxdigit((unsigned char)*c) && *c != '-') bad = 1;
+    }
+    if (!start || !end || bad || n < 32 || n > 40 || n >= size) {
+        pc5_buf_free(&data);
+        return -1;
+    }
+    memcpy(out, start, n);
+    out[n] = 0;
+    pc5_buf_free(&data);
+    return 0;
+}
+
+int pc5_udk_eula_register(const char *root, const char *prefix, const char *program,
+                          void (*log)(void *context, const char *line), void *context)
+{
+    char dir[PC5_PATH], info[PC5_PATH], guid[48], key[64], path[PC5_PATH];
+    char *slash;
+    int found = -1;
+
+    if (!program || !program[0]) return 0;
+    /* InstallInfo.xml is in the game's Binaries, beside or above its program
+     * (Binaries/Win64/UDK.exe, Binaries/Win32/UDK.exe). */
+    pc5_copy(dir, sizeof(dir), program);
+    for (int up = 0; up < 3 && found; up++) {
+        if (!(slash = strrchr(dir, '/'))) break;
+        *slash = 0;
+        found = file_any_case(dir, "InstallInfo.xml", info, sizeof(info));
+    }
+    if (found || udk_guid(info, guid, sizeof(guid)) || pc5_format(key, sizeof(key), "UDK-%s", guid) ||
+        pc5_format(path, sizeof(path), "%s/prefixes/%s/system.reg", root, prefix) || !pc5_is_file(path) ||
+        file_has(path, key))
+        return 0;
+    /* An Unreal Development Kit game asks its UnSetup.exe to show Epic's EULA until the
+     * install it was made from says it was accepted: Uninstall\UDK-<its GUID>'s EULAAccepted,
+     * which Steam's install writes. The console can't start UnSetup.exe, and the game stops
+     * ("Failed to launch UnSetup.exe. Please reinstall."). */
+    Pc5Buf text = { 0 };
+    int failed = 0;
+    for (int view = 0; view < 2 && !failed; view++)
+        failed = pc5_buf_printf(&text, "\n[Software\\\\%sMicrosoft\\\\Windows\\\\CurrentVersion\\\\Uninstall\\\\%s]\n",
+                                view ? "Wow6432Node\\\\" : "", key) ||
+                 pc5_buf_puts(&text, "\"EULAAccepted\"=dword:00000001\n");
+    if (!failed) failed = append_text(path, &text);
+    pc5_buf_free(&text);
+    if (failed) return -1;
+    say_line(log, context, "PC5 udk eula accepted %s", key);
+    return 1;
 }
 

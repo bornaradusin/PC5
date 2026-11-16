@@ -47,6 +47,14 @@ int pc5_redist_install(const char *root, const char *prefix, const char *game_di
 int pc5_physx_register(const char *root, const char *prefix, void (*log)(void *context, const char *line),
                        void *context);
 
+/* An Unreal Development Kit game (Binaries/InstallInfo.xml beside or above its program, at
+ * program, a host path): Epic's EULA marked accepted for its install GUID in both registry
+ * views, as Steam's install does, since the game otherwise starts UnSetup.exe to ask and stops
+ * when it can't. 1 when written, 0 for nothing to do (not a UDK game, or already there), -1
+ * when system.reg couldn't be written. */
+int pc5_udk_eula_register(const char *root, const char *prefix, const char *program,
+                          void (*log)(void *context, const char *line), void *context);
+
 /* For the tests: a Windows Installer condition, with the properties of 64-bit Windows 7 and
  * those given ("NAME=value" lines): 1 true, 0 false; text that can't be read is true. */
 int pc5_msi_condition(const char *condition, const char *properties);

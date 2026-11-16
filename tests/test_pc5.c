@@ -9439,6 +9439,35 @@ static void test_msi(void)
     write_text(file, "WINE REGISTRY Version 2\n");
     CHECK(pc5_physx_register(game_root, "physx-none", NULL, NULL) == 0 && !file_holds_text(file, "Ageia"),
           "no PhysX: nothing");
+
+    /* An Unreal Development Kit game (#664 Them & Us): Epic's EULA accepted for the GUID in its
+     * Binaries/InstallInfo.xml, in both registry views, as Steam's install does, once; a game
+     * without the file, or with a GUID that isn't one, is left as it is. */
+    path(file, sizeof(file), "%s/prefixes/udk-game/system.reg", game_root);
+    write_text(file, "WINE REGISTRY Version 2\n#arch=win64\n");
+    path(game, sizeof(game), "%s/prefixes/udk-game/drive_c/Games/Udk Game/Binaries/InstallInfo.xml", game_root);
+    write_text(game, "<?xml version=\"1.0\"?>\n<InstallInfo>\n  <InstallGuidString>749A8A1D-2A53-4156-B290-D29CFB2FB9A7"
+                     "</InstallGuidString>\n</InstallInfo>\n");
+    path(game, sizeof(game), "%s/prefixes/udk-game/drive_c/Games/Udk Game/Binaries/Win64/UDK.exe", game_root);
+    write_text(game, "MZ");
+    CHECK(pc5_udk_eula_register(game_root, "udk-game", game, NULL, NULL) == 1, "a UDK game's EULA accepted");
+    CHECK(file_holds_text(file, "[Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Uninstall\\\\"
+                                "UDK-749A8A1D-2A53-4156-B290-D29CFB2FB9A7]\n\"EULAAccepted\"=dword:00000001\n") &&
+          file_holds_text(file, "[Software\\\\Wow6432Node\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Uninstall\\\\"
+                                "UDK-749A8A1D-2A53-4156-B290-D29CFB2FB9A7]\n\"EULAAccepted\"=dword:00000001\n"),
+          "EULAAccepted under Uninstall\\UDK-<GUID>, both registry views");
+    CHECK(pc5_udk_eula_register(game_root, "udk-game", game, NULL, NULL) == 0, "once");
+    path(file, sizeof(file), "%s/prefixes/udk-none/system.reg", game_root);
+    write_text(file, "WINE REGISTRY Version 2\n");
+    path(game, sizeof(game), "%s/prefixes/udk-none/drive_c/Games/Other/Binaries/Win64/Game.exe", game_root);
+    write_text(game, "MZ");
+    CHECK(pc5_udk_eula_register(game_root, "udk-none", game, NULL, NULL) == 0 && !file_holds_text(file, "UDK-"),
+          "no InstallInfo.xml: nothing");
+    path(game, sizeof(game), "%s/prefixes/udk-none/drive_c/Games/Other/Binaries/InstallInfo.xml", game_root);
+    write_text(game, "<InstallGuidString>not a GUID; [Software]</InstallGuidString>");
+    path(game, sizeof(game), "%s/prefixes/udk-none/drive_c/Games/Other/Binaries/Win64/Game.exe", game_root);
+    CHECK(pc5_udk_eula_register(game_root, "udk-none", game, NULL, NULL) == 0 && !file_holds_text(file, "UDK-"),
+          "a GUID that isn't one: nothing");
 }
 
 /* Which game a folder is: the files a store, an installer or a Steam stand-in leave in it. */

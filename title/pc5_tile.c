@@ -696,6 +696,7 @@ int pc5_tile_prepare_step(Pc5TilePrep *prep, int budget_ms)
                 Pc5Controls chosen;
                 char why[PC5_ERROR];
                 pc5_physx_register(prep->root, prep->id, NULL, NULL);
+                pc5_udk_eula_register(prep->root, prep->id, program, NULL, NULL);
                 if (pc5_steam_stub(program)) {
                     pc5_steam_check_keep(prep->root, prep->id, game_dir, program, 1, 1, NULL, 0);
                     return fail(prep, N_("Its program is wrapped in Steam's DRM (SteamStub), which starts only with Steam "
