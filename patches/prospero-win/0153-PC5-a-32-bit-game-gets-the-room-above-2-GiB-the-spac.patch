@@ -1,0 +1,474 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 16 Nov 2026 18:38:40 +0000
+Subject: [PATCH 153/153] PC5: a 32-bit game gets the room above 2 GiB, the space it
+ can have, and the Windows error when memory runs out (Wine patches 1018 to
+ 1021)
+
+A 32-bit program had a 4 GiB limit (0921), but only the low 2 GiB was reserved, so the console's own mappings could take the rest and the space the game saw as free above 2 GiB wasn't all there: a game that reserves the largest free block it finds for its heap asked for 2 GiB, got nothing and read through a null pointer (Wanted: Weapons of Fate). The range above 2 GiB is now reserved for a program with 4 GiB (1018), VirtualQuery reports only reserved space as free below 4 GiB (1020), and the first two allocations that find no room log what fills the space (1019). A commit the console has no memory for now fails with Windows' commitment-limit error and leaves the pages as they were, instead of an access-denied error a game takes for a bug (V8's "Check failed: 1455L == error."), and the direct-memory layer logs the calls the kernel refuses with the pool's largest free block (1021). From leolobato/prospero-win's 1000, 1005, 1007 and 1020.
+---
+ ...-gib-for-a-32-bit-program-with-4-gib.patch |  68 ++++++++++
+ ...ay-what-fills-a-32-bit-address-space.patch | 116 ++++++++++++++++++
+ ...ed-space-as-free-to-a-32-bit-program.patch |  47 +++++++
+ ...it-limit-when-the-host-cannot-commit.patch | 104 ++++++++++++++++
+ wine/ps5/pw_wine_dmem_ps5.c                   |  47 +++++--
+ 5 files changed, 374 insertions(+), 8 deletions(-)
+ create mode 100644 wine/patches/1018-ntdll-ps5-reserve-the-range-above-2-gib-for-a-32-bit-program-with-4-gib.patch
+ create mode 100644 wine/patches/1019-ntdll-ps5-say-what-fills-a-32-bit-address-space.patch
+ create mode 100644 wine/patches/1020-ntdll-ps5-report-only-reserved-space-as-free-to-a-32-bit-program.patch
+ create mode 100644 wine/patches/1021-ntdll-report-the-commit-limit-when-the-host-cannot-commit.patch
+
+diff --git a/wine/patches/1018-ntdll-ps5-reserve-the-range-above-2-gib-for-a-32-bit-program-with-4-gib.patch b/wine/patches/1018-ntdll-ps5-reserve-the-range-above-2-gib-for-a-32-bit-program-with-4-gib.patch
+new file mode 100644
+index 0000000..4d64fe8
+--- /dev/null
++++ b/wine/patches/1018-ntdll-ps5-reserve-the-range-above-2-gib-for-a-32-bit-program-with-4-gib.patch
+@@ -0,0 +1,68 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Mon, 16 Nov 2026 19:00:00 +0000
++Subject: [PATCH] ntdll: Reserve the range above 2 GiB for a 32-bit program
++ with 4 GiB on PS5.
++
++A 32-bit program gets a 4 GiB limit on PS5 (0921), but mmap_init
++reserves only the low 2 GiB, so the range above 2 GiB was left to the
++console, which places plain mappings anywhere: a 4 GiB limit alone
++added little room the program could have, and what it got there was
++flexible memory. The range above 2 GiB is now reserved too when the
++limit is 4 GiB. The reservation refuses to overwrite, so anything
++already there keeps its place; a startup line gives how much of the
++range the reservation took. From leolobato/prospero-win's 1000.
++---
++ dlls/ntdll/unix/virtual.c | 27 +++++++++++++++++++++++++++
++ 1 file changed, 27 insertions(+)
++
++diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
++index 8d608a2..9818ebd 100644
++--- a/dlls/ntdll/unix/virtual.c
+++++ b/dlls/ntdll/unix/virtual.c
++@@ -5973,6 +5973,20 @@ static BOOL ps5_large_address_aware(void)
++                     : "2 GiB of address space (PW_LARGE_ADDRESS_AWARE=0)" );
++     return on;
++ }
+++
+++/* How much of base-end the address space reservations hold, in MiB. */
+++static size_t ps5_reserved_mib( char *base, char *end )
+++{
+++    struct reserved_area *area;
+++    size_t total = 0;
+++
+++    LIST_FOR_EACH_ENTRY( area, &reserved_areas, struct reserved_area, entry )
+++    {
+++        char *start = max( (char *)area->base, base ), *stop = min( (char *)area->base + area->size, end );
+++        if (start < stop) total += stop - start;
+++    }
+++    return total >> 20;
+++}
++ #else
++ static BOOL ps5_large_address_aware(void) { return FALSE; }
++ #endif
++@@ -5993,8 +6007,21 @@ void virtual_set_large_address_space(void)
++         else if ((main_image_info.ImageCharacteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE) || ps5_large_address_aware())
++         {
++             user_space_wow_limit = limit_4g - 1;
+++#ifdef __PROSPERO__
+++            /* mmap_init reserves only the low 2 GiB: reserve the rest of the
+++             * 4 GiB too, as the console places plain mappings anywhere and a
+++             * reservation is what keeps a range for the program (and makes it
+++             * direct memory, not the console's small flexible pool). The
+++             * reservation refuses to overwrite, so anything already there
+++             * keeps its place. */
+++            reserve_area( (void *)0x80000000, (void *)0xfff00000 );
+++#endif
++             /* reserve space for top-down allocations; some apps break if the entire high 2G is available */
++             reserve_area( (void *)0xfff00000, (void *)0xffff0000 );
+++#ifdef __PROSPERO__
+++            fprintf( stderr, "wine-ps5: 32-bit address space 4 GiB, %zu MiB of it reserved above 2 GiB\n",
+++                     ps5_reserved_mib( (char *)0x80000000, (char *)0x100000000 ) );
+++#endif
++         }
++         else user_space_wow_limit = limit_2g - 1;
++     }
++-- 
++2.43.0
++
+diff --git a/wine/patches/1019-ntdll-ps5-say-what-fills-a-32-bit-address-space.patch b/wine/patches/1019-ntdll-ps5-say-what-fills-a-32-bit-address-space.patch
+new file mode 100644
+index 0000000..7353928
+--- /dev/null
++++ b/wine/patches/1019-ntdll-ps5-say-what-fills-a-32-bit-address-space.patch
+@@ -0,0 +1,116 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Mon, 9 Nov 2026 00:20:00 +0100
++Subject: [PATCH] ntdll: Say what fills a 32-bit program's address space on
++ PS5.
++
++When an allocation of a 32-bit program finds no room below its limit,
++the log only said "out of memory for allocation". The first two such
++failures now also log the limit asked for and the WoW64 limit, the views
++below 4 GB per 2 GB half (count, size, committed pages, the largest free
++gap) and the largest views, so the log tells a space full of
++reservations from one the allocator never reaches.
++---
++ dlls/ntdll/unix/virtual.c | 78 +++++++++++++++++++++++++++++++++++++++
++ 1 file changed, 78 insertions(+)
++
++diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
++index 9818ebd..88a6d0e 100644
++--- a/dlls/ntdll/unix/virtual.c
+++++ b/dlls/ntdll/unix/virtual.c
++@@ -6034,6 +6034,79 @@ void virtual_set_large_address_space(void)
++ }
++ 
++ 
+++#ifdef __PROSPERO__
+++/* Adds the part of start-stop in each 2 GiB half below 4 GiB to sums[0] and sums[1]. */
+++static void ps5_add_halves( SIZE_T sums[2], char *start, char *stop )
+++{
+++    char *half = (char *)0x80000000;
+++
+++    if (start < half) sums[0] += min( stop, half ) - start;
+++    if (stop > half) sums[1] += stop - max( start, half );
+++}
+++
+++/* The largest part of a gap start-stop in each 2 GiB half below 4 GiB. */
+++static void ps5_max_halves( SIZE_T gaps[2], char *start, char *stop )
+++{
+++    char *half = (char *)0x80000000;
+++
+++    if (start < half) gaps[0] = max( gaps[0], (SIZE_T)(min( stop, half ) - start) );
+++    if (stop > half) gaps[1] = max( gaps[1], (SIZE_T)(stop - max( start, half )) );
+++}
+++
+++/* An allocation of a 32-bit program found no room below its limit: log what
+++ * the views hold below 4 GiB, per 2 GiB half (views by where they start, their
+++ * size, committed pages and the largest free gap, each split at 2 GiB) and the largest views, so the
+++ * log says whether the space is full and with what. The first two failures
+++ * are logged. */
+++static void ps5_log_wow_views( ULONG_PTR limit_high, SIZE_T size )
+++{
+++    static LONG failures;
+++    struct { char *base; SIZE_T size; unsigned int protect; } top[6] = {{0}};
+++    SIZE_T views[2] = {0}, bytes[2] = {0}, committed[2] = {0}, gap[2] = {0};
+++    char *end = (char *)0x100000000, *prev = (char *)address_space_start;
+++    struct file_view *view;
+++    sigset_t sigset;
+++    unsigned int i, j;
+++
+++    if (InterlockedIncrement( &failures ) > 2) return;
+++    server_enter_uninterrupted_section( &virtual_mutex, &sigset );
+++    WINE_RB_FOR_EACH_ENTRY( view, &views_tree, struct file_view, entry )
+++    {
+++        char *base = view->base, *stop = min( (char *)view->base + view->size, end ), *page;
+++
+++        if (base >= end) break;
+++        if (base > prev) ps5_max_halves( gap, prev, base );
+++        views[base >= (char *)0x80000000]++;
+++        ps5_add_halves( bytes, base, stop );
+++        for (page = base; page < stop; page += page_size)
+++            if (get_page_vprot( page ) & VPROT_COMMITTED) committed[page >= (char *)0x80000000] += page_size;
+++        for (i = 0; i < ARRAY_SIZE(top); i++) if (view->size > top[i].size) break;
+++        if (i < ARRAY_SIZE(top))
+++        {
+++            for (j = ARRAY_SIZE(top) - 1; j > i; j--) top[j] = top[j - 1];
+++            top[i].base = base;
+++            top[i].size = view->size;
+++            top[i].protect = view->protect;
+++        }
+++        prev = max( prev, stop );
+++    }
+++    if (end > prev) ps5_max_halves( gap, prev, end );
+++    server_leave_uninterrupted_section( &virtual_mutex, &sigset );
+++
+++    fprintf( stderr, "wine-ps5: 32-bit out of address space for %#lx (limit %#lx, wow limit %#lx): "
+++             "below 2 GiB views=%lu %lu MiB committed %lu MiB gap %lu MiB; "
+++             "2-4 GiB views=%lu %lu MiB committed %lu MiB gap %lu MiB; %lu MiB reserved above 2 GiB\n",
+++             (unsigned long)size, (unsigned long)limit_high, (unsigned long)get_wow_user_space_limit(),
+++             (unsigned long)views[0], (unsigned long)(bytes[0] >> 20), (unsigned long)(committed[0] >> 20),
+++             (unsigned long)(gap[0] >> 20), (unsigned long)views[1], (unsigned long)(bytes[1] >> 20),
+++             (unsigned long)(committed[1] >> 20), (unsigned long)(gap[1] >> 20),
+++             (unsigned long)ps5_reserved_mib( (char *)0x80000000, end ) );
+++    for (i = 0; i < ARRAY_SIZE(top) && top[i].size; i++)
+++        fprintf( stderr, "wine-ps5:   view %p %lu MiB protect %#x\n", top[i].base,
+++                 (unsigned long)(top[i].size >> 20), top[i].protect );
+++}
+++#endif
+++
++ /***********************************************************************
++  *             allocate_virtual_memory
++  *
++@@ -6167,7 +6240,12 @@ static NTSTATUS allocate_virtual_memory( void **ret, SIZE_T *size_ptr, ULONG typ
++         *size_ptr = size;
++     }
++     else if (status == STATUS_NO_MEMORY)
+++    {
++         ERR( "out of memory for allocation, base %p size %08lx\n", base, size );
+++#ifdef __PROSPERO__
+++        if (is_wow64()) ps5_log_wow_views( limit_high, size );
+++#endif
+++    }
++ 
++     return status;
++ }
++-- 
++2.43.0
++
+diff --git a/wine/patches/1020-ntdll-ps5-report-only-reserved-space-as-free-to-a-32-bit-program.patch b/wine/patches/1020-ntdll-ps5-report-only-reserved-space-as-free-to-a-32-bit-program.patch
+new file mode 100644
+index 0000000..75415dc
+--- /dev/null
++++ b/wine/patches/1020-ntdll-ps5-report-only-reserved-space-as-free-to-a-32-bit-program.patch
+@@ -0,0 +1,47 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Mon, 9 Nov 2026 10:40:00 +0100
++Subject: [PATCH] ntdll: Report only reserved space as free to a 32-bit program
++ on PS5.
++
++A 32-bit program learns how much address space is free from
++VirtualQuery. On i386, ntdll reports the space outside its reserved
++areas as allocated, since the system keeps mappings there. Under WoW64
++the 64-bit ntdll skipped that, so the range above 2 GiB looked free up
++to 4 GiB even where the PS5 kernel already had mappings of its own and
++the reservation could not take it (2042 of 2048 MiB).
++
++Wanted: Weapons of Fate reserves the largest free block it finds for
++its heap: it asked for 0x80000000 bytes, the allocation failed ("out of
++memory for allocation"), and the game read through a null pointer.
++
++On PS5 a WoW64 process now gets the i386 rule below 4 GiB: space
++outside the reserved areas is reported as reserved, so the largest free
++block is one the program can have.
++---
++ dlls/ntdll/unix/virtual.c | 9 ++++++++-
++ 1 file changed, 8 insertions(+), 1 deletion(-)
++
++diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
++index 88a6d0e..2901fbd 100644
++--- a/dlls/ntdll/unix/virtual.c
+++++ b/dlls/ntdll/unix/virtual.c
++@@ -6661,7 +6661,14 @@ static struct file_view *get_memory_region_size( char *base, char **region_start
++             return view;
++         }
++     }
++-#ifdef __i386__
+++#if defined(__i386__) || defined(__PROSPERO__)
+++#ifdef __PROSPERO__
+++    /* So too for a 32-bit program on PS5 below 4 GiB: the kernel keeps
+++     * mappings of its own there, outside the reservations, and a program
+++     * that reserves the largest free block it finds (Wanted: Weapons of
+++     * Fate's heap) must only find room it can have. */
+++    if (is_wow64() && (UINT_PTR)base < 0x100000000ull)
+++#endif
++     {
++         struct reserved_area *area;
++ 
++-- 
++2.43.0
++
+diff --git a/wine/patches/1021-ntdll-report-the-commit-limit-when-the-host-cannot-commit.patch b/wine/patches/1021-ntdll-report-the-commit-limit-when-the-host-cannot-commit.patch
+new file mode 100644
+index 0000000..a91e8ab
+--- /dev/null
++++ b/wine/patches/1021-ntdll-report-the-commit-limit-when-the-host-cannot-commit.patch
+@@ -0,0 +1,104 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Thu, 12 Nov 2026 11:00:00 +0100
++Subject: [PATCH] ntdll: Report the commit limit when the host cannot commit.
++
++Committing reserved pages changes their host protection. When the host
++refuses for lack of memory (mprotect() fails with ENOMEM: RLIMIT_DATA on
++Linux, a full direct-memory pool on a PS5), NtAllocateVirtualMemory
++returned STATUS_ACCESS_DENIED and left the pages marked committed.
++Windows returns STATUS_COMMITMENT_LIMIT and leaves the pages as they
++were: reserved pages stay reserved, and committed ones in the range keep
++their protection. Host pages that only hold reserved pages are mapped
++again, as decommit does, so the host takes back what it gave them.
++
++V8 checks the error of a failed commit: anything but
++ERROR_NOT_ENOUGH_MEMORY or ERROR_COMMITMENT_LIMIT is a fatal "Check
++failed: 1455L == error." (Counter-Strike 2's UI).
++---
++ dlls/ntdll/unix/virtual.c | 62 ++++++++++++++++++++++++++++++++++++++-
++ 1 file changed, 61 insertions(+), 1 deletion(-)
++
++diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
++index 2901fbd..2eb45fb 100644
++--- a/dlls/ntdll/unix/virtual.c
+++++ b/dlls/ntdll/unix/virtual.c
++@@ -3054,6 +3054,66 @@ static SIZE_T get_committed_size( struct file_view *view, void *base, size_t max
++ }
++ 
++ 
+++/***********************************************************************
+++ *           commit_pages
+++ *
+++ * Commit a range of pages. When the host cannot give them memory (ENOMEM),
+++ * Windows reports the commit limit and leaves the pages as they were, so a
+++ * reserved range stays reserved and the caller can free memory and retry.
+++ */
+++static NTSTATUS commit_pages( struct file_view *view, void *base, SIZE_T size, ULONG protect )
+++{
+++    struct { char *base; SIZE_T size; BYTE vprot; } stack_runs[16], *runs = stack_runs, *grown;
+++    SIZE_T done, count = 0, max = ARRAY_SIZE(stack_runs), i;
+++    char *start, *end;
+++    NTSTATUS status;
+++
+++    /* the pages' protections as they are, in runs, to put back if the host refuses */
+++    for (done = 0; done < size; done += runs[count++].size)
+++    {
+++        if (count == max)
+++        {
+++            if (!(grown = malloc( 2 * max * sizeof(*runs) )))
+++            {
+++                if (runs != stack_runs) free( runs );
+++                return STATUS_NO_MEMORY;
+++            }
+++            memcpy( grown, runs, count * sizeof(*runs) );
+++            if (runs != stack_runs) free( runs );
+++            runs = grown;
+++            max *= 2;
+++        }
+++        runs[count].base = (char *)base + done;
+++        runs[count].size = get_vprot_range_size( runs[count].base, size - done, ~0, &runs[count].vprot );
+++    }
+++
+++    errno = 0;
+++    status = set_protection( view, base, size, protect );
+++    if (status == STATUS_ACCESS_DENIED && errno == ENOMEM)
+++    {
+++        WARN( "no memory to commit %p-%p\n", base, (char *)base + size - 1 );
+++        for (i = 0; i < count; i++) set_page_vprot( runs[i].base, runs[i].size, runs[i].vprot );
+++        /* host pages that only hold pages left reserved give back what the host took for them */
+++        for (i = 0; is_view_valloc( view ) && i < count; i++)
+++        {
+++            if (runs[i].vprot & VPROT_COMMITTED) continue;
+++            start = runs[i].base;
+++            while (i + 1 < count && !(runs[i + 1].vprot & VPROT_COMMITTED)) i++;
+++            end = ROUND_ADDR( runs[i].base + runs[i].size, host_page_mask );
+++            start = (char *)ROUND_SIZE( 0, start, host_page_mask );
+++            if (start >= end) continue;
+++            anon_mmap_fixed( start, end - start, PROT_NONE, 0 );
+++            kernel_writewatch_register_range( view, start, end - start );
+++        }
+++        if (mprotect_range( base, size, 0, 0 ))
+++            ERR( "cannot restore the protection of %p-%p\n", base, (char *)base + size - 1 );
+++        status = STATUS_COMMITMENT_LIMIT;
+++    }
+++    if (runs != stack_runs) free( runs );
+++    return status;
+++}
+++
+++
++ /***********************************************************************
++  *           decommit_pages
++  *
++@@ -6211,7 +6271,7 @@ static NTSTATUS allocate_virtual_memory( void **ret, SIZE_T *size_ptr, ULONG typ
++         if (!(view = find_view( base, size ))) status = STATUS_NOT_MAPPED_VIEW;
++         else if (view->protect & SEC_FILE) status = STATUS_ALREADY_COMMITTED;
++         else if (view->protect & VPROT_FREE_PLACEHOLDER) status = STATUS_CONFLICTING_ADDRESSES;
++-        else if (!(status = set_protection( view, base, size, protect )) && (view->protect & SEC_RESERVE))
+++        else if (!(status = commit_pages( view, base, size, protect )) && (view->protect & SEC_RESERVE))
++         {
++             SERVER_START_REQ( add_mapping_committed_range )
++             {
++-- 
++2.43.0
++
+diff --git a/wine/ps5/pw_wine_dmem_ps5.c b/wine/ps5/pw_wine_dmem_ps5.c
+index 793747e..3ea07b6 100644
+--- a/wine/ps5/pw_wine_dmem_ps5.c
++++ b/wine/ps5/pw_wine_dmem_ps5.c
+@@ -17,6 +17,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <time.h>
++#include <unistd.h>
+ #include <sys/mman.h>
+ 
+ extern int sceKernelReserveVirtualRange(void **address, size_t bytes, int flags, size_t alignment);
+@@ -71,6 +72,32 @@ static void slow_end(uint64_t start, const char *what, size_t bytes)
+ /* CPU read-write, unless the kernel wants the GPU bits too. */
+ static int map_protection = CPU_READ_WRITE;
+ 
++static int largest_free_block(size_t pool, size_t *bytes);
++
++/* A refused direct-memory call, for the title's log: the step, the kernel's
++ * status and the largest free block of the pool then, which tells a full
++ * pool from a refused protection. The first 32, then every 1000th: a game
++ * whose heap spills keeps failing allocations on purpose. Written with
++ * write(): the heap calls allocate() with its lock held, and stdio may
++ * allocate. */
++static void log_refusal(const char *step, uintptr_t address, size_t bytes, unsigned protection, int status)
++{
++    static uint32_t refusals;
++    const uint32_t count = __atomic_add_fetch(&refusals, 1, __ATOMIC_RELAXED);
++    const int saved_errno = errno;
++    size_t free_bytes = 0;
++    char line[192];
++    int length;
++
++    if (count > 32 && count % 1000) return;
++    if (largest_free_block(sceKernelGetDirectMemorySize(), &free_bytes)) free_bytes = 0;
++    length = snprintf(line, sizeof(line), "wine-ps5: direct memory %s refused: address %#llx, %zu bytes, "
++                      "protection %#x, status %#x, largest free block %zu MiB (refusal %u)\n", step,
++                      (unsigned long long)address, bytes, protection, (unsigned)status, free_bytes >> 20, count);
++    if (length > 0) (void)!write(2, line, (size_t)length < sizeof(line) ? (size_t)length : sizeof(line) - 1);
++    errno = saved_errno;
++}
++
+ static int reserve(void *context, uintptr_t address, size_t bytes)
+ {
+     void *at = (void *)address;
+@@ -87,24 +114,27 @@ static int allocate(void *context, size_t bytes, int64_t *offset)
+     uint64_t t0 = slow_start();
+     int rc;
+     (void)context;
+-    rc = sceKernelAllocateMainDirectMemory(bytes, PAGE, MEMORY_TYPE, offset) != 0;
++    rc = sceKernelAllocateMainDirectMemory(bytes, PAGE, MEMORY_TYPE, offset);
+     slow_end(t0, "allocate", bytes);
+-    return rc;
++    if (rc) log_refusal("allocate", 0, bytes, 0, rc);
++    return rc != 0;
+ }
+ static int map(void *context, uintptr_t address, size_t bytes, int64_t offset)
+ {
+     void *at = (void *)address;
+     uint64_t t0 = slow_start();
+-    int rc;
++    int rc, protection = map_protection;
+     (void)context;
+-    rc = sceKernelMapDirectMemory(&at, bytes, map_protection, KERNEL_FIXED, offset, PAGE);
++    rc = sceKernelMapDirectMemory(&at, bytes, protection, KERNEL_FIXED, offset, PAGE);
+     slow_end(t0, "map", bytes);
+-    if (rc && map_protection == CPU_READ_WRITE) {
++    if (rc && protection == CPU_READ_WRITE) {
+         /* Refused CPU-only: the GPU bits, and keep them if they work. */
+         at = (void *)address;
+-        rc = sceKernelMapDirectMemory(&at, bytes, CPU_GPU_READ_WRITE, KERNEL_FIXED, offset, PAGE);
++        protection = CPU_GPU_READ_WRITE;
++        rc = sceKernelMapDirectMemory(&at, bytes, protection, KERNEL_FIXED, offset, PAGE);
+         if (!rc) map_protection = CPU_GPU_READ_WRITE;
+     }
++    if (rc || at != (void *)address) log_refusal("map", address, bytes, (unsigned)protection, rc ? rc : -1);
+     return rc || at != (void *)address;
+ }
+ static int protect(void *context, uintptr_t address, size_t bytes, unsigned protection)
+@@ -112,9 +142,10 @@ static int protect(void *context, uintptr_t address, size_t bytes, unsigned prot
+     uint64_t t0 = slow_start();
+     int rc;
+     (void)context;
+-    rc = sceKernelMprotect((const void *)address, bytes, (int)protection) != 0;
++    rc = sceKernelMprotect((const void *)address, bytes, (int)protection);
+     slow_end(t0, "protect", bytes);
+-    return rc;
++    if (rc) log_refusal("protect", address, bytes, protection, rc);
++    return rc != 0;
+ }
+ static int unmap(void *context, uintptr_t address, size_t bytes)
+ {
+-- 
+2.43.0
+
