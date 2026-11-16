@@ -1,0 +1,155 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 16 Nov 2026 20:08:03 +0000
+Subject: [PATCH 158/158] PC5: a failed effect compile saves the effect for the report,
+ so what it needs can be seen (Wine patch 1031)
+
+Mini Ninjas' effects still fail to compile with the errors 1017 now logs (duplicate technique names, array sizes and constant expressions not evaluated, a call not matched, render states assigned from a variable), but those name line numbers of a source the log doesn't have. A failed CompileEffect now saves its errors and the effect it compiled, numbered by line, under the game's AppData\Local\PC5\failed-effects, which goes into the game's report zip: one effect per set of errors, eight at most.
+---
+ ...ed-compileeffect-s-errors-and-source.patch | 134 ++++++++++++++++++
+ 1 file changed, 134 insertions(+)
+ create mode 100644 wine/patches/1031-d3dx9-save-a-failed-compileeffect-s-errors-and-source.patch
+
+diff --git a/wine/patches/1031-d3dx9-save-a-failed-compileeffect-s-errors-and-source.patch b/wine/patches/1031-d3dx9-save-a-failed-compileeffect-s-errors-and-source.patch
+new file mode 100644
+index 0000000..bfa4902
+--- /dev/null
++++ b/wine/patches/1031-d3dx9-save-a-failed-compileeffect-s-errors-and-source.patch
+@@ -0,0 +1,134 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Mon, 16 Nov 2026 20:10:00 +0000
++Subject: [PATCH] d3dx9: Save a failed CompileEffect's errors and source for a
++ report.
++
++Patch 1017 logs a failed CompileEffect's errors, but not the effect they
++are about, and the errors alone don't say what to support: Mini Ninjas'
++effects fail with duplicate technique names, array sizes and constant
++expressions the compiler can't evaluate, a call it can't match and render
++states assigned from something other than a constant, all at line
++numbers of a source the log doesn't have. A failed CompileEffect now
++also saves its errors and the preprocessed source it compiled, each line
++after its number, as %LOCALAPPDATA%\PC5\failed-effects\effect-N.log,
++which PC5 puts in a game's report zip. A game builds many effects from
++one source with other defines, so one effect of each set of errors is
++saved, eight at most, and the log says where.
++---
++ dlls/d3dx9_36/effect.c | 91 ++++++++++++++++++++++++++++++++++++++++++
++ 1 file changed, 91 insertions(+)
++
++diff --git a/dlls/d3dx9_36/effect.c b/dlls/d3dx9_36/effect.c
++index 3598024..a8eeca4 100644
++--- a/dlls/d3dx9_36/effect.c
+++++ b/dlls/d3dx9_36/effect.c
++@@ -5192,6 +5192,94 @@ static void log_effect_compile_errors(HRESULT hr, ID3DBlob *errors)
++     }
++ }
++ 
+++/* A failed CompileEffect's errors and the source they count lines in, saved as
+++ * %LOCALAPPDATA%\\PC5\\failed-effects\\effect-N.log for a report: the log names
+++ * the compiler's errors (log_effect_compile_errors), but not what in the effect
+++ * they are about. A game builds many effects from one source with other
+++ * defines (Mini Ninjas: about 1300), so one of each set of errors is kept, eight
+++ * at most. */
+++static void save_failed_effect(const char *source, SIZE_T source_size, ID3DBlob *errors)
+++{
+++    static SRWLOCK lock = SRWLOCK_INIT;
+++    static UINT64 seen[8];
+++    static unsigned int count;
+++    const char *text = errors ? ID3D10Blob_GetBufferPointer(errors) : "";
+++    SIZE_T text_size = errors ? ID3D10Blob_GetBufferSize(errors) : 0, i, size = 0, max;
+++    WCHAR path[MAX_PATH], name[32];
+++    UINT64 hash = 0xcbf29ce484222325ull;
+++    unsigned int index, line = 1;
+++    const char *p, *end;
+++    char *data;
+++    DWORD written, length;
+++    HANDLE file;
+++
+++    while (text_size && !text[text_size - 1])
+++        --text_size;
+++    while (source_size && !source[source_size - 1])
+++        --source_size;
+++    for (i = 0; i < text_size; ++i)
+++        hash = (hash ^ (unsigned char)text[i]) * 0x100000001b3ull;
+++
+++    AcquireSRWLockExclusive(&lock);
+++    for (index = 0; index < count && seen[index] != hash; ++index)
+++        ;
+++    if (index < count || count == ARRAY_SIZE(seen))
+++    {
+++        ReleaseSRWLockExclusive(&lock);
+++        return;
+++    }
+++    seen[count] = hash;
+++    index = ++count;
+++    ReleaseSRWLockExclusive(&lock);
+++
+++    length = GetEnvironmentVariableW(L"LOCALAPPDATA", path, ARRAY_SIZE(path));
+++    if (!length || length >= ARRAY_SIZE(path) - 40)
+++        return;
+++    lstrcatW(path, L"\\PC5");
+++    CreateDirectoryW(path, NULL);
+++    lstrcatW(path, L"\\failed-effects");
+++    CreateDirectoryW(path, NULL);
+++    swprintf(name, ARRAY_SIZE(name), L"\\effect-%u.log", index);
+++    lstrcatW(path, name);
+++
+++    /* the errors, then each line of the source after its number */
+++    max = text_size + source_size + source_size / 8 + 256;
+++    for (p = source, end = source + source_size; p < end; ++p)
+++        if (*p == '\n')
+++            max += 8;
+++    if (!(data = malloc(max)))
+++        return;
+++    size += sprintf(data + size, "The effect's compile errors:\r\n");
+++    memcpy(data + size, text, text_size);
+++    size += text_size;
+++    size += sprintf(data + size, "\r\n\r\nThe effect, as compiled (the errors' line numbers count in it):\r\n");
+++    for (p = source; p < end && size + 16 < max; ++line)
+++    {
+++        const char *stop = memchr(p, '\n', end - p);
+++        SIZE_T len = (stop ? stop : end) - p;
+++
+++        if (len && p[len - 1] == '\r')
+++            --len;
+++        if (size + len + 16 > max)
+++            len = max - size - 16;
+++        size += sprintf(data + size, "%5u: ", line);
+++        memcpy(data + size, p, len);
+++        size += len;
+++        data[size++] = '\r';
+++        data[size++] = '\n';
+++        p = stop ? stop + 1 : end;
+++    }
+++
+++    file = CreateFileW(path, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+++    if (file != INVALID_HANDLE_VALUE)
+++    {
+++        if (WriteFile(file, data, size, &written, NULL) && written == size)
+++            FIXME("Saved the failed effect to %s.\n", debugstr_w(path));
+++        CloseHandle(file);
+++    }
+++    free(data);
+++}
+++
++ static HRESULT WINAPI ID3DXEffectCompilerImpl_CompileEffect(ID3DXEffectCompiler *iface, DWORD flags,
++         ID3DXBuffer **effect, ID3DXBuffer **error_msgs)
++ {
++@@ -5221,7 +5309,10 @@ static HRESULT WINAPI ID3DXEffectCompilerImpl_CompileEffect(ID3DXEffectCompiler
++     hr = D3DCompile(compiler->data, compiler->data_size, NULL, NULL, NULL,
++             NULL, "fx_2_0", compile_flags, 0, &bytecode, &errors);
++     if (FAILED(hr))
+++    {
++         log_effect_compile_errors(hr, errors);
+++        save_failed_effect(compiler->data, compiler->data_size, errors);
+++    }
++     if (error_msgs)
++         *error_msgs = (ID3DXBuffer *)errors;
++     else if (errors)
++-- 
++2.43.0
++
+-- 
+2.43.0
+
