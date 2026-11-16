@@ -1,0 +1,93 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Mon, 16 Nov 2026 09:00:00 +0000
+Subject: [PATCH 151/151] PC5: a failed effect compile logs each of its errors, as
+ the warnings before them hid them (Wine patch 1017)
+
+Mini Ninjas' effects fail to compile with E_FAIL and E_NOTIMPL, but the log showed only the first few hundred characters of the compiler's messages, all of them warnings. The first failures now log each message that isn't a warning on a line of its own.
+---
+ ...each-error-of-a-failed-compileeffect.patch | 75 +++++++++++++++++++
+ 1 file changed, 75 insertions(+)
+ create mode 100644 wine/patches/1017-d3dx9-log-each-error-of-a-failed-compileeffect.patch
+
+diff --git a/wine/patches/1017-d3dx9-log-each-error-of-a-failed-compileeffect.patch b/wine/patches/1017-d3dx9-log-each-error-of-a-failed-compileeffect.patch
+new file mode 100644
+index 0000000..7669d12
+--- /dev/null
++++ b/wine/patches/1017-d3dx9-log-each-error-of-a-failed-compileeffect.patch
+@@ -0,0 +1,75 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Mon, 16 Nov 2026 09:00:00 +0000
++Subject: [PATCH] d3dx9: Log each error of a failed CompileEffect on a line of
++ its own.
++
++A failed compile was logged with the compiler's messages in one
++debugstr_a, which keeps only their first few hundred characters: an
++effect that warns first (Mini Ninjas' W5300 implicit truncations) never
++showed the error that made it fail. The first failures now log each
++message that isn't a warning on its own line.
++---
++ dlls/d3dx9_36/effect.c | 42 ++++++++++++++++++++++++++++++++++++++++--
++ 1 file changed, 40 insertions(+), 2 deletions(-)
++
++diff --git a/dlls/d3dx9_36/effect.c b/dlls/d3dx9_36/effect.c
++index 7aa5c08..3598024 100644
++--- a/dlls/d3dx9_36/effect.c
+++++ b/dlls/d3dx9_36/effect.c
++@@ -5153,6 +5153,45 @@ static HRESULT WINAPI ID3DXEffectCompilerImpl_GetLiteral(ID3DXEffectCompiler *if
++     return E_NOTIMPL;
++ }
++ 
+++static BOOL line_has(const char *start, const char *stop, const char *text)
+++{
+++    size_t len = strlen(text);
+++
+++    for (; stop - start >= (ptrdiff_t)len; ++start)
+++        if (!memcmp(start, text, len))
+++            return TRUE;
+++    return FALSE;
+++}
+++
+++/* A failed compile's messages: warnings come first and can fill a line of the log on their own,
+++ * so each message that isn't a warning gets a line of its own, the first few times. */
+++static void log_effect_compile_errors(HRESULT hr, ID3DBlob *errors)
+++{
+++    static LONG logged;
+++    const char *text, *end, *line, *next;
+++    unsigned int shown = 0;
+++
+++    FIXME("Failed to compile the effect, hr %#lx.\n", hr);
+++    if (!errors || InterlockedIncrement(&logged) > 8)
+++        return;
+++    text = ID3D10Blob_GetBufferPointer(errors);
+++    end = text + ID3D10Blob_GetBufferSize(errors);
+++    for (line = text; line < end && *line && shown < 16; line = next)
+++    {
+++        const char *stop = memchr(line, '\n', end - line);
+++
+++        next = stop ? stop + 1 : end;
+++        if (!stop)
+++            stop = end;
+++        while (stop > line && !stop[-1])
+++            --stop;
+++        if (stop == line || line_has(line, stop, ": W") || line_has(line, stop, "warning"))
+++            continue;
+++        FIXME("  %s\n", debugstr_an(line, stop - line));
+++        ++shown;
+++    }
+++}
+++
++ static HRESULT WINAPI ID3DXEffectCompilerImpl_CompileEffect(ID3DXEffectCompiler *iface, DWORD flags,
++         ID3DXBuffer **effect, ID3DXBuffer **error_msgs)
++ {
++@@ -5182,8 +5221,7 @@ static HRESULT WINAPI ID3DXEffectCompilerImpl_CompileEffect(ID3DXEffectCompiler
++     hr = D3DCompile(compiler->data, compiler->data_size, NULL, NULL, NULL,
++             NULL, "fx_2_0", compile_flags, 0, &bytecode, &errors);
++     if (FAILED(hr))
++-        FIXME("Failed to compile the effect, hr %#lx: %s\n", hr,
++-                errors ? debugstr_a(ID3D10Blob_GetBufferPointer(errors)) : "no messages");
+++        log_effect_compile_errors(hr, errors);
++     if (error_msgs)
++         *error_msgs = (ID3DXBuffer *)errors;
++     else if (errors)

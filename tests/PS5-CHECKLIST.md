@@ -584,6 +584,7 @@ controller's speaker.
 | 342 | Resident Evil 2 (non-RT), without DisableGstByteStreamHandler in user.reg: the RE logo and the first film (#454) | the films play, the game doesn't close at the logo | `MF_MT_FRAME_RATE` of the WMV stream isn't 1 (0/1) in a log with `+mfplat` |
 | 343 | Install a fresh NW.js game that has no launch.txt (an RPG Maker MV/MZ game with nw.dll), then start it (#534) | it reaches its title instead of hanging on the launch screen | `about.txt` Launch options shows `--single-process ...`; recipe.txt says "Web game (NW.js)" |
 | 344 | Catherine Classic, its main menu and a new game (#628): films played through the EVR (WMV, a color converter before the EVR) | the menu's background film plays, a new game's opening film plays with sound | with `+mfplat,+dmo` extra logging: the converter's `transform_ProcessOutput` followed by the video stream's `media_stream_RequestSample`, no endless `session_sa_ready_callback_Invoke Failed to node` |
+| 345 | Mini Ninjas from start to its menu (#533) | the log names the effect compiler's errors | each error of a failed `CompileEffect` on a line of its own after `Failed to compile the effect` |
 
 ## Custom media navigation changes (pending on PS5)
 
