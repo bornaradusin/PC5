@@ -33,7 +33,7 @@ issue that it doesn't, and the row names the game's other reports and issues bes
 that an earlier issue was closed about as unable to run (not planned, or anti-cheat: CANT_RUN)
 keeps that row while a new issue about it is open, with the new one named beside it: reporting
 it again doesn't make it being looked at, until the new issue is closed or labelled "fix ready".
-An open
+That new issue is labelled "known not to run" (KNOWN_LABEL), with no comment. An open
 issue whose game an earlier report lists as running gets one comment with what that report says
 (its settings may help).
 
@@ -89,6 +89,8 @@ CHEATED = "<!-- pc5-compatibility: anti-cheat -->"   # its comment when it close
 STORED = "<!-- pc5-compatibility: needs steam -->"   # its comment when it closes such an issue (unchanged: it marks the old ones too)
 SHOWN = ["Works perfectly", "Playable with issues", FIX_READY, LOOKED_AT, NEEDS_TESTING, NEEDS_STORE, ANTI_CHEAT, UNRESOLVED]
 CANT_RUN = (UNRESOLVED, ANTI_CHEAT)   # an issue closed so about the game itself: a new issue doesn't undo it
+KNOWN_LABEL = "known not to run"   # an open issue about a game CANT_RUN lists: labelled, no comment
+KNOWN_ABOUT = "An earlier issue about this game was closed as one PC5 can't run: that issue says why"   # 100 at most
 MARK = "<!-- pc5-compatibility: needs an issue -->"   # the Action's comment, so it is made once
 UNKNOWN = {}   # an issue that couldn't be looked up: the report waits for the next run
 LISTED = "<!-- pc5-compatibility: listed -->"   # the Action's comment once a report is in the list
@@ -238,7 +240,7 @@ def main() -> int:
     # they are closed, by the newest one's state, or by the reports posted after it closed, which
     # name it beside them (a fixed one not at all). An open issue that earlier reports list as
     # running is told once what they say. One about a game an earlier issue was closed about as
-    # unable to run doesn't change the game's row (best_row).
+    # unable to run is labelled KNOWN_LABEL, and doesn't change the game's row (best_row).
     store_label(owner, name)
     issues = issue_reports(owner, name, named)
     listed = {}
@@ -249,6 +251,8 @@ def main() -> int:
         same = listed.get(game_key(row["game"]), [])
         if row["open"] and same and not row["told_listed"]:
             told_issues += tell_issue(row, [r for r in same if r["created"] < row["created"]], owner, name)
+    for row in to_label(issues):
+        label_known(row, owner, name)
     # One row a game: the best said of it, reports and issues alike (the newest of equals), with
     # the others named beside it. A game that runs for someone can run, given the right copy.
     games = {}
@@ -446,6 +450,7 @@ def issue_reports(owner: str, name: str, named: dict) -> list:
                     "author": (node["author"] or {}).get("login", "someone"), "date": node["createdAt"][:10],
                     "id": node["id"], "open": node["state"] == "OPEN",
                     "told_listed": any(LISTED_ALREADY in (c["body"] or "") for c in node["comments"]["nodes"]),
+                    "labels": issue["labels"],
                 }
                 rows.append(row)
                 if extra.get("notes"):
@@ -505,11 +510,11 @@ def close_anti_cheat(node: dict, owner: str, name: str) -> None:
 
 
 def store_label(owner: str, name: str) -> None:
-    """The STORE, CHEAT_LABEL and FIX_LABEL labels, made the first time, so they are there to choose."""
+    """The STORE, CHEAT_LABEL, FIX_LABEL and KNOWN_LABEL labels, made the first time, so they are there."""
     url = f"https://api.github.com/repos/{owner}/{name}/labels"
     headers = {"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}", "Accept": "application/vnd.github+json"}
     for label_name, color, about in ((STORE, "fbca04", STORE_ABOUT), (CHEAT_LABEL, "5319e7", CHEAT_ABOUT),
-                                     (FIX_LABEL, "0e8a16", FIX_ABOUT)):
+                                     (FIX_LABEL, "0e8a16", FIX_ABOUT), (KNOWN_LABEL, "b60205", KNOWN_ABOUT)):
         try:
             urllib.request.urlopen(urllib.request.Request(f"{url}/{urllib.parse.quote(label_name)}", headers=headers),
                                    timeout=60)
@@ -574,6 +579,33 @@ def best_row(group: list) -> dict:
         if earlier:
             return max(earlier, key=lambda r: r["closed_at"])
     return best
+
+
+def to_label(issues: list) -> list:
+    """The open issues to label KNOWN_LABEL: being looked at, about a game an earlier issue was
+    closed about as unable to run, and not labelled so yet (an issue naming two games once)."""
+    rows, seen = [], set()
+    for row in issues:
+        if (row["shown"] == LOOKED_AT and KNOWN_LABEL not in row.get("labels", ()) and row["number"] not in seen
+                and closed_before(row, issues)):
+            seen.add(row["number"])
+            rows.append(row)
+    return rows
+
+
+def label_known(issue: dict, owner: str, name: str) -> bool:
+    """KNOWN_LABEL on an issue (store_label made it): True when it is on."""
+    url = f"https://api.github.com/repos/{owner}/{name}/issues/{issue['number']}/labels"
+    headers = {"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}", "Accept": "application/vnd.github+json"}
+    try:
+        urllib.request.urlopen(urllib.request.Request(url, method="POST", headers=headers, data=json.dumps(
+            {"labels": [KNOWN_LABEL]}).encode()), timeout=60)
+    except (urllib.error.URLError, OSError) as error:
+        print(f"::warning::compatibility list: #{issue['number']} couldn't be labelled '{KNOWN_LABEL}' "
+              f"({getattr(error, 'code', error)})")
+        return False
+    print(f"compatibility list: #{issue['number']} labelled '{KNOWN_LABEL}': an earlier issue closed its game")
+    return True
 
 
 def tell_issue(issue: dict, reports: list, owner: str, name: str) -> int:

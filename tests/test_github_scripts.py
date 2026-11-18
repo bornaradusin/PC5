@@ -14,7 +14,7 @@ import no_reply     # noqa: E402
 def issue(number, shown, created, closed="", game="BeamNG.drive", notes=""):
     return {"number": number, "game": game, "shown": shown, "created": created, "closed_at": closed,
             "url": f"https://github.com/o/r/issues/{number}", "notes": notes, "id": f"I{number}",
-            "open": not closed}
+            "open": not closed, "labels": []}
 
 
 def closed_before_keeps_the_row() -> None:
@@ -42,11 +42,27 @@ def closed_before_keeps_the_row() -> None:
     rest = [r for r in c.by_shown([new, old]) if r is not c.best_row([new, old])]
     assert c.best_row([new, old])["notes"] == "Chromium starts programs" and rest == [new]
 
+    # The new issue is labelled, once, with no comment; not one with a fix out, nor one labelled already.
+    second_game = dict(new, game="BeamNG.drive")   # the same issue's row for another game it names
+    assert c.to_label([new, old, second_game, ready]) == [new]
+    assert c.to_label([dict(new, labels=[c.KNOWN_LABEL]), old]) == [] and c.to_label([new, store]) == []
+    sent, real = [], c.urllib.request.urlopen
+    c.urllib.request.urlopen = lambda request, timeout=0: sent.append(request)
+    assert c.label_known(new, "o", "r") and len(sent) == 1
+    assert sent[0].full_url == "https://api.github.com/repos/o/r/issues/714/labels" and sent[0].get_method() == "POST"
+    assert c.json.loads(sent[0].data) == {"labels": [c.KNOWN_LABEL]} and len(c.KNOWN_ABOUT) <= 100
+
+    def refused(request, timeout=0):
+        raise c.urllib.error.HTTPError(request.full_url, 403, "no", {}, None)
+    c.urllib.request.urlopen = refused
+    assert not c.label_known(new, "o", "r")   # a warning, and labelled on the next run
+    c.urllib.request.urlopen = real
+
 
 def main() -> int:
     assert callable(compatibility_list.issue_reports) and "keep open" in no_reply.KEEP
     closed_before_keeps_the_row()
-    print("GitHub scripts passed: they load; an earlier issue that closed a game keeps its row")
+    print("GitHub scripts passed: they load; an earlier issue that closed a game keeps its row, the new one is labelled")
     return 0
 
 if __name__ == "__main__":
