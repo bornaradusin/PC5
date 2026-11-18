@@ -29,7 +29,11 @@ A game has one row (game_key: the same name but for case, punctuation, a leading
 Roman numerals; editions stay apart): the best of everything said about it, reports and issues
 alike, in SHOWN's order (works perfectly first), the newest of equals. A game that runs for
 someone can run, given the right copy or version, so a report that it works stands over an
-issue that it doesn't, and the row names the game's other reports and issues beside it. An open
+issue that it doesn't, and the row names the game's other reports and issues beside it. A game
+that an earlier issue was closed about as unable to run (not planned, or anti-cheat: CANT_RUN)
+keeps that row while a new issue about it is open, with the new one named beside it: reporting
+it again doesn't make it being looked at, until the new issue is closed or labelled "fix ready".
+An open
 issue whose game an earlier report lists as running gets one comment with what that report says
 (its settings may help).
 
@@ -84,6 +88,7 @@ CHEAT_ABOUT = "Runs anti-cheat (Easy Anti-Cheat, BattlEye...), which needs Windo
 CHEATED = "<!-- pc5-compatibility: anti-cheat -->"   # its comment when it closes such an issue
 STORED = "<!-- pc5-compatibility: needs steam -->"   # its comment when it closes such an issue (unchanged: it marks the old ones too)
 SHOWN = ["Works perfectly", "Playable with issues", FIX_READY, LOOKED_AT, NEEDS_TESTING, NEEDS_STORE, ANTI_CHEAT, UNRESOLVED]
+CANT_RUN = (UNRESOLVED, ANTI_CHEAT)   # an issue closed so about the game itself: a new issue doesn't undo it
 MARK = "<!-- pc5-compatibility: needs an issue -->"   # the Action's comment, so it is made once
 UNKNOWN = {}   # an issue that couldn't be looked up: the report waits for the next run
 LISTED = "<!-- pc5-compatibility: listed -->"   # the Action's comment once a report is in the list
@@ -232,7 +237,8 @@ def main() -> int:
     # that issue alone (a report posted meanwhile is turned away, one posted before waits); once
     # they are closed, by the newest one's state, or by the reports posted after it closed, which
     # name it beside them (a fixed one not at all). An open issue that earlier reports list as
-    # running is told once what they say.
+    # running is told once what they say. One about a game an earlier issue was closed about as
+    # unable to run doesn't change the game's row (best_row).
     store_label(owner, name)
     issues = issue_reports(owner, name, named)
     listed = {}
@@ -250,10 +256,10 @@ def main() -> int:
         games.setdefault(game_key(r["game"]), []).append(r)
     reports = []
     for group in games.values():
-        group = sorted(sorted(group, key=lambda r: r["created"], reverse=True), key=lambda r: SHOWN.index(r["shown"]))
-        best = group[0]
-        for other in group[1:]:
-            best.setdefault("earlier" if "votes" in other else "issues", []).append(other)
+        best = best_row(group)
+        for other in by_shown(group):
+            if other is not best:
+                best.setdefault("earlier" if "votes" in other else "issues", []).append(other)
         reports.append(best)
     if told_issues:
         print(f"::notice::compatibility list: told {told_issues} issue{'s' * (told_issues != 1)} what reports say")
@@ -544,6 +550,30 @@ def linked_issue(owner: str, name: str, text: str):
         return None
     return {"number": node["number"], "url": node["url"], "state": node["state"], "stateReason": node["stateReason"],
             "labels": [label["name"].casefold() for label in node["labels"]["nodes"]]}
+
+
+def by_shown(group: list) -> list:
+    """A game's reports and issues, best first (SHOWN's order), the newest of equals first."""
+    return sorted(sorted(group, key=lambda r: r["created"], reverse=True), key=lambda r: SHOWN.index(r["shown"]))
+
+
+def closed_before(row: dict, rows: list) -> list:
+    """The other issues about row's game closed as unable to run (CANT_RUN) before row was opened."""
+    key = game_key(row["game"])
+    return [r for r in rows if r.get("number") != row.get("number") and r["shown"] in CANT_RUN
+            and r.get("closed_at") and r["closed_at"] <= row["created"] and game_key(r["game"]) == key]
+
+
+def best_row(group: list) -> dict:
+    """A game's row: the best said of it. An issue still open about a game an earlier issue was
+    closed about as unable to run doesn't make it being looked at: the newest such earlier issue
+    keeps the row, and main() names the open one beside it."""
+    best = by_shown(group)[0]
+    if best["shown"] == LOOKED_AT:
+        earlier = closed_before(best, group)
+        if earlier:
+            return max(earlier, key=lambda r: r["closed_at"])
+    return best
 
 
 def tell_issue(issue: dict, reports: list, owner: str, name: str) -> int:
