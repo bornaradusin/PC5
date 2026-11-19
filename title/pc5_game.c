@@ -347,7 +347,8 @@ static const char *dx9_cab_arch(const char *name)
     return NULL;
 }
 
-int pc5_dx9_extract_cabs(const char *root, const char *cab_dir)
+/* pc5_dx9_extract_cabs, with *failed set when a cabinet couldn't be read or a DLL written. */
+static int dx9_extract_cabs(const char *root, const char *cab_dir, int *failed)
 {
     DIR *dir;
     struct dirent *entry;
@@ -360,18 +361,21 @@ int pc5_dx9_extract_cabs(const char *root, const char *cab_dir)
         struct stat st;
         if (!arch) continue;
         if (pc5_format(cab_path, sizeof(cab_path), "%s/%s", cab_dir, entry->d_name) ||
-            pc5_format(dst_dir, sizeof(dst_dir), "%s/pc5/dx9/%s", root, arch))
+            pc5_format(dst_dir, sizeof(dst_dir), "%s/pc5/dx9/%s", root, arch)) {
+            *failed = 1;
             continue;
+        }
         int fd = open(cab_path, O_RDONLY);
         if (fd < 0 || fstat(fd, &st) || !S_ISREG(st.st_mode)) {
             if (fd >= 0) close(fd);
+            else *failed = 1;
             continue;
         }
         Dx9CabIn in = { fd, (uint64_t)st.st_size };
         Dx9CabOut out = { dst_dir, -1, "", "", 0 };
         Pc5CabIn cab = { &in, in.size, dx9_cab_read };
         Pc5CabOut cb = { &out, dx9_cab_begin, dx9_cab_write, dx9_cab_end };
-        pc5_cab_extract(&cab, &cb, why, sizeof(why));
+        if (pc5_cab_extract(&cab, &cb, why, sizeof(why)) < 0) *failed = 1;
         if (out.fd >= 0) {
             close(out.fd);
             unlink(out.part);
@@ -383,17 +387,26 @@ int pc5_dx9_extract_cabs(const char *root, const char *cab_dir)
     return extracted;
 }
 
-/* Harvests DirectX helper CABs from common redist folders beside (or one level above) program. */
-static int dx9_harvest_game(const char *root, const char *program)
+int pc5_dx9_extract_cabs(const char *root, const char *cab_dir)
+{
+    int failed = 0;
+    return dx9_extract_cabs(root, cab_dir, &failed);
+}
+
+int pc5_prefix_dx9_cabs(const char *root, const char *prefix, const char *program)
 {
     static const char *const subs[] = {
         "", "_CommonRedist/DirectX/Jun2010", "_CommonRedist/DirectX", "Redist/DirectX/Jun2010",
         "Redist/DirectX", "redist/DirectX", "DirectX", "directx", "Support/DirectX",
     };
-    char base[PC5_PATH];
-    int total = 0;
+    char base[PC5_PATH], note[PC5_PATH], has[PC5_PATH], folder[PC5_PATH];
+    int total = 0, failed = 0;
 
-    if (!root || !root[0] || !program || !program[0]) return 0;
+    if (!root || !root[0] || !prefix || !prefix[0] || !strcmp(prefix, "default") || !program || !program[0]) return 0;
+    /* Looked for once per program: its path in the prefix's note means done. */
+    if (pc5_format(note, sizeof(note), "%s/prefixes/%s/pc5/dx9.txt", root, prefix)) return -1;
+    first_line(note, has, sizeof(has));
+    if (!strcmp(has, program)) return 0;
     pc5_copy(base, sizeof(base), program);
     char *slash = strrchr(base, '/');
     if (!slash) return 0;
@@ -404,12 +417,18 @@ static int dx9_harvest_game(const char *root, const char *program)
             if (subs[i][0] ? pc5_format(dir, sizeof(dir), "%s/%s", base, subs[i])
                            : pc5_format(dir, sizeof(dir), "%s", base))
                 continue;
-            total += pc5_dx9_extract_cabs(root, dir);
+            total += dx9_extract_cabs(root, dir, &failed);
         }
         slash = strrchr(base, '/');
         if (!slash || slash == base) break;
         *slash = 0;
     }
+    if (failed) return -1;   /* no note: looked for again at the next start */
+    char text[PC5_PATH + 2];
+    if (pc5_format(text, sizeof(text), "%s\n", program) ||
+        pc5_format(folder, sizeof(folder), "%s/prefixes/%s/pc5", root, prefix) || pc5_mkdirs(folder) ||
+        pc5_write_file(note, text, strlen(text)))
+        return -1;
     return total;
 }
 
@@ -1095,8 +1114,8 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         if (!pc5_game_program(root, prefix, started, sizeof(started))) {
             int installs = pc5_prefix_installs(root, prefix, started);
             if (installs) say(game, "PC5 prefix installer keys %s", installs > 0 ? "added" : "failed");
-            int harvested = dx9_harvest_game(root, started);
-            if (harvested > 0) say(game, "PC5 DirectX cabinets extracted %d", harvested);
+            int harvested = pc5_prefix_dx9_cabs(root, prefix, started);
+            if (harvested) say(game, "PC5 DirectX cabinets %s %d", harvested > 0 ? "extracted" : "failed", harvested > 0 ? harvested : 0);
         }
         int dx9 = pc5_prefix_dx9(root, prefix);
         if (dx9) say(game, "PC5 prefix DirectX files %s %d", dx9 > 0 ? "added" : "failed", dx9 > 0 ? dx9 : 0);

@@ -5821,6 +5821,28 @@ static void test_prefix_dxvk(void)
     CHECK(file_holds_text(file, "\"d3dx9_34\"=\"native,builtin\""), "override added to user.reg");
     CHECK(pc5_prefix_dx9(root, "game") == 0, "idempotent on second call");
     CHECK(pc5_prefix_dx9(root, "default") == 0, "default prefix untouched");
+
+    /* pc5_prefix_dx9_cabs: a game's DirectX cabinets looked for on its first start only */
+    char program[PC5_PATH], other[PC5_PATH];
+    path(program, sizeof(program), "%s/dx9-games/Ninja/bin/ninja.exe", work);
+    path(other, sizeof(other), "%s/dx9-games/Ninja/bin/launcher.exe", work);
+    write_text(program, "MZ");
+    write_text(other, "MZ");
+    path(file, sizeof(file), "%s/prefixes/game/pc5/dx9.txt", root);
+    CHECK(pc5_prefix_dx9_cabs(root, "game", program) == 0 && file_holds_text(file, program),
+          "a game without cabinets: none, and noted as looked for");
+    path(file, sizeof(file), "%s/dx9-games/Ninja/_CommonRedist/DirectX/Jun2010/Jun2010_d3dx9_43_x86.cab", work);
+    write_text(file, "not a cabinet");
+    CHECK(pc5_prefix_dx9_cabs(root, "game", program) == 0, "not looked for again at the next start");
+    path(file, sizeof(file), "%s/prefixes/game/pc5/dx9.txt", root);
+    CHECK(pc5_prefix_dx9_cabs(root, "game", other) == -1 && file_holds_text(file, program),
+          "another program looks again; a cabinet it can't read fails and isn't noted");
+    CHECK(pc5_prefix_dx9_cabs(root, "game", other) == -1, "so it's tried again at the next start");
+    path(file, sizeof(file), "%s/dx9-games/Ninja/_CommonRedist/DirectX/Jun2010/Jun2010_d3dx9_43_x86.cab", work);
+    unlink(file);
+    path(file, sizeof(file), "%s/prefixes/game/pc5/dx9.txt", root);
+    CHECK(pc5_prefix_dx9_cabs(root, "game", other) == 0 && file_holds_text(file, other), "and noted once it can be");
+    CHECK(pc5_prefix_dx9_cabs(root, "default", program) == 0, "default prefix untouched");
 }
 
 static void test_prefix_media(void)

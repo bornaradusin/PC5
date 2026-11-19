@@ -2064,9 +2064,9 @@ static int update_recover(const char *root, const char *name)
 /* ---- resets, the moves (pc5_reset_begin) ---------------------------------------------------- */
 
 /* PC5's notes on what a game's Windows has (pc5_game_begin's: its template's version, its DXVK,
- * the redistributables put in it and the folders they put in PATH): the old Windows', kept aside
- * with its registry, so the next start puts all that in the new one. */
-static const char *const reset_marks[] = { "template.txt", "dxvk.txt", "redist.txt", "path.txt" };
+ * the redistributables put in it, the folders they put in PATH, its DirectX cabinets looked for):
+ * the old Windows', kept aside with its registry, so the next start puts all that in the new one. */
+static const char *const reset_marks[] = { "template.txt", "dxvk.txt", "redist.txt", "path.txt", "dx9.txt" };
 static const char *const reset_registry[] = { "system.reg", "user.reg", "userdef.reg" };
 
 /* from (in the old Windows) moved to to (its place in the new one), the old one's over the

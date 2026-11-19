@@ -180,6 +180,12 @@ int pc5_prefix_dx9(const char *root, const char *prefix);
 /* Extracts any missing Microsoft DirectX helper DLLs from *_x86.cab / *_x64.cab files inside
  * cab_dir into root/pc5/dx9/{syswow64,system32}. Returns the number of DLLs extracted, or 0. */
 int pc5_dx9_extract_cabs(const char *root, const char *cab_dir);
+/* The DirectX *_x86.cab / *_x64.cab files a game brings (beside program, the game's program,
+ * or one folder up, in its DirectX redistributable folders) extracted as pc5_dx9_extract_cabs
+ * does, on the game's first start only: done is noted in the prefix's pc5/dx9.txt with the
+ * program's path, so another program, or Reset Windows, looks again. The number extracted,
+ * 0 when done already or none, -1 on a failure (tried again at the next start). */
+int pc5_prefix_dx9_cabs(const char *root, const char *prefix, const char *program);
 /* .NET (Wine Mono, the app's pc5/mono): a prefix made before the app had it gets what its
  * installer adds to system.reg (pc5/prefix-dotnet.reg) and C:\windows\Microsoft.NET; and
  * every prefix's Wine is told where the runtime is (HKCU\Software\Wine\Mono RuntimePath:
