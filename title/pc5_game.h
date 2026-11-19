@@ -169,6 +169,17 @@ int pc5_prefix_system(const char *root, const char *prefix, const char *app);
  * 1 replaced, 0 already the app's (or nothing to do), -1 when it couldn't be
  * done (tried again at the next start). */
 int pc5_prefix_dxvk(const char *root, const char *prefix, const char *app);
+/* User-supplied Microsoft DirectX helper DLLs (d3dx9_*, d3dx10_*, d3dx11_*, d3dcompiler_*)
+ * placed under root/pc5/dx9/syswow64 (32-bit) and root/pc5/dx9/system32 (64-bit), or
+ * extracted automatically from DirectX *_x86.cab / *_x64.cab files in root/pc5/dx9 or a
+ * game's DirectX redistributable folder, are copied into the prefix's Windows folders and
+ * registered as native,builtin in user.reg so every game can use them without duplicating
+ * files per game. Returns the number copied or registered, 0 when nothing needed changing,
+ * or -1 on a failure. */
+int pc5_prefix_dx9(const char *root, const char *prefix);
+/* Extracts any missing Microsoft DirectX helper DLLs from *_x86.cab / *_x64.cab files inside
+ * cab_dir into root/pc5/dx9/{syswow64,system32}. Returns the number of DLLs extracted, or 0. */
+int pc5_dx9_extract_cabs(const char *root, const char *cab_dir);
 /* .NET (Wine Mono, the app's pc5/mono): a prefix made before the app had it gets what its
  * installer adds to system.reg (pc5/prefix-dotnet.reg) and C:\windows\Microsoft.NET; and
  * every prefix's Wine is told where the runtime is (HKCU\Software\Wine\Mono RuntimePath:
