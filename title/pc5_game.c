@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 /* PC5 in a game's process (pc5_game.h). */
 #include "pc5_game.h"
+#include "pc5_cab.h"
 #include "pc5_i18n.h"
 #include "pc5_controls.h"
 #include "pc5_library.h"
@@ -246,13 +247,180 @@ static int dx9_runtime_dll(const char *stem)
     return 0;
 }
 
+typedef struct Dx9CabIn {
+    int fd;
+    uint64_t size;
+} Dx9CabIn;
+
+static int dx9_cab_read(void *context, uint64_t offset, void *out, size_t size)
+{
+    Dx9CabIn *in = context;
+    uint8_t *p = out;
+    if (offset > in->size || size > in->size - offset) return -1;
+    while (size) {
+        ssize_t got = pread(in->fd, p, size, (off_t)offset);
+        if (got <= 0) return -1;
+        p += (size_t)got;
+        offset += (uint64_t)got;
+        size -= (size_t)got;
+    }
+    return 0;
+}
+
+typedef struct Dx9CabOut {
+    const char *dst_dir;
+    int fd;
+    char to[PC5_PATH];
+    char part[PC5_PATH];
+    int extracted;
+} Dx9CabOut;
+
+static int dx9_cab_begin(void *context, const char *name, uint32_t size)
+{
+    Dx9CabOut *out = context;
+    const char *base = name;
+    char stem[48];
+
+    (void)size;
+    for (const char *p = name; *p; p++)
+        if (*p == '/' || *p == '\\') base = p + 1;
+    size_t n = strlen(base);
+    if (n < 5 || n - 4 >= sizeof(stem) || !pc5_ends_with_ci(base, ".dll")) return 0;
+    for (size_t i = 0; i < n - 4; i++) {
+        char c = base[i];
+        stem[i] = (char)((c >= 'A' && c <= 'Z') ? c + 32 : c);
+    }
+    stem[n - 4] = 0;
+    if (!dx9_runtime_dll(stem)) return 0;
+    if (pc5_format(out->to, sizeof(out->to), "%s/%s.dll", out->dst_dir, stem) ||
+        pc5_format(out->part, sizeof(out->part), "%s.pc5-part", out->to))
+        return -1;
+    if (pc5_is_file(out->to)) return 0;
+    if (pc5_mkdirs(out->dst_dir)) return -1;
+    out->fd = open(out->part, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    return out->fd < 0 ? -1 : 1;
+}
+
+static int dx9_cab_write(void *context, const void *data, size_t size)
+{
+    Dx9CabOut *out = context;
+    const uint8_t *p = data;
+    while (size) {
+        ssize_t put = write(out->fd, p, size);
+        if (put <= 0) return -1;
+        p += (size_t)put;
+        size -= (size_t)put;
+    }
+    return 0;
+}
+
+static int dx9_cab_end(void *context)
+{
+    Dx9CabOut *out = context;
+    int ok = out->fd >= 0 && !close(out->fd);
+    out->fd = -1;
+    if (!ok || rename(out->part, out->to)) {
+        unlink(out->part);
+        return -1;
+    }
+    out->extracted++;
+    return 0;
+}
+
+/* "syswow64" for a DirectX helper *_x86.cab, "system32" for *_x64.cab, NULL otherwise. */
+static const char *dx9_cab_arch(const char *name)
+{
+    static const char *const families[] = { "d3dcompiler_", "d3dx9_", "d3dx10_", "d3dx11_" };
+    char low[128];
+    size_t n = strlen(name);
+    if (n < 12 || n >= sizeof(low)) return NULL;
+    for (size_t i = 0; i <= n; i++) {
+        char c = name[i];
+        low[i] = (char)((c >= 'A' && c <= 'Z') ? c + 32 : c);
+    }
+    int match = 0;
+    for (size_t i = 0; i < sizeof(families) / sizeof(families[0]); i++)
+        if (strstr(low, families[i])) { match = 1; break; }
+    if (!match) return NULL;
+    if (pc5_ends_with_ci(low, "_x86.cab")) return "syswow64";
+    if (pc5_ends_with_ci(low, "_x64.cab")) return "system32";
+    return NULL;
+}
+
+int pc5_dx9_extract_cabs(const char *root, const char *cab_dir)
+{
+    DIR *dir;
+    struct dirent *entry;
+    int extracted = 0;
+
+    if (!root || !root[0] || !cab_dir || !cab_dir[0] || !(dir = opendir(cab_dir))) return 0;
+    while ((entry = readdir(dir))) {
+        const char *arch = dx9_cab_arch(entry->d_name);
+        char cab_path[PC5_PATH], dst_dir[PC5_PATH], why[PC5_ERROR] = "";
+        struct stat st;
+        if (!arch) continue;
+        if (pc5_format(cab_path, sizeof(cab_path), "%s/%s", cab_dir, entry->d_name) ||
+            pc5_format(dst_dir, sizeof(dst_dir), "%s/pc5/dx9/%s", root, arch))
+            continue;
+        int fd = open(cab_path, O_RDONLY);
+        if (fd < 0 || fstat(fd, &st) || !S_ISREG(st.st_mode)) {
+            if (fd >= 0) close(fd);
+            continue;
+        }
+        Dx9CabIn in = { fd, (uint64_t)st.st_size };
+        Dx9CabOut out = { dst_dir, -1, "", "", 0 };
+        Pc5CabIn cab = { &in, in.size, dx9_cab_read };
+        Pc5CabOut cb = { &out, dx9_cab_begin, dx9_cab_write, dx9_cab_end };
+        pc5_cab_extract(&cab, &cb, why, sizeof(why));
+        if (out.fd >= 0) {
+            close(out.fd);
+            unlink(out.part);
+        }
+        close(fd);
+        extracted += out.extracted;
+    }
+    closedir(dir);
+    return extracted;
+}
+
+/* Harvests DirectX helper CABs from common redist folders beside (or one level above) program. */
+static int dx9_harvest_game(const char *root, const char *program)
+{
+    static const char *const subs[] = {
+        "", "_CommonRedist/DirectX/Jun2010", "_CommonRedist/DirectX", "Redist/DirectX/Jun2010",
+        "Redist/DirectX", "redist/DirectX", "DirectX", "directx", "Support/DirectX",
+    };
+    char base[PC5_PATH];
+    int total = 0;
+
+    if (!root || !root[0] || !program || !program[0]) return 0;
+    pc5_copy(base, sizeof(base), program);
+    char *slash = strrchr(base, '/');
+    if (!slash) return 0;
+    *slash = 0;
+    for (int up = 0; up < 2; up++) {
+        for (size_t i = 0; i < sizeof(subs) / sizeof(subs[0]); i++) {
+            char dir[PC5_PATH];
+            if (subs[i][0] ? pc5_format(dir, sizeof(dir), "%s/%s", base, subs[i])
+                           : pc5_format(dir, sizeof(dir), "%s", base))
+                continue;
+            total += pc5_dx9_extract_cabs(root, dir);
+        }
+        slash = strrchr(base, '/');
+        if (!slash || slash == base) break;
+        *slash = 0;
+    }
+    return total;
+}
+
 int pc5_prefix_dx9(const char *root, const char *prefix)
 {
     static const char *const folders[] = { "system32", "syswow64" };
-    char user[PC5_PATH];
+    char user[PC5_PATH], cab_dir[PC5_PATH];
     int user_ready = 0, changed = 0, failed = 0;
 
     if (!root || !root[0] || !prefix || !prefix[0] || !strcmp(prefix, "default")) return 0;
+    if (!pc5_format(cab_dir, sizeof(cab_dir), "%s/pc5/dx9", root)) pc5_dx9_extract_cabs(root, cab_dir);
     if (pc5_format(user, sizeof(user), "%s/prefixes/%s/user.reg", root, prefix)) return -1;
     user_ready = pc5_is_file(user);
 
@@ -910,8 +1078,6 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         if (system) say(game, "PC5 prefix system files %s %d", system > 0 ? "added" : "failed", system > 0 ? system : 0);
         int dxvk = pc5_prefix_dxvk(root, prefix, app);
         if (dxvk) say(game, "PC5 prefix DXVK %s", dxvk > 0 ? "updated" : "update failed");
-        int dx9 = pc5_prefix_dx9(root, prefix);
-        if (dx9) say(game, "PC5 prefix DirectX files %s %d", dx9 > 0 ? "added" : "failed", dx9 > 0 ? dx9 : 0);
         int dotnet = pc5_prefix_dotnet(root, prefix, app);
         if (dotnet) say(game, "PC5 prefix .NET %s", dotnet > 0 ? "updated" : "update failed");
         int fonts = pc5_prefix_fonts(root, prefix, app);
@@ -929,7 +1095,11 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         if (!pc5_game_program(root, prefix, started, sizeof(started))) {
             int installs = pc5_prefix_installs(root, prefix, started);
             if (installs) say(game, "PC5 prefix installer keys %s", installs > 0 ? "added" : "failed");
+            int harvested = dx9_harvest_game(root, started);
+            if (harvested > 0) say(game, "PC5 DirectX cabinets extracted %d", harvested);
         }
+        int dx9 = pc5_prefix_dx9(root, prefix);
+        if (dx9) say(game, "PC5 prefix DirectX files %s %d", dx9 > 0 ? "added" : "failed", dx9 > 0 ? dx9 : 0);
     }
     /* Frame generation and the aspect ratio, which libvulkan.prx reads from the
      * environment (the picture of a game drawn on the CPU follows its profile's
