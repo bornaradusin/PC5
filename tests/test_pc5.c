@@ -5804,7 +5804,7 @@ static void test_prefix_dxvk(void)
     CHECK(!pc5_read_file(file, &text, 4096) && !memcmp(text.data, "2.6.2", 5), "and isn't noted");
     pc5_buf_free(&text);
 
-    /* pc5_prefix_dx9: user-supplied d3dx9_*/d3dcompiler_* DLLs copied and registered in user.reg */
+    /* pc5_prefix_dx9: user-supplied d3dx9 and d3dcompiler DLLs copied and registered in user.reg */
     CHECK(pc5_prefix_dx9(root, "game") == 0, "no pc5/dx9 folder yet: nothing done");
     path(file, sizeof(file), "%s/pc5/dx9/syswow64/D3DX9_34.DLL", root);
     write_text(file, "dx9-34-x86");
