@@ -598,6 +598,8 @@ controller's speaker.
 | 356 | A game showing a smaller display mode and a 2D game drawn with GDI (Sacred Underworld, Heroes of Might and Magic IV in 2D) (regression check for 355) | the picture and the pointer's reach as in 2.4.0 | |
 | 357 | Heroes of Might and Magic IV with Graphics mode › 2D only (1024x768): its menu and a battle | the whole picture in the middle of the TV, nothing cut off on the left, no black on the right; the pointer reaches every edge | |
 | 358 | Mini Ninjas from start to where its gameplay begins | as before (its effects still fail) | `Saved the failed effect to ...failed-effects\\effect-N.log` up to eight times; the game's log zip has `game/users/.../AppData/Local/PC5/failed-effects/effect-N.log`, each with its errors and the numbered effect |
+| 359 | Mini Ninjas (a clean copy, its `_CommonRedist/DirectX` folder beside it) with `WINE_PS5_READ_AHEAD=0` in its `env.txt`: from start through Level 1 | it starts, Level 1 loads and plays with no crash | `PC5 DirectX cabinets extracted N` on its first start only, `PC5 prefix DirectX files added N`; the game's prefix has `pc5/dx9.txt` |
+| 360 | A DirectX 9 game that ran before 2.4.3 and has its own DirectX redist folder (regression check for 359) | plays as in 2.4.2 | |
 
 ## Custom media navigation changes (pending on PS5)
 
