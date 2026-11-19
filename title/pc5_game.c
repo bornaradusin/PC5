@@ -234,6 +234,94 @@ static int append_text(const char *path, const char *text)
     return ok ? 0 : -1;
 }
 
+/* 1 when stem (lower case, without .dll) is a Microsoft DirectX helper DLL that Wine's
+ * builtin version lacks parts of (same families as pc5_library.c's own_dll). */
+static int dx9_runtime_dll(const char *stem)
+{
+    static const char *const families[] = { "d3dcompiler_", "d3dx9_", "d3dx10_", "d3dx11_" };
+    for (size_t i = 0; i < sizeof(families) / sizeof(families[0]); i++) {
+        size_t n = strlen(families[i]);
+        if (!strncmp(stem, families[i], n) && stem[n] >= '0' && stem[n] <= '9') return 1;
+    }
+    return 0;
+}
+
+int pc5_prefix_dx9(const char *root, const char *prefix)
+{
+    static const char *const folders[] = { "system32", "syswow64" };
+    char user[PC5_PATH];
+    int user_ready = 0, changed = 0, failed = 0;
+
+    if (!root || !root[0] || !prefix || !prefix[0] || !strcmp(prefix, "default")) return 0;
+    if (pc5_format(user, sizeof(user), "%s/prefixes/%s/user.reg", root, prefix)) return -1;
+    user_ready = pc5_is_file(user);
+
+    for (size_t f = 0; f < 2; f++) {
+        char src_dir[PC5_PATH], dst_dir[PC5_PATH];
+        DIR *dir;
+        struct dirent *entry;
+
+        if (pc5_format(src_dir, sizeof(src_dir), "%s/pc5/dx9/%s", root, folders[f]) ||
+            pc5_format(dst_dir, sizeof(dst_dir), "%s/prefixes/%s/drive_c/windows/%s", root, prefix, folders[f])) {
+            failed = 1;
+            continue;
+        }
+        if (!(dir = opendir(src_dir))) continue;
+        while ((entry = readdir(dir))) {
+            char stem[48], from[PC5_PATH], to[PC5_PATH], part[PC5_PATH];
+            struct stat st_from, st_to;
+            size_t n = strlen(entry->d_name);
+
+            if (n < 5 || n - 4 >= sizeof(stem) || !pc5_ends_with_ci(entry->d_name, ".dll")) continue;
+            for (size_t i = 0; i < n - 4; i++) {
+                char c = entry->d_name[i];
+                stem[i] = (char)((c >= 'A' && c <= 'Z') ? c + 32 : c);
+            }
+            stem[n - 4] = 0;
+            if (!dx9_runtime_dll(stem)) continue;
+
+            if (pc5_format(from, sizeof(from), "%s/%s", src_dir, entry->d_name) ||
+                pc5_format(to, sizeof(to), "%s/%s.dll", dst_dir, stem) ||
+                pc5_format(part, sizeof(part), "%s.pc5-part", to)) {
+                failed = 1;
+                continue;
+            }
+            if (stat(from, &st_from) || !S_ISREG(st_from.st_mode)) continue;
+            if (stat(to, &st_to) || st_to.st_size != st_from.st_size) {
+                if (pc5_mkdirs(dst_dir) || copy_file(from, part) || rename(part, to)) {
+                    unlink(part);
+                    failed = 1;
+                    continue;
+                }
+                changed++;
+            }
+            if (user_ready) {
+                char needle[80], reg[160];
+                if (pc5_format(needle, sizeof(needle), "\"%s\"=", stem) ||
+                    pc5_format(reg, sizeof(reg), "\n[Software\\\\Wine\\\\DllOverrides]\n\"%s\"=\"native,builtin\"\n",
+                               stem)) {
+                    failed = 1;
+                    continue;
+                }
+                int held = file_holds(user, needle);
+                if (held < 0) {
+                    failed = 1;
+                    continue;
+                }
+                if (!held) {
+                    if (append_text(user, reg)) {
+                        failed = 1;
+                        continue;
+                    }
+                    changed++;
+                }
+            }
+        }
+        closedir(dir);
+    }
+    return failed ? -1 : changed;
+}
+
 /* The app's file at from appended to the file at to: 0, or -1 */
 static int append_file(const char *from, const char *to)
 {
@@ -753,10 +841,10 @@ int pc5_game_env_name_ok(const char *name)
     /* ... except prospero-win's per-frame profile, for finding what slows a game down
      * (docs/cs-thread-profile.md), whose switches only add lines to the log, and how long a
      * wait spins before it sleeps (Wine patch 0998; 0 off), and how long the pointer stays on
-     * screen unused (Wine patch 0999; 0 always). */
+     * screen unused (Wine patch 0999; 0 always), and turning off read-ahead (Wine patch 1001; 0 off). */
     static const char *const profile[] = { "PW_NATIVE_PROFILE", "PW_VK_RADV_PROFILE", "PW_VK_RADV_EVENT_US",
                                            "PW_NATIVE_SLOW_SYSCALL_US", "WINE_PS5_SYNC_SPIN_US",
-                                           "WINE_PS5_CURSOR_IDLE_MS" };
+                                           "WINE_PS5_CURSOR_IDLE_MS", "WINE_PS5_READ_AHEAD" };
     for (size_t i = 0; i < sizeof(profile) / sizeof(profile[0]); i++)
         if (!strcmp(name, profile[i])) return 1;
     if (!name[0] || strlen(name) > 64 || !((name[0] >= 'A' && name[0] <= 'Z') || (name[0] >= 'a' && name[0] <= 'z') ||
@@ -822,6 +910,8 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         if (system) say(game, "PC5 prefix system files %s %d", system > 0 ? "added" : "failed", system > 0 ? system : 0);
         int dxvk = pc5_prefix_dxvk(root, prefix, app);
         if (dxvk) say(game, "PC5 prefix DXVK %s", dxvk > 0 ? "updated" : "update failed");
+        int dx9 = pc5_prefix_dx9(root, prefix);
+        if (dx9) say(game, "PC5 prefix DirectX files %s %d", dx9 > 0 ? "added" : "failed", dx9 > 0 ? dx9 : 0);
         int dotnet = pc5_prefix_dotnet(root, prefix, app);
         if (dotnet) say(game, "PC5 prefix .NET %s", dotnet > 0 ? "updated" : "update failed");
         int fonts = pc5_prefix_fonts(root, prefix, app);

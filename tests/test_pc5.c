@@ -5421,7 +5421,8 @@ static void test_java(void)
         CHECK(!pc5_game_env_name_ok("WineDllOverrides") && !pc5_game_env_name_ok("pw_x") && !pc5_game_env_name_ok("PATH") &&
               pc5_game_env_name_ok("SteamAppId") && pc5_game_env_name_ok("_X1") &&
               pc5_game_env_name_ok("PW_NATIVE_PROFILE") && pc5_game_env_name_ok("PW_VK_RADV_PROFILE") &&
-              pc5_game_env_name_ok("WINE_PS5_SYNC_SPIN_US") && !pc5_game_env_name_ok("WINEDEBUG") &&
+              pc5_game_env_name_ok("WINE_PS5_SYNC_SPIN_US") && pc5_game_env_name_ok("WINE_PS5_READ_AHEAD") &&
+              !pc5_game_env_name_ok("WINEDEBUG") &&
               !pc5_game_env_name_ok("PW_VK_BATCH"), "the names it takes");
         unsetenv("MEMORIES_NO_MONITOR");
         unsetenv("GAME_LOG");
@@ -5802,6 +5803,24 @@ static void test_prefix_dxvk(void)
     path(file, sizeof(file), "%s/prefixes/game/pc5/dxvk.txt", root);
     CHECK(!pc5_read_file(file, &text, 4096) && !memcmp(text.data, "2.6.2", 5), "and isn't noted");
     pc5_buf_free(&text);
+
+    /* pc5_prefix_dx9: user-supplied d3dx9_*/d3dcompiler_* DLLs copied and registered in user.reg */
+    CHECK(pc5_prefix_dx9(root, "game") == 0, "no pc5/dx9 folder yet: nothing done");
+    path(file, sizeof(file), "%s/pc5/dx9/syswow64/D3DX9_34.DLL", root);
+    write_text(file, "dx9-34-x86");
+    path(file, sizeof(file), "%s/pc5/dx9/syswow64/d3d9.dll", root);
+    write_text(file, "not-a-helper");
+    path(file, sizeof(file), "%s/prefixes/game/user.reg", root);
+    write_text(file, "WINE REGISTRY Version 2\n");
+    CHECK(pc5_prefix_dx9(root, "game") == 2, "copied d3dx9_34.dll and registered override");
+    path(file, sizeof(file), "%s/prefixes/game/drive_c/windows/syswow64/d3dx9_34.dll", root);
+    CHECK(file_is(file, "dx9-34-x86"), "d3dx9_34.dll copied in lower case");
+    path(file, sizeof(file), "%s/prefixes/game/drive_c/windows/syswow64/d3d9.dll", root);
+    CHECK(!file_is(file, "not-a-helper"), "non-helper d3d9.dll ignored");
+    path(file, sizeof(file), "%s/prefixes/game/user.reg", root);
+    CHECK(file_holds_text(file, "\"d3dx9_34\"=\"native,builtin\""), "override added to user.reg");
+    CHECK(pc5_prefix_dx9(root, "game") == 0, "idempotent on second call");
+    CHECK(pc5_prefix_dx9(root, "default") == 0, "default prefix untouched");
 }
 
 static void test_prefix_media(void)
