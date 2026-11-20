@@ -608,6 +608,8 @@ controller's speaker.
 | 366 | Frame rate cap 40 with 120 Hz output on (a 120 Hz TV) | a steady 40 fps; with Frame generation on, no cap (`fps_cap=0`) | |
 | 367 | Uninstall a game with Keep saves, then install it again with Put them back | its saves, progress and options are back; the kept folder in `saves/` has no `drive_c/windows`, `pc5-cache` or `system.reg` | |
 | 368 | A bgfx game set up to draw with OpenGL (its program has bgfx's `glcontext_wgl`), installed before 2.4.4 | it starts with OpenGL (Mesa Zink) instead of stopping at `ChoosePixelFormat failed` | `zink provider=ok`; `prefixes/<game>/pc5/opengl.txt` says opengl |
+| 369 | GIGASWORD, Controller: Xbox controller, the controller on when it starts | it opens past its first window instead of closing at once | no page fault at `GigaSword.exe+0x3c1d`; with `+ps5drv`, no `controller connected or disconnected` line at the start |
+| 370 | An Unreal Engine 4 game: turn the controller off mid-game, then on again (regression check for 369) | the game finds the controller again, as in 2.4.4 | with `+ps5drv`, `controller connected or disconnected (N): WM_DEVICECHANGE` at the off and the on |
 
 ## Custom media navigation changes (pending on PS5)
 

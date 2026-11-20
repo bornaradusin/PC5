@@ -1,0 +1,74 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Fri, 20 Nov 2026 13:56:27 +0000
+Subject: [PATCH 162/162] PC5: the controllers a game starts with don't tell
+ its windows that devices changed (Wine patch 1035)
+
+The controller the player holds when the game starts was counted as a connect, so every game with a controller got WM_DEVICECHANGE (DBT_DEVNODES_CHANGED, no data) at its first window, which Windows never sends; a game that reads the message's data crashed at once. The controllers connected at the driver's first look are now where its count starts, and only a connect or disconnect after that is announced.
+---
+ ...ame-starts-with-are-no-device-change.patch | 53 +++++++++++++++++++
+ 1 file changed, 53 insertions(+)
+ create mode 100644 wine/patches/1035-win32u-ps5-the-controllers-a-game-starts-with-are-no-device-change.patch
+
+diff --git a/wine/patches/1035-win32u-ps5-the-controllers-a-game-starts-with-are-no-device-change.patch b/wine/patches/1035-win32u-ps5-the-controllers-a-game-starts-with-are-no-device-change.patch
+new file mode 100644
+index 0000000..f1614a8
+--- /dev/null
++++ b/wine/patches/1035-win32u-ps5-the-controllers-a-game-starts-with-are-no-device-change.patch
+@@ -0,0 +1,53 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Fri, 20 Nov 2026 14:00:00 +0000
++Subject: [PATCH] win32u: PS5: the controllers a game starts with are no device change.
++
++Patch 0984 posts WM_DEVICECHANGE with DBT_DEVNODES_CHANGED to every
++top-level window when the title's controller connects or disconnects.
++Its count of changes starts at 0, and the controller the player holds
++when the game starts is its first connect, so every game with a
++controller got the message at its first window, when Windows sends
++nothing. GIGASWORD's window reads the message's data, which
++DBT_DEVNODES_CHANGED doesn't have (lParam 0), and crashed at once,
++reading address 0, in both graphics modes.
++
++The count at the driver's first look is now where it starts: the
++controllers connected then are the ones the game starts with, and only
++a connect or disconnect after that is announced, as Windows announces a
++device added or removed while a program runs. A game whose controller
++goes off and comes back while it runs (the Unreal Engine 4 game patch
++0984 was made for) is told, as before.
++---
++ dlls/win32u/ps5drv.c | 12 +++++++++---
++ 1 file changed, 9 insertions(+), 3 deletions(-)
++
++diff --git a/dlls/win32u/ps5drv.c b/dlls/win32u/ps5drv.c
++index 904b854..898fd92 100644
++--- a/dlls/win32u/ps5drv.c
+++++ b/dlls/win32u/ps5drv.c
++@@ -1010,15 +1010,21 @@ static BOOL dialog_key( HWND hwnd, const struct ps5_input *event )
++  * (pw_wine_pad_changes). Windows then tells every top-level window that
++  * devices changed, through the plug and play service a title cannot run.
++  * Some games (Unreal Engine 4) only look for a lost XInput controller
++- * again when told. */
+++ * again when told. The controllers connected at the first look are the
+++ * ones the game starts with, which Windows announces to no one: counted as
+++ * a change, they told every game at its first window that devices changed,
+++ * and one that reads the message's data without checking for it crashed. */
++ static void notify_pad_changes(void)
++ {
++     static UINT32 seen;
++-    UINT32 changes;
+++    static LONG looked;
+++    UINT32 changes, before;
++ 
++     if (!pad_changes) return;
++     changes = pad_changes();
++-    if (__atomic_exchange_n( &seen, changes, __ATOMIC_RELAXED ) == changes) return;
+++    before = __atomic_exchange_n( &seen, changes, __ATOMIC_RELAXED );
+++    if (!__atomic_exchange_n( &looked, 1, __ATOMIC_RELAXED )) return;
+++    if (before == changes) return;
++     TRACE( "controller connected or disconnected (%u): WM_DEVICECHANGE\n", changes );
++     NtUserPostMessage( HWND_BROADCAST, WM_DEVICECHANGE, DBT_DEVNODES_CHANGED, 0 );
++ }
+-- 
+2.43.0
+
