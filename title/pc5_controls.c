@@ -286,6 +286,9 @@ static void controls_parse(char *data, Pc5Controls *controls)
             if (!strcmp(value, "on")) controls->frame_generation = 1;
             else if (!strcmp(value, "mihawkgen")) controls->frame_generation = 2;
             else if (!strcmp(value, "off")) controls->frame_generation = 0;
+        } else if (!strcmp(name, "frame_rate_cap")) {
+            if (!strcmp(value, "off")) controls->fps_cap = 0;
+            else if (!strcmp(value, "30") || !strcmp(value, "40") || !strcmp(value, "60")) controls->fps_cap = atoi(value);
         } else if (!strcmp(name, "resolution")) {
             if (!strcmp(value, "1080p")) controls->resolution = 0;
             else if (!strcmp(value, "1440p")) controls->resolution = 1;
@@ -369,6 +372,7 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                                    "# Button mapping, then Touchpad: button (one button), zones (halves and swipes) or mouse\n"
                                    "touchpad_mode = %s\n"
                                    "# Triangle on the game, then Frame generation: off, on (60 -> 120, or 30 -> 60 at 60 Hz) or mihawkgen (40 -> 120)\nframe_generation = %s\n"
+                                   "# Triangle on the game, then Frame rate cap: off, 30, or 40 and 60 with 120 Hz output\nframe_rate_cap = %s\n"
                                    "# Triangle on a 32-bit game, then Game memory: auto (as Windows) or 4gb\nmemory = %s\n"
                                    "# Triangle on the game, then Graphics memory: auto, full (Maximum), or 2gb, 3gb, 5gb, 6gb (a 64-bit game), 512mb, 1gb, 3gb (a 32-bit one)\n"
                                    "video_memory = %s\n"
@@ -389,6 +393,7 @@ int pc5_controls_save(const char *root, const char *id, const Pc5Controls *contr
                                 ? control_keys[controls->slow_button] : "none",
                             controls->slow_percent, touch_mode_keys[controls->touch_mode >= 0 && controls->touch_mode < 3 ? controls->touch_mode : 0],
                             controls->frame_generation == 2 ? "mihawkgen" : controls->frame_generation ? "on" : "off",
+                            controls->fps_cap == 30 ? "30" : controls->fps_cap == 40 ? "40" : controls->fps_cap == 60 ? "60" : "off",
                             controls->memory_4gb ? "4gb" : "auto",
                             pc5_video_memory_key(controls),
                             controls->resolution == 2 ? "2160p" : controls->resolution == 1 ? "1440p" : "1080p",

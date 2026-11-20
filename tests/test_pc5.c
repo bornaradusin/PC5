@@ -760,6 +760,15 @@ static void test_pe(void)
         write_text(pck, "GDPC");
         CHECK(pc5_pe_godot(godot), "a program with its .pck beside it");
         CHECK(!pc5_pe_godot(ue), "nor an Unreal one");
+        CHECK(pc5_pe_draws_opengl(godot), "a Godot game draws with OpenGL");
+        /* A bgfx program with its OpenGL context code: OpenGL, whatever it names. */
+        char bgfx[PC5_PATH];
+        path(bgfx, sizeof(bgfx), "%s/bgfx/game.exe", work);
+        write_text(bgfx, "MZ ... d3d11.dll d3d12.dll opengl32.dll ... src\\glcontext_wgl.cpp ...");
+        CHECK(pc5_pe_draws_opengl(bgfx), "a bgfx program set up for OpenGL");
+        write_text(bgfx, "MZ ... d3d11.dll d3d12.dll ... src\\renderer_d3d11.cpp ...");
+        CHECK(!pc5_pe_draws_opengl(bgfx), "not a bgfx program without OpenGL");
+        CHECK(!pc5_pe_draws_opengl(ue), "nor an Unreal one");
     }
     path(file, sizeof(file), "%s/game64.exe", programs);
     CHECK(!pc5_pe_read(file, &pe), "game64 reads");
@@ -2396,7 +2405,13 @@ static void test_keep_saves(void)
     path(file, sizeof(file), "%s/%s/drive_c/users/prospero/Saved Games/NeonDrift/slot1.sav", prefixes, id);
     write_text(file, "my save");
     path(file, sizeof(file), "%s/%s/user.reg", prefixes, id);
-    write_text(file, "the game's settings");
+    write_text(file, "WINE REGISTRY Version 2\n;; All keys relative to \\\\User\\\\S-1-5-21-0-0-0-1000\n\n"
+                     "[Software\\\\Wine\\\\Direct3D] 1700000000\n\"renderer\"=\"gl\"\n\n"
+                     "[Software\\\\NeonDrift\\\\Game] 1700000000\n#time=1\n\"Slot\"=dword:00000001\n");
+    path(file, sizeof(file), "%s/%s/drive_c/ProgramData/NeonDrift/profile.dat", prefixes, id);
+    write_text(file, "a profile");
+    path(file, sizeof(file), "%s/%s/pc5-cache/radv/cache.bin", prefixes, id);
+    write_text(file, "shaders");
     path(file, sizeof(file), "%s/%s/pc5/controls.txt", prefixes, id);
     write_text(file, "mode = keyboard\n");
     /* Its pictures (the install saved its cover and background.txt), and the player's own cover elsewhere. */
@@ -2427,6 +2442,19 @@ static void test_keep_saves(void)
     CHECK(file_is(file, "my save"), "the save kept");
     path(file, sizeof(file), "%s/saves/%s/drive_c/Games", root, id);
     CHECK(!pc5_exists(file), "without the game");
+    {
+        /* Only the saves: Windows itself, the shader cache and the rest of the registry go. */
+        static const char *const gone[] = { "drive_c/windows", "drive_c/Program Files (x86)", "dosdevices", "pc5-cache",
+                                            "system.reg", "userdef.reg" };
+        int left = 0;
+        for (size_t g = 0; g < sizeof(gone) / sizeof(gone[0]); g++) {
+            path(file, sizeof(file), "%s/saves/%s/%s", root, id, gone[g]);
+            left += pc5_exists(file);
+        }
+        CHECK(!left, "only its saves kept: %d left", left);
+        path(file, sizeof(file), "%s/saves/%s/drive_c/ProgramData/NeonDrift/profile.dat", root, id);
+        CHECK(file_is(file, "a profile"), "ProgramData kept");
+    }
     path(file, sizeof(file), "%s/saves/%s/pc5-game/save/slot2.sav", root, id);
     CHECK(file_is(file, "in its folder"), "the save in the game's folder kept");
     path(file, sizeof(file), "%s/saves/%s/pc5-game/NeonDrift.exe", root, id);
@@ -2469,7 +2497,12 @@ static void test_keep_saves(void)
     path(file, sizeof(file), "%s/%s/drive_c/users/prospero/Saved Games/NeonDrift/slot1.sav", prefixes, again);
     CHECK(file_is(file, "my save"), "the save is back");
     path(file, sizeof(file), "%s/%s/user.reg", prefixes, again);
-    CHECK(file_is(file, "the game's settings"), "the registry is back");
+    CHECK(file_is(file, "user.reg\n[Software\\\\NeonDrift\\\\Game] 1700000000\n#time=1\n\"Slot\"=dword:00000001\n"),
+          "the game's own keys are back in the new Windows' registry, Wine's are the new one's");
+    path(file, sizeof(file), "%s/%s/drive_c/windows/system32/kernel32.dll", prefixes, again);
+    CHECK(file_is(file, "drive_c/windows/system32/kernel32.dll"), "a new Windows from the template");
+    path(file, sizeof(file), "%s/%s/drive_c/ProgramData/NeonDrift/profile.dat", prefixes, again);
+    CHECK(file_is(file, "a profile"), "ProgramData is back");
     path(file, sizeof(file), "%s/%s/pc5/controls.txt", prefixes, again);
     CHECK(file_is(file, "mode = keyboard\n"), "the options are back");
     path(file, sizeof(file), "%s/%s/drive_c/Games/NeonDrift/NeonDrift.exe", prefixes, again);
@@ -6669,6 +6702,22 @@ static void test_game(const char *fonts_path)
         }
         controls.frame_generation = 0;
         pc5_controls_save(game_root, "liberty", &controls);
+        /* Frame rate cap: off by default, its rate for RADV, none with frame generation on */
+        pc5_game_begin(&game, &ops, game_root, app, "liberty", "Liberty Town");
+        CHECK(!getenv("PW_PC5_FPS_CAP"), "no frame rate cap by default");
+        controls.fps_cap = 30;
+        CHECK(!pc5_controls_save(game_root, "liberty", &controls) && !pc5_controls_load(game_root, "liberty", &again) &&
+              again.fps_cap == 30, "the frame rate cap is kept with the game");
+        pc5_game_begin(&game, &ops, game_root, app, "liberty", "Liberty Town");
+        env = getenv("PW_PC5_FPS_CAP");
+        CHECK(env && !strcmp(env, "30"), "a capped game tells RADV its rate");
+        controls.frame_generation = 1;
+        pc5_controls_save(game_root, "liberty", &controls);
+        pc5_game_begin(&game, &ops, game_root, app, "liberty", "Liberty Town");
+        CHECK(!getenv("PW_PC5_FPS_CAP"), "and no cap with frame generation on");
+        controls.frame_generation = 0;
+        controls.fps_cap = 0;
+        pc5_controls_save(game_root, "liberty", &controls);
         /* 120 Hz output: off by default, on from Settings, "1" for RADV and the title */
         pc5_game_begin(&game, &ops, game_root, app, "liberty", "Liberty Town");
         env = getenv("PW_PC5_HIGH_REFRESH");
@@ -8003,6 +8052,18 @@ static void test_screens(const char *fonts)
           "Frame generation on: %s", pc5_ui_screen(ui));
     press(ui, PC5_KEY_RIGHT, &canvas);
     CHECK(controls_has("orbital-nine", "frame_generation = off\n"), "and off, with no 40 -> 120 at 60 Hz");
+    press(ui, PC5_KEY_DOWN, &canvas);       /* Frame rate cap: 30, then off (60 Hz: no 40 or 60) */
+    press(ui, PC5_KEY_ACCEPT, &canvas);
+    CHECK(!strcmp(pc5_ui_screen(ui), "game-menu") && controls_has("orbital-nine", "frame_rate_cap = 30\n"),
+          "Frame rate cap 30: %s", pc5_ui_screen(ui));
+    pc5_ui_draw(ui, &canvas);
+    save_shot(&canvas, "game-menu-frame-rate-cap");
+    press(ui, PC5_KEY_SQUARE, &canvas);
+    pc5_ui_draw(ui, &canvas);
+    save_shot(&canvas, "game-menu-frame-rate-cap-about");
+    press(ui, PC5_KEY_BACK, &canvas);
+    press(ui, PC5_KEY_RIGHT, &canvas);
+    CHECK(controls_has("orbital-nine", "frame_rate_cap = off\n"), "and off, with no 40 or 60 at 60 Hz");
     press(ui, PC5_KEY_DOWN, &canvas);       /* Resolution: 1440p, 4K, back round to 1080p */
     press(ui, PC5_KEY_ACCEPT, &canvas);
     CHECK(controls_has("orbital-nine", "resolution = 1440p\n"), "Resolution 1440p");

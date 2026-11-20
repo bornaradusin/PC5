@@ -1130,10 +1130,12 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
     int memory_4gb = 0, stretch = 0, cpu_sharing = 0, video_memory_full = 0, video_memory_mb = 0, pointer_hide = 0;
     int surround = 0;
     game->create_kept = 0;
+    game->fps_cap = 0;
     if (prefix && prefix[0]) {
         Pc5Controls controls;
         pc5_controls_load(root, prefix, &controls);
         game->frame_generation = controls.frame_generation;
+        game->fps_cap = controls.fps_cap;
         memory_4gb = controls.memory_4gb;
         stretch = controls.stretch;
         cpu_sharing = controls.cpu_sharing;
@@ -1189,6 +1191,12 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
     else unsetenv("PW_PC5_FRAMEGEN");
     if (generator == 2) setenv("PW_FRAMEGEN", "3", 1);
     else unsetenv("PW_FRAMEGEN");
+    /* Frame rate cap: RADV's presenter shows a frame no sooner than its turn at that rate
+     * (patches/radv 0013). Not with frame generation, which sets the rate itself. */
+    char fps_cap[8];
+    snprintf(fps_cap, sizeof(fps_cap), "%d", game->fps_cap);
+    if (!generator && (game->fps_cap == 30 || game->fps_cap == 40 || game->fps_cap == 60)) setenv("PW_PC5_FPS_CAP", fps_cap, 1);
+    else unsetenv("PW_PC5_FPS_CAP");
     /* 120 Hz output: RADV opens the display at 119.88 Hz where the TV takes it (patches/radv 0004),
      * the title tells Wine (WINE_PS5_REFRESH); "0" keeps it at 60 Hz. */
     setenv("PW_PC5_HIGH_REFRESH", game->settings.high_refresh ? "1" : "0", 1);
@@ -1250,11 +1258,12 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
     if (path[0]) setenv("WINEPATH", path, 1);
     else unsetenv("WINEPATH");
     say(game, "PC5 game fps=%d overlay=%#x corner=%d vibration=%d light=%d triggers=%d trigger_rumble=%d "
-        "trigger_resistance=%d tint=%06x frame_generation=%d memory_32bit=%s aspect_ratio=%s cpu_sharing=%d high_refresh=%d speakers=%d",
+        "trigger_resistance=%d tint=%06x frame_generation=%d fps_cap=%d memory_32bit=%s aspect_ratio=%s cpu_sharing=%d high_refresh=%d speakers=%d",
         game->settings.fps,
         pc5_game_overlay_lines(&game->settings), (int)game->settings.fps_corner, game->settings.vibration,
         (int)game->settings.light_bar, (int)game->settings.triggers, game->settings.trigger_rumble,
-        game->settings.trigger_resistance, (unsigned)game->cover_tint, game->frame_generation, memory_4gb ? "4gb" : "auto",
+        game->settings.trigger_resistance, (unsigned)game->cover_tint, game->frame_generation,
+        game->frame_generation ? 0 : game->fps_cap, memory_4gb ? "4gb" : "auto",
         stretch ? "stretch" : "keep", cpu_sharing, game->settings.high_refresh,
         surround == 2 ? 8 : surround == 1 ? 6 : 2);
 }

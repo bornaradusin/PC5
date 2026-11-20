@@ -114,6 +114,7 @@ From 2.1.9, **□ About** on a setting opens a window that says in plain words w
 | Settings that worked | Only when a player has reported the game working (**Report it works**) with settings other than yours. It lists what they changed (Graphics mode, Controller, Frame generation, Game memory, Stutter fix, Steam emulator, Sound output, launch options) and **Use them** sets the same; your other settings stay. The first time you press **Play**, PC5 asks once. It comes from the [game compatibility list](Game-compatibility), which PC5 keeps a copy of. |
 | Graphics mode | Only for games drawn with Direct3D or DirectDraw: how the game's pictures are made. **Auto** suits almost every game. See [Graphics mode](#graphics-mode) below. |
 | Frame generation | **Off** (the default) or **30 → 60 fps**. See [Frame generation](#frame-generation) below. |
+| Frame rate cap | **Off** (the default), **30 fps**, and with 120 Hz output on also **40 fps** and **60 fps**. See [Frame rate cap](#frame-rate-cap) below. |
 | Resolution | Only for games drawn with Direct3D, Vulkan or OpenGL: **1080p** (the default), **1440p** or **4K**. See [Resolution](#resolution) below. |
 | Aspect ratio | **Keep** (the default) or **Stretch**. See [Aspect ratio](#aspect-ratio) below. |
 | Game memory | Only for 32-bit games: **Auto** (the default from 1.9.8) or **4 GB**. Auto is as on Windows: a game made for more memory (its program says so) gets 4 GB of address space, any other gets 2 GB. 4 GB gives every game 4 GB, room for big textures and mods, but an older game not made for it can crash with it. From 1.4.0 to 1.9.7 every game had 4 GB; a game left as it was is Auto from 1.9.8. |
@@ -188,6 +189,17 @@ What to expect:
 - The game reacts a little later than without it.
 - The overlay's FPS counts every frame shown, the made ones too, so it shows about 60.
 - It works with games drawn with Direct3D 8 to 12, Vulkan or OpenGL. It doesn't apply to DirectDraw or plain Windows drawing, nor to 10-bit (HDR) output.
+- A change takes effect the next time the game starts.
+
+## Frame rate cap
+
+From 2.4.4, a game can be held to a steady frame rate: **△ › Graphics › Frame rate cap**, **Off** by default, kept for that game. A game that jumps between fast and slow feels smoother kept at a rate it can always reach.
+
+- **30 fps**: for a demanding game that can't hold 60. Each frame stays on screen for two refreshes of a 60 Hz TV.
+- **40 fps** and **60 fps**: only offered with **Settings › 120 Hz output** on, on a TV that takes 120 Hz, where 40 fps is three refreshes a frame. A game set to them shows **Off** while 120 Hz output is off.
+- Frames are counted in the TV's refreshes, so they are shown evenly. A frame the game finishes late is shown at the next refresh, as without a cap.
+- It works with games drawn with Direct3D 8 to 12, Vulkan or OpenGL. It doesn't apply to games drawn in 2D only or with plain Windows drawing.
+- It is off while [Frame generation](#frame-generation) is on, which sets the rate itself.
 - A change takes effect the next time the game starts.
 
 ## Resolution

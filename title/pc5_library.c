@@ -922,22 +922,23 @@ int pc5_profile_refresh(const char *root, const char *id, char *error, size_t si
                 pc5_write_file(path, text, strlen(text));
         }
     }
-    /* A Godot game installed before 1.9.8 as drawing with Direct3D (what its program imports):
-     * OpenGL, kept in its notes. Its program is read once (pc5/godot.txt says it was). */
+    /* A Godot game installed before 1.9.8, or a bgfx game set up to draw with OpenGL before
+     * 2.4.4, as drawing with Direct3D (what its program imports or names): OpenGL, kept in its
+     * notes. Its program is read once (pc5/opengl.txt says it was). */
     if (info.api != PC5_API_OPENGL && info.api != PC5_API_DDRAW &&
-        !pc5_format(path, sizeof(path), "%s/prefixes/%s/pc5/godot.txt", root, id) && !pc5_exists(path)) {
+        !pc5_format(path, sizeof(path), "%s/prefixes/%s/pc5/opengl.txt", root, id) && !pc5_exists(path)) {
         char marker[PC5_PATH];
-        int godot = 0;
+        int opengl = 0;
         pc5_copy(marker, sizeof(marker), path);
         if (!pc5_format(path, sizeof(path), "%s/prefixes/%s/drive_c/Games/%s/%s", root, id, info.folder, program.exe) &&
-            (godot = pc5_pe_godot(path))) {
+            (opengl = pc5_pe_draws_opengl(path))) {
             info.api = program.api = PC5_API_OPENGL;
             if (!pc5_info_text(&info, text, sizeof(text)) &&
                 !pc5_format(path, sizeof(path), "%s/prefixes/%s/pc5/info.txt", root, id))
                 pc5_write_file(path, text, strlen(text));
         }
-        const char *note = godot ? "# PC5 read the game's program: a Godot game, so it draws with OpenGL\ngodot\n"
-                                 : "# PC5 read the game's program: not a Godot game\nother\n";
+        const char *note = opengl ? "# PC5 read the game's program: it draws with OpenGL\nopengl\n"
+                                  : "# PC5 read the game's program: it doesn't draw with OpenGL only\nother\n";
         pc5_write_file(marker, note, strlen(note));
     }
     /* A Java game installed before 1.8.2, or an FNA or MonoGame OpenGL game before 2.3.1, as
@@ -1073,7 +1074,7 @@ static void handed_program(const char *path, const char *dir, Pc5Info *program)
 
     if (pc5_pe_read(path, &pe) || pe.dll) return;
     if (pe.bits == 32 || pe.bits == 64) program->bits = pe.bits;
-    if (pc5_pe_godot(path)) program->api = PC5_API_OPENGL;   /* a Godot game: OpenGL, whatever it imports */
+    if (pc5_pe_draws_opengl(path)) program->api = PC5_API_OPENGL;   /* Godot, bgfx on OpenGL: whatever it imports */
     else if ((drawing = (pe.imports | pc5_pe_unity_direct3d(path, pe.imports)) & PC5_IMPORT_DRAWING) ||
              (drawing = pc5_pe_named_libraries(path) & PC5_IMPORT_DRAWING) ||
         (dir[0] && (drawing = pc5_dll_imports_in(dir) & PC5_IMPORT_DRAWING)))
@@ -1746,9 +1747,76 @@ static int keep_game_files(const char *keeping, char *error, size_t error_size)
     return status;
 }
 
+/* What a game's kept saves keep of its Windows: its users' folders and ProgramData, where games
+ * put their saves and settings, its user registry (user.reg, of which the game's own keys are
+ * put back), PC5's notes on it (pc5/, with its options) and what the game made in its own folder
+ * (pc5-game/). The rest is Windows itself, made anew from the template when the saves are put
+ * back, the game's shader cache and the rest of its registry. drive: a name in its C: drive. */
+static int kept_part(const char *name, int drive)
+{
+    if (drive) return !pc5_casecmp(name, "users") || !pc5_casecmp(name, "ProgramData");
+    return !strcmp(name, "drive_c") || !strcmp(name, "pc5") || !strcmp(name, "pc5-game") || !strcmp(name, "user.reg");
+}
+
+/* The rest of the kept Windows (kept_part) moved out of it into removing/.windows, to be
+ * deleted with the game; removing is made (prefixes/.removing-<id>) when it is "". Run again,
+ * it moves what is left. */
+static int keep_trim(const char *keeping, const char *prefixes, const char *id, char *removing, size_t removing_size,
+                     char *error, size_t error_size)
+{
+    char (*p)[PC5_PATH] = pc5_alloc(sizeof(*p) * 3);
+    char base[PC5_ID + 16], leaf[PC5_ID + 32];
+    int status = 0;
+
+    if (!p) {
+        snprintf(error, error_size, N_("Out of memory."));
+        return -1;
+    }
+    for (int drive = 0; drive < 2 && !status; drive++) {
+        Pc5Buf names = { 0 };
+        struct dirent *entry;
+        DIR *folder;
+        if (drive ? pc5_format(p[0], PC5_PATH, "%s/drive_c", keeping) : pc5_format(p[0], PC5_PATH, "%s", keeping)) {
+            snprintf(error, error_size, N_("A path is too long."));
+            status = -1;
+            break;
+        }
+        if (!(folder = opendir(p[0]))) continue;
+        while (!status && (entry = readdir(folder)))
+            if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..") && !kept_part(entry->d_name, drive))
+                status = pc5_buf_put(&names, entry->d_name, strlen(entry->d_name) + 1);
+        closedir(folder);
+        if (status) snprintf(error, error_size, N_("Out of memory."));
+        for (size_t i = 0; !status && i < names.len; i += strlen((char *)names.data + i) + 1) {
+            const char *name = (const char *)names.data + i;
+            if (!removing[0]) {
+                snprintf(base, sizeof(base), ".removing-%s", id);
+                if (free_name(prefixes, base, leaf, sizeof(leaf)) || pc5_join(removing, removing_size, prefixes, leaf) ||
+                    mkdir(removing, 0777)) {
+                    snprintf(error, error_size, N_("PC5 can't keep the saves apart: %s."), strerror(errno));
+                    removing[0] = 0;
+                    status = -1;
+                    break;
+                }
+            }
+            snprintf(base, sizeof(base), "%s%.*s", drive ? "c-" : "", (int)(sizeof(base) - 3), name);
+            if (pc5_format(p[1], PC5_PATH, "%s/.windows", removing) || (mkdir(p[1], 0777) && errno != EEXIST) ||
+                free_name(p[1], base, leaf, sizeof(leaf)) || pc5_join(p[2], PC5_PATH, p[1], leaf) ||
+                pc5_join(p[1], PC5_PATH, p[0], name) || rename(p[1], p[2])) {
+                snprintf(error, error_size, N_("PC5 can't keep the saves apart: %s."), strerror(errno));
+                status = -1;
+            }
+        }
+        pc5_buf_free(&names);
+    }
+    pc5_free(p);
+    return status;
+}
+
 /* The rest of keeping a game's saves, its Windows already moved to saves/.keeping-<id>: the
- * game's folders (C:\Games) out of it to prefixes/.removing-<id> (removing, deleted after;
- * "" when there were none), the game out of the library, the saves under their own name.
+ * game's folders (C:\Games) and the rest that isn't saves (keep_trim) out of it to
+ * prefixes/.removing-<id> (removing, deleted after; "" when there was nothing), the game out
+ * of the library, the saves under their own name.
  * Run again, it finishes one cut short. */
 static int keep_finish(const char *root, const char *id, const char *profile_file, char *removing, size_t removing_size,
                        char *error, size_t error_size)
@@ -1773,6 +1841,8 @@ static int keep_finish(const char *root, const char *id, const char *profile_fil
         removing[0] = 0;
         return -1;
     }
+    /* Only the saves stay: Windows itself and the game's shader cache go with the game. */
+    if (keep_trim(keeping, prefixes, id, removing, removing_size, error, error_size)) return -1;
     if (unlink(profile) && errno != ENOENT) {
         snprintf(error, error_size, N_("PC5 can't delete the game's profile: %s."), strerror(errno));
         return -1;
@@ -2842,15 +2912,31 @@ int pc5_install_begin_on_usb(Pc5Install *install, const char *root, const char *
     return install_begin(install, root, template_prefix, folder, exe, cover, tint, cover_source, 0, usb_root);
 }
 
-/* One template entry: a folder made or a file copied whole. */
+/* Kept saves in the install's list (pc5_install_use_saves): a kept file, the kept user registry. */
+enum { KEPT_FILE = 1, KEPT_REGISTRY = 2 };
+static int registry_merge(const char *from, const char *to);
+
+/* One template entry: a folder made or a file copied whole; with kept saves, a kept file
+ * (KEPT_FILE) or the kept user registry added to the template's (KEPT_REGISTRY). */
 static int prefix_entry(Pc5Install *install, const char *line)
 {
     char source[PC5_PATH], target[PC5_PATH];
-    size_t length = strlen(line);
+    const char *from = install->template_prefix;
+    size_t length;
     int in, out, ok = 1;
     ssize_t got;
 
-    if (pc5_join(source, sizeof(source), install->template_prefix, line) ||
+    if (line[0] == KEPT_REGISTRY) {
+        if (pc5_join(source, sizeof(source), install->kept, line + 1) || pc5_join(target, sizeof(target), install->staging, line + 1))
+            return fail(install, N_("A path in the Windows template is too long."));
+        return registry_merge(source, target) ? fail(install, N_("PC5 can't put back the game's registry: %s."), strerror(errno)) : 0;
+    }
+    if (line[0] == KEPT_FILE) {
+        from = install->kept;
+        line++;
+    }
+    length = strlen(line);
+    if (pc5_join(source, sizeof(source), from, line) ||
         (!strncmp(line, "pc5-game/", 9)
              /* kept saves: what the game made in its own folder goes back there */
              ? pc5_format(target, sizeof(target), "%s/drive_c/Games/%s/%s", install->staging, install->info.folder, line + 9)
@@ -3567,17 +3653,101 @@ static int reset_finish(Pc5Install *install)
 
 /* ---- kept saves, installed ------------------------------------------------------------------- */
 
-/* What of the kept saves makes the game's Windows: all but the game's folders and PC5's
- * notes, of which the options and the marks of what the Windows has (its DXVK, its
- * template's version) stay. */
+/* 0 when the first n characters of a are b's, in any case (ASCII). */
+static int prefix_ci(const char *a, const char *b, size_t n)
+{
+    for (size_t i = 0; i < n; i++)
+        if (pc5_lower((unsigned char)a[i]) != pc5_lower((unsigned char)b[i]) || !a[i]) return 1;
+    return 0;
+}
+
+/* What of the kept saves goes into the game's new Windows, made from the template: its users'
+ * folders and ProgramData, PC5's options for it (pc5/controls.txt) and what it made in its own
+ * folder (pc5-game/). Kept saves made before 2.4.4 have a whole Windows: the rest of it stays
+ * out too. The kept user registry is added to the new one's (KEPT_REGISTRY). */
 static int saves_keep(const char *relative, int folder)
 {
-    if (!pc5_casecmp(relative, "drive_c/Games")) return 0;
-    if (!strcmp(relative, "pc5")) return 1;
-    if (!strncmp(relative, "pc5/", 4))
-        return !folder && (!strcmp(relative, "pc5/controls.txt") || !strcmp(relative, "pc5/dxvk.txt") ||
-                           !strcmp(relative, "pc5/template.txt"));
-    return 1;
+    if (!strcmp(relative, "drive_c") || !strcmp(relative, "pc5")) return folder;
+    if (!pc5_casecmp(relative, "drive_c/users") || !pc5_casecmp(relative, "drive_c/ProgramData") ||
+        !strcmp(relative, "pc5-game") || !strcmp(relative, "pc5/controls.txt"))
+        return 1;
+    return !prefix_ci(relative, "drive_c/users/", 14) || !prefix_ci(relative, "drive_c/ProgramData/", 20) ||
+           !strncmp(relative, "pc5-game/", 9);
+}
+
+/* The keys of a Wine registry file (its "[key] time" lines), lower case, NUL after each. */
+static int registry_keys(const Pc5Buf *text, Pc5Buf *keys)
+{
+    const char *at = (const char *)text->data, *end = at + text->len;
+    while (at < end) {
+        const char *eol = memchr(at, '\n', (size_t)(end - at)), *close;
+        size_t n = (size_t)((eol ? eol : end) - at);
+        if (n > 2 && at[0] == '[' && (close = memchr(at, ']', n))) {
+            for (const char *c = at + 1; c < close; c++) {
+                char lower = (char)pc5_lower((unsigned char)*c);
+                if (pc5_buf_put(keys, &lower, 1)) return -1;
+            }
+            if (pc5_buf_put(keys, "", 1)) return -1;
+        }
+        at = eol ? eol + 1 : end;
+    }
+    return 0;
+}
+
+static int registry_has(const Pc5Buf *keys, const char *key, size_t n)
+{
+    for (size_t at = 0; at < keys->len; at += strlen((const char *)keys->data + at) + 1) {
+        const char *k = (const char *)keys->data + at;
+        size_t i;
+        if (strlen(k) != n) continue;
+        for (i = 0; i < n && k[i] == (char)pc5_lower((unsigned char)key[i]); i++)
+            ;
+        if (i == n) return 1;
+    }
+    return 0;
+}
+
+/* The game's own keys of the kept user registry (from) added to the new Windows' (to): each key
+ * the new one doesn't have, but for Wine's (Software\\Wine: its settings are the new Windows').
+ * A key the new one has is the template's, and stays as it is. */
+static int registry_merge(const char *from, const char *to)
+{
+    static const char wine[] = "software\\\\wine";
+    Pc5Buf kept = { 0 }, fresh = { 0 }, keys = { 0 }, add = { 0 };
+    int status = 0;
+
+    if (pc5_read_file(from, &kept, 256u << 20)) return 0;   /* none kept: nothing to add */
+    if (pc5_read_file(to, &fresh, 256u << 20) || registry_keys(&fresh, &keys)) status = -1;
+    for (const char *at = (const char *)kept.data, *end = at + kept.len; !status && at < end;) {
+        const char *eol = memchr(at, '\n', (size_t)(end - at)), *close, *next;
+        size_t n = (size_t)((eol ? eol : end) - at);
+        if (!(n > 2 && at[0] == '[' && (close = memchr(at, ']', n)))) {
+            at = eol ? eol + 1 : end;
+            continue;
+        }
+        /* The key's section: its line and the values after it, up to the next key. */
+        for (next = eol ? eol + 1 : end; next < end && next[0] != '['; ) {
+            const char *e = memchr(next, '\n', (size_t)(end - next));
+            next = e ? e + 1 : end;
+        }
+        size_t key = (size_t)(close - at - 1);
+        int is_wine = key >= sizeof(wine) - 1 && !prefix_ci(at + 1, wine, sizeof(wine) - 1) &&
+                      (key == sizeof(wine) - 1 || at[sizeof(wine)] == '\\');
+        if (!is_wine && !registry_has(&keys, at + 1, key) &&
+            (pc5_buf_put(&add, "\n", 1) || pc5_buf_put(&add, at, (size_t)(next - at))))
+            status = -1;
+        at = next;
+    }
+    if (!status && add.len) {
+        int fd = open(to, O_WRONLY | O_APPEND);
+        status = fd < 0 || write(fd, add.data, add.len) != (ssize_t)add.len || fsync(fd) ? -1 : 0;
+        if (fd >= 0 && close(fd)) status = -1;
+    }
+    pc5_buf_free(&kept);
+    pc5_buf_free(&fresh);
+    pc5_buf_free(&keys);
+    pc5_buf_free(&add);
+    return status;
 }
 
 int pc5_install_use_saves(Pc5Install *install, const char *path)
@@ -3585,39 +3755,45 @@ int pc5_install_use_saves(Pc5Install *install, const char *path)
     /* A game played from its USB drive: what it made in its own folder would go onto the drive. */
     if (install->in_place) return fail(install, N_("Kept saves can't be put back for a game that plays from its USB drive."));
     Pc5Buf found = { 0 }, ordered = { 0 };
-    int has_system = 0, failed;
+    const char *list = (const char *)install->template_list.data;
+    size_t split = 0;
+    int failed;
+    char user[PC5_PATH];
 
     if (install->phase != PC5_INSTALL_PREFIX || install->at) return fail(install, N_("The install has begun already."));
     failed = walk_tree(path, &found, saves_keep);
-    /* As template_paths orders the template's: the registry after the rest, system.reg last. */
-    for (int pass = 0; pass < 3 && !failed; pass++)
-        for (size_t at = 0; at < found.len; at += strlen((char *)found.data + at) + 1) {
-            const char *line = (const char *)found.data + at;
-            size_t length = strlen(line);
-            int registry = length > 4 && !strchr(line, '/') && !strcmp(line + length - 4, ".reg");
-            int system = !strcmp(line, "system.reg");
-            has_system |= system;
-            if (pass == 0 ? registry : pass == 1 ? !registry || system : !system) continue;
-            if (pc5_buf_put(&ordered, line, length + 1)) failed = 1;
-        }
-    pc5_buf_free(&found);
-    if (failed || !has_system) {
-        pc5_buf_free(&ordered);
-        return fail(install, failed ? N_("PC5 can't read the kept saves.") : N_("The kept saves are damaged: they have no registry."));
+    /* The template's Windows first (template_paths: folders and files, then the registry,
+     * system.reg last), the kept files after its files, the kept user registry added to its
+     * before system.reg. */
+    while (split < install->template_list.len) {
+        const char *line = list + split;
+        size_t length = strlen(line);
+        if (length > 4 && !strchr(line, '/') && !strcmp(line + length - 4, ".reg")) break;
+        split += length + 1;
     }
-    pc5_buf_free(&install->template_list);
-    install->template_list = ordered;
-    install->bytes_total = 0;
-    install->files_total = 0;
-    for (size_t at = 0; at < ordered.len; at += strlen((char *)ordered.data + at) + 1) {
-        const char *line = (const char *)ordered.data + at;
+    if (!failed && split && pc5_buf_put(&ordered, list, split)) failed = 1;
+    for (size_t at = 0; !failed && at < found.len; at += strlen((char *)found.data + at) + 1) {
+        const char *line = (const char *)found.data + at;
         char source[PC5_PATH];
         struct stat st;
+        if (pc5_buf_put(&ordered, (char[]){ KEPT_FILE }, 1) || pc5_buf_put(&ordered, line, strlen(line) + 1)) failed = 1;
         if (line[strlen(line) - 1] == '/') continue;
         if (!pc5_join(source, sizeof(source), path, line) && !stat(source, &st)) install->bytes_total += (uint64_t)st.st_size;
         install->files_total++;
     }
-    pc5_copy(install->template_prefix, sizeof(install->template_prefix), path);
+    for (size_t at = split; !failed && at < install->template_list.len; at += strlen(list + at) + 1) {
+        if (!strcmp(list + at, "system.reg") && !pc5_format(user, sizeof(user), "%s/user.reg", path) && pc5_exists(user) &&
+            pc5_buf_put(&ordered, (char[]){ KEPT_REGISTRY, 'u', 's', 'e', 'r', '.', 'r', 'e', 'g', 0 }, 10))
+            failed = 1;
+        if (!failed && pc5_buf_put(&ordered, list + at, strlen(list + at) + 1)) failed = 1;
+    }
+    pc5_buf_free(&found);
+    if (failed) {
+        pc5_buf_free(&ordered);
+        return fail(install, N_("PC5 can't read the kept saves."));
+    }
+    pc5_buf_free(&install->template_list);
+    install->template_list = ordered;
     pc5_copy(install->kept, sizeof(install->kept), path);
     return 0;
 }

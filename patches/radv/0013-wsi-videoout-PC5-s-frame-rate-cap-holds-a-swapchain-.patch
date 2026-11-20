@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Fri, 20 Nov 2026 12:00:00 +0000
+Subject: [PATCH] wsi/videoout: PC5's frame rate cap holds a swapchain's flips
+ to its rate
+
+PC5's Frame rate cap (PW_PC5_FPS_CAP=30, 40 or 60) now holds a game to
+that rate: after each flip, the flip thread waits for the refreshes the
+frame stays on screen before it submits the next, the nearest whole
+number of refreshes to the rate (30 fps two at 59.94 Hz and four at
+119.88 Hz, 40 fps three at 119.88 Hz). Counted in refreshes rather than
+time, the frames stay on the display's beat, evenly spaced. The queue
+fills while the thread waits and the game waits in its acquire, as with
+FIFO at the display's rate. A frame that isn't ready in time shows at
+its next vblank, as without a cap. CPU frames are not capped.
+---
+ src/vulkan/wsi/wsi_common_videoout.c | 34 ++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+
+diff --git a/src/vulkan/wsi/wsi_common_videoout.c b/src/vulkan/wsi/wsi_common_videoout.c
+index c5414a7..04aa506 100644
+--- a/src/vulkan/wsi/wsi_common_videoout.c
++++ b/src/vulkan/wsi/wsi_common_videoout.c
+@@ -288,6 +288,9 @@ struct wsi_videoout_output {
+    /* The swapchain presenting now; older ones are retired. */
+    struct wsi_videoout_swapchain *current;
+ 
++   /* PW_PC5_FPS_CAP (PC5's Frame rate cap): the most frames a second a swapchain
++    * shows, 0 for none. */
++   uint32_t fps_cap;
+    /* The flip thread and its queue. */
+    bool thread_started;
+    thrd_t thread;
+@@ -306,6 +309,24 @@ videoout_output_init_once(void)
+ {
+    mtx_init(&videoout_output.lock, mtx_plain);
+    cnd_init(&videoout_output.changed);
++   const char *const cap = getenv("PW_PC5_FPS_CAP");
++   const long fps = cap ? strtol(cap, NULL, 10) : 0;
++   if (fps >= 10 && fps <= 120)
++      videoout_output.fps_cap = (uint32_t)fps;
++}
++
++/* The refreshes each frame stays on screen under the frame rate cap, the
++ * nearest whole number to the rate it allows: 30 fps is two at 59.94 Hz,
++ * four at 119.88 Hz; 40 fps three at 119.88 Hz. 1 without a cap. Counted in
++ * refreshes, not time, so the frames stay on the display's beat. */
++static uint32_t
++videoout_cap_refreshes_locked(const struct wsi_videoout_output *out)
++{
++   if (!out->fps_cap)
++      return 1;
++   const uint32_t millihertz = out->high_frame_rate ? VIDEOOUT_HIGH_REFRESH_MILLIHERTZ : VIDEOOUT_REFRESH_MILLIHERTZ;
++   const uint32_t refreshes = (millihertz + out->fps_cap * 500) / (out->fps_cap * 1000);
++   return refreshes ? refreshes : 1;
+ }
+ 
+ struct wsi_videoout_swapchain {
+@@ -634,6 +655,19 @@ videoout_flip_thread(void *data)
+       out->queue_count--;
+       chain->in_flight--;
+       cnd_broadcast(&out->changed);
++      /* The frame rate cap: the next flip no sooner than the frame has been
++       * on screen its refreshes. This one shows at the next vblank; the next
++       * is submitted after the refreshes - 1 after it, so it shows at the one
++       * after those. A frame not ready by then shows at its next vblank, as
++       * without a cap. */
++      const uint32_t refreshes = result == 0 ? videoout_cap_refreshes_locked(out) : 1;
++      if (refreshes > 1) {
++         const int32_t handle = out->handle;
++         mtx_unlock(&out->lock);
++         for (uint32_t i = 0; i < refreshes; i++)
++            sceVideoOutWaitVblank(handle);
++         mtx_lock(&out->lock);
++      }
+    }
+    return 0;
+ }

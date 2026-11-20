@@ -447,8 +447,9 @@ int pc5_folder_inspect(const char *path, const char *name, Pc5Folder *folder)
         program_of(path, folder->exes[i].path, batch, program, sizeof(program));
         if (pc5_format(file, sizeof(file), "%s/%s", path, program)) continue;
         if (pc5_pe_unreal_d3d12(file, folder->exes[i].pe.imports)) folder->exes[i].pe.imports |= PC5_IMPORT_D3D12;
-        /* A Godot game's program imports Direct3D, but the game draws with OpenGL (or Vulkan). */
-        folder->exes[i].godot = pc5_pe_godot(file);
+        /* A Godot game's program imports Direct3D, but the game draws with OpenGL (or Vulkan),
+         * as a bgfx game set up to draw with OpenGL does. */
+        folder->exes[i].opengl = pc5_pe_draws_opengl(file);
     }
     /* Which game it is, from what its store or a Steam stand-in left in it (pc5_identity.h). */
     {
@@ -479,7 +480,7 @@ Pc5Api pc5_folder_api(const Pc5Folder *folder, int index)
     uint32_t own, beside;
 
     if (index < 0 || index >= folder->exe_count) return PC5_API_GDI;
-    if (folder->exes[index].godot) return PC5_API_OPENGL;
+    if (folder->exes[index].opengl) return PC5_API_OPENGL;
     own = folder->exes[index].pe.imports;
     beside = folder->exes[index].beside;
     if (own & drawing) return pc5_api_from_imports(own);

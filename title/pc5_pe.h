@@ -68,6 +68,13 @@ int pc5_pe_unreal_d3d12(const char *path, uint32_t imports);
  * the engine's name in it ("Godot Engine"). Its imports name Direct3D, but a Godot game
  * draws with OpenGL or Vulkan; PC5 gives it OpenGL (Zink), which has Vulkan too. */
 int pc5_pe_godot(const char *path);
+/* 1 when the program at path draws with OpenGL whatever it imports or names: a Godot game's
+ * (pc5_pe_godot), or one built with bgfx with its OpenGL context code in it (glcontext_wgl).
+ * Such a bgfx program names Direct3D 9 to 12, OpenGL and Vulkan alike, its renderers, and
+ * the one it chose was OpenGL when it set up an OpenGL context: without OpenGL (Zink) it
+ * stops there ("ChoosePixelFormat failed"). With Zink its Direct3D is Wine's own, which
+ * draws with OpenGL too, should it choose Direct3D after all. */
+int pc5_pe_draws_opengl(const char *path);
 /* A Unity game's program (its <name>_Data folder beside it) draws with Direct3D, which what
  * it imports, or what is beside it, doesn't say: Unity 5.5 and before (the player in the
  * program, importing OpenGL alone) draws with the Direct3D libraries it names (PC5_IMPORT_D3D*,

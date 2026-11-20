@@ -96,6 +96,11 @@ typedef struct Pc5Controls {
      * 2 MihawkGen, three pictures a frame, 40 -> 120 with 120 Hz output (30 -> 60 without).
      * "frame_generation = off|on|mihawkgen". */
     int frame_generation;
+    /* Frame rate cap: the most frames a second the game is shown at (the console's Vulkan
+     * presenter waits for its turn before each, PW_PC5_FPS_CAP), 30, 40 or 60; 0, Off (the
+     * default): as the game draws, up to the display's rate. Not with Frame generation, which
+     * sets the rate itself. "frame_rate_cap = off|30|40|60". */
+    int fps_cap;
     /* A 32-bit game's address space. 0, Auto (the default from 1.9.8): as on Windows, 4 GB for a
      * program made for it (its large-address flag), 2 GB for one that isn't, which may take an
      * address above 2 GB for a negative number or size what it asks for by the room it sees.

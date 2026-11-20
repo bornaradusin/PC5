@@ -558,6 +558,11 @@ int pc5_pe_godot(const char *path)
     return file_has_text(path, "Godot Engine");
 }
 
+int pc5_pe_draws_opengl(const char *path)
+{
+    return pc5_pe_godot(path) || file_has_text(path, "glcontext_wgl");
+}
+
 uint32_t pc5_pe_unity_direct3d(const char *path, uint32_t imports)
 {
     const uint32_t direct3d = PC5_IMPORT_D3D8 | PC5_IMPORT_D3D9 | PC5_IMPORT_D3D10 | PC5_IMPORT_D3D11 | PC5_IMPORT_DXGI;

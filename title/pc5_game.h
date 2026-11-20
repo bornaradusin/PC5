@@ -129,6 +129,7 @@ typedef struct Pc5GameSession {
     uint64_t stats_threads_at;    /* when, in ms (0 none yet) */
     int stats_logged;
     int frame_generation;         /* the game's Frame generation (PW_PC5_FRAMEGEN for libvulkan.prx) */
+    int fps_cap;                  /* the game's Frame rate cap, frames a second, 0 none (PW_PC5_FPS_CAP for RADV) */
     /* The on-screen keyboard: open, its text, how much of the accepted text is typed,
      * and the buttons PC5 took from the game for it. */
     int two_finger_key;           /* a two-finger click is mapped to a key: no on-screen keyboard */

@@ -200,13 +200,13 @@ static int page_rows(const Pc5Settings *set, int page, int offer_update, Setting
 /* The game's groups and media submenus each have their own page. */
 typedef enum GameRow {
     GR_PLAY, GR_CONTROLLER, GR_BUTTONS, GR_CREATE, GR_POINTER, GR_GRAPHICS, GR_SOUND, GR_APPEARANCE, GR_MANAGE,
-    GR_GRAPHICS_API, GR_FRAMEGEN, GR_RESOLUTION, GR_ASPECT, GR_MEMORY, GR_VIDEO_MEMORY, GR_CPU_SHARING,
+    GR_GRAPHICS_API, GR_FRAMEGEN, GR_FPS_CAP, GR_RESOLUTION, GR_ASPECT, GR_MEMORY, GR_VIDEO_MEMORY, GR_CPU_SHARING,
     GR_KNOWN, GR_COVER, GR_BACKGROUND, GR_HOME, GR_ICON, GR_MUSIC, GR_MUSIC_CLEAR,
     GR_BACKGROUND_IMAGE, GR_BACKGROUND_VIDEO, GR_VIDEO_CLEAR, GR_MEDIA_OPTIONS, GR_MUSIC_FILE, GR_VIDEO_FILE,
     GR_MEDIA, GR_LOADING, GR_LOADING_FILE, GR_LOADING_BACKGROUND, GR_LOADING_CLEAR,
     GR_PROGRAM, GR_STEAM, GR_FILES, GR_UPDATE, GR_REPORT, GR_WORKS, GR_RESET, GR_UNINSTALL
 } GameRow;
-enum { GAME_ROWS = 8, GAME_PAGES = 9, GP_MAIN = 0, GP_GRAPHICS = 1, GP_APPEARANCE = 2, GP_MANAGE = 3, GP_BACKGROUND = 4,
+enum { GAME_ROWS = 9, GAME_PAGES = 9, GP_MAIN = 0, GP_GRAPHICS = 1, GP_APPEARANCE = 2, GP_MANAGE = 3, GP_BACKGROUND = 4,
        GP_MUSIC = 5, GP_VIDEO = 6, GP_MEDIA = 7, GP_LOADING = 8 };
 static const char *const game_page_titles[GAME_PAGES] = { "", N_("Graphics"), N_("Appearance"), N_("Manage"), N_("Background"),
                                                         N_("Library music"), N_("Background video"),
@@ -243,6 +243,7 @@ static int game_rows(const Pc5Controls *controls, int kind, int page, GameRow ro
         if (kind & GAME_KNOWN) rows[n++] = GR_KNOWN;
         if (kind & GAME_API) rows[n++] = GR_GRAPHICS_API;
         rows[n++] = GR_FRAMEGEN;
+        rows[n++] = GR_FPS_CAP;
         if (kind & GAME_VULKAN) rows[n++] = GR_RESOLUTION;
         rows[n++] = GR_ASPECT;
         if (kind & GAME_32BIT) rows[n++] = GR_MEMORY;
@@ -5664,6 +5665,16 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             ui->controls.frame_generation = (now + count + step) % count;
             controls_changed(ui);
             ui->dirty = 1;
+        } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_FPS_CAP) {
+            /* Off, 30, and with 120 Hz output 40 and 60 (at 60 Hz the screen can't show 40 evenly,
+             * and 60 is its own rate): a cap set to them shows as Off at 60 Hz. */
+            static const int caps[] = { 0, 30, 40, 60 };
+            int step = (k & PC5_KEY_LEFT) ? -1 : 1, count = ui->settings.high_refresh ? 4 : 2, now = 0;
+            for (int i = 0; i < count; i++)
+                if (caps[i] == ui->controls.fps_cap) now = i;
+            ui->controls.fps_cap = caps[(now + count + step) % count];
+            controls_changed(ui);
+            ui->dirty = 1;
         } else if ((k & (PC5_KEY_LEFT | PC5_KEY_RIGHT | accept)) && row == GR_RESOLUTION) {
             int step = (k & PC5_KEY_LEFT) ? -1 : 1;
             ui->controls.resolution = (ui->controls.resolution + 3 + step) % 3;
@@ -7310,6 +7321,25 @@ static void game_row_text(Pc5Ui *ui, const Pc5Game *game, int kind, GameRow row,
             *value = T("Off");
         }
         break;
+    case GR_FPS_CAP: {
+        /* 40 and 60 only with 120 Hz output: at 60 Hz such a cap is Off. */
+        int cap = ui->controls.fps_cap == 30 || (ui->settings.high_refresh && (ui->controls.fps_cap == 40 ||
+                                                                              ui->controls.fps_cap == 60))
+                      ? ui->controls.fps_cap : 0;
+        *label = T("Frame rate cap");
+        if (ui->controls.frame_generation) {
+            *text = T("Off while Frame generation is on, which sets the rate itself");
+            *value = T("Off");
+        } else if (cap) {
+            *text = T("Shown at most at this rate, evenly: steadier for a game that can't hold its full speed");
+            *value = cap == 30 ? T("30 fps") : cap == 40 ? T("40 fps") : T("60 fps");
+        } else {
+            *text = ui->settings.high_refresh ? T("Off: as fast as the game draws. Left and right: 30, 40 or 60 fps")
+                                              : T("Off: as fast as the game draws. Left and right: 30 fps (with 120 Hz output on, 40 or 60 too)");
+            *value = T("Off");
+        }
+        break;
+    }
     case GR_RESOLUTION:
         *label = T("Resolution");
         *text = ui->controls.resolution == 2 ? T("Drawn at 4K, as the console shows it; four times the work of 1080p") : ui->controls.resolution == 1 ? T("Drawn at 1440p and shown at 4K; sharper than 1080p, slower") : T("Drawn at 1080p and shown at 4K by the console");
@@ -7554,6 +7584,12 @@ static int setting_about(Pc5Ui *ui, GameRow row, const char *lines[6])
         lines[n++] = T("60 \xe2\x86\x92 120 fps: held at 60 and shown at 120, on a 120 Hz TV with 120 Hz output on in Settings.");
         lines[n++] = T("40 \xe2\x86\x92 120 fps: held at 40, two frames made between each two, for a game that can't hold 60.");
         break;
+    case GR_FPS_CAP:
+        lines[n++] = T("Holds the game to a steady frame rate. A game that jumps between fast and slow feels smoother kept at a rate it can always reach.");
+        lines[n++] = T("30 fps: for a demanding game that can't hold 60.");
+        lines[n++] = T("40 or 60 fps: with 120 Hz output on in Settings and a TV that takes it, where 40 is shown evenly.");
+        lines[n++] = T("It works on games drawn with DirectX, OpenGL or Vulkan. It is off while Frame generation is on.");
+        break;
     case GR_RESOLUTION:
         lines[n++] = T("The size the game is drawn at. The console always shows 4K, so a smaller picture is scaled up.");
         lines[n++] = T("1080p: the fastest, and right for most games.");
@@ -7662,7 +7698,7 @@ static void game_menu_screen(Pc5Ui *ui, Pc5Canvas *c, int chosen)
                    label, text, value);
     }
     GameRow row = chosen >= 0 && chosen < count ? rows[chosen] : GR_PLAY;
-    int changes = row == GR_CONTROLLER || row == GR_FRAMEGEN || row == GR_RESOLUTION || row == GR_ASPECT ||
+    int changes = row == GR_CONTROLLER || row == GR_FRAMEGEN || row == GR_FPS_CAP || row == GR_RESOLUTION || row == GR_ASPECT ||
                   row == GR_MEMORY || row == GR_VIDEO_MEMORY || row == GR_CPU_SHARING || row == GR_HOME || row == GR_STEAM ||
                   row == GR_SOUND;
     const char *about_lines[6];

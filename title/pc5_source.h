@@ -27,7 +27,7 @@ typedef struct Pc5Exe {
     uint32_t beside;          /* the imports of the libraries in its folder */
     int java;                 /* a Java runtime beside it (pc5_java_beside) */
     int gl_framework;         /* an OpenGL game framework beside it (pc5_gl_framework_beside) */
-    int godot;                /* a Godot Engine game's (pc5_pe_godot): it draws with OpenGL */
+    int opengl;               /* it draws with OpenGL whatever it imports (pc5_pe_draws_opengl) */
 } Pc5Exe;
 
 typedef struct Pc5Folder {
