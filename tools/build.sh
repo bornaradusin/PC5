@@ -345,7 +345,21 @@ SOURCES="src_wine src_ffmpeg src_framegen src_foundation src_prxfoundation src_v
 # signs its PRX modules with (from the PRX boilerplate).
 need_sdk() {
     src_foundation
-    bash "$PW/.deps/ps5-native-app-boilerplate/tools/setup-native-dependencies.sh"
+    # The zlib release archive the boilerplate pins, from zlib's own GitHub release, which has
+    # the same archive: zlib.net answered a build runner with something else (its pinned
+    # SHA-256 didn't match) and the build stopped. The boilerplate takes an archive already
+    # there when its SHA-256 matches, and downloads it only when none is.
+    local deps=$PW/.deps/ps5-native-app-boilerplate setup zlib_version zlib_hash
+    setup=$deps/tools/setup-native-dependencies.sh
+    zlib_version=$(sed -n 's/^zlib_version="\(.*\)"$/\1/p' "$setup")
+    zlib_hash=$(sed -n 's/^zlib_hash="\(.*\)"$/\1/p' "$setup")
+    if [[ -n $zlib_version && -n $zlib_hash ]]; then
+        mkdir -p "$deps/.deps/native/zlib"
+        download "$deps/.deps/native/zlib/zlib-$zlib_version.tar.gz" \
+            "https://github.com/madler/zlib/releases/download/v$zlib_version/zlib-$zlib_version.tar.gz" "$zlib_hash" ||
+            echo "zlib $zlib_version from GitHub didn't come: the boilerplate tries zlib.net" >&2
+    fi
+    bash "$setup"
 }
 need_native_tool() {
     local native=$B/prx-foundation/tooling/native tool=$B/prx-foundation/build/host/ps5-native-tool
