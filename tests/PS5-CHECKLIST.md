@@ -386,8 +386,8 @@ controller's speaker.
 | 184 | A 32-bit game installed before 1.9.8, Memory never changed: △ › Graphics | Memory shows Auto | `memory_32bit=auto`; for a program without the large-address flag `2 GiB of address space` |
 | 185 | A 32-bit game whose program has the large-address flag, on Auto | it gets 4 GB | no `without the large-address flag` line |
 | 186 | Touhou 12.3 (th123.exe) on Auto | it starts past where it stopped with 0xe06d7363 | no `out of memory for allocation … size baa50000` |
-| 187 | A Godot game installed before 1.9.8 (MegaMan X Regenesis) | △ shows OpenGL; it starts with Mesa Zink | `zink provider=ok`, `prefixes/<game>/pc5/godot.txt` says godot |
-| 188 | Any other game after 1.9.8 | as before | `godot.txt` says other |
+| 187 | A Godot game installed before 1.9.8 (MegaMan X Regenesis) | △ shows OpenGL; it starts with Mesa Zink | `zink provider=ok`, `prefixes/<game>/pc5/opengl.txt` says opengl |
+| 188 | Any other game after 1.9.8 | as before | `opengl.txt` says other |
 
 ## Report after updating (next)
 
@@ -600,6 +600,14 @@ controller's speaker.
 | 358 | Mini Ninjas from start to where its gameplay begins | as before (its effects still fail) | `Saved the failed effect to ...failed-effects\\effect-N.log` up to eight times; the game's log zip has `game/users/.../AppData/Local/PC5/failed-effects/effect-N.log`, each with its errors and the numbered effect |
 | 359 | Mini Ninjas (a clean copy, its `_CommonRedist/DirectX` folder beside it) with `WINE_PS5_READ_AHEAD=0` in its `env.txt`: from start through Level 1 | it starts, Level 1 loads and plays with no crash | `PC5 DirectX cabinets extracted N` on its first start only, `PC5 prefix DirectX files added N`; the game's prefix has `pc5/dx9.txt` |
 | 360 | A DirectX 9 game that ran before 2.4.3 and has its own DirectX redist folder (regression check for 359) | plays as in 2.4.2 | |
+| 361 | A game playing a Media Foundation video with 48 kHz sound (an Unreal game's tutorial videos) | the video plays with its sound instead of staying black | no `Timestamp is not set for the sample`; with `+dmo`, `resampler_process_input` gives a time, not `(none)` |
+| 362 | A Unity game using Unity's own input (Input Manager), Controller: Xbox controller | the controller works in its menus | `PW_WINE64 raw input controller for a Unity game` |
+| 363 | A non-Unity game and an SDL game, Controller: Xbox controller (regression check for 362) | the controller works as in 2.4.3 | no `raw input controller` line |
+| 364 | A game playing its films through DirectShow into part of a DirectDraw texture | the film fills the frame the game draws, not enlarged | with `+quartz`, `Decoding at (0,0)-(640,480) of a 1024x512 surface` |
+| 365 | △ › Graphics › Frame rate cap 30 on a demanding Direct3D game, at 60 Hz | it runs at a steady 30 fps; Off: as before | `PC5 game ... fps_cap=30` |
+| 366 | Frame rate cap 40 with 120 Hz output on (a 120 Hz TV) | a steady 40 fps; with Frame generation on, no cap (`fps_cap=0`) | |
+| 367 | Uninstall a game with Keep saves, then install it again with Put them back | its saves, progress and options are back; the kept folder in `saves/` has no `drive_c/windows`, `pc5-cache` or `system.reg` | |
+| 368 | A bgfx game set up to draw with OpenGL (its program has bgfx's `glcontext_wgl`), installed before 2.4.4 | it starts with OpenGL (Mesa Zink) instead of stopping at `ChoosePixelFormat failed` | `zink provider=ok`; `prefixes/<game>/pc5/opengl.txt` says opengl |
 
 ## Custom media navigation changes (pending on PS5)
 
