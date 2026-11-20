@@ -196,7 +196,7 @@ What to expect:
 From 2.4.4, a game can be held to a steady frame rate: **△ › Graphics › Frame rate cap**, **Off** by default, kept for that game. A game that jumps between fast and slow feels smoother kept at a rate it can always reach.
 
 - **30 fps**: for a demanding game that can't hold 60. Each frame stays on screen for two refreshes of a 60 Hz TV.
-- **40 fps** and **60 fps**: only offered with **Settings › 120 Hz output** on, on a TV that takes 120 Hz, where 40 fps is three refreshes a frame. A game set to them shows **Off** while 120 Hz output is off.
+- **40 fps** and **60 fps**: only offered with **Settings › In games › 120 Hz output** on, on a TV that takes 120 Hz, where 40 fps is three refreshes a frame. A game set to them shows **Off** while 120 Hz output is off.
 - Frames are counted in the TV's refreshes, so they are shown evenly. A frame the game finishes late is shown at the next refresh, as without a cap.
 - It works with games drawn with Direct3D 8 to 12, Vulkan or OpenGL. It doesn't apply to games drawn in 2D only or with plain Windows drawing.
 - It is off while [Frame generation](#frame-generation) is on, which sets the rate itself.
