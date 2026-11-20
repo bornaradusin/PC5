@@ -1,0 +1,152 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Fri, 20 Nov 2026 12:20:00 +0000
+Subject: [PATCH 160/160] PC5: a Unity game finds the Xbox controller, which Unity's
+ own input looks for in raw input's list (Wine patch 1033)
+
+Unity's Input Manager finds controllers in raw input's device list and reads an XInput one through XInput. With the Xbox controller setting the title's controller was in no such list, and a game using it saw no controller at all. For a Unity game (its <name>_Data folder or UnityPlayer.dll beside its program) with that setting the title sets PW_RAWINPUT_PAD=1, and win32u lists the controller as Windows lists an Xbox 360 controller's HID collection; its input stays XInput's. Other games, and DirectInput, Windows.Gaming.Input and SDL in a Unity game, see nothing new.
+---
+ native/wine64_main.c                          | 39 ++++++++++-
+ ...roller-for-raw-input-in-a-unity-game.patch | 65 +++++++++++++++++++
+ 2 files changed, 102 insertions(+), 2 deletions(-)
+ create mode 100644 wine/patches/1033-win32u-ps5-list-the-title-s-xbox-controller-for-raw-input-in-a-unity-game.patch
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 66b5ff3..77cb772 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -101,6 +101,33 @@ static char sandbox_app0[64] = PW_SANDBOX_APP0;
+ static char tile_runtime[128];
+ static const char *const runtime_roots[] = { "/app0", sandbox_app0, tile_runtime };
+ 
++/* A Unity game: its program has its "<name>_Data" folder beside it, or Unity's
++ * player library (UnityPlayer.dll) from Unity 2017 on. */
++static int unity_game(const char *prefix, const char *executable)
++{
++    char windows[PW_APP_PATH_CAPACITY], host[PW_WINE_LIBRARY_PATH + PW_APP_PATH_CAPACITY + 16];
++    const char *slash = strrchr(executable, '\\'), *name;
++    size_t dir_length, name_length;
++    struct stat st;
++
++    if (!slash || (dir_length = (size_t)(slash - executable)) >= sizeof(windows)) return 0;
++    memcpy(windows, executable, dir_length);
++    windows[dir_length] = 0;
++    if (pw_wine_launch_host_dir(prefix, windows, host, sizeof(host) - 16)) return 0;
++    name = slash + 1;
++    name_length = strlen(name);
++    if (name_length > 4 && name[name_length - 4] == '.' && (name[name_length - 3] | 0x20) == 'e' &&
++        (name[name_length - 2] | 0x20) == 'x' && (name[name_length - 1] | 0x20) == 'e')
++        name_length -= 4;
++    dir_length = strlen(host);
++    if (dir_length + 1 + name_length + 5 < sizeof(host)) {
++        snprintf(host + dir_length, sizeof(host) - dir_length, "/%.*s_Data", (int)name_length, name);
++        if (!stat(host, &st) && S_ISDIR(st.st_mode)) return 1;
++    }
++    snprintf(host + dir_length, sizeof(host) - dir_length, "/UnityPlayer.dll");
++    return !stat(host, &st) && S_ISREG(st.st_mode);
++}
++
+ /* Before anything else: /app0 is not visible once /data is granted. */
+ static void find_title_id(void)
+ {
+@@ -1676,7 +1703,7 @@ int main(int argc, char **argv)
+     enum { PC5_FIXED_ENV = 0 };
+ #endif
+     enum { WINE64_FIXED_ENV_COUNT = 7 + PC5_FIXED_ENV,
+-           WINE64_PROFILE_ENV_CAPACITY = 3 + PW_GAME_GRAPHICS_ENV_MAX + PW_GAME_RUNTIME_ENV_MAX + PW_GAME_CPU_ENV_MAX +
++           WINE64_PROFILE_ENV_CAPACITY = 4 + PW_GAME_GRAPHICS_ENV_MAX + PW_GAME_RUNTIME_ENV_MAX + PW_GAME_CPU_ENV_MAX +
+                                          PW_GAME_CLOCK_ENV_MAX + PW_GAME_DEBUG_ENV_MAX };
+     static PwWineStartEnv extra[WINE64_FIXED_ENV_COUNT + WINE64_PROFILE_ENV_CAPACITY] = {
+         { "WINEDEBUG", PW_WINE64_DEBUG },
+@@ -1859,8 +1886,16 @@ int main(int argc, char **argv)
+         /* xinput mode: SDL2 games (Half-Life) look for controllers through
+          * raw input first, which Wine on the PS5 has none of, and then skip
+          * XInput; this hint makes them read controller 0 through XInput. */
+-        if (game_input.mode == PW_GAME_INPUT_XINPUT)
++        if (game_input.mode == PW_GAME_INPUT_XINPUT) {
+             extra[config.extra_env_count++] = (PwWineStartEnv){ "SDL_JOYSTICK_RAWINPUT", "0" };
++            /* Unity's own input finds controllers in raw input's list and reads
++             * an XInput one through XInput: win32u lists the controller there
++             * for a Unity game (patch 1033); other games see no change. */
++            if (unity_game(prefix, game->app.executable)) {
++                extra[config.extra_env_count++] = (PwWineStartEnv){ "PW_RAWINPUT_PAD", "1" };
++                PS5LOG_LOG("PW_WINE64 raw input controller for a Unity game");
++            }
++        }
+         /* dualsense mode: Wine's xinput makes the DualSense a game finds
+          * (patch 0475), which ntdll loads it for at the start (0476). */
+         else if (game_input.mode == PW_GAME_INPUT_DUALSENSE)
+diff --git a/wine/patches/1033-win32u-ps5-list-the-title-s-xbox-controller-for-raw-input-in-a-unity-game.patch b/wine/patches/1033-win32u-ps5-list-the-title-s-xbox-controller-for-raw-input-in-a-unity-game.patch
+new file mode 100644
+index 0000000..6f2ded0
+--- /dev/null
++++ b/wine/patches/1033-win32u-ps5-list-the-title-s-xbox-controller-for-raw-input-in-a-unity-game.patch
+@@ -0,0 +1,65 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Mon, 20 Nov 2026 11:40:00 +0000
++Subject: [PATCH] win32u: List the PS5 title's Xbox controller for raw input in a Unity game.
++
++Unity's own input (its Input Manager) finds controllers in raw input's
++device list and reads one whose name says it is an XInput device (IG_)
++through XInput. With the Xbox controller setting the title's controller is
++no HID device, the list had none, and such a game saw no controller at all
++(Yestersol: no reaction with the Xbox controller; with the DualSense, a HID
++device, it drifted, reading a trigger as a stick). With PW_RAWINPUT_PAD=1,
++which the title sets for a Unity game with the Xbox controller setting, the
++list has the controller as Windows lists an Xbox 360 controller's HID
++collection (VID_045E&PID_028E&IG_00, generic desktop gamepad); its input
++stays XInput's. It is in this list only: DirectInput, Windows.Gaming.Input
++and SDL find their devices elsewhere and see nothing new.
++---
++ dlls/win32u/rawinput.c |   27 +++++++++++++++++++++++++++
++ 1 file changed, 27 insertions(+)
++
++diff --git a/dlls/win32u/rawinput.c b/dlls/win32u/rawinput.c
++index 1791351..d7d5f46 100644
++--- a/dlls/win32u/rawinput.c
+++++ b/dlls/win32u/rawinput.c
++@@ -304,6 +304,32 @@ static void add_driver_device( HANDLE handle, DWORD type, const char *path )
++     else device->info.keyboard = keyboard_info;
++     list_add_tail( &devices, &device->entry );
++ }
+++
+++/* PW_RAWINPUT_PAD=1, which a PS5 title sets for a Unity game whose controller
+++ * is an Xbox controller: Unity's player finds controllers in this list and
+++ * reads one whose name says it is an XInput device (IG_) through XInput.
+++ * The title's controller is no HID device in this mode, so this lists it as
+++ * Windows lists an Xbox 360 controller's HID collection, while its input
+++ * stays XInput's. It is in this list only: DirectInput, Windows.Gaming.Input
+++ * and SDL look for devices elsewhere, and see nothing new. */
+++#define PW_TITLE_PAD_HANDLE ULongToHandle( 0x7ff05001 )
+++static void add_title_pad(void)
+++{
+++    static const RID_DEVICE_INFO_HID hid_info = {0x045e, 0x028e, 0x0114, HID_USAGE_PAGE_GENERIC,
+++                                                 HID_USAGE_GENERIC_GAMEPAD};
+++    const char *value = getenv( "PW_RAWINPUT_PAD" );
+++    struct device *device;
+++
+++    if (!value || strcmp( value, "1" )) return;
+++    if (!(device = calloc( 1, sizeof(*device) ))) return;
+++    asciiz_to_unicode( device->path, "\\\\?\\HID#VID_045E&PID_028E&IG_00#0&0&0&0#"
+++                       "{4d1e55b2-f16f-11cf-88cb-001111000030}" );
+++    device->handle = PW_TITLE_PAD_HANDLE;
+++    device->info.cbSize = sizeof(device->info);
+++    device->info.dwType = RIM_TYPEHID;
+++    device->info.hid = hid_info;
+++    list_add_tail( &devices, &device->entry );
+++}
++ #endif
++ 
++ static void rawinput_update_device_list( BOOL force )
++@@ -333,6 +359,7 @@ static void rawinput_update_device_list( BOOL force )
++                        "\\\\?\\WINE#MOUSE#0&0&0#{378de44c-56ef-11d1-bc8c-00a0c91405dd}" );
++     add_driver_device( WINE_KEYBOARD_HANDLE, RIM_TYPEKEYBOARD,
++                        "\\\\?\\WINE#KEYBOARD#0&0&0#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}" );
+++    add_title_pad();
++ #endif
++ }
++ 
+-- 
+2.43.0
+

@@ -1,0 +1,227 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Fri, 20 Nov 2026 12:30:00 +0000
+Subject: [PATCH 161/161] PC5: a film DirectShow plays into part of a larger DirectDraw
+ surface is decoded at that part's size, not stretched over the surface (Wine
+ patch 1034)
+
+amstream's DirectDraw stream asks for the picture in a rectangle of a larger surface (rcTarget), as a game playing its films into the corner of a texture does; the parser scaled the film over the whole surface, and the game showed its top-left part, enlarged. The film is now decoded at the rectangle's size and its rows written into it, as native decoders do.
+---
+ ...-target-rectangle-of-a-larger-sample.patch | 205 ++++++++++++++++++
+ 1 file changed, 205 insertions(+)
+ create mode 100644 wine/patches/1034-winegstreamer-decode-a-video-into-the-target-rectangle-of-a-larger-sample.patch
+
+diff --git a/wine/patches/1034-winegstreamer-decode-a-video-into-the-target-rectangle-of-a-larger-sample.patch b/wine/patches/1034-winegstreamer-decode-a-video-into-the-target-rectangle-of-a-larger-sample.patch
+new file mode 100644
+index 0000000..50a0572
+--- /dev/null
++++ b/wine/patches/1034-winegstreamer-decode-a-video-into-the-target-rectangle-of-a-larger-sample.patch
+@@ -0,0 +1,205 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Mon, 20 Nov 2026 11:50:00 +0000
++Subject: [PATCH] winegstreamer: Decode a video into the target rectangle of a larger sample.
++
++amstream's DirectDraw stream hands the parser a sample whose media type
++puts the picture in part of a larger surface (rcTarget), as for a sample
++made with a rectangle: Sacred Underworld plays its films into the 640x480
++corner of a 1024x512 texture and draws that corner. The parser took the
++surface's size for the picture's and scaled the film over the whole
++texture, so the game showed its top-left part, enlarged. A dynamic format
++change with a target rectangle smaller than the surface now has the film
++decoded at the rectangle's size and its rows written into the rectangle
++with the surface's stride (bottom-up for a bottom-up RGB surface), as
++native decoders do, for one-plane formats.
++---
++ dlls/winegstreamer/quartz_parser.c |  144 ++++++++++++++++++++++++++++++++++--
++ 1 file changed, 135 insertions(+), 9 deletions(-)
++
++diff --git a/dlls/winegstreamer/quartz_parser.c b/dlls/winegstreamer/quartz_parser.c
++index a191020..aabc810 100644
++--- a/dlls/winegstreamer/quartz_parser.c
+++++ b/dlls/winegstreamer/quartz_parser.c
++@@ -107,6 +107,18 @@ struct parser_source
++ 
++     bool interpolate_timestamps;
++     UINT64 prev_end_pts;
+++
+++    /* A downstream sample whose media type puts the picture in a part of a
+++     * larger surface (rcTarget, as amstream's DirectDraw stream does for a
+++     * sample made with a rectangle): the picture is decoded at the part's
+++     * size and its rows written there, as native decoders do, not scaled
+++     * over the whole surface. */
+++    bool has_target;
+++    RECT target;
+++    unsigned int target_bpp, surface_stride, surface_height;
+++    bool surface_bottom_up;
+++    BYTE *target_buffer;
+++    uint32_t target_buffer_size;
++ };
++ 
++ static inline struct parser *impl_from_strmbase_filter(struct strmbase_filter *iface)
++@@ -1273,6 +1285,96 @@ static uint64_t scale_uint64(uint64_t value, uint32_t numerator, uint32_t denomi
++     return ((high.QuadPart / denominator) << 32) + (low.QuadPart / denominator);
++ }
++ 
+++/* Bytes per pixel of a one-plane raw video format, 0 for the others. */
+++static unsigned int video_format_bpp(enum wg_video_format format)
+++{
+++    switch (format)
+++    {
+++        case WG_VIDEO_FORMAT_BGRA:
+++        case WG_VIDEO_FORMAT_BGRx:
+++        case WG_VIDEO_FORMAT_AYUV:
+++        case WG_VIDEO_FORMAT_RGBA:
+++            return 4;
+++        case WG_VIDEO_FORMAT_BGR:
+++            return 3;
+++        case WG_VIDEO_FORMAT_RGB15:
+++        case WG_VIDEO_FORMAT_RGB16:
+++        case WG_VIDEO_FORMAT_UYVY:
+++        case WG_VIDEO_FORMAT_YUY2:
+++        case WG_VIDEO_FORMAT_YVYU:
+++            return 2;
+++        default:
+++            return 0;
+++    }
+++}
+++
+++/* What a downstream media type with a target rectangle smaller than its
+++ * surface asks for (pin->has_target), and format at the rectangle's size. */
+++static void set_video_target(struct parser_source *pin, const AM_MEDIA_TYPE *mt, struct wg_format *format)
+++{
+++    const VIDEOINFOHEADER *info = (const VIDEOINFOHEADER *)mt->pbFormat;
+++    unsigned int bpp, width, height;
+++    RECT target;
+++
+++    pin->has_target = false;
+++    if (format->major_type != WG_MAJOR_TYPE_VIDEO || !IsEqualGUID(&mt->formattype, &FORMAT_VideoInfo)
+++            || mt->cbFormat < sizeof(VIDEOINFOHEADER) || !info
+++            || !(bpp = video_format_bpp(format->u.video.format)))
+++        return;
+++
+++    target = info->rcTarget;
+++    width = info->bmiHeader.biWidth;
+++    height = abs(info->bmiHeader.biHeight);
+++    if (IsRectEmpty(&target) || target.left < 0 || target.top < 0
+++            || target.right > width || target.bottom > height
+++            || (target.right - target.left == width && target.bottom - target.top == height))
+++        return;
+++
+++    TRACE("Decoding at %s of a %ux%u surface.\n", wine_dbgstr_rect(&target), width, height);
+++    format->u.video.width = target.right - target.left;
+++    format->u.video.height = (format->u.video.height < 0 ? -1 : 1) * (target.bottom - target.top);
+++    pin->has_target = true;
+++    pin->target = target;
+++    pin->target_bpp = bpp;
+++    pin->surface_stride = ALIGN(width * bpp, 4);
+++    pin->surface_height = height;
+++    /* A DIB with a positive height is bottom-up, but only an RGB one. */
+++    pin->surface_bottom_up = wg_video_format_is_rgb(format->u.video.format) && info->bmiHeader.biHeight > 0;
+++}
+++
+++/* Copy a decoded picture into its target rectangle of the sample's surface. */
+++static bool copy_to_target(struct parser_source *pin, BYTE *surface, uint32_t surface_size, uint32_t size)
+++{
+++    unsigned int width = pin->target.right - pin->target.left, height = pin->target.bottom - pin->target.top;
+++    unsigned int row_size = width * pin->target_bpp, stride = ALIGN(row_size, 4), row;
+++
+++    if (pin->target_buffer_size < size)
+++    {
+++        BYTE *buffer;
+++        if (!(buffer = realloc(pin->target_buffer, size)))
+++            return false;
+++        pin->target_buffer = buffer;
+++        pin->target_buffer_size = size;
+++    }
+++    if (!wg_parser_stream_copy_buffer(pin->wg_stream, pin->target_buffer, 0, size))
+++        return false;
+++
+++    for (row = 0; row < height && (row + 1) * stride <= size; ++row)
+++    {
+++        unsigned int source = pin->surface_bottom_up ? height - 1 - row : row;
+++        unsigned int line = pin->target.top + row;
+++        uint64_t to;
+++
+++        if (pin->surface_bottom_up)
+++            line = pin->surface_height - 1 - line;
+++        to = (uint64_t)line * pin->surface_stride + pin->target.left * pin->target_bpp;
+++        if (to + row_size > surface_size)
+++            break;
+++        memcpy(surface + to, pin->target_buffer + (size_t)source * stride, row_size);
+++    }
+++    return true;
+++}
+++
++ /* Fill and send a single IMediaSample. */
++ static HRESULT send_sample(struct parser_source *pin, IMediaSample *sample,
++         const struct wg_parser_buffer *buffer, uint32_t offset, uint32_t size, DWORD bytes_per_second)
++@@ -1282,18 +1384,40 @@ static HRESULT send_sample(struct parser_source *pin, IMediaSample *sample,
++ 
++     TRACE("offset %u, size %u, sample size %lu.\n", offset, size, IMediaSample_GetSize(sample));
++ 
++-    hr = IMediaSample_SetActualDataLength(sample, size);
++-    if(FAILED(hr)){
++-        ERR("Failed to set sample size, hr %#lx.\n", hr);
++-        return hr;
++-    }
+++    if (pin->has_target && !offset)
+++    {
+++        uint32_t surface_size = min(pin->surface_stride * pin->surface_height, IMediaSample_GetSize(sample));
++ 
++-    IMediaSample_GetPointer(sample, &ptr);
+++        hr = IMediaSample_SetActualDataLength(sample, surface_size);
+++        if (FAILED(hr))
+++        {
+++            ERR("Failed to set sample size, hr %#lx.\n", hr);
+++            return hr;
+++        }
+++
+++        IMediaSample_GetPointer(sample, &ptr);
++ 
++-    if (!wg_parser_stream_copy_buffer(pin->wg_stream, ptr, offset, size))
+++        if (!copy_to_target(pin, ptr, surface_size, size))
+++        {
+++            /* The GStreamer pin has been flushed. */
+++            return S_OK;
+++        }
+++    }
+++    else
++     {
++-        /* The GStreamer pin has been flushed. */
++-        return S_OK;
+++        hr = IMediaSample_SetActualDataLength(sample, size);
+++        if(FAILED(hr)){
+++            ERR("Failed to set sample size, hr %#lx.\n", hr);
+++            return hr;
+++        }
+++
+++        IMediaSample_GetPointer(sample, &ptr);
+++
+++        if (!wg_parser_stream_copy_buffer(pin->wg_stream, ptr, offset, size))
+++        {
+++            /* The GStreamer pin has been flushed. */
+++            return S_OK;
+++        }
++     }
++ 
++     if (buffer->has_pts || (pin->interpolate_timestamps && pin->prev_end_pts != 0))
++@@ -1420,6 +1544,7 @@ static void send_buffer(struct parser_source *pin, struct parser *filter, const
++                 }
++                 else if (amt_to_wg_format(mt, &format))
++                 {
+++                    set_video_target(pin, mt, &format);
++                     if (!memcmp(&format, &pin->current_format, sizeof(format)))
++                     {
++                         send_sample(pin, sample, buffer, 0, buffer->size, 0);
++@@ -2343,6 +2468,7 @@ static void free_source_pin(struct parser_source *pin)
++ 
++     strmbase_seeking_cleanup(&pin->seek);
++     strmbase_source_cleanup(&pin->pin);
+++    free(pin->target_buffer);
++     free(pin);
++ }
++ 
+-- 
+2.43.0
+

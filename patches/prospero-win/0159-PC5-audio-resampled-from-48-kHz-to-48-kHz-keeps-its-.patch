@@ -1,0 +1,102 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Fri, 20 Nov 2026 12:10:00 +0000
+Subject: [PATCH 159/159] PC5: audio resampled from 48 kHz to 48 kHz keeps its
+ timestamps, so a video Media Foundation plays doesn't stop at its first sound
+ (Wine patch 1032)
+
+The resampler counted time in units of 1/(input rate * output rate) in an int, which 48000 * 48000 overflows: every time rescaled through it came out as none, the resampled audio had no timestamps, and Unreal's media player stopped each video at its first audio sample ("Timestamp is not set for the sample"), leaving it black. The scale is a 64-bit number now.
+---
+ ...ledmo-keep-the-time-scale-in-64-bits.patch | 80 +++++++++++++++++++
+ 1 file changed, 80 insertions(+)
+ create mode 100644 wine/patches/1032-resampledmo-keep-the-time-scale-in-64-bits.patch
+
+diff --git a/wine/patches/1032-resampledmo-keep-the-time-scale-in-64-bits.patch b/wine/patches/1032-resampledmo-keep-the-time-scale-in-64-bits.patch
+new file mode 100644
+index 0000000..ec7814c
+--- /dev/null
++++ b/wine/patches/1032-resampledmo-keep-the-time-scale-in-64-bits.patch
+@@ -0,0 +1,80 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Mon, 20 Nov 2026 11:30:00 +0000
++Subject: [PATCH] resampledmo: Keep the time scale in 64 bits.
++
++The resampler counts time in units of 1/(input rate * output rate), as
++swr_next_pts takes it, but kept that in an AVRational's int denominator:
++48000 * 48000 = 2304000000 is more than an int holds, the denominator went
++negative, and every time rescaled through it came out as no time at all.
++Audio resampled from 48 kHz to 48 kHz then had no timestamps (Sumerian Six:
++"input samples 1024, time (none)"), and Unreal's media player stopped each
++tutorial video at its first audio sample with "Timestamp is not set for
++the sample", leaving the video black. The scale is now a 64-bit number of
++ticks a second, and times are rescaled with av_rescale_rnd.
++---
++ dlls/resampledmo/resampler.c |   18 ++++++++++--------
++ 1 file changed, 10 insertions(+), 8 deletions(-)
++
++diff --git a/dlls/resampledmo/resampler.c b/dlls/resampledmo/resampler.c
++index 5452e2d..6e7c500 100644
++--- a/dlls/resampledmo/resampler.c
+++++ b/dlls/resampledmo/resampler.c
++@@ -207,17 +207,19 @@ struct resampler
++     AVFrame input_frame;
++     AVFrame output_frame;
++     AVFrame current_frame;
++-    AVRational time_base;
+++    /* Ticks per second of the times swr_next_pts takes and gives: the input rate times the
+++     * output rate, 48000 * 48000 = 2304000000 already more than an int holds. */
+++    INT64 time_scale;
++ };
++ 
++ static INT64 resampler_time_to_user(struct resampler *impl, INT64 time)
++ {
++-    return av_rescale_q_rnd(time, impl->time_base, USER_TIME_BASE_Q, AV_ROUND_PASS_MINMAX);
+++    return av_rescale_rnd(time, USER_TIME_BASE_Q.den, impl->time_scale, AV_ROUND_PASS_MINMAX);
++ }
++ 
++ static INT64 resampler_time_from_user(struct resampler *impl, INT64 time)
++ {
++-    return av_rescale_q_rnd(time, USER_TIME_BASE_Q, impl->time_base, AV_ROUND_PASS_MINMAX);
+++    return av_rescale_rnd(time, impl->time_scale, USER_TIME_BASE_Q.den, AV_ROUND_PASS_MINMAX);
++ }
++ 
++ static HRESULT resampler_process_frame(struct resampler *impl, AVFrame *input_frame, DMO_OUTPUT_DATA_BUFFER *output)
++@@ -321,8 +323,8 @@ static HRESULT resampler_process_input(struct resampler *impl, const DMO_OUTPUT_
++     impl->current_frame.pts = resampler_time_from_user(impl, pts);
++     impl->current_frame.duration = resampler_time_from_user(impl, duration);
++     TRACE("input samples %u, time %s, duration %s\n", impl->current_frame.nb_samples,
++-            debugstr_avtime(impl->current_frame.pts, impl->time_base),
++-            debugstr_avtime(impl->current_frame.duration, impl->time_base));
+++            debugstr_avtime(resampler_time_to_user(impl, impl->current_frame.pts), USER_TIME_BASE_Q),
+++            debugstr_avtime(resampler_time_to_user(impl, impl->current_frame.duration), USER_TIME_BASE_Q));
++     return S_OK;
++ }
++ 
++@@ -344,7 +346,7 @@ static HRESULT resampler_process_output(struct resampler *impl, DMO_OUTPUT_DATA_
++ 
++ static void resampler_cleanup(struct resampler *impl)
++ {
++-    impl->time_base.num = impl->time_base.den = 1;
+++    impl->time_scale = 1;
++     memset(&impl->input_format, 0, sizeof(impl->input_format));
++     memset(&impl->output_format, 0, sizeof(impl->output_format));
++     av_frame_unref(&impl->current_frame);
++@@ -402,12 +404,12 @@ static HRESULT resampler_init(struct resampler *impl)
++     av_opt_set_chlayout(impl->context, "in_chlayout", &impl->input_frame.ch_layout, 0);
++     av_opt_set_int(impl->context, "in_sample_rate", impl->input_frame.sample_rate, 0);
++     av_opt_set_sample_fmt(impl->context, "in_sample_fmt", impl->input_frame.format, 0);
++-    impl->time_base.den *= impl->input_frame.sample_rate;
+++    impl->time_scale *= impl->input_frame.sample_rate;
++ 
++     av_opt_set_chlayout(impl->context, "out_chlayout", &impl->output_frame.ch_layout, 0);
++     av_opt_set_int(impl->context, "out_sample_rate", impl->output_frame.sample_rate, 0);
++     av_opt_set_sample_fmt(impl->context, "out_sample_fmt", impl->output_frame.format, 0);
++-    impl->time_base.den *= impl->output_frame.sample_rate;
+++    impl->time_scale *= impl->output_frame.sample_rate;
++ 
++     if ((ret = swr_init(impl->context)) < 0)
++         goto failed;
+-- 
+2.43.0
+
