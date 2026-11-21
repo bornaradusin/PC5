@@ -612,6 +612,8 @@ controller's speaker.
 | 370 | An Unreal Engine 4 game: turn the controller off mid-game, then on again (regression check for 369) | the game finds the controller again, as in 2.4.4 | with `+ps5drv`, `controller connected or disconnected (N): WM_DEVICECHANGE` at the off and the on |
 | 371 | Well Dweller on a console in another language (Brazilian Portuguese), PC5's Settings › Language: English | it gets past its save code instead of stopping with GameMaker's error box | `PW_WINE64 pc5 locale=en_US.UTF-8`; the game's report says "The language it was given: en_US.UTF-8" |
 | 372 | Any game with PC5's Language on System default (regression check for 371) | the game is in the console's language, as before | `PW_WINE64 pc5 locale=` is the console's (pt_BR.UTF-8 on a Brazilian Portuguese console) |
+| 373 | Saints Row 2 (`SR2_pc.exe`, Juiced Patch applied): create a character, then skip the next cutscene quickly | no freeze; the cutscene's voices play | no `Integer division by zero` in `xactengine3_2.dll` (Juiced's CrashDumps log), no `RtlpWaitForCriticalSection ... wait timed out` |
+| 374 | Another XACT game (Juiced 2, Dead Space, Saints Row: The Third): menus and in-game sound (regression check for 373) | sound plays as in 2.4.5 | nothing new from `xaudio2`/`xact` in the log |
 
 ## Custom media navigation changes (pending on PS5)
 

@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sat, 21 Nov 2026 21:55:58 +0000
+Subject: [PATCH 164/164] PC5: Wine's XACT sound engine no longer divides by
+ zero for a cue whose sound hasn't started (Wine patch 1036)
+
+FACTCue_GetProperties divided each track's length by its wave's sample rate, and a track whose wave hadn't started yet has no wave, so the rate was 0. Saints Row 2 asks for its cutscene cues' properties as they start: xactengine3_2.dll stopped with an integer division by zero on the sound thread while it held the engine's lock, and the game froze after character creation or a skipped cutscene. Such a track's properties now stay 0.
+---
+ ...ave-hasn-t-started-has-no-properties.patch | 44 +++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+ create mode 100644 wine/patches/1036-faudio-a-cue-s-track-whose-wave-hasn-t-started-has-no-properties.patch
+
+diff --git a/wine/patches/1036-faudio-a-cue-s-track-whose-wave-hasn-t-started-has-no-properties.patch b/wine/patches/1036-faudio-a-cue-s-track-whose-wave-hasn-t-started-has-no-properties.patch
+new file mode 100644
+index 0000000..338ca9c
+--- /dev/null
++++ b/wine/patches/1036-faudio-a-cue-s-track-whose-wave-hasn-t-started-has-no-properties.patch
+@@ -0,0 +1,44 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sat, 21 Nov 2026 22:00:00 +0000
++Subject: [PATCH] faudio: A cue's track whose wave hasn't started has no
++ properties.
++
++FACTCue_GetProperties describes each track's wave, and a track whose
++play event is still waiting has none yet. FACTWave_GetProperties then
++left the properties empty (it returns 1 for no wave, which nothing
++checked; the assert is compiled out), and the track's duration was
++divided by a sample rate of 0. Saints Row 2 asks for its cutscene cues'
++properties as they start: xactengine3_2.dll stopped with an integer
++division by zero (+0x4e9e) on the sound thread, which was holding the
++engine's lock, so the game froze after character creation or when a
++cutscene was skipped, with the cutscene's voices missing.
++
++Such a track's properties now stay 0, as they were allocated; a track
++with a wave is described as before.
++---
++ libs/faudio/src/FACT.c | 11 +++++++++--
++ 1 file changed, 9 insertions(+), 2 deletions(-)
++
++diff --git a/libs/faudio/src/FACT.c b/libs/faudio/src/FACT.c
++index ae299fb..04fb725 100644
++--- a/libs/faudio/src/FACT.c
+++++ b/libs/faudio/src/FACT.c
++@@ -2756,8 +2756,15 @@ uint32_t FACTCue_GetProperties(
++ 			FACTTrackProperties *track_props = &sndProps->arrTrackProperties[i];
++ 			FACTTrackInstance *track = &pCue->playingSound->tracks[i];
++ 
++-			FAudio_assert(track->activeWave.wave);
++-			FACTWave_GetProperties(track->activeWave.wave, &waveProps);
+++			/* A track whose wave hasn't started yet (its play event is
+++			 * still waiting) has no wave to describe: its properties stay
+++			 * 0, instead of a division by a sample rate of 0.
+++			 */
+++			if (	FACTWave_GetProperties(track->activeWave.wave, &waveProps) != FAUDIO_OK ||
+++				waveProps.properties.format.nSamplesPerSec == 0	)
+++			{
+++				continue;
+++			}
++ 
++ 			track_props->duration = (waveProps.properties.durationInSamples * 1000)
++ 				/ waveProps.properties.format.nSamplesPerSec;
+-- 
+2.43.0
+
