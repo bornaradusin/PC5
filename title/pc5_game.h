@@ -216,6 +216,19 @@ int pc5_prefix_versions(const char *root, const char *prefix);
  * key. 1 when it added some, 0 when it had them or the game needs none, -1 on a failure
  * (tried again next time). */
 int pc5_prefix_installs(const char *root, const char *prefix, const char *program);
+/* An Infinity Engine game (Baldur's Gate, Icewind Dale I and II, Planescape: Torment) finds its
+ * data through the [Alias] section of its ini (baldur.ini, icewind.ini, icewind2.ini,
+ * torment.ini): HD0:= the folder it was installed in, CD1:= to CD6:= where each disc's files are,
+ * as Windows paths. A copy whose ini names the folder it was installed in on a PC (C:\Program
+ * Files\Black Isle\...) couldn't open its data ("Unable to Open BIF:data\2DA.bif", Icewind
+ * Dale II). Each path there that doesn't exist on the console is put where the same folder is in
+ * the game's copy (program: its program, on the console or the USB drive it plays from): under
+ * its folder in place of HD0's old one, or its folder of the path's last name (CD2) for a disc's
+ * drive; a path that exists, or whose folder the copy doesn't have, stays. The ini as it was is
+ * kept once beside it (<name>.ini.pc5-old). 1 when it changed an ini, 0 when none needed it,
+ * -1 when writing failed (tried again next time). shown, unless NULL, gets each such ini's [Alias]
+ * lines as the game will read them ("icewind2.ini: HD0:=..., CD1:=..."), for the game's log. */
+int pc5_prefix_infinity_aliases(const char *root, const char *prefix, const char *program, Pc5Buf *shown);
 
 /* The runtime's copy on the console: the app can't be listed, and every game's prefix
  * would otherwise hold its own 230 MB. Made once, from pc5/mono.list, by the first .NET

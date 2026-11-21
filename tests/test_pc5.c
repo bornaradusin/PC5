@@ -5826,6 +5826,60 @@ static void test_dotnet(void)
         pc5_usb_roots(NULL);
     }
 
+    /* An Infinity Engine game's [Alias] paths (Icewind Dale II's icewind2.ini) still naming the
+     * folder it was installed in on a PC: each that doesn't exist put where the same folder is in
+     * the copy, once, the ini as it was kept; a disc's drive whose folder the copy lacks, another
+     * section's line, and a relative path stay. */
+    {
+        char program[PC5_PATH], ini[PC5_PATH];
+        static const char before[] =
+            "[Program Options]\r\nVolume=100\r\n[Alias]\r\n"
+            "HD0:=C:\\Program Files\\Black Isle\\Icewind Dale II\\\r\n"
+            "CD1:=C:\\Program Files\\Black Isle\\Icewind Dale II\\Data\\\r\n"
+            "CD2:=C:\\Program Files\\Black Isle\\Icewind Dale II\\CD2\\;E:\\CD2\\\r\n"
+            "CD3:=F:\\CD3\\\r\n"
+            "CD4:=C:\\Games\\Icewind Dale II\r\n"
+            "[Keymap]\r\nHD0:=C:\\elsewhere\\\r\n";
+        static const char after[] =
+            "[Program Options]\r\nVolume=100\r\n[Alias]\r\n"
+            "HD0:=C:\\Games\\Icewind Dale II\\\r\n"
+            "CD1:=C:\\Games\\Icewind Dale II\\Data\\\r\n"
+            "CD2:=C:\\Games\\Icewind Dale II\\CD2\\;C:\\Games\\Icewind Dale II\\CD2\\\r\n"
+            "CD3:=F:\\CD3\\\r\n"
+            "CD4:=C:\\Games\\Icewind Dale II\r\n"
+            "[Keymap]\r\nHD0:=C:\\elsewhere\\\r\n";
+        path(program, sizeof(program), "%s/prefixes/game/drive_c/Games/Icewind Dale II/IWD2.exe", root);
+        write_text(program, "MZ");
+        path(file, sizeof(file), "%s/prefixes/game/drive_c/Games/Icewind Dale II/data/2DA.bif", root);
+        write_text(file, "BIFF");
+        path(file, sizeof(file), "%s/prefixes/game/drive_c/Games/Icewind Dale II/cd2/Data/AR6100.bif", root);
+        write_text(file, "BIFF");
+        path(file, sizeof(file), "%s/prefixes/game/drive_c/Games/Icewind Dale II/Keymap.ini", root);
+        write_text(file, "[Keymap]\r\nHD0:=C:\\nowhere\\\r\n");
+        path(ini, sizeof(ini), "%s/prefixes/game/drive_c/Games/Icewind Dale II/icewind2.ini", root);
+        write_text(ini, before);
+        CHECK(pc5_prefix_infinity_aliases(root, "game", program, NULL) == 1, "the [Alias] paths put on the copy");
+        CHECK(file_holds_text(ini, after), "each path where its folder is in the copy, the rest as it was");
+        path(file, sizeof(file), "%s/prefixes/game/drive_c/Games/Icewind Dale II/icewind2.ini.pc5-old", root);
+        CHECK(file_holds_text(file, before), "the ini as it was, kept");
+        {
+            Pc5Buf shown = { 0 };
+            CHECK(pc5_prefix_infinity_aliases(root, "game", program, &shown) == 0 && !pc5_buf_terminate(&shown) &&
+                      !strcmp((const char *)shown.data, "icewind2.ini: HD0:=C:\\Games\\Icewind Dale II\\, "
+                                                         "CD1:=C:\\Games\\Icewind Dale II\\Data\\, "
+                                                         "CD2:=C:\\Games\\Icewind Dale II\\CD2\\;C:\\Games\\Icewind Dale II\\CD2\\, "
+                                                         "CD3:=F:\\CD3\\, CD4:=C:\\Games\\Icewind Dale II"),
+                  "only once, its paths for the log: %s", shown.data ? (const char *)shown.data : "");
+            pc5_buf_free(&shown);
+        }
+        path(file, sizeof(file), "%s/prefixes/game/drive_c/Games/Icewind Dale II/Keymap.ini", root);
+        CHECK(file_holds_text(file, "HD0:=C:\\nowhere\\"), "an ini without [Alias] left alone");
+        write_text(ini, "[Alias]\nHD0:=.\\\nCD1:=.\\data\\\n");
+        CHECK(pc5_prefix_infinity_aliases(root, "game", program, NULL) == 0 && file_holds_text(ini, "HD0:=.\\\nCD1:=.\\data\\\n"),
+              "relative paths left alone");
+        CHECK(pc5_prefix_infinity_aliases(root, "default", program, NULL) == 0, "the default prefix is left alone");
+    }
+
     /* The runtime: copied once, for a .NET program only. */
     path(file, sizeof(file), "%s/pc5/mono.list", app);
     write_text(file, "mono-2.0/\nmono-2.0/bin/\nmono-2.0/bin/libmono-2.0-x86_64.dll\nmono-2.0/lib/mono/4.5/mscorlib.dll\n");

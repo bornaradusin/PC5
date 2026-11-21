@@ -1,0 +1,111 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sat, 21 Nov 2026 23:22:38 +0000
+Subject: [PATCH 166/166] PC5: an Electron game's stdout and stderr open as
+ pipes (Wine patch 1038)
+
+A PS5 title gives a game a socket pair for its output, so its standard handles are files made from Unix sockets, which Windows calls pipes. Node.js (libuv) sets such a pipe to byte mode and blocking before using it; the server refused that as no named pipe, libuv answered EBADF, and Noreya (Electron) stopped at its start with "Uncaught Exception: Error: open EBADF". A file made from a Unix pipe or socket now accepts exactly that state; any other state or handle fails as before.
+---
+ ...akes-a-byte-mode-blocking-pipe-state.patch | 90 +++++++++++++++++++
+ 1 file changed, 90 insertions(+)
+ create mode 100644 wine/patches/1038-server-a-unix-stream-standard-handle-takes-a-byte-mode-blocking-pipe-state.patch
+
+diff --git a/wine/patches/1038-server-a-unix-stream-standard-handle-takes-a-byte-mode-blocking-pipe-state.patch b/wine/patches/1038-server-a-unix-stream-standard-handle-takes-a-byte-mode-blocking-pipe-state.patch
+new file mode 100644
+index 0000000..e03af9e
+--- /dev/null
++++ b/wine/patches/1038-server-a-unix-stream-standard-handle-takes-a-byte-mode-blocking-pipe-state.patch
+@@ -0,0 +1,90 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sat, 21 Nov 2026 23:40:00 +0000
++Subject: [PATCH] server: A Unix stream standard handle takes a byte-mode,
++ blocking pipe state.
++
++A PS5 title gives a game a socket pair for its standard output and
++error (pipe() isn't available), so the game's standard handles are
++files made from Unix sockets, which GetFileType calls pipes. Node.js
++opens a pipe-type stdout or stderr with libuv's uv_pipe_open, which
++first sets the handle to byte mode and blocking (SetNamedPipeHandleState
++with PIPE_READMODE_BYTE | PIPE_WAIT). The server refused it as no
++named pipe (STATUS_OBJECT_TYPE_MISMATCH, ERROR_INVALID_HANDLE), libuv
++answered EBADF, and an Electron game stopped at its start with
++"Uncaught Exception: Error: open EBADF" (Noreya, #693).
++
++A file made from a Unix pipe or socket is a byte stream whose writes
++block: asked for just that, set_named_pipe_info now succeeds on it.
++Message mode or no-wait mode on it still fails (invalid parameter, as
++on a byte-mode pipe), and any other handle that isn't a named pipe
++fails as before.
++---
++ server/file.c       | 14 ++++++++++++++
++ server/file.h       |  1 +
++ server/named_pipe.c | 15 ++++++++++++++-
++ 3 files changed, 29 insertions(+), 1 deletion(-)
++
++diff --git a/server/file.c b/server/file.c
++index c2157ff..1d55dcd 100644
++--- a/server/file.c
+++++ b/server/file.c
++@@ -621,6 +621,20 @@ struct file *get_file_obj( struct process *process, obj_handle_t handle, unsigne
++     return (struct file *)get_handle_obj( process, handle, access, &file_ops );
++ }
++ 
+++/* A file made from a Unix pipe or socket, as a process's standard handles are when the process
+++ * is started from Unix: a byte stream whose writes block, as a byte-mode named pipe's in wait
+++ * mode do. Any other handle: 0, the error left as it was. */
+++int is_unix_stream_file( struct process *process, obj_handle_t handle )
+++{
+++    struct file *file;
+++    int stream;
+++
+++    if (!(file = (struct file *)get_handle_obj( process, handle, 0, &file_ops ))) return 0;
+++    stream = S_ISFIFO( file->mode ) || S_ISSOCK( file->mode );
+++    release_object( file );
+++    return stream;
+++}
+++
++ int get_file_unix_fd( struct file *file )
++ {
++     return get_unix_fd( file->fd );
++diff --git a/server/file.h b/server/file.h
++index 910121d..c224fa2 100644
++--- a/server/file.h
+++++ b/server/file.h
++@@ -160,6 +160,7 @@ extern const char *get_timeout_str( timeout_t timeout );
++ extern struct file *get_file_obj( struct process *process, obj_handle_t handle,
++                                   unsigned int access );
++ extern int get_file_unix_fd( struct file *file );
+++extern int is_unix_stream_file( struct process *process, obj_handle_t handle );
++ extern struct file *create_file_for_fd( int fd, unsigned int access, unsigned int sharing );
++ extern struct file *create_file_for_fd_obj( struct fd *fd, unsigned int access, unsigned int sharing );
++ extern void file_set_error(void);
++diff --git a/server/named_pipe.c b/server/named_pipe.c
++index 1e51158..383f974 100644
++--- a/server/named_pipe.c
+++++ b/server/named_pipe.c
++@@ -1617,7 +1617,20 @@ DECL_HANDLER(set_named_pipe_info)
++         clear_error();
++         pipe_end = (struct pipe_end *)get_handle_obj( current->process, req->handle,
++                                                       0, &pipe_client_ops );
++-        if (!pipe_end) return;
+++        if (!pipe_end)
+++        {
+++            /* A standard handle made from a Unix pipe or socket (a PS5 title gives a game a
+++             * socket pair for its output) is a byte stream whose writes wait: asked for just
+++             * that (Node.js's libuv, opening stdout and stderr as pipes), it succeeds, as on a
+++             * byte-mode pipe. Any other mode, or any other handle, fails as before. */
+++            if (get_error() != STATUS_OBJECT_TYPE_MISMATCH) return;
+++            clear_error();
+++            if (!is_unix_stream_file( current->process, req->handle ))
+++                set_error( STATUS_OBJECT_TYPE_MISMATCH );
+++            else if (req->flags)
+++                set_error( STATUS_INVALID_PARAMETER );
+++            return;
+++        }
++     }
++ 
++     if (!pipe_end->pipe)
+-- 
+2.43.0
+

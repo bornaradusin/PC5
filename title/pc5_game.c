@@ -862,6 +862,244 @@ int pc5_prefix_installs(const char *root, const char *prefix, const char *progra
     return added;
 }
 
+/* ---- an Infinity Engine game's [Alias] paths ------------------------------------------------ */
+
+/* The Windows path windows (C:\..., any case, \ or / between its folders) on the console: 1 when
+ * it is a folder under drive (the prefix's drive_c), each of its names matched in any case. */
+static int windows_folder_exists(const char *drive, const char *windows)
+{
+    char at[PC5_PATH], name[256];
+    const char *p = windows;
+
+    if (pc5_lower((unsigned char)p[0]) != 'c' || p[1] != ':' || (p[2] && p[2] != '\\' && p[2] != '/')) return 0;
+    if (strlen(drive) >= sizeof(at)) return 0;
+    pc5_copy(at, sizeof(at), drive);
+    if (at[0] && at[strlen(at) - 1] == '/') at[strlen(at) - 1] = 0;
+    for (p += 2; *p;) {
+        size_t n = 0;
+        while (*p == '\\' || *p == '/') p++;
+        while (*p && *p != '\\' && *p != '/' && n + 1 < sizeof(name)) name[n++] = *p++;
+        name[n] = 0;
+        if (!n) break;
+        if (!strcmp(name, ".")) continue;
+        DIR *d = opendir(at);
+        struct dirent *e;
+        int found = 0;
+        if (!d) return 0;
+        while (!found && (e = readdir(d)))
+            if (!strcasecmp(e->d_name, name)) {
+                size_t used = strlen(at);
+                found = (size_t)snprintf(at + used, sizeof(at) - used, "/%s", e->d_name) < sizeof(at) - used;
+            }
+        closedir(d);
+        if (!found) return 0;
+    }
+    return pc5_is_dir(at);
+}
+
+/* 1 when text holds needle (lower case), in any case. */
+static int holds_ci(const char *text, const char *needle)
+{
+    size_t n = strlen(needle);
+    for (; *text; text++)
+        if (!strncasecmp(text, needle, n)) return 1;
+    return 0;
+}
+
+/* path's length without its trailing \, / or spaces. */
+static size_t alias_trimmed(const char *path, size_t length)
+{
+    while (length && (path[length - 1] == '\\' || path[length - 1] == '/' || path[length - 1] == ' ')) length--;
+    return length;
+}
+
+static int alias_starts_with(const char *path, size_t length, const char *base, size_t base_length)
+{
+    if (!base_length || length < base_length) return 0;
+    for (size_t i = 0; i < base_length; i++) {
+        int a = pc5_lower((unsigned char)path[i]), b = pc5_lower((unsigned char)base[i]);
+        if (a == '/') a = '\\';
+        if (b == '/') b = '\\';
+        if (a != b) return 0;
+    }
+    return length == base_length || path[base_length] == '\\' || path[base_length] == '/';
+}
+
+/* One alias's value (paths between ;) into out, each that doesn't exist on the console put where
+ * the same folder is in the game's copy (game: its program's folder as Windows sees it, with a \
+ * at its end): under game in place of old, the folder HD0 named, or game's own folder of the
+ * path's last name (CD2) for a disc's drive. 1 when a path changed. */
+static int alias_value(const char *drive, const char *value, size_t length, const char *old, size_t old_length,
+                       const char *game, Pc5Buf *out)
+{
+    int changed = 0;
+
+    for (size_t at = 0; at <= length;) {
+        size_t end = at;
+        while (end < length && value[end] != ';') end++;
+        size_t start = at, n;
+        while (start < end && value[start] == ' ') start++;
+        n = alias_trimmed(value + start, end - start);
+        char path[PC5_PATH], moved[PC5_PATH] = "";
+        int slash = n < end - start && (value[start + n] == '\\' || value[start + n] == '/');   /* a \ at its end */
+        if (at) pc5_buf_puts(out, ";");
+        /* A drive's path (X:\...): a relative one (.\) is the game's folder wherever it is. */
+        if (n >= 2 && n < sizeof(path) && value[start + 1] == ':' &&
+            pc5_lower((unsigned char)value[start]) >= 'a' && pc5_lower((unsigned char)value[start]) <= 'z') {
+            memcpy(path, value + start, n);
+            path[n] = 0;
+            if (!windows_folder_exists(drive, path)) {
+                size_t game_length = strlen(game);
+                if (alias_starts_with(path, n, old, old_length)) {
+                    const char *rest = path + old_length;
+                    while (*rest == '\\' || *rest == '/') rest++;
+                    if (*rest ? pc5_format(moved, sizeof(moved), "%s%s%s", game, rest, slash ? "\\" : "")
+                              : pc5_format(moved, sizeof(moved), "%.*s%s", (int)(game_length - 1), game, slash ? "\\" : ""))
+                        moved[0] = 0;
+                } else {
+                    const char *last = path + n;
+                    while (last > path && last[-1] != '\\' && last[-1] != '/' && last[-1] != ':') last--;
+                    if (*last && pc5_format(moved, sizeof(moved), "%s%s%s", game, last, slash ? "\\" : "")) moved[0] = 0;
+                }
+                if (moved[0] && !windows_folder_exists(drive, moved)) moved[0] = 0;
+            }
+        }
+        if (moved[0]) {
+            pc5_buf_puts(out, moved);
+            changed = 1;
+        } else {
+            pc5_buf_printf(out, "%.*s", (int)(end - at), value + at);
+        }
+        at = end + 1;
+    }
+    return changed;
+}
+
+/* ini (its text) with its [Alias] paths put on the game's copy, into out: 1 when one changed. */
+static int alias_ini(const char *drive, const char *text, const char *game, Pc5Buf *out)
+{
+    char old[PC5_PATH] = "";
+    size_t old_length = 0;
+    int in_alias = 0, changed = 0;
+
+    /* HD0, the folder the game was installed in, first: the other paths may be under it. */
+    for (const char *line = text; *line;) {
+        const char *end = strchr(line, '\n'), *p = line;
+        if (!end) end = line + strlen(line);
+        while (p < end && (*p == ' ' || *p == '\t')) p++;
+        if (*p == '[') in_alias = end - p >= 7 && !strncasecmp(p, "[alias]", 7);
+        else if (in_alias && end - p > 5 && !strncasecmp(p, "HD0:=", 5)) {
+            const char *v = p + 5, *stop = v;
+            while (stop < end && *stop != ';' && *stop != '\r') stop++;
+            while (v < stop && *v == ' ') v++;
+            old_length = alias_trimmed(v, (size_t)(stop - v));
+            if (old_length >= sizeof(old)) old_length = 0;
+            memcpy(old, v, old_length);
+            old[old_length] = 0;
+        }
+        line = *end ? end + 1 : end;
+    }
+    in_alias = 0;
+    for (const char *line = text; *line;) {
+        const char *end = strchr(line, '\n'), *p = line, *eq;
+        if (!end) end = line + strlen(line);
+        size_t cr = end > line && end[-1] == '\r';
+        while (p < end && (*p == ' ' || *p == '\t')) p++;
+        if (*p == '[') in_alias = end - p >= 7 && !strncasecmp(p, "[alias]", 7);
+        /* HD0:=, CD1:= ... CD6:= */
+        if (in_alias && *p != '[' && *p != ';' && (eq = memchr(p, '=', (size_t)(end - p))) && eq > p && eq[-1] == ':') {
+            pc5_buf_printf(out, "%.*s", (int)(eq + 1 - line), line);
+            changed |= alias_value(drive, eq + 1, (size_t)(end - cr - eq - 1), old, old_length, game, out);
+            pc5_buf_puts(out, cr ? "\r" : "");
+        } else {
+            pc5_buf_printf(out, "%.*s", (int)(end - line), line);
+        }
+        if (*end) pc5_buf_puts(out, "\n");
+        line = *end ? end + 1 : end;
+    }
+    return changed;
+}
+
+/* ini's [Alias] lines (its text), "HD0:=...; CD1:=...", appended to shown. */
+static void alias_lines(const char *name, const char *text, Pc5Buf *shown)
+{
+    int in_alias = 0, first = 1;
+
+    pc5_buf_printf(shown, "%s%s:", shown->len ? "; " : "", name);
+    for (const char *line = text; *line;) {
+        const char *end = strchr(line, '\n'), *p = line, *stop;
+        if (!end) end = line + strlen(line);
+        stop = end > line && end[-1] == '\r' ? end - 1 : end;
+        while (p < stop && (*p == ' ' || *p == '\t')) p++;
+        if (*p == '[') in_alias = stop - p >= 7 && !strncasecmp(p, "[alias]", 7);
+        else if (in_alias && p < stop && *p != ';' && memchr(p, '=', (size_t)(stop - p))) {
+            pc5_buf_printf(shown, "%s %.*s", first ? "" : ",", (int)(stop - p), p);
+            first = 0;
+        }
+        line = *end ? end + 1 : end;
+    }
+}
+
+int pc5_prefix_infinity_aliases(const char *root, const char *prefix, const char *program, Pc5Buf *shown)
+{
+    char drive[PC5_PATH], dir[PC5_PATH], inside[PC5_PATH], top[PC5_PATH], game[PC5_PATH], file[PC5_PATH];
+    const char *slash = program ? strrchr(program, '/') : NULL;
+    Pc5Info info;
+    int changed = 0;
+
+    if (!prefix || !prefix[0] || !strcmp(prefix, "default") || !slash) return 0;
+    if (pc5_format(drive, sizeof(drive), "%s/prefixes/%s/drive_c/", root, prefix) ||
+        (size_t)(slash - program) >= sizeof(dir))
+        return 0;
+    memcpy(dir, program, (size_t)(slash - program));
+    dir[slash - program] = 0;
+    /* The program's folder as Windows sees it, as for the installer keys: on C:, a game played
+     * from a USB drive at C:\Games\<folder> too. */
+    if (!strncmp(dir, drive, strlen(drive))) {
+        pc5_copy(inside, sizeof(inside), dir + strlen(drive));
+    } else {
+        size_t n;
+        if (pc5_info_read(root, prefix, &info) || pc5_game_folder(root, prefix, top, sizeof(top))) return 0;
+        n = strlen(top);
+        if (strncmp(dir, top, n) || (dir[n] && dir[n] != '/') ||
+            pc5_format(inside, sizeof(inside), "Games/%s%s", info.folder, dir + n))
+            return 0;
+    }
+    if (pc5_format(game, sizeof(game), "C:\\%s\\", inside)) return 0;
+    for (char *c = game; *c; c++) {
+        if (*c == '/') *c = '\\';
+        if ((unsigned char)*c >= 0x80) return 0;   /* the ini is read in the console's code page: ASCII only */
+    }
+    DIR *d = opendir(dir);
+    struct dirent *e;
+    if (!d) return 0;
+    while ((e = readdir(d))) {
+        Pc5Buf text = { 0 }, out = { 0 };
+        if (!pc5_ends_with_ci(e->d_name, ".ini") || pc5_format(file, sizeof(file), "%s/%s", dir, e->d_name) ||
+            !pc5_is_file(file) || pc5_read_file(file, &text, 256 * 1024) || pc5_buf_terminate(&text)) {
+            pc5_buf_free(&text);
+            continue;
+        }
+        int infinity = holds_ci((const char *)text.data, "[alias]") && holds_ci((const char *)text.data, "hd0:=");
+        if (infinity && alias_ini(drive, (const char *)text.data, game, &out) && out.data && !pc5_buf_terminate(&out)) {
+            /* The ini as it was, kept once beside it (<name>.ini.pc5-old). */
+            char kept[PC5_PATH];
+            if (pc5_format(kept, sizeof(kept), "%s.pc5-old", file) ||
+                (!pc5_exists(kept) && pc5_write_file(kept, text.data, text.len)) ||
+                pc5_write_file(file, out.data, out.len))
+                changed = -1;
+            else if (changed >= 0)
+                changed = 1;
+        }
+        /* What the game finds its data by, for its log. */
+        if (infinity && shown) alias_lines(e->d_name, out.data && changed >= 0 ? (const char *)out.data : (const char *)text.data, shown);
+        pc5_buf_free(&text);
+        pc5_buf_free(&out);
+    }
+    closedir(d);
+    return changed;
+}
+
 /* ---- the runtime's copy ------------------------------------------------------------------- */
 
 static uint64_t now_ms(void)
@@ -1114,6 +1352,11 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         if (!pc5_game_program(root, prefix, started, sizeof(started))) {
             int installs = pc5_prefix_installs(root, prefix, started);
             if (installs) say(game, "PC5 prefix installer keys %s", installs > 0 ? "added" : "failed");
+            Pc5Buf shown = { 0 };
+            int aliases = pc5_prefix_infinity_aliases(root, prefix, started, &shown);
+            if (aliases) say(game, "PC5 Infinity Engine [Alias] paths %s", aliases > 0 ? "put on the game's folder" : "failed");
+            if (shown.len && !pc5_buf_terminate(&shown)) say(game, "PC5 Infinity Engine [Alias] in %.600s", (const char *)shown.data);
+            pc5_buf_free(&shown);
             int harvested = pc5_prefix_dx9_cabs(root, prefix, started);
             if (harvested) say(game, "PC5 DirectX cabinets %s %d", harvested > 0 ? "extracted" : "failed", harvested > 0 ? harvested : 0);
         }
