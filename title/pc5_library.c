@@ -456,6 +456,40 @@ const char *pc5_known_dxvk(const char *program)
     return i < 0 ? NULL : known_games[i].dxvk;
 }
 
+const char *pc5_program_dxvk(const char *root, const char *id, const char *program)
+{
+    /* Unreal Engine's Media Foundation player decodes its videos on a Direct3D 11 device of its
+     * own and hands each picture to the game's device through a shared texture; the console has
+     * no memory to share between two Vulkan devices, so DXVK runs the second device on the
+     * first one's Vulkan device for this game alone (patches/dxvk 0007). Without it the
+     * pictures were green (The Thaumaturge, Burning Sword: Death Sun, with -dx11). */
+    static const char share[] = "d3d11.shareDevice = True";
+    char lower[PC5_PATH], marker[PC5_PATH], want[64], line[80];
+    struct stat st;
+    Pc5Buf text = { 0 };
+    int found;
+
+    if (!program) return NULL;
+    pc5_copy(lower, sizeof(lower), program);
+    for (char *c = lower; *c; c++) *c = (char)pc5_lower((unsigned char)*c);
+    if (!strstr(lower, "/binaries/win64/") && !strstr(lower, "/binaries/win32/")) return NULL;
+    if (stat(program, &st) || !id || !id[0] ||
+        pc5_format(marker, sizeof(marker), "%s/prefixes/%s/pc5/media-player.txt", root, id))
+        return NULL;
+    snprintf(want, sizeof(want), "%lld %lld ", (long long)st.st_size, (long long)st.st_mtime);
+    if (!pc5_read_file(marker, &text, 256) && !pc5_buf_terminate(&text) &&
+        !strncmp((const char *)text.data, want, strlen(want))) {
+        found = ((const char *)text.data)[strlen(want)] == '1';
+        pc5_buf_free(&text);
+        return found ? share : NULL;
+    }
+    pc5_buf_free(&text);
+    found = pc5_pe_unreal_media_player(program);
+    snprintf(line, sizeof(line), "%s%d\n", want, found);
+    (void)pc5_write_file(marker, line, strlen(line));
+    return found ? share : NULL;
+}
+
 /* The folder the game's program is in, on the console. */
 static void program_folder(const char *root, const char *id, const Pc5Info *info, char *out, size_t size)
 {

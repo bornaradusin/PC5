@@ -75,6 +75,11 @@ int pc5_pe_godot(const char *path);
  * stops there ("ChoosePixelFormat failed"). With Zink its Direct3D is Wine's own, which
  * draws with OpenGL too, should it choose Direct3D after all. */
 int pc5_pe_draws_opengl(const char *path);
+/* 1 when the program at path is an Unreal Engine game's with the engine's Media Foundation
+ * video player in it (its WmfMedia module, named in UTF-16 as the engine registers it), which
+ * decodes on a Direct3D 11 device of its own and hands each picture to the game's through a
+ * shared texture. Reads the whole program. */
+int pc5_pe_unreal_media_player(const char *path);
 /* A Unity game's program (its <name>_Data folder beside it) draws with Direct3D, which what
  * it imports, or what is beside it, doesn't say: Unity 5.5 and before (the player in the
  * program, importing OpenGL alone) draws with the Direct3D libraries it names (PC5_IMPORT_D3D*,

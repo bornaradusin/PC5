@@ -769,6 +769,36 @@ static void test_pe(void)
         write_text(bgfx, "MZ ... d3d11.dll d3d12.dll ... src\\renderer_d3d11.cpp ...");
         CHECK(!pc5_pe_draws_opengl(bgfx), "not a bgfx program without OpenGL");
         CHECK(!pc5_pe_draws_opengl(ue), "nor an Unreal one");
+        /* Unreal Engine's Media Foundation video player in a game's program (its module's name in
+         * UTF-16): DXVK's d3d11.shareDevice for that game alone, read once per size and time. */
+        {
+            static const uint8_t named[] = { 'M', 'Z', 0, 0, 'W', 0, 'm', 0, 'f', 0, 'M', 0, 'e', 0, 'd', 0, 'i', 0, 'a', 0, 0, 0 };
+            char player[PC5_PATH], plain[PC5_PATH], elsewhere[PC5_PATH], marker[PC5_PATH];
+            path(player, sizeof(player), "%s/ue-media/prefixes/thaum/drive_c/Games/T/T/Binaries/Win64/T-Win64-Shipping.exe", work);
+            write_text(player, "");
+            CHECK(!pc5_write_file(player, named, sizeof(named)), "the player's program written");
+            CHECK(pc5_pe_unreal_media_player(player), "an Unreal game with its Media Foundation player");
+            CHECK(!pc5_pe_unreal_media_player(ue), "not an Unreal game without it");
+            path(plain, sizeof(plain), "%s/ue-media/prefixes/plain/drive_c/Games/P/Binaries/Win64/P-Win64-Shipping.exe", work);
+            write_text(plain, "MZ ... WmfMedia, but not as the engine names it ...");
+            CHECK(!pc5_pe_unreal_media_player(plain), "not the name in ASCII");
+            char root_dir[PC5_PATH];
+            path(root_dir, sizeof(root_dir), "%s/ue-media", work);
+            path(marker, sizeof(marker), "%s/prefixes/thaum/pc5/media-player.txt", root_dir);
+            write_text(marker, "");   /* its prefix's pc5 folder, as an installed game has */
+            const char *options = pc5_program_dxvk(root_dir, "thaum", player);
+            CHECK(options && !strcmp(options, "d3d11.shareDevice = True"), "d3d11.shareDevice for it: %s", options ? options : "none");
+            path(marker, sizeof(marker), "%s/prefixes/thaum/pc5/media-player.txt", root_dir);
+            CHECK(file_holds_text(marker, " 1\n"), "what was found, kept");
+            CHECK(pc5_program_dxvk(root_dir, "thaum", player) != NULL, "and read from there");
+            CHECK(pc5_program_dxvk(root_dir, "plain", plain) == NULL, "nothing for an Unreal game without the player");
+            path(elsewhere, sizeof(elsewhere), "%s/ue-media/prefixes/other/drive_c/Games/O/game.exe", work);
+            write_text(elsewhere, "");
+            CHECK(!pc5_write_file(elsewhere, named, sizeof(named)), "a program elsewhere written");
+            CHECK(pc5_program_dxvk(root_dir, "other", elsewhere) == NULL, "nothing for a program outside Binaries\\Win64, not read");
+            path(marker, sizeof(marker), "%s/prefixes/other/pc5/media-player.txt", root_dir);
+            CHECK(!pc5_exists(marker), "and no note of it");
+        }
     }
     path(file, sizeof(file), "%s/game64.exe", programs);
     CHECK(!pc5_pe_read(file, &pe), "game64 reads");

@@ -1,0 +1,122 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sat, 21 Nov 2026 22:40:00 +0000
+Subject: [PATCH] d3d11: d3d11.shareDevice: any second device shares textures
+ within the process, and ReleaseSync orders them
+
+Patch 0006 runs a video device (D3D11_CREATE_DEVICE_VIDEO_SUPPORT) on
+the DxvkDevice of a D3D11 device that lives, so its shared textures can
+be opened there without external memory (Unity's movies). Unreal
+Engine's Media Foundation player makes its decoding device without that
+flag: its pictures were listed within the process on a DxvkDevice of
+their own, the main device's OpenSharedResource found no image of its
+own under the handle ("Handle not found", once a frame), and the
+tutorial videos and cinematics showed green (The Thaumaturge, Burning
+Sword: Death Sun, with -dx11).
+
+d3d11.shareDevice, off unless set for a game (PC5 sets it for an Unreal
+Engine game with that player in its program):
+
+- A D3D11 device made while another lives runs on that device's
+  DxvkDevice where external memory is missing.
+- Without keyed mutexes, ReleaseSync on a texture waits until what this
+  device did to it is finished, so the device that acquires it next
+  reads the whole picture, as the keyed mutex orders them.
+
+Every other game is as before: only a video device shares, and
+ReleaseSync without keyed mutexes does nothing.
+---
+ src/d3d11/d3d11_main.cpp     | 10 +++++++---
+ src/d3d11/d3d11_options.cpp  |  1 +
+ src/d3d11/d3d11_options.h    |  8 ++++++++
+ src/d3d11/d3d11_resource.cpp | 16 +++++++++++++++-
+ 4 files changed, 31 insertions(+), 4 deletions(-)
+
+diff --git a/src/d3d11/d3d11_main.cpp b/src/d3d11/d3d11_main.cpp
+index 02c15d0..23c2cdc 100644
+--- a/src/d3d11/d3d11_main.cpp
++++ b/src/d3d11/d3d11_main.cpp
+@@ -96,14 +96,18 @@ extern "C" {
+       // textures it shares are shared within the process (util_local_share.h): Unity decodes
+       // its movies on a device of their own and hands each picture to its main device
+       // through a shared texture. D3D11 devices on an adapter all enable the same features.
++      // Any other device does too only in a game with d3d11.shareDevice set (Unreal Engine's
++      // Media Foundation player makes its decoding device without the video flag).
+       Rc<DxvkDevice> dxvkDevice;
++      const bool video = (Flags & D3D11_CREATE_DEVICE_VIDEO_SUPPORT) != 0;
+ 
+-      if ((Flags & D3D11_CREATE_DEVICE_VIDEO_SUPPORT) && !dxvkAdapter->features().khrExternalMemoryWin32
+-       && dxvkInstance->config().getOption<bool>("d3d11.shareVideoDevice", true)) {
++      if (!dxvkAdapter->features().khrExternalMemoryWin32
++       && (video ? dxvkInstance->config().getOption<bool>("d3d11.shareVideoDevice", true)
++                 : dxvkInstance->config().getOption<bool>("d3d11.shareDevice", false))) {
+         dxvkDevice = local_share::findDevice(dxvkAdapter->devicePropertiesExt().vk11.deviceUUID);
+ 
+         if (dxvkDevice != nullptr)
+-          Logger::info("D3D11: A video device shares a Direct3D 11 device's Vulkan device, for textures shared within the process");
++          Logger::info(str::format("D3D11: A ", video ? "video " : "", "device shares a Direct3D 11 device's Vulkan device, for textures shared within the process"));
+       }
+ 
+       if (dxvkDevice == nullptr) {
+diff --git a/src/d3d11/d3d11_options.cpp b/src/d3d11/d3d11_options.cpp
+index c66cffc..f4dbd3f 100644
+--- a/src/d3d11/d3d11_options.cpp
++++ b/src/d3d11/d3d11_options.cpp
+@@ -26,6 +26,7 @@ namespace dxvk {
+     this->floatControls         = config.getOption<bool>("d3d11.floatControls", true);
+     this->forceSampleRateShading = config.getOption<bool>("d3d11.forceSampleRateShading", false);
+     this->disableMsaa           = config.getOption<bool>("d3d11.disableMsaa", false);
++    this->shareDevice           = config.getOption<bool>("d3d11.shareDevice", false);
+     this->enableContextLock     = config.getOption<bool>("d3d11.enableContextLock", false);
+     this->deferSurfaceCreation  = config.getOption<bool>("dxgi.deferSurfaceCreation", false);
+     this->maxFrameLatency       = config.getOption<int32_t>("dxgi.maxFrameLatency", 0);
+diff --git a/src/d3d11/d3d11_options.h b/src/d3d11/d3d11_options.h
+index 7f7c71f..1e21c42 100644
+--- a/src/d3d11/d3d11_options.h
++++ b/src/d3d11/d3d11_options.h
+@@ -90,6 +90,14 @@ namespace dxvk {
+     /// performs the required shader and resolve fixups.
+     bool disableMsaa = false;
+ 
++    /// Without external memory: a D3D11 device made while another lives
++    /// runs on that device's DxvkDevice, and ReleaseSync waits until the
++    /// device's use of the texture is finished, for a game that hands
++    /// pictures from one device to another through shared textures
++    /// (Unreal Engine's Media Foundation player). Off unless set for the
++    /// game; a video device shares without it (d3d11.shareVideoDevice).
++    bool shareDevice = false;
++
+     /// Dynamic resources with the given bind flags will be allocated
+     /// in cached system memory. Enabled automatically when recording
+     /// an api trace.
+diff --git a/src/d3d11/d3d11_resource.cpp b/src/d3d11/d3d11_resource.cpp
+index 27836bd..3480505 100644
+--- a/src/d3d11/d3d11_resource.cpp
++++ b/src/d3d11/d3d11_resource.cpp
+@@ -107,8 +107,22 @@ namespace dxvk {
+ 
+   HRESULT STDMETHODCALLTYPE D3D11DXGIKeyedMutex::ReleaseSync(
+           UINT64                  Key) {
+-    if (!m_supported)
++    if (!m_supported) {
++      // Without keyed mutexes, in a game whose devices share one DxvkDevice for it
++      // (d3d11.shareDevice): what this device did to the texture is finished before the
++      // device that acquires it next uses it, as the keyed mutex would order them (Unreal
++      // Engine's video player writes each picture on a device of its own). Any other game:
++      // nothing, as before.
++      D3D11CommonTexture* texture = GetCommonTexture(m_resource);
++
++      if (texture && m_device->GetOptions()->shareDevice) {
++        D3D11ImmediateContext* context = m_device->GetContext();
++        D3D10DeviceLock lock = context->LockContext();
++        context->WaitForResource(*texture->GetImage(), DxvkCsThread::SynchronizeAll, D3D11_MAP_READ_WRITE, 0);
++      }
++
+       return S_OK;
++    }
+ 
+     D3D11CommonTexture* texture = GetCommonTexture(m_resource);
+     Rc<DxvkDevice> dxvkDevice = m_device->GetDXVKDevice();
+-- 
+2.43.0
+

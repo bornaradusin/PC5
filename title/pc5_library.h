@@ -111,6 +111,12 @@ const char *pc5_recipe_name(const char *program, const char *program_dir);
  * recipe in pc5/recipe.txt: 1 when it has one, 0 when not, -1 when it can't. */
 int pc5_recipe_apply(const char *root, const char *id);
 const char *pc5_known_dxvk(const char *program);
+/* The DXVK options a game needs for what its program has in it (NULL for none), added to
+ * DXVK_CONFIG: d3d11.shareDevice for an Unreal Engine game with the engine's Media Foundation
+ * video player (pc5_pe_unreal_media_player), whose videos showed green without it. Only an
+ * Unreal Engine game's program (in Binaries/Win64 or Binaries/Win32) is read, once for each
+ * size and time it has; pc5/media-player.txt in the game's prefix keeps what was found. */
+const char *pc5_program_dxvk(const char *root, const char *id, const char *program);
 /* The folder PC5 copied a game into (prefixes/<id>/drive_c/Games/<folder>). */
 int pc5_game_folder(const char *root, const char *id, char *out, size_t size);
 /* Makes a PC5 game start another of its programs (folder: its copy, read with

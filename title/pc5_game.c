@@ -1167,11 +1167,12 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
      * for a 32-bit game); Full the whole heap.
      * A game's env.txt, applied after, can set DXVK_CONFIG itself. */
     {
-        /* With the DXVK options of a game PC5 knows (pc5_known_dxvk: GTA IV's). */
+        /* With the DXVK options of a game PC5 knows (pc5_known_dxvk: GTA IV's), and those a game
+         * needs for what its program has in it (pc5_program_dxvk: Unreal Engine's video player). */
         char dxvk_config[256] = "", program[PC5_PATH];
-        const char *known = prefix && prefix[0] && !pc5_game_program(root, prefix, program, sizeof(program))
-                                ? pc5_known_dxvk(program)
-                                : NULL;
+        const int found = prefix && prefix[0] && !pc5_game_program(root, prefix, program, sizeof(program));
+        const char *known = found ? pc5_known_dxvk(program) : NULL;
+        const char *needed = found ? pc5_program_dxvk(root, prefix, program) : NULL;
         if (!video_memory_full)
             snprintf(dxvk_config, sizeof(dxvk_config), "dxgi.maxDeviceMemory = %d",
                      video_memory_mb ? video_memory_mb : 4096);
@@ -1179,6 +1180,11 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
             size_t n = strlen(dxvk_config);
             snprintf(dxvk_config + n, sizeof(dxvk_config) - n, "%s%s", n ? "; " : "", known);
             say(game, "PC5 DXVK options for this game: %s", known);
+        }
+        if (needed) {
+            size_t n = strlen(dxvk_config);
+            snprintf(dxvk_config + n, sizeof(dxvk_config) - n, "%s%s", n ? "; " : "", needed);
+            say(game, "PC5 DXVK options for what this game has in it: %s", needed);
         }
         if (dxvk_config[0]) setenv("DXVK_CONFIG", dxvk_config, 1);
         else unsetenv("DXVK_CONFIG");

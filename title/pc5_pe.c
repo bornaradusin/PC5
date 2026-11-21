@@ -512,11 +512,10 @@ int pc5_pe_unreal_d3d12(const char *path, uint32_t imports)
     return agility_sdk(path) || (pc5_pe_named_libraries(path) & PC5_IMPORT_D3D12) != 0;
 }
 
-/* 1 when the file at path holds text (ASCII, as it is), in its first GB. */
-static int file_has_text(const char *path, const char *text)
+/* 1 when the file at path holds these n bytes, in its first GB. */
+static int file_has_bytes(const char *path, const uint8_t *bytes, size_t n)
 {
-    enum { CHUNK = 1 << 20, KEEP = 64 };
-    const size_t n = strlen(text);
+    enum { CHUNK = 1 << 20, KEEP = 128 };
     const uint64_t most = (uint64_t)1 << 30;
     uint64_t total = 0;
     size_t kept = 0;
@@ -532,16 +531,33 @@ static int file_has_text(const char *path, const char *text)
     while (!found && total < most && (got = read(fd, buf + kept, CHUNK)) > 0) {
         size_t have = kept + (size_t)got;
         total += (uint64_t)got;
-        for (const uint8_t *at = buf; !found && (at = memchr(at, (unsigned char)text[0], have - (size_t)(at - buf)));
-             at++)
-            found = (size_t)(buf + have - at) >= n && !memcmp(at, text, n);
-        /* The tail again with the next chunk: the text may run across the two. */
+        for (const uint8_t *at = buf; !found && (at = memchr(at, bytes[0], have - (size_t)(at - buf))); at++)
+            found = (size_t)(buf + have - at) >= n && !memcmp(at, bytes, n);
+        /* The tail again with the next chunk: the bytes may run across the two. */
         kept = have < KEEP ? have : KEEP;
         memmove(buf, buf + have - kept, kept);
     }
     pc5_free(buf);
     close(fd);
     return found;
+}
+
+/* 1 when the file at path holds text (ASCII, as it is), in its first GB. */
+static int file_has_text(const char *path, const char *text)
+{
+    return file_has_bytes(path, (const uint8_t *)text, strlen(text));
+}
+
+int pc5_pe_unreal_media_player(const char *path)
+{
+    /* The module's name as the engine registers it, TEXT("WmfMedia"): UTF-16. */
+    static const char name[] = "WmfMedia";
+    uint8_t wide[2 * (sizeof(name) - 1)];
+    for (size_t i = 0; i + 1 < sizeof(name); i++) {
+        wide[2 * i] = (uint8_t)name[i];
+        wide[2 * i + 1] = 0;
+    }
+    return file_has_bytes(path, wide, sizeof(wide));
 }
 
 int pc5_pe_godot(const char *path)
