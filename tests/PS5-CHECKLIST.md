@@ -616,6 +616,8 @@ controller's speaker.
 | 374 | Another XACT game (Juiced 2, Dead Space, Saints Row: The Third): menus and in-game sound (regression check for 373) | sound plays as in 2.4.5 | nothing new from `xaudio2`/`xact` in the log |
 | 375 | Alien Breed: Impact with NVIDIA's `PhysX-9.13.0604-SystemSoftware.msi` in its folder (`Redist/` or `_CommonRedist/PhysX/`), even one that failed with 2.4.5 | it starts past PhysX instead of closing at once | `PC5 redist installed Redist/PhysX-9.13.0604-SystemSoftware.msi (NVIDIA PhysX) files=34 kept=0 skipped=0 registry=29`; the game loads `PhysX\Engine\v2.8.1\PhysXCore.dll` |
 | 376 | A game with the Legacy PhysX installer (Clive Barker's Jericho), and one whose redistributable is damaged (regression check for 375) | the Legacy one installs as in 2.4.5; the damaged one is tried once and not at every start | `PC5 redist installed ...Legacy.msi`; `pc5/redist.txt` lists the damaged one as `failed-2.4.6` |
+| 377 | Rec Rewind (Unreal Engine 5): start it and wait at its loading screen | it gets past the loading screen and its videos play | no `Assertion failed: Length >= static_cast<DWORD>(Pitch * DecodedHeight * 3 / 2)` in `REC_REWIND/Saved/Logs/REC_REWIND.log`, no `ElectraPlayer::Video decoder crashed` |
+| 378 | A Unity game's cutscenes (Ruined King) and a Media Foundation movie in another game (regression check for 377) | the films play as in 2.4.5 | nothing new from `mfplat` in the log |
 
 ## Custom media navigation changes (pending on PS5)
 

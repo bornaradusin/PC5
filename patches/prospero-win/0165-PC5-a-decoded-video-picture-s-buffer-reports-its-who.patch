@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sat, 21 Nov 2026 22:16:32 +0000
+Subject: [PATCH 165/165] PC5: a decoded video picture's buffer reports its
+ whole length, all its planes (Wine patch 1037)
+
+A Media Foundation buffer holding a Direct3D 11 texture answered DXVK's DepthPitch as its length, which for NV12 is the luma plane only (2088960 of a 1920x1088 picture's 3133440). Unreal Engine 5's Electra H.264 decoder checks the length against Pitch x Height x 3 / 2, stopped its decoder thread at the first picture, and Rec Rewind stayed on its loading screen. The length is now the whole picture at the mapped pitch.
+---
+ ...buffer-s-length-is-the-whole-picture.patch | 42 +++++++++++++++++++
+ 1 file changed, 42 insertions(+)
+ create mode 100644 wine/patches/1037-mfplat-a-direct3d-11-surface-buffer-s-length-is-the-whole-picture.patch
+
+diff --git a/wine/patches/1037-mfplat-a-direct3d-11-surface-buffer-s-length-is-the-whole-picture.patch b/wine/patches/1037-mfplat-a-direct3d-11-surface-buffer-s-length-is-the-whole-picture.patch
+new file mode 100644
+index 0000000..f8e57c4
+--- /dev/null
++++ b/wine/patches/1037-mfplat-a-direct3d-11-surface-buffer-s-length-is-the-whole-picture.patch
+@@ -0,0 +1,42 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sat, 21 Nov 2026 22:30:00 +0000
++Subject: [PATCH] mfplat: A Direct3D 11 surface buffer's length is the whole
++ picture.
++
++Lock2DSize on a buffer holding a Direct3D 11 texture answered the
++mapped texture's DepthPitch as the buffer's length. For a planar
++format, DXVK's DepthPitch is the first plane: a 1920x1088 NV12 picture
++gave 2088960, its luma, where the buffer holds 3133440 with its chroma.
++Unreal Engine 5's Electra H.264 decoder checks that the length is at
++least Pitch x DecodedHeight x 3 / 2, so its decoder thread stopped on
++the first picture and Rec Rewind stayed on its loading screen.
++
++The length is now the whole picture at the mapped pitch: the buffer's
++plane size scaled from its own stride to RowPitch, or DepthPitch if
++that is more, as the copy into the buffer already takes both planes.
++---
++ dlls/mfplat/buffer.c | 10 +++++++++-
++ 1 file changed, 9 insertions(+), 1 deletion(-)
++
++diff --git a/dlls/mfplat/buffer.c b/dlls/mfplat/buffer.c
++index 6d59245..e1c4f8d 100644
++--- a/dlls/mfplat/buffer.c
+++++ b/dlls/mfplat/buffer.c
++@@ -1117,7 +1117,15 @@ static HRESULT dxgi_surface_buffer_lock(struct buffer *buffer, MF2DBuffer_LockFl
++         if (buffer_start)
++             *buffer_start = *scanline0;
++         if (buffer_length)
++-            *buffer_length = buffer->dxgi_surface.map_desc.DepthPitch;
+++        {
+++            /* The whole picture, all its planes at the mapped pitch, as Windows has it: a
+++             * planar format's DepthPitch may be its first plane only (DXVK's NV12 is RowPitch x
+++             * Height), and a decoder that checks the length against Pitch x Height x 3 / 2
+++             * stops (Unreal Engine 5's Electra H.264 decoder). */
+++            UINT64 length = buffer->_2d.width ? (UINT64)buffer->_2d.plane_size *
+++                    buffer->dxgi_surface.map_desc.RowPitch / buffer->_2d.width : 0;
+++            *buffer_length = max(buffer->dxgi_surface.map_desc.DepthPitch, (DWORD)min(length, MAXDWORD));
+++        }
++     }
++ 
++     return hr;
+-- 
+2.43.0
+
