@@ -456,6 +456,8 @@ const char *pc5_known_dxvk(const char *program)
     return i < 0 ? NULL : known_games[i].dxvk;
 }
 
+static int resolve_ci(const char *base, const char *relative, char *out, size_t size);
+
 const char *pc5_program_dxvk(const char *root, const char *id, const char *program)
 {
     /* Unreal Engine's Media Foundation player decodes its videos on a Direct3D 11 device of its
@@ -485,6 +487,33 @@ const char *pc5_program_dxvk(const char *root, const char *id, const char *progr
     }
     pc5_buf_free(&text);
     found = pc5_pe_unreal_media_player(program);
+    if (!found) {
+        /* A game built with its modules apart (not one program): the player is its own DLL in
+         * the engine's plugin folder, <top>/Engine/Plugins/Media/WmfMedia/Binaries/Win64, the
+         * program being <top>/<project>/Binaries/Win64/<name>.exe. */
+        char top[PC5_PATH], dir[PC5_PATH];
+        pc5_copy(top, sizeof(top), program);
+        for (int up = 0; up < 4; up++) {
+            char *slash = strrchr(top, '/');
+            if (!slash) { top[0] = 0; break; }
+            *slash = 0;
+        }
+        for (int bits = 0; top[0] && !found && bits < 2; bits++) {
+            char relative[64];
+            DIR *d;
+            struct dirent *e;
+            snprintf(relative, sizeof(relative), "Engine/Plugins/Media/WmfMedia/Binaries/%s", bits ? "Win32" : "Win64");
+            if (resolve_ci(top, relative, dir, sizeof(dir)) || !(d = opendir(dir))) continue;
+            while (!found && (e = readdir(d))) {
+                char name[256];
+                size_t n = strlen(e->d_name);
+                pc5_copy(name, sizeof(name), e->d_name);
+                for (char *c = name; *c; c++) *c = (char)pc5_lower((unsigned char)*c);
+                found = n > 4 && !strcmp(name + n - 4, ".dll") && strstr(name, "wmfmedia") != NULL;
+            }
+            closedir(d);
+        }
+    }
     snprintf(line, sizeof(line), "%s%d\n", want, found);
     (void)pc5_write_file(marker, line, strlen(line));
     return found ? share : NULL;

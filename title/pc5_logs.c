@@ -429,7 +429,7 @@ void pc5_log_notes(const char *text, size_t length, Pc5Buf *out)
     NoteError errors[NOTE_ERRORS];
     NoteModule *modules = calloc(NOTE_MODULES, sizeof(*modules));
     int missing_n = 0, programs_n = 0, errors_n = 0, libs_n = 0, modules_n = 0, said_n = 0;
-    int tile = 0, vkd3d = 0, zink = 0;
+    int tile = 0, vkd3d = 0, zink = 0, unshared = 0, shared_on = 0;
     long long free_low = -1, dmem_peak = -1, dmem_failures = -1;
     double first_t = -1, last_t = -1;
 
@@ -473,6 +473,10 @@ void pc5_log_notes(const char *text, size_t length, Pc5Buf *out)
         if (!dxvk[0] && (found = after(line, end, "DXVK: ")) && *found >= '0' && *found <= '9')
             word(found, end, dxvk, sizeof(dxvk));
         if (after(line, end, ":vkd3d-proton:")) vkd3d = 1;
+        /* A picture one Direct3D 11 device shared that another couldn't open (DXVK), once a frame
+         * while a video plays: the video shows green (Unreal Engine's video player). */
+        if (after(line, end, "OpenSharedResourceGeneric: Handle not found")) unshared++;
+        if (after(line, end, "D3D11: A device shares a Direct3D 11 device's Vulkan device")) shared_on = 1;
         if (after(line, end, "OpenGL Device: zink") || after(line, end, "PW_WINE64 zink provider=ok")) zink = 1;
         if (!locale[0] && (found = after(line, end, "PW_WINE64 pc5 locale="))) word(found, end, locale, sizeof(locale));
         if (after(line, end, " PC5 tile game=")) tile = 1;
@@ -575,6 +579,11 @@ void pc5_log_notes(const char *text, size_t length, Pc5Buf *out)
         pc5_buf_puts(out, ".\n");
     }
     if (said_n) pc5_buf_printf(out, "  The game said: %s%s\n", said, said_n > 1 ? " (and more like it)" : "");
+    if (unshared)
+        pc5_buf_printf(out, "  Pictures one of its Direct3D 11 devices shared couldn't be opened by another (%d times): "
+                            "its videos may show green%s.\n",
+                       unshared, shared_on ? ", though its devices share one Vulkan device"
+                                           : "; its devices don't share one Vulkan device (d3d11.shareDevice)");
     if (free_low >= 0 || dmem_peak >= 0) {
         pc5_buf_puts(out, "  Memory:");
         if (free_low >= 0) pc5_buf_printf(out, " flexible memory free at least %lld MB", free_low / 1024);

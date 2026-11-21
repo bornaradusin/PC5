@@ -620,6 +620,8 @@ controller's speaker.
 | 378 | A Unity game's cutscenes (Ruined King) and a Media Foundation movie in another game (regression check for 377) | the films play as in 2.4.5 | nothing new from `mfplat` in the log |
 | 379 | The Thaumaturge and Burning Sword: Death Sun with `-dx11` in Launch options: the tutorial videos and the new game's cinematic | they play instead of green boxes or a green screen | `PC5 DXVK options for what this game has in it: d3d11.shareDevice = True`; `D3D11: A device shares a Direct3D 11 device's Vulkan device`; no `OpenSharedResourceGeneric: Handle not found` |
 | 380 | A Direct3D 11 game that isn't Unreal (Ruined King's cutscenes), and an Unreal game without videos (regression check for 379) | as in 2.4.5 | no `PC5 DXVK options for what this game has in it` line; Ruined King still logs `D3D11: A video device shares ...` |
+| 381 | An Unreal game built with its modules apart (a `*WmfMedia*.dll` in `Engine/Plugins/Media/WmfMedia/Binaries/Win64`), with `-dx11`, playing a video | the video plays instead of green | `PC5 DXVK options for what this game has in it: d3d11.shareDevice = True`; `prefixes/<game>/pc5/media-player.txt` ends in ` 1` |
+| 382 | The Thaumaturge with `-dx11` and `DXVK_CONFIG=dxgi.maxDeviceMemory = 4096` in its env.txt (so sharing is off): a tutorial video, then the game's report | the video is green; the report's "What the log shows" names it | about.txt: `Pictures one of its Direct3D 11 devices shared couldn't be opened by another (N times): its videos may show green; its devices don't share one Vulkan device (d3d11.shareDevice).` Remove the env.txt line after |
 
 ## Custom media navigation changes (pending on PS5)
 

@@ -341,8 +341,8 @@ msgid "PC5 ran out of memory planning the work."
 msgstr "PC5规划操作时内存不足。"
 
 #: title/pc5_files.c:385 title/pc5_files.c:406 title/pc5_files.c:419
-#: title/pc5_library.c:2992 title/pc5_library.c:3246 title/pc5_library.c:3256
-#: title/pc5_library.c:3269
+#: title/pc5_library.c:3021 title/pc5_library.c:3275 title/pc5_library.c:3285
+#: title/pc5_library.c:3298
 #, c-format
 msgid "PC5 can't write %s: %s."
 msgstr "PC5无法写入%s：%s。"
@@ -352,7 +352,7 @@ msgstr "PC5无法写入%s：%s。"
 msgid "PC5 ran out of memory copying %s."
 msgstr "PC5复制%s时内存不足。"
 
-#: title/pc5_files.c:427 title/pc5_library.c:2089
+#: title/pc5_files.c:427 title/pc5_library.c:2118
 #, c-format
 msgid "PC5 can't put %s in place: %s."
 msgstr "PC5无法放置%s：%s。"
@@ -444,7 +444,7 @@ msgid ""
 "Plug in the USB drive with %.100s: it plays from the folder %.200s on it."
 msgstr "请插入装有%.100s的USB存储设备：游戏从该设备上的文件夹%.200s运行。"
 
-#: title/pc5_library.c:175 title/pc5_library.c:3874 title/pc5_library.c:3925
+#: title/pc5_library.c:175 title/pc5_library.c:3903 title/pc5_library.c:3954
 #, c-format
 msgid "PC5 can't make the game's folder: %s."
 msgstr "PC5无法创建游戏的文件夹：%s。"
@@ -454,200 +454,200 @@ msgstr "PC5无法创建游戏的文件夹：%s。"
 msgid "PC5 can't link the game's folder on the USB drive: %s."
 msgstr "PC5无法链接USB存储设备上的游戏文件夹：%s。"
 
-#: title/pc5_library.c:672 title/pc5_library.c:689
+#: title/pc5_library.c:701 title/pc5_library.c:718
 msgid "Choose one of the game's programs."
 msgstr "请选择游戏的一个程序。"
 
-#: title/pc5_library.c:685 title/pc5_library.c:900 title/pc5_library.c:1133
+#: title/pc5_library.c:714 title/pc5_library.c:929 title/pc5_library.c:1162
 msgid "PC5's notes on this game are missing."
 msgstr "PC5关于此游戏的记录丢失了。"
 
-#: title/pc5_library.c:697
+#: title/pc5_library.c:726
 msgid "That program is too deep in the game's folder for Windows."
 msgstr "该程序在游戏文件夹中的位置太深，Windows无法使用。"
 
-#: title/pc5_library.c:702 title/pc5_library.c:2106 title/pc5_library.c:3433
-#: title/pc5_library.c:3436 title/pc5_library.c:3445 title/pc5_library.c:3519
-#: title/pc5_library.c:3671 title/pc5_library.c:3887
+#: title/pc5_library.c:731 title/pc5_library.c:2135 title/pc5_library.c:3462
+#: title/pc5_library.c:3465 title/pc5_library.c:3474 title/pc5_library.c:3548
+#: title/pc5_library.c:3700 title/pc5_library.c:3916
 #, c-format
 msgid "PC5 can't write its notes: %s."
 msgstr "PC5无法写入记录：%s。"
 
-#: title/pc5_library.c:723
+#: title/pc5_library.c:752
 msgid "PC5 is out of memory."
 msgstr "PC5内存不足。"
 
-#: title/pc5_library.c:727
+#: title/pc5_library.c:756
 #, c-format
 msgid "%.200s doesn't start any of the game's programs."
 msgstr "%.200s不会启动游戏的任何程序。"
 
-#: title/pc5_library.c:1000
+#: title/pc5_library.c:1029
 msgid "The game's launch options are too long: 511 characters at most."
 msgstr "游戏的启动选项太长：最多511个字符。"
 
-#: title/pc5_library.c:1017
+#: title/pc5_library.c:1046
 msgid "The game's path is too long for Windows."
 msgstr "游戏的路径对Windows来说太长。"
 
-#: title/pc5_library.c:1033 title/pc5_library.c:1212
+#: title/pc5_library.c:1062 title/pc5_library.c:1241
 #, c-format
 msgid "PC5 can't write the game's profile: %s."
 msgstr "PC5无法写入游戏的配置文件：%s。"
 
-#: title/pc5_library.c:1158
+#: title/pc5_library.c:1187
 #, c-format
 msgid "The program its launcher started isn't one of the game's: %.200s"
 msgstr "启动器启动的程序不属于该游戏：%.200s"
 
-#: title/pc5_library.c:1172
+#: title/pc5_library.c:1201
 msgid "The arguments its launcher gave are too long."
 msgstr "启动器给出的参数太长。"
 
-#: title/pc5_library.c:1194
+#: title/pc5_library.c:1223
 #, c-format
 msgid "Its programs kept starting each other: %d hand-offs in a row."
 msgstr "它的程序不断相互启动：连续交接了%d次。"
 
-#: title/pc5_library.c:1208
+#: title/pc5_library.c:1237
 msgid "The program's path is too long for Windows."
 msgstr "程序的路径对Windows来说太长。"
 
-#: title/pc5_library.c:1270
+#: title/pc5_library.c:1299
 #, c-format
 msgid "Its profile has a mistake (%s)."
 msgstr "它的配置文件有错误（%s）。"
 
-#: title/pc5_library.c:1287
+#: title/pc5_library.c:1316
 msgid "Its Windows folder is missing."
 msgstr "它的Windows文件夹不见了。"
 
-#: title/pc5_library.c:1291
+#: title/pc5_library.c:1320
 msgid "Resetting its Windows isn't finished: close PC5 and open it again."
 msgstr ""
 
-#: title/pc5_library.c:1433
+#: title/pc5_library.c:1462
 #, c-format
 msgid "PC5 can't delete %s: %s."
 msgstr "PC5无法删除%s：%s。"
 
-#: title/pc5_library.c:1532 title/pc5_library.c:1874 title/pc5_library.c:1931
-#: title/pc5_library.c:2402
+#: title/pc5_library.c:1561 title/pc5_library.c:1903 title/pc5_library.c:1960
+#: title/pc5_library.c:2431
 #, c-format
 msgid "PC5 can't move the game's folder: %s."
 msgstr "PC5无法移动游戏的文件夹：%s。"
 
-#: title/pc5_library.c:1541 title/pc5_library.c:1881
+#: title/pc5_library.c:1570 title/pc5_library.c:1910
 #, c-format
 msgid "PC5 can't delete the game's profile: %s."
 msgstr "PC5无法删除游戏的配置文件：%s。"
 
-#: title/pc5_library.c:1555 title/pc5_library.c:1814 title/pc5_library.c:1866
-#: title/pc5_library.c:2323 title/pc5_library.c:2349 title/pc5_library.c:2358
-#: title/pc5_library.c:2398 title/pc5_library.c:3584 title/pc5_library.c:3592
-#: title/pc5_library.c:3638 title/pc5_library.c:3674
+#: title/pc5_library.c:1584 title/pc5_library.c:1843 title/pc5_library.c:1895
+#: title/pc5_library.c:2352 title/pc5_library.c:2378 title/pc5_library.c:2387
+#: title/pc5_library.c:2427 title/pc5_library.c:3613 title/pc5_library.c:3621
+#: title/pc5_library.c:3667 title/pc5_library.c:3703
 msgid "A path is too long."
 msgstr "路径太长。"
 
-#: title/pc5_library.c:1758
+#: title/pc5_library.c:1787
 msgid "PC5 can't read the game's folder."
 msgstr "PC5无法读取游戏的文件夹。"
 
-#: title/pc5_library.c:1766 title/pc5_library.c:2086 title/pc5_library.c:3182
+#: title/pc5_library.c:1795 title/pc5_library.c:2115 title/pc5_library.c:3211
 #, c-format
 msgid "A path in the game is too long: %s."
 msgstr "游戏中有路径太长：%s。"
 
-#: title/pc5_library.c:1775
+#: title/pc5_library.c:1804
 #, c-format
 msgid "PC5 can't keep %s: %s."
 msgstr "PC5无法保留%s：%s。"
 
-#: title/pc5_library.c:1806 title/pc5_library.c:1823 title/pc5_library.c:2192
-#: title/pc5_library.c:2223 title/pc5_library.c:2273 title/pc5_library.c:2281
-#: title/pc5_library.c:2312 title/pc5_library.c:2332 title/pc5_library.c:2929
-#: title/pc5_library.c:3019 title/pc5_library.c:3055 title/pc5_library.c:3332
-#: title/pc5_library.c:3600 title/pc5_library.c:3654
+#: title/pc5_library.c:1835 title/pc5_library.c:1852 title/pc5_library.c:2221
+#: title/pc5_library.c:2252 title/pc5_library.c:2302 title/pc5_library.c:2310
+#: title/pc5_library.c:2341 title/pc5_library.c:2361 title/pc5_library.c:2958
+#: title/pc5_library.c:3048 title/pc5_library.c:3084 title/pc5_library.c:3361
+#: title/pc5_library.c:3629 title/pc5_library.c:3683
 msgid "Out of memory."
 msgstr "内存不足。"
 
-#: title/pc5_library.c:1830 title/pc5_library.c:1840
+#: title/pc5_library.c:1859 title/pc5_library.c:1869
 #, c-format, fuzzy
 msgid "PC5 can't keep the saves apart: %s."
 msgstr "PC5无法移动存档：%s。"
 
-#: title/pc5_library.c:1900
+#: title/pc5_library.c:1929
 #, c-format
 msgid "PC5 can't put the saves in place: %s."
 msgstr "PC5无法放回存档：%s。"
 
-#: title/pc5_library.c:1914
+#: title/pc5_library.c:1943
 msgid "This game's saves can't be kept apart from it."
 msgstr "此游戏的存档无法与游戏分开保留。"
 
-#: title/pc5_library.c:1920
+#: title/pc5_library.c:1949
 #, c-format
 msgid "PC5 can't make its saves folder: %s."
 msgstr "PC5无法创建存档文件夹：%s。"
 
-#: title/pc5_library.c:1924
+#: title/pc5_library.c:1953
 msgid "PC5 is still keeping this game's saves from before: start PC5 again."
 msgstr "PC5仍在保留此游戏之前的存档：请重新启动PC5。"
 
-#: title/pc5_library.c:1957
+#: title/pc5_library.c:1986
 #, c-format
 msgid "PC5 can't move the saves: %s."
 msgstr "PC5无法移动存档：%s。"
 
-#: title/pc5_library.c:2044
+#: title/pc5_library.c:2073
 #, c-format
 msgid "A path in the update is too long: %s."
 msgstr "更新中有路径太长：%s。"
 
-#: title/pc5_library.c:2126
+#: title/pc5_library.c:2155
 #, c-format
 msgid "PC5 can't write the game's list of files: %s."
 msgstr "PC5无法写入游戏的文件列表：%s。"
 
-#: title/pc5_library.c:2251 title/pc5_library.c:2288
+#: title/pc5_library.c:2280 title/pc5_library.c:2317
 #, c-format
 msgid "PC5 can't move %.150s into the new Windows: %s."
 msgstr ""
 
-#: title/pc5_library.c:2368 title/pc5_library.c:2374 title/pc5_library.c:2380
+#: title/pc5_library.c:2397 title/pc5_library.c:2403 title/pc5_library.c:2409
 #, c-format
 msgid "PC5 can't keep the old registry: %s."
 msgstr ""
 
-#: title/pc5_library.c:2406 title/pc5_library.c:3456
+#: title/pc5_library.c:2435 title/pc5_library.c:3485
 #, c-format
 msgid "PC5 can't put the game in place: %s."
 msgstr "PC5无法放置游戏：%s。"
 
-#: title/pc5_library.c:2745
+#: title/pc5_library.c:2774
 msgid ""
 "PC5's Windows template is missing from the app: copy the PC5 folder again."
 msgstr "应用中缺少PC5的Windows模板：请重新复制PC5文件夹。"
 
-#: title/pc5_library.c:2769
+#: title/pc5_library.c:2798
 msgid "PC5's Windows template is damaged: copy the PC5 folder again."
 msgstr "PC5的Windows模板已损坏：请重新复制PC5文件夹。"
 
-#: title/pc5_library.c:2851 title/pc5_library.c:2911
+#: title/pc5_library.c:2880 title/pc5_library.c:2940
 #, c-format
 msgid "PC5 can't make its folders in %s: %s."
 msgstr "PC5无法在%s中创建文件夹：%s。"
 
-#: title/pc5_library.c:2862
+#: title/pc5_library.c:2891
 #, c-format
 msgid "PC5 can't make its folder on the USB drive: %s."
 msgstr "PC5无法在USB存储设备上创建文件夹：%s。"
 
-#: title/pc5_library.c:2865
+#: title/pc5_library.c:2894
 msgid "PC5 can't name the game's folder on the USB drive."
 msgstr "PC5无法为USB存储设备上的游戏文件夹命名。"
 
-#: title/pc5_library.c:2883
+#: title/pc5_library.c:2912
 #, c-format
 msgid ""
 "The drive reads at %.0f MB/s here, too slow to play from (%.0f needed). "
@@ -656,22 +656,22 @@ msgid ""
 msgstr ""
 "该驱动器在此处的读取速度为%.0f MB/s，太慢，无法直接运行游戏（需要%.0f）。请插到背面的端口或正面的USB-C端口。仍可安装到主机。"
 
-#: title/pc5_library.c:2891
+#: title/pc5_library.c:2920
 #, c-format
 msgid ""
 "Not enough space on the USB drive: the game needs %s and it has %s free."
 msgstr "USB存储设备空间不足：游戏需要%s，而它只剩%s可用。"
 
-#: title/pc5_library.c:2895
+#: title/pc5_library.c:2924
 msgid ""
 "Only a game on a USB drive can play from it: this folder isn't on one."
 msgstr "只有USB存储设备上的游戏才能直接从设备运行：此文件夹不在USB存储设备上。"
 
-#: title/pc5_library.c:2897
+#: title/pc5_library.c:2926
 msgid "A game in PC5's INSTALL folder is installed, not played from there."
 msgstr "PC5的INSTALL文件夹中的游戏会被安装，而不是从那里运行。"
 
-#: title/pc5_library.c:2902
+#: title/pc5_library.c:2931
 #, c-format
 msgid ""
 "The drive reads at %.0f MB/s in this USB port, too slow to play from (at "
@@ -682,163 +682,163 @@ msgstr ""
 "该驱动器在此USB端口的读取速度为%.0f "
 "MB/s，太慢，无法直接运行游戏（至少需要%.0f）。初代PS5正面的USB-A端口速度较慢：请将驱动器插到背面的端口或正面的USB-C端口。此端口仍可用于安装。"
 
-#: title/pc5_library.c:2908
+#: title/pc5_library.c:2937
 msgid "The game's program is too deep in its folder for Windows."
 msgstr "游戏的程序在其文件夹中的位置太深，Windows无法使用。"
 
-#: title/pc5_library.c:2916
+#: title/pc5_library.c:2945
 #, c-format
 msgid "Not enough space: the game needs %s and the console has %s free."
 msgstr "空间不足：游戏需要%s，而主机只剩%s可用。"
 
-#: title/pc5_library.c:2919
+#: title/pc5_library.c:2948
 msgid "PC5 can't name the game."
 msgstr "PC5无法为游戏命名。"
 
-#: title/pc5_library.c:2922 title/pc5_library.c:3348
+#: title/pc5_library.c:2951 title/pc5_library.c:3377
 #, c-format
 msgid "PC5 can't start the install: %s."
 msgstr "PC5无法开始安装：%s。"
 
-#: title/pc5_library.c:2965 title/pc5_library.c:2978
+#: title/pc5_library.c:2994 title/pc5_library.c:3007
 msgid "A path in the Windows template is too long."
 msgstr "Windows模板中有路径太长。"
 
-#: title/pc5_library.c:2966
+#: title/pc5_library.c:2995
 #, c-format
 msgid "PC5 can't put back the game's registry: %s."
 msgstr ""
 
-#: title/pc5_library.c:2981 title/pc5_library.c:2986 title/pc5_library.c:3190
+#: title/pc5_library.c:3010 title/pc5_library.c:3015 title/pc5_library.c:3219
 #: title/pc5_tile.c:522
 #, c-format
 msgid "PC5 can't make %s: %s."
 msgstr "PC5无法创建%s：%s。"
 
-#: title/pc5_library.c:2989
+#: title/pc5_library.c:3018
 #, c-format
 msgid "PC5's Windows template is missing %s."
 msgstr "PC5的Windows模板缺少%s。"
 
-#: title/pc5_library.c:3008
+#: title/pc5_library.c:3037
 #, c-format
 msgid "PC5 can't copy %s: %s."
 msgstr "PC5无法复制%s：%s。"
 
-#: title/pc5_library.c:3033
+#: title/pc5_library.c:3062
 #, c-format
 msgid "PC5 can't read %s on the USB drive: %s."
 msgstr "PC5无法读取USB存储设备上的%s：%s。"
 
-#: title/pc5_library.c:3197 title/pc5_library.c:3209
+#: title/pc5_library.c:3226 title/pc5_library.c:3238
 #, c-format
 msgid "PC5 can't read back %s: %s."
 msgstr "PC5无法回读%s：%s。"
 
-#: title/pc5_library.c:3197
+#: title/pc5_library.c:3226
 #, c-format
 msgid "PC5 can't open %s on the USB drive: %s."
 msgstr "PC5无法打开USB存储设备上的%s：%s。"
 
-#: title/pc5_library.c:3210
+#: title/pc5_library.c:3239
 #, c-format
 msgid "The USB drive stopped answering while PC5 copied %s (%s)."
 msgstr "PC5复制%s时，USB存储设备停止响应（%s）。"
 
-#: title/pc5_library.c:3279
+#: title/pc5_library.c:3308
 #, c-format
 msgid ""
 "The copy of %s doesn't match the USB drive. The drive or its cable may be "
 "failing; nothing was kept."
 msgstr "%s的副本与USB存储设备上的不一致。驱动器或数据线可能出现故障；未保留任何内容。"
 
-#: title/pc5_library.c:3398 title/pc5_library.c:3410
+#: title/pc5_library.c:3427 title/pc5_library.c:3439
 #, c-format
 msgid ""
 "The game couldn't be put back in the INSTALL folder: it is in %.180s."
 msgstr "游戏无法放回INSTALL文件夹：它位于%.180s。"
 
-#: title/pc5_library.c:3449
+#: title/pc5_library.c:3478
 #, c-format
 msgid "PC5 can't save the cover: %s."
 msgstr "PC5无法保存封面：%s。"
 
-#: title/pc5_library.c:3565
+#: title/pc5_library.c:3594
 msgid "PC5 didn't install this game, so it can't update it."
 msgstr "此游戏不是PC5安装的，因此无法更新。"
 
-#: title/pc5_library.c:3567
+#: title/pc5_library.c:3596
 #, c-format
 msgid ""
 "%s plays from its USB drive: copy the newer version over its folder %s "
 "there."
 msgstr "%s从其USB存储设备运行：请将新版本复制覆盖到该设备上的文件夹%s。"
 
-#: title/pc5_library.c:3572 title/pc5_library.c:3634
+#: title/pc5_library.c:3601 title/pc5_library.c:3663
 msgid "The game's folder is missing: uninstall it and install it again."
 msgstr "游戏的文件夹不见了：请卸载后重新安装。"
 
-#: title/pc5_library.c:3575
+#: title/pc5_library.c:3604
 #, c-format
 msgid ""
 "This folder doesn't have %s, the program %s starts. Choose the folder of a "
 "newer copy of %s."
 msgstr "此文件夹中没有%s（%s启动的程序）。请选择较新版本%s的文件夹。"
 
-#: title/pc5_library.c:3589
+#: title/pc5_library.c:3618
 #, c-format
 msgid "Not enough space: the update needs %s and the console has %s free."
 msgstr "空间不足：更新需要%s，而主机只剩%s可用。"
 
-#: title/pc5_library.c:3595
+#: title/pc5_library.c:3624
 msgid ""
 "An earlier update of this game isn't finished: close PC5 and open it again "
 "to finish it."
 msgstr "此游戏的上一次更新尚未完成：请关闭PC5并重新打开以完成更新。"
 
-#: title/pc5_library.c:3597
+#: title/pc5_library.c:3626
 #, c-format
 msgid "PC5 can't start the update: %s."
 msgstr "PC5无法开始更新：%s。"
 
-#: title/pc5_library.c:3632
+#: title/pc5_library.c:3661
 msgid ""
 "PC5 didn't install this game in a Windows of its own, so its Windows can't "
 "be reset."
 msgstr ""
 
-#: title/pc5_library.c:3637
+#: title/pc5_library.c:3666
 #, fuzzy
 msgid ""
 "An update or a reset of this game isn't finished: close PC5 and open it "
 "again to finish it."
 msgstr "此游戏的上一次更新尚未完成：请关闭PC5并重新打开以完成更新。"
 
-#: title/pc5_library.c:3643
+#: title/pc5_library.c:3672
 #, c-format, fuzzy
 msgid ""
 "Not enough space: a new Windows needs %s and the console has %s free."
 msgstr "空间不足：更新需要%s，而主机只剩%s可用。"
 
-#: title/pc5_library.c:3647
+#: title/pc5_library.c:3676
 #, c-format
 msgid "PC5 can't start resetting its Windows: %s."
 msgstr ""
 
-#: title/pc5_library.c:3790
+#: title/pc5_library.c:3819
 msgid ""
 "Kept saves can't be put back for a game that plays from its USB drive."
 msgstr "从USB存储设备运行的游戏无法放回保留的存档。"
 
-#: title/pc5_library.c:3797
+#: title/pc5_library.c:3826
 msgid "The install has begun already."
 msgstr "安装已经开始了。"
 
-#: title/pc5_library.c:3827
+#: title/pc5_library.c:3856
 msgid "PC5 can't read the kept saves."
 msgstr "PC5无法读取保留的存档。"
 
-#: title/pc5_library.c:3899
+#: title/pc5_library.c:3928
 #, c-format
 msgid "PC5 can't make the game's folder on the USB drive: %s."
 msgstr "PC5无法在USB存储设备上创建游戏的文件夹：%s。"

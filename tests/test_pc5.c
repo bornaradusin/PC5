@@ -798,6 +798,19 @@ static void test_pe(void)
             CHECK(pc5_program_dxvk(root_dir, "other", elsewhere) == NULL, "nothing for a program outside Binaries\\Win64, not read");
             path(marker, sizeof(marker), "%s/prefixes/other/pc5/media-player.txt", root_dir);
             CHECK(!pc5_exists(marker), "and no note of it");
+            /* A game built with its modules apart: the player is a DLL in the engine's plugin folder
+             * (its folders' case as the game has them), the program's own text without its name. */
+            char modular[PC5_PATH], plugin[PC5_PATH];
+            path(modular, sizeof(modular), "%s/ue-media/prefixes/mod/drive_c/Games/M/Mod/Binaries/Win64/Mod-Win64-Shipping.exe", work);
+            write_text(modular, "MZ ... no player named here ...");
+            CHECK(pc5_program_dxvk(root_dir, "mod", modular) == NULL, "nothing for a modular game without the player's DLL");
+            path(plugin, sizeof(plugin),
+                 "%s/ue-media/prefixes/mod/drive_c/Games/M/engine/Plugins/media/WMFMedia/Binaries/Win64/Mod-WmfMedia-Win64-Shipping.dll", work);
+            write_text(plugin, "MZ");
+            write_text(modular, "MZ ... no player named here, the program changed ...");
+            options = pc5_program_dxvk(root_dir, "mod", modular);
+            CHECK(options && !strcmp(options, "d3d11.shareDevice = True"), "d3d11.shareDevice for a modular game with the player's DLL: %s",
+                  options ? options : "none");
         }
     }
     path(file, sizeof(file), "%s/game64.exe", programs);
@@ -4758,6 +4771,8 @@ static void test_log_notes(void)
         "REC seq=19 t=11.200 WINESERVER wine-ps5: can't map error 55\n"
         "REC seq=20 t=11.300 STDOUT Could not allocate memory: System out of memory!\n"
         "REC seq=21 t=11.310 STDOUT Could not allocate memory: System out of memory!\n"
+        "REC seq=21 t=11.400 WINE warn:  D3D11Device::OpenSharedResourceGeneric: Handle not found: 0x7d900054\n"
+        "REC seq=21 t=11.430 WINE warn:  D3D11Device::OpenSharedResourceGeneric: Handle not found: 0x7d900048\n"
         "REC seq=22 t=20.000 PW_WINE64 memory flexible_free=314368K dmem=2487776K dmem_peak=2487776K dmem_failures=0\n"
         "REC seq=23 t=30.000 PW_WINE64 memory flexible_free=258048K dmem=5949712K dmem_peak=5969040K dmem_failures=2\n"
         "REC seq=24 t=40.000 PW_WINE64 alive tick=60 sink_calls=1 frames_put=1 shown=5 rejected=0 last=1920x1080 inputs=2 "
@@ -4785,6 +4800,29 @@ static void test_log_notes(void)
           "what it drew with, a library of the game's own named: %s", notes);
     CHECK(strstr(notes, "  The game said: Could not allocate memory: System out of memory! (and more like it)\n"),
           "what the game said of memory (Silica's Unity): %s", notes);
+    CHECK(strstr(notes, "  Pictures one of its Direct3D 11 devices shared couldn't be opened by another (2 times): its videos may "
+                        "show green; its devices don't share one Vulkan device (d3d11.shareDevice).\n"),
+          "pictures shared between two devices that couldn't be opened (green videos, The Thaumaturge): %s", notes);
+    {
+        const char *shared =
+            "PW_REPORT/1 build=abc profile=game cycle=2 pid=276 time=1792700000\n"
+            "REC seq=1 t=10.000 WINE info:  D3D11: A video device shares a Direct3D 11 device's Vulkan device, for textures shared within the process\n"
+            "REC seq=2 t=10.100 WINE warn:  D3D11Device::OpenSharedResourceGeneric: Handle not found: 0x7d900054\n";
+        Pc5Buf more = { 0 };
+        pc5_log_notes(shared, strlen(shared), &more);
+        pc5_buf_puts(&more, "");
+        CHECK(more.data && strstr((const char *)more.data, "(1 times): its videos may show green; its devices don't share"),
+              "a video device's sharing (Ruined King's) isn't the game's devices sharing: %s", more.data ? (const char *)more.data : "");
+        pc5_buf_free(&more);
+        shared = "PW_REPORT/1 build=abc profile=game cycle=2 pid=276 time=1792700000\n"
+                 "REC seq=1 t=10.000 WINE info:  D3D11: A device shares a Direct3D 11 device's Vulkan device, for textures shared within the process\n"
+                 "REC seq=2 t=10.100 WINE warn:  D3D11Device::OpenSharedResourceGeneric: Handle not found: 0x7d900054\n";
+        pc5_log_notes(shared, strlen(shared), &more);
+        pc5_buf_puts(&more, "");
+        CHECK(more.data && strstr((const char *)more.data, "may show green, though its devices share one Vulkan device.\n"),
+              "and green though its devices share one: %s", more.data ? (const char *)more.data : "");
+        pc5_buf_free(&more);
+    }
     CHECK(strstr(notes, "  Memory: flexible memory free at least 252 MB, direct memory in use at most 5829 MB, "
                         "2 direct memory requests refused.\n"),
           "the memory: %s", notes);
