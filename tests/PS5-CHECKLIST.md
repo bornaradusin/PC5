@@ -618,6 +618,8 @@ controller's speaker.
 | 376 | A game with the Legacy PhysX installer (Clive Barker's Jericho), and one whose redistributable is damaged (regression check for 375) | the Legacy one installs as in 2.4.5; the damaged one is tried once and not at every start | `PC5 redist installed ...Legacy.msi`; `pc5/redist.txt` lists the damaged one as `failed-2.4.6` |
 | 377 | Rec Rewind (Unreal Engine 5): start it and wait at its loading screen | it gets past the loading screen and its videos play | no `Assertion failed: Length >= static_cast<DWORD>(Pitch * DecodedHeight * 3 / 2)` in `REC_REWIND/Saved/Logs/REC_REWIND.log`, no `ElectraPlayer::Video decoder crashed` |
 | 378 | A Unity game's cutscenes (Ruined King) and a Media Foundation movie in another game (regression check for 377) | the films play as in 2.4.5 | nothing new from `mfplat` in the log |
+| 379 | The Thaumaturge and Burning Sword: Death Sun with `-dx11` in Launch options: the tutorial videos and the new game's cinematic | they play instead of green boxes or a green screen | `D3D11: A device shares a Direct3D 11 device's Vulkan device`; no `OpenSharedResourceGeneric: Handle not found` |
+| 380 | Ruined King's cutscenes, and a Direct3D 11 game with no videos for 10 minutes (regression check for 379) | cutscenes play as in 2.4.5; frame rate as in 2.4.5 | `D3D11: A video device shares ...` for Ruined King; nothing new from DXVK otherwise |
 
 ## Custom media navigation changes (pending on PS5)
 
