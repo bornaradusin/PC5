@@ -312,8 +312,10 @@ def lzx_compress(data, window_bits, plan, filesize=0):
 # ---- cabinets -------------------------------------------------------------------------------
 
 
-def cabinet(files, kind, lzx_plan=None, window_bits=16, filesize=0):
-    """files: [(name, bytes)] in one folder; kind 0 stored, 1 MSZIP, 3 LZX."""
+def cabinet(files, kind, lzx_plan=None, window_bits=16, filesize=0, same=()):
+    """files: [(name, bytes)] in one folder; kind 0 stored, 1 MSZIP, 3 LZX. same: [(name, of)],
+    a file listed right after the file of that name, with its bytes (stored once), as NVIDIA's
+    PhysX installer lists two copies of one DLL."""
     stream = b''.join(data for _, data in files)
     blocks = []   # (compressed, uncompressed size)
     if kind == 0:
@@ -330,18 +332,21 @@ def cabinet(files, kind, lzx_plan=None, window_bits=16, filesize=0):
         for i, chunk in enumerate(chunks):
             blocks.append((chunk, min(FRAME, len(stream) - i * FRAME)))
     type_compress = kind | (window_bits << 8 if kind == 3 else 0)
-    names = [name.encode() + b'\0' for name, _ in files]
+    entries, offset = [], 0   # (name, size, offset)
+    for name, data in files:
+        entries.append((name, len(data), offset))
+        entries += [(copy, len(data), offset) for copy, of in same if of == name]
+        offset += len(data)
+    names = [name.encode() + b'\0' for name, _, _ in entries]
     header_size, folder_size = 36, 8
     files_at = header_size + folder_size
     files_size = sum(16 + len(n) for n in names)
     data_at = files_at + files_size
     total = data_at + sum(8 + len(c) for c, _ in blocks)
-    out = bytearray(b'MSCF' + struct.pack('<IIIIIBBHHHHH', 0, total, 0, files_at, 0, 3, 1, 1, len(files), 0, 0x1234, 0))
+    out = bytearray(b'MSCF' + struct.pack('<IIIIIBBHHHHH', 0, total, 0, files_at, 0, 3, 1, 1, len(entries), 0, 0x1234, 0))
     out += struct.pack('<IHH', data_at, len(blocks), type_compress)
-    offset = 0
-    for (name, data), raw in zip(files, names):
-        out += struct.pack('<IIHHHH', len(data), offset, 0, 0x5821, 0, 0x20) + raw
-        offset += len(data)
+    for (name, size, at), raw in zip(entries, names):
+        out += struct.pack('<IIHHHH', size, at, 0, 0x5821, 0, 0x20) + raw
     for comp, size in blocks:
         out += struct.pack('<IHH', 0, len(comp), size) + comp
     assert len(out) == total
@@ -590,6 +595,15 @@ def main(out):
     # The LZX cabinet alone, for cabextract.
     with open(os.path.join(out, 'lzx.cab'), 'wb') as f:
         f.write(streams[1][1])
+    # Files that share their bytes, as NVIDIA's PhysX 9.13.0604 cabinet has them: two copies at
+    # the folder's start, then a file, then a copy of a file that spans MSZIP blocks.
+    shared = [('first', b'first copy ' * 3000), ('middle', b'middle'), ('last', bytes(code))]
+    with open(os.path.join(out, 'shared.cab'), 'wb') as f:
+        f.write(cabinet(shared, 1, same=[('first-again', 'first'), ('last-again', 'last')]))
+    os.makedirs(os.path.join(expected, 'shared'), exist_ok=True)
+    for name, data in shared + [('first-again', shared[0][1]), ('last-again', shared[2][1])]:
+        with open(os.path.join(expected, 'shared', name), 'wb') as f:
+            f.write(data)
     files = {
         'Program Files (x86)/NVIDIA Corporation/PhysX/Common/PhysXLoader.dll': common[0][1],
         'Program Files (x86)/NVIDIA Corporation/PhysX/Common/PhysXCooking.dll': common[1][1],

@@ -614,6 +614,8 @@ controller's speaker.
 | 372 | Any game with PC5's Language on System default (regression check for 371) | the game is in the console's language, as before | `PW_WINE64 pc5 locale=` is the console's (pt_BR.UTF-8 on a Brazilian Portuguese console) |
 | 373 | Saints Row 2 (`SR2_pc.exe`, Juiced Patch applied): create a character, then skip the next cutscene quickly | no freeze; the cutscene's voices play | no `Integer division by zero` in `xactengine3_2.dll` (Juiced's CrashDumps log), no `RtlpWaitForCriticalSection ... wait timed out` |
 | 374 | Another XACT game (Juiced 2, Dead Space, Saints Row: The Third): menus and in-game sound (regression check for 373) | sound plays as in 2.4.5 | nothing new from `xaudio2`/`xact` in the log |
+| 375 | Alien Breed: Impact with NVIDIA's `PhysX-9.13.0604-SystemSoftware.msi` in its folder (`Redist/` or `_CommonRedist/PhysX/`), even one that failed with 2.4.5 | it starts past PhysX instead of closing at once | `PC5 redist installed Redist/PhysX-9.13.0604-SystemSoftware.msi (NVIDIA PhysX) files=34 kept=0 skipped=0 registry=29`; the game loads `PhysX\Engine\v2.8.1\PhysXCore.dll` |
+| 376 | A game with the Legacy PhysX installer (Clive Barker's Jericho), and one whose redistributable is damaged (regression check for 375) | the Legacy one installs as in 2.4.5; the damaged one is tried once and not at every start | `PC5 redist installed ...Legacy.msi`; `pc5/redist.txt` lists the damaged one as `failed-2.4.6` |
 
 ## Custom media navigation changes (pending on PS5)
 

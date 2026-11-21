@@ -1443,7 +1443,12 @@ static int redist_list_path(const char *root, const char *prefix, char *out, siz
     return pc5_format(out, size, "%s/prefixes/%s/pc5/redist.txt", root, prefix);
 }
 
-/* 1 when redist.txt lists f with its size and time. */
+/* What redist.txt says of a package that couldn't be installed: the PC5 that tried, so that a
+ * newer one tries it once more (before 2.4.6, NVIDIA's PhysX 9.13.0604 couldn't be read and
+ * stayed "failed" for good). */
+#define REDIST_FAILED "failed-" PC5_VERSION
+
+/* 1 when redist.txt lists f with its size and time, other than as failed with an older PC5. */
 static int listed(const Pc5Buf *list, const Found *f)
 {
     char line[PC5_PATH + 64];
@@ -1453,7 +1458,11 @@ static int listed(const Pc5Buf *list, const Found *f)
     for (const char *at = (const char *)list->data; at && *at; at = strchr(at, '\n') ? strchr(at, '\n') + 1 : NULL) {
         if (strncmp(at, line, n)) continue;
         const char *result = at + n, *space = strchr(result, ' ');
-        if (space && !strncmp(space + 1, f->relative, rlen) && (space[1 + rlen] == '\n' || !space[1 + rlen])) return 1;
+        if (!space || strncmp(space + 1, f->relative, rlen) || (space[1 + rlen] != '\n' && space[1 + rlen])) continue;
+        if (!strncmp(result, "failed", 6) &&
+            ((size_t)(space - result) != strlen(REDIST_FAILED) || strncmp(result, REDIST_FAILED, strlen(REDIST_FAILED))))
+            continue;
+        return 1;
     }
     return 0;
 }
@@ -1524,7 +1533,7 @@ int pc5_redist_install(const char *root, const char *prefix, const char *game_di
             Pc5MsiReport report;
             char error[PC5_ERROR];
             if (pc5_msi_install(f->path, (uint64_t)offset, prefix_dir, &report, error, sizeof(error))) {
-                result = "failed";
+                result = REDIST_FAILED;
                 failed = 1;
                 say_line(log, context, "PC5 problem redist %s: %s", f->relative, error);
             } else {

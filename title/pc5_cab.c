@@ -496,6 +496,7 @@ static int lzx_frame(Lzx *z, uint32_t frame_size, uint8_t *out)
 typedef struct CabFile {
     uint32_t size, offset;
     uint16_t folder;
+    uint8_t handed;   /* its folder's bytes have been read for it */
     char name[256];
 } CabFile;
 
@@ -606,7 +607,7 @@ static int cab_folder(const Pc5CabIn *in, const CabFolder *folder, uint8_t data_
             pc5_copy(error, size, "an LZX cabinet with a window PC5 doesn't know");
             goto done;
         }
-        for (int b = 0; b < folder->blocks; b++) {
+        for (int b = 0; b < folder->blocks && d->at < d->count; b++) {
             if (lzx_frame(lzx, frame_sizes[b], frame)) goto damaged;
             if (dispatch(d, frame, frame_sizes[b])) goto stopped;
         }
@@ -614,7 +615,8 @@ static int cab_folder(const Pc5CabIn *in, const CabFolder *folder, uint8_t data_
         goto done;
     }
     size_t history = 0;
-    for (int b = 0; b < folder->blocks; b++) {
+    /* Once its files have all been handed out, the rest of the folder isn't read. */
+    for (int b = 0; b < folder->blocks && d->at < d->count; b++) {
         uint8_t head[8];
         if (in->read(in->context, at, head, 8)) goto damaged;
         uint16_t bytes = u16(head + 4), unpacked = u16(head + 6);
@@ -699,6 +701,7 @@ int pc5_cab_extract(const Pc5CabIn *in, const Pc5CabOut *out, char *error, size_
         files[i].size = u32(entry);
         files[i].offset = u32(entry + 4);
         files[i].folder = u16(entry + 8);
+        files[i].handed = 0;
         /* The name: up to 255 bytes and its 0. */
         uint64_t left = in->size > at + 16 ? in->size - at - 16 : 0;
         size_t want = left < 256 ? (size_t)left : 256;
@@ -712,17 +715,33 @@ int pc5_cab_extract(const Pc5CabIn *in, const Pc5CabOut *out, char *error, size_
         }
         at += 16 + got + 1;
     }
+    /* A folder's bytes are read once for the files that follow one another in it. Two files
+     * may also be the same bytes, which a cabinet stores once (NVIDIA's PhysX installer lists
+     * two copies of one PhysXCore.dll at the same place): one that starts inside a file
+     * already handed out in that reading is left for another reading of the folder, which
+     * goes as far as its files need. Each reading hands out at least one file. */
     for (int f = 0; f < nfolders; f++) {
-        Dispatch d = { out, order, 0, 0, 0, 0, 0, 0, 0 };
-        for (int i = 0; i < nfiles; i++)
-            if (files[i].folder == f) order[d.count++] = &files[i];
-        qsort(order, (size_t)d.count, sizeof(*order), cmp_offset);
-        if (cab_folder(in, &folders[f], data_reserve, &d, error, size)) goto done;
-        if (d.at < d.count) {
-            pc5_copy(error, size, "the cabinet ends before its files do");
-            goto done;
+        for (;;) {
+            Dispatch d = { out, order, 0, 0, 0, 0, 0, 0, 0 };
+            int listed = 0;
+            for (int i = 0; i < nfiles; i++)
+                if (files[i].folder == f && !files[i].handed) order[listed++] = &files[i];
+            if (!listed) break;
+            qsort(order, (size_t)listed, sizeof(*order), cmp_offset);
+            uint64_t end = 0;
+            for (int i = 0; i < listed; i++) {
+                if (d.count && order[i]->offset < end) continue;   /* its bytes come again in the next reading */
+                order[i]->handed = 1;
+                if ((uint64_t)order[i]->offset + order[i]->size > end) end = (uint64_t)order[i]->offset + order[i]->size;
+                order[d.count++] = order[i];
+            }
+            if (cab_folder(in, &folders[f], data_reserve, &d, error, size)) goto done;
+            if (d.at < d.count) {
+                pc5_copy(error, size, "the cabinet ends before its files do");
+                goto done;
+            }
+            taken += d.taken;
         }
-        taken += d.taken;
     }
     status = taken;
     goto done;

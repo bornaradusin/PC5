@@ -24,7 +24,8 @@ typedef struct Pc5CabOut {
     int (*end)(void *context);
 } Pc5CabOut;
 
-/* Every file of the cabinet, in its order: how many were taken, or -1 with why in error. */
+/* Every file of the cabinet, in the order its bytes come (one whose bytes another file has too
+ * after the others of its folder): how many were taken, or -1 with why in error. */
 int pc5_cab_extract(const Pc5CabIn *in, const Pc5CabOut *out, char *error, size_t size);
 
 /* For the tests: raw deflate (in, size) after dictionary (the bytes before it, may be NULL)

@@ -9435,6 +9435,41 @@ static void pe_variant(const char *from, const char *to, const char *signer, con
     pc5_buf_free(&data);
 }
 
+/* A cabinet read from a file, its files written into a folder (pc5_cab.h). */
+typedef struct CabTest {
+    FILE *in, *writing;
+    char dir[PC5_PATH];
+} CabTest;
+
+static int cab_test_read(void *context, uint64_t offset, void *out, size_t size)
+{
+    CabTest *t = context;
+    return fseeko(t->in, (off_t)offset, SEEK_SET) || fread(out, 1, size, t->in) != size ? -1 : 0;
+}
+
+static int cab_test_begin(void *context, const char *name, uint32_t size)
+{
+    CabTest *t = context;
+    char file[PC5_PATH];
+    (void)size;
+    path(file, sizeof(file), "%s/%s", t->dir, name);
+    return (t->writing = fopen(file, "wb")) ? 1 : -1;
+}
+
+static int cab_test_write(void *context, const void *data, size_t size)
+{
+    CabTest *t = context;
+    return fwrite(data, 1, size, t->writing) == size ? 0 : -1;
+}
+
+static int cab_test_end(void *context)
+{
+    CabTest *t = context;
+    int status = fclose(t->writing) ? -1 : 0;
+    t->writing = NULL;
+    return status;
+}
+
 static void test_msi(void)
 {
     char out[PC5_PATH], command[3 * PC5_PATH], prefix[PC5_PATH], file[PC5_PATH], expected[PC5_PATH], error[PC5_ERROR];
@@ -9463,6 +9498,31 @@ static void test_msi(void)
         uint8_t mszip_in[] = { 0x4b, 0x4c, 0x4a, 0x06, 0x00 }, made[8];
         CHECK(pc5_inflate(mszip_in, sizeof(mszip_in), NULL, 0, made, sizeof(made)) == 3 && !memcmp(made, "abc", 3),
               "deflate: %d", (int)pc5_inflate(mszip_in, sizeof(mszip_in), NULL, 0, made, sizeof(made)));
+    }
+    {
+        /* Files that share their bytes, as NVIDIA's PhysX 9.13.0604 cabinet has them: each one
+         * whole (before 2.4.6, the second copy took the next file's bytes and the cabinet
+         * "ended before its files did"). */
+        static const char *const names[] = { "first", "first-again", "middle", "last", "last-again" };
+        CabTest t = { 0 };
+        path(file, sizeof(file), "%s/shared.cab", out);
+        path(t.dir, sizeof(t.dir), "%s/shared-out", out);
+        mkdir(t.dir, 0755);
+        t.in = fopen(file, "rb");
+        CHECK(t.in != NULL, "shared.cab opens");
+        if (t.in) {
+            fseeko(t.in, 0, SEEK_END);
+            Pc5CabIn cab = { &t, (uint64_t)ftello(t.in), cab_test_read };
+            Pc5CabOut to = { &t, cab_test_begin, cab_test_write, cab_test_end };
+            int taken = pc5_cab_extract(&cab, &to, error, sizeof(error));
+            fclose(t.in);
+            CHECK(taken == 5, "files that share their bytes: all of them (%d) %s", taken, taken < 0 ? error : "");
+            for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+                path(file, sizeof(file), "%s/%s", t.dir, names[i]);
+                path(expected, sizeof(expected), "%s/expected/shared/%s", out, names[i]);
+                CHECK(same_files(file, expected), "a file that shares its bytes, as the cabinet has it: %s", names[i]);
+            }
+        }
     }
     path(prefix, sizeof(prefix), "%s/prefix", out);
     path(file, sizeof(file), "%s/drive_c/windows/system32/cudart32.dll", prefix);
@@ -9552,6 +9612,34 @@ static void test_msi(void)
           "listed; Visual C++ and a package outside the redistributables' folders left out");
     CHECK(!pc5_redist_pending(game_root, "physx-game", game, NULL, 0) &&
           pc5_redist_install(game_root, "physx-game", game, NULL, NULL) == 0, "once: not again");
+    {
+        /* One that can't be installed: not tried again by the same PC5, but once more by a newer
+         * one (a "failed" from before 2.4.6, when NVIDIA's PhysX 9.13.0604 couldn't be read). */
+        char retry[PC5_PATH], list[PC5_PATH];
+        path(retry, sizeof(retry), "%s/prefixes/physx-retry/drive_c/Games/Retry", game_root);
+        path(file, sizeof(file), "%s/prefixes/physx-retry/system.reg", game_root);
+        write_text(file, "WINE REGISTRY Version 2\n");
+        path(file, sizeof(file), "%s/Redist/PhysX-9.13.0604-SystemSoftware.msi", retry);
+        path(expected, sizeof(expected), "%s/cut.msi", out);
+        copy_file(expected, file);
+        CHECK(pc5_redist_install(game_root, "physx-retry", retry, NULL, NULL) == -1,
+              "a damaged package: not installed");
+        path(list, sizeof(list), "%s/prefixes/physx-retry/pc5/redist.txt", game_root);
+        CHECK(file_holds_text(list, " failed-" PC5_VERSION " Redist/PhysX-9.13.0604-SystemSoftware.msi\n"),
+              "listed as failed with this PC5");
+        CHECK(!pc5_redist_pending(game_root, "physx-retry", retry, NULL, 0), "this PC5: not tried again");
+        Pc5Buf text = { 0 };
+        CHECK(!pc5_read_file(list, &text, 1 << 20) && !pc5_buf_terminate(&text), "redist.txt read");
+        char *at = text.data ? strstr((char *)text.data, " failed-" PC5_VERSION " ") : NULL;
+        if (at) {
+            memmove(at + 7, at + 8 + strlen(PC5_VERSION), strlen(at + 8 + strlen(PC5_VERSION)) + 1);
+            write_text(list, (const char *)text.data);
+        }
+        pc5_buf_free(&text);
+        CHECK(file_holds_text(list, " failed Redist/PhysX-9.13.0604-SystemSoftware.msi\n") &&
+              pc5_redist_pending(game_root, "physx-retry", retry, NULL, 0) == 1,
+              "failed with an older PC5: tried again");
+    }
 
     /* PhysX's runtime copied into a game's Windows by hand (as from a PC): registered as its
      * setup program would, once; a prefix without it is left as it is. */
