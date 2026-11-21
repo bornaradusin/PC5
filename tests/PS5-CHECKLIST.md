@@ -610,6 +610,8 @@ controller's speaker.
 | 368 | A bgfx game set up to draw with OpenGL (its program has bgfx's `glcontext_wgl`), installed before 2.4.4 | it starts with OpenGL (Mesa Zink) instead of stopping at `ChoosePixelFormat failed` | `zink provider=ok`; `prefixes/<game>/pc5/opengl.txt` says opengl |
 | 369 | GIGASWORD, Controller: Xbox controller, the controller on when it starts | it opens past its first window instead of closing at once | no page fault at `GigaSword.exe+0x3c1d`; with `+ps5drv`, no `controller connected or disconnected` line at the start |
 | 370 | An Unreal Engine 4 game: turn the controller off mid-game, then on again (regression check for 369) | the game finds the controller again, as in 2.4.4 | with `+ps5drv`, `controller connected or disconnected (N): WM_DEVICECHANGE` at the off and the on |
+| 371 | Well Dweller on a console in another language (Brazilian Portuguese), PC5's Settings › Language: English | it gets past its save code instead of stopping with GameMaker's error box | `PW_WINE64 pc5 locale=en_US.UTF-8`; the game's report says "The language it was given: en_US.UTF-8" |
+| 372 | Any game with PC5's Language on System default (regression check for 371) | the game is in the console's language, as before | `PW_WINE64 pc5 locale=` is the console's (pt_BR.UTF-8 on a Brazilian Portuguese console) |
 
 ## Custom media navigation changes (pending on PS5)
 

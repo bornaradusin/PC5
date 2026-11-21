@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sat, 21 Nov 2026 21:52:12 +0000
+Subject: [PATCH 163/163] PC5: a game gets PC5's language, not always the
+ console's
+
+The game's Windows language (LC_ALL) was read from PW_PC5_LOCALE before pc5_game_start set it from PC5's Language setting, so every game got the console's language whatever PC5 was set to: with PC5 in English on a Brazilian Portuguese console, Well Dweller still got pt_BR (lang=en, locale=pt_BR.UTF-8 in its log) and its save code stopped with an error. The setting is now read after pc5_game_start, before Wine's environment is set; the console's language stays the default with System default.
+---
+ native/wine64_main.c | 17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 77cb772..a2d86ff 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -1833,11 +1833,11 @@ int main(int argc, char **argv)
+      * launches and go when the game is uninstalled. */
+     snprintf(radv_cache, sizeof(radv_cache), "%s/pc5-cache/radv", prefix);
+     {
+-        /* The game's language is PC5's (its Language setting, PW_PC5_LOCALE), or the console's with System default. */
+-        const char *chosen = getenv("PW_PC5_LOCALE");
+-        const char *locale = chosen && *chosen ? chosen : pc5_console_locale();
++        /* The console's language, until PC5's Language setting is in the environment
++         * (pc5_game_start, below, which logs the language the game gets). */
++        const char *locale = pc5_console_locale();
+         if (locale) snprintf(pc5_locale, sizeof(pc5_locale), "%s", locale);
+-        PS5LOG_LOG("PW_WINE64 pc5 locale=%s shader_cache=%s", pc5_locale, radv_cache);
++        PS5LOG_LOG("PW_WINE64 shader_cache=%s", radv_cache);
+     }
+ #else
+     snprintf(radv_cache, sizeof(radv_cache), "%s/cache/radv", library_root);
+@@ -2089,6 +2089,15 @@ int main(int argc, char **argv)
+         }
+ #ifdef PW_PC5
+         pc5_game_start(game, launch.executable);
++        {
++            /* The game's language is PC5's (its Language setting: PW_PC5_LOCALE, which
++             * pc5_game_start has just set), or the console's with System default. Read
++             * before pc5_game_start (before 2.4.6), it was always the console's. pc5_locale
++             * reaches Wine as LC_ALL with the rest of its environment, below. */
++            const char *chosen = getenv("PW_PC5_LOCALE");
++            if (chosen && *chosen) snprintf(pc5_locale, sizeof(pc5_locale), "%s", chosen);
++            PS5LOG_LOG("PW_WINE64 pc5 locale=%s", pc5_locale);
++        }
+         /* After the game's settings are in the environment (pc5_game_start): Programs a game starts. */
+         pc5_children_start(&start, runtime_root);
+         /* 120 Hz output (PC5's Settings: PW_PC5_HIGH_REFRESH=1): where the TV takes it, RADV opens
+-- 
+2.43.0
+
