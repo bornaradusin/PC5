@@ -169,8 +169,18 @@ static uint32_t import_bit(const char *name)
         { "ddraw.dll", PC5_IMPORT_DDRAW },     { "mscoree.dll", PC5_IMPORT_DOTNET },
         { "steam_api.dll", PC5_IMPORT_STEAM }, { "steam_api64.dll", PC5_IMPORT_STEAM },
     };
+    /* D3DX, every version of it: d3dx9_24.dll to d3dx9_43.dll, d3dx10_33.dll to d3dx10_43.dll,
+     * d3dx11_42.dll and d3dx11_43.dll (the debug builds' d3dx9d_43.dll too). */
+    static const struct { const char *prefix; uint32_t bit; } helpers[] = {
+        { "d3dx9", PC5_IMPORT_D3DX9 }, { "d3dx10", PC5_IMPORT_D3DX10 }, { "d3dx11", PC5_IMPORT_D3DX11 },
+    };
+    size_t n = strlen(name);
     for (size_t i = 0; i < sizeof(known) / sizeof(known[0]); i++)
         if (!strcmp(name, known[i].name)) return known[i].bit;
+    for (size_t i = 0; n > 4 && !strcmp(name + n - 4, ".dll") && i < sizeof(helpers) / sizeof(helpers[0]); i++) {
+        size_t p = strlen(helpers[i].prefix);
+        if (!strncmp(name, helpers[i].prefix, p) && (name[p] == '_' || name[p] == 'd' || name[p] == '.')) return helpers[i].bit;
+    }
     return 0;
 }
 
@@ -409,6 +419,13 @@ uint32_t pc5_pe_named_libraries(const char *path)
     pc5_free(buf);
     close(fd);
     return bits;
+}
+
+uint32_t pc5_pe_d3dx_drawing(uint32_t imports)
+{
+    if (imports & PC5_IMPORT_DRAWING) return 0;
+    return (imports & PC5_IMPORT_D3DX11 ? PC5_IMPORT_D3D11 : 0) | (imports & PC5_IMPORT_D3DX10 ? PC5_IMPORT_D3D10 : 0) |
+           (imports & PC5_IMPORT_D3DX9 ? PC5_IMPORT_D3D9 : 0);
 }
 
 Pc5Api pc5_api_from_imports(uint32_t imports)

@@ -341,8 +341,8 @@ msgid "PC5 ran out of memory planning the work."
 msgstr "PC5 had te weinig geheugen om het werk te plannen."
 
 #: title/pc5_files.c:385 title/pc5_files.c:406 title/pc5_files.c:419
-#: title/pc5_library.c:3021 title/pc5_library.c:3275 title/pc5_library.c:3285
-#: title/pc5_library.c:3298
+#: title/pc5_library.c:3033 title/pc5_library.c:3287 title/pc5_library.c:3297
+#: title/pc5_library.c:3310
 #, c-format
 msgid "PC5 can't write %s: %s."
 msgstr "PC5 kan %s niet schrijven: %s."
@@ -352,7 +352,7 @@ msgstr "PC5 kan %s niet schrijven: %s."
 msgid "PC5 ran out of memory copying %s."
 msgstr "PC5 had te weinig geheugen bij het kopiëren van %s."
 
-#: title/pc5_files.c:427 title/pc5_library.c:2118
+#: title/pc5_files.c:427 title/pc5_library.c:2130
 #, c-format
 msgid "PC5 can't put %s in place: %s."
 msgstr "PC5 kan %s niet op zijn plaats zetten: %s."
@@ -449,7 +449,7 @@ msgstr ""
 "Sluit de USB-schijf met %.100s aan: de game wordt gespeeld vanuit de map "
 "%.200s daarop."
 
-#: title/pc5_library.c:175 title/pc5_library.c:3903 title/pc5_library.c:3954
+#: title/pc5_library.c:175 title/pc5_library.c:3915 title/pc5_library.c:3966
 #, c-format
 msgid "PC5 can't make the game's folder: %s."
 msgstr "PC5 kan de map van de game niet maken: %s."
@@ -463,7 +463,7 @@ msgstr "PC5 kan de map van de game op de USB-schijf niet koppelen: %s."
 msgid "Choose one of the game's programs."
 msgstr "Kies een van de programma's van de game."
 
-#: title/pc5_library.c:714 title/pc5_library.c:929 title/pc5_library.c:1162
+#: title/pc5_library.c:714 title/pc5_library.c:929 title/pc5_library.c:1174
 msgid "PC5's notes on this game are missing."
 msgstr "De notities van PC5 over deze game ontbreken."
 
@@ -471,9 +471,9 @@ msgstr "De notities van PC5 over deze game ontbreken."
 msgid "That program is too deep in the game's folder for Windows."
 msgstr "Dat programma zit te diep in de map van de game voor Windows."
 
-#: title/pc5_library.c:731 title/pc5_library.c:2135 title/pc5_library.c:3462
-#: title/pc5_library.c:3465 title/pc5_library.c:3474 title/pc5_library.c:3548
-#: title/pc5_library.c:3700 title/pc5_library.c:3916
+#: title/pc5_library.c:731 title/pc5_library.c:2147 title/pc5_library.c:3474
+#: title/pc5_library.c:3477 title/pc5_library.c:3486 title/pc5_library.c:3560
+#: title/pc5_library.c:3712 title/pc5_library.c:3928
 #, c-format
 msgid "PC5 can't write its notes: %s."
 msgstr "PC5 kan zijn notities niet schrijven: %s."
@@ -487,179 +487,179 @@ msgstr "PC5 heeft geen geheugen meer."
 msgid "%.200s doesn't start any of the game's programs."
 msgstr "%.200s start geen van de programma's van de game."
 
-#: title/pc5_library.c:1029
+#: title/pc5_library.c:1039
 msgid "The game's launch options are too long: 511 characters at most."
 msgstr "De startopties van de game zijn te lang: maximaal 511 tekens."
 
-#: title/pc5_library.c:1046
+#: title/pc5_library.c:1056
 msgid "The game's path is too long for Windows."
 msgstr "Het pad van de game is te lang voor Windows."
 
-#: title/pc5_library.c:1062 title/pc5_library.c:1241
+#: title/pc5_library.c:1072 title/pc5_library.c:1253
 #, c-format
 msgid "PC5 can't write the game's profile: %s."
 msgstr "PC5 kan het profiel van de game niet schrijven: %s."
 
-#: title/pc5_library.c:1187
+#: title/pc5_library.c:1199
 #, c-format
 msgid "The program its launcher started isn't one of the game's: %.200s"
 msgstr ""
 "Het programma dat de launcher startte, hoort niet bij de game: %.200s"
 
-#: title/pc5_library.c:1201
+#: title/pc5_library.c:1213
 msgid "The arguments its launcher gave are too long."
 msgstr "De argumenten van de launcher zijn te lang."
 
-#: title/pc5_library.c:1223
+#: title/pc5_library.c:1235
 #, c-format
 msgid "Its programs kept starting each other: %d hand-offs in a row."
 msgstr "De programma's bleven elkaar starten: %d keer achter elkaar."
 
-#: title/pc5_library.c:1237
+#: title/pc5_library.c:1249
 msgid "The program's path is too long for Windows."
 msgstr "Het pad van het programma is te lang voor Windows."
 
-#: title/pc5_library.c:1299
+#: title/pc5_library.c:1311
 #, c-format
 msgid "Its profile has a mistake (%s)."
 msgstr "Het profiel bevat een fout (%s)."
 
-#: title/pc5_library.c:1316
+#: title/pc5_library.c:1328
 msgid "Its Windows folder is missing."
 msgstr "De Windows-map ontbreekt."
 
-#: title/pc5_library.c:1320
+#: title/pc5_library.c:1332
 msgid "Resetting its Windows isn't finished: close PC5 and open it again."
 msgstr ""
 
-#: title/pc5_library.c:1462
+#: title/pc5_library.c:1474
 #, c-format
 msgid "PC5 can't delete %s: %s."
 msgstr "PC5 kan %s niet verwijderen: %s."
 
-#: title/pc5_library.c:1561 title/pc5_library.c:1903 title/pc5_library.c:1960
-#: title/pc5_library.c:2431
+#: title/pc5_library.c:1573 title/pc5_library.c:1915 title/pc5_library.c:1972
+#: title/pc5_library.c:2443
 #, c-format
 msgid "PC5 can't move the game's folder: %s."
 msgstr "PC5 kan de map van de game niet verplaatsen: %s."
 
-#: title/pc5_library.c:1570 title/pc5_library.c:1910
+#: title/pc5_library.c:1582 title/pc5_library.c:1922
 #, c-format
 msgid "PC5 can't delete the game's profile: %s."
 msgstr "PC5 kan het profiel van de game niet verwijderen: %s."
 
-#: title/pc5_library.c:1584 title/pc5_library.c:1843 title/pc5_library.c:1895
-#: title/pc5_library.c:2352 title/pc5_library.c:2378 title/pc5_library.c:2387
-#: title/pc5_library.c:2427 title/pc5_library.c:3613 title/pc5_library.c:3621
-#: title/pc5_library.c:3667 title/pc5_library.c:3703
+#: title/pc5_library.c:1596 title/pc5_library.c:1855 title/pc5_library.c:1907
+#: title/pc5_library.c:2364 title/pc5_library.c:2390 title/pc5_library.c:2399
+#: title/pc5_library.c:2439 title/pc5_library.c:3625 title/pc5_library.c:3633
+#: title/pc5_library.c:3679 title/pc5_library.c:3715
 msgid "A path is too long."
 msgstr "Een pad is te lang."
 
-#: title/pc5_library.c:1787
+#: title/pc5_library.c:1799
 msgid "PC5 can't read the game's folder."
 msgstr "PC5 kan de map van de game niet lezen."
 
-#: title/pc5_library.c:1795 title/pc5_library.c:2115 title/pc5_library.c:3211
+#: title/pc5_library.c:1807 title/pc5_library.c:2127 title/pc5_library.c:3223
 #, c-format
 msgid "A path in the game is too long: %s."
 msgstr "Een pad in de game is te lang: %s."
 
-#: title/pc5_library.c:1804
+#: title/pc5_library.c:1816
 #, c-format
 msgid "PC5 can't keep %s: %s."
 msgstr "PC5 kan %s niet bewaren: %s."
 
-#: title/pc5_library.c:1835 title/pc5_library.c:1852 title/pc5_library.c:2221
-#: title/pc5_library.c:2252 title/pc5_library.c:2302 title/pc5_library.c:2310
-#: title/pc5_library.c:2341 title/pc5_library.c:2361 title/pc5_library.c:2958
-#: title/pc5_library.c:3048 title/pc5_library.c:3084 title/pc5_library.c:3361
-#: title/pc5_library.c:3629 title/pc5_library.c:3683
+#: title/pc5_library.c:1847 title/pc5_library.c:1864 title/pc5_library.c:2233
+#: title/pc5_library.c:2264 title/pc5_library.c:2314 title/pc5_library.c:2322
+#: title/pc5_library.c:2353 title/pc5_library.c:2373 title/pc5_library.c:2970
+#: title/pc5_library.c:3060 title/pc5_library.c:3096 title/pc5_library.c:3373
+#: title/pc5_library.c:3641 title/pc5_library.c:3695
 msgid "Out of memory."
 msgstr "Te weinig geheugen."
 
-#: title/pc5_library.c:1859 title/pc5_library.c:1869
+#: title/pc5_library.c:1871 title/pc5_library.c:1881
 #, c-format, fuzzy
 msgid "PC5 can't keep the saves apart: %s."
 msgstr "PC5 kan de opgeslagen gegevens niet verplaatsen: %s."
 
-#: title/pc5_library.c:1929
+#: title/pc5_library.c:1941
 #, c-format
 msgid "PC5 can't put the saves in place: %s."
 msgstr "PC5 kan de opgeslagen gegevens niet terugzetten: %s."
 
-#: title/pc5_library.c:1943
+#: title/pc5_library.c:1955
 msgid "This game's saves can't be kept apart from it."
 msgstr ""
 "De opgeslagen gegevens van deze game kunnen niet apart worden bewaard."
 
-#: title/pc5_library.c:1949
+#: title/pc5_library.c:1961
 #, c-format
 msgid "PC5 can't make its saves folder: %s."
 msgstr "PC5 kan de map voor opgeslagen gegevens niet maken: %s."
 
-#: title/pc5_library.c:1953
+#: title/pc5_library.c:1965
 msgid "PC5 is still keeping this game's saves from before: start PC5 again."
 msgstr ""
 "PC5 is nog bezig de eerdere opgeslagen gegevens van deze game te bewaren: "
 "start PC5 opnieuw."
 
-#: title/pc5_library.c:1986
+#: title/pc5_library.c:1998
 #, c-format
 msgid "PC5 can't move the saves: %s."
 msgstr "PC5 kan de opgeslagen gegevens niet verplaatsen: %s."
 
-#: title/pc5_library.c:2073
+#: title/pc5_library.c:2085
 #, c-format
 msgid "A path in the update is too long: %s."
 msgstr "Een pad in de update is te lang: %s."
 
-#: title/pc5_library.c:2155
+#: title/pc5_library.c:2167
 #, c-format
 msgid "PC5 can't write the game's list of files: %s."
 msgstr "PC5 kan de bestandslijst van de game niet schrijven: %s."
 
-#: title/pc5_library.c:2280 title/pc5_library.c:2317
+#: title/pc5_library.c:2292 title/pc5_library.c:2329
 #, c-format
 msgid "PC5 can't move %.150s into the new Windows: %s."
 msgstr ""
 
-#: title/pc5_library.c:2397 title/pc5_library.c:2403 title/pc5_library.c:2409
+#: title/pc5_library.c:2409 title/pc5_library.c:2415 title/pc5_library.c:2421
 #, c-format
 msgid "PC5 can't keep the old registry: %s."
 msgstr ""
 
-#: title/pc5_library.c:2435 title/pc5_library.c:3485
+#: title/pc5_library.c:2447 title/pc5_library.c:3497
 #, c-format
 msgid "PC5 can't put the game in place: %s."
 msgstr "PC5 kan de game niet op zijn plaats zetten: %s."
 
-#: title/pc5_library.c:2774
+#: title/pc5_library.c:2786
 msgid ""
 "PC5's Windows template is missing from the app: copy the PC5 folder again."
 msgstr ""
 "Het Windows-sjabloon van PC5 ontbreekt in de app: kopieer de map PC5 "
 "opnieuw."
 
-#: title/pc5_library.c:2798
+#: title/pc5_library.c:2810
 msgid "PC5's Windows template is damaged: copy the PC5 folder again."
 msgstr ""
 "Het Windows-sjabloon van PC5 is beschadigd: kopieer de map PC5 opnieuw."
 
-#: title/pc5_library.c:2880 title/pc5_library.c:2940
+#: title/pc5_library.c:2892 title/pc5_library.c:2952
 #, c-format
 msgid "PC5 can't make its folders in %s: %s."
 msgstr "PC5 kan zijn mappen in %s niet maken: %s."
 
-#: title/pc5_library.c:2891
+#: title/pc5_library.c:2903
 #, c-format
 msgid "PC5 can't make its folder on the USB drive: %s."
 msgstr "PC5 kan zijn map op de USB-schijf niet maken: %s."
 
-#: title/pc5_library.c:2894
+#: title/pc5_library.c:2906
 msgid "PC5 can't name the game's folder on the USB drive."
 msgstr "PC5 kan de map van de game op de USB-schijf geen naam geven."
 
-#: title/pc5_library.c:2912
+#: title/pc5_library.c:2924
 #, c-format
 msgid ""
 "The drive reads at %.0f MB/s here, too slow to play from (%.0f needed). "
@@ -670,7 +670,7 @@ msgstr ""
 "nodig). Sluit hem aan op een poort aan de achterkant of op de USB-C-poort "
 "aan de voorkant. Installeren op de console werkt nog wel."
 
-#: title/pc5_library.c:2920
+#: title/pc5_library.c:2932
 #, c-format
 msgid ""
 "Not enough space on the USB drive: the game needs %s and it has %s free."
@@ -678,20 +678,20 @@ msgstr ""
 "Niet genoeg ruimte op de USB-schijf: de game heeft %s nodig en er is %s "
 "vrij."
 
-#: title/pc5_library.c:2924
+#: title/pc5_library.c:2936
 msgid ""
 "Only a game on a USB drive can play from it: this folder isn't on one."
 msgstr ""
 "Alleen een game op een USB-schijf kan daarvandaan gespeeld worden: deze "
 "map staat er niet op."
 
-#: title/pc5_library.c:2926
+#: title/pc5_library.c:2938
 msgid "A game in PC5's INSTALL folder is installed, not played from there."
 msgstr ""
 "Een game in de INSTALL-map van PC5 wordt geïnstalleerd, niet vandaar "
 "gespeeld."
 
-#: title/pc5_library.c:2931
+#: title/pc5_library.c:2943
 #, c-format
 msgid ""
 "The drive reads at %.0f MB/s in this USB port, too slow to play from (at "
@@ -705,71 +705,71 @@ msgstr ""
 "op de USB-C-poort aan de voorkant. Installeren werkt nog wel via deze "
 "poort."
 
-#: title/pc5_library.c:2937
+#: title/pc5_library.c:2949
 msgid "The game's program is too deep in its folder for Windows."
 msgstr "Het programma van de game zit te diep in zijn map voor Windows."
 
-#: title/pc5_library.c:2945
+#: title/pc5_library.c:2957
 #, c-format
 msgid "Not enough space: the game needs %s and the console has %s free."
 msgstr ""
 "Niet genoeg ruimte: de game heeft %s nodig en de console heeft %s vrij."
 
-#: title/pc5_library.c:2948
+#: title/pc5_library.c:2960
 msgid "PC5 can't name the game."
 msgstr "PC5 kan de game geen naam geven."
 
-#: title/pc5_library.c:2951 title/pc5_library.c:3377
+#: title/pc5_library.c:2963 title/pc5_library.c:3389
 #, c-format
 msgid "PC5 can't start the install: %s."
 msgstr "PC5 kan de installatie niet starten: %s."
 
-#: title/pc5_library.c:2994 title/pc5_library.c:3007
+#: title/pc5_library.c:3006 title/pc5_library.c:3019
 msgid "A path in the Windows template is too long."
 msgstr "Een pad in het Windows-sjabloon is te lang."
 
-#: title/pc5_library.c:2995
+#: title/pc5_library.c:3007
 #, c-format
 msgid "PC5 can't put back the game's registry: %s."
 msgstr ""
 
-#: title/pc5_library.c:3010 title/pc5_library.c:3015 title/pc5_library.c:3219
+#: title/pc5_library.c:3022 title/pc5_library.c:3027 title/pc5_library.c:3231
 #: title/pc5_tile.c:522
 #, c-format
 msgid "PC5 can't make %s: %s."
 msgstr "PC5 kan %s niet maken: %s."
 
-#: title/pc5_library.c:3018
+#: title/pc5_library.c:3030
 #, c-format
 msgid "PC5's Windows template is missing %s."
 msgstr "Het Windows-sjabloon van PC5 mist %s."
 
-#: title/pc5_library.c:3037
+#: title/pc5_library.c:3049
 #, c-format
 msgid "PC5 can't copy %s: %s."
 msgstr "PC5 kan %s niet kopiëren: %s."
 
-#: title/pc5_library.c:3062
+#: title/pc5_library.c:3074
 #, c-format
 msgid "PC5 can't read %s on the USB drive: %s."
 msgstr "PC5 kan %s op de USB-schijf niet lezen: %s."
 
-#: title/pc5_library.c:3226 title/pc5_library.c:3238
+#: title/pc5_library.c:3238 title/pc5_library.c:3250
 #, c-format
 msgid "PC5 can't read back %s: %s."
 msgstr "PC5 kan %s niet teruglezen: %s."
 
-#: title/pc5_library.c:3226
+#: title/pc5_library.c:3238
 #, c-format
 msgid "PC5 can't open %s on the USB drive: %s."
 msgstr "PC5 kan %s op de USB-schijf niet openen: %s."
 
-#: title/pc5_library.c:3239
+#: title/pc5_library.c:3251
 #, c-format
 msgid "The USB drive stopped answering while PC5 copied %s (%s)."
 msgstr "De USB-schijf reageerde niet meer terwijl PC5 %s kopieerde (%s)."
 
-#: title/pc5_library.c:3308
+#: title/pc5_library.c:3320
 #, c-format
 msgid ""
 "The copy of %s doesn't match the USB drive. The drive or its cable may be "
@@ -778,22 +778,22 @@ msgstr ""
 "De kopie van %s komt niet overeen met de USB-schijf. De schijf of de kabel "
 "is misschien defect; er is niets bewaard."
 
-#: title/pc5_library.c:3427 title/pc5_library.c:3439
+#: title/pc5_library.c:3439 title/pc5_library.c:3451
 #, c-format
 msgid ""
 "The game couldn't be put back in the INSTALL folder: it is in %.180s."
 msgstr "De game kon niet terug in de INSTALL-map: hij staat in %.180s."
 
-#: title/pc5_library.c:3478
+#: title/pc5_library.c:3490
 #, c-format
 msgid "PC5 can't save the cover: %s."
 msgstr "PC5 kan de cover niet opslaan: %s."
 
-#: title/pc5_library.c:3594
+#: title/pc5_library.c:3606
 msgid "PC5 didn't install this game, so it can't update it."
 msgstr "PC5 heeft deze game niet geïnstalleerd en kan hem dus niet updaten."
 
-#: title/pc5_library.c:3596
+#: title/pc5_library.c:3608
 #, c-format
 msgid ""
 "%s plays from its USB drive: copy the newer version over its folder %s "
@@ -802,12 +802,12 @@ msgstr ""
 "%s wordt gespeeld vanaf zijn USB-schijf: kopieer de nieuwere versie daar "
 "over zijn map %s."
 
-#: title/pc5_library.c:3601 title/pc5_library.c:3663
+#: title/pc5_library.c:3613 title/pc5_library.c:3675
 msgid "The game's folder is missing: uninstall it and install it again."
 msgstr ""
 "De map van de game ontbreekt: deïnstalleer hem en installeer hem opnieuw."
 
-#: title/pc5_library.c:3604
+#: title/pc5_library.c:3616
 #, c-format
 msgid ""
 "This folder doesn't have %s, the program %s starts. Choose the folder of a "
@@ -816,13 +816,13 @@ msgstr ""
 "Deze map heeft geen %s, het programma dat %s start. Kies de map van een "
 "nieuwere kopie van %s."
 
-#: title/pc5_library.c:3618
+#: title/pc5_library.c:3630
 #, c-format
 msgid "Not enough space: the update needs %s and the console has %s free."
 msgstr ""
 "Niet genoeg ruimte: de update heeft %s nodig en de console heeft %s vrij."
 
-#: title/pc5_library.c:3624
+#: title/pc5_library.c:3636
 msgid ""
 "An earlier update of this game isn't finished: close PC5 and open it again "
 "to finish it."
@@ -830,18 +830,18 @@ msgstr ""
 "Een eerdere update van deze game is niet klaar: sluit PC5 en open het "
 "opnieuw om hem af te ronden."
 
-#: title/pc5_library.c:3626
+#: title/pc5_library.c:3638
 #, c-format
 msgid "PC5 can't start the update: %s."
 msgstr "PC5 kan de update niet starten: %s."
 
-#: title/pc5_library.c:3661
+#: title/pc5_library.c:3673
 msgid ""
 "PC5 didn't install this game in a Windows of its own, so its Windows can't "
 "be reset."
 msgstr ""
 
-#: title/pc5_library.c:3666
+#: title/pc5_library.c:3678
 #, fuzzy
 msgid ""
 "An update or a reset of this game isn't finished: close PC5 and open it "
@@ -850,34 +850,34 @@ msgstr ""
 "Een eerdere update van deze game is niet klaar: sluit PC5 en open het "
 "opnieuw om hem af te ronden."
 
-#: title/pc5_library.c:3672
+#: title/pc5_library.c:3684
 #, c-format, fuzzy
 msgid ""
 "Not enough space: a new Windows needs %s and the console has %s free."
 msgstr ""
 "Niet genoeg ruimte: de update heeft %s nodig en de console heeft %s vrij."
 
-#: title/pc5_library.c:3676
+#: title/pc5_library.c:3688
 #, c-format
 msgid "PC5 can't start resetting its Windows: %s."
 msgstr ""
 
-#: title/pc5_library.c:3819
+#: title/pc5_library.c:3831
 msgid ""
 "Kept saves can't be put back for a game that plays from its USB drive."
 msgstr ""
 "Bewaarde gegevens kunnen niet worden teruggezet voor een game die vanaf "
 "zijn USB-schijf wordt gespeeld."
 
-#: title/pc5_library.c:3826
+#: title/pc5_library.c:3838
 msgid "The install has begun already."
 msgstr "De installatie is al begonnen."
 
-#: title/pc5_library.c:3856
+#: title/pc5_library.c:3868
 msgid "PC5 can't read the kept saves."
 msgstr "PC5 kan de bewaarde gegevens niet lezen."
 
-#: title/pc5_library.c:3928
+#: title/pc5_library.c:3940
 #, c-format
 msgid "PC5 can't make the game's folder on the USB drive: %s."
 msgstr "PC5 kan de map van de game op de USB-schijf niet maken: %s."

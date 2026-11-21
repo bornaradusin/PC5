@@ -5371,6 +5371,51 @@ static void test_named_libraries(void)
               strstr((char *)profile.data, "graphics = dxvk\n"), "drawn through DXVK now");
         pc5_buf_free(&profile);
     }
+    /* A program that names nothing it draws with beside an engine library importing D3DX
+     * (d3dx9_43.dll), which loads d3d9.dll itself (WRC Powerslide's Engine.dll): Direct3D 9. */
+    {
+        char engine[PC5_PATH];
+        Pc5PeInfo pe;
+        path(engine, sizeof(engine), "%s/d3dx.dll", programs);
+        CHECK(!pc5_pe_read(engine, &pe) && pe.dll && (pe.imports & PC5_IMPORT_D3DX9) && !(pe.imports & PC5_IMPORT_DRAWING),
+              "D3DX imported, not counted as drawing: %#x", pe.imports);
+        CHECK(pc5_pe_d3dx_drawing(PC5_IMPORT_D3DX9) == PC5_IMPORT_D3D9 &&
+                  pc5_pe_d3dx_drawing(PC5_IMPORT_D3DX11 | PC5_IMPORT_D3DX9) == (PC5_IMPORT_D3D11 | PC5_IMPORT_D3D9) &&
+                  pc5_pe_d3dx_drawing(PC5_IMPORT_D3DX9 | PC5_IMPORT_OPENGL) == 0 && pc5_pe_d3dx_drawing(0) == 0,
+              "D3DX's Direct3D only when nothing else draws");
+        path(file, sizeof(file), "%s/prefixes/rally/drive_c/Games/Rally/Rally.exe", root);
+        copy_file(from, file);
+        path(file, sizeof(file), "%s/prefixes/rally/drive_c/Games/Rally/Engine.dll", root);
+        copy_file(engine, file);
+        memset(&info, 0, sizeof(info));
+        pc5_copy(info.title, sizeof(info.title), "Rally");
+        pc5_copy(info.folder, sizeof(info.folder), "Rally");
+        pc5_copy(info.exe, sizeof(info.exe), "Rally.exe");
+        info.bits = 32;
+        info.api = PC5_API_GDI;
+        pc5_info_text(&info, text, sizeof(text));
+        path(file, sizeof(file), "%s/prefixes/rally/pc5/info.txt", root);
+        write_text(file, text);
+        CHECK(!pc5_profile_refresh(root, "rally", error, sizeof(error)), "refreshed: %s", error);
+        CHECK(!pc5_info_read(root, "rally", &info) && info.api == PC5_API_D3D9, "an installed one: Direct3D 9, kept: %d", (int)info.api);
+        /* With an OpenGL framework beside it (FNA's): the framework's OpenGL. */
+        path(file, sizeof(file), "%s/prefixes/framed/drive_c/Games/Framed/Framed.exe", root);
+        copy_file(from, file);
+        path(file, sizeof(file), "%s/prefixes/framed/drive_c/Games/Framed/Engine.dll", root);
+        copy_file(engine, file);
+        path(file, sizeof(file), "%s/prefixes/framed/drive_c/Games/Framed/FNA.dll", root);
+        copy_file(from, file);
+        pc5_copy(info.title, sizeof(info.title), "Framed");
+        pc5_copy(info.folder, sizeof(info.folder), "Framed");
+        pc5_copy(info.exe, sizeof(info.exe), "Framed.exe");
+        info.api = PC5_API_GDI;
+        pc5_info_text(&info, text, sizeof(text));
+        path(file, sizeof(file), "%s/prefixes/framed/pc5/info.txt", root);
+        write_text(file, text);
+        CHECK(!pc5_profile_refresh(root, "framed", error, sizeof(error)) && !pc5_info_read(root, "framed", &info) &&
+                  info.api == PC5_API_OPENGL,
+              "beside an OpenGL framework: OpenGL, not D3DX's Direct3D: %d", (int)info.api);
+    }
 }
 
 /* A Java game: a launcher that imports nothing it draws with, a Java runtime beside it. It
@@ -5422,6 +5467,23 @@ static void test_java(void)
         CHECK(!pc5_folder_inspect(beside, "Engined", folder) && folder->exe_count && folder->exes[0].java &&
               pc5_folder_api(folder, 0) == PC5_API_D3D12, "its library's Direct3D 12 first: %d", (int)pc5_folder_api(folder, 0));
         CHECK(pc5_dll_imports_in(beside) & PC5_IMPORT_D3D12, "the library's imports");
+    }
+    /* A library beside the program that imports D3DX and loads its Direct3D itself (WRC
+     * Powerslide's Engine.dll): that Direct3D. Elsewhere in the folder (a tool's), it isn't. */
+    {
+        char rally[PC5_PATH], engine[PC5_PATH];
+        path(engine, sizeof(engine), "%s/d3dx.dll", programs);
+        path(rally, sizeof(rally), "%s/stubs/Rally", work);
+        path(file, sizeof(file), "%s/Rally.exe", rally);
+        copy_file(from, file);
+        path(file, sizeof(file), "%s/tools/editor/Engine.dll", rally);
+        copy_file(engine, file);
+        CHECK(!pc5_folder_inspect(rally, "Rally", folder) && folder->exe_count && pc5_folder_api(folder, 0) == PC5_API_GDI,
+              "D3DX in a tool's folder: Windows' own drawing: %d", (int)pc5_folder_api(folder, 0));
+        path(file, sizeof(file), "%s/Engine.dll", rally);
+        copy_file(engine, file);
+        CHECK(!pc5_folder_inspect(rally, "Rally", folder) && folder->exe_count && pc5_folder_api(folder, 0) == PC5_API_D3D9,
+              "D3DX beside it: Direct3D 9: %d", (int)pc5_folder_api(folder, 0));
     }
     /* A .NET game on FNA (Bastion's) or MonoGame's OpenGL build: SDL2 loads OpenGL at run
      * time, so nothing imports it. FNA3D beside FNA, or MonoGame's Direct3D build (SharpDX),

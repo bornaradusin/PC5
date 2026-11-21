@@ -948,6 +948,16 @@ int pc5_profile_refresh(const char *root, const char *id, char *error, size_t si
         uint32_t named = info.api == PC5_API_GDI ? pc5_pe_named_libraries(path) & PC5_IMPORT_DRAWING
                          : pc5_pe_read(path, &pe)  ? 0
                                                    : pc5_pe_unity_direct3d(path, pe.imports);
+        /* ... or it names none, but it or a library beside it imports D3DX, Direct3D's helper
+         * library, and loads that Direct3D itself (WRC Powerslide; before 2.4.6 PC5 didn't look). */
+        if (!named && info.api == PC5_API_GDI && !pc5_pe_read(path, &pe)) {
+            char dir[PC5_PATH];
+            char *slash;
+            pc5_copy(dir, sizeof(dir), path);
+            if ((slash = strrchr(dir, '/'))) *slash = 0;
+            if (slash && !pc5_java_beside(dir) && !pc5_gl_framework_beside(dir))
+                named = pc5_pe_d3dx_drawing(pe.imports | pc5_dll_imports_in(dir));
+        }
         if (named) {
             info.api = program.api = pc5_api_from_imports(named);
             if (!pc5_info_text(&info, text, sizeof(text)) &&
@@ -1144,6 +1154,8 @@ static void handed_program(const char *path, const char *dir, Pc5Info *program)
         program->api = pc5_api_from_imports(pc5_pe_unreal_d3d12(path, drawing) ? drawing | PC5_IMPORT_D3D12 : drawing);
     else if (dir[0] && (pc5_java_beside(dir) || pc5_gl_framework_beside(dir)))
         program->api = PC5_API_OPENGL;
+    else if ((drawing = pc5_pe_d3dx_drawing(pe.imports | (dir[0] ? pc5_dll_imports_in(dir) : 0))))
+        program->api = pc5_api_from_imports(drawing);   /* D3DX's Direct3D, loaded at run time */
 }
 
 int pc5_handoff_take(const char *root, const char *id, char *error, size_t size)

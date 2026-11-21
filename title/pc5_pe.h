@@ -19,6 +19,11 @@ enum {
     PC5_IMPORT_DDRAW = 1u << 8,
     PC5_IMPORT_DOTNET = 1u << 9,   /* mscoree: a .NET Framework program */
     PC5_IMPORT_STEAM = 1u << 10,   /* steam_api, steam_api64 imported (not delay-loaded): Steam's library (pc5_steam.h) */
+    /* Direct3D's helper library (D3DX) of a version, d3dx9_43.dll and the like: not drawing itself
+     * (pc5_pe_d3dx_drawing) */
+    PC5_IMPORT_D3DX9 = 1u << 11,
+    PC5_IMPORT_D3DX10 = 1u << 12,
+    PC5_IMPORT_D3DX11 = 1u << 13,
     /* the libraries a program draws with */
     PC5_IMPORT_DRAWING = PC5_IMPORT_D3D8 | PC5_IMPORT_D3D9 | PC5_IMPORT_D3D10 | PC5_IMPORT_D3D11 | PC5_IMPORT_DXGI |
                          PC5_IMPORT_D3D12 | PC5_IMPORT_OPENGL | PC5_IMPORT_VULKAN | PC5_IMPORT_DDRAW,
@@ -54,6 +59,12 @@ int pc5_pe_read(const char *path, Pc5PeInfo *info);
 uint32_t pc5_pe_named_libraries(const char *path);
 /* The most capable API among the imports. */
 Pc5Api pc5_api_from_imports(uint32_t imports);
+/* The Direct3D a program draws with when its imports, and those of the libraries beside it, name
+ * none of the libraries that draw but name Direct3D's helper library (D3DX) of a version: that
+ * version's, as PC5_IMPORT_D3D* bits; 0 without one. D3DX only works with its own Direct3D,
+ * which the game loads itself at run time (WRC Powerslide: d3dx9_43.dll imported, d3d9.dll
+ * loaded by LoadLibrary). imports: the program's and its folder's libraries' together. */
+uint32_t pc5_pe_d3dx_drawing(uint32_t imports);
 /* 1 when the program at path (a path on the disk, or relative, either slash) is an Unreal
  * Engine game's, in a folder of its Binaries (Win64, or another but Win32: Gears Tactics'
  * is in Binaries\Steam), whose imports don't name Direct3D 12 but that

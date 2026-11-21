@@ -4,7 +4,7 @@
 
     tests/make-test-programs.py OUT_DIR
 
-They import what real games import (d3d9, d3d11, d3d12, opengl32, mscoree for .NET, steam_api64), and one carries a
+They import what real games import (d3d9, d3d11, d3d12, opengl32, mscoree for .NET, steam_api64, d3dx9_43), and one carries a
 version resource and an icon, so PC5's PE reader is tested on real PE files.
 """
 import subprocess
@@ -24,6 +24,7 @@ PROGRAMS = {
     "dotnet.exe": ("x86_64-w64-mingw32-gcc", "dotnet", ["-L.", "-lmscoree"], True, False),
     "agility.exe": ("x86_64-w64-mingw32-gcc", "agility", ["-ldxgi"], True, False),
     "steam64.exe": ("x86_64-w64-mingw32-gcc", "steam", ["-L.", "-lsteam_api64", "-ld3d11"], True, False),
+    "d3dx.dll": ("i686-w64-mingw32-gcc", "d3dx", ["-ld3dx9_43"], True, False),
 }
 
 SOURCES = {
@@ -37,6 +38,9 @@ SOURCES = {
     "agility": "#include <windows.h>\nextern HRESULT WINAPI CreateDXGIFactory1();\n__declspec(dllexport) const UINT D3D12SDKVersion = 614;\n__declspec(dllexport) const char *D3D12SDKPath = \".\\\\D3D12\\\\\";\nint WINAPI WinMain(HINSTANCE a, HINSTANCE b, LPSTR c, int d) { return (int)(INT_PTR)&CreateDXGIFactory1; }\n",
     # A Steam game's program: it imports Steam's library (steam_api64.dll), as most do.
     "steam": "#include <windows.h>\nextern BOOL SteamAPI_Init(void);\nextern HRESULT WINAPI D3D11CreateDevice();\nint WINAPI WinMain(HINSTANCE a, HINSTANCE b, LPSTR c, int d) { return SteamAPI_Init() + (int)(INT_PTR)&D3D11CreateDevice; }\n",
+    # A game's engine library that imports D3DX (d3dx9_43.dll) and loads d3d9.dll itself, as WRC
+    # Powerslide's Engine.dll does.
+    "d3dx": "#include <windows.h>\nextern void *WINAPI D3DXMatrixMultiply(void *, const void *, const void *);\n__declspec(dllexport) int engine(void) { return (int)(INT_PTR)&D3DXMatrixMultiply + (int)(INT_PTR)LoadLibraryA(\"d3d9.dll\"); }\nBOOL WINAPI DllMain(HINSTANCE a, DWORD b, LPVOID c) { return TRUE; }\n",
     "dotnet": "#include <windows.h>\nextern int WINAPI _CorExeMain(void);\nint WINAPI WinMain(HINSTANCE a, HINSTANCE b, LPSTR c, int d) { return _CorExeMain(); }\n",
 }
 

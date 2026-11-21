@@ -486,7 +486,10 @@ Pc5Api pc5_folder_api(const Pc5Folder *folder, int index)
     if (own & drawing) return pc5_api_from_imports(own);
     if (beside & drawing) return pc5_api_from_imports(beside);
     if (folder->exes[index].java || folder->exes[index].gl_framework) return PC5_API_OPENGL;
-    return pc5_api_from_imports(folder->imports);
+    if (folder->imports & drawing) return pc5_api_from_imports(folder->imports);
+    /* Nothing names what it draws with, but the program or a library beside it imports D3DX:
+     * that D3DX's Direct3D, which the game loads at run time (WRC Powerslide). */
+    return pc5_api_from_imports(pc5_pe_d3dx_drawing(own | beside));
 }
 
 /* name in dir in any case, joined to dir into out: 0, or -1 when there is none. */
