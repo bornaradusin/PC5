@@ -628,6 +628,17 @@ controller's speaker.
 | 386 | A Unity game (Silica) and a .NET console game (Streets of Rage 4) (regression check for 385) | they start and play as in 2.4.5 | their output still in the log as `STDOUT` lines (the report's "The game said") |
 | 387 | Icewind Dale II (#746's copy) | it gets past "An Assertion failed in ChDimm.cpp ... Unable to Open BIF:data\2DA.bif" | `PC5 Infinity Engine [Alias] in icewind2.ini: HD0:=C:\Games\Icewind Dale II\, ...`; if it was changed, `PC5 Infinity Engine [Alias] paths put on the game's folder` and `icewind2.ini.pc5-old` beside it |
 | 388 | Baldur's Gate II (GOG) (regression check for 387) | it plays as in 2.4.5 | `PC5 Infinity Engine [Alias] in baldur.ini: ...` with its own paths; no `paths put on the game's folder`; no `baldur.ini.pc5-old` |
+| 389 | `directx_Jun2010_redist.exe` (Microsoft's download, as it is) in `/data/prospero-win/pc5/dx9`, then start any game | the game starts as before; `pc5/dx9` gets `syswow64/xactengine3_2.dll`, `syswow64/xaudio2_2.dll`, `syswow64/d3dx9_43.dll`, `system32/d3dx9_43.dll` and `packages.txt`; no `.package` folder left | `PC5 prefix DirectX files added N` |
+| 390 | Saints Row 2 (#741's copy) with 389 done, youss17x's `user.reg` lines removed | voices in the cutscene after character creation, ambient sound at its normal level, in step; no T-posing | `PC5 Microsoft's XACT for this game added 4`; `xactengine3_2.dll ... native` and `xaudio2_2.dll ... native`; no `fixme:wmadec` lines |
+| 391 | Saints Row 2 without 389 | it plays as on 2.4.6 | `PC5 this game's sound needs Microsoft's XACT, which pc5/dx9 doesn't have (xactengine3_2.dll, xaudio2_2.dll)` |
+| 392 | Another game with XACT sound (Bully: Scholarship Edition, or any game loading `xactengine3_*.dll`) with 389 done (regression check for 390) | its sound as on 2.4.6 | `xactengine3_*.dll ... builtin`; no `PC5 Microsoft's XACT` line |
+| 393 | WRC Powerslide, Graphics mode Auto, its launcher's Windowed off, no Microsoft `d3dx9_43.dll` in `pc5/dx9` | the race shows in fullscreen instead of a black screen | no `fixme:d3dx:d3dx_effect_OnResetDevice` |
+| 394 | Rec Rewind, a new game | no red "Video memory has been exhausted" line, or a much smaller number than 2.4.6's 6197 MB | — |
+| 395 | Blackwood, all Low, the loading after the end of a mission (#742's crash) | it loads the next part instead of crashing with "System out of memory" | if a request was refused: `taken in N blocks instead` after it; each refusal line ends `free in all N MiB` |
+| 396 | ANOMALITH, the end of the prologue (#755's crash) | it goes on instead of crashing in d3d11.dll | if it happened: `radv/ps5: N bytes of device memory taken in M blocks`; no `DxvkMemoryAllocator: Memory allocation failed` |
+| 397 | Any game played 2 minutes (regression check for 395 and 396) | it plays as on 2.4.6 | the minute line `direct memory free=X MiB of 12288 MiB, largest free block Y MiB` |
+| 398 | Resident Evil 4 (2023) (#757's copy), installed with 2.4.5 | the report's Settings line says "draws with DirectX 12"; no "D3D12 Create Device Failed" | `vkd3d-proton` lines; no Wine `d3d12.dll ... builtin` |
+| 399 | The 2007 Resident Evil 4 (`RE4.exe`, Direct3D 9) (regression check for 398) | it starts as before, Direct3D 9 | its Settings line unchanged |
 
 ## Custom media navigation changes (pending on PS5)
 
