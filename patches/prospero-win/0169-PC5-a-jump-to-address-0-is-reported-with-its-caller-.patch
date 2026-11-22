@@ -1,0 +1,103 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 22 Nov 2026 15:58:56 +0000
+Subject: [PATCH 169/169] PC5: a jump to address 0 is reported with its caller
+ (Wine patch 1040)
+
+A call through an empty function pointer jumps to address 0, and a program with its own crash handler takes that exception itself: Wine's crash report never sees it, and on the console the handler then waits for a crash reporter that can't start, so the game sits frozen with nothing in the log. Before any handler runs, Wine now writes that such a jump happened and the module addresses at the top of the stack, the first being the caller. At most four per process; the exception is dispatched as before.
+---
+ ...ddress-0-is-reported-with-its-caller.patch | 82 +++++++++++++++++++
+ 1 file changed, 82 insertions(+)
+ create mode 100644 wine/patches/1040-ntdll-a-jump-to-address-0-is-reported-with-its-caller.patch
+
+diff --git a/wine/patches/1040-ntdll-a-jump-to-address-0-is-reported-with-its-caller.patch b/wine/patches/1040-ntdll-a-jump-to-address-0-is-reported-with-its-caller.patch
+new file mode 100644
+index 0000000..9834df1
+--- /dev/null
++++ b/wine/patches/1040-ntdll-a-jump-to-address-0-is-reported-with-its-caller.patch
+@@ -0,0 +1,82 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sun, 22 Nov 2026 16:05:00 +0000
++Subject: [PATCH] ntdll: A jump to address 0 is reported with its caller.
++
++A call through an empty function pointer jumps to address 0. A program
++with its own crash handler takes that exception itself: Wine's crash
++report (0912, 0924) never sees it, and on the PS5 the handler then waits
++for a crash reporter that can't start, so the game sits frozen and the
++log says nothing (Valor Mortis, Unreal Engine 5.7, when its settings are
++applied: its own report has only "EXCEPTION_ACCESS_VIOLATION
++0x0000000000000000" and an empty dump).
++
++dispatch_exception now writes, before any handler runs, that such a jump
++happened, and the addresses at the top of the stack that lie inside
++modules: the first is the call's return address, the caller. At most
++four reports per process. Only an access violation at address 0 with the
++instruction pointer at 0 is looked at; the exception is dispatched as
++before.
++---
++ dlls/ntdll/exception.c | 41 +++++++++++++++++++++++++++++++++++++++++
++ 1 file changed, 41 insertions(+)
++
++diff --git a/dlls/ntdll/exception.c b/dlls/ntdll/exception.c
++index 1802244..22804e1 100644
++--- a/dlls/ntdll/exception.c
+++++ b/dlls/ntdll/exception.c
++@@ -233,6 +233,45 @@ static LONG call_vectored_handlers( EXCEPTION_RECORD *rec, CONTEXT *context )
++ }
++ 
++ 
+++/* A jump to address 0, a call through an empty function pointer, which the
+++ * program's own crash handler may take without a word (on the PS5 it then
+++ * waits for a crash reporter that can't start): where it came from, before
+++ * any handler runs. The call left its return address at the top of the
+++ * stack, which names the caller; a few more of the stack's addresses inside
+++ * modules follow. At most four, for a program that makes such jumps on
+++ * purpose; nothing else is looked at, and nothing is changed. */
+++static void report_jump_to_zero( const EXCEPTION_RECORD *rec, const CONTEXT *context )
+++{
+++    static LONG reported;
+++    const ULONG_PTR *stack;
+++    unsigned int i, shown = 0;
+++    ULONG_PTR pc;
+++
+++    if (rec->ExceptionCode != EXCEPTION_ACCESS_VIOLATION || rec->ExceptionAddress) return;
+++#ifdef __x86_64__
+++    pc = context->Rip;
+++    stack = (const ULONG_PTR *)context->Rsp;
+++#elif defined(__i386__)
+++    pc = context->Eip;
+++    stack = (const ULONG_PTR *)context->Esp;
+++#else
+++    return;
+++#endif
+++    if (pc || !stack || InterlockedIncrement( &reported ) > 4) return;
+++    MESSAGE( "wine: a jump to address 0 (thread %04lx)\n", GetCurrentThreadId() );
+++    for (i = 0; i < 64 && shown < 8; i++)
+++    {
+++        LDR_DATA_TABLE_ENTRY *mod;
+++        ULONG_PTR value = stack[i];
+++
+++        if (LdrFindEntryForAddress( (const void *)value, &mod )) continue;
+++        MESSAGE( "wine: a jump to address 0: stack+0x%Ix %s+0x%Ix%s\n", (ULONG_PTR)i * sizeof(*stack),
+++                 debugstr_us( &mod->BaseDllName ), value - (ULONG_PTR)mod->DllBase, i ? "" : ", its caller" );
+++        shown++;
+++    }
+++}
+++
+++
++ /*******************************************************************
++  *		dispatch_exception
++  */
++@@ -286,6 +325,8 @@ NTSTATUS WINAPI dispatch_exception( EXCEPTION_RECORD *rec, CONTEXT *context )
++         break;
++     }
++ 
+++    report_jump_to_zero( rec, context );
+++
++     TRACE( "code=%lx (%s) flags=%lx addr=%p\n",
++            rec->ExceptionCode, debugstr_exception_code(rec->ExceptionCode),
++            rec->ExceptionFlags, rec->ExceptionAddress );
+-- 
+2.43.0
+

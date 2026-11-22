@@ -639,6 +639,8 @@ controller's speaker.
 | 397 | Any game played 2 minutes (regression check for 395 and 396) | it plays as on 2.4.6 | the minute line `direct memory free=X MiB of 12288 MiB, largest free block Y MiB` |
 | 398 | Resident Evil 4 (2023) (#757's copy), installed with 2.4.5 | the report's Settings line says "draws with DirectX 12"; no "D3D12 Create Device Failed" | `vkd3d-proton` lines; no Wine `d3d12.dll ... builtin` |
 | 399 | The 2007 Resident Evil 4 (`RE4.exe`, Direct3D 9) (regression check for 398) | it starts as before, Direct3D 9 | its Settings line unchanged |
+| 400 | Valor Mortis (#761's copy): change any setting in its menu and apply it | it still freezes (this only logs where from) | `wine: a jump to address 0 (thread 0024)`, then `wine: a jump to address 0: stack+0x0 <module>+0x..., its caller` and up to 7 more `stack+` lines |
+| 401 | Any two games played a few minutes, one 32-bit (regression check for 400) | they play as on 2.4.7 | no `a jump to address 0` lines |
 
 ## Custom media navigation changes (pending on PS5)
 
