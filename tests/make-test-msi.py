@@ -604,6 +604,17 @@ def main(out):
     for name, data in shared + [('first-again', shared[0][1]), ('last-again', shared[2][1])]:
         with open(os.path.join(expected, 'shared', name), 'wb') as f:
             f.write(data)
+    # Microsoft's DirectX End-User Runtime as it is downloaded: a program carrying a cabinet of
+    # DirectX's cabinets (here MSZIP outside, stored inside), after something that only looks
+    # like a cabinet's start.
+    inner = [('Aug2008_XACT_x86.cab', cabinet([('xactengine3_2.dll', b'xact 3.2 x86')], 0)),
+             ('Aug2008_XAudio_x86.cab', cabinet([('XAudio2_2.dll', b'xaudio 2.2 x86'), ('XAPOFX1_1.dll', b'fx')], 0)),
+             ('Jun2010_d3dx9_43_x64.cab', cabinet([('d3dx9_43.dll', b'd3dx9 43 x64')], 0)),
+             ('Jun2010_xinput_x86.cab', cabinet([('xinput1_3.dll', b'xinput')], 0)),
+             ('DXSETUP.exe', b'MZ setup')]
+    os.makedirs(os.path.join(out, 'directx'), exist_ok=True)
+    with open(os.path.join(out, 'directx', 'directx_Jun2010_redist.exe'), 'wb') as f:
+        f.write(b'MZ' + b'\x90' * 2000 + b'MSCF' + b'\0' * 40 + cabinet(inner, 1) + b'trailer' * 20)
     files = {
         'Program Files (x86)/NVIDIA Corporation/PhysX/Common/PhysXLoader.dll': common[0][1],
         'Program Files (x86)/NVIDIA Corporation/PhysX/Common/PhysXCooking.dll': common[1][1],

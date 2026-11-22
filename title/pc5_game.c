@@ -247,9 +247,21 @@ static int dx9_runtime_dll(const char *stem)
     return 0;
 }
 
+/* 1 when stem (lower case, without .dll) is Microsoft's XACT or XAudio2 2.0 to 2.7: taken
+ * from DirectX's cabinets with the helper DLLs, but given only to a game whose sound needs
+ * Microsoft's own (pc5_prefix_xact); Wine's plays every other game's. */
+static int xact_dll(const char *stem)
+{
+    if (!strncmp(stem, "xactengine", 10))
+        return (stem[10] == '2' || stem[10] == '3') && stem[11] == '_' && stem[12] >= '0' && stem[12] <= '9';
+    return !strncmp(stem, "xaudio2_", 8) && stem[8] >= '0' && stem[8] <= '7' && !stem[9];
+}
+
+/* A cabinet in a file: size bytes from base. */
 typedef struct Dx9CabIn {
     int fd;
     uint64_t size;
+    uint64_t base;
 } Dx9CabIn;
 
 static int dx9_cab_read(void *context, uint64_t offset, void *out, size_t size)
@@ -257,6 +269,7 @@ static int dx9_cab_read(void *context, uint64_t offset, void *out, size_t size)
     Dx9CabIn *in = context;
     uint8_t *p = out;
     if (offset > in->size || size > in->size - offset) return -1;
+    offset += in->base;
     while (size) {
         ssize_t got = pread(in->fd, p, size, (off_t)offset);
         if (got <= 0) return -1;
@@ -291,7 +304,7 @@ static int dx9_cab_begin(void *context, const char *name, uint32_t size)
         stem[i] = (char)((c >= 'A' && c <= 'Z') ? c + 32 : c);
     }
     stem[n - 4] = 0;
-    if (!dx9_runtime_dll(stem)) return 0;
+    if (!dx9_runtime_dll(stem) && !xact_dll(stem)) return 0;
     if (pc5_format(out->to, sizeof(out->to), "%s/%s.dll", out->dst_dir, stem) ||
         pc5_format(out->part, sizeof(out->part), "%s.pc5-part", out->to))
         return -1;
@@ -327,10 +340,11 @@ static int dx9_cab_end(void *context)
     return 0;
 }
 
-/* "syswow64" for a DirectX helper *_x86.cab, "system32" for *_x64.cab, NULL otherwise. */
+/* "syswow64" for a DirectX helper's or XACT's *_x86.cab, "system32" for *_x64.cab, NULL
+ * otherwise. */
 static const char *dx9_cab_arch(const char *name)
 {
-    static const char *const families[] = { "d3dcompiler_", "d3dx9_", "d3dx10_", "d3dx11_" };
+    static const char *const families[] = { "d3dcompiler_", "d3dx9_", "d3dx10_", "d3dx11_", "xact", "xaudio" };
     char low[128];
     size_t n = strlen(name);
     if (n < 12 || n >= sizeof(low)) return NULL;
@@ -371,7 +385,7 @@ static int dx9_extract_cabs(const char *root, const char *cab_dir, int *failed)
             else *failed = 1;
             continue;
         }
-        Dx9CabIn in = { fd, (uint64_t)st.st_size };
+        Dx9CabIn in = { fd, (uint64_t)st.st_size, 0 };
         Dx9CabOut out = { dst_dir, -1, "", "", 0 };
         Pc5CabIn cab = { &in, in.size, dx9_cab_read };
         Pc5CabOut cb = { &out, dx9_cab_begin, dx9_cab_write, dx9_cab_end };
@@ -387,10 +401,133 @@ static int dx9_extract_cabs(const char *root, const char *cab_dir, int *failed)
     return extracted;
 }
 
+static uint32_t rd32(const uint8_t *p) { return p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24; }
+
+/* The offset of the cabinet inside the file at fd (size bytes), its size in *cab_size: a
+ * program carrying one, as Microsoft's self-extracting packages do. -1 when it has none. */
+static int64_t embedded_cabinet(int fd, uint64_t size, uint64_t *cab_size)
+{
+    enum { CHUNK = 1 << 20, HEADER = 36 };
+    static uint8_t buf[CHUNK + HEADER];
+    uint64_t at = 0;
+
+    while (at < size) {
+        size_t want = size - at < sizeof(buf) ? (size_t)(size - at) : sizeof(buf), have = 0;
+        while (have < want) {
+            ssize_t got = pread(fd, buf + have, want - have, (off_t)(at + have));
+            if (got <= 0) return -1;
+            have += (size_t)got;
+        }
+        for (size_t i = 0; i + HEADER <= have; i++) {
+            const uint8_t *h = buf + i;
+            if (h[0] != 'M' || h[1] != 'S' || h[2] != 'C' || h[3] != 'F') continue;
+            uint32_t reserved1 = rd32(h + 4), total = rd32(h + 8), reserved2 = rd32(h + 12), files = rd32(h + 16),
+                     reserved3 = rd32(h + 20);
+            /* a real header: its reserved fields 0, version 1.3, a folder and a file, all inside */
+            if (reserved1 || reserved2 || reserved3 || h[24] != 3 || h[25] != 1 || !(h[26] | h[27]) ||
+                !(h[28] | h[29]) || files >= total || total > size - (at + i))
+                continue;
+            *cab_size = total;
+            return (int64_t)(at + i);
+        }
+        if (want < sizeof(buf)) break;
+        at += want - HEADER;   /* a header across the chunk's end is read again in the next */
+    }
+    return -1;
+}
+
+/* A file of Microsoft's package written into cab_dir/.package: only the cabinets of the
+ * helper DLLs and XACT, which dx9_extract_cabs reads from there. */
+static int dx9_package_begin(void *context, const char *name, uint32_t size)
+{
+    Dx9CabOut *out = context;
+    const char *base = name;
+
+    (void)size;
+    for (const char *p = name; *p; p++)
+        if (*p == '/' || *p == '\\') base = p + 1;
+    if (!dx9_cab_arch(base)) return 0;
+    if (pc5_format(out->to, sizeof(out->to), "%s/%s", out->dst_dir, base) ||
+        pc5_format(out->part, sizeof(out->part), "%s.pc5-part", out->to) || pc5_mkdirs(out->dst_dir))
+        return -1;
+    out->fd = open(out->part, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    return out->fd < 0 ? -1 : 1;
+}
+
+/* Microsoft's DirectX End-User Runtime as it is downloaded (directx_Jun2010_redist.exe), put
+ * in cab_dir by the player: a program carrying a cabinet that holds DirectX's cabinets. Each
+ * .exe in cab_dir with one: the cabinets of the helper DLLs and XACT written to
+ * cab_dir/.package, read from there (their DLLs into pc5/dx9) and removed. Read once: noted
+ * in cab_dir/packages.txt by name and size, a .exe without a cabinet too. Returns the DLLs
+ * extracted. */
+static int dx9_extract_packages(const char *root, const char *cab_dir, int *failed)
+{
+    DIR *dir;
+    struct dirent *entry;
+    char notes[PC5_PATH], temp[PC5_PATH];
+    Pc5Buf noted = { 0 };
+    int extracted = 0;
+
+    if (!root || !root[0] || !cab_dir || !cab_dir[0] || pc5_format(notes, sizeof(notes), "%s/packages.txt", cab_dir) ||
+        pc5_format(temp, sizeof(temp), "%s/.package", cab_dir) || !(dir = opendir(cab_dir)))
+        return 0;
+    if (pc5_is_file(notes) && (pc5_read_file(notes, &noted, 1 << 20) || pc5_buf_terminate(&noted))) {
+        pc5_buf_free(&noted);
+        closedir(dir);
+        *failed = 1;
+        return 0;
+    }
+    while ((entry = readdir(dir))) {
+        char path[PC5_PATH], note[PC5_PATH + 32], why[PC5_ERROR] = "";
+        struct stat st;
+        uint64_t cab_size = 0;
+        int64_t at;
+        int fd;
+
+        if (!pc5_ends_with_ci(entry->d_name, ".exe") || pc5_format(path, sizeof(path), "%s/%s", cab_dir, entry->d_name) ||
+            stat(path, &st) || !S_ISREG(st.st_mode) ||
+            pc5_format(note, sizeof(note), "%s\t%lld\n", entry->d_name, (long long)st.st_size))
+            continue;
+        /* read before: its line at the notes' start or after a line's end */
+        const char *seen = noted.len ? strstr((const char *)noted.data, note) : NULL;
+        while (seen && seen != (const char *)noted.data && seen[-1] != '\n') seen = strstr(seen + 1, note);
+        if (seen) continue;
+        if ((fd = open(path, O_RDONLY)) < 0) {
+            *failed = 1;
+            continue;
+        }
+        if ((at = embedded_cabinet(fd, (uint64_t)st.st_size, &cab_size)) >= 0) {
+            Dx9CabIn in = { fd, cab_size, (uint64_t)at };
+            Dx9CabOut out = { temp, -1, "", "", 0 };
+            Pc5CabIn cab = { &in, in.size, dx9_cab_read };
+            Pc5CabOut cb = { &out, dx9_package_begin, dx9_cab_write, dx9_cab_end };
+            if (pc5_cab_extract(&cab, &cb, why, sizeof(why)) < 0) *failed = 1;
+            if (out.fd >= 0) {
+                close(out.fd);
+                unlink(out.part);
+            }
+            extracted += dx9_extract_cabs(root, temp, failed);
+            DIR *made = opendir(temp);
+            struct dirent *file;
+            while (made && (file = readdir(made))) {
+                char gone[PC5_PATH];
+                if (file->d_name[0] != '.' && !pc5_format(gone, sizeof(gone), "%s/%s", temp, file->d_name)) unlink(gone);
+            }
+            if (made) closedir(made);
+            rmdir(temp);
+        }
+        close(fd);
+        if (append_text(notes, note)) *failed = 1;
+    }
+    closedir(dir);
+    pc5_buf_free(&noted);
+    return extracted;
+}
+
 int pc5_dx9_extract_cabs(const char *root, const char *cab_dir)
 {
     int failed = 0;
-    return dx9_extract_cabs(root, cab_dir, &failed);
+    return dx9_extract_packages(root, cab_dir, &failed) + dx9_extract_cabs(root, cab_dir, &failed);
 }
 
 int pc5_prefix_dx9_cabs(const char *root, const char *prefix, const char *program)
@@ -507,6 +644,98 @@ int pc5_prefix_dx9(const char *root, const char *prefix)
         closedir(dir);
     }
     return failed ? -1 : changed;
+}
+
+/* Games whose sound needs Microsoft's XACT rather than Wine's: the program's name (lower
+ * case), the folder of the prefix its DLLs go to, and the DLLs. Saints Row 2 hands XACT its own
+ * XAudio2 engine and mastering voice, which Wine's XACT doesn't take: its voices went missing,
+ * its ambient sound was too loud and out of step, and its cutscenes stood still without them.
+ * With Microsoft's xactengine3_2.dll and xaudio2_2.dll it plays as it should. */
+static const struct {
+    const char *program, *folder, *dlls[3];
+} xact_games[] = {
+    { "sr2_pc.exe", "syswow64", { "xactengine3_2", "xaudio2_2", NULL } },
+};
+
+/* name.dll in dir in any case, into out: 1 when there is one. */
+static int dll_in(const char *dir, const char *stem, char *out, size_t size)
+{
+    DIR *d = opendir(dir);
+    struct dirent *e;
+    char want[64];
+    int found = 0;
+
+    if (!d) return 0;
+    if (pc5_format(want, sizeof(want), "%s.dll", stem)) {
+        closedir(d);
+        return 0;
+    }
+    while (!found && (e = readdir(d)))
+        if (!pc5_casecmp(e->d_name, want)) found = !pc5_format(out, size, "%s/%s", dir, e->d_name);
+    closedir(d);
+    return found;
+}
+
+int pc5_prefix_xact(const char *root, const char *prefix, const char *program, char *missing, size_t missing_size)
+{
+    char name[64], user[PC5_PATH];
+    const char *base;
+    size_t n = 0;
+    int changed = 0, failed = 0, absent = 0;
+
+    if (missing_size) missing[0] = 0;
+    if (!root || !root[0] || !prefix || !prefix[0] || !strcmp(prefix, "default") || !program || !program[0]) return 0;
+    base = strrchr(program, '/') ? strrchr(program, '/') + 1 : program;
+    for (; base[n] && n + 1 < sizeof(name); n++) name[n] = (char)pc5_lower((unsigned char)base[n]);
+    name[n] = 0;
+    if (pc5_format(user, sizeof(user), "%s/prefixes/%s/user.reg", root, prefix)) return -1;
+    for (size_t g = 0; g < sizeof(xact_games) / sizeof(xact_games[0]); g++) {
+        char src_dir[PC5_PATH], dst_dir[PC5_PATH];
+        if (strcmp(name, xact_games[g].program)) continue;
+        if (pc5_format(src_dir, sizeof(src_dir), "%s/pc5/dx9/%s", root, xact_games[g].folder) ||
+            pc5_format(dst_dir, sizeof(dst_dir), "%s/prefixes/%s/drive_c/windows/%s", root, prefix, xact_games[g].folder))
+            return -1;
+        for (int i = 0; xact_games[g].dlls[i]; i++) {
+            const char *stem = xact_games[g].dlls[i];
+            char from[PC5_PATH], to[PC5_PATH], part[PC5_PATH], needle[80], reg[160];
+            struct stat st_from, st_to;
+
+            if (!dll_in(src_dir, stem, from, sizeof(from)) || stat(from, &st_from) || !S_ISREG(st_from.st_mode)) {
+                size_t used = strlen(missing);
+                if (missing_size > used)
+                    snprintf(missing + used, missing_size - used, "%s%s.dll", used ? ", " : "", stem);
+                absent = 1;
+                continue;
+            }
+            if (pc5_format(to, sizeof(to), "%s/%s.dll", dst_dir, stem) || pc5_format(part, sizeof(part), "%s.pc5-part", to)) {
+                failed = 1;
+                continue;
+            }
+            if (stat(to, &st_to) || st_to.st_size != st_from.st_size) {
+                if (pc5_mkdirs(dst_dir) || copy_file(from, part) || rename(part, to)) {
+                    unlink(part);
+                    failed = 1;
+                    continue;
+                }
+                changed++;
+            }
+            /* Microsoft's in place of Wine's: native first, in this game's prefix only */
+            if (!pc5_is_file(user)) continue;
+            if (pc5_format(needle, sizeof(needle), "\"%s\"=\"native,builtin\"", stem) ||
+                pc5_format(reg, sizeof(reg), "\n[Software\\\\Wine\\\\DllOverrides]\n\"%s\"=\"native,builtin\"\n", stem)) {
+                failed = 1;
+                continue;
+            }
+            int held = file_holds(user, needle);
+            if (held < 0 || (!held && append_text(user, reg))) {
+                failed = 1;
+                continue;
+            }
+            if (!held) changed++;
+        }
+    }
+    if (failed) return -1;
+    return absent ? -2 : changed;
 }
 
 /* The app's file at from appended to the file at to: 0, or -1 */
@@ -1362,6 +1591,16 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         }
         int dx9 = pc5_prefix_dx9(root, prefix);
         if (dx9) say(game, "PC5 prefix DirectX files %s %d", dx9 > 0 ? "added" : "failed", dx9 > 0 ? dx9 : 0);
+        if (!pc5_game_program(root, prefix, started, sizeof(started))) {
+            char missing[160];
+            int xact = pc5_prefix_xact(root, prefix, started, missing, sizeof(missing));
+            if (xact == -2)
+                say(game, "PC5 this game's sound needs Microsoft's XACT, which pc5/dx9 doesn't have (%s): "
+                          "put Microsoft's DirectX End-User Runtime (directx_Jun2010_redist.exe) there",
+                    missing);
+            else if (xact)
+                say(game, "PC5 Microsoft's XACT for this game %s %d", xact > 0 ? "added" : "failed", xact > 0 ? xact : 0);
+        }
     }
     /* Frame generation and the aspect ratio, which libvulkan.prx reads from the
      * environment (the picture of a game drawn on the CPU follows its profile's

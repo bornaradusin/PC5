@@ -516,6 +516,19 @@ int pc5_pe_unreal_d3d12(const char *path, uint32_t imports)
     const char *name = strrchr(lower, '/') ? strrchr(lower, '/') + 1 : lower;
     for (size_t i = 0; i < sizeof(d3d12_only) / sizeof(d3d12_only[0]) && !(imports & (PC5_IMPORT_D3D9 | PC5_IMPORT_D3D8)); i++)
         if (!strcmp(name, d3d12_only[i])) return 1;
+    /* Resident Evil 4 (2023), RE Engine, draws only with Direct3D 12, and its protected
+     * program shows only dxgi.dll: taken for Direct3D 11, it got Wine's d3d12 and said "D3D12
+     * Create Device Failed". The name with the engine's data beside it (re_chunk_000.pak):
+     * the 2007 port's RE4.exe has none and imports Direct3D 9. */
+    if (!strcmp(name, "re4.exe") && !(imports & (PC5_IMPORT_D3D9 | PC5_IMPORT_D3D8))) {
+        char dir[PC5_PATH], data[PC5_PATH];
+        char *slash;
+        pc5_copy(dir, sizeof(dir), path);
+        for (char *p = dir; *p; p++) if (*p == '\\') *p = '/';
+        slash = strrchr(dir, '/');
+        if (slash) *slash = 0;
+        if (slash && entry_ci(dir, "re_chunk_000.pak", data, sizeof(data))) return 1;
+    }
     if (!(imports & (PC5_IMPORT_D3D11 | PC5_IMPORT_DXGI | PC5_IMPORT_D3D10))) return 0;
     /* An Unreal game's program is in a folder of its Binaries: Win64, or the store's build's
      * (Gears Tactics' Binaries\Steam), but not a 32-bit one. */

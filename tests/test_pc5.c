@@ -715,6 +715,22 @@ static void test_pe(void)
                   pc5_pe_unreal_d3d12("C:\\Games\\Miles\\MilesMorales.exe", 0) &&
                   !pc5_pe_unreal_d3d12("Other/Game.exe", PC5_IMPORT_VULKAN) && !pc5_pe_unreal_d3d12(ue, PC5_IMPORT_VULKAN),
               "Spider-Man by its name whatever its own imports name, no other program without Direct3D");
+        /* Resident Evil 4 (2023): its protected program shows only dxgi.dll; with its engine's
+         * data beside it, Direct3D 12. Not the 2007 port's RE4.exe (Direct3D 9, no such data),
+         * nor a re4.exe without the data. */
+        {
+            char re4[PC5_PATH], pak[PC5_PATH], lone[PC5_PATH];
+            path(re4, sizeof(re4), "%s/re4-2023/re4.exe", work);
+            write_text(re4, "MZ ... dxgi.dll ...");
+            path(pak, sizeof(pak), "%s/re4-2023/RE_CHUNK_000.PAK", work);
+            write_text(pak, "chunk");
+            path(lone, sizeof(lone), "%s/re4-2007/RE4.exe", work);
+            write_text(lone, "MZ ... d3d9.dll ...");
+            CHECK(pc5_pe_unreal_d3d12(re4, PC5_IMPORT_DXGI) && pc5_pe_unreal_d3d12(re4, 0) &&
+                      !pc5_pe_unreal_d3d12(re4, PC5_IMPORT_D3D9) && !pc5_pe_unreal_d3d12(lone, PC5_IMPORT_DXGI) &&
+                      !pc5_pe_unreal_d3d12(lone, PC5_IMPORT_D3D9),
+                  "Resident Evil 4 (2023) by its name and its engine's data, not the 2007 port");
+        }
         /* Another folder of Binaries (Gears Tactics' Steam), but not a 32-bit one's, Binaries
          * itself or a folder only ending in it. */
         char store[PC5_PATH];
@@ -6039,6 +6055,34 @@ static void test_prefix_dxvk(void)
     CHECK(pc5_prefix_dx9(root, "game") == 0, "idempotent on second call");
     CHECK(pc5_prefix_dx9(root, "default") == 0, "default prefix untouched");
 
+    /* pc5_prefix_xact: Microsoft's XACT from pc5/dx9 for Saints Row 2 alone; never every game's */
+    {
+        char missing[160], sr2[PC5_PATH];
+        path(sr2, sizeof(sr2), "%s/prefixes/game/drive_c/Games/Saints Row 2/SR2_pc.exe", root);
+        CHECK(pc5_prefix_xact(root, "game", sr2, missing, sizeof(missing)) == -2 &&
+                  !strcmp(missing, "xactengine3_2.dll, xaudio2_2.dll"),
+              "Saints Row 2 without Microsoft's XACT in pc5/dx9: both named missing (%s)", missing);
+        path(file, sizeof(file), "%s/pc5/dx9/syswow64/XACTENGINE3_2.DLL", root);
+        write_text(file, "xact-32");
+        path(file, sizeof(file), "%s/pc5/dx9/syswow64/xaudio2_2.dll", root);
+        write_text(file, "xaudio-22");
+        CHECK(pc5_prefix_dx9(root, "game") == 0, "XACT in pc5/dx9 isn't given to every game");
+        path(file, sizeof(file), "%s/prefixes/game/drive_c/windows/syswow64/xaudio2_2.dll", root);
+        CHECK(!pc5_is_file(file), "so no game gets it there");
+        CHECK(pc5_prefix_xact(root, "game", "/data/Games/Other/game.exe", missing, sizeof(missing)) == 0 && !pc5_is_file(file),
+              "nor another game");
+        CHECK(pc5_prefix_xact(root, "game", sr2, missing, sizeof(missing)) == 4 && file_is(file, "xaudio-22"),
+              "Saints Row 2: both copied and registered");
+        path(file, sizeof(file), "%s/prefixes/game/drive_c/windows/syswow64/xactengine3_2.dll", root);
+        CHECK(file_is(file, "xact-32"), "in lower case");
+        path(file, sizeof(file), "%s/prefixes/game/user.reg", root);
+        CHECK(file_holds_text(file, "\"xactengine3_2\"=\"native,builtin\"") &&
+                  file_holds_text(file, "\"xaudio2_2\"=\"native,builtin\""),
+              "Microsoft's before Wine's, in its prefix");
+        CHECK(pc5_prefix_xact(root, "game", sr2, missing, sizeof(missing)) == 0, "once");
+        CHECK(pc5_prefix_xact(root, "default", sr2, missing, sizeof(missing)) == 0, "default prefix untouched");
+    }
+
     /* pc5_prefix_dx9_cabs: a game's DirectX cabinets looked for on its first start only */
     char program[PC5_PATH], other[PC5_PATH];
     path(program, sizeof(program), "%s/dx9-games/Ninja/bin/ninja.exe", work);
@@ -9677,6 +9721,39 @@ static void test_msi(void)
     path(out, sizeof(out), "%s/msi", work);
     snprintf(command, sizeof(command), "rm -rf '%s' && python3 -I tests/make-test-msi.py '%s'", out, out);
     run(command);
+    {
+        /* Microsoft's DirectX End-User Runtime as downloaded, put in pc5/dx9: its cabinets of the
+         * helper DLLs and XACT read from the program, their DLLs extracted, once; not the other
+         * cabinets, nor a cabinet's look-alike before the real one. */
+        char dxroot[PC5_PATH], dx9[PC5_PATH], dxfile[PC5_PATH];
+        path(dxroot, sizeof(dxroot), "%s/dx-package", work);
+        path(dx9, sizeof(dx9), "%s/pc5/dx9", dxroot);
+        snprintf(command, sizeof(command), "rm -rf '%s' && mkdir -p '%s'", dxroot, dx9);
+        run(command);
+        snprintf(command, sizeof(command), "cp '%s/directx/directx_Jun2010_redist.exe' '%s/'", out, dx9);
+        run(command);
+        CHECK(pc5_dx9_extract_cabs(dxroot, dx9) == 3, "XACT, XAudio2 2.2 and a 64-bit d3dx9 from the package");
+        path(dxfile, sizeof(dxfile), "%s/syswow64/xactengine3_2.dll", dx9);
+        CHECK(file_is(dxfile, "xact 3.2 x86"), "xactengine3_2.dll");
+        path(dxfile, sizeof(dxfile), "%s/syswow64/xaudio2_2.dll", dx9);
+        CHECK(file_is(dxfile, "xaudio 2.2 x86"), "xaudio2_2.dll, in lower case");
+        path(dxfile, sizeof(dxfile), "%s/system32/d3dx9_43.dll", dx9);
+        CHECK(file_is(dxfile, "d3dx9 43 x64"), "d3dx9_43.dll for 64-bit games");
+        path(dxfile, sizeof(dxfile), "%s/syswow64/xinput1_3.dll", dx9);
+        CHECK(!pc5_is_file(dxfile), "not XInput");
+        path(dxfile, sizeof(dxfile), "%s/syswow64/xapofx1_1.dll", dx9);
+        CHECK(!pc5_is_file(dxfile), "nor XAPOFX");
+        path(dxfile, sizeof(dxfile), "%s/.package", dx9);
+        CHECK(!pc5_is_dir(dxfile), "the cabinets read from the package are gone");
+        path(dxfile, sizeof(dxfile), "%s/packages.txt", dx9);
+        CHECK(file_holds_text(dxfile, "directx_Jun2010_redist.exe\t"), "noted");
+        CHECK(pc5_dx9_extract_cabs(dxroot, dx9) == 0, "read once");
+        path(dxfile, sizeof(dxfile), "%s/not-a-package.exe", dx9);
+        write_text(dxfile, "MZ no cabinet");
+        CHECK(pc5_dx9_extract_cabs(dxroot, dx9) == 0, "a program without a cabinet: nothing");
+        path(dxfile, sizeof(dxfile), "%s/packages.txt", dx9);
+        CHECK(file_holds_text(dxfile, "not-a-package.exe\t"), "and noted, so not read again");
+    }
     {
         /* The LZX folder alone, read through pc5_cab as a package would. */
         uint8_t mszip_in[] = { 0x4b, 0x4c, 0x4a, 0x06, 0x00 }, made[8];

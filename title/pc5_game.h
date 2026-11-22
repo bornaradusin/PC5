@@ -173,14 +173,24 @@ int pc5_prefix_dxvk(const char *root, const char *prefix, const char *app);
 /* User-supplied Microsoft DirectX helper DLLs (d3dx9_*, d3dx10_*, d3dx11_*, d3dcompiler_*)
  * placed under root/pc5/dx9/syswow64 (32-bit) and root/pc5/dx9/system32 (64-bit), or
  * extracted automatically from DirectX *_x86.cab / *_x64.cab files in root/pc5/dx9 or a
- * game's DirectX redistributable folder, are copied into the prefix's Windows folders and
- * registered as native,builtin in user.reg so every game can use them without duplicating
- * files per game. Returns the number copied or registered, 0 when nothing needed changing,
- * or -1 on a failure. */
+ * game's DirectX redistributable folder, or from Microsoft's DirectX End-User Runtime as it
+ * is downloaded (directx_Jun2010_redist.exe) in root/pc5/dx9, are copied into the prefix's
+ * Windows folders and registered as native,builtin in user.reg so every game can use them
+ * without duplicating files per game. Returns the number copied or registered, 0 when
+ * nothing needed changing, or -1 on a failure. */
 int pc5_prefix_dx9(const char *root, const char *prefix);
-/* Extracts any missing Microsoft DirectX helper DLLs from *_x86.cab / *_x64.cab files inside
- * cab_dir into root/pc5/dx9/{syswow64,system32}. Returns the number of DLLs extracted, or 0. */
+/* Extracts any missing Microsoft DirectX helper DLLs, and XACT's and XAudio2's (which
+ * pc5_prefix_xact alone hands out), from *_x86.cab / *_x64.cab files inside cab_dir, and
+ * from each program there carrying DirectX's cabinets (Microsoft's End-User Runtime, read
+ * once: noted in cab_dir/packages.txt), into root/pc5/dx9/{syswow64,system32}. Returns the
+ * number of DLLs extracted, or 0. */
 int pc5_dx9_extract_cabs(const char *root, const char *cab_dir);
+/* Microsoft's XACT and XAudio2 DLLs from root/pc5/dx9, for a game whose sound needs them
+ * rather than Wine's (by its program's name: Saints Row 2), copied into its prefix and
+ * registered as native,builtin in its user.reg; any other game is left with Wine's. Returns
+ * the number copied or registered, 0 when nothing needed changing or the game needs none, -1
+ * on a failure, -2 when the game needs DLLs root/pc5/dx9 doesn't have (named in missing). */
+int pc5_prefix_xact(const char *root, const char *prefix, const char *program, char *missing, size_t missing_size);
 /* The DirectX *_x86.cab / *_x64.cab files a game brings (beside program, the game's program,
  * or one folder up, in its DirectX redistributable folders) extracted as pc5_dx9_extract_cabs
  * does, on the game's first start only: done is noted in the prefix's pc5/dx9.txt with the
