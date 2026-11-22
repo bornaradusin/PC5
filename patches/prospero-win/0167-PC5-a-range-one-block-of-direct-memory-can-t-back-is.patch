@@ -1,0 +1,446 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 22 Nov 2026 14:31:07 +0000
+Subject: [PATCH 167/167] PC5: a range one block of direct memory can't back is
+ backed with several; a refusal logs all the free memory
+
+When the console's pool is split into pieces, a commit larger than its
+largest free block was refused although enough memory was free, and the
+game stopped (a Unity game: "Could not allocate memory: System out of
+memory!" with 821 MiB free a minute before and a largest block of 52 MiB).
+Such a range is now backed with several blocks, each mapped where the one
+before ends, sized by the largest free block, at most 32. Only a refused
+commit takes this path; one block still backs every range it can.
+
+A refused call's line adds all the free memory of the pool, and the
+title's minute line the largest free block, which together tell a full
+pool from a fragmented one.
+---
+ native/wine64_main.c          |  8 ++-
+ tests/test_pw_wine_dmem.c     | 82 +++++++++++++++++++++++++++++-
+ tests/test_pw_wine_dmem_ps5.c | 11 +++-
+ wine/ps5/pw_wine_dmem.c       | 95 ++++++++++++++++++++++++++++++-----
+ wine/ps5/pw_wine_dmem.h       |  6 +++
+ wine/ps5/pw_wine_dmem_ps5.c   | 82 ++++++++++++++++++++++++++----
+ 6 files changed, 257 insertions(+), 27 deletions(-)
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index a2d86ff..2188411 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -2548,8 +2548,12 @@ int main(int argc, char **argv)
+                 }
+             }
+             if (tick % (60 * PW_WINE64_TICKS_PER_S) == 0) {
+-                size_t total = 0, free_bytes = direct_memory_free(&total);
+-                PS5LOG_LOG("PW_WINE64 direct memory free=%zu MiB of %zu MiB", free_bytes >> 20, total >> 20);
++                size_t total = 0, free_bytes = direct_memory_free(&total), largest = 0;
++                long long where = 0;
++                /* With the largest free block: much free in small blocks is fragmented memory. */
++                if (sceKernelAvailableDirectMemorySize(0, (long long)total, 0x4000, &where, &largest)) largest = 0;
++                PS5LOG_LOG("PW_WINE64 direct memory free=%zu MiB of %zu MiB, largest free block %zu MiB",
++                           free_bytes >> 20, total >> 20, largest >> 20);
+             }
+             if (tick % 300 == 0) {
+                 uint64_t m[13] = { 0 };
+diff --git a/tests/test_pw_wine_dmem.c b/tests/test_pw_wine_dmem.c
+index f326797..0cfd7db 100644
+--- a/tests/test_pw_wine_dmem.c
++++ b/tests/test_pw_wine_dmem.c
+@@ -26,6 +26,9 @@ static unsigned state[PAGES], prot_of[PAGES];
+ static int64_t phys_of[PAGES];            /* the direct page a mapped page shows */
+ static unsigned allocated[PHYS_PAGES];
+ static unsigned fail_allocate, fail_map, fail_protect;
++/* The pool split into pieces: no block larger than this many pages (0: any). */
++static unsigned largest_block;
++static unsigned split_calls, split_blocks;
+ 
+ static unsigned page_of(uintptr_t address) { return (unsigned)((address - (uintptr_t)space) / PAGE); }
+ static int host_prot(unsigned protection)
+@@ -53,6 +56,7 @@ static int model_allocate(void *context, size_t bytes, int64_t *offset)
+     unsigned count = (unsigned)(bytes / PAGE), run = 0;
+     (void)context;
+     if (fail_allocate && !--fail_allocate) return -1;
++    if (largest_block && count > largest_block) return -1;
+     for (unsigned p = 0; p < PHYS_PAGES; p++) {
+         run = allocated[p] ? 0 : run + 1;
+         if (run == count) {
+@@ -113,8 +117,28 @@ static int model_release(void *context, int64_t offset, size_t bytes)
+     return 0;
+ }
+ 
++static int model_largest(void *context, size_t *bytes)
++{
++    (void)context;
++    if (!largest_block) return -1;
++    *bytes = (size_t)largest_block * PAGE;
++    return 0;
++}
++static void model_split(void *context, size_t bytes, unsigned blocks)
++{
++    (void)context;
++    (void)bytes;
++    split_calls++;
++    split_blocks = blocks;
++}
++
+ static const PwWineDmemOps ops = {
++    NULL, PAGE, model_reserve, model_allocate, model_map, model_protect, model_unmap, model_release, NULL, NULL,
++};
++/* The same with the largest free block told, and splits reported. */
++static const PwWineDmemOps told_ops = {
+     NULL, PAGE, model_reserve, model_allocate, model_map, model_protect, model_unmap, model_release,
++    model_largest, model_split,
+ };
+ static PwWineDmem dmem;
+ static PwWineDmemRun runs[RUNS];
+@@ -284,6 +308,61 @@ static void test_merge_and_failures(void)
+     check_consistent();
+ }
+ 
++/* A range no one block can back: backed with several, side by side, zeroed and protected, and
++ * given back whole; when even several can't, nothing is kept. */
++static void test_blocks(void)
++{
++    PwWineDmemStats before, after;
++
++    assert(pw_wine_dmem_replace(&dmem, at(16), 256 * PAGE, 0) == 0);
++    pw_wine_dmem_stats(&dmem, &before);
++    /* Without the largest block told: halved until each block fits. */
++    largest_block = 3;
++    assert(pw_wine_dmem_protect(&dmem, at(40), 10 * PAGE, 3) == 0);
++    for (unsigned p = 40; p < 50; p++) assert(state[p] == MAPPED && ((uint8_t *)at(p))[0] == 0);
++    memset((void *)at(40), 0x33, 10 * PAGE);
++    check_consistent();
++    assert(pw_wine_dmem_replace(&dmem, at(40), 10 * PAGE, 0) == 0);
++    /* With it told: each block as large as the largest, a read-only protection on all of them. */
++    dmem.ops = told_ops;
++    split_calls = 0;
++    assert(pw_wine_dmem_replace(&dmem, at(60), 7 * PAGE, 1) == 0);
++    assert(split_calls == 1 && split_blocks == 3);
++    for (unsigned p = 60; p < 67; p++) assert(state[p] == MAPPED && prot_of[p] == 1 && ((uint8_t *)at(p))[0] == 0);
++    check_consistent();
++    /* Blocks of one page each are the least. */
++    {
++        const unsigned pages = allocated_pages();
++        largest_block = 1;
++        assert(pw_wine_dmem_protect(&dmem, at(80), 2 * PAGE, 3) == 0 && split_blocks == 2);
++        assert(pw_wine_dmem_replace(&dmem, at(80), 2 * PAGE, 0) == 0 && allocated_pages() == pages);
++    }
++    /* A map refused partway gives every block back. */
++    largest_block = 2;
++    {
++        const unsigned pages = allocated_pages();
++        fail_map = 3;
++        assert(pw_wine_dmem_protect(&dmem, at(90), 6 * PAGE, 3) == -1);
++        for (unsigned p = 90; p < 96; p++) assert(state[p] == RESERVED);
++        assert(allocated_pages() == pages);
++        check_consistent();
++    }
++    /* More blocks than one range may have: refused, nothing kept. */
++    largest_block = 1;
++    {
++        const unsigned pages = allocated_pages();
++        assert(pw_wine_dmem_protect(&dmem, at(100), 40 * PAGE, 3) == -1);
++        assert(allocated_pages() == pages && state[100] == RESERVED && state[139] == RESERVED);
++        check_consistent();
++    }
++    largest_block = 0;
++    dmem.ops = ops;
++    assert(pw_wine_dmem_replace(&dmem, at(16), 256 * PAGE, 0) == 0);
++    check_consistent();
++    pw_wine_dmem_stats(&dmem, &after);
++    assert(after.failures == before.failures + 2);
++}
++
+ /* Random replace/protect/adopt/write against a byte-per-page reference. */
+ static void test_random(void)
+ {
+@@ -380,6 +459,7 @@ int main(void)
+     assert(pw_wine_dmem_init(&dmem, &ops, runs, RUNS, 1) == 0);
+     test_basics();
+     test_merge_and_failures();
++    test_blocks();
+     test_random();
+     test_remove_regions();
+     pw_wine_dmem_stats(&dmem, &stats);
+@@ -387,7 +467,7 @@ int main(void)
+     assert(!straddles ||
+            (stats.peak_low_backed_bytes > 0 && stats.peak_low_backed_bytes < stats.peak_backed_bytes));
+     printf("wine dmem passed: regions, commit, protect, replace, split and merged runs, "
+-           "caller mappings, kernel failures, a full table, 20000 random operations, dropped regions and the "
++           "caller mappings, kernel failures, a full table, ranges backed with several blocks, 20000 random operations, dropped regions and the "
+            "below-4-GiB split%s; peak %u runs, %llu KiB, %llu KiB below 4 GiB\n",
+            straddles ? "" : " (one side only)",
+            stats.peak_runs, (unsigned long long)(stats.peak_backed_bytes >> 10),
+diff --git a/tests/test_pw_wine_dmem_ps5.c b/tests/test_pw_wine_dmem_ps5.c
+index 2bc4b5e..a638194 100644
+--- a/tests/test_pw_wine_dmem_ps5.c
++++ b/tests/test_pw_wine_dmem_ps5.c
+@@ -38,7 +38,16 @@ size_t sceKernelGetDirectMemorySize(void) { return budget_pool; }
+ int sceKernelAvailableDirectMemorySize(int64_t start, int64_t end, size_t alignment, int64_t *address,
+                                       size_t *bytes)
+ {
+-    assert(start == 0 && end == (int64_t)budget_pool && alignment == PAGE);
++    assert(start >= 0 && end <= (int64_t)budget_pool && start < end && alignment == PAGE);
++    /* A part of the pool (the refusal log adding up every free block): the one free block,
++     * at PAGE, as far as it lies in that part. */
++    if (start != 0 || end != (int64_t)budget_pool) {
++        int64_t low = start > PAGE ? start : PAGE, high = PAGE + (int64_t)budget_free;
++        if (high > end) high = end;
++        *address = low;
++        *bytes = high > low ? (size_t)(high - low) : 0;
++        return high > low ? budget_status : -1;
++    }
+     budget_queries++;
+     *address = PAGE;
+     *bytes = budget_free;
+diff --git a/wine/ps5/pw_wine_dmem.c b/wine/ps5/pw_wine_dmem.c
+index 762ee08..12882c2 100644
+--- a/wine/ps5/pw_wine_dmem.c
++++ b/wine/ps5/pw_wine_dmem.c
+@@ -129,31 +129,102 @@ static void add_run(PwWineDmem *d, PwWineDmemRun run)
+     }
+ }
+ 
++/* At most this many blocks back one range. */
++enum { MAX_BLOCKS = 32 };
++
++/* Mapped blocks given back: their pages reserved again, their direct memory
++ * released. */
++static void drop_blocks(PwWineDmem *d, const PwWineDmemRun *blocks, unsigned count)
++{
++    const PwWineDmemOps *ops = &d->ops;
++
++    while (count--) {
++        (void)ops->unmap(ops->context, blocks[count].address, blocks[count].bytes);
++        (void)ops->reserve(ops->context, blocks[count].address, blocks[count].bytes);
++        (void)ops->release(ops->context, blocks[count].offset, blocks[count].bytes);
++    }
++}
++
++/* A reserved range one block of direct memory refused to back, backed with
++ * several, each mapped where the one before ends: the kernel hands out each
++ * block in one piece, and a pool split into pieces can hold the whole range
++ * in no one block. The largest free block, when ops tell it, sizes each; a
++ * block refused anyway is halved, down to a page. blocks gets them, mapped:
++ * their count, or 0 with nothing kept. */
++static unsigned back_blocks(PwWineDmem *d, uintptr_t address, size_t bytes, PwWineDmemRun *blocks)
++{
++    const PwWineDmemOps *ops = &d->ops;
++    const size_t page = ops->page;
++    size_t done = 0, size = (bytes / 2) & ~(page - 1);
++    unsigned count = 0;
++
++    while (done < bytes) {
++        size_t largest = 0;
++        int64_t offset;
++
++        if (size > bytes - done) size = bytes - done;
++        if (ops->largest && !ops->largest(ops->context, &largest) && (largest & ~(page - 1)) < size)
++            size = largest & ~(page - 1);
++        if (size < page || count == MAX_BLOCKS) break;
++        if (ops->allocate(ops->context, size, &offset)) {
++            size = (size / 2) & ~(page - 1);
++            continue;
++        }
++        d->stats.allocations++;
++        if (ops->map(ops->context, address + done, size, offset)) {
++            (void)ops->release(ops->context, offset, size);
++            break;
++        }
++        d->stats.maps++;
++        blocks[count++] = (PwWineDmemRun){ address + done, size, offset };
++        done += size;
++    }
++    if (done == bytes) return count;
++    drop_blocks(d, blocks, count);
++    return 0;
++}
++
+ /* Back a reserved range that no run touches, with one table entry free. */
+ static int back(PwWineDmem *d, uintptr_t address, size_t bytes, unsigned protection)
+ {
+     const PwWineDmemOps *ops = &d->ops;
++    PwWineDmemRun blocks[MAX_BLOCKS];
++    unsigned count = 0;
+     int64_t offset;
+ 
+-    if (ops->allocate(ops->context, bytes, &offset)) goto failed;
+-    d->stats.allocations++;
+-    if (ops->map(ops->context, address, bytes, offset)) goto release;
+-    d->stats.maps++;
++    if (!ops->allocate(ops->context, bytes, &offset)) {
++        d->stats.allocations++;
++        if (ops->map(ops->context, address, bytes, offset)) {
++            (void)ops->release(ops->context, offset, bytes);
++            goto failed;
++        }
++        d->stats.maps++;
++        blocks[count++] = (PwWineDmemRun){ address, bytes, offset };
++    } else {
++        count = back_blocks(d, address, bytes, blocks);
++        /* Each block is a run of its own: past the one free entry, the
++         * table must hold the others. */
++        if (count && d->run_count + count > d->run_capacity) {
++            d->stats.table_full++;
++            drop_blocks(d, blocks, count);
++            count = 0;
++        }
++        if (!count) goto failed;
++        if (ops->split) ops->split(ops->context, bytes, count);
++    }
+     if (d->zero_fill) memset((void *)address, 0, bytes);
+     if (protection != READ_WRITE) {
+-        if (ops->protect(ops->context, address, bytes, protection)) {
+-            (void)ops->unmap(ops->context, address, bytes);
+-            (void)ops->reserve(ops->context, address, bytes);
+-            goto release;
+-        }
++        for (unsigned i = 0; i < count; i++)
++            if (ops->protect(ops->context, blocks[i].address, blocks[i].bytes, protection)) {
++                drop_blocks(d, blocks, count);
++                goto failed;
++            }
+         d->stats.protects++;
+     }
+     note_backed(d, address, bytes, 1);
+     /* Direct memory handed out in order often continues the run before. */
+-    add_run(d, (PwWineDmemRun){ address, bytes, offset });
++    for (unsigned i = 0; i < count; i++) add_run(d, blocks[i]);
+     return 0;
+-release:
+-    (void)ops->release(ops->context, offset, bytes);
+ failed:
+     d->stats.failures++;
+     return -1;
+diff --git a/wine/ps5/pw_wine_dmem.h b/wine/ps5/pw_wine_dmem.h
+index a64bdca..ce14ae0 100644
+--- a/wine/ps5/pw_wine_dmem.h
++++ b/wine/ps5/pw_wine_dmem.h
+@@ -47,6 +47,12 @@ typedef struct PwWineDmemOps {
+     int (*unmap)(void *context, uintptr_t address, size_t bytes);
+     /* Give back direct memory, possibly a part of one allocation. */
+     int (*release)(void *context, int64_t offset, size_t bytes);
++    /* Optional. The largest block allocate could take now, in *bytes: 0,
++     * or nonzero when it can't tell. */
++    int (*largest)(void *context, size_t *bytes);
++    /* Optional. A range one block couldn't back was backed with `blocks`
++     * blocks (for the log). */
++    void (*split)(void *context, size_t bytes, unsigned blocks);
+ } PwWineDmemOps;
+ 
+ /* Virtual pages mapped onto contiguous direct memory, or, with offset
+diff --git a/wine/ps5/pw_wine_dmem_ps5.c b/wine/ps5/pw_wine_dmem_ps5.c
+index 3ea07b6..a47fadf 100644
+--- a/wine/ps5/pw_wine_dmem_ps5.c
++++ b/wine/ps5/pw_wine_dmem_ps5.c
+@@ -74,26 +74,61 @@ static int map_protection = CPU_READ_WRITE;
+ 
+ static int largest_free_block(size_t pool, size_t *bytes);
+ 
++/* All the free direct memory of the pool, block by block (as the title's
++ * minute line reads it): with the largest free block, it tells a full pool
++ * (little free) from a fragmented one (much free, no large block). At most
++ * 512 questions to the kernel; no allocation. */
++static size_t total_free_bytes(size_t pool)
++{
++    struct range { int64_t low, high; } waiting[64], now = { 0, (int64_t)pool };
++    const size_t alignment = 0x4000;
++    unsigned count = 0, questions = 0;
++    size_t free_bytes = 0;
++
++    for (;;) {
++        int64_t start = 0;
++        size_t size = 0;
++
++        if (now.high - now.low >= (int64_t)alignment && questions++ < 512 &&
++            !sceKernelAvailableDirectMemorySize(now.low, now.high, alignment, &start, &size) && size &&
++            start >= now.low && size <= (uint64_t)(now.high - start)) {
++            struct range after = { start + (int64_t)size, now.high };
++
++            free_bytes += size;
++            if (after.high - after.low >= (int64_t)alignment && count < sizeof(waiting) / sizeof(waiting[0]))
++                waiting[count++] = after;
++            now.high = start;
++            continue;
++        }
++        if (!count) break;
++        now = waiting[--count];
++    }
++    return free_bytes;
++}
++
+ /* A refused direct-memory call, for the title's log: the step, the kernel's
+- * status and the largest free block of the pool then, which tells a full
+- * pool from a refused protection. The first 32, then every 1000th: a game
+- * whose heap spills keeps failing allocations on purpose. Written with
+- * write(): the heap calls allocate() with its lock held, and stdio may
+- * allocate. */
++ * status, the largest free block of the pool then and all its free memory,
++ * which tell a full pool, a fragmented one and a refused protection apart.
++ * The first 32, then every 1000th: a game whose heap spills keeps failing
++ * allocations on purpose. Written with write(): the heap calls allocate()
++ * with its lock held, and stdio may allocate. */
+ static void log_refusal(const char *step, uintptr_t address, size_t bytes, unsigned protection, int status)
+ {
+     static uint32_t refusals;
+     const uint32_t count = __atomic_add_fetch(&refusals, 1, __ATOMIC_RELAXED);
+     const int saved_errno = errno;
+-    size_t free_bytes = 0;
+-    char line[192];
++    const size_t pool = sceKernelGetDirectMemorySize();
++    size_t free_bytes = 0, all_free;
++    char line[224];
+     int length;
+ 
+     if (count > 32 && count % 1000) return;
+-    if (largest_free_block(sceKernelGetDirectMemorySize(), &free_bytes)) free_bytes = 0;
++    if (largest_free_block(pool, &free_bytes)) free_bytes = 0;
++    all_free = total_free_bytes(pool);
+     length = snprintf(line, sizeof(line), "wine-ps5: direct memory %s refused: address %#llx, %zu bytes, "
+-                      "protection %#x, status %#x, largest free block %zu MiB (refusal %u)\n", step,
+-                      (unsigned long long)address, bytes, protection, (unsigned)status, free_bytes >> 20, count);
++                      "protection %#x, status %#x, largest free block %zu MiB, free in all %zu MiB (refusal %u)\n",
++                      step, (unsigned long long)address, bytes, protection, (unsigned)status, free_bytes >> 20,
++                      all_free >> 20, count);
+     if (length > 0) (void)!write(2, line, (size_t)length < sizeof(line) ? (size_t)length : sizeof(line) - 1);
+     errno = saved_errno;
+ }
+@@ -166,7 +201,32 @@ static int release(void *context, int64_t offset, size_t bytes)
+     return rc;
+ }
+ 
+-static const PwWineDmemOps ops = { NULL, PAGE, reserve, allocate, map, protect, unmap, release };
++/* The largest block allocate could take now: a range one block couldn't
++ * back is backed with several, each sized by it. */
++static int largest(void *context, size_t *bytes)
++{
++    (void)context;
++    return largest_free_block(sceKernelGetDirectMemorySize(), bytes);
++}
++/* After the refusal line, that the range was backed after all, with several
++ * blocks. As often as refusals are logged. */
++static void split(void *context, size_t bytes, unsigned blocks)
++{
++    static uint32_t splits;
++    const uint32_t count = __atomic_add_fetch(&splits, 1, __ATOMIC_RELAXED);
++    const int saved_errno = errno;
++    char line[128];
++    int length;
++
++    (void)context;
++    if (count > 32 && count % 1000) return;
++    length = snprintf(line, sizeof(line), "wine-ps5: direct memory for %zu bytes taken in %u blocks instead (%u)\n",
++                      bytes, blocks, count);
++    if (length > 0) (void)!write(2, line, (size_t)length < sizeof(line) ? (size_t)length : sizeof(line) - 1);
++    errno = saved_errno;
++}
++
++static const PwWineDmemOps ops = { NULL, PAGE, reserve, allocate, map, protect, unmap, release, largest, split };
+ static PwWineDmem dmem;
+ static PwWineDmemRun runs[RUNS];
+ /* 0 before the self-check, 1 in use, -1 refused: every call passes. */
+-- 
+2.43.0
+

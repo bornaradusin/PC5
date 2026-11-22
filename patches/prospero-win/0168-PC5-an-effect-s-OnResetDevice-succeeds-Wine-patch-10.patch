@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 22 Nov 2026 14:32:27 +0000
+Subject: [PATCH 168/168] PC5: an effect's OnResetDevice succeeds (Wine patch
+ 1039)
+
+ID3DXEffect::OnResetDevice answered E_NOTIMPL. A game that resets its device when it switches to fullscreen and checks what its effects answer took that as a failed reset and stopped drawing: its screen stayed black right after the switch, and it drew only in a window, where there is no reset. Microsoft's d3dx9_43.dll answers D3D_OK. Wine's effect has nothing of the device's to make again after a reset (OnLostDevice only lets go of default-pool textures set as parameters, which the application sets again), so it answers D3D_OK too.
+---
+ ...9-an-effect-s-onresetdevice-succeeds.patch | 41 +++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+ create mode 100644 wine/patches/1039-d3dx9-an-effect-s-onresetdevice-succeeds.patch
+
+diff --git a/wine/patches/1039-d3dx9-an-effect-s-onresetdevice-succeeds.patch b/wine/patches/1039-d3dx9-an-effect-s-onresetdevice-succeeds.patch
+new file mode 100644
+index 0000000..02a44d3
+--- /dev/null
++++ b/wine/patches/1039-d3dx9-an-effect-s-onresetdevice-succeeds.patch
+@@ -0,0 +1,41 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Sun, 22 Nov 2026 14:40:00 +0000
++Subject: [PATCH] d3dx9: An effect's OnResetDevice succeeds.
++
++ID3DXEffect::OnResetDevice was a stub answering E_NOTIMPL. A game that
++resets its device when it switches to fullscreen, and checks what its
++effects answer, took that as a failed reset and stopped drawing: WRC
++Powerslide's screen stayed black right after the switch, with Auto as
++with WineD3D, and drew in a window, where there is no reset. Microsoft's
++d3dx9_43.dll answers D3D_OK, and with it the game got past the switch.
++
++OnLostDevice only lets go of the D3DPOOL_DEFAULT textures set as the
++effect's parameters, which the application sets again after the reset,
++so the effect has nothing of the device's to make again: it answers
++D3D_OK.
++---
++ dlls/d3dx9_36/effect.c | 9 +++++----
++ 1 file changed, 5 insertions(+), 4 deletions(-)
++
++diff --git a/dlls/d3dx9_36/effect.c b/dlls/d3dx9_36/effect.c
++index a8eeca4..fb34bba 100644
++--- a/dlls/d3dx9_36/effect.c
+++++ b/dlls/d3dx9_36/effect.c
++@@ -4200,11 +4200,12 @@ static HRESULT WINAPI d3dx_effect_OnLostDevice(ID3DXEffect *iface)
++ 
++ static HRESULT WINAPI d3dx_effect_OnResetDevice(ID3DXEffect *iface)
++ {
++-    struct d3dx_effect *This = impl_from_ID3DXEffect(iface);
++-
++-    FIXME("(%p)->(): stub\n", This);
+++    TRACE("iface %p.\n", iface);
++ 
++-    return E_NOTIMPL;
+++    /* OnLostDevice only lets go of the D3DPOOL_DEFAULT textures set as
+++     * parameters, which the application sets again after the reset; the
+++     * effect holds nothing else of the device's to make again. */
+++    return D3D_OK;
++ }
++ 
++ static HRESULT WINAPI d3dx_effect_SetStateManager(ID3DXEffect *iface, ID3DXEffectStateManager *manager)
+-- 
+2.43.0
+

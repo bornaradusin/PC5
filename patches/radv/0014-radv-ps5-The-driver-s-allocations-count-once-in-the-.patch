@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 22 Nov 2026 14:35:53 +0000
+Subject: [PATCH] radv/ps5: The driver's allocations count once in the memory
+ budget
+
+The memory budget adds allocated_vram and allocated_vram_vis for an
+APU's visible heap. The console's heap information set both to the
+driver's allocations, so every allocation counted twice: a game with
+5 GiB of video memory read 10, DXVK's report showed twice the memory in
+use as reserved, and Unreal warned on screen that video memory was
+exhausted. The driver's allocations are all in the visible heap, the
+only one with device-local memory, so allocated_vram stays 0.
+---
+ src/amd/vulkan/radv_physical_device.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/src/amd/vulkan/radv_physical_device.c b/src/amd/vulkan/radv_physical_device.c
+index e9fa953..f7658fc 100644
+--- a/src/amd/vulkan/radv_physical_device.c
++++ b/src/amd/vulkan/radv_physical_device.c
+@@ -3266,10 +3266,14 @@ radv_query_heap_info(struct radv_physical_device *pdev, struct radeon_winsys_hea
+    memset(heap_info, 0, sizeof(*heap_info));
+ #ifdef RADV_PS5
+    /* One pool, which the CPU draws on too: the driver's own allocations and
+-    * what the pool has handed out to anyone. */
++    * what the pool has handed out to anyone. The driver's are all in the
++    * visible heap, the only one with device-local memory: the budget adds
++    * allocated_vram and allocated_vram_vis for an APU, so the first stays 0,
++    * or every allocation counted twice (a game with 5 GiB of video memory
++    * read 10, and Unreal warned that video memory was exhausted). */
+    uint64_t pool = 0, available = 0, driver = 0;
+    radv_ps5_winsys_heap_usage(&pool, &available, &driver);
+-   heap_info->allocated_vram = driver;
++   heap_info->allocated_vram = 0;
+    heap_info->allocated_vram_vis = driver;
+    heap_info->vram_usage = pool - MIN2(available, pool);
+    heap_info->vram_vis_usage = heap_info->vram_usage;
+-- 
+2.43.0
+

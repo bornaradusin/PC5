@@ -1,0 +1,174 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Sun, 22 Nov 2026 14:35:53 +0000
+Subject: [PATCH] radv/ps5: A buffer no one block of direct memory can hold
+ takes several
+
+The kernel hands out direct memory a block at a time, each in one
+piece. When the console's pool is split into pieces, enough can be free
+while no single block is as large as a buffer: a Unity game stopped at
+the end of a level when DXVK asked for 72 MiB with 1.4 GiB free in
+blocks of at most 65 MiB, and the allocation failed.
+
+The GPU reaches a buffer by its address, so a buffer of the
+device-memory region that one block refuses now takes several, mapped
+side by side where its granules start: each whole granules at the
+buffer's alignment, as large as the largest free block, halved when
+refused anyway, the last one what is left, at most 32. Each mapping must
+land where it is asked, or the buffer is given up as before; freeing it
+unmaps and releases each block. Only a refused allocation takes this
+path, and window buffers keep their single block.
+---
+ src/amd/vulkan/winsys/ps5/radv_ps5_platform.c | 101 +++++++++++++++++-
+ src/amd/vulkan/winsys/ps5/radv_ps5_platform.h |   9 ++
+ 2 files changed, 109 insertions(+), 1 deletion(-)
+
+diff --git a/src/amd/vulkan/winsys/ps5/radv_ps5_platform.c b/src/amd/vulkan/winsys/ps5/radv_ps5_platform.c
+index 53c323b..44e5718 100644
+--- a/src/amd/vulkan/winsys/ps5/radv_ps5_platform.c
++++ b/src/amd/vulkan/winsys/ps5/radv_ps5_platform.c
+@@ -280,6 +280,98 @@ radv_ps5_memory_available_bytes(void)
+    return available;
+ }
+ 
++/* At most this many blocks behind one buffer. */
++#define RADV_PS5_MAX_BLOCKS 32
++
++/* Blocks taken for a buffer, given back: unmapped and released. */
++static void
++radv_ps5_blocks_give(uint8_t *base, const struct radv_ps5_block *blocks, uint32_t count)
++{
++   uint64_t at = 0;
++   for (uint32_t i = 0; i < count; i++) {
++      sceKernelMunmap(base + at, blocks[i].bytes);
++      sceKernelReleaseDirectMemory(blocks[i].physical, blocks[i].bytes);
++      at += blocks[i].bytes;
++   }
++}
++
++/* A buffer of the device-memory region that no one block of direct memory
++ * could hold. The kernel hands out each block in one piece, and when the pool
++ * is split into pieces, enough can be free while no block is that large (a
++ * game stopped asking for 72 MiB with 1.4 GiB free, in blocks of at most 65).
++ * The GPU reaches a buffer by its address, so it takes several blocks, mapped
++ * side by side where its granules start: each whole granules at the buffer's
++ * alignment, as large as the largest free block, halved when refused anyway,
++ * the last one what is left. Each mapping lands where it is asked or the
++ * buffer is given up, as in radv_ps5_memory_alloc. */
++static bool
++radv_ps5_memory_alloc_blocks(uint64_t bytes, uint64_t alignment, struct radv_ps5_memory *out)
++{
++   const uint64_t unit = MAX2(alignment, RADV_PS5_LARGE_BYTES);
++   const int64_t pool = sceKernelGetDirectMemorySize();
++   struct radv_ps5_block blocks[RADV_PS5_MAX_BLOCKS];
++   uint32_t count = 0;
++   uint64_t done = 0, size = bytes / 2 / unit * unit;
++
++   if (pool <= 0 || bytes <= unit)
++      return false;
++   const uint32_t granules = (uint32_t)DIV_ROUND_UP(bytes, RADV_PS5_LARGE_BYTES);
++   const uint32_t granule =
++      radv_ps5_granules_take(&radv_ps5_region, granules, (uint32_t)MAX2(alignment / RADV_PS5_LARGE_BYTES, 1));
++   if (granule == UINT32_MAX)
++      return false;
++   uint8_t *const base = (uint8_t *)(uintptr_t)(RADV_PS5_REGION_BASE + (uint64_t)granule * RADV_PS5_LARGE_BYTES);
++
++   while (done < bytes && count < RADV_PS5_MAX_BLOCKS) {
++      const uint64_t left = bytes - done;
++      int64_t start = -1, physical = -1;
++      size_t largest = 0;
++
++      if (size > left)
++         size = left;
++      if (sceKernelAvailableDirectMemorySize(0, pool, alignment, &start, &largest) == 0 && largest < size)
++         size = largest;
++      /* Whole units, so the next block's address keeps the alignment; only
++       * the last may be less. */
++      if (size < left)
++         size = size / unit * unit;
++      if (!size)
++         break;
++      if (sceKernelAllocateDirectMemory(0, pool, size, alignment, RADV_PS5_DIRECT_TYPE, &physical) != 0) {
++         size = size / 2 / unit * unit;
++         continue;
++      }
++      void *address = base + done;
++      if (sceKernelMapDirectMemory(&address, size, RADV_PS5_PROTECTION, 0, physical, alignment) != 0 ||
++          address != base + done) {
++         if (address != NULL && address != base + done)
++            sceKernelMunmap(address, size);
++         sceKernelReleaseDirectMemory(physical, size);
++         break;
++      }
++      blocks[count++] = (struct radv_ps5_block){.physical = physical, .bytes = size};
++      done += size;
++   }
++   struct radv_ps5_block *kept = done == bytes ? malloc(count * sizeof(*kept)) : NULL;
++   if (!kept) {
++      radv_ps5_blocks_give(base, blocks, count);
++      radv_ps5_granules_give(&radv_ps5_region, granule, granules);
++      return false;
++   }
++   memcpy(kept, blocks, count * sizeof(*kept));
++   *out = (struct radv_ps5_memory){
++      .cpu = base,
++      .bytes = bytes,
++      .physical = -1,
++      .granule = granule,
++      .granules = granules,
++      .blocks = kept,
++      .block_count = count,
++   };
++   fprintf(stderr, "radv/ps5: %" PRIu64 " bytes of device memory taken in %u blocks\n", bytes, (unsigned)count);
++   return true;
++}
++
+ bool
+ radv_ps5_memory_alloc(uint64_t bytes, uint64_t alignment, bool window32, struct radv_ps5_memory *out)
+ {
+@@ -293,7 +385,7 @@ radv_ps5_memory_alloc(uint64_t bytes, uint64_t alignment, bool window32, struct
+    int64_t physical = -1;
+    if (sceKernelAllocateDirectMemory(0, sceKernelGetDirectMemorySize(), bytes, alignment,
+                                      RADV_PS5_DIRECT_TYPE, &physical) != 0)
+-      return false;
++      return !window32 && radv_ps5_memory_alloc_blocks(bytes, alignment, out);
+ 
+    /* A window buffer goes where the kernel puts a mapping it is given no
+     * address for, which is the window (PS5_Vulkan R86); anything else goes in
+@@ -632,6 +724,13 @@ radv_ps5_memory_free(struct radv_ps5_memory *memory)
+       *memory = (struct radv_ps5_memory){.physical = -1};
+       return;
+    }
++   if (memory->blocks) {
++      radv_ps5_blocks_give(memory->cpu, memory->blocks, memory->block_count);
++      radv_ps5_granules_give(&radv_ps5_region, memory->granule, memory->granules);
++      free(memory->blocks);
++      *memory = (struct radv_ps5_memory){.physical = -1};
++      return;
++   }
+    const int32_t unmapped = sceKernelMunmap(memory->cpu, memory->bytes);
+    if (unmapped != 0)
+       fprintf(stderr, "radv/ps5: sceKernelMunmap(%p, %" PRIu64 ") failed: 0x%08x\n", (void *)memory->cpu,
+diff --git a/src/amd/vulkan/winsys/ps5/radv_ps5_platform.h b/src/amd/vulkan/winsys/ps5/radv_ps5_platform.h
+index 1702bc4..6212271 100644
+--- a/src/amd/vulkan/winsys/ps5/radv_ps5_platform.h
++++ b/src/amd/vulkan/winsys/ps5/radv_ps5_platform.h
+@@ -48,6 +48,15 @@ struct radv_ps5_memory {
+    uint32_t granule;
+    uint32_t granules;
+    bool window_replay;
++   /* A buffer no one block of direct memory could hold: the blocks mapped
++    * side by side behind it, in order (physical is then -1), or NULL. */
++   struct radv_ps5_block *blocks;
++   uint32_t block_count;
++};
++
++struct radv_ps5_block {
++   int64_t physical;
++   uint64_t bytes;
+ };
+ 
+ /* Initialises AGC once per process. It has to run from the title's own
+-- 
+2.43.0
+
