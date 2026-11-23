@@ -380,6 +380,39 @@ static int names_at(const uint8_t *p, size_t left, const char *name, int wide)
     return 1;
 }
 
+int pc5_pe_dotnet_version(const char *path, char *out, size_t size)
+{
+    Pe pe;
+    uint8_t cor[16], root[16];
+    char version[256];
+    uint32_t length;
+    int rc = -1;
+
+    if (!out || !size) return -1;
+    out[0] = 0;
+    if (pe_open(path, &pe)) return -1;
+    /* The CLR header (directory 14): its metadata's RVA and size at 8. The metadata starts
+     * "BSJB", two versions and a reserved word, then the version's length (with its padding)
+     * at 12 and the version, 0-terminated, at 16. */
+    if (pe.dir_rva[14] && pe.dir_size[14] >= 16 && !read_rva(&pe, pe.dir_rva[14], cor, sizeof(cor)) &&
+        u32(cor + 8) && !read_rva(&pe, u32(cor + 8), root, sizeof(root)) && !memcmp(root, "BSJB", 4) &&
+        (length = u32(root + 12)) >= 4 && length < sizeof(version) && !read_rva(&pe, u32(cor + 8) + 16, version, length)) {
+        size_t n = 0;
+        version[length] = 0;
+        n = strlen(version);
+        /* "v" and a version of digits and dots, as Wine's .NET loader takes it */
+        int ok = n >= 4 && version[0] == 'v' && n < size;
+        for (size_t i = 1; ok && i < n; i++)
+            if (!(version[i] >= '0' && version[i] <= '9') && version[i] != '.') ok = 0;
+        if (ok) {
+            memcpy(out, version, n + 1);
+            rc = 0;
+        }
+    }
+    pe_close(&pe);
+    return rc;
+}
+
 uint32_t pc5_pe_named_libraries(const char *path)
 {
     static const struct { const char *name; uint32_t bit; } named[] = {

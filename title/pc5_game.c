@@ -738,6 +738,43 @@ int pc5_prefix_xact(const char *root, const char *prefix, const char *program, c
     return absent ? -2 : changed;
 }
 
+int pc5_dotnet_config(const char *program, char *version, size_t size)
+{
+    char dir[PC5_PATH], want[PC5_PATH], config[PC5_PATH], part[PC5_PATH + 16], text[512];
+    const char *base;
+    DIR *d;
+    struct dirent *e;
+    int found = 0;
+
+    if (size) version[0] = 0;
+    if (!program || !program[0] || pc5_format(dir, sizeof(dir), "%s", program)) return 0;
+    base = strrchr(program, '/') ? strrchr(program, '/') + 1 : program;
+    char *slash = strrchr(dir, '/');
+    if (!slash || !base[0] || pc5_format(want, sizeof(want), "%s.config", base)) return 0;
+    *slash = 0;
+    if (pc5_pe_dotnet_version(program, version, size)) return 0;   /* not a .NET program */
+    /* its own config, in any case: left as it is */
+    if (!(d = opendir(dir))) return -1;
+    while (!found && (e = readdir(d))) found = !pc5_casecmp(e->d_name, want);
+    closedir(d);
+    if (found) return 0;
+    if (pc5_format(config, sizeof(config), "%s/%s", dir, want) || pc5_format(part, sizeof(part), "%s.pc5-part", config) ||
+        pc5_format(text, sizeof(text),
+                   "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+                   "<configuration>\n"
+                   "  <startup>\n"
+                   "    <supportedRuntime version=\"%s\"/>\n"
+                   "  </startup>\n"
+                   "</configuration>\n",
+                   version))
+        return -1;
+    if (pc5_write_file(part, text, strlen(text)) || rename(part, config)) {
+        unlink(part);
+        return -1;
+    }
+    return 1;
+}
+
 /* The app's file at from appended to the file at to: 0, or -1 */
 static int append_file(const char *from, const char *to)
 {
@@ -1592,7 +1629,10 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         int dx9 = pc5_prefix_dx9(root, prefix);
         if (dx9) say(game, "PC5 prefix DirectX files %s %d", dx9 > 0 ? "added" : "failed", dx9 > 0 ? dx9 : 0);
         if (!pc5_game_program(root, prefix, started, sizeof(started))) {
-            char missing[160];
+            char missing[160], dotnet[64];
+            int config = pc5_dotnet_config(started, dotnet, sizeof(dotnet));
+            if (config > 0) say(game, "PC5 .NET version written beside the program, in its .config: %s", dotnet);
+            else if (config < 0) say(game, "PC5 .NET version for the program's .config failed (%s)", dotnet);
             int xact = pc5_prefix_xact(root, prefix, started, missing, sizeof(missing));
             if (xact == -2)
                 say(game, "PC5 this game's sound needs Microsoft's XACT, which pc5/dx9 doesn't have (%s): "

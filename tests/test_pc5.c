@@ -5650,8 +5650,67 @@ static void test_batch_bits(void)
 /* A game's prefix from before winegstreamer gets its registrations once. */
 /* An installed game's DXVK follows the app's: replaced once when the app names another. */
 /* .NET: what an older game's prefix lacks, the runtime's path, and the runtime's one copy. */
+/* A 32-bit .NET program as small as one can be: a CLR header whose metadata names version. */
+static void write_clr_program(const char *file, const char *version)
+{
+    uint8_t pe[0x400] = { 0 };
+    uint8_t *opt = pe + 64 + 24, *sec = opt + 224, *cor = pe + 0x200, *md = pe + 0x248;
+    size_t n = strlen(version);
+    pe[0] = 'M', pe[1] = 'Z', pe[0x3c] = 64;
+    memcpy(pe + 64, "PE\0\0", 4);
+    pe[68] = 0x4c, pe[69] = 0x01;            /* i386 */
+    pe[70] = 1;                              /* one section */
+    pe[84] = 224;                            /* optional header's size */
+    pe[86] = 0x02, pe[87] = 0x01;            /* a 32-bit program */
+    opt[0] = 0x0b, opt[1] = 0x01;            /* PE32 */
+    opt[30] = 0x40;                          /* image base 0x400000 */
+    opt[33] = 0x10, opt[37] = 0x02;          /* sections aligned 0x1000, the file 0x200 */
+    opt[68] = 2;                             /* a window program */
+    opt[92] = 16;                            /* 16 directories */
+    opt[96 + 14 * 8 + 1] = 0x10, opt[96 + 14 * 8 + 4] = 72;   /* the CLR header at 0x1000 */
+    memcpy(sec, ".text", 5);
+    sec[9] = 0x02, sec[13] = 0x10, sec[17] = 0x02, sec[21] = 0x02;   /* 0x200 at 0x1000, from 0x200 */
+    cor[0] = 72, cor[4] = 2, cor[6] = 5;
+    cor[8] = 0x48, cor[9] = 0x10, cor[12] = 0x40;   /* metadata at 0x1048 */
+    memcpy(md, "BSJB", 4);
+    md[4] = 1, md[6] = 1, md[12] = (uint8_t)((n + 4) & ~3u);
+    memcpy(md + 16, version, n);
+    FILE *f = fopen(file, "wb");
+    CHECK(f && fwrite(pe, 1, sizeof(pe), f) == sizeof(pe) && !fclose(f), "wrote %s", file);
+}
+
 static void test_dotnet(void)
 {
+    /* pc5_pe_dotnet_version and pc5_dotnet_config: a .NET program without a config gets one with
+     * its own version, so Wine's .NET loader doesn't map the whole program to read it */
+    {
+        char game_dir[PC5_PATH], exe[PC5_PATH], cfg[PC5_PATH], version[64], native[PC5_PATH];
+        path(game_dir, sizeof(game_dir), "%s/clr-game", work);
+        path(exe, sizeof(exe), "%s/BlossomTales.exe", game_dir);
+        write_text(exe, "");
+        write_clr_program(exe, "v4.0.30319");
+        CHECK(!pc5_pe_dotnet_version(exe, version, sizeof(version)) && !strcmp(version, "v4.0.30319"),
+              "the version from its CLR header: %s", version);
+        path(native, sizeof(native), "%s/dotnet.exe", programs);
+        CHECK(pc5_pe_dotnet_version(native, version, sizeof(version)) == -1, "a program only importing mscoree has none");
+        CHECK(pc5_dotnet_config(native, version, sizeof(version)) == 0, "so no config for it");
+        CHECK(pc5_dotnet_config(exe, version, sizeof(version)) == 1, "a config written");
+        path(cfg, sizeof(cfg), "%s/BlossomTales.exe.config", game_dir);
+        CHECK(file_holds_text(cfg, "<supportedRuntime version=\"v4.0.30319\"/>") && file_holds_text(cfg, "<startup>"),
+              "naming its version");
+        CHECK(pc5_dotnet_config(exe, version, sizeof(version)) == 0, "once");
+        unlink(cfg);
+        path(cfg, sizeof(cfg), "%s/BLOSSOMTALES.EXE.CONFIG", game_dir);
+        write_text(cfg, "<configuration/>");
+        CHECK(pc5_dotnet_config(exe, version, sizeof(version)) == 0 && file_is(cfg, "<configuration/>"),
+              "its own config, in any case, left as it is");
+        write_clr_program(exe, "v4.0.30319 beta");
+        unlink(cfg);
+        CHECK(pc5_dotnet_config(exe, version, sizeof(version)) == 0, "a version that isn't one: nothing written");
+        write_clr_program(exe, "v2.0.50727");
+        CHECK(pc5_dotnet_config(exe, version, sizeof(version)) == 1 && !strcmp(version, "v2.0.50727"), "an older .NET's");
+    }
+
     char root[PC5_PATH], app[PC5_PATH], file[PC5_PATH], program[PC5_PATH];
     Pc5Buf text = { 0 };
     Pc5Runtime runtime;

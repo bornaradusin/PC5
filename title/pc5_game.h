@@ -191,6 +191,14 @@ int pc5_dx9_extract_cabs(const char *root, const char *cab_dir);
  * the number copied or registered, 0 when nothing needed changing or the game needs none, -1
  * on a failure, -2 when the game needs DLLs root/pc5/dx9 doesn't have (named in missing). */
 int pc5_prefix_xact(const char *root, const char *prefix, const char *program, char *missing, size_t missing_size);
+/* A .NET program without a config file beside it (<program>.config, in any case) gets one
+ * naming the .NET version its CLR header gives (pc5_pe_dotnet_version), into version. Wine's
+ * .NET loader then takes the version from there instead of mapping the whole program to read
+ * it: a program of hundreds of MB took seconds on the console, and then the loader gave up and
+ * the game closed. The same version, so the same runtime; one the loader doesn't know sends it
+ * back to the program as before. Returns 1 when written, 0 for a program that isn't .NET or
+ * has its own config, -1 on a failure. */
+int pc5_dotnet_config(const char *program, char *version, size_t size);
 /* The DirectX *_x86.cab / *_x64.cab files a game brings (beside program, the game's program,
  * or one folder up, in its DirectX redistributable folders) extracted as pc5_dx9_extract_cabs
  * does, on the game's first start only: done is noted in the prefix's pc5/dx9.txt with the

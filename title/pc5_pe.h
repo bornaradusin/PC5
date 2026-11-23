@@ -56,6 +56,10 @@ int pc5_pe_read(const char *path, Pc5PeInfo *info);
 /* The libraries a program draws with that it names in its own data, as PC5_IMPORT_* bits:
  * a program that loads Direct3D or Vulkan itself at run time (LoadLibrary) imports none
  * of them. Names in ASCII or UTF-16, any case; reads at most 1 GiB of the file. */
+/* The .NET version a program was built for, from its CLR header ("v4.0.30319"), into out: what
+ * Wine's .NET loader reads, mapping the whole program, when no config file names one. 0, or -1
+ * for a program without one. */
+int pc5_pe_dotnet_version(const char *path, char *out, size_t size);
 uint32_t pc5_pe_named_libraries(const char *path);
 /* The most capable API among the imports. */
 Pc5Api pc5_api_from_imports(uint32_t imports);
