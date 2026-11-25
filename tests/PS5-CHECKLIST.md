@@ -641,6 +641,18 @@ controller's speaker.
 | 399 | The 2007 Resident Evil 4 (`RE4.exe`, Direct3D 9) (regression check for 398) | it starts as before, Direct3D 9 | its Settings line unchanged |
 | 400 | Valor Mortis (#761's copy): change any setting in its menu and apply it | it still freezes (this only logs where from) | `wine: a jump to address 0 (thread 0024)`, then `wine: a jump to address 0: stack+0x0 <module>+0x..., its caller` and up to 7 more `stack+` lines |
 | 401 | Any two games played a few minutes, one 32-bit (regression check for 400) | they play as on 2.4.7 | no `a jump to address 0` lines |
+| 402 | Riverfront Rumble (#750's copy), its Launch options kept, Extra logging empty | it gets past its first window instead of stopping 5 s in | at the first start `PC5 prefix web game files cut short by an earlier start put right: 3`; no `Unable to map Index file`; nothing the next start |
+| 403 | Noreya (#693's copy), its Launch options kept | no "SyntaxError: Unexpected end of JSON input" box | `PC5 prefix web game files cut short ... put right: N` once; a `.json.pc5-empty` in its AppData\Roaming folder |
+| 404 | Another Electron or NW.js game that works (regression check for 402 and 403) | it starts as on 2.4.7, its settings kept | no `web game files cut short` line |
+| 405 | Arcanum (#747's copy), Keyboard & mouse, Graphics mode Auto: click around the menu, also outside the 800x600 picture | the menu and its pointer keep showing and answer clicks | with Extra logging `+ddraw`: `deactivation ignored`; no endless `IsLost` lines |
+| 406 | Divine Divinity (#745's copy), Graphics mode Auto | its menu shows and answers clicks | as 405 |
+| 407 | A DirectDraw game that worked (Heroes of Might and Magic III, or any `ddraw.dll` game) (regression check for 405) | it plays as on 2.4.7 | — |
+| 408 | Icewind Dale II (#746's copy) | it gets past "Unable to Open BIF" | `PC5 Infinity Engine [Alias] paths put on the game's folder`, or `PC5 Infinity Engine [Alias] left as they were: ...` saying why |
+| 409 | Ceville (#737's copy) | PC5's message names Microsoft.DirectX.AudioVideoPlayback.dll, part of Managed DirectX 1.1 | the report's cause line |
+| 410 | GTAV recompilation (#779's copy) with `WINE_PS5_HIGH_FREE_GIB=8` in its env.txt, Graphics mode Alternative | its log `gtav.log` says `Guest memory arena mapped`, and it gets past "Starting game" | `its first 8 GiB left to the program's own addresses`; no `reservation refused for 1000000000-` |
+| 411 | Any 64-bit game without that env.txt line (regression check for 410) | it plays as on 2.4.7 | no `left to the program's own addresses` line |
+| 412 | Yestersol (#684's copy), △ › Controller › Xbox controller | the controller moves in its menu | `a game registered raw input for controllers: ...` and `a game asked raw input for the title's pad's name`; `XInputGetState` with Extra logging `+xinput` |
+| 413 | Another Unity game with an Xbox controller that worked (regression check for 412) | its controller as on 2.4.7 | — |
 
 ## Custom media navigation changes (pending on PS5)
 
