@@ -653,6 +653,9 @@ controller's speaker.
 | 411 | Any 64-bit game without that env.txt line (regression check for 410) | it plays as on 2.4.7 | no `left to the program's own addresses` line |
 | 412 | Yestersol (#684's copy), △ › Controller › Xbox controller | the controller moves in its menu | `a game registered raw input for controllers: ...` and `a game asked raw input for the title's pad's name`; `XInputGetState` with Extra logging `+xinput` |
 | 413 | Another Unity game with an Xbox controller that worked (regression check for 412) | its controller as on 2.4.7 | — |
+| 414 | A game with Easy Anti-Cheat or BattlEye (Elden Ring, Fortnite's or any EAC game's copy) | PC5's message: "It runs Easy Anti-Cheat, an anti-cheat that needs Windows' own kernel..." | △ › Report a problem: "Likely cause: anti-cheat: ..." |
+| 415 | A Ubisoft Connect game (Assassin's Creed Unity's store copy) | PC5's message: "It needs Ubisoft Connect running beside it..." | the report: "Likely cause: needs store app: ..." |
+| 416 | A game that works (regression check for 414 and 415) | no message | — |
 
 ## Custom media navigation changes (pending on PS5)
 

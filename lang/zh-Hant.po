@@ -92,7 +92,7 @@ msgstr "左方向鍵"
 msgid "Right arrow"
 msgstr "右方向鍵"
 
-#: title/pc5_controls.c:30 title/pc5_controls.c:64 title/pc5_ui.c:7807
+#: title/pc5_controls.c:30 title/pc5_controls.c:64 title/pc5_ui.c:7820
 msgid "Nothing"
 msgstr "無"
 
@@ -140,7 +140,7 @@ msgstr "方向鍵右"
 msgid "Create"
 msgstr "建立按鈕"
 
-#: title/pc5_controls.c:44 title/pc5_ui.c:7782
+#: title/pc5_controls.c:44 title/pc5_ui.c:7795
 msgid "Touchpad"
 msgstr "觸控板"
 
@@ -229,14 +229,14 @@ msgid "Keys"
 msgstr "按鍵"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_controls.c:64 title/pc5_ui.c:7272
+#: title/pc5_controls.c:64 title/pc5_ui.c:7285
 msgid "Mouse pointer"
 msgstr "滑鼠指標"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
 #: title/pc5_controls.c:100 title/pc5_ui.c:2577 title/pc5_ui.c:3094
-#: title/pc5_ui.c:3096 title/pc5_ui.c:7357 title/pc5_ui.c:7378
-#: title/pc5_ui.c:7497
+#: title/pc5_ui.c:3096 title/pc5_ui.c:7370 title/pc5_ui.c:7391
+#: title/pc5_ui.c:7510
 msgid "Auto"
 msgstr "自動"
 
@@ -389,34 +389,34 @@ msgstr "連接埠%u已被佔用，或沒有網路。"
 msgid "PC5 can't start it."
 msgstr "PC5無法啟動它。"
 
-#: title/pc5_game.c:1419
+#: title/pc5_game.c:1536
 msgid "The app's path is too long."
 msgstr "應用程式的路徑太長。"
 
-#: title/pc5_game.c:1425
+#: title/pc5_game.c:1542
 msgid "PC5 can't read the app's .NET runtime."
 msgstr "PC5無法讀取應用程式的.NET執行階段。"
 
-#: title/pc5_game.c:1450
+#: title/pc5_game.c:1567
 msgid "A path of the .NET runtime is too long."
 msgstr ".NET執行階段的某個路徑太長。"
 
-#: title/pc5_game.c:1455
+#: title/pc5_game.c:1572
 msgid "PC5 can't make the .NET runtime's folders: is the console full?"
 msgstr "PC5無法建立.NET執行階段的資料夾：主機空間滿了嗎？"
 
-#: title/pc5_game.c:1466
+#: title/pc5_game.c:1583
 #, c-format
 msgid ""
 "The app's .NET runtime has no %.80s. Copy the PPSA11018 folder to the "
 "console again."
 msgstr "應用程式的.NET執行階段缺少%.80s。請重新將PPSA11018資料夾複製到主機。"
 
-#: title/pc5_game.c:1472
+#: title/pc5_game.c:1589
 msgid "PC5 can't copy the .NET runtime: is the console full?"
 msgstr "PC5無法複製.NET執行階段：主機空間滿了嗎？"
 
-#: title/pc5_game.c:1480
+#: title/pc5_game.c:1597
 msgid "PC5 can't finish the .NET runtime's copy."
 msgstr "PC5無法完成.NET執行階段的複製。"
 
@@ -877,7 +877,7 @@ msgid "Console's colour"
 msgstr "主機顏色"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_settings.c:17 title/pc5_ui.c:7274
+#: title/pc5_settings.c:17 title/pc5_ui.c:7287
 msgid "Normal"
 msgstr "正常"
 
@@ -897,8 +897,8 @@ msgstr "特大"
 #: title/pc5_ui.c:2672 title/pc5_ui.c:2677 title/pc5_ui.c:2682
 #: title/pc5_ui.c:2733 title/pc5_ui.c:2746 title/pc5_ui.c:2785
 #: title/pc5_ui.c:3093 title/pc5_ui.c:3095 title/pc5_ui.c:3096
-#: title/pc5_ui.c:7321 title/pc5_ui.c:7332 title/pc5_ui.c:7339
-#: title/pc5_ui.c:7394 title/pc5_ui.c:7483 title/pc5_ui.c:7497
+#: title/pc5_ui.c:7334 title/pc5_ui.c:7345 title/pc5_ui.c:7352
+#: title/pc5_ui.c:7407 title/pc5_ui.c:7496 title/pc5_ui.c:7510
 msgid "Off"
 msgstr "關"
 
@@ -1089,13 +1089,13 @@ msgstr "PC5無法取代圖示：%s。"
 msgid "PC5 can't put the tile in place: %s."
 msgstr "PC5無法放置圖示：%s。"
 
-#: title/pc5_tile.c:639 title/pc5_ui.c:5009
+#: title/pc5_tile.c:639 title/pc5_ui.c:5022
 msgid ""
 "It isn't in PC5 any more. Take the tile off the home screen, or install "
 "the game again."
 msgstr "它已不在PC5中。請從主畫面移除這個圖示，或重新安裝遊戲。"
 
-#: title/pc5_tile.c:702 title/pc5_ui.c:6344
+#: title/pc5_tile.c:702 title/pc5_ui.c:6357
 msgid ""
 "Its program is wrapped in Steam's DRM (SteamStub), which starts only with "
 "Steam running, and Steam doesn't run on the console. A copy of the game "
@@ -1125,14 +1125,14 @@ msgstr "相容性"
 #. One of the tabs along the top of the screen: one short word.
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:66 title/pc5_ui.c:8171 title/pc5_ui.c:9329
+#: title/pc5_ui.c:66 title/pc5_ui.c:8184 title/pc5_ui.c:9342
 msgid "Install"
 msgstr "安裝"
 
 #. One of the tabs along the top of the screen: one short word.
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:66 title/pc5_ui.c:133 title/pc5_ui.c:7131 title/pc5_ui.c:7145
+#: title/pc5_ui.c:66 title/pc5_ui.c:133 title/pc5_ui.c:7144 title/pc5_ui.c:7158
 msgid "Settings"
 msgstr "設定"
 
@@ -1152,7 +1152,7 @@ msgid "Favourites"
 msgstr "我的最愛"
 
 #. A filter on the Library tab, drawn as a small pill: keep it short.
-#: title/pc5_ui.c:69 title/pc5_ui.c:7003 title/pc5_ui.c:9150
+#: title/pc5_ui.c:69 title/pc5_ui.c:7016 title/pc5_ui.c:9163
 msgid "USB drive"
 msgstr "USB儲存裝置"
 
@@ -1197,51 +1197,51 @@ msgstr "網路"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:211 title/pc5_ui.c:7277
+#: title/pc5_ui.c:211 title/pc5_ui.c:7290
 msgid "Graphics"
 msgstr "圖形"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:211 title/pc5_ui.c:7282
+#: title/pc5_ui.c:211 title/pc5_ui.c:7295
 msgid "Appearance"
 msgstr "外觀"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:211 title/pc5_ui.c:7287
+#: title/pc5_ui.c:211 title/pc5_ui.c:7300
 msgid "Manage"
 msgstr "管理"
 
 #. A page's title, at the top of the Settings or game menu drawer.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:211 title/pc5_ui.c:7402
+#: title/pc5_ui.c:211 title/pc5_ui.c:7415
 msgid "Background"
 msgstr "背景"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:212 title/pc5_ui.c:7428 title/pc5_ui.c:8476
+#: title/pc5_ui.c:212 title/pc5_ui.c:7441 title/pc5_ui.c:8489
 msgid "Library music"
 msgstr "遊戲庫音樂"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:212 title/pc5_ui.c:7413 title/pc5_ui.c:8476
+#: title/pc5_ui.c:212 title/pc5_ui.c:7426 title/pc5_ui.c:8489
 msgid "Background video"
 msgstr "背景影片"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:213 title/pc5_ui.c:7438
+#: title/pc5_ui.c:213 title/pc5_ui.c:7451
 msgid "Media settings and backup"
 msgstr "媒體設定和備份"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:213 title/pc5_ui.c:4057 title/pc5_ui.c:7449
-#: title/pc5_ui.c:8477
+#: title/pc5_ui.c:213 title/pc5_ui.c:4070 title/pc5_ui.c:7462
+#: title/pc5_ui.c:8490
 msgid "Loading screen"
 msgstr "載入畫面"
 
 #. a percentage (Vibration 50%); put a space before % where your language does.
-#: title/pc5_ui.c:357 title/pc5_ui.c:7769
+#: title/pc5_ui.c:357 title/pc5_ui.c:7782
 #, c-format
 msgid "%d%%"
 msgstr "%d%%"
@@ -1263,8 +1263,8 @@ msgstr "您的版本是%s，落後超過一個版本：PC5會下載整個應用�
 msgid "You have %s: PC5 downloads the whole app (%s)"
 msgstr "您的版本是%s：PC5會下載整個應用程式（%s）"
 
-#: title/pc5_ui.c:1687 title/pc5_ui.c:4087 title/pc5_ui.c:5750
-#: title/pc5_ui.c:5759
+#: title/pc5_ui.c:1687 title/pc5_ui.c:4100 title/pc5_ui.c:5763
+#: title/pc5_ui.c:5772
 msgid "PC5 didn't install this game"
 msgstr "這款遊戲不是PC5安裝的"
 
@@ -1312,7 +1312,7 @@ msgstr "PC5無法寫入/data/prospero-win/prefixes中的遊戲資料夾。"
 msgid "PC5 couldn't make the card from the game's icon and name."
 msgstr "PC5無法用遊戲的圖示和名稱製作卡片。"
 
-#: title/pc5_ui.c:1947 title/pc5_ui.c:8005
+#: title/pc5_ui.c:1947 title/pc5_ui.c:8018
 #, c-format
 msgid "USB drive %d"
 msgstr "USB儲存裝置%d"
@@ -1336,8 +1336,8 @@ msgstr "%s無法安裝"
 msgid "%s can't be updated"
 msgstr "%s無法更新"
 
-#: title/pc5_ui.c:2026 title/pc5_ui.c:3311 title/pc5_ui.c:4891
-#: title/pc5_ui.c:5581 title/pc5_ui.c:6285 title/pc5_ui.c:8416
+#: title/pc5_ui.c:2026 title/pc5_ui.c:3311 title/pc5_ui.c:4904
+#: title/pc5_ui.c:5594 title/pc5_ui.c:6298 title/pc5_ui.c:8429
 msgid "The game"
 msgstr "這款遊戲"
 
@@ -1346,7 +1346,7 @@ msgstr "這款遊戲"
 msgid "The Windows of %s wasn't reset"
 msgstr ""
 
-#: title/pc5_ui.c:2055 title/pc5_ui.c:2248 title/pc5_ui.c:6047
+#: title/pc5_ui.c:2055 title/pc5_ui.c:2248 title/pc5_ui.c:6060
 #, c-format
 msgid "%s Nothing was changed."
 msgstr "%s沒有任何變更。"
@@ -1361,7 +1361,7 @@ msgstr "它的Windows需要%s，但主機只剩%s可用。"
 msgid "The game needs %s and the console has %s free."
 msgstr "遊戲需要%s，但主機只剩%s可用。"
 
-#: title/pc5_ui.c:2123 title/pc5_ui.c:5552
+#: title/pc5_ui.c:2123 title/pc5_ui.c:5565
 msgid "Not enough space"
 msgstr "空間不足"
 
@@ -1389,7 +1389,7 @@ msgstr ""
 msgid "The new Windows made so far was deleted: the game is as it was."
 msgstr ""
 
-#: title/pc5_ui.c:2248 title/pc5_ui.c:6096
+#: title/pc5_ui.c:2248 title/pc5_ui.c:6109
 #, c-format
 msgid "%s PC5 finishes it the next time it starts."
 msgstr "%sPC5會在下次啟動時完成。"
@@ -1511,7 +1511,7 @@ msgid "They're in your library. The USB drive wasn't changed."
 msgstr "它們已在您的遊戲庫中。USB儲存裝置沒有被變更。"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2515 title/pc5_ui.c:8201
+#: title/pc5_ui.c:2515 title/pc5_ui.c:8214
 msgid "Install games from USB"
 msgstr "從USB儲存裝置安裝遊戲"
 
@@ -1520,7 +1520,7 @@ msgid "Copies one game, or several in a row, to the console"
 msgstr "將一款或連續多款遊戲複製到主機"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2519 title/pc5_ui.c:9219 title/pc5_ui.c:9226
+#: title/pc5_ui.c:2519 title/pc5_ui.c:9232 title/pc5_ui.c:9239
 msgid "Uninstall game"
 msgstr "解除安裝遊戲"
 
@@ -1529,7 +1529,7 @@ msgid "Deletes a game (its saves can be kept), or saves kept from before"
 msgstr "刪除遊戲（可保留其存檔），或刪除之前保留的存檔"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2523 title/pc5_ui.c:8477 title/pc5_ui.c:8484
+#: title/pc5_ui.c:2523 title/pc5_ui.c:8490 title/pc5_ui.c:8497
 msgid "Library appearance from phone"
 msgstr "從手機設定外觀"
 
@@ -1541,7 +1541,7 @@ msgstr "一個QR碼即可選擇任何已安裝的遊戲，並傳送其圖片、�
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:2525 title/pc5_ui.c:8714 title/pc5_ui.c:8716
+#: title/pc5_ui.c:2525 title/pc5_ui.c:8727 title/pc5_ui.c:8729
 msgid "Open"
 msgstr "開啟"
 
@@ -1601,7 +1601,7 @@ msgstr "關：遊戲最高顯示 60 fps"
 #: title/pc5_ui.c:2662 title/pc5_ui.c:2667 title/pc5_ui.c:2672
 #: title/pc5_ui.c:2677 title/pc5_ui.c:2682 title/pc5_ui.c:2733
 #: title/pc5_ui.c:2785 title/pc5_ui.c:3093 title/pc5_ui.c:3095
-#: title/pc5_ui.c:7394 title/pc5_ui.c:7483
+#: title/pc5_ui.c:7407 title/pc5_ui.c:7496
 msgid "On"
 msgstr "開"
 
@@ -1752,12 +1752,12 @@ msgid "Optional: none set, no password is asked for"
 msgstr "選填：未設定，不需要輸入密碼"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:2638 title/pc5_ui.c:7765
+#: title/pc5_ui.c:2638 title/pc5_ui.c:7778
 msgid "None"
 msgstr "無"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2641 title/pc5_ui.c:8698
+#: title/pc5_ui.c:2641 title/pc5_ui.c:8711
 msgid "File manager"
 msgstr "檔案管理員"
 
@@ -1847,7 +1847,7 @@ msgid "Where the overlay sits on the screen"
 msgstr "疊加層在畫面上的位置"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:2690 title/pc5_ui.c:8136
+#: title/pc5_ui.c:2690 title/pc5_ui.c:8149
 msgid "Size"
 msgstr "大小"
 
@@ -2003,7 +2003,7 @@ msgstr "系統預設"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:2768 title/pc5_ui.c:9049 title/pc5_ui.c:9345
+#: title/pc5_ui.c:2768 title/pc5_ui.c:9062 title/pc5_ui.c:9358
 msgid "Update now"
 msgstr "立即更新"
 
@@ -2048,52 +2048,52 @@ msgid "It refused the key in %s: check it there"
 msgstr "它拒絕了%s中的金鑰：請到那裡檢查"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:3090 title/pc5_ui.c:7302 title/pc5_ui.c:7875
+#: title/pc5_ui.c:3090 title/pc5_ui.c:7315 title/pc5_ui.c:7888
 msgid "Graphics mode"
 msgstr "圖形模式"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:3091 title/pc5_ui.c:7255 title/pc5_ui_enhancements_draw.h:110
+#: title/pc5_ui.c:3091 title/pc5_ui.c:7268 title/pc5_ui_enhancements_draw.h:110
 msgid "Controller"
 msgstr "控制器"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:3093 title/pc5_ui.c:7308
+#: title/pc5_ui.c:3093 title/pc5_ui.c:7321
 msgid "Frame generation"
 msgstr "影格生成"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:3093 title/pc5_ui.c:7313
+#: title/pc5_ui.c:3093 title/pc5_ui.c:7326
 msgid "40 → 120 fps"
 msgstr "40 → 120 fps"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:3094 title/pc5_ui.c:7354
+#: title/pc5_ui.c:3094 title/pc5_ui.c:7367
 msgid "Game memory"
 msgstr "遊戲記憶體"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:3094 title/pc5_ui.c:7357 title/pc5_ui.c:7378
+#: title/pc5_ui.c:3094 title/pc5_ui.c:7370 title/pc5_ui.c:7391
 msgid "4 GB"
 msgstr "4 GB"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:3095 title/pc5_ui.c:7392
+#: title/pc5_ui.c:3095 title/pc5_ui.c:7405
 msgid "Stutter fix"
 msgstr "卡頓修正"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:3096 title/pc5_ui.c:7494
+#: title/pc5_ui.c:3096 title/pc5_ui.c:7507
 msgid "Steam emulator"
 msgstr "Steam模擬器"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:3097 title/pc5_ui.c:7386
+#: title/pc5_ui.c:3097 title/pc5_ui.c:7399
 msgid "Sound output"
 msgstr "聲音輸出"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:3097 title/pc5_ui.c:7389
+#: title/pc5_ui.c:3097 title/pc5_ui.c:7402
 msgid "Stereo"
 msgstr "立體聲"
 
@@ -2180,7 +2180,7 @@ msgstr ""
 msgid "Its own crash report says: %.200s"
 msgstr ""
 
-#: title/pc5_ui.c:3339
+#: title/pc5_ui.c:3342
 #, c-format
 msgid ""
 "It needs %s, part of %s, which the console doesn't have. Copy it from %s "
@@ -2188,7 +2188,7 @@ msgid ""
 "program."
 msgstr ""
 
-#: title/pc5_ui.c:3343
+#: title/pc5_ui.c:3346
 #, c-format
 msgid ""
 "It needs %s, which isn't in its folder or the console's Windows. If the "
@@ -2196,7 +2196,7 @@ msgid ""
 "the game it is in %s."
 msgstr ""
 
-#: title/pc5_ui.c:3349
+#: title/pc5_ui.c:3352
 #, c-format
 msgid ""
 "%s beside the game is of the other kind: a 64-bit game needs the 64-bit "
@@ -2204,76 +2204,92 @@ msgid ""
 "(from C:\\Windows\\SysWOW64)."
 msgstr ""
 
+#. %s is the anti-cheat's name (Easy Anti-Cheat, BattlEye).
 #: title/pc5_ui.c:3358
+#, c-format
+msgid ""
+"It runs %s, an anti-cheat that needs Windows' own kernel, which the "
+"console doesn't have: no copy of this game can run on PC5."
+msgstr ""
+
+#. %s is the store's app (Ubisoft Connect, the EA app).
+#: title/pc5_ui.c:3363
+#, c-format
+msgid ""
+"It needs %s running beside it, which can't run on the console. A copy of "
+"the game from a store that doesn't need its app may run."
+msgstr ""
+
+#: title/pc5_ui.c:3371
 #, c-format
 msgid "%s stopped with an error"
 msgstr "%s因錯誤而停止"
 
-#: title/pc5_ui.c:3359
+#: title/pc5_ui.c:3372
 #, c-format
 msgid "Wine reported a crash. Its log is kept as %.120s in %.120s."
 msgstr "Wine回報了當機。記錄檔已儲存為%.120s，位於%.120s。"
 
-#: title/pc5_ui.c:3362
+#: title/pc5_ui.c:3375
 #, c-format
 msgid "%s closed before showing anything"
 msgstr "%s在顯示任何內容前就關閉了"
 
-#: title/pc5_ui.c:3363
+#: title/pc5_ui.c:3376
 #, c-format
 msgid ""
 "If PC5 started the wrong program, choose Change program in the game's menu "
 "(Triangle). Its log is kept as %.120s in %.120s."
 msgstr "如果PC5啟動了錯誤的程式，請在遊戲選單（△）中選擇「變更程式」。記錄檔已儲存為%.120s，位於%.120s。"
 
-#: title/pc5_ui.c:3367
+#: title/pc5_ui.c:3380
 #, c-format
 msgid "%s had to be closed"
 msgstr "%s被強制關閉"
 
-#: title/pc5_ui.c:3368
+#: title/pc5_ui.c:3381
 #, c-format
 msgid ""
 "It didn't close when asked, so PC5 ended it. Its log is kept as %.120s in "
 "%.120s."
 msgstr "它沒有回應關閉要求，因此PC5將它結束。記錄檔已儲存為%.120s，位於%.120s。"
 
-#: title/pc5_ui.c:3372
+#: title/pc5_ui.c:3385
 #, c-format
 msgid "%s closed soon after starting"
 msgstr ""
 
-#: title/pc5_ui.c:3373 title/pc5_ui.c:3378
+#: title/pc5_ui.c:3386 title/pc5_ui.c:3391
 #, c-format
 msgid "Its log is kept as %.120s in %.120s."
 msgstr "記錄檔已儲存為%.120s，位於%.120s。"
 
-#: title/pc5_ui.c:3376
+#: title/pc5_ui.c:3389
 #, c-format
 msgid "%s ended unexpectedly"
 msgstr "%s意外結束"
 
-#: title/pc5_ui.c:3377
+#: title/pc5_ui.c:3390
 msgid "PC5 ended unexpectedly last time"
 msgstr "PC5上次意外結束"
 
-#: title/pc5_ui.c:3405
+#: title/pc5_ui.c:3418
 #, c-format
 msgid "No log of %s yet"
 msgstr "還沒有%s的記錄檔"
 
-#: title/pc5_ui.c:3406
+#: title/pc5_ui.c:3419
 msgid ""
 "Play it once until the problem happens, then come back here: its log goes "
 "with the report."
 msgstr "請先玩一次直到問題出現，然後回到這裡：記錄檔會隨報告一起附上。"
 
-#: title/pc5_ui.c:3420
+#: title/pc5_ui.c:3433
 #, c-format
 msgid "Report a problem with %s"
 msgstr "回報%s的問題"
 
-#: title/pc5_ui.c:3421
+#: title/pc5_ui.c:3434
 #, c-format
 msgid ""
 "Its newest log, %.120s, is in %.120s/logs. Press Triangle for a QR code "
@@ -2282,1269 +2298,1269 @@ msgid ""
 msgstr ""
 "最新的記錄檔%.120s位於%.120s/logs。按△顯示QR碼，開啟已填好遊戲、PC5及遊戲設定的GitHub表單；請在那裡附上該zip檔。"
 
-#: title/pc5_ui.c:3717
+#: title/pc5_ui.c:3730
 msgid "Internal storage"
 msgstr "主機儲存空間"
 
-#: title/pc5_ui.c:3730
+#: title/pc5_ui.c:3743
 msgid "PC5's INSTALL folder"
 msgstr "PC5的INSTALL資料夾"
 
-#: title/pc5_ui.c:3736
+#: title/pc5_ui.c:3749
 msgid "PC5's app"
 msgstr "PC5的應用程式"
 
-#: title/pc5_ui.c:3741
+#: title/pc5_ui.c:3754
 msgid "Whole console"
 msgstr "整台主機"
 
-#: title/pc5_ui.c:3819 title/pc5_ui.c:3826 title/pc5_ui.c:6145
-#: title/pc5_ui.c:6149 title/pc5_ui_enhancements_input.h:19
+#: title/pc5_ui.c:3832 title/pc5_ui.c:3839 title/pc5_ui.c:6158
+#: title/pc5_ui.c:6162 title/pc5_ui_enhancements_input.h:19
 msgid "Music wasn't saved"
 msgstr "音樂未儲存"
 
-#: title/pc5_ui.c:3819
+#: title/pc5_ui.c:3832
 msgid "PC5 couldn't create the game's music folder. Check free space."
 msgstr "PC5無法建立遊戲的音樂資料夾。請檢查可用空間。"
 
-#: title/pc5_ui.c:3826
+#: title/pc5_ui.c:3839
 msgid "PC5 couldn't start importing the music. Try again."
 msgstr "PC5無法開始匯入音樂。請再試一次。"
 
-#: title/pc5_ui.c:3863 title/pc5_ui.c:3870 title/pc5_ui.c:6172
-#: title/pc5_ui.c:6176 title/pc5_ui_enhancements_input.h:19
+#: title/pc5_ui.c:3876 title/pc5_ui.c:3883 title/pc5_ui.c:6185
+#: title/pc5_ui.c:6189 title/pc5_ui_enhancements_input.h:19
 msgid "Video wasn't saved"
 msgstr "影片未儲存"
 
-#: title/pc5_ui.c:3863
+#: title/pc5_ui.c:3876
 msgid "PC5 couldn't create the game's video folder. Check free space."
 msgstr "PC5無法建立遊戲的影片資料夾。請檢查可用空間。"
 
-#: title/pc5_ui.c:3870
+#: title/pc5_ui.c:3883
 msgid "This build couldn't start the video importer."
 msgstr "此版本無法啟動影片匯入程式。"
 
-#: title/pc5_ui.c:3978
+#: title/pc5_ui.c:3991
 msgid "Plug in the game's USB drive"
 msgstr "請插入遊戲的USB儲存裝置"
 
-#: title/pc5_ui.c:3978
+#: title/pc5_ui.c:3991
 msgid "Its files are on the USB drive it plays from."
 msgstr "它的檔案位於執行時使用的USB儲存裝置上。"
 
-#: title/pc5_ui.c:3980
+#: title/pc5_ui.c:3993
 msgid "PC5 can't find the game's folder"
 msgstr "PC5找不到遊戲的資料夾"
 
-#: title/pc5_ui.c:3980 title/pc5_ui.c:5947
+#: title/pc5_ui.c:3993 title/pc5_ui.c:5960
 msgid "Its files may be missing: uninstall it and install it again."
 msgstr "它的檔案可能已遺失：請解除安裝後重新安裝。"
 
-#: title/pc5_ui.c:4025 title/pc5_ui.c:4046 title/pc5_ui.c:4130
+#: title/pc5_ui.c:4038 title/pc5_ui.c:4059 title/pc5_ui.c:4143
 msgid "Picture wasn't saved"
 msgstr "圖片未儲存"
 
-#: title/pc5_ui.c:4025 title/pc5_ui.c:4130
+#: title/pc5_ui.c:4038 title/pc5_ui.c:4143
 msgid ""
 "Choose a readable JPEG or PNG image, at most 20 MB. Your previous picture "
 "was kept."
 msgstr "請選擇可讀取的JPEG或PNG圖片，最大20 MB。先前的圖片已保留。"
 
-#: title/pc5_ui.c:4031 title/pc5_ui.c:4047
+#: title/pc5_ui.c:4044 title/pc5_ui.c:4060
 msgid "Loading screen saved"
 msgstr "載入畫面已儲存"
 
-#: title/pc5_ui.c:4031
+#: title/pc5_ui.c:4044
 msgid "It shows the next time the game starts."
 msgstr "下次啟動遊戲時顯示。"
 
-#: title/pc5_ui.c:4046
+#: title/pc5_ui.c:4059
 msgid "It has no background picture yet: choose one in Background first."
 msgstr "還沒有背景圖片：請先在背景中選擇。"
 
-#: title/pc5_ui.c:4047
+#: title/pc5_ui.c:4060
 msgid "Its background shows the next time the game starts."
 msgstr "下次啟動遊戲時顯示它的背景。"
 
-#: title/pc5_ui.c:4057
+#: title/pc5_ui.c:4070
 msgid "It shows PC5's own loading screen again."
 msgstr "重新顯示 PC5 自己的載入畫面。"
 
-#: title/pc5_ui.c:4087
+#: title/pc5_ui.c:4100
 msgid "Phone uploads need a game with its own PC5 folder."
 msgstr "從手機上傳需要遊戲有自己的PC5資料夾。"
 
-#: title/pc5_ui.c:4097 title/pc5_ui.c:4106
+#: title/pc5_ui.c:4110 title/pc5_ui.c:4119
 msgid "Phone connection unavailable"
 msgstr "無法連線到手機"
 
-#: title/pc5_ui.c:4106
+#: title/pc5_ui.c:4119
 msgid ""
 "Check the network, then try again. The phone and PS5 must share a network "
 "or phone hotspot."
 msgstr "請檢查網路後再試一次。手機和PS5必須連上同一個網路或手機熱點。"
 
-#: title/pc5_ui.c:4267 title/pc5_ui.c:8722
+#: title/pc5_ui.c:4280 title/pc5_ui.c:8735
 msgid "Choose an appearance backup"
 msgstr "選擇外觀備份"
 
-#: title/pc5_ui.c:4267
+#: title/pc5_ui.c:4280
 msgid "Choose a .pc5look backup made by PC5."
 msgstr "請選擇由PC5製作的.pc5look備份。"
 
-#: title/pc5_ui.c:4276
+#: title/pc5_ui.c:4289
 msgid "Choose a picture"
 msgstr "選擇圖片"
 
-#: title/pc5_ui.c:4276
+#: title/pc5_ui.c:4289
 msgid "Choose a JPEG or PNG picture."
 msgstr "請選擇 JPEG 或 PNG 圖片。"
 
-#: title/pc5_ui.c:4285 title/pc5_ui.c:8724
+#: title/pc5_ui.c:4298 title/pc5_ui.c:8737
 msgid "Choose a music file"
 msgstr "選擇音樂檔案"
 
-#: title/pc5_ui.c:4285 title/pc5_ui.c:8725
+#: title/pc5_ui.c:4298 title/pc5_ui.c:8738
 msgid "Choose an MP3 or a 16-bit PCM WAV file."
 msgstr "請選擇MP3或16位元PCM WAV檔案。"
 
-#: title/pc5_ui.c:4295 title/pc5_ui.c:8734
+#: title/pc5_ui.c:4308 title/pc5_ui.c:8747
 msgid "PC5 can't open this folder"
 msgstr "PC5無法開啟這個資料夾"
 
-#: title/pc5_ui.c:4295
+#: title/pc5_ui.c:4308
 msgid "Its path is too long."
 msgstr "它的路徑太長。"
 
-#: title/pc5_ui.c:4351
+#: title/pc5_ui.c:4364
 msgid "Nothing was deleted"
 msgstr "沒有刪除任何內容"
 
-#: title/pc5_ui.c:4351
+#: title/pc5_ui.c:4364
 msgid "Nothing was moved"
 msgstr "沒有移動任何內容"
 
-#: title/pc5_ui.c:4351
+#: title/pc5_ui.c:4364
 msgid "Nothing was copied"
 msgstr "沒有複製任何內容"
 
-#: title/pc5_ui.c:4397
+#: title/pc5_ui.c:4410
 msgid "Nothing was pasted"
 msgstr "沒有貼上任何內容"
 
-#: title/pc5_ui.c:4397
+#: title/pc5_ui.c:4410
 msgid "Those items are here already, and were left as they were."
 msgstr "這些項目已經在這裡，維持原樣。"
 
-#: title/pc5_ui.c:4400
+#: title/pc5_ui.c:4413
 msgid "Stopped"
 msgstr "已停止"
 
-#: title/pc5_ui.c:4401
+#: title/pc5_ui.c:4414
 msgid "What was deleted so far is gone; the rest is still here."
 msgstr "目前已刪除的內容已經不見；其餘仍在這裡。"
 
-#: title/pc5_ui.c:4402
+#: title/pc5_ui.c:4415
 msgid ""
 "What was moved so far is here. Nothing was deleted from where it came from."
 msgstr "目前已移動的內容在這裡。原位置沒有刪除任何內容。"
 
-#: title/pc5_ui.c:4403
+#: title/pc5_ui.c:4416
 msgid ""
 "What was copied so far is here; the file being copied when it stopped was "
 "deleted."
 msgstr "目前已複製的內容在這裡；停止時正在複製的檔案已刪除。"
 
-#: title/pc5_ui.c:4406
+#: title/pc5_ui.c:4419
 msgid "Not everything was deleted"
 msgstr "未能全部刪除"
 
-#: title/pc5_ui.c:4406
+#: title/pc5_ui.c:4419
 msgid "Not everything was moved"
 msgstr "未能全部移動"
 
-#: title/pc5_ui.c:4406
+#: title/pc5_ui.c:4419
 msgid "Not everything was copied"
 msgstr "未能全部複製"
 
-#: title/pc5_ui.c:4418 title/pc5_ui.c:4422
+#: title/pc5_ui.c:4431 title/pc5_ui.c:4435
 msgid "That name can't be used"
 msgstr "無法使用這個名稱"
 
-#: title/pc5_ui.c:4422
+#: title/pc5_ui.c:4435
 msgid "The path would be too long."
 msgstr "路徑會太長。"
 
-#: title/pc5_ui.c:4431 title/pc5_ui.c:4444
+#: title/pc5_ui.c:4444 title/pc5_ui.c:4457
 #, c-format
 msgid "This folder has %.200s already."
 msgstr "這個資料夾中已有%.200s。"
 
-#: title/pc5_ui.c:4432 title/pc5_ui.c:4445
+#: title/pc5_ui.c:4445 title/pc5_ui.c:4458
 msgid "That name is taken"
 msgstr "這個名稱已被使用"
 
-#: title/pc5_ui.c:4436 title/pc5_ui.c:4449
+#: title/pc5_ui.c:4449 title/pc5_ui.c:4462
 #, c-format
 msgid "%s."
 msgstr "%s。"
 
-#: title/pc5_ui.c:4438
+#: title/pc5_ui.c:4451
 msgid "PC5 can't rename it"
 msgstr "PC5無法重新命名"
 
-#: title/pc5_ui.c:4451
+#: title/pc5_ui.c:4464
 msgid "PC5 can't make the folder"
 msgstr "PC5無法建立資料夾"
 
 #. The title of the console's on-screen keyboard.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:4485 title/pc5_ui.c:8757
+#: title/pc5_ui.c:4498 title/pc5_ui.c:8770
 msgid "Rename"
 msgstr "重新命名"
 
 #. The title of the console's on-screen keyboard.
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:4485 title/pc5_ui.c:4487 title/pc5_ui.c:8758
+#: title/pc5_ui.c:4498 title/pc5_ui.c:4500 title/pc5_ui.c:8771
 msgid "New folder"
 msgstr "新增資料夾"
 
-#: title/pc5_ui.c:4490 title/pc5_ui.c:4591 title/pc5_ui.c:5223
-#: title/pc5_ui.c:5818 title/pc5_ui_enhancements_input.h:56
+#: title/pc5_ui.c:4503 title/pc5_ui.c:4604 title/pc5_ui.c:5236
+#: title/pc5_ui.c:5831 title/pc5_ui_enhancements_input.h:56
 msgid "The keyboard didn't open"
 msgstr "鍵盤沒有開啟"
 
-#: title/pc5_ui.c:4490 title/pc5_ui.c:4591 title/pc5_ui.c:5223
-#: title/pc5_ui.c:5818 title/pc5_ui_enhancements_input.h:56
+#: title/pc5_ui.c:4503 title/pc5_ui.c:4604 title/pc5_ui.c:5236
+#: title/pc5_ui.c:5831 title/pc5_ui_enhancements_input.h:56
 msgid "The console's on-screen keyboard can't be used just now."
 msgstr "主機的螢幕鍵盤暫時無法使用。"
 
-#: title/pc5_ui.c:4530
+#: title/pc5_ui.c:4543
 msgid "PC5 can't open it as text"
 msgstr "PC5 無法將其作為文字開啟"
 
-#: title/pc5_ui.c:4560
+#: title/pc5_ui.c:4573
 msgid "PC5 couldn't save it"
 msgstr "PC5 無法儲存"
 
-#: title/pc5_ui.c:4577
+#: title/pc5_ui.c:4590
 msgid "This line is too long to change here"
 msgstr "此行太長，無法在這裡變更"
 
-#: title/pc5_ui.c:4578
+#: title/pc5_ui.c:4591
 msgid ""
 "The console's keyboard holds about 1000 characters. Change it from PC5's "
 "web page, or a computer over FTP."
 msgstr "主機鍵盤大約只能容納 1000 個字元。請在 PC5 的網頁上，或用電腦透過 FTP 變更。"
 
-#: title/pc5_ui.c:4583 title/pc5_ui.c:8864
+#: title/pc5_ui.c:4596 title/pc5_ui.c:8877
 #, c-format
 msgid "Line %d"
 msgstr "第 %d 行"
 
-#: title/pc5_ui.c:4585
+#: title/pc5_ui.c:4598
 msgid "New line"
 msgstr "新行"
 
-#: title/pc5_ui.c:4699
+#: title/pc5_ui.c:4712
 msgid "Choose a writable folder"
 msgstr "選擇可寫入的資料夾"
 
-#: title/pc5_ui.c:4699
+#: title/pc5_ui.c:4712
 msgid ""
 "Open a folder on internal storage or a USB drive, then choose Save here."
 msgstr "請開啟主機儲存空間或USB儲存裝置上的資料夾，然後選擇「儲存在這裡」。"
 
-#: title/pc5_ui.c:4709
+#: title/pc5_ui.c:4722
 msgid "Backup wasn't saved"
 msgstr "備份未儲存"
 
-#: title/pc5_ui.c:4709
+#: title/pc5_ui.c:4722
 msgid ""
 "Choose another folder. The backup name is unavailable or its path is too "
 "long."
 msgstr "請選擇其他資料夾。備份名稱無法使用，或路徑太長。"
 
-#: title/pc5_ui.c:4891
+#: title/pc5_ui.c:4904
 #, c-format
 msgid "%s didn't start"
 msgstr "%s沒有啟動"
 
-#: title/pc5_ui.c:4893
+#: title/pc5_ui.c:4906
 msgid "The console refused to start it. Try again, or restart PC5."
 msgstr "主機拒絕啟動它。請再試一次，或重新啟動PC5。"
 
-#: title/pc5_ui.c:5008
+#: title/pc5_ui.c:5021
 msgid "This tile's game can't start"
 msgstr "這個圖示的遊戲無法啟動"
 
-#: title/pc5_ui.c:5054
+#: title/pc5_ui.c:5067
 msgid "PC5 couldn't restart"
 msgstr "PC5無法重新啟動"
 
-#: title/pc5_ui.c:5055
+#: title/pc5_ui.c:5068
 msgid ""
 "The new version is installed. Close PC5 from the PS button and open it "
 "again."
 msgstr "新版本已安裝。請從PS按鈕關閉PC5，再重新開啟。"
 
-#: title/pc5_ui.c:5065
+#: title/pc5_ui.c:5078
 msgid "The update was stopped"
 msgstr "更新已停止"
 
-#: title/pc5_ui.c:5065
+#: title/pc5_ui.c:5078
 msgid "PC5 is as it was, and what was downloaded is deleted."
 msgstr "PC5維持原樣，已下載的內容已刪除。"
 
-#: title/pc5_ui.c:5068
+#: title/pc5_ui.c:5081
 msgid "PC5's update isn't finished"
 msgstr "PC5的更新尚未完成"
 
-#: title/pc5_ui.c:5068
+#: title/pc5_ui.c:5081
 msgid "PC5 wasn't updated"
 msgstr "PC5未更新"
 
-#: title/pc5_ui.c:5154 title/pc5_ui.c:6268 title/pc5_ui.c:6285
-#: title/pc5_ui.c:6364
+#: title/pc5_ui.c:5167 title/pc5_ui.c:6281 title/pc5_ui.c:6298
+#: title/pc5_ui.c:6377
 #, c-format
 msgid "%s can't start"
 msgstr "%s無法啟動"
 
-#: title/pc5_ui.c:5155
+#: title/pc5_ui.c:5168
 #, c-format
 msgid ""
 "%s You can uninstall it from its menu (Triangle) and install it again."
 msgstr "%s您可以從它的選單（△）中解除安裝，再重新安裝。"
 
-#: title/pc5_ui.c:5156 title/pc5_ui.c:5726
+#: title/pc5_ui.c:5169 title/pc5_ui.c:5739
 msgid "Something it needs is missing."
 msgstr "缺少它需要的某些內容。"
 
 #. The title of the console's on-screen keyboard.
-#: title/pc5_ui.c:5218
+#: title/pc5_ui.c:5231
 msgid "Username (empty: any)"
 msgstr "使用者名稱（留空：任意）"
 
 #. The title of the console's on-screen keyboard.
-#: title/pc5_ui.c:5218
+#: title/pc5_ui.c:5231
 msgid "Password (empty: none)"
 msgstr "密碼（留空：無）"
 
-#: title/pc5_ui.c:5327
+#: title/pc5_ui.c:5340
 msgid "Appearance wasn't changed"
 msgstr "外觀未變更"
 
-#: title/pc5_ui.c:5327
+#: title/pc5_ui.c:5340
 msgid "Appearance backup complete"
 msgstr "外觀備份完成"
 
-#: title/pc5_ui.c:5328
+#: title/pc5_ui.c:5341
 msgid "The saved appearance was restored. Game files and saves were kept."
 msgstr "已還原儲存的外觀。遊戲檔案和存檔皆已保留。"
 
-#: title/pc5_ui.c:5392 title/pc5_ui.c:5523
+#: title/pc5_ui.c:5405 title/pc5_ui.c:5536
 msgid "Out of memory"
 msgstr "記憶體不足"
 
-#: title/pc5_ui.c:5392 title/pc5_ui.c:5523
+#: title/pc5_ui.c:5405 title/pc5_ui.c:5536
 msgid "PC5 couldn't make room to read the folders."
 msgstr "PC5無法騰出記憶體來讀取資料夾。"
 
-#: title/pc5_ui.c:5404
+#: title/pc5_ui.c:5417
 msgid "PC5 can't read that folder"
 msgstr "PC5無法讀取該資料夾"
 
-#: title/pc5_ui.c:5404
+#: title/pc5_ui.c:5417
 msgid "Check that the USB drive is still plugged in."
 msgstr "請檢查USB儲存裝置是否仍插著。"
 
-#: title/pc5_ui.c:5455
+#: title/pc5_ui.c:5468
 msgid "Nothing to install"
 msgstr "沒有可安裝的內容"
 
-#: title/pc5_ui.c:5455
+#: title/pc5_ui.c:5468
 msgid "None of these folders has a game PC5 can install."
 msgstr "這些資料夾中都沒有PC5可以安裝的遊戲。"
 
-#: title/pc5_ui.c:5460
+#: title/pc5_ui.c:5473
 #, c-format
 msgid ""
 "Together they need %s and the console has %s free. Go back and untick some."
 msgstr "它們總共需要%s，但主機只剩%s可用。請返回並取消勾選一些。"
 
-#: title/pc5_ui.c:5462
+#: title/pc5_ui.c:5475
 msgid "Not enough space for all of them"
 msgstr "空間不足，無法全部安裝"
 
-#: title/pc5_ui.c:5496
+#: title/pc5_ui.c:5509
 msgid "This folder can't be installed"
 msgstr "無法安裝這個資料夾"
 
-#: title/pc5_ui.c:5551
+#: title/pc5_ui.c:5564
 #, c-format
 msgid "The update needs %s and the console has %s free."
 msgstr "更新需要%s，但主機只剩%s可用。"
 
-#: title/pc5_ui.c:5584
+#: title/pc5_ui.c:5597
 #, c-format
 msgid "%s's program wasn't changed"
 msgstr "%s的程式未變更"
 
-#: title/pc5_ui.c:5588
+#: title/pc5_ui.c:5601
 #, c-format
 msgid "%s starts %s now"
 msgstr "%s現在會啟動%s"
 
-#: title/pc5_ui.c:5589
+#: title/pc5_ui.c:5602
 #, c-format
 msgid "It runs as %d-bit %s."
 msgstr "它以%d位元%s執行。"
 
-#: title/pc5_ui.c:5608 title/pc5_ui.c:5726
+#: title/pc5_ui.c:5621 title/pc5_ui.c:5739
 msgid "This game can't start"
 msgstr "這款遊戲無法啟動"
 
-#: title/pc5_ui.c:5750
+#: title/pc5_ui.c:5763
 msgid "Media settings need a game with its own PC5 folder."
 msgstr "媒體設定需要遊戲有自己的PC5資料夾。"
 
-#: title/pc5_ui.c:5760
+#: title/pc5_ui.c:5773
 msgid "PC5 didn't install it, so its program can't be changed here."
 msgstr "這款遊戲不是PC5安裝的，因此無法在這裡變更它的程式。"
 
-#: title/pc5_ui.c:5812
+#: title/pc5_ui.c:5825
 msgid "Search for covers by name"
 msgstr "依名稱搜尋封面"
 
-#: title/pc5_ui.c:5813
+#: title/pc5_ui.c:5826
 msgid "Search for tile pictures by name"
 msgstr "依名稱搜尋圖示圖片"
 
-#: title/pc5_ui.c:5814
+#: title/pc5_ui.c:5827
 msgid "Search for backgrounds by name"
 msgstr "依名稱搜尋背景"
 
-#: title/pc5_ui.c:5872
+#: title/pc5_ui.c:5885
 msgid "Your mapping wasn't saved"
 msgstr "您的按鈕配置未儲存"
 
-#: title/pc5_ui.c:5872
+#: title/pc5_ui.c:5885
 msgid "PC5 couldn't write it to the console's storage."
 msgstr "PC5無法將它寫入主機儲存空間。"
 
-#: title/pc5_ui.c:5875
+#: title/pc5_ui.c:5888
 msgid "Saved as your mapping"
 msgstr "已儲存為您的按鈕配置"
 
-#: title/pc5_ui.c:5876
+#: title/pc5_ui.c:5889
 msgid ""
 "Games set up from now on start with it, and Use my mapping puts it on any "
 "game."
 msgstr "從現在起設定的遊戲都會使用它，「使用我的按鈕配置」可將它套用到任何遊戲。"
 
-#: title/pc5_ui.c:5947
+#: title/pc5_ui.c:5960
 msgid "PC5 can't read the game's folder"
 msgstr "PC5無法讀取遊戲的資料夾"
 
-#: title/pc5_ui.c:5952
+#: title/pc5_ui.c:5965
 msgid "This game has one program"
 msgstr "這款遊戲只有一個程式"
 
-#: title/pc5_ui.c:5952
+#: title/pc5_ui.c:5965
 msgid "There is no other program in its folder to start."
 msgstr "它的資料夾中沒有其他可啟動的程式。"
 
-#: title/pc5_ui.c:6046
+#: title/pc5_ui.c:6059
 #, c-format
 msgid "%s wasn't uninstalled"
 msgstr "%s未解除安裝"
 
 #. added after the sentence before it, hence the space at its start.
 #. Keep the space at the start or end: the text is joined to another.
-#: title/pc5_ui.c:6087
+#: title/pc5_ui.c:6100
 msgid ""
 " Its home screen tile's folder was deleted: if the tile is still on the "
 "home screen, delete it there."
 msgstr " 它的主畫面圖示資料夾已刪除：如果主畫面上仍有這個圖示，請在那裡刪除。"
 
-#: title/pc5_ui.c:6090
+#: title/pc5_ui.c:6103
 #, c-format
 msgid "The saves of %s weren't fully deleted"
 msgstr "%s的存檔未完全刪除"
 
-#: title/pc5_ui.c:6090
+#: title/pc5_ui.c:6103
 #, c-format
 msgid "The saves of %s are deleted"
 msgstr "%s的存檔已刪除"
 
-#: title/pc5_ui.c:6092
+#: title/pc5_ui.c:6105
 #, c-format
 msgid "%s PC5 finishes deleting them the next time it starts."
 msgstr "%sPC5會在下次啟動時完成刪除。"
 
-#: title/pc5_ui.c:6093
+#: title/pc5_ui.c:6106
 msgid "Its saves and settings, kept when it was uninstalled, are gone."
 msgstr "解除安裝時保留的存檔和設定已刪除。"
 
-#: title/pc5_ui.c:6095
+#: title/pc5_ui.c:6108
 #, c-format
 msgid "%s wasn't fully uninstalled"
 msgstr "%s未完全解除安裝"
 
-#: title/pc5_ui.c:6095
+#: title/pc5_ui.c:6108
 #, c-format
 msgid "%s is uninstalled"
 msgstr "%s已解除安裝"
 
-#: title/pc5_ui.c:6098
+#: title/pc5_ui.c:6111
 #, c-format
 msgid ""
 "Its saves and settings are kept: installing it again puts them back. "
 "Settings › Game maintenance › Uninstall game deletes them.%s"
 msgstr "它的存檔和設定已保留：重新安裝即可恢復。可在「設定 › 遊戲維護 › 解除安裝遊戲」中刪除。%s"
 
-#: title/pc5_ui.c:6100
+#: title/pc5_ui.c:6113
 #, c-format
 msgid "The game, its saves and its settings were deleted.%s"
 msgstr "遊戲及其存檔和設定已刪除。%s"
 
-#: title/pc5_ui.c:6141
+#: title/pc5_ui.c:6154
 msgid ""
 "Choose a readable MP3 or 16-bit PCM WAV file. Protected or damaged files "
 "may not work."
 msgstr "請選擇可讀取的MP3或16位元PCM WAV檔案。受保護或損毀的檔案可能無法使用。"
 
-#: title/pc5_ui.c:6143
+#: title/pc5_ui.c:6156
 msgid "The prepared music exceeds the 2 GB limit. Choose a shorter track."
 msgstr "處理後的音樂超過2 GB上限。請選擇較短的曲目。"
 
-#: title/pc5_ui.c:6144
+#: title/pc5_ui.c:6157
 msgid ""
 "Check free space and keep the source drive connected until importing "
 "finishes. Your previous music was kept."
 msgstr "請檢查可用空間，並在匯入完成前保持來源儲存裝置連接。先前的音樂已保留。"
 
-#: title/pc5_ui.c:6149 title/pc5_ui_enhancements_input.h:21
+#: title/pc5_ui.c:6162 title/pc5_ui_enhancements_input.h:21
 msgid "PC5 couldn't save the music selection. Try again."
 msgstr "PC5無法儲存音樂選擇。請再試一次。"
 
-#: title/pc5_ui.c:6169
+#: title/pc5_ui.c:6182
 msgid ""
 "Choose an H.264 video up to 1920x1080, 60 fps and 1 GB. MP4 is "
 "recommended. Audio is ignored."
 msgstr "請選擇最高1920x1080、60 fps、1 GB的H.264影片。建議使用MP4。音訊會被忽略。"
 
-#: title/pc5_ui.c:6170
+#: title/pc5_ui.c:6183
 msgid ""
 "Check free space and keep the source drive connected until importing "
 "finishes. Your previous video was kept."
 msgstr "請檢查可用空間，並在匯入完成前保持來源儲存裝置連接。先前的影片已保留。"
 
-#: title/pc5_ui.c:6176
+#: title/pc5_ui.c:6189
 msgid "PC5 couldn't save the video selection. Try again."
 msgstr "PC5無法儲存影片選擇。請再試一次。"
 
-#: title/pc5_ui.c:6341
+#: title/pc5_ui.c:6354
 #, c-format
 msgid "%s needs Steam"
 msgstr "%s需要Steam"
 
-#: title/pc5_ui.c:6974 title/pc5_ui.c:6984
+#: title/pc5_ui.c:6987 title/pc5_ui.c:6997
 msgid "Play Game"
 msgstr "開始遊戲"
 
 #. a chip under the game's name: 64-bit or 32-bit. Keep it short.
-#: title/pc5_ui.c:6995
+#: title/pc5_ui.c:7008
 #, c-format
 msgid "%d-bit"
 msgstr "%d位元"
 
-#: title/pc5_ui.c:6999
+#: title/pc5_ui.c:7012
 msgid "Frame gen"
 msgstr "影格生成"
 
-#: title/pc5_ui.c:7000
+#: title/pc5_ui.c:7013
 #, c-format
 msgid "Controller: %s"
 msgstr "控制器：%s"
 
-#: title/pc5_ui.c:7089
+#: title/pc5_ui.c:7102
 msgid "No games yet."
 msgstr "還沒有遊戲。"
 
-#: title/pc5_ui.c:7089
+#: title/pc5_ui.c:7102
 msgid "Nothing played yet: games show here once you play them."
 msgstr "還沒有玩過任何遊戲：玩過的遊戲會顯示在這裡。"
 
-#: title/pc5_ui.c:7090
+#: title/pc5_ui.c:7103
 msgid "No favourites yet: press Square on a game to add it."
 msgstr "還沒有我的最愛：在遊戲上按□即可加入。"
 
-#: title/pc5_ui.c:7091
+#: title/pc5_ui.c:7104
 msgid "No game is played from a USB drive."
 msgstr "沒有從USB儲存裝置執行的遊戲。"
 
-#: title/pc5_ui.c:7091
+#: title/pc5_ui.c:7104
 msgid "Every game can start."
 msgstr "所有遊戲都能啟動。"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7115 title/pc5_ui.c:7160 title/pc5_ui.c:7236
-#: title/pc5_ui.c:7675 title/pc5_ui.c:7706 title/pc5_ui.c:7807
-#: title/pc5_ui.c:7836 title/pc5_ui.c:7893 title/pc5_ui.c:7940
-#: title/pc5_ui.c:8174 title/pc5_ui.c:8183 title/pc5_ui.c:8200
-#: title/pc5_ui.c:8430 title/pc5_ui.c:8446 title/pc5_ui.c:8655
-#: title/pc5_ui.c:8714 title/pc5_ui.c:8716 title/pc5_ui.c:8717
-#: title/pc5_ui.c:8733 title/pc5_ui.c:8798 title/pc5_ui.c:8830
-#: title/pc5_ui.c:8832 title/pc5_ui.c:8875 title/pc5_ui.c:9081
-#: title/pc5_ui.c:9180 title/pc5_ui.c:9191 title/pc5_ui.c:9218
-#: title/pc5_ui.c:9224 title/pc5_ui_enhancements_draw.h:120
+#: title/pc5_ui.c:7128 title/pc5_ui.c:7173 title/pc5_ui.c:7249
+#: title/pc5_ui.c:7688 title/pc5_ui.c:7719 title/pc5_ui.c:7820
+#: title/pc5_ui.c:7849 title/pc5_ui.c:7906 title/pc5_ui.c:7953
+#: title/pc5_ui.c:8187 title/pc5_ui.c:8196 title/pc5_ui.c:8213
+#: title/pc5_ui.c:8443 title/pc5_ui.c:8459 title/pc5_ui.c:8668
+#: title/pc5_ui.c:8727 title/pc5_ui.c:8729 title/pc5_ui.c:8730
+#: title/pc5_ui.c:8746 title/pc5_ui.c:8811 title/pc5_ui.c:8843
+#: title/pc5_ui.c:8845 title/pc5_ui.c:8888 title/pc5_ui.c:9094
+#: title/pc5_ui.c:9193 title/pc5_ui.c:9204 title/pc5_ui.c:9231
+#: title/pc5_ui.c:9237 title/pc5_ui_enhancements_draw.h:120
 #: title/pc5_ui_enhancements_draw.h:132 title/pc5_ui_enhancements_draw.h:158
 msgid "Back"
 msgstr "返回"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7115 title/pc5_ui.c:7139 title/pc5_ui.c:7145
-#: title/pc5_ui.c:7250 title/pc5_ui.c:9191
+#: title/pc5_ui.c:7128 title/pc5_ui.c:7152 title/pc5_ui.c:7158
+#: title/pc5_ui.c:7263 title/pc5_ui.c:9204
 msgid "Play"
 msgstr "開始遊戲"
 
-#: title/pc5_ui.c:7125
+#: title/pc5_ui.c:7138
 msgid "No games yet"
 msgstr "還沒有遊戲"
 
-#: title/pc5_ui.c:7127
+#: title/pc5_ui.c:7140
 msgid ""
 "Put a game's folder in PC5/INSTALL on a USB drive, then open Install › "
 "Install games from USB."
 msgstr "請將遊戲的資料夾放入USB儲存裝置上的PC5/INSTALL，再開啟「安裝 › 從USB儲存裝置安裝遊戲」。"
 
-#: title/pc5_ui.c:7130
+#: title/pc5_ui.c:7143
 msgid ""
 "Or send it from a phone or PC: Settings › Network › Web page or FTP server."
 msgstr "或從手機或電腦傳送：「設定 › 網路 › 網頁」或「FTP伺服器」。"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7131
+#: title/pc5_ui.c:7144
 msgid "Tabs"
 msgstr "分頁"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7139 title/pc5_ui_enhancements_draw.h:56
+#: title/pc5_ui.c:7152 title/pc5_ui_enhancements_draw.h:56
 #: title/pc5_ui_enhancements_draw.h:101
 msgid "Filter"
 msgstr "篩選"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7139 title/pc5_ui.c:7145
+#: title/pc5_ui.c:7152 title/pc5_ui.c:7158
 msgid "Game options"
 msgstr "遊戲選項"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7139 title/pc5_ui.c:7145
+#: title/pc5_ui.c:7152 title/pc5_ui.c:7158
 msgid "Favourite"
 msgstr "我的最愛"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7236 title/pc5_ui.c:7706 title/pc5_ui.c:7806
-#: title/pc5_ui.c:8831
+#: title/pc5_ui.c:7249 title/pc5_ui.c:7719 title/pc5_ui.c:7819
+#: title/pc5_ui.c:8844
 msgid "Change"
 msgstr "變更"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7236 title/pc5_ui.c:7706 title/pc5_ui.c:7836
-#: title/pc5_ui.c:7893 title/pc5_ui.c:8183 title/pc5_ui.c:8717
-#: title/pc5_ui.c:8798 title/pc5_ui.c:8875 title/pc5_ui.c:9180
+#: title/pc5_ui.c:7249 title/pc5_ui.c:7719 title/pc5_ui.c:7849
+#: title/pc5_ui.c:7906 title/pc5_ui.c:8196 title/pc5_ui.c:8730
+#: title/pc5_ui.c:8811 title/pc5_ui.c:8888 title/pc5_ui.c:9193
 msgid "Choose"
 msgstr "選擇"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7236
+#: title/pc5_ui.c:7249
 msgid "QR code"
 msgstr "QR碼"
 
-#: title/pc5_ui.c:7251
+#: title/pc5_ui.c:7264
 msgid "To leave it, hold the touchpad and OPTIONS for 2 s"
 msgstr "要離開，請按住觸控板和OPTIONS 2秒"
 
-#: title/pc5_ui.c:7256
+#: title/pc5_ui.c:7269
 msgid "The game sees a DualSense, as one plugged into a PC"
 msgstr "遊戲會識別為DualSense，就像連接到電腦一樣"
 
-#: title/pc5_ui.c:7256
+#: title/pc5_ui.c:7269
 msgid "The buttons press keys, the sticks move the mouse"
 msgstr "按鈕對應按鍵，搖桿移動滑鼠"
 
-#: title/pc5_ui.c:7256
+#: title/pc5_ui.c:7269
 msgid "Games with controller support see an Xbox controller"
 msgstr "支援控制器的遊戲會識別為Xbox控制器"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7260 title/pc5_ui.c:7727
+#: title/pc5_ui.c:7273 title/pc5_ui.c:7740
 msgid "Button mapping"
 msgstr "按鈕配置"
 
-#: title/pc5_ui.c:7261
+#: title/pc5_ui.c:7274
 msgid "The key or mouse button each one sends"
 msgstr "每個按鈕送出的按鍵或滑鼠按鍵"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7265
+#: title/pc5_ui.c:7278
 msgid "Create button"
 msgstr ""
 
-#: title/pc5_ui.c:7266
+#: title/pc5_ui.c:7279
 msgid "Kept from the game: safe for the PS5's screenshots"
 msgstr ""
 
-#: title/pc5_ui.c:7267
+#: title/pc5_ui.c:7280
 msgid "The game sees it, as a DualSense's Create"
 msgstr ""
 
-#: title/pc5_ui.c:7268
+#: title/pc5_ui.c:7281
 msgid "The game sees it as Back (Select)"
 msgstr ""
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7269
+#: title/pc5_ui.c:7282
 msgid "Not sent"
 msgstr ""
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7269
+#: title/pc5_ui.c:7282
 msgid "Sent"
 msgstr ""
 
-#: title/pc5_ui.c:7273
+#: title/pc5_ui.c:7286
 msgid "Hides when not moved or clicked for 5 s"
 msgstr "5 秒未移動或點按時隱藏"
 
-#: title/pc5_ui.c:7273
+#: title/pc5_ui.c:7286
 msgid "Stays as the game shows it"
 msgstr "保持遊戲顯示的樣子"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7274
+#: title/pc5_ui.c:7287
 msgid "Auto-hide"
 msgstr "自動隱藏"
 
-#: title/pc5_ui.c:7278
+#: title/pc5_ui.c:7291
 msgid "Frames, resolution, aspect ratio, memory and CPU"
 msgstr "影格生成、解析度、長寬比、記憶體和CPU"
 
-#: title/pc5_ui.c:7278
+#: title/pc5_ui.c:7291
 msgid "Frame generation, resolution, aspect ratio and CPU"
 msgstr "影格生成、解析度、長寬比和CPU"
 
-#: title/pc5_ui.c:7278
+#: title/pc5_ui.c:7291
 msgid "Frame generation, aspect ratio, memory and CPU"
 msgstr "影格生成、長寬比、記憶體和CPU"
 
-#: title/pc5_ui.c:7278
+#: title/pc5_ui.c:7291
 msgid "Frame generation, aspect ratio and CPU"
 msgstr "影格生成、長寬比和CPU"
 
-#: title/pc5_ui.c:7283
+#: title/pc5_ui.c:7296
 msgid "Its cover, its background and a home screen tile"
 msgstr "它的封面、背景和主畫面圖示"
 
-#: title/pc5_ui.c:7288
+#: title/pc5_ui.c:7301
 msgid "Its program, updating it and uninstalling it"
 msgstr "它的程式、更新和解除安裝"
 
-#: title/pc5_ui.c:7288
+#: title/pc5_ui.c:7301
 msgid "Its program and uninstalling it"
 msgstr "它的程式和解除安裝"
 
-#: title/pc5_ui.c:7295
+#: title/pc5_ui.c:7308
 msgid ""
 "The usual way for older games like this; change it only if the picture is "
 "wrong"
 msgstr "這類較舊遊戲的常用方式；只在畫面異常時變更"
 
-#: title/pc5_ui.c:7296
+#: title/pc5_ui.c:7309
 msgid ""
 "Best for most games; change it only if the picture is wrong or it won't "
 "start"
 msgstr "適合大多數遊戲；只在畫面異常或無法啟動時變更"
 
-#: title/pc5_ui.c:7297
+#: title/pc5_ui.c:7310
 msgid "Without OpenGL; set it back to Auto if it doesn't help"
 msgstr ""
 
-#: title/pc5_ui.c:7298
+#: title/pc5_ui.c:7311
 msgid "A slower way to draw it; set it back to Auto if it doesn't help"
 msgstr "較慢的繪製方式；如果沒有改善，請改回「自動」"
 
-#: title/pc5_ui.c:7299
+#: title/pc5_ui.c:7312
 msgid "Drawn in 2D only; set it back to Auto if it doesn't help"
 msgstr "僅以2D繪製；如果沒有改善，請改回「自動」"
 
-#: title/pc5_ui.c:7300
+#: title/pc5_ui.c:7313
 msgid "Another way to draw it; set it back to Auto if it doesn't help"
 msgstr "另一種繪製方式；如果沒有改善，請改回「自動」"
 
-#: title/pc5_ui.c:7301
+#: title/pc5_ui.c:7314
 msgid ""
 "The slowest way, but it starts the most games; Auto if it doesn't help"
 msgstr "最慢的方式，但能啟動最多遊戲；如果沒有改善，請選「自動」"
 
-#: title/pc5_ui.c:7312
+#: title/pc5_ui.c:7325
 msgid ""
 "Held at 40 fps, two frames made between each two: for a game that can't "
 "hold 60"
 msgstr "保持在 40 fps，每兩幀之間產生兩幀：適合無法維持 60 的遊戲"
 
-#: title/pc5_ui.c:7315
+#: title/pc5_ui.c:7328
 msgid ""
 "Held at 60 fps, a frame made between each two: smoother on a 120 Hz TV"
 msgstr "保持在 60 fps，每兩幀之間產生一幀：在 120 Hz 電視上更流暢"
 
-#: title/pc5_ui.c:7316
+#: title/pc5_ui.c:7329
 msgid "Held at 30 fps and shown at 60: smoother where it runs below 60"
 msgstr "鎖定30 fps並以60 fps顯示：在低於60 fps的場景更流暢"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7317
+#: title/pc5_ui.c:7330
 msgid "60 → 120 fps"
 msgstr "60 → 120 fps"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7317
+#: title/pc5_ui.c:7330
 msgid "30 → 60 fps"
 msgstr "30 → 60 fps"
 
-#: title/pc5_ui.c:7319
+#: title/pc5_ui.c:7332
 msgid "Off. Left and right: 60 → 120 or 40 → 120 fps"
 msgstr "關。左右切換：60 → 120 或 40 → 120 fps"
 
-#: title/pc5_ui.c:7320
+#: title/pc5_ui.c:7333
 msgid ""
 "Off. Left and right: 30 → 60 fps (with 120 Hz output on, 60 → 120 or 40 → "
 "120)"
 msgstr "關。左右切換：30 → 60 fps（開啟 120 Hz 輸出後為 60 → 120 或 40 → 120）"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7329
+#: title/pc5_ui.c:7342
 msgid "Frame rate cap"
 msgstr ""
 
-#: title/pc5_ui.c:7331
+#: title/pc5_ui.c:7344
 msgid "Off while Frame generation is on, which sets the rate itself"
 msgstr ""
 
-#: title/pc5_ui.c:7334
+#: title/pc5_ui.c:7347
 msgid ""
 "Shown at most at this rate, evenly: steadier for a game that can't hold "
 "its full speed"
 msgstr ""
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7335
+#: title/pc5_ui.c:7348
 msgid "30 fps"
 msgstr ""
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7335
+#: title/pc5_ui.c:7348
 msgid "40 fps"
 msgstr ""
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7335
+#: title/pc5_ui.c:7348
 msgid "60 fps"
 msgstr ""
 
-#: title/pc5_ui.c:7337
+#: title/pc5_ui.c:7350
 msgid "Off: as fast as the game draws. Left and right: 30, 40 or 60 fps"
 msgstr ""
 
-#: title/pc5_ui.c:7338
+#: title/pc5_ui.c:7351
 msgid ""
 "Off: as fast as the game draws. Left and right: 30 fps (with 120 Hz output "
 "on, 40 or 60 too)"
 msgstr ""
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7344
+#: title/pc5_ui.c:7357
 msgid "Resolution"
 msgstr "解析度"
 
-#: title/pc5_ui.c:7345
+#: title/pc5_ui.c:7358
 msgid "Drawn at 4K, as the console shows it; four times the work of 1080p"
 msgstr "以4K繪製，與主機顯示一致；工作量是1080p的四倍"
 
-#: title/pc5_ui.c:7345
+#: title/pc5_ui.c:7358
 msgid "Drawn at 1440p and shown at 4K; sharper than 1080p, slower"
 msgstr "以1440p繪製並以4K顯示；比1080p清晰，但較慢"
 
-#: title/pc5_ui.c:7345
+#: title/pc5_ui.c:7358
 msgid "Drawn at 1080p and shown at 4K by the console"
 msgstr "以1080p繪製，由主機以4K顯示"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7346
+#: title/pc5_ui.c:7359
 msgid "4K"
 msgstr "4K"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7349
+#: title/pc5_ui.c:7362
 msgid "Aspect ratio"
 msgstr "長寬比"
 
-#: title/pc5_ui.c:7350
+#: title/pc5_ui.c:7363
 msgid "Stretched to fill the screen: a 4:3 picture gets wider"
 msgstr "拉伸以填滿畫面：4:3的畫面會變寬"
 
-#: title/pc5_ui.c:7350
+#: title/pc5_ui.c:7363
 msgid "The picture's own shape, with bars beside a 4:3 one"
 msgstr "保持畫面原有比例，4:3畫面兩側會有黑邊"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7351 title/pc5_ui_enhancements_draw.h:145
+#: title/pc5_ui.c:7364 title/pc5_ui_enhancements_draw.h:145
 msgid "Stretch"
 msgstr "拉伸"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7351
+#: title/pc5_ui.c:7364
 msgid "Keep"
 msgstr "保持"
 
-#: title/pc5_ui.c:7355
+#: title/pc5_ui.c:7368
 msgid ""
 "4 GB even for a game not made for it: room for mods; Auto if it misbehaves"
 msgstr "即使遊戲並非為此設計也提供4 GB：為模組留出空間；如有異常請選「自動」"
 
-#: title/pc5_ui.c:7356
+#: title/pc5_ui.c:7369
 msgid "2 GB, or 4 GB for a game made for it, as on Windows"
 msgstr "2 GB；為此設計的遊戲為4 GB，與Windows相同"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7364
+#: title/pc5_ui.c:7377
 msgid "Graphics memory"
 msgstr "顯示記憶體"
 
-#: title/pc5_ui.c:7366
+#: title/pc5_ui.c:7379
 msgid "All the console's; Auto if the game says there is too little"
 msgstr "主機的全部記憶體；如果遊戲提示記憶體太少，請選「自動」"
 
-#: title/pc5_ui.c:7367
+#: title/pc5_ui.c:7380
 msgid "All 8 GB: the game may take memory the rest of it needs"
 msgstr "全部8 GB：遊戲可能佔用其他部分所需的記憶體"
 
-#: title/pc5_ui.c:7369
+#: title/pc5_ui.c:7382
 msgid "2 GB at most, so older games don't get confused"
 msgstr "最多2 GB，以免較舊的遊戲出錯"
 
-#: title/pc5_ui.c:7370
+#: title/pc5_ui.c:7383
 msgid ""
 "4 GB, so the game leaves room for the rest: the console's memory is shared"
 msgstr "4 GB，讓遊戲為其他部分留出空間：主機的記憶體是共用的"
 
-#: title/pc5_ui.c:7372
+#: title/pc5_ui.c:7385
 msgid ""
 "Less for textures, more for the game: for one that runs out of memory"
 msgstr "紋理少用，遊戲多用：適合記憶體不足的遊戲"
 
-#: title/pc5_ui.c:7374
+#: title/pc5_ui.c:7387
 msgid "More for a game that says there is too little; Auto if it misbehaves"
 msgstr "給嫌太少的遊戲更多；出問題就用自動"
 
-#: title/pc5_ui.c:7375
+#: title/pc5_ui.c:7388
 msgid ""
 "More for the game's textures, less for the rest; Auto if it runs out of "
 "memory"
 msgstr "給遊戲材質更多，其餘部分更少；記憶體不足時請用自動"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7376
+#: title/pc5_ui.c:7389
 msgid "Maximum"
 msgstr "最大"
 
-#: title/pc5_ui.c:7378
+#: title/pc5_ui.c:7391
 #, c-format
 msgid "%s (%s)"
 msgstr "%s (%s)"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7378 title/pc5_ui.c:7381
+#: title/pc5_ui.c:7391 title/pc5_ui.c:7394
 msgid "2 GB"
 msgstr "2 GB"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7381
+#: title/pc5_ui.c:7394
 msgid "512 MB"
 msgstr "512 MB"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7381
+#: title/pc5_ui.c:7394
 msgid "1 GB"
 msgstr "1 GB"
 
-#: title/pc5_ui.c:7382
+#: title/pc5_ui.c:7395
 msgid "3 GB"
 msgstr "3 GB"
 
-#: title/pc5_ui.c:7382
+#: title/pc5_ui.c:7395
 msgid "5 GB"
 msgstr "5 GB"
 
-#: title/pc5_ui.c:7382
+#: title/pc5_ui.c:7395
 msgid "6 GB"
 msgstr "6 GB"
 
-#: title/pc5_ui.c:7387
+#: title/pc5_ui.c:7400
 msgid ""
 "Each sound on its own speaker of a surround system; Stereo if it is silent"
 msgstr "每個聲音從環繞音效系統的各自喇叭發出；無聲時請用立體聲"
 
-#: title/pc5_ui.c:7388
+#: title/pc5_ui.c:7401
 msgid ""
 "Two speakers, for a TV or headphones; 5.1 or 7.1 for a surround system"
 msgstr "兩個喇叭，適合電視或耳機；環繞音效系統選 5.1 或 7.1"
 
-#: title/pc5_ui.c:7393
+#: title/pc5_ui.c:7406
 msgid "The game's work takes turns, as on a PC: steadier for some games"
 msgstr "遊戲的工作像在PC上一樣輪流進行：某些遊戲會更穩定"
 
-#: title/pc5_ui.c:7393
+#: title/pc5_ui.c:7406
 msgid "Fastest for most games; turn on if it freezes or stutters"
 msgstr "對大多數遊戲最快；如果當住或卡頓請開啟"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7397 title/pc5_ui.c:8476
+#: title/pc5_ui.c:7410 title/pc5_ui.c:8489
 msgid "Cover"
 msgstr "封面"
 
-#: title/pc5_ui.c:7398
+#: title/pc5_ui.c:7411
 msgid "Another of those found, or search by another name"
 msgstr "找到的其他封面，或用其他名稱搜尋"
 
-#: title/pc5_ui.c:7403
+#: title/pc5_ui.c:7416
 msgid "Choose a background image or a silent video"
 msgstr "選擇背景圖片或無聲影片"
 
-#: title/pc5_ui.c:7404
+#: title/pc5_ui.c:7417
 msgid "Another of those found, search by another name, or none"
 msgstr "找到的其他背景、用其他名稱搜尋，或不使用"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7408 title/pc5_ui.c:8476
+#: title/pc5_ui.c:7421 title/pc5_ui.c:8489
 msgid "Background image"
 msgstr "背景圖片"
 
-#: title/pc5_ui.c:7409
+#: title/pc5_ui.c:7422
 msgid ""
 "Choose a still image; it also appears when video playback is unavailable"
 msgstr "選擇一張靜態圖片；無法播放影片時也會顯示"
 
-#: title/pc5_ui.c:7414
+#: title/pc5_ui.c:7427
 msgid "Choose or remove this game's silent background video"
 msgstr "選擇或移除這款遊戲的無聲背景影片"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7418
+#: title/pc5_ui.c:7431
 msgid "Choose video file"
 msgstr "選擇影片檔案"
 
-#: title/pc5_ui.c:7419
+#: title/pc5_ui.c:7432
 msgid ""
 "Import H.264 video to console storage; experimental 1080p/60, without audio"
 msgstr "將H.264影片匯入主機儲存空間；1080p/60為實驗性，無音訊"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7423
+#: title/pc5_ui.c:7436
 msgid "Remove background video"
 msgstr "移除背景影片"
 
-#: title/pc5_ui.c:7424
+#: title/pc5_ui.c:7437
 msgid ""
 "Delete the imported video and return to the background image; keep the "
 "source file"
 msgstr "刪除匯入的影片並回到背景圖片；保留來源檔案"
 
-#: title/pc5_ui.c:7429
+#: title/pc5_ui.c:7442
 msgid "Choose or remove the music that plays on this game's cover"
 msgstr "選擇或移除在這款遊戲封面上播放的音樂"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7433
+#: title/pc5_ui.c:7446
 msgid "Choose music file"
 msgstr "選擇音樂檔案"
 
-#: title/pc5_ui.c:7434
+#: title/pc5_ui.c:7447
 msgid ""
 "Import MP3 or WAV to console storage: plays on this cover, even without USB"
 msgstr "將MP3或WAV匯入主機儲存空間：即使沒有USB也能在此封面上播放"
 
-#: title/pc5_ui.c:7439
+#: title/pc5_ui.c:7452
 msgid ""
 "Its cover, background and loading screen, and its music and video settings"
 msgstr "封面、背景和載入畫面，以及音樂和影片設定"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7443
+#: title/pc5_ui.c:7456
 msgid "Music, video and backup"
 msgstr "音樂、影片和備份"
 
-#: title/pc5_ui.c:7444
+#: title/pc5_ui.c:7457
 msgid ""
 "Music volume and start, video loop, framing, darkness and appearance backup"
 msgstr "音樂音量和起點、影片循環、取景、暗度和外觀備份"
 
-#: title/pc5_ui.c:7450
+#: title/pc5_ui.c:7463
 msgid "The picture shown while it starts: PC5's own, or one of yours"
 msgstr "啟動時顯示的圖片：PC5 的或你自己的"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7451
+#: title/pc5_ui.c:7464
 #, fuzzy
 msgid "Own"
 msgstr "開"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7451
+#: title/pc5_ui.c:7464
 msgid "PC5's"
 msgstr "PC5 的"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7455
+#: title/pc5_ui.c:7468
 #, fuzzy
 msgid "Choose image file"
 msgstr "選擇影片檔案"
 
-#: title/pc5_ui.c:7456
+#: title/pc5_ui.c:7469
 msgid ""
 "A JPEG or PNG from a USB drive or the console; Square: from your phone"
 msgstr "來自 USB 或主機的 JPEG/PNG；方塊：來自手機"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7460
+#: title/pc5_ui.c:7473
 #, fuzzy
 msgid "Use its background"
 msgstr "它的背景"
 
-#: title/pc5_ui.c:7461
+#: title/pc5_ui.c:7474
 msgid "Its background picture, as its loading screen"
 msgstr "用背景圖片作載入畫面"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7465
+#: title/pc5_ui.c:7478
 msgid "Use PC5's"
 msgstr "使用 PC5 的"
 
-#: title/pc5_ui.c:7466
+#: title/pc5_ui.c:7479
 msgid "Back to PC5's own loading screen for it"
 msgstr "恢復 PC5 的載入畫面"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7470
+#: title/pc5_ui.c:7483
 msgid "Remove library music"
 msgstr "移除遊戲庫音樂"
 
-#: title/pc5_ui.c:7471
+#: title/pc5_ui.c:7484
 msgid "Delete this game's imported music; the original source file is kept"
 msgstr "刪除這款遊戲匯入的音樂；保留原始來源檔案"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7475 title/pc5_ui.c:8476
+#: title/pc5_ui.c:7488 title/pc5_ui.c:8489
 msgid "Tile picture"
 msgstr "圖示圖片"
 
-#: title/pc5_ui.c:7476
+#: title/pc5_ui.c:7489
 msgid ""
 "Its home screen tile's picture: a square one found online, or one made "
 "from its cover"
 msgstr "它的主畫面圖示圖片：線上找到的方形圖片，或用封面製作"
 
-#: title/pc5_ui.c:7480
+#: title/pc5_ui.c:7493
 #, c-format
 msgid "Its tile, %.40s, starts the game"
 msgstr "它的圖示%.40s會啟動遊戲"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7481
+#: title/pc5_ui.c:7494
 msgid "Home screen tile"
 msgstr "主畫面圖示"
 
-#: title/pc5_ui.c:7482
+#: title/pc5_ui.c:7495
 msgid "A tile on the PS5's home screen that starts it"
 msgstr "PS5主畫面上用來啟動它的圖示"
 
-#: title/pc5_ui.c:7487
+#: title/pc5_ui.c:7500
 #, c-format
 msgid "Now: %.150s"
 msgstr "目前：%.150s"
 
 #. A menu row's name (about 30 characters fit).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7488 title/pc5_ui.c:8173
+#: title/pc5_ui.c:7501 title/pc5_ui.c:8186
 msgid "Change program"
 msgstr "變更程式"
 
-#: title/pc5_ui.c:7495
+#: title/pc5_ui.c:7508
 msgid "Steam's own library: the game won't find Steam on the console"
 msgstr "Steam原本的程式庫：遊戲在主機上找不到Steam"
 
-#: title/pc5_ui.c:7496
+#: title/pc5_ui.c:7509
 msgid "Stands in for Steam, which the game asks for; Off if it misbehaves"
 msgstr "代替遊戲所需的Steam；如有異常請關閉"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7500 title/pc5_ui.c:8692
+#: title/pc5_ui.c:7513 title/pc5_ui.c:8705
 msgid "Game files"
 msgstr "遊戲檔案"
 
-#: title/pc5_ui.c:7501
+#: title/pc5_ui.c:7514
 msgid "Its folder: copy, move, rename and delete its files"
 msgstr "它的資料夾：複製、移動、重新命名和刪除其中的檔案"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7505 title/pc5_ui.c:9118
+#: title/pc5_ui.c:7518 title/pc5_ui.c:9131
 msgid "Update"
 msgstr "更新"
 
-#: title/pc5_ui.c:7506
+#: title/pc5_ui.c:7519
 msgid "A newer copy from USB; its saves and settings stay"
 msgstr "來自USB的較新版本；存檔和設定會保留"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7510
+#: title/pc5_ui.c:7523
 msgid "Report a problem"
 msgstr "回報問題"
 
-#: title/pc5_ui.c:7511
+#: title/pc5_ui.c:7524
 msgid "A QR code for GitHub's form, filled in from the game's newest log"
 msgstr "GitHub表單的QR碼，依遊戲最新的記錄檔填寫"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7515
+#: title/pc5_ui.c:7528
 msgid "Report it works"
 msgstr ""
 
-#: title/pc5_ui.c:7516
+#: title/pc5_ui.c:7529
 msgid ""
 "A QR code for the game compatibility form, filled in: adds the game to the "
 "list"
 msgstr ""
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7520
+#: title/pc5_ui.c:7533
 #, fuzzy
 msgid "Settings that worked"
 msgstr "有幫助的設定"
 
-#: title/pc5_ui.c:7521
+#: title/pc5_ui.c:7534
 msgid "A player's settings for it, from the game compatibility list"
 msgstr ""
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:7525
+#: title/pc5_ui.c:7538
 msgid "Reset Windows"
 msgstr ""
 
-#: title/pc5_ui.c:7526
+#: title/pc5_ui.c:7539
 msgid ""
 "Makes its Windows new, as a fresh install's; its files, saves and settings "
 "stay"
@@ -3552,42 +3568,42 @@ msgstr ""
 
 #. A menu row's name (about 30 characters fit).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7530 title/pc5_ui.c:9218 title/pc5_ui.c:9246
+#: title/pc5_ui.c:7543 title/pc5_ui.c:9231 title/pc5_ui.c:9259
 msgid "Uninstall"
 msgstr "解除安裝"
 
-#: title/pc5_ui.c:7531
+#: title/pc5_ui.c:7544
 msgid "Deletes the game, or keeps its saves for later"
 msgstr "刪除遊戲，或保留其存檔供日後使用"
 
-#: title/pc5_ui.c:7544
+#: title/pc5_ui.c:7557
 msgid "What the game sees when you play with the controller."
 msgstr "您用控制器遊玩時，遊戲辨識到的裝置。"
 
-#: title/pc5_ui.c:7545
+#: title/pc5_ui.c:7558
 msgid "Xbox controller: what most PC games expect. Try this first."
 msgstr "Xbox控制器：大多數PC遊戲所預期的。請先試試這個。"
 
-#: title/pc5_ui.c:7546
+#: title/pc5_ui.c:7559
 msgid ""
 "DualSense: a PS5 controller plugged into a PC, with PlayStation buttons in "
 "games that support it."
 msgstr "DualSense：接在PC上的PS5控制器，在支援的遊戲中顯示PlayStation按鈕。"
 
-#: title/pc5_ui.c:7547
+#: title/pc5_ui.c:7560
 msgid ""
 "Keyboard & mouse: for games with no controller support. The buttons press "
 "keys and the sticks move the mouse; Button mapping changes which key each "
 "one sends."
 msgstr "鍵盤和滑鼠：適用於不支援控制器的遊戲。按鈕對應按鍵，搖桿移動滑鼠；可在「按鈕配置」中變更每個按鈕送出的按鍵。"
 
-#: title/pc5_ui.c:7550
+#: title/pc5_ui.c:7563
 msgid ""
 "What each button, stick and the touchpad sends to the game with Keyboard & "
 "mouse."
 msgstr "在「鍵盤和滑鼠」下，每個按鈕、搖桿和觸控板送出給遊戲的內容。"
 
-#: title/pc5_ui.c:7551
+#: title/pc5_ui.c:7564
 msgid ""
 "Touchpad: One button (a click sends one key), Halves and swipes (a key for "
 "each half's click and each quick swipe up, down, left or right), or Mouse "
@@ -3595,473 +3611,473 @@ msgid ""
 msgstr ""
 "觸控板：「單一按鈕」（按下送出一個按鍵）、「左右半邊和滑動」（每半邊的按下以及向上、下、左、右的每次快速滑動各對應一個按鍵）或「滑鼠」（像筆記型電腦一樣，用手指移動指標）。"
 
-#: title/pc5_ui.c:7552
+#: title/pc5_ui.c:7565
 msgid "Two-finger click: PC5's on-screen keyboard, or a key of its own."
 msgstr "雙指按下：PC5 的螢幕鍵盤，或專屬的按鍵。"
 
-#: title/pc5_ui.c:7553
+#: title/pc5_ui.c:7566
 msgid "Save as my mapping keeps your layout for every game set up after it."
 msgstr "「儲存為我的按鈕配置」會讓之後設定的每個遊戲都沿用您的配置。"
 
-#: title/pc5_ui.c:7556
+#: title/pc5_ui.c:7569
 msgid "Whether the game sees the Create button."
 msgstr ""
 
-#: title/pc5_ui.c:7557
+#: title/pc5_ui.c:7570
 msgid ""
 "Sent: the game sees it, as Back (Select) on an Xbox controller or as "
 "Create on a DualSense."
 msgstr ""
 
-#: title/pc5_ui.c:7558
+#: title/pc5_ui.c:7571
 msgid ""
 "Not sent: the game never sees it, so taking a screenshot with the PS5's "
 "Create button doesn't press anything in the game."
 msgstr ""
 
-#: title/pc5_ui.c:7561
+#: title/pc5_ui.c:7574
 msgid "Whether the mouse pointer shows over the game."
 msgstr "是否在遊戲畫面上顯示滑鼠指標。"
 
-#: title/pc5_ui.c:7562
+#: title/pc5_ui.c:7575
 msgid "Normal: the game decides, as on a PC."
 msgstr "正常：像在PC上一樣，由遊戲決定。"
 
-#: title/pc5_ui.c:7563
+#: title/pc5_ui.c:7576
 msgid ""
 "Auto-hide: hidden after 5 seconds without moving or clicking, for a game "
 "that leaves it on the screen."
 msgstr "自動隱藏：5秒未移動或點按後隱藏，適用於會把指標留在畫面上的遊戲。"
 
-#: title/pc5_ui.c:7566
+#: title/pc5_ui.c:7579
 msgid ""
 "How the game's pictures are made on the console. Auto is right for almost "
 "every game; the others are for a game that won't start or shows a wrong "
 "picture."
 msgstr "遊戲畫面在主機上的產生方式。「自動」適合幾乎所有遊戲；其他選項用於無法啟動或畫面異常的遊戲。"
 
-#: title/pc5_ui.c:7568
+#: title/pc5_ui.c:7581
 msgid ""
 "Alternative: another way to draw the game. Try it if the picture is wrong "
 "with Auto."
 msgstr "備用：另一種繪製遊戲的方式。如果用「自動」時畫面異常，請試試。"
 
-#: title/pc5_ui.c:7569
+#: title/pc5_ui.c:7582
 msgid ""
 "2D only: for a 2D game that flickers or shows only part of its screen."
 msgstr "僅2D：適用於閃爍或只顯示部分畫面的2D遊戲。"
 
-#: title/pc5_ui.c:7571
+#: title/pc5_ui.c:7584
 msgid ""
 "Alternative: slower than Auto. Try it if the game won't start or its "
 "picture is wrong."
 msgstr "備用：比「自動」慢。如果遊戲無法啟動或畫面異常，請試試。"
 
-#: title/pc5_ui.c:7573
+#: title/pc5_ui.c:7586
 msgid ""
 "Auto: OpenGL is ready for the game in case it asks for it while it runs."
 msgstr ""
 
-#: title/pc5_ui.c:7574
+#: title/pc5_ui.c:7587
 msgid ""
 "Windows only: without OpenGL. Try it if the game starts or draws worse "
 "with Auto."
 msgstr ""
 
-#: title/pc5_ui.c:7576
+#: title/pc5_ui.c:7589
 msgid ""
 "Alternative: another way to draw the game. Try it if the picture is wrong "
 "with Auto. Some mods need it."
 msgstr "備用：另一種繪製遊戲的方式。如果用「自動」時畫面異常，請試試。有些模組需要它。"
 
-#: title/pc5_ui.c:7577
+#: title/pc5_ui.c:7590
 msgid "Compatibility (slow): the slowest, but it starts the most games."
 msgstr "相容（較慢）：最慢，但能啟動最多遊戲。"
 
-#: title/pc5_ui.c:7579
+#: title/pc5_ui.c:7592
 msgid "Choose the row to see each one with what it does."
 msgstr "選擇這一列，查看每個選項及其作用。"
 
-#: title/pc5_ui.c:7582
+#: title/pc5_ui.c:7595
 msgid ""
 "Makes extra frames between the game's own, so movement looks smoother. It "
 "can add a little delay to the controls."
 msgstr "在遊戲本身的影格之間產生額外的影格，讓動作看起來更流暢。可能會讓操作稍有延遲。"
 
-#: title/pc5_ui.c:7583
+#: title/pc5_ui.c:7596
 msgid "30 → 60 fps: the game is held at 30 fps and shown at 60."
 msgstr "30 → 60 fps：遊戲鎖定在30 fps，並以60 fps顯示。"
 
-#: title/pc5_ui.c:7584
+#: title/pc5_ui.c:7597
 msgid ""
 "60 → 120 fps: held at 60 and shown at 120, on a 120 Hz TV with 120 Hz "
 "output on in Settings."
 msgstr "60 → 120 fps：鎖定在60，並以120顯示；需要120 Hz電視，並在「設定」中開啟「120 Hz 輸出」。"
 
-#: title/pc5_ui.c:7585
+#: title/pc5_ui.c:7598
 msgid ""
 "40 → 120 fps: held at 40, two frames made between each two, for a game "
 "that can't hold 60."
 msgstr "40 → 120 fps：鎖定在40，每兩幀之間產生兩幀，適合無法維持60的遊戲。"
 
-#: title/pc5_ui.c:7588
+#: title/pc5_ui.c:7601
 msgid ""
 "Holds the game to a steady frame rate. A game that jumps between fast and "
 "slow feels smoother kept at a rate it can always reach."
 msgstr ""
 
-#: title/pc5_ui.c:7589
+#: title/pc5_ui.c:7602
 msgid "30 fps: for a demanding game that can't hold 60."
 msgstr ""
 
-#: title/pc5_ui.c:7590
+#: title/pc5_ui.c:7603
 msgid ""
 "40 or 60 fps: with 120 Hz output on in Settings and a TV that takes it, "
 "where 40 is shown evenly."
 msgstr ""
 
-#: title/pc5_ui.c:7591
+#: title/pc5_ui.c:7604
 msgid ""
 "It works on games drawn with DirectX, OpenGL or Vulkan. It is off while "
 "Frame generation is on."
 msgstr ""
 
-#: title/pc5_ui.c:7594
+#: title/pc5_ui.c:7607
 msgid ""
 "The size the game is drawn at. The console always shows 4K, so a smaller "
 "picture is scaled up."
 msgstr "遊戲繪製的尺寸。主機一律以4K顯示，因此較小的畫面會被放大。"
 
-#: title/pc5_ui.c:7595
+#: title/pc5_ui.c:7608
 msgid "1080p: the fastest, and right for most games."
 msgstr "1080p：最快，適合大多數遊戲。"
 
-#: title/pc5_ui.c:7596
+#: title/pc5_ui.c:7609
 msgid "1440p: sharper, but slower."
 msgstr "1440p：更清晰，但更慢。"
 
-#: title/pc5_ui.c:7597
+#: title/pc5_ui.c:7610
 msgid ""
 "4K: the sharpest, four times the work of 1080p: only for light games."
 msgstr "4K：最清晰，工作量是1080p的四倍：只適合要求不高的遊戲。"
 
-#: title/pc5_ui.c:7600
+#: title/pc5_ui.c:7613
 msgid "The shape of the picture on the TV."
 msgstr "畫面在電視上的形狀。"
 
-#: title/pc5_ui.c:7601
+#: title/pc5_ui.c:7614
 msgid ""
 "Keep: the picture's own shape. An older 4:3 game gets black bars at the "
 "sides."
 msgstr "保持：畫面原有的形狀。較舊的4:3遊戲兩側會有黑邊。"
 
-#: title/pc5_ui.c:7602
+#: title/pc5_ui.c:7615
 msgid "Stretch: fills the whole screen, so a 4:3 picture gets wider."
 msgstr "拉伸：填滿整個畫面，因此4:3畫面會變寬。"
 
-#: title/pc5_ui.c:7605
+#: title/pc5_ui.c:7618
 msgid "How much memory an older 32-bit game may use."
 msgstr "較舊的32位元遊戲可以使用多少記憶體。"
 
-#: title/pc5_ui.c:7606
+#: title/pc5_ui.c:7619
 msgid "Auto: as on Windows, 4 GB for a game made for it, otherwise 2 GB."
 msgstr "自動：與Windows相同，為此設計的遊戲為4 GB，否則為2 GB。"
 
-#: title/pc5_ui.c:7607
+#: title/pc5_ui.c:7620
 msgid ""
 "4 GB: for a game that runs out of memory, often with big mods. Set it back "
 "to Auto if the game misbehaves."
 msgstr "4 GB：適用於記憶體不足的遊戲，常見於裝了大型模組時。如果遊戲出現異常，請改回「自動」。"
 
-#: title/pc5_ui.c:7610
+#: title/pc5_ui.c:7623
 msgid ""
 "How much graphics memory the game is told the console has. The PS5's "
 "memory is shared by the game and its graphics, so more for graphics leaves "
 "less for the game."
 msgstr "告訴遊戲主機有多少顯示記憶體。PS5的記憶體由遊戲和其圖形共用，因此分給圖形越多，留給遊戲的就越少。"
 
-#: title/pc5_ui.c:7612
+#: title/pc5_ui.c:7625
 msgid ""
 "512 MB or 1 GB: less for textures, more for the game, for one that runs "
 "out of memory."
 msgstr "512 MB 或 1 GB：紋理少用，遊戲多用，適合記憶體不足的遊戲。"
 
-#: title/pc5_ui.c:7613
+#: title/pc5_ui.c:7626
 msgid ""
 "Auto: 2 GB at most, so older games don't get confused by a large number."
 msgstr "自動：最多2 GB，以免較舊的遊戲被過大的數字搞混。"
 
-#: title/pc5_ui.c:7614
+#: title/pc5_ui.c:7627
 msgid ""
 "3 GB or Maximum: for a game that says there is too little. Set it back to "
 "Auto if it misbehaves."
 msgstr "3 GB 或最大：給嫌太少的遊戲。出問題請改回自動。"
 
-#: title/pc5_ui.c:7616
+#: title/pc5_ui.c:7629
 msgid ""
 "2 GB or 3 GB: less for textures, more for the game, for one that runs out "
 "of memory."
 msgstr "2 GB 或 3 GB：紋理少用，遊戲多用，適合記憶體不足的遊戲。"
 
-#: title/pc5_ui.c:7617
+#: title/pc5_ui.c:7630
 msgid "Auto: 4 GB, room for both."
 msgstr "自動：4 GB，兩者都有空間。"
 
-#: title/pc5_ui.c:7618
+#: title/pc5_ui.c:7631
 msgid ""
 "5 GB or 6 GB: more for textures. Set it back to Auto if the game runs out "
 "of memory."
 msgstr "5 GB或6 GB：給材質更多空間。如果遊戲記憶體不足，請改回「自動」。"
 
-#: title/pc5_ui.c:7619
+#: title/pc5_ui.c:7632
 msgid ""
 "Maximum: all of it, only for a game that won't start because it sees too "
 "little."
 msgstr "最大：全部，只適用於因看到的記憶體太少而無法啟動的遊戲。"
 
-#: title/pc5_ui.c:7623
+#: title/pc5_ui.c:7636
 msgid "How many speakers the game is told the console has."
 msgstr "告訴遊戲主機有幾個喇叭。"
 
-#: title/pc5_ui.c:7624
+#: title/pc5_ui.c:7637
 msgid "Stereo: two, right for a TV or headphones."
 msgstr "立體聲：兩個，適合電視或耳機。"
 
-#: title/pc5_ui.c:7625
+#: title/pc5_ui.c:7638
 msgid ""
 "5.1 or 7.1: the game plays each sound on its own speaker of a surround "
 "system, and the PS5 sends it on as it does its own games' sound."
 msgstr "5.1 或 7.1：遊戲把每個聲音放到環繞音效系統的各自喇叭上，PS5 像傳送自己遊戲的聲音一樣傳送它。"
 
-#: title/pc5_ui.c:7626
+#: title/pc5_ui.c:7639
 msgid ""
 "If the game is silent or plays only from the front, set it back to Stereo."
 msgstr "如果遊戲無聲或只有前方有聲音，請改回立體聲。"
 
-#: title/pc5_ui.c:7629
+#: title/pc5_ui.c:7642
 msgid ""
 "Changes how the game's work is shared out on the console's processor."
 msgstr "變更遊戲的工作在主機處理器上的分配方式。"
 
-#: title/pc5_ui.c:7630
+#: title/pc5_ui.c:7643
 msgid "Off: the fastest for most games."
 msgstr "關：對大多數遊戲最快。"
 
-#: title/pc5_ui.c:7631
+#: title/pc5_ui.c:7644
 msgid ""
 "On: the game's work takes turns, as on a PC. Try it if the game freezes, "
 "stutters or hangs while loading; it can be a little slower."
 msgstr "開：遊戲的工作像在PC上一樣輪流進行。如果遊戲卡住、卡頓或在載入時停住，請試試；可能會稍慢一些。"
 
-#: title/pc5_ui.c:7634
+#: title/pc5_ui.c:7647
 msgid ""
 "Many PC games need Steam running to start. The console has no Steam, so "
 "PC5 stands in for it."
 msgstr "許多PC遊戲需要Steam在執行才能啟動。主機上沒有Steam，因此由PC5代替它。"
 
-#: title/pc5_ui.c:7635
+#: title/pc5_ui.c:7648
 msgid "Auto: the game starts as if Steam were running, offline."
 msgstr "自動：遊戲會像Steam正在離線執行一樣啟動。"
 
-#: title/pc5_ui.c:7636
+#: title/pc5_ui.c:7649
 msgid ""
 "Off: the game's own Steam files are used. It won't find Steam and may not "
 "start; only for a game that misbehaves with Auto."
 msgstr "關：使用遊戲本身的Steam檔案。遊戲找不到Steam，可能無法啟動；只適用於在「自動」下出現異常的遊戲。"
 
-#: title/pc5_ui.c:7639
+#: title/pc5_ui.c:7652
 msgid ""
 "A player who got this game running put their settings in the game "
 "compatibility list (Report it works)."
 msgstr ""
 
-#: title/pc5_ui.c:7640
+#: title/pc5_ui.c:7653
 msgid ""
 "Choose it to see what they changed, and use the same settings. The game's "
 "other settings stay as they are."
 msgstr ""
 
-#: title/pc5_ui.c:7643
+#: title/pc5_ui.c:7656
 msgid ""
 "Makes the game's Windows new, as a fresh install has it. Use it when a "
 "game that used to work stops starting."
 msgstr ""
 
-#: title/pc5_ui.c:7644
+#: title/pc5_ui.c:7657
 msgid ""
 "What stays: the game's files, its saves in its Windows user folders "
 "(AppData, Documents, Saved Games) and PC5's settings for it."
 msgstr ""
 
-#: title/pc5_ui.c:7645
+#: title/pc5_ui.c:7658
 msgid ""
 "What goes back to its default: the Windows settings the game kept in the "
 "registry. Some games keep options or saves there; the old registry is kept "
 "in the game's pc5/reset-backup folder."
 msgstr ""
 
-#: title/pc5_ui.c:7707
+#: title/pc5_ui.c:7720
 msgid "About"
 msgstr "說明"
 
-#: title/pc5_ui.c:7707 title/pc5_ui.c:8481
+#: title/pc5_ui.c:7720 title/pc5_ui.c:8494
 msgid "Receive from phone"
 msgstr "從手機接收"
 
-#: title/pc5_ui.c:7735
+#: title/pc5_ui.c:7748
 msgid "Touchpad + OPTIONS for 2 s still leaves the game"
 msgstr "按住觸控板+OPTIONS 2秒仍可離開遊戲"
 
-#: title/pc5_ui.c:7737
+#: title/pc5_ui.c:7750
 msgid "Two fingers: PC5's on-screen keyboard, or a key of its own"
 msgstr "雙指：PC5 的螢幕鍵盤，或專屬的按鍵"
 
-#: title/pc5_ui.c:7740
+#: title/pc5_ui.c:7753
 msgid "A key for each half's click and each quick swipe"
 msgstr "每半邊的按下和每次快速滑動各對應一個按鍵"
 
-#: title/pc5_ui.c:7741
+#: title/pc5_ui.c:7754
 msgid "A finger moves the pointer; a click sends its key"
 msgstr "手指移動指標；按下送出對應的按鍵"
 
-#: title/pc5_ui.c:7742
+#: title/pc5_ui.c:7755
 msgid "The whole touchpad is one button"
 msgstr "整個觸控板是一個按鈕"
 
-#: title/pc5_ui.c:7752
+#: title/pc5_ui.c:7765
 msgid "Right stick"
 msgstr "右類比搖桿"
 
-#: title/pc5_ui.c:7752
+#: title/pc5_ui.c:7765
 msgid "Left stick"
 msgstr "左類比搖桿"
 
-#: title/pc5_ui.c:7760
+#: title/pc5_ui.c:7773
 msgid "Pointer speed"
 msgstr "指標速度"
 
 #. which picture is shown: 3 of 12.
-#: title/pc5_ui.c:7761 title/pc5_ui.c:7955 title/pc5_ui.c:8619
+#: title/pc5_ui.c:7774 title/pc5_ui.c:7968 title/pc5_ui.c:8632
 #, c-format
 msgid "%d of %d"
 msgstr "%d/%d"
 
-#: title/pc5_ui.c:7764
+#: title/pc5_ui.c:7777
 msgid "Slow pointer button"
 msgstr "減速指標按鈕"
 
 #. Keep the space at the start or end: the text is joined to another.
-#: title/pc5_ui.c:7768
+#: title/pc5_ui.c:7781
 msgid "    Slower by"
 msgstr "    減慢"
 
-#: title/pc5_ui.c:7773
+#: title/pc5_ui.c:7786
 msgid "Click"
 msgstr "按下"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:7776
+#: title/pc5_ui.c:7789
 msgid "Slows the pointer"
 msgstr "減慢指標"
 
-#: title/pc5_ui.c:7778
+#: title/pc5_ui.c:7791
 msgid "On-screen keyboard"
 msgstr "螢幕鍵盤"
 
-#: title/pc5_ui.c:7786
+#: title/pc5_ui.c:7799
 msgid "Reset to default"
 msgstr "恢復預設"
 
-#: title/pc5_ui.c:7789
+#: title/pc5_ui.c:7802
 msgid "Save as my mapping"
 msgstr "儲存為我的按鈕配置"
 
-#: title/pc5_ui.c:7792
+#: title/pc5_ui.c:7805
 msgid "Use my mapping"
 msgstr "使用我的按鈕配置"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7804
+#: title/pc5_ui.c:7817
 msgid "Choose a key"
 msgstr "選擇按鍵"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:7804 title/pc5_ui.c:9281
+#: title/pc5_ui.c:7817 title/pc5_ui.c:9294
 msgid "Reset"
 msgstr "重設"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:7805 title/pc5_ui.c:8849 title/pc5_ui.c:8920
+#: title/pc5_ui.c:7818 title/pc5_ui.c:8862 title/pc5_ui.c:8933
 msgid "Save"
 msgstr "儲存"
 
-#: title/pc5_ui.c:7805
+#: title/pc5_ui.c:7818
 msgid "Use"
 msgstr "使用"
 
-#: title/pc5_ui.c:7826
+#: title/pc5_ui.c:7839
 #, c-format
 msgid "What %s sends"
 msgstr "%s送出的內容"
 
-#: title/pc5_ui.c:7844
+#: title/pc5_ui.c:7857
 msgid "The usual way for older games like this one, with their 2D and 3D."
 msgstr "這類較舊遊戲的常用方式，可處理它們的2D和3D畫面。"
 
-#: title/pc5_ui.c:7845
+#: title/pc5_ui.c:7858
 msgid ""
 "Draws as Windows programs do, with OpenGL ready in case the game asks for "
 "it. Leave it here unless the game won't start or its picture is wrong."
 msgstr ""
 
-#: title/pc5_ui.c:7846
+#: title/pc5_ui.c:7859
 msgid ""
 "The fastest, and what most games want. Leave it here unless the game won't "
 "start or its picture is wrong."
 msgstr "最快，也是大多數遊戲所需的。除非遊戲無法啟動或畫面異常，否則保持此項即可。"
 
-#: title/pc5_ui.c:7848
+#: title/pc5_ui.c:7861
 msgid ""
 "Draws as Windows programs do, without OpenGL. For a game that starts or "
 "draws worse with Auto."
 msgstr ""
 
-#: title/pc5_ui.c:7850
+#: title/pc5_ui.c:7863
 msgid ""
 "Another way to draw the game, slower than Auto. Try it if the game won't "
 "start or its picture is wrong."
 msgstr "另一種繪製遊戲的方式，比「自動」慢。如果遊戲無法啟動或畫面異常，請試試。"
 
-#: title/pc5_ui.c:7852
+#: title/pc5_ui.c:7865
 msgid ""
 "Draws everything in 2D, the way ordinary Windows programs are drawn. For a "
 "2D game that flickers or shows only part of its screen; a game with 3D "
 "scenes won't start with it."
 msgstr "一切都以2D繪製，就像一般Windows程式那樣。適用於閃爍或只顯示部分畫面的2D遊戲；含有3D場景的遊戲用它將無法啟動。"
 
-#: title/pc5_ui.c:7854
+#: title/pc5_ui.c:7867
 msgid ""
 "Another way to draw the game. Try it if the picture is wrong with Auto; "
 "faster than Compatibility. Some mods need it."
 msgstr "另一種繪製遊戲的方式。如果用「自動」時畫面異常，請試試；比「相容」快。有些模組需要它。"
 
-#: title/pc5_ui.c:7855
+#: title/pc5_ui.c:7868
 msgid ""
 "The slowest, but it starts the most games. Try it if the game won't start "
 "with the others."
 msgstr "最慢，但能啟動最多遊戲。如果遊戲用其他選項都無法啟動，請試試。"
 
-#: title/pc5_ui.c:7876
+#: title/pc5_ui.c:7889
 #, c-format
 msgid "The game uses %s"
 msgstr "遊戲使用%s"
 
-#: title/pc5_ui.c:7888
+#: title/pc5_ui.c:7901
 msgid "In use"
 msgstr "使用中"
 
-#: title/pc5_ui.c:7908
+#: title/pc5_ui.c:7921
 msgid ""
 "PC5 runs your PC games with prospero-win: Wine, DXVK for Direct3D 8 to 11, "
 "VKD3D-Proton for Direct3D 12, and Mesa (RADV for Vulkan, Zink for OpenGL)."
@@ -4069,225 +4085,225 @@ msgstr ""
 "PC5透過prospero-win執行您的電腦遊戲：Wine、用於Direct3D 8至11的DXVK、用於Direct3D "
 "12的VKD3D-Proton，以及Mesa（Vulkan用RADV，OpenGL用Zink）。"
 
-#: title/pc5_ui.c:7910
+#: title/pc5_ui.c:7923
 msgid ""
 "Covers come from Steam, GOG, PCGamingWiki and Wikidata, and SteamGridDB "
 "with your key. No game is part of PC5."
 msgstr "封面來自Steam、GOG、PCGamingWiki和Wikidata，以及使用您金鑰的SteamGridDB。PC5不包含任何遊戲。"
 
-#: title/pc5_ui.c:7911
+#: title/pc5_ui.c:7924
 msgid "Free software under the GNU LGPL 2.1 or later."
 msgstr "自由軟體，採用GNU LGPL 2.1或更新版本授權。"
 
 #. About PC5: the version (2.0.7 · PPSA11018).
-#: title/pc5_ui.c:7920
+#: title/pc5_ui.c:7933
 #, c-format
 msgid "version %s"
 msgstr "版本%s"
 
-#: title/pc5_ui.c:7926
+#: title/pc5_ui.c:7939
 msgid "Like PC5?"
 msgstr "喜歡PC5嗎？"
 
-#: title/pc5_ui.c:7929
+#: title/pc5_ui.c:7942
 msgid "Buy me a coffee"
 msgstr "請我喝杯咖啡"
 
-#: title/pc5_ui.c:7933
+#: title/pc5_ui.c:7946
 #, c-format
 msgid "Games are kept in %.150s"
 msgstr "遊戲存放在%.150s"
 
-#: title/pc5_ui.c:7937
+#: title/pc5_ui.c:7950
 #, c-format
 msgid "%s free on the console"
 msgstr "主機可用空間%s"
 
-#: title/pc5_ui.c:8002
+#: title/pc5_ui.c:8015
 msgid "INSTALL folder"
 msgstr "INSTALL資料夾"
 
-#: title/pc5_ui.c:8004
+#: title/pc5_ui.c:8017
 #, c-format
 msgid "INSTALL folder, %.20s"
 msgstr "INSTALL資料夾，%.20s"
 
-#: title/pc5_ui.c:8020
+#: title/pc5_ui.c:8033
 msgid "No program found: it will be skipped"
 msgstr "找不到程式：將略過"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8024
+#: title/pc5_ui.c:8037
 #, c-format
 msgid "%s · %d-bit · %s · %s"
 msgstr "%s · %d位元 · %s · %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8037
+#: title/pc5_ui.c:8050
 #, c-format
 msgid "%d-bit · %s · %s%s"
 msgstr "%d位元 · %s · %s%s"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8038 title/pc5_ui.c:8056
+#: title/pc5_ui.c:8051 title/pc5_ui.c:8069
 msgid " · chosen"
 msgstr " · 已選擇"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8039
+#: title/pc5_ui.c:8052
 msgid " · offered at Play"
 msgstr "·遊戲時提供"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8055 title/pc5_ui.c:8133
+#: title/pc5_ui.c:8068 title/pc5_ui.c:8146
 #, c-format
 msgid "%d-bit · %s"
 msgstr "%d位元 · %s"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:8070
+#: title/pc5_ui.c:8083
 msgid "Jan"
 msgstr "1月"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:8070
+#: title/pc5_ui.c:8083
 msgid "Feb"
 msgstr "2月"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:8070
+#: title/pc5_ui.c:8083
 msgid "Mar"
 msgstr "3月"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:8070
+#: title/pc5_ui.c:8083
 msgid "Apr"
 msgstr "4月"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:8070
+#: title/pc5_ui.c:8083
 msgid "May"
 msgstr "5月"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:8070
+#: title/pc5_ui.c:8083
 msgid "Jun"
 msgstr "6月"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:8071
+#: title/pc5_ui.c:8084
 msgid "Jul"
 msgstr "7月"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:8071
+#: title/pc5_ui.c:8084
 msgid "Aug"
 msgstr "8月"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:8071
+#: title/pc5_ui.c:8084
 msgid "Sep"
 msgstr "9月"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:8071
+#: title/pc5_ui.c:8084
 msgid "Oct"
 msgstr "10月"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:8071
+#: title/pc5_ui.c:8084
 msgid "Nov"
 msgstr "11月"
 
 #. a month, short, in the day a game's saves were kept (Kept 3 Oct 2026).
-#: title/pc5_ui.c:8071
+#: title/pc5_ui.c:8084
 msgid "Dec"
 msgstr "12月"
 
-#: title/pc5_ui.c:8073
+#: title/pc5_ui.c:8086
 #, c-format
 msgid "Saves of %s"
 msgstr "%s的存檔"
 
 #. the day, the month (Jan to Dec, translated on their own) and the year: put them in your order with %1$d, %2$s, %3$d.
-#: title/pc5_ui.c:8082
+#: title/pc5_ui.c:8095
 #, c-format
 msgid "Kept %d %s %d; installing it again puts them back"
 msgstr "保留於%3$d年%2$s%1$d日；重新安裝即可恢復"
 
-#: title/pc5_ui.c:8085
+#: title/pc5_ui.c:8098
 msgid "Kept when it was uninstalled; installing it again puts them back"
 msgstr "解除安裝時保留；重新安裝即可恢復"
 
-#: title/pc5_ui.c:8121
+#: title/pc5_ui.c:8134
 #, c-format
 msgid "Cover %d of %d"
 msgstr "封面%d/%d"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8122
+#: title/pc5_ui.c:8135
 #, c-format
 msgid "Made from the game's icon · %d of %d"
 msgstr "用遊戲圖示製作 · %d/%d"
 
-#: title/pc5_ui.c:8130
+#: title/pc5_ui.c:8143
 msgid "Program"
 msgstr "程式"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:8131
+#: title/pc5_ui.c:8144
 msgid "none found"
 msgstr "找不到"
 
-#: title/pc5_ui.c:8132
+#: title/pc5_ui.c:8145
 msgid "Runs as"
 msgstr "執行方式"
 
-#: title/pc5_ui.c:8137
+#: title/pc5_ui.c:8150
 #, c-format
 msgid "%s in %u file"
 msgstr "%s，%u個檔案"
 
-#: title/pc5_ui.c:8137
+#: title/pc5_ui.c:8150
 #, c-format
 msgid "%s in %u files"
 msgstr "%s，%u個檔案"
 
-#: title/pc5_ui.c:8138
+#: title/pc5_ui.c:8151
 msgid "Space"
 msgstr "空間"
 
-#: title/pc5_ui.c:8142
+#: title/pc5_ui.c:8155
 #, c-format
 msgid "%s free after installing"
 msgstr "安裝後剩餘%s"
 
-#: title/pc5_ui.c:8142
+#: title/pc5_ui.c:8155
 #, c-format
 msgid "not enough: %s free"
 msgstr "不足：只剩%s"
 
 #. A menu row's value, shown at its right: keep it short (about 15 characters).
-#: title/pc5_ui.c:8144
+#: title/pc5_ui.c:8157
 msgid "unknown"
 msgstr "未知"
 
-#: title/pc5_ui.c:8157
+#: title/pc5_ui.c:8170
 #, c-format
 msgid ""
 "This copy has %s, which its store doesn't ship. Games with it often close "
 "before starting: try a copy as its store ships it."
 msgstr ""
 
-#: title/pc5_ui.c:8163
+#: title/pc5_ui.c:8176
 msgid ""
 "A .NET program: PC5 sets up what it needs the first time a .NET game "
 "starts."
 msgstr ".NET程式：第一次啟動.NET遊戲時，PC5會準備它所需的內容。"
 
-#: title/pc5_ui.c:8167
+#: title/pc5_ui.c:8180
 msgid ""
 "The game is copied once and checked, to the console or, with a USB drive "
 "plugged in, to its PC5 folder. Whether a game runs is only known by trying "
@@ -4295,790 +4311,790 @@ msgid ""
 msgstr "遊戲會複製一次並校驗，複製到主機；若插著USB儲存裝置，則複製到其中的PC5資料夾。遊戲能否執行只有試過才知道。"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8171 title/pc5_ui.c:8467
+#: title/pc5_ui.c:8184 title/pc5_ui.c:8480
 msgid "Done"
 msgstr "完成"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8172 title/pc5_ui.c:8653
+#: title/pc5_ui.c:8185 title/pc5_ui.c:8666
 msgid "Other covers"
 msgstr "其他封面"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8183 title/pc5_ui.c:8199
+#: title/pc5_ui.c:8196 title/pc5_ui.c:8212
 msgid "Look again"
 msgstr "重新尋找"
 
-#: title/pc5_ui.c:8184
+#: title/pc5_ui.c:8197
 #, c-format
 msgid "Update %s from USB"
 msgstr "從USB更新%s"
 
-#: title/pc5_ui.c:8184 title/pc5_ui.c:9060 title/pc5_ui.c:9112
-#: title/pc5_ui.c:9227 title/pc5_ui.c:9262 title/pc5_ui.c:9275
-#: title/pc5_ui.c:9350
+#: title/pc5_ui.c:8197 title/pc5_ui.c:9073 title/pc5_ui.c:9125
+#: title/pc5_ui.c:9240 title/pc5_ui.c:9275 title/pc5_ui.c:9288
+#: title/pc5_ui.c:9363
 msgid "the game"
 msgstr "這款遊戲"
 
-#: title/pc5_ui.c:8185 title/pc5_ui.c:8202
+#: title/pc5_ui.c:8198 title/pc5_ui.c:8215
 msgid "No game folders found"
 msgstr "找不到遊戲資料夾"
 
-#: title/pc5_ui.c:8186
+#: title/pc5_ui.c:8199
 msgid ""
 "Put the newer copy's folder (the one with the game's .exe in it) at the "
 "top of a USB drive formatted as exFAT, plug the drive into the PS5, then "
 "look again."
 msgstr "請將較新版本的資料夾（含有遊戲.exe的那個）放在格式化為exFAT的USB儲存裝置的最上層，將裝置插入PS5，然後重新尋找。"
 
-#: title/pc5_ui.c:8193
+#: title/pc5_ui.c:8206
 #, c-format
 msgid "Install ticked (%d)"
 msgstr "安裝已勾選的（%d）"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8197
+#: title/pc5_ui.c:8210
 msgid "Install one"
 msgstr "安裝此項"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8198 title/pc5_ui.c:8716
+#: title/pc5_ui.c:8211 title/pc5_ui.c:8729
 msgid "Tick"
 msgstr "勾選"
 
-#: title/pc5_ui.c:8201
+#: title/pc5_ui.c:8214
 msgid "Install games from the INSTALL folder"
 msgstr "從INSTALL資料夾安裝遊戲"
 
-#: title/pc5_ui.c:8203
+#: title/pc5_ui.c:8216
 msgid ""
 "Put each game's folder (the one with its .exe in it) at the top of a USB "
 "drive formatted as exFAT, plug the drive into the PS5, then look again."
 msgstr "請將每款遊戲的資料夾（含有其.exe的那個）放在格式化為exFAT的USB儲存裝置的最上層，將裝置插入PS5，然後重新尋找。"
 
-#: title/pc5_ui.c:8218
+#: title/pc5_ui.c:8231
 msgid "Making a new Windows from PC5's template"
 msgstr ""
 
-#: title/pc5_ui.c:8219
+#: title/pc5_ui.c:8232
 #, fuzzy
 msgid "Deleting the old Windows"
 msgstr "正在刪除舊檔案"
 
-#: title/pc5_ui.c:8219
+#: title/pc5_ui.c:8232
 msgid "Moving the game's files, saves and settings into it"
 msgstr ""
 
-#: title/pc5_ui.c:8222
+#: title/pc5_ui.c:8235
 msgid "Putting back its saves and settings"
 msgstr "正在恢復存檔和設定"
 
-#: title/pc5_ui.c:8222
+#: title/pc5_ui.c:8235
 msgid "Setting up the game's Windows"
 msgstr "正在設定遊戲的Windows"
 
-#: title/pc5_ui.c:8225
+#: title/pc5_ui.c:8238
 msgid "Copying the newer version"
 msgstr "正在複製較新版本"
 
-#: title/pc5_ui.c:8225
+#: title/pc5_ui.c:8238
 msgid "Copying the game"
 msgstr "正在複製遊戲"
 
-#: title/pc5_ui.c:8226
+#: title/pc5_ui.c:8239
 msgid "Checking the copy against the USB drive"
 msgstr "正在與USB儲存裝置上的內容比對"
 
-#: title/pc5_ui.c:8227 title/pc5_ui.c:8528
+#: title/pc5_ui.c:8240 title/pc5_ui.c:8541
 msgid "Putting the new files in place"
 msgstr "正在放置新檔案"
 
-#: title/pc5_ui.c:8227 title/pc5_ui.c:8229
+#: title/pc5_ui.c:8240 title/pc5_ui.c:8242
 msgid "Finishing"
 msgstr "正在完成"
 
-#: title/pc5_ui.c:8230
+#: title/pc5_ui.c:8243
 msgid "Stopping: deleting what was copied"
 msgstr "正在停止：刪除已複製的內容"
 
-#: title/pc5_ui.c:8230
+#: title/pc5_ui.c:8243
 msgid "Deleting what was copied"
 msgstr "正在刪除已複製的內容"
 
-#: title/pc5_ui.c:8235
+#: title/pc5_ui.c:8248
 #, c-format
 msgid "Game %d of %d"
 msgstr "遊戲%d/%d"
 
-#: title/pc5_ui.c:8238
+#: title/pc5_ui.c:8251
 #, c-format
 msgid "Resetting the Windows of %s"
 msgstr ""
 
-#: title/pc5_ui.c:8238
+#: title/pc5_ui.c:8251
 #, c-format
 msgid "Updating %s"
 msgstr "正在更新%s"
 
-#: title/pc5_ui.c:8238
+#: title/pc5_ui.c:8251
 #, c-format
 msgid "Installing %s"
 msgstr "正在安裝%s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8241
+#: title/pc5_ui.c:8254
 #, c-format, fuzzy
 msgid "Step %d of 2 · %s"
 msgstr "步驟%d/3 · %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8242 title/pc5_ui.c:8537
+#: title/pc5_ui.c:8255 title/pc5_ui.c:8550
 #, c-format
 msgid "Step %d of 3 · %s"
 msgstr "步驟%d/3 · %s"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8256 title/pc5_ui.c:8552
+#: title/pc5_ui.c:8269 title/pc5_ui.c:8565
 msgid " · under a minute left"
 msgstr " · 剩餘不到1分鐘"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8257 title/pc5_ui.c:8553
+#: title/pc5_ui.c:8270 title/pc5_ui.c:8566
 #, c-format
 msgid " · about %d min left"
 msgstr " · 約剩%d分鐘"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8259 title/pc5_ui.c:8555
+#: title/pc5_ui.c:8272 title/pc5_ui.c:8568
 #, c-format
 msgid "%s of %s · %s/s%s"
 msgstr "%s/%s · %s/s%s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8261 title/pc5_ui.c:8557
+#: title/pc5_ui.c:8274 title/pc5_ui.c:8570
 #, c-format
 msgid "%s of %s · measuring the speed"
 msgstr "%s/%s · 正在測速"
 
-#: title/pc5_ui.c:8264
+#: title/pc5_ui.c:8277
 #, c-format
 msgid "%u of %u files"
 msgstr "%u/%u個檔案"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8268 title/pc5_ui.c:8568 title/pc5_ui.c:8905
-#: title/pc5_ui.c:9204 title/pc5_ui.c:9207 title/pc5_ui.c:9215
+#: title/pc5_ui.c:8281 title/pc5_ui.c:8581 title/pc5_ui.c:8918
+#: title/pc5_ui.c:9217 title/pc5_ui.c:9220 title/pc5_ui.c:9228
 msgid "Stop"
 msgstr "停止"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8373
+#: title/pc5_ui.c:8386
 msgid "OK"
 msgstr "確定"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8373 title/pc5_ui.c:8412
+#: title/pc5_ui.c:8386 title/pc5_ui.c:8425
 msgid "Report on GitHub"
 msgstr "在GitHub上回報"
 
-#: title/pc5_ui.c:8419
+#: title/pc5_ui.c:8432
 #, c-format
 msgid ""
 "1. Scan the code with your phone. GitHub's game compatibility form opens, "
 "filled in with %s, PC5's version and the game's settings."
 msgstr ""
 
-#: title/pc5_ui.c:8422
+#: title/pc5_ui.c:8435
 #, c-format
 msgid ""
 "1. On your phone or computer, open %s and start a new Game compatibility "
 "discussion."
 msgstr ""
 
-#: title/pc5_ui.c:8427
+#: title/pc5_ui.c:8440
 msgid ""
 "2. Say how well it runs and anything that helped, then post it. You need a "
 "GitHub account."
 msgstr ""
 
-#: title/pc5_ui.c:8429
+#: title/pc5_ui.c:8442
 msgid ""
 "3. The game compatibility list adds it, so other players know it runs."
 msgstr ""
 
-#: title/pc5_ui.c:8435
+#: title/pc5_ui.c:8448
 #, c-format
 msgid ""
 "1. Scan the code with your phone. GitHub's form for a new issue opens, "
 "filled in with %s, PC5's version and what PC5 saw."
 msgstr "1. 用手機掃描QR碼。GitHub的新問題表單會開啟，並已填入%s、PC5的版本和PC5偵測到的資訊。"
 
-#: title/pc5_ui.c:8438
+#: title/pc5_ui.c:8451
 #, c-format
 msgid "1. On your phone or computer, open %s and choose New issue."
 msgstr "1. 在手機或電腦上開啟%s並選擇「New issue」。"
 
-#: title/pc5_ui.c:8441
+#: title/pc5_ui.c:8454
 #, c-format
 msgid "2. Copy %s off the console, from %s/logs, as you copy files to it."
 msgstr "2. 用將檔案複製到主機的方式，從%2$s/logs中將%1$s複製出主機。"
 
-#: title/pc5_ui.c:8445
+#: title/pc5_ui.c:8458
 msgid ""
 "3. Say what happened, attach the zip, and submit. You need a GitHub "
 "account."
 msgstr "3. 描述發生的情況，附上zip檔並提交。您需要GitHub帳號。"
 
-#: title/pc5_ui.c:8458
+#: title/pc5_ui.c:8471
 msgid "PC5's web page"
 msgstr "PC5的網頁"
 
-#: title/pc5_ui.c:8462
+#: title/pc5_ui.c:8475
 #, c-format
 msgid ""
 "Scan the code with your phone, or open %s in a browser on a PC on the same "
 "network."
 msgstr "用手機掃描QR碼，或在同一網路中的電腦上用瀏覽器開啟%s。"
 
-#: title/pc5_ui.c:8465
+#: title/pc5_ui.c:8478
 msgid ""
 "From there: send a game's folder to install, report a problem with a game "
 "(its log and settings go with it), edit launch options and download logs. "
 "It works while PC5 is open."
 msgstr "在那裡可以：傳送要安裝的遊戲資料夾、回報遊戲問題（會附上記錄檔和設定）、編輯啟動選項及下載記錄檔。PC5開啟時即可使用。"
 
-#: title/pc5_ui.c:8486
+#: title/pc5_ui.c:8499
 msgid ""
 "Connect your phone and PS5 to the same network or phone hotspot. Scan this "
 "code and choose one file. Keep this screen open."
 msgstr "請將手機和PS5連上同一個網路或手機熱點。掃描此QR碼並選擇一個檔案。請保持此畫面開啟。"
 
-#: title/pc5_ui.c:8489
+#: title/pc5_ui.c:8502
 msgid ""
 "This link expires after 10 minutes or when you leave. Your previous "
 "selection stays until import succeeds."
 msgstr "此連結會在10分鐘後或您離開時失效。匯入成功前，先前的選擇會保持不變。"
 
-#: title/pc5_ui.c:8490
+#: title/pc5_ui.c:8503
 #, c-format
 msgid "Receiving: %u%%"
 msgstr "正在接收：%u%%"
 
-#: title/pc5_ui.c:8491
+#: title/pc5_ui.c:8504
 msgid "Waiting for a file"
 msgstr "正在等待檔案"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8494 title/pc5_ui.c:8920 title/pc5_ui.c:8956
-#: title/pc5_ui.c:9096 title/pc5_ui.c:9099 title/pc5_ui.c:9118
-#: title/pc5_ui.c:9229 title/pc5_ui.c:9242 title/pc5_ui.c:9246
-#: title/pc5_ui.c:9281
+#: title/pc5_ui.c:8507 title/pc5_ui.c:8933 title/pc5_ui.c:8969
+#: title/pc5_ui.c:9109 title/pc5_ui.c:9112 title/pc5_ui.c:9131
+#: title/pc5_ui.c:9242 title/pc5_ui.c:9255 title/pc5_ui.c:9259
+#: title/pc5_ui.c:9294
 msgid "Cancel"
 msgstr "取消"
 
-#: title/pc5_ui.c:8517
+#: title/pc5_ui.c:8530
 #, c-format
 msgid "PC5 %s is installed"
 msgstr "PC5 %s已安裝"
 
-#: title/pc5_ui.c:8520
+#: title/pc5_ui.c:8533
 msgid ""
 "PC5 restarts now with the new version. Your games, saves and settings are "
 "as they were."
 msgstr "PC5現在將以新版本重新啟動。您的遊戲、存檔和設定都維持原樣。"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8521
+#: title/pc5_ui.c:8534
 msgid "Restart PC5"
 msgstr "重新啟動PC5"
 
-#: title/pc5_ui.c:8526
+#: title/pc5_ui.c:8539
 msgid "Downloading it from GitHub"
 msgstr "正在從GitHub下載"
 
-#: title/pc5_ui.c:8527
+#: title/pc5_ui.c:8540
 msgid "Unpacking it and checking every file"
 msgstr "正在解壓縮並檢查每個檔案"
 
-#: title/pc5_ui.c:8529
+#: title/pc5_ui.c:8542
 msgid "Deleting the old files"
 msgstr "正在刪除舊檔案"
 
-#: title/pc5_ui.c:8530
+#: title/pc5_ui.c:8543
 msgid "Asking GitHub and finding PC5's folder"
 msgstr "正在查詢GitHub並尋找PC5的資料夾"
 
-#: title/pc5_ui.c:8533 title/pc5_ui.c:8888
+#: title/pc5_ui.c:8546 title/pc5_ui.c:8901
 msgid "Stopping"
 msgstr "正在停止"
 
-#: title/pc5_ui.c:8534
+#: title/pc5_ui.c:8547
 #, c-format
 msgid "Updating PC5 to %s"
 msgstr "正在將PC5更新到%s"
 
-#: title/pc5_ui.c:8535
+#: title/pc5_ui.c:8548
 msgid "Updating PC5"
 msgstr "正在更新PC5"
 
-#: title/pc5_ui.c:8542
+#: title/pc5_ui.c:8555
 #, c-format
 msgid "%llu of %llu files"
 msgstr "%llu/%llu個檔案"
 
-#: title/pc5_ui.c:8564
+#: title/pc5_ui.c:8577
 #, c-format
 msgid "Into %.280s"
 msgstr "目標：%.280s"
 
-#: title/pc5_ui.c:8572
+#: title/pc5_ui.c:8585
 msgid "Don't turn the console off now. This takes a moment."
 msgstr "現在請勿關閉主機。這需要一點時間。"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8585 title/pc5_ui.c:8935
+#: title/pc5_ui.c:8598 title/pc5_ui.c:8948
 msgid "Skip"
 msgstr "略過"
 
-#: title/pc5_ui.c:8624
+#: title/pc5_ui.c:8637
 msgid "Its cover"
 msgstr "它的封面"
 
-#: title/pc5_ui.c:8624
+#: title/pc5_ui.c:8637
 msgid "Its tile picture"
 msgstr "它的圖示圖片"
 
-#: title/pc5_ui.c:8624
+#: title/pc5_ui.c:8637
 msgid "Its background"
 msgstr "它的背景"
 
-#: title/pc5_ui.c:8628
+#: title/pc5_ui.c:8641
 msgid "The cover it has now"
 msgstr "目前的封面"
 
-#: title/pc5_ui.c:8628
+#: title/pc5_ui.c:8641
 msgid "The tile picture it has now"
 msgstr "目前的圖示圖片"
 
-#: title/pc5_ui.c:8628
+#: title/pc5_ui.c:8641
 msgid "The background it has now"
 msgstr "目前的背景"
 
-#: title/pc5_ui.c:8630
+#: title/pc5_ui.c:8643
 msgid "A cover found online"
 msgstr "線上找到的封面"
 
-#: title/pc5_ui.c:8630
+#: title/pc5_ui.c:8643
 msgid "A square picture found online"
 msgstr "線上找到的方形圖片"
 
-#: title/pc5_ui.c:8630
+#: title/pc5_ui.c:8643
 msgid "A background found online"
 msgstr "線上找到的背景"
 
-#: title/pc5_ui.c:8632
+#: title/pc5_ui.c:8645
 msgid "Made from the game's icon and name"
 msgstr "用遊戲的圖示和名稱製作"
 
-#: title/pc5_ui.c:8633
+#: title/pc5_ui.c:8646
 msgid "Made from its cover"
 msgstr "用其封面製作"
 
-#: title/pc5_ui.c:8633
+#: title/pc5_ui.c:8646
 msgid "None: a backdrop made from its cover"
 msgstr "無：用其封面製作的背景"
 
-#: title/pc5_ui.c:8640
+#: title/pc5_ui.c:8653
 #, c-format
 msgid "Nothing found for “%s”."
 msgstr "找不到與「%s」相關的結果。"
 
-#: title/pc5_ui.c:8642
+#: title/pc5_ui.c:8655
 msgid ""
 "Square pictures come from SteamGridDB: put your key in api_keys.txt "
 "(Covers on the wiki)."
 msgstr "方形圖片來自SteamGridDB：請將您的金鑰放入api_keys.txt（見Wiki中的「Covers」）。"
 
-#: title/pc5_ui.c:8644
+#: title/pc5_ui.c:8657
 msgid "Nothing found for its name."
 msgstr "依名稱找不到任何結果。"
 
-#: title/pc5_ui.c:8647
+#: title/pc5_ui.c:8660
 #, c-format
 msgid "Found for “%s”"
 msgstr "「%s」的搜尋結果"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8652
+#: title/pc5_ui.c:8665
 msgid "Use this"
 msgstr "使用這個"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8653
+#: title/pc5_ui.c:8666
 msgid "Other pictures"
 msgstr "其他圖片"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8653
+#: title/pc5_ui.c:8666
 msgid "Other backgrounds"
 msgstr "其他背景"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8654
+#: title/pc5_ui.c:8667
 msgid "Search by name"
 msgstr "依名稱搜尋"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8668 title/pc5_ui.c:8708 title/pc5_ui.c:8828
+#: title/pc5_ui.c:8681 title/pc5_ui.c:8721 title/pc5_ui.c:8841
 msgid " · read-only"
 msgstr " · 唯讀"
 
-#: title/pc5_ui.c:8684
+#: title/pc5_ui.c:8697
 msgid "Folder"
 msgstr "資料夾"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8709
+#: title/pc5_ui.c:8722
 #, c-format
 msgid " · %d ticked"
 msgstr " · 已勾選%d個"
 
-#: title/pc5_ui.c:8711
+#: title/pc5_ui.c:8724
 msgid "△ Paste or New folder puts something in it."
 msgstr "△ 貼上或新增資料夾可在其中放入內容。"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8716 title/pc5_ui.c:8831
+#: title/pc5_ui.c:8729 title/pc5_ui.c:8844
 msgid "Actions"
 msgstr "動作"
 
-#: title/pc5_ui.c:8720
+#: title/pc5_ui.c:8733
 msgid "Choose backup destination"
 msgstr "選擇備份位置"
 
-#: title/pc5_ui.c:8721
+#: title/pc5_ui.c:8734
 msgid "Open a folder, then press OPTIONS to save the backup here."
 msgstr "開啟資料夾，然後按OPTIONS將備份儲存在這裡。"
 
-#: title/pc5_ui.c:8728
+#: title/pc5_ui.c:8741
 msgid "Choose a background video"
 msgstr "選擇背景影片"
 
-#: title/pc5_ui.c:8729
+#: title/pc5_ui.c:8742
 msgid "H.264 up to 1080p/60 and 1 GB; MP4 recommended. Playback is silent."
 msgstr "H.264，最高1080p/60和1 GB；建議使用MP4。播放時無聲。"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8733
+#: title/pc5_ui.c:8746
 msgid "Open folder"
 msgstr "開啟資料夾"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8733
+#: title/pc5_ui.c:8746
 msgid "Save here"
 msgstr "儲存在這裡"
 
-#: title/pc5_ui.c:8734
+#: title/pc5_ui.c:8747
 msgid "This folder is empty"
 msgstr "這個資料夾是空的"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8746
+#: title/pc5_ui.c:8759
 msgid "Copy"
 msgstr "複製"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8746
+#: title/pc5_ui.c:8759
 msgid "Then Paste puts a copy in another folder"
 msgstr "然後用「貼上」將複本放到另一個資料夾"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8747
+#: title/pc5_ui.c:8760
 msgid "Cut"
 msgstr "剪下"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8747
+#: title/pc5_ui.c:8760
 msgid "Then Paste moves it to another folder"
 msgstr "然後用「貼上」將它移到另一個資料夾"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8750
+#: title/pc5_ui.c:8763
 msgid "Paste"
 msgstr "貼上"
 
-#: title/pc5_ui.c:8751
+#: title/pc5_ui.c:8764
 #, c-format
 msgid "Moves %d item from %.120s"
 msgstr "移動%d個項目（來自%.120s）"
 
-#: title/pc5_ui.c:8751
+#: title/pc5_ui.c:8764
 #, c-format
 msgid "Moves %d items from %.120s"
 msgstr "移動%d個項目（來自%.120s）"
 
-#: title/pc5_ui.c:8751
+#: title/pc5_ui.c:8764
 #, c-format
 msgid "Copies %d item from %.120s"
 msgstr "複製%d個項目（來自%.120s）"
 
-#: title/pc5_ui.c:8751
+#: title/pc5_ui.c:8764
 #, c-format
 msgid "Copies %d items from %.120s"
 msgstr "複製%d個項目（來自%.120s）"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8757
+#: title/pc5_ui.c:8770
 msgid "Type its new name"
 msgstr "輸入新名稱"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8758
+#: title/pc5_ui.c:8771
 msgid "An empty folder in this one"
 msgstr "在這個資料夾中新增一個空資料夾"
 
 #. A menu row's name (about 30 characters fit).
 #. In a question window: the title, its text, or a button's label (keep buttons short).
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8759 title/pc5_ui.c:8956 title/pc5_ui.c:9096
-#: title/pc5_ui.c:9218 title/pc5_ui.c:9224 title/pc5_ui.c:9229
+#: title/pc5_ui.c:8772 title/pc5_ui.c:8969 title/pc5_ui.c:9109
+#: title/pc5_ui.c:9231 title/pc5_ui.c:9237 title/pc5_ui.c:9242
 msgid "Delete"
 msgstr "刪除"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8759
+#: title/pc5_ui.c:8772
 msgid "Deleted for good: there is no undo"
 msgstr "永久刪除：無法復原"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8761
+#: title/pc5_ui.c:8774
 msgid "Untick all"
 msgstr "取消全選"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8761
+#: title/pc5_ui.c:8774
 msgid "Tick all"
 msgstr "全選"
 
-#: title/pc5_ui.c:8762
+#: title/pc5_ui.c:8775
 msgid "Every item in this folder"
 msgstr "這個資料夾中的所有項目"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8766
+#: title/pc5_ui.c:8779
 msgid "Edit"
 msgstr "編輯"
 
-#: title/pc5_ui.c:8767
+#: title/pc5_ui.c:8780
 msgid ""
 "A text file (.ini, .cfg, .txt and the like), changed a line at a time"
 msgstr "文字檔（.ini、.cfg、.txt 等），逐行變更"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8769
+#: title/pc5_ui.c:8782
 msgid "View"
 msgstr "檢視"
 
-#: title/pc5_ui.c:8770
+#: title/pc5_ui.c:8783
 msgid "A text file, shown: nothing here can be changed"
 msgstr "文字檔，僅顯示：這裡無法變更任何內容"
 
-#: title/pc5_ui.c:8783
+#: title/pc5_ui.c:8796
 #, c-format
 msgid "%d items"
 msgstr "%d個項目"
 
-#: title/pc5_ui.c:8785
+#: title/pc5_ui.c:8798
 msgid "This folder"
 msgstr "這個資料夾"
 
-#: title/pc5_ui.c:8789
+#: title/pc5_ui.c:8802
 msgid "Read-only: PC5 changes nothing here"
 msgstr "唯讀：PC5不會變更這裡的任何內容"
 
 #. Keep the space at the start or end: the text is joined to another.
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:8829
+#: title/pc5_ui.c:8842
 msgid " · not saved"
 msgstr " · 未儲存"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8830 title/pc5_ui.c:8832
+#: title/pc5_ui.c:8843 title/pc5_ui.c:8845
 msgid "Page"
 msgstr "翻頁"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:8831
+#: title/pc5_ui.c:8844
 msgid "Add a line"
 msgstr "新增一行"
 
-#: title/pc5_ui.c:8835
+#: title/pc5_ui.c:8848
 msgid "This file is empty"
 msgstr "此檔案是空的"
 
-#: title/pc5_ui.c:8836
+#: title/pc5_ui.c:8849
 msgid "There's nothing in it."
 msgstr "裡面什麼也沒有。"
 
-#: title/pc5_ui.c:8836
+#: title/pc5_ui.c:8849
 msgid "✕ puts a first line in it."
 msgstr "按 ✕ 寫入第一行。"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8845
+#: title/pc5_ui.c:8858
 msgid "Add a line below"
 msgstr "在下方新增一行"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8845
+#: title/pc5_ui.c:8858
 msgid "Typed with the keyboard, under the line chosen"
 msgstr "用鍵盤輸入，放在所選行下方"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8846
+#: title/pc5_ui.c:8859
 msgid "Add a line above"
 msgstr "在上方新增一行"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8846
+#: title/pc5_ui.c:8859
 msgid "Typed with the keyboard, over the line chosen"
 msgstr "用鍵盤輸入，放在所選行上方"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8847
+#: title/pc5_ui.c:8860
 msgid "Delete line"
 msgstr "刪除行"
 
 #. A menu row's name (about 30 characters fit).
-#: title/pc5_ui.c:8847
+#: title/pc5_ui.c:8860
 msgid "The line chosen goes; nothing is saved until Save"
 msgstr "所選行會被刪除；在「儲存」前不會儲存任何內容"
 
-#: title/pc5_ui.c:8850
+#: title/pc5_ui.c:8863
 msgid "Written back as it was: UTF-16, with its line ends"
 msgstr "按原樣寫回：UTF-16，保留換行符號"
 
-#: title/pc5_ui.c:8851
+#: title/pc5_ui.c:8864
 msgid "Written back as it was: one byte a letter, with its line ends"
 msgstr "按原樣寫回：每個字母一個位元組，保留換行符號"
 
-#: title/pc5_ui.c:8852
+#: title/pc5_ui.c:8865
 msgid "Written back as it was: UTF-8, with its line ends"
 msgstr "按原樣寫回：UTF-8，保留換行符號"
 
-#: title/pc5_ui.c:8865
+#: title/pc5_ui.c:8878
 msgid "This file"
 msgstr "此檔案"
 
-#: title/pc5_ui.c:8889
+#: title/pc5_ui.c:8902
 msgid "Deleting"
 msgstr "正在刪除"
 
-#: title/pc5_ui.c:8890
+#: title/pc5_ui.c:8903
 msgid "Moving"
 msgstr "正在移動"
 
-#: title/pc5_ui.c:8890
+#: title/pc5_ui.c:8903
 msgid "Copying"
 msgstr "正在複製"
 
-#: title/pc5_ui.c:8892
+#: title/pc5_ui.c:8905
 msgid "Getting ready"
 msgstr "正在準備"
 
-#: title/pc5_ui.c:8899
+#: title/pc5_ui.c:8912
 #, c-format
 msgid "%s of %s"
 msgstr "%s/%s"
 
-#: title/pc5_ui.c:8901
+#: title/pc5_ui.c:8914
 #, c-format
 msgid "%u of %u"
 msgstr "%u/%u"
 
-#: title/pc5_ui.c:8919
+#: title/pc5_ui.c:8932
 #, c-format
 msgid "Save the changes to %.200s?"
 msgstr "儲存對 %.200s 的變更？"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:8920
+#: title/pc5_ui.c:8933
 msgid "Don't save leaves the file as it was before."
 msgstr "「不儲存」會讓檔案維持原樣。"
 
-#: title/pc5_ui.c:8921
+#: title/pc5_ui.c:8934
 msgid "Don't save"
 msgstr "不儲存"
 
-#: title/pc5_ui.c:8930
+#: title/pc5_ui.c:8943
 #, c-format
 msgid "This folder has %.200s already"
 msgstr "這個資料夾中已有%.200s"
 
-#: title/pc5_ui.c:8930 title/pc5_ui.c:8945
+#: title/pc5_ui.c:8943 title/pc5_ui.c:8958
 msgid "it"
 msgstr "它"
 
-#: title/pc5_ui.c:8931
+#: title/pc5_ui.c:8944
 #, c-format
 msgid "This folder has %d of the %d items already"
 msgstr "這個資料夾中已有%d個項目（共%d個）"
 
-#: title/pc5_ui.c:8933
+#: title/pc5_ui.c:8946
 msgid ""
 "Skip leaves those as they are. Keep both gives the new ones a name like "
 "“name (2)”. Replace overwrites files and puts folders' contents together."
 msgstr "「略過」會讓原有項目維持原樣。「兩者都保留」會將新項目命名為「名稱 (2)」這類名稱。「取代」會覆寫檔案並合併資料夾的內容。"
 
-#: title/pc5_ui.c:8935
+#: title/pc5_ui.c:8948
 msgid "Keep both"
 msgstr "兩者都保留"
 
-#: title/pc5_ui.c:8935
+#: title/pc5_ui.c:8948
 msgid "Replace"
 msgstr "取代"
 
-#: title/pc5_ui.c:8940
+#: title/pc5_ui.c:8953
 #, c-format
 msgid "Delete %d items?"
 msgstr "要刪除%d個項目嗎？"
 
-#: title/pc5_ui.c:8945
+#: title/pc5_ui.c:8958
 #, c-format
 msgid "Delete %.200s?"
 msgstr "要刪除%.200s嗎？"
 
-#: title/pc5_ui.c:8946
+#: title/pc5_ui.c:8959
 msgid "Delete?"
 msgstr "要刪除嗎？"
 
-#: title/pc5_ui.c:8948
+#: title/pc5_ui.c:8961
 #, c-format
 msgid "%u file"
 msgstr "%u個檔案"
 
-#: title/pc5_ui.c:8948
+#: title/pc5_ui.c:8961
 #, c-format
 msgid "%u files"
 msgstr "%u個檔案"
 
-#: title/pc5_ui.c:8949
+#: title/pc5_ui.c:8962
 #, c-format
 msgid "%u folder"
 msgstr "%u個資料夾"
 
-#: title/pc5_ui.c:8949
+#: title/pc5_ui.c:8962
 #, c-format
 msgid "%u folders"
 msgstr "%u個資料夾"
 
 #. the first %s is a count of files ("3 files"), the second of folders, the third a size ("2.1 GB").
-#: title/pc5_ui.c:8952
+#: title/pc5_ui.c:8965
 #, c-format
 msgid ""
 "At least %s and %s, %s. They're deleted for good: there is no backup and "
@@ -5086,36 +5102,36 @@ msgid ""
 msgstr "至少%s和%s，共%s。它們將被永久刪除：沒有備份，也無法復原。"
 
 #. the first %s is a count of files ("3 files"), the second of folders, the third a size ("2.1 GB").
-#: title/pc5_ui.c:8952
+#: title/pc5_ui.c:8965
 #, c-format
 msgid ""
 "%s and %s, %s. They're deleted for good: there is no backup and no undo."
 msgstr "%s和%s，共%s。它們將被永久刪除：沒有備份，也無法復原。"
 
-#: title/pc5_ui.c:9019
+#: title/pc5_ui.c:9032
 msgid "Finishing an install or uninstall that was cut short"
 msgstr "正在完成被中斷的安裝或解除安裝"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:9022
+#: title/pc5_ui.c:9035
 #, c-format
 msgid "Getting covers · %d of %d"
 msgstr "正在取得封面 · %d/%d"
 
-#: title/pc5_ui.c:9026 title/pc5_ui.c:9042 title/pc5_ui.c:9336
+#: title/pc5_ui.c:9039 title/pc5_ui.c:9055 title/pc5_ui.c:9349
 msgid "Checking for a newer PC5"
 msgstr "正在檢查是否有新版PC5"
 
-#: title/pc5_ui.c:9042
+#: title/pc5_ui.c:9055
 msgid "Asking GitHub"
 msgstr "正在詢問GitHub"
 
-#: title/pc5_ui.c:9046
+#: title/pc5_ui.c:9059
 #, c-format
 msgid "PC5 %s is available"
 msgstr "PC5 %s已推出"
 
-#: title/pc5_ui.c:9047
+#: title/pc5_ui.c:9060
 #, c-format
 msgid ""
 "%s, installs it and restarts. Your games, saves and settings stay. Later: "
@@ -5123,118 +5139,118 @@ msgid ""
 msgstr "%s，安裝後重新啟動。您的遊戲、存檔和設定都會保留。稍後也可在「設定 › 系統」中更新。"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9049 title/pc5_ui.c:9329
+#: title/pc5_ui.c:9062 title/pc5_ui.c:9342
 msgid "Later"
 msgstr "稍後"
 
-#: title/pc5_ui.c:9060 title/pc5_ui.c:9107
+#: title/pc5_ui.c:9073 title/pc5_ui.c:9120
 #, c-format
 msgid "Reading %s"
 msgstr "正在讀取%s"
 
-#: title/pc5_ui.c:9061
+#: title/pc5_ui.c:9074
 msgid "Finding its programs"
 msgstr "正在尋找它的程式"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:9066
+#: title/pc5_ui.c:9079
 #, c-format
 msgid "Getting ready · %d of %d"
 msgstr "正在準備 · %d/%d"
 
-#: title/pc5_ui.c:9070
+#: title/pc5_ui.c:9083
 msgid "reading its files"
 msgstr "正在讀取它的檔案"
 
-#: title/pc5_ui.c:9070
+#: title/pc5_ui.c:9083
 msgid "looking for its cover"
 msgstr "正在尋找它的封面"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:9079
+#: title/pc5_ui.c:9092
 #, c-format
 msgid "Install %d game · %s"
 msgstr "安裝%d款遊戲 · %s"
 
 #. · separates parts of a line; keep it.
-#: title/pc5_ui.c:9079
+#: title/pc5_ui.c:9092
 #, c-format
 msgid "Install %d games · %s"
 msgstr "安裝%d款遊戲 · %s"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:9081
+#: title/pc5_ui.c:9094
 msgid "Install all"
 msgstr "全部安裝"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:9081
+#: title/pc5_ui.c:9094
 msgid "Review"
 msgstr "檢視"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9093
+#: title/pc5_ui.c:9106
 msgid "Remove background video?"
 msgstr "要移除背景影片嗎？"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9093
+#: title/pc5_ui.c:9106
 msgid "Remove library music?"
 msgstr "要移除遊戲庫音樂嗎？"
 
-#: title/pc5_ui.c:9094
+#: title/pc5_ui.c:9107
 msgid ""
 "Delete this game's imported video and return to the background image? The "
 "original source file is kept."
 msgstr "要刪除這款遊戲匯入的影片並回到背景圖片嗎？原始來源檔案會保留。"
 
-#: title/pc5_ui.c:9095
+#: title/pc5_ui.c:9108
 msgid "Delete this game's imported music? The original source file is kept."
 msgstr "要刪除這款遊戲匯入的音樂嗎？原始來源檔案會保留。"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9099
+#: title/pc5_ui.c:9112
 msgid "Restore this appearance?"
 msgstr "要還原此外觀嗎？"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9099
+#: title/pc5_ui.c:9112
 msgid ""
 "This replaces this game's pictures, music, video and media settings. Game "
 "files and saves are kept."
 msgstr "這會取代這款遊戲的圖片、音樂、影片和媒體設定。遊戲檔案和存檔會保留。"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9099
+#: title/pc5_ui.c:9112
 msgid "Restore"
 msgstr "還原"
 
-#: title/pc5_ui.c:9101
+#: title/pc5_ui.c:9114
 msgid "Restoring appearance"
 msgstr "正在還原外觀"
 
-#: title/pc5_ui.c:9101
+#: title/pc5_ui.c:9114
 msgid "Exporting appearance"
 msgstr "正在匯出外觀"
 
-#: title/pc5_ui.c:9101
+#: title/pc5_ui.c:9114
 msgid "Keep the drive connected. Back cancels."
 msgstr "請保持儲存裝置連接。按返回可取消。"
 
-#: title/pc5_ui.c:9104
+#: title/pc5_ui.c:9117
 msgid "Looking at the USB drives"
 msgstr "正在檢查USB儲存裝置"
 
-#: title/pc5_ui.c:9108
+#: title/pc5_ui.c:9121
 msgid "Counting its files and finding its program"
 msgstr "正在計算它的檔案並尋找它的程式"
 
-#: title/pc5_ui.c:9115
+#: title/pc5_ui.c:9128
 #, c-format
 msgid "Update %s?"
 msgstr "要更新%s嗎？"
 
-#: title/pc5_ui.c:9116
+#: title/pc5_ui.c:9129
 #, c-format
 msgid ""
 "PC5 copies %s (%s) from the USB drive over the game's folder: the files it "
@@ -5242,24 +5258,24 @@ msgid ""
 "stay too."
 msgstr "PC5會將USB儲存裝置上的%s（%s）複製並覆蓋到遊戲資料夾：其中的檔案會取代遊戲的同名檔案，其他檔案保留。存檔、設定和選項也會保留。"
 
-#: title/pc5_ui.c:9128
+#: title/pc5_ui.c:9141
 #, c-format
 msgid "Where should the %d games go?"
 msgstr "這%d款遊戲要安裝到哪裡？"
 
-#: title/pc5_ui.c:9129
+#: title/pc5_ui.c:9142
 #, c-format
 msgid "Where should %s go?"
 msgstr "%s要安裝到哪裡？"
 
-#: title/pc5_ui.c:9133
+#: title/pc5_ui.c:9146
 #, c-format
 msgid ""
 "The console has %s free. Extended storage (%.40s) has %s free: a game "
 "there plays from its PC5 folder. Its saves stay on the console either way."
 msgstr "主機剩餘 %s。延伸儲存空間（%.40s）剩餘 %s：放在那裡的遊戲從其 PC5 資料夾執行。存檔無論如何都會留在主機上。"
 
-#: title/pc5_ui.c:9138
+#: title/pc5_ui.c:9151
 #, c-format
 msgid ""
 "The console has %s free. The USB drive (%.40s) has %s free: a game there "
@@ -5268,199 +5284,199 @@ msgid ""
 msgstr ""
 "主機有%s可用空間。USB儲存裝置（%.40s）有%s可用空間：安裝在那裡的遊戲會從其中的PC5資料夾執行，因此請將裝置插在高速連接埠上。無論哪種方式，存檔都會留在主機上。"
 
-#: title/pc5_ui.c:9148
+#: title/pc5_ui.c:9161
 #, c-format
 msgid "Left and right choose among the %d drives a game can go on."
 msgstr "左右可在 %d 個可放遊戲的磁碟機中選擇。"
 
-#: title/pc5_ui.c:9150
+#: title/pc5_ui.c:9163
 msgid "Extended storage"
 msgstr "延伸儲存空間"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9153
+#: title/pc5_ui.c:9166
 msgid "Console"
 msgstr "主機"
 
-#: title/pc5_ui.c:9158
+#: title/pc5_ui.c:9171
 #, c-format
 msgid "Put back the saves of %s?"
 msgstr "要恢復%s的存檔嗎？"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9160
+#: title/pc5_ui.c:9173
 msgid ""
 "They were kept when it was uninstalled: its saves, settings and options "
 "come back with it. Start fresh: they stay kept, for later."
 msgstr "它們是在解除安裝時保留的：存檔、設定和選項會隨遊戲一起恢復。「重新開始」：它們會繼續保留，供日後使用。"
 
-#: title/pc5_ui.c:9161
+#: title/pc5_ui.c:9174
 msgid "Start fresh"
 msgstr "重新開始"
 
-#: title/pc5_ui.c:9161
+#: title/pc5_ui.c:9174
 msgid "Put them back"
 msgstr "恢復"
 
-#: title/pc5_ui.c:9165
+#: title/pc5_ui.c:9178
 msgid "Looking for the cover"
 msgstr "正在尋找封面"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:9165 title/pc5_ui.c:9171
+#: title/pc5_ui.c:9178 title/pc5_ui.c:9184
 msgid "On Steam, GOG and others"
 msgstr "在Steam、GOG等平台上"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:9170
+#: title/pc5_ui.c:9183
 #, c-format
 msgid "“%s”, %s"
 msgstr "「%s」，%s"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:9170
+#: title/pc5_ui.c:9183
 msgid "on Steam, GOG and others"
 msgstr "在Steam、GOG等平台上"
 
 #. the name typed, in quotation marks (use your language's), then where it is looked for.
-#: title/pc5_ui.c:9172
+#: title/pc5_ui.c:9185
 msgid "Looking for covers"
 msgstr "正在尋找封面"
 
-#: title/pc5_ui.c:9173
+#: title/pc5_ui.c:9186
 msgid "Looking for tile pictures"
 msgstr "正在尋找圖示圖片"
 
-#: title/pc5_ui.c:9173
+#: title/pc5_ui.c:9186
 msgid "Looking for backgrounds"
 msgstr "正在尋找背景"
 
 #. A button hint along the bottom of the screen, beside a button's picture: keep it short (one or two words).
-#: title/pc5_ui.c:9180
+#: title/pc5_ui.c:9193
 msgid "Offer at Play"
 msgstr "在遊戲時提供"
 
-#: title/pc5_ui.c:9183 title/pc5_ui.c:9186
+#: title/pc5_ui.c:9196 title/pc5_ui.c:9199
 msgid "Which program is the game?"
 msgstr "哪個程式是遊戲？"
 
-#: title/pc5_ui.c:9196
+#: title/pc5_ui.c:9209
 msgid "Which program?"
 msgstr "哪個程式？"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9203
+#: title/pc5_ui.c:9216
 msgid "Stop resetting?"
 msgstr ""
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9203
+#: title/pc5_ui.c:9216
 msgid "The new Windows made so far is deleted and the game stays as it was."
 msgstr ""
 
-#: title/pc5_ui.c:9204
+#: title/pc5_ui.c:9217
 msgid "Keep resetting"
 msgstr ""
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9206
+#: title/pc5_ui.c:9219
 msgid "Stop updating?"
 msgstr "要停止更新嗎？"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9206
+#: title/pc5_ui.c:9219
 msgid ""
 "The copy made so far is deleted and the game stays as it was. The USB "
 "drive isn't changed."
 msgstr "目前已複製的內容會被刪除，遊戲維持原樣。USB儲存裝置不會被變更。"
 
-#: title/pc5_ui.c:9207
+#: title/pc5_ui.c:9220
 msgid "Keep updating"
 msgstr "繼續更新"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9209 title/pc5_ui.c:9214
+#: title/pc5_ui.c:9222 title/pc5_ui.c:9227
 msgid "Stop installing?"
 msgstr "要停止安裝嗎？"
 
-#: title/pc5_ui.c:9210
+#: title/pc5_ui.c:9223
 msgid ""
 "What this game copied so far is deleted; games already installed stay. The "
 "USB drive isn't changed. Press the back button to keep installing."
 msgstr "這款遊戲目前已複製的內容會被刪除；已安裝的遊戲會保留。USB儲存裝置不會被變更。按返回按鈕可繼續安裝。"
 
-#: title/pc5_ui.c:9212
+#: title/pc5_ui.c:9225
 msgid "Stop this game"
 msgstr "停止這款遊戲"
 
-#: title/pc5_ui.c:9212
+#: title/pc5_ui.c:9225
 msgid "Stop all"
 msgstr "全部停止"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9214
+#: title/pc5_ui.c:9227
 msgid "Everything copied so far is deleted. The USB drive isn't changed."
 msgstr "目前已複製的所有內容都會被刪除。USB儲存裝置不會被變更。"
 
-#: title/pc5_ui.c:9215
+#: title/pc5_ui.c:9228
 msgid "Keep installing"
 msgstr "繼續安裝"
 
-#: title/pc5_ui.c:9219
+#: title/pc5_ui.c:9232
 msgid "There are no games to uninstall"
 msgstr "沒有可解除安裝的遊戲"
 
-#: title/pc5_ui.c:9227
+#: title/pc5_ui.c:9240
 #, c-format
 msgid "Delete the saves of %s?"
 msgstr "要刪除%s的存檔嗎？"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9228
+#: title/pc5_ui.c:9241
 msgid ""
 "Its saves and settings, kept when it was uninstalled, are deleted. There "
 "is no backup and no undo."
 msgstr "解除安裝時保留的存檔和設定將被刪除。沒有備份，也無法復原。"
 
-#: title/pc5_ui.c:9237
+#: title/pc5_ui.c:9250
 #, c-format
 msgid "Uninstall %s?"
 msgstr "要解除安裝%s嗎？"
 
-#: title/pc5_ui.c:9240
+#: title/pc5_ui.c:9253
 msgid ""
 "Keep saves: the game goes, its saves and settings stay, and installing it "
 "again puts them back. Delete all: the game, its saves and settings go, "
 "with no backup and no undo."
 msgstr "「保留存檔」：刪除遊戲，保留存檔和設定，重新安裝即可恢復。「全部刪除」：刪除遊戲及其存檔和設定，沒有備份，也無法復原。"
 
-#: title/pc5_ui.c:9242
+#: title/pc5_ui.c:9255
 msgid "Keep saves"
 msgstr "保留存檔"
 
-#: title/pc5_ui.c:9242
+#: title/pc5_ui.c:9255
 msgid "Delete all"
 msgstr "全部刪除"
 
-#: title/pc5_ui.c:9245
+#: title/pc5_ui.c:9258
 msgid ""
 "This deletes the game and all its saves and settings. There is no backup "
 "and no undo."
 msgstr "這會刪除遊戲及其所有存檔和設定。沒有備份，也無法復原。"
 
-#: title/pc5_ui.c:9262
+#: title/pc5_ui.c:9275
 #, c-format
 msgid "Settings that worked for %s"
 msgstr ""
 
-#: title/pc5_ui.c:9264
+#: title/pc5_ui.c:9277
 #, c-format
 msgid ""
 "A player got it running with PC5 %s with these settings: %s. Its other "
 "settings stay as they are."
 msgstr ""
 
-#: title/pc5_ui.c:9267
+#: title/pc5_ui.c:9280
 #, c-format
 msgid ""
 "A player got it running with these settings: %s. Its other settings stay "
@@ -5468,21 +5484,21 @@ msgid ""
 msgstr ""
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9268
+#: title/pc5_ui.c:9281
 msgid "Not now"
 msgstr ""
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9268
+#: title/pc5_ui.c:9281
 msgid "Use them"
 msgstr ""
 
-#: title/pc5_ui.c:9275
+#: title/pc5_ui.c:9288
 #, c-format
 msgid "Reset the Windows of %s?"
 msgstr ""
 
-#: title/pc5_ui.c:9277
+#: title/pc5_ui.c:9290
 msgid ""
 "Its Windows is made new, like a fresh install. The game's files, its saves "
 "(its Windows user folders) and PC5's settings for it stay. Windows "
@@ -5491,42 +5507,42 @@ msgid ""
 "stops starting."
 msgstr ""
 
-#: title/pc5_ui.c:9285
+#: title/pc5_ui.c:9298
 #, c-format
 msgid "Deleting the saves of %s"
 msgstr "正在刪除%s的存檔"
 
-#: title/pc5_ui.c:9285
+#: title/pc5_ui.c:9298
 #, c-format
 msgid "Uninstalling %s"
 msgstr "正在解除安裝%s"
 
-#: title/pc5_ui.c:9288
+#: title/pc5_ui.c:9301
 #, c-format
 msgid "%u files and folders deleted"
 msgstr "已刪除%u個檔案和資料夾"
 
-#: title/pc5_ui.c:9294
+#: title/pc5_ui.c:9307
 msgid "Importing library music"
 msgstr "正在匯入遊戲庫音樂"
 
-#: title/pc5_ui.c:9295
+#: title/pc5_ui.c:9308
 msgid ""
 "Preparing a copy on the console. Keep the source drive connected until "
 "this finishes."
 msgstr "正在主機上準備副本。完成前請保持來源儲存裝置連接。"
 
-#: title/pc5_ui.c:9298
+#: title/pc5_ui.c:9311
 msgid "Importing background video"
 msgstr "正在匯入背景影片"
 
-#: title/pc5_ui.c:9299
+#: title/pc5_ui.c:9312
 msgid ""
 "Copying video to the console. Keep the source drive connected until this "
 "finishes."
 msgstr "正在將影片複製到主機。完成前請保持來源儲存裝置連接。"
 
-#: title/pc5_ui.c:9317
+#: title/pc5_ui.c:9330
 #, c-format
 msgid ""
 "%d game is waiting in PC5's INSTALL folders (its own, and PC5/INSTALL on "
@@ -5535,7 +5551,7 @@ msgid ""
 msgstr ""
 "PC5的INSTALL資料夾（它自己的，以及USB儲存裝置上的PC5/INSTALL）中有%d款遊戲等待安裝。現在安裝嗎？從那裡安裝的遊戲會從INSTALL資料夾移入PC5的遊戲庫。"
 
-#: title/pc5_ui.c:9317
+#: title/pc5_ui.c:9330
 #, c-format
 msgid ""
 "%d games are waiting in PC5's INSTALL folders (its own, and PC5/INSTALL on "
@@ -5544,7 +5560,7 @@ msgid ""
 msgstr ""
 "PC5的INSTALL資料夾（它自己的，以及USB儲存裝置上的PC5/INSTALL）中有%d款遊戲等待安裝。現在安裝嗎？從那裡安裝的遊戲會從INSTALL資料夾移入PC5的遊戲庫。"
 
-#: title/pc5_ui.c:9317
+#: title/pc5_ui.c:9330
 #, c-format
 msgid ""
 "%d game is waiting in PC5's INSTALL folder. Install it now? A game "
@@ -5552,7 +5568,7 @@ msgid ""
 "folder."
 msgstr "PC5的INSTALL資料夾中有%d款遊戲等待安裝。現在安裝嗎？從那裡安裝的遊戲會從INSTALL資料夾移入PC5的遊戲庫。"
 
-#: title/pc5_ui.c:9317
+#: title/pc5_ui.c:9330
 #, c-format
 msgid ""
 "%d games are waiting in PC5's INSTALL folder. Install them now? A game "
@@ -5561,33 +5577,33 @@ msgid ""
 msgstr "PC5的INSTALL資料夾中有%d款遊戲等待安裝。現在安裝嗎？從那裡安裝的遊戲會從INSTALL資料夾移入PC5的遊戲庫。"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9329
+#: title/pc5_ui.c:9342
 msgid "Games in PC5's INSTALL folder"
 msgstr "PC5的INSTALL資料夾中的遊戲"
 
-#: title/pc5_ui.c:9334
+#: title/pc5_ui.c:9347
 msgid "Updating the home screen tile"
 msgstr "正在更新主畫面圖示"
 
-#: title/pc5_ui.c:9334
+#: title/pc5_ui.c:9347
 msgid "Its picture and background"
 msgstr "它的圖片和背景"
 
-#: title/pc5_ui.c:9336
+#: title/pc5_ui.c:9349
 msgid "A newer one may have fixed it"
 msgstr "新版本可能已經修正"
 
-#: title/pc5_ui.c:9339
+#: title/pc5_ui.c:9352
 #, c-format
 msgid "Update to PC5 %s first?"
 msgstr "要先更新到PC5 %s嗎？"
 
-#: title/pc5_ui.c:9341
+#: title/pc5_ui.c:9354
 #, c-format
 msgid "You have %s"
 msgstr "您的版本是%s"
 
-#: title/pc5_ui.c:9342
+#: title/pc5_ui.c:9355
 #, c-format
 msgid ""
 "This may already be fixed in it. Update, try the game again, and report it "
@@ -5595,21 +5611,21 @@ msgid ""
 msgstr "新版本中可能已經修正了這個問題。請更新後再試一次遊戲，如果問題仍然存在再回報。%s。"
 
 #. In a question window: the title, its text, or a button's label (keep buttons short).
-#: title/pc5_ui.c:9345
+#: title/pc5_ui.c:9358
 msgid "Report anyway"
 msgstr "仍要回報"
 
-#: title/pc5_ui.c:9350
+#: title/pc5_ui.c:9363
 #, c-format
 msgid "Starting %s"
 msgstr "正在啟動%s"
 
-#: title/pc5_ui.c:9353
+#: title/pc5_ui.c:9366
 #, c-format
 msgid "Installing %.80s for it, once"
 msgstr "正在為它安裝%.80s（僅此一次）"
 
-#: title/pc5_ui.c:9357
+#: title/pc5_ui.c:9370
 #, c-format
 msgid "Setting up .NET for your games, once: %u of %u"
 msgstr "正在為您的遊戲設定.NET（僅此一次）：%u/%u"

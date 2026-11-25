@@ -79,8 +79,45 @@ static int contains_ci_range(const char *line, const char *end, const char *need
     return 0;
 }
 
+/* Copy protection that can't run on the console, known by a DLL a game loads or a program it
+ * starts (matched in the line's path, any case). An anti-cheat needs Windows' own kernel, so no
+ * copy runs ("anti-cheat" on GitHub); a store's app the game needs running ("needs store app")
+ * can't start, though another store's copy may not need it. A name a game's own file could have
+ * starts with its folder's backslash. */
+enum { PROTECTION_ANTI_CHEAT = 1, PROTECTION_STORE_APP };
+static const struct { const char *needle, *what; int kind; } PROTECTIONS[] = {
+    { "easyanticheat", "Easy Anti-Cheat", PROTECTION_ANTI_CHEAT },
+    { "start_protected_game", "Easy Anti-Cheat", PROTECTION_ANTI_CHEAT },
+    { "beclient", "BattlEye", PROTECTION_ANTI_CHEAT },
+    { "beservice", "BattlEye", PROTECTION_ANTI_CHEAT },
+    { "battleye", "BattlEye", PROTECTION_ANTI_CHEAT },
+    { "eaanticheat", "EA Anti-Cheat", PROTECTION_ANTI_CHEAT },
+    { "vanguard", "Riot Vanguard", PROTECTION_ANTI_CHEAT },
+    { "gameguard", "nProtect GameGuard", PROTECTION_ANTI_CHEAT },
+    { "gamemon.des", "nProtect GameGuard", PROTECTION_ANTI_CHEAT },
+    { "\\npgg", "nProtect GameGuard", PROTECTION_ANTI_CHEAT },
+    { "xigncode", "XIGNCODE3", PROTECTION_ANTI_CHEAT },
+    { "\\x3.xem", "XIGNCODE3", PROTECTION_ANTI_CHEAT },
+    { "ace-base", "Anti-Cheat Expert", PROTECTION_ANTI_CHEAT },
+    { "sguard64", "Anti-Cheat Expert", PROTECTION_ANTI_CHEAT },
+    { "mhyprot", "mhyprot", PROTECTION_ANTI_CHEAT },
+    { "\\equ8", "EQU8", PROTECTION_ANTI_CHEAT },
+    { "uplay_r1_loader", "Ubisoft Connect", PROTECTION_STORE_APP },
+    { "uplay_r2_loader", "Ubisoft Connect", PROTECTION_STORE_APP },
+    { "upc_r1_loader", "Ubisoft Connect", PROTECTION_STORE_APP },
+    { "upc_r2_loader", "Ubisoft Connect", PROTECTION_STORE_APP },
+    { "socialclub", "the Rockstar Games Launcher (Social Club)", PROTECTION_STORE_APP },
+    { "\\activation64.dll", "the EA app (its activation)", PROTECTION_STORE_APP },
+    { "\\activation.dll", "the EA app (its activation)", PROTECTION_STORE_APP },
+    { "eadesktop", "the EA app", PROTECTION_STORE_APP },
+    { "\\battle.net", "Battle.net", PROTECTION_STORE_APP },
+    { "epicgameslauncher", "the Epic Games Launcher", PROTECTION_STORE_APP },
+};
+
 Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *issue)
 {
+    const char *protection = NULL;
+    int protection_kind = 0;
     const char *end_of_text = text + length, *line = text;
     double first_t = -1, last_t = -1;
     int ended = 0, launch_failed = 0, unhandled = 0, forced = 0, pc5_problem = 0, picture = 0, asked = 0, handed_off = 0;
@@ -140,6 +177,15 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
             for (size_t i = 0; i < sizeof(others) / sizeof(others[0]) && !copy_file[0]; i++)
                 if (contains_ci_range(line, end, others[i])) pc5_copy(copy_file, sizeof(copy_file), others[i]);
         }
+        /* Copy protection, in a DLL loaded or a program started (by Wine, or one PC5 left out). */
+        if (!protection && (after(line, end, "trace:loaddll:") || after(line, end, "NtCreateUserProcess L\"") ||
+                            after(line, end, " is a helper") || after(line, end, "hand-off to "))) {
+            for (size_t i = 0; i < sizeof(PROTECTIONS) / sizeof(PROTECTIONS[0]) && !protection; i++)
+                if (contains_ci_range(line, end, PROTECTIONS[i].needle)) {
+                    protection = PROTECTIONS[i].what;
+                    protection_kind = PROTECTIONS[i].kind;
+                }
+        }
         if (after(line, end, "called without a rendering context")) no_opengl = 1;
         /* A DLL nowhere to be found, and the program that couldn't load for it ("Importing dlls for
          * ... failed"), or one of the other kind (c000007b: a 32-bit DLL beside a 64-bit game). */
@@ -183,6 +229,9 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
     if (missing_dll[0] && imports_failed) {
         issue->cause = PC5_CAUSE_MISSING_DLL;
         pc5_copy(issue->cause_what, sizeof(issue->cause_what), missing_dll);
+    } else if (protection) {
+        issue->cause = protection_kind == PROTECTION_ANTI_CHEAT ? PC5_CAUSE_ANTI_CHEAT : PC5_CAUSE_STORE_APP;
+        pc5_copy(issue->cause_what, sizeof(issue->cause_what), protection);
     } else if (installer[0]) {
         issue->cause = PC5_CAUSE_INSTALLER;
         pc5_copy(issue->cause_what, sizeof(issue->cause_what), installer);
@@ -224,6 +273,9 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
         issue->problem = PC5_LOG_CLOSED_EARLY;
     }
     if (!strcmp(issue->profile, "launcher")) issue->cause = PC5_CAUSE_NONE;
+    /* Copy protection is the cause only of a game that failed: one that ran is fine as it is. */
+    if (issue->problem == PC5_LOG_FINE && (issue->cause == PC5_CAUSE_ANTI_CHEAT || issue->cause == PC5_CAUSE_STORE_APP))
+        issue->cause = PC5_CAUSE_NONE;
     return issue->problem;
 }
 
@@ -279,6 +331,13 @@ void pc5_log_cause_text(const Pc5LogIssue *issue, char *out, size_t size)
     }
     case PC5_CAUSE_WRONG_DLL:
         snprintf(out, size, "%s beside it is of the other kind (32-bit for a 64-bit game, or the reverse)", issue->cause_what);
+        break;
+    case PC5_CAUSE_ANTI_CHEAT:
+        snprintf(out, size, "anti-cheat: it runs %s, which needs Windows' own kernel, so no copy of the game runs on the console",
+                 issue->cause_what);
+        break;
+    case PC5_CAUSE_STORE_APP:
+        snprintf(out, size, "needs store app: it needs %s running beside it, which can't run on the console", issue->cause_what);
         break;
     default:
         if (size) out[0] = 0;

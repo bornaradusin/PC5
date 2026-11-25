@@ -34,6 +34,8 @@ typedef enum Pc5LogCause {
     PC5_CAUSE_CRASH_REPORT,   /* the game's own crash report (Unreal's CrashContext) says what it was */
     PC5_CAUSE_MISSING_DLL,    /* its program couldn't load: a DLL it needs is nowhere (mfc100u.dll, Kenshi) */
     PC5_CAUSE_WRONG_DLL,      /* a DLL it loads is of the other kind, 32-bit for a 64-bit game (c000007b) */
+    PC5_CAUSE_ANTI_CHEAT,     /* it loaded or started an anti-cheat (Easy Anti-Cheat), which needs Windows' kernel */
+    PC5_CAUSE_STORE_APP,      /* it needs its store's app running (Ubisoft Connect's uplay_r1_loader64.dll) */
 } Pc5LogCause;
 
 typedef struct Pc5LogIssue {

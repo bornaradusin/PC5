@@ -3353,6 +3353,16 @@ static void issue_message(Pc5Ui *ui)
                  "C:\\Windows\\System32 on a PC), a 32-bit game the 32-bit one (from C:\\Windows\\SysWOW64).",
                  issue->cause_what);
         break;
+    case PC5_CAUSE_ANTI_CHEAT:
+        /* TRANSLATORS: %s is the anti-cheat's name (Easy Anti-Cheat, BattlEye). */
+        pc5_tf(why, sizeof(why), "It runs %s, an anti-cheat that needs Windows' own kernel, which the console doesn't "
+                 "have: no copy of this game can run on PC5.", issue->cause_what);
+        break;
+    case PC5_CAUSE_STORE_APP:
+        /* TRANSLATORS: %s is the store's app (Ubisoft Connect, the EA app). */
+        pc5_tf(why, sizeof(why), "It needs %s running beside it, which can't run on the console. A copy of the game "
+                 "from a store that doesn't need its app may run.", issue->cause_what);
+        break;
     default:
         break;
     }

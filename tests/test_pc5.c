@@ -4997,6 +4997,38 @@ static void test_logs(void)
               "Managed DirectX it can't start without (#737): %d %d %s", (int)issue.problem, (int)issue.cause, issue.cause_what);
         pc5_log_cause_text(&issue, cause, sizeof(cause));
         CHECK(strstr(cause, "Microsoft.DirectX.AudioVideoPlayback.dll, from Managed DirectX 1.1"), "in words: %s", cause);
+        /* Copy protection that can't run on the console, named when the game failed: an anti-cheat
+         * (no copy runs) and a store's app it needs running (Assassin's Creed Unity's Ubisoft Connect,
+         * #767); a game that ran with it is fine. */
+        static char more_text[1024];
+        CHECK(CLASSIFY("eac", "REC seq=1 t=1.0 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\\\Games\\\\Game\\\\"
+                              "EasyAntiCheat\\\\EasyAntiCheat_EOS.dll\" at 0000000180000000: native\nREC seq=2 t=2.0 WINE "
+                              "wine: Unhandled exception 0xc0000005 in thread 24 at address 0000000180001234 (thread 0024)\n") ==
+                  PC5_LOG_GAME_CRASHED && issue.cause == PC5_CAUSE_ANTI_CHEAT && !strcmp(issue.cause_what, "Easy Anti-Cheat"),
+              "an anti-cheat: %d %d %s", (int)issue.problem, (int)issue.cause, issue.cause_what);
+        pc5_log_cause_text(&issue, cause, sizeof(cause));
+        CHECK(!strncmp(cause, "anti-cheat: it runs Easy Anti-Cheat", 35), "in words, with its label first: %s", cause);
+        CHECK(CLASSIFY("battleye", "REC seq=1 t=1.0 WINE 0024:trace:process:NtCreateUserProcess L\"\\\\??\\\\C:\\\\Games\\\\G\\\\"
+                                   "G_BE.exe\" image L\"C:\\\\Games\\\\G\\\\BattlEye\\\\BEService_x64.exe\" cmdline L\"x\"\n"
+                                   "REC seq=2 t=1.1 PW_WINE64 session_end reason=wine-exit\n") == PC5_LOG_NO_PICTURE &&
+                  issue.cause == PC5_CAUSE_ANTI_CHEAT && !strcmp(issue.cause_what, "BattlEye"),
+              "an anti-cheat it started: %d %s", (int)issue.cause, issue.cause_what);
+        static const char unity[] = "REC seq=100 t=2220.6 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\\\Games\\\\Assassins "
+                                    "Creed Unity\\\\uplay_r1_loader64.dll\" at 00000013FEF20000: native\n";
+        snprintf(more_text, sizeof(more_text), "%sREC seq=101 t=2221.0 PW_WINE64 session_end reason=wine-exit\n", unity);
+        CHECK(CLASSIFY("acu", more_text) == PC5_LOG_NO_PICTURE && issue.cause == PC5_CAUSE_STORE_APP &&
+                  !strcmp(issue.cause_what, "Ubisoft Connect"),
+              "a store's app it needs (#767): %d %d %s", (int)issue.problem, (int)issue.cause, issue.cause_what);
+        pc5_log_cause_text(&issue, cause, sizeof(cause));
+        CHECK(!strncmp(cause, "needs store app: it needs Ubisoft Connect running", 49), "in words: %s", cause);
+        snprintf(more_text, sizeof(more_text), "%sREC seq=101 t=2221.0 PW_WINE64 alive tick=60 sink_calls=1 frames_put=2 shown=1\n"
+                 "REC seq=102 t=2400.0 PW_WINE64 session_end reason=wine-exit\n", unity);
+        CHECK(CLASSIFY("acu", more_text) == PC5_LOG_FINE && issue.cause == PC5_CAUSE_NONE,
+              "a game that ran with it is fine: %d %d", (int)issue.problem, (int)issue.cause);
+        (void)CLASSIFY("activation", "REC seq=1 t=1.0 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\\\Games\\\\G\\\\"
+                                     "MyActivation.dll\" at 0000000180000000: native\nREC seq=2 t=1.1 PW_WINE64 session_end "
+                                     "reason=wine-exit\n");
+        CHECK(issue.cause == PC5_CAUSE_NONE, "a game's own DLL with such a word in its name isn't one: %d", (int)issue.cause);
         (void)CLASSIFY("xml", "REC seq=1 t=1.0 WINE Could not load file or assembly 'Game.XmlSerializers, Version=1.0.0.0' or "
                               "one of its dependencies.\nREC seq=2 t=1.1 PW_WINE64 session_end reason=wine-exit\n");
         CHECK(issue.cause == PC5_CAUSE_NONE, "an assembly a game goes on without isn't a cause: %d", (int)issue.cause);
