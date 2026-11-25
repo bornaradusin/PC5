@@ -1172,12 +1172,18 @@ static int holds_ci(const char *text, const char *needle)
     return 0;
 }
 
-/* path's length without its trailing \, / or spaces. */
+/* path's length without its trailing \, / or blanks (spaces, tabs, and control characters an
+ * editor left, which a log line doesn't show). */
 static size_t alias_trimmed(const char *path, size_t length)
 {
-    while (length && (path[length - 1] == '\\' || path[length - 1] == '/' || path[length - 1] == ' ')) length--;
+    while (length && (path[length - 1] == '\\' || path[length - 1] == '/' || (unsigned char)path[length - 1] <= ' '))
+        length--;
     return length;
 }
+
+/* Why each path of the last pc5_prefix_infinity_aliases was left as it was, for the log (#746:
+ * a copy whose paths stayed on D:\ though the game's folder was there, and the log couldn't say why). */
+static Pc5Buf alias_why;
 
 static int alias_starts_with(const char *path, size_t length, const char *base, size_t base_length)
 {
@@ -1204,7 +1210,7 @@ static int alias_value(const char *drive, const char *value, size_t length, cons
         size_t end = at;
         while (end < length && value[end] != ';') end++;
         size_t start = at, n;
-        while (start < end && value[start] == ' ') start++;
+        while (start < end && (unsigned char)value[start] <= ' ') start++;
         n = alias_trimmed(value + start, end - start);
         char path[PC5_PATH], moved[PC5_PATH] = "";
         int slash = n < end - start && (value[start + n] == '\\' || value[start + n] == '/');   /* a \ at its end */
@@ -1227,7 +1233,12 @@ static int alias_value(const char *drive, const char *value, size_t length, cons
                     while (last > path && last[-1] != '\\' && last[-1] != '/' && last[-1] != ':') last--;
                     if (*last && pc5_format(moved, sizeof(moved), "%s%s%s", game, last, slash ? "\\" : "")) moved[0] = 0;
                 }
-                if (moved[0] && !windows_folder_exists(drive, moved)) moved[0] = 0;
+                if (moved[0] && !windows_folder_exists(drive, moved)) {
+                    pc5_buf_printf(&alias_why, "%s%s: %s isn't there either", alias_why.len ? "; " : "", path, moved);
+                    moved[0] = 0;
+                } else if (!moved[0]) {
+                    pc5_buf_printf(&alias_why, "%s%s: no folder for it in the game's copy", alias_why.len ? "; " : "", path);
+                }
             }
         }
         if (moved[0]) {
@@ -1257,7 +1268,7 @@ static int alias_ini(const char *drive, const char *text, const char *game, Pc5B
         else if (in_alias && end - p > 5 && !strncasecmp(p, "HD0:=", 5)) {
             const char *v = p + 5, *stop = v;
             while (stop < end && *stop != ';' && *stop != '\r') stop++;
-            while (v < stop && *v == ' ') v++;
+            while (v < stop && (unsigned char)*v <= ' ') v++;
             old_length = alias_trimmed(v, (size_t)(stop - v));
             if (old_length >= sizeof(old)) old_length = 0;
             memcpy(old, v, old_length);
@@ -1313,6 +1324,7 @@ int pc5_prefix_infinity_aliases(const char *root, const char *prefix, const char
     Pc5Info info;
     int changed = 0;
 
+    alias_why.len = 0;
     if (!prefix || !prefix[0] || !strcmp(prefix, "default") || !slash) return 0;
     if (pc5_format(drive, sizeof(drive), "%s/prefixes/%s/drive_c/", root, prefix) ||
         (size_t)(slash - program) >= sizeof(dir))
@@ -1336,6 +1348,8 @@ int pc5_prefix_infinity_aliases(const char *root, const char *prefix, const char
         if (*c == '/') *c = '\\';
         if ((unsigned char)*c >= 0x80) return 0;   /* the ini is read in the console's code page: ASCII only */
     }
+    if (!windows_folder_exists(drive, game))
+        pc5_buf_printf(&alias_why, "the game's folder %s isn't found under %s", game, drive);
     DIR *d = opendir(dir);
     struct dirent *e;
     if (!d) return 0;
@@ -1364,6 +1378,11 @@ int pc5_prefix_infinity_aliases(const char *root, const char *prefix, const char
     }
     closedir(d);
     return changed;
+}
+
+const char *pc5_prefix_infinity_aliases_why(void)
+{
+    return alias_why.len && !pc5_buf_terminate(&alias_why) ? (const char *)alias_why.data : "";
 }
 
 /* ---- the runtime's copy ------------------------------------------------------------------- */
@@ -1622,6 +1641,8 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
             int aliases = pc5_prefix_infinity_aliases(root, prefix, started, &shown);
             if (aliases) say(game, "PC5 Infinity Engine [Alias] paths %s", aliases > 0 ? "put on the game's folder" : "failed");
             if (shown.len && !pc5_buf_terminate(&shown)) say(game, "PC5 Infinity Engine [Alias] in %.600s", (const char *)shown.data);
+            if (shown.len && pc5_prefix_infinity_aliases_why()[0])
+                say(game, "PC5 Infinity Engine [Alias] left as they were: %.600s", pc5_prefix_infinity_aliases_why());
             pc5_buf_free(&shown);
             int harvested = pc5_prefix_dx9_cabs(root, prefix, started);
             if (harvested) say(game, "PC5 DirectX cabinets %s %d", harvested > 0 ? "extracted" : "failed", harvested > 0 ? harvested : 0);

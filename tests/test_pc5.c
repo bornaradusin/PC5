@@ -5969,6 +5969,18 @@ static void test_dotnet(void)
         CHECK(pc5_prefix_infinity_aliases(root, "game", program, NULL) == 0 && file_holds_text(ini, "HD0:=.\\\nCD1:=.\\data\\\n"),
               "relative paths left alone");
         CHECK(pc5_prefix_infinity_aliases(root, "default", program, NULL) == 0, "the default prefix is left alone");
+        /* Installed on a PC's D:, no \ after HD0, a tab an editor left after it (#746). */
+        write_text(ini, "[Alias]\r\nHD0:=D:\\Icewind Dale II\t\r\nCD1:=D:\\Icewind Dale II\\Data\\\r\n"
+                        "CD2:=D:\\Icewind Dale II\\CD2\\;F:\\CD2\\\r\nCD3:=F:\\CD3\\\r\n");
+        path(file, sizeof(file), "%s/prefixes/game/drive_c/Games/Icewind Dale II/icewind2.ini.pc5-old", root);
+        unlink(file);
+        CHECK(pc5_prefix_infinity_aliases(root, "game", program, NULL) == 1 &&
+                  file_holds_text(ini, "[Alias]\r\nHD0:=C:\\Games\\Icewind Dale II\r\nCD1:=C:\\Games\\Icewind Dale II\\Data\\\r\n"
+                                       "CD2:=C:\\Games\\Icewind Dale II\\CD2\\;C:\\Games\\Icewind Dale II\\CD2\\\r\n"
+                                       "CD3:=F:\\CD3\\\r\n"),
+              "a copy installed on D: put on the console's copy too (#746)");
+        CHECK(!strcmp(pc5_prefix_infinity_aliases_why(), "F:\\CD3: C:\\Games\\Icewind Dale II\\CD3\\ isn't there either"),
+              "and why the one left was left, for the log: %s", pc5_prefix_infinity_aliases_why());
     }
 
     /* The runtime: copied once, for a .NET program only. */

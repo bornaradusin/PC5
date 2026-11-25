@@ -247,6 +247,9 @@ int pc5_prefix_installs(const char *root, const char *prefix, const char *progra
  * -1 when writing failed (tried again next time). shown, unless NULL, gets each such ini's [Alias]
  * lines as the game will read them ("icewind2.ini: HD0:=..., CD1:=..."), for the game's log. */
 int pc5_prefix_infinity_aliases(const char *root, const char *prefix, const char *program, Pc5Buf *shown);
+/* Why the last pc5_prefix_infinity_aliases left paths that don't exist as they were ("D:\CD3: no
+ * folder for it in the game's copy"), for the game's log; "" when it left none. */
+const char *pc5_prefix_infinity_aliases_why(void);
 
 /* The runtime's copy on the console: the app can't be listed, and every game's prefix
  * would otherwise hold its own 230 MB. Made once, from pc5/mono.list, by the first .NET
