@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Wed, 25 Nov 2026 12:00:00 +0000
+Subject: [PATCH] PC5: a reservation refused past a hole is named a hole (Wine
+ patch 1041)
+
+A refused fixed reservation named the next mapping after it as the one holding the range, though that mapping began past the range's end and nothing was in it (GTAV's recompilation, #779, at 0x800000000). Such a range is now reported as one no mapping holds.
+---
+ ...-refused-past-a-hole-is-named-a-hole.patch | 42 +++++++++++++++++++
+ 1 file changed, 42 insertions(+)
+ create mode 100644 wine/patches/1041-ntdll-a-reservation-refused-past-a-hole-is-named-a-hole.patch
+
+diff --git a/wine/patches/1041-ntdll-a-reservation-refused-past-a-hole-is-named-a-hole.patch b/wine/patches/1041-ntdll-a-reservation-refused-past-a-hole-is-named-a-hole.patch
+new file mode 100644
+index 0000000..babef45
+--- /dev/null
++++ b/wine/patches/1041-ntdll-a-reservation-refused-past-a-hole-is-named-a-hole.patch
+@@ -0,0 +1,42 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Wed, 25 Nov 2026 12:00:00 +0000
++Subject: [PATCH] ntdll: A reservation refused past a hole is named a hole.
++
++The kernel's virtual query reports the next mapping at or after an
++address. When a fixed reservation was refused and that mapping begins
++past the request's end, nothing lies in the range: the kernel refused
++the reservation itself. The report named that later mapping as if it
++held the range (GTAV's recompilation: "reservation refused for
++800000000-840000000: 1000000000-1000110000 is "anon"", where 0x800000000
++was empty), which sent the reading the wrong way. It now says no mapping
++holds it.
++---
++ dlls/ntdll/unix/virtual.c | 7 +++++--
++ 1 file changed, 5 insertions(+), 2 deletions(-)
++
++diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
++index 025b604..8f6f096 100644
++--- a/dlls/ntdll/unix/virtual.c
+++++ b/dlls/ntdll/unix/virtual.c
++@@ -886,7 +886,9 @@ static void *anon_mmap_tryfixed( void *start, size_t size, int prot, int flags )
++          * tells the two apart: a query reporting protection, flags and a
++          * name describes a mapping, while a cleared record covering the
++          * whole request describes a hole, meaning the reservation was
++-         * refused rather than blocked. This matters most at a fixed base,
+++         * refused rather than blocked; so does a mapping the query found
+++         * past the request's end (it reports the next mapping at or after
+++         * start). This matters most at a fixed base,
++          * where a title's own image lying across a program's preferred base
++          * is indistinguishable from an exhausted address space. */
++         struct { void *start, *end; int64_t offset; int32_t protection, memory_type;
++@@ -895,7 +897,8 @@ static void *anon_mmap_tryfixed( void *start, size_t size, int prot, int flags )
++ 
++         memset( &info, 0, sizeof(info) );
++         query = sceKernelVirtualQuery( start, 1, &info, sizeof(info) );
++-        if (query || (!info.protection && !info.flags && (char *)info.end >= (char *)start + size))
+++        if (query || (!info.protection && !info.flags && (char *)info.end >= (char *)start + size) ||
+++            (char *)info.start >= (char *)start + size)
++             ERR( "reservation refused for %p-%p, which no mapping holds (query %d)\n",
++                  start, (char *)start + size, query );
++         else
