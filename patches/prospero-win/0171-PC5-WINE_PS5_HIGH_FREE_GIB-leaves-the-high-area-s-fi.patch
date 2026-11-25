@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Wed, 25 Nov 2026 12:00:00 +0000
+Subject: [PATCH] PC5: WINE_PS5_HIGH_FREE_GIB leaves the high area's first GiB
+ to a program (Wine patch 1042)
+
+A static recompilation of an Xbox 360 game (gtav-recomp, #779) maps its guest memory at the first power of two from 4 GiB that is free; on the console each one below 0x1000000000 is held or refused, and Wine's own first allocations sat at 0x1000000000. WINE_PS5_HIGH_FREE_GIB=n in a game's env.txt leaves the high area's first n GiB to it.
+---
+ ...ib-leaves-the-high-area-to-a-program.patch | 73 +++++++++++++++++++
+ 1 file changed, 73 insertions(+)
+ create mode 100644 wine/patches/1042-ntdll-ps5-wine-ps5-high-free-gib-leaves-the-high-area-to-a-program.patch
+
+diff --git a/wine/patches/1042-ntdll-ps5-wine-ps5-high-free-gib-leaves-the-high-area-to-a-program.patch b/wine/patches/1042-ntdll-ps5-wine-ps5-high-free-gib-leaves-the-high-area-to-a-program.patch
+new file mode 100644
+index 0000000..3e68603
+--- /dev/null
++++ b/wine/patches/1042-ntdll-ps5-wine-ps5-high-free-gib-leaves-the-high-area-to-a-program.patch
+@@ -0,0 +1,73 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Wed, 25 Nov 2026 12:00:00 +0000
++Subject: [PATCH] ntdll: PS5: WINE_PS5_HIGH_FREE_GIB leaves the high area's
++ first GiB to a program.
++
++A static recompilation of an Xbox 360 game (gtav-recomp, made with
++ReXGlue, whose memory is Xenia's) maps its guest memory with
++MapViewOfFileEx at a host base it chooses: the first power of two from
++4 GiB where its views fit. On the console 0x100000000 holds the title's
++own image, 0x200000000 and 0x400000000 the console's mappings, the
++kernel refuses 0x800000000, and at 0x1000000000 Wine's own first
++allocations sat at the bottom of the high reserved area, so every base
++was refused and the game waited forever for memory it never got.
++
++WINE_PS5_HIGH_FREE_GIB=n (1 to 15) now starts an allocation free to go
++anywhere n GiB into the high area, leaving its bottom to such a
++program's fixed views. Without it nothing changes.
++---
++ dlls/ntdll/unix/virtual.c | 24 +++++++++++++++++++++---
++ 1 file changed, 21 insertions(+), 3 deletions(-)
++
++diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
++index 8f6f096..04ad352 100644
++--- a/dlls/ntdll/unix/virtual.c
+++++ b/dlls/ntdll/unix/virtual.c
++@@ -863,6 +863,13 @@ extern int sceKernelVirtualQuery( const void *addr, int flags, void *info, size_
++ #define PS5_HIGH_KEEP        ((size_t)64 << 30)
++ /* Where the high areas end: map_view reserves more from here. */
++ static char *ps5_high_top = (char *)PS5_HIGH_BASE;
+++/* Where an allocation free to go anywhere starts in the high areas. WINE_PS5_HIGH_FREE_GIB=n
+++ * leaves their first n GiB to a program that maps there at addresses of its own: a static
+++ * recompilation of an Xbox 360 game (gtav-recomp, ReXGlue, Xenia's memory) maps its guest
+++ * memory at the first power of two from 4 GiB that is free, and below 0x1000000000 the
+++ * console's own mappings hold or refuse each one, while Wine's first allocations sat at
+++ * 0x1000000000 itself. */
+++static char *ps5_anywhere_base = (char *)PS5_HIGH_BASE;
++ #endif
++ 
++ static void *anon_mmap_tryfixed( void *start, size_t size, int prot, int flags )
++@@ -1095,6 +1102,17 @@ static void mmap_init( const struct preload_info *preload_info )
++             mmap_add_reserved_area( high, PS5_HIGH_RESERVE );
++             ps5_high_top = (char *)high + PS5_HIGH_RESERVE;
++         }
+++        {
+++            const char *keep = getenv( "WINE_PS5_HIGH_FREE_GIB" );
+++            unsigned long gib = keep ? strtoul( keep, NULL, 10 ) : 0;
+++
+++            if (gib && gib < (PS5_HIGH_RESERVE >> 30) && ps5_high_top > (char *)PS5_HIGH_BASE)
+++            {
+++                ps5_anywhere_base = (char *)PS5_HIGH_BASE + ((size_t)gib << 30);
+++                fprintf( stderr, "wine-ps5: its first %lu GiB left to the program's own addresses, Wine's "
+++                         "allocations from %p (WINE_PS5_HIGH_FREE_GIB)\n", gib, ps5_anywhere_base );
+++            }
+++        }
++         fprintf( stderr, "wine-ps5: address space for programs: %zu GiB at %p, more when needed up to %p "
++                  "(the console's ends at %p)\n", (size_t)(ps5_high_top - (char *)PS5_HIGH_BASE) >> 30,
++                  PS5_HIGH_BASE, (char *)host_addr_space_limit - PS5_HIGH_KEEP, host_addr_space_limit );
++@@ -2885,11 +2903,11 @@ static NTSTATUS map_view( struct file_view **view_ret, void *base, size_t size,
++          * the low reserved areas to the i386 guest. When the high areas
++          * cannot take it, they grow (a 64-bit game's 512 MiB allocation found
++          * no room in the first 16 GiB and failed, 2026-10-24). */
++-        if ((char *)end > (char *)PS5_HIGH_BASE &&
++-            ((ptr = map_reserved_area( max( start, PS5_HIGH_BASE ), end, host_size, top_down,
+++        if ((char *)end > ps5_anywhere_base &&
+++            ((ptr = map_reserved_area( max( start, (void *)ps5_anywhere_base ), end, host_size, top_down,
++                                        unix_prot, align_mask )) ||
++              (ps5_grow_high_area( end, view_size ) &&
++-              (ptr = map_reserved_area( max( start, PS5_HIGH_BASE ), end, host_size, top_down,
+++              (ptr = map_reserved_area( max( start, (void *)ps5_anywhere_base ), end, host_size, top_down,
++                                         unix_prot, align_mask )))))
++         {
++             TRACE( "got mem in the high reserved area %p-%p\n", ptr, (char *)ptr + size );

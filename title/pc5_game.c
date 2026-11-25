@@ -1649,10 +1649,13 @@ int pc5_game_env_name_ok(const char *name)
     /* ... except prospero-win's per-frame profile, for finding what slows a game down
      * (docs/cs-thread-profile.md), whose switches only add lines to the log, and how long a
      * wait spins before it sleeps (Wine patch 0998; 0 off), and how long the pointer stays on
-     * screen unused (Wine patch 0999; 0 always), and turning off read-ahead (Wine patch 1001; 0 off). */
+     * screen unused (Wine patch 0999; 0 always), and turning off read-ahead (Wine patch 1001; 0 off),
+     * and the GiB of the high area left to a program's own addresses (Wine patch 1042: an Xbox 360
+     * recompilation's guest memory, gtav-recomp, #779). */
     static const char *const profile[] = { "PW_NATIVE_PROFILE", "PW_VK_RADV_PROFILE", "PW_VK_RADV_EVENT_US",
                                            "PW_NATIVE_SLOW_SYSCALL_US", "WINE_PS5_SYNC_SPIN_US",
-                                           "WINE_PS5_CURSOR_IDLE_MS", "WINE_PS5_READ_AHEAD" };
+                                           "WINE_PS5_CURSOR_IDLE_MS", "WINE_PS5_READ_AHEAD",
+                                           "WINE_PS5_HIGH_FREE_GIB" };
     for (size_t i = 0; i < sizeof(profile) / sizeof(profile[0]); i++)
         if (!strcmp(name, profile[i])) return 1;
     if (!name[0] || strlen(name) > 64 || !((name[0] >= 'A' && name[0] <= 'Z') || (name[0] >= 'a' && name[0] <= 'z') ||

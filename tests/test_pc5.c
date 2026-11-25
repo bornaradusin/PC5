@@ -5619,6 +5619,8 @@ static void test_java(void)
               pc5_game_env_name_ok("WINE_PS5_SYNC_SPIN_US") && pc5_game_env_name_ok("WINE_PS5_READ_AHEAD") &&
               !pc5_game_env_name_ok("WINEDEBUG") &&
               !pc5_game_env_name_ok("PW_VK_BATCH"), "the names it takes");
+        CHECK(pc5_game_env_name_ok("WINE_PS5_HIGH_FREE_GIB") && !pc5_game_env_name_ok("WINE_PS5_HIGH_FREE"),
+              "the high area left to a program's own addresses (gtav-recomp, #779)");
         unsetenv("MEMORIES_NO_MONITOR");
         unsetenv("GAME_LOG");
         unlink(file);
