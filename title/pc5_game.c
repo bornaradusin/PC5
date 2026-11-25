@@ -909,6 +909,104 @@ int pc5_prefix_arial(const char *root, const char *prefix, const char *app)
     return added;
 }
 
+/* ---- a web game's files cut short ----------------------------------------------------------- */
+
+/* 1 when dir/index is a Chromium disk cache's index cut short: empty, or the block-file cache's
+ * (magic 0xC103CAC3) shorter than its header and smallest table (368 + 4 * 0x10000 bytes). */
+static int web_cache_cut_short(const char *dir)
+{
+    char index[PC5_PATH];
+    unsigned char magic[4];
+    struct stat st;
+
+    if (pc5_format(index, sizeof(index), "%s/index", dir) || stat(index, &st) || !S_ISREG(st.st_mode)) return 0;
+    if (st.st_size < 4) return 1;
+    int fd = open(index, O_RDONLY);
+    if (fd < 0) return 0;
+    ssize_t got = read(fd, magic, sizeof(magic));
+    close(fd);
+    return got == 4 && magic[0] == 0xc3 && magic[1] == 0xca && magic[2] == 0x03 && magic[3] == 0xc1 &&
+           st.st_size < 368 + 4 * 0x10000;
+}
+
+/* The files of dir (not its folders) removed: 0, or -1. */
+static int remove_files(const char *dir)
+{
+    char file[PC5_PATH];
+    DIR *d = opendir(dir);
+    struct dirent *e;
+    int failed = 0;
+
+    if (!d) return -1;
+    while ((e = readdir(d)))
+        if (!pc5_format(file, sizeof(file), "%s/%s", dir, e->d_name) && pc5_is_file(file) && unlink(file)) failed = -1;
+    closedir(d);
+    return failed;
+}
+
+/* In an app's folder (AppData\Roaming\<app>), its caches up to two folders down (GPUCache,
+ * Cache\Cache_Data) cut short emptied, and, when it is a Chromium profile, its empty .json files
+ * moved aside. The number changed, or -1. */
+static int web_app_folder(const char *app)
+{
+    char path[PC5_PATH], moved[PC5_PATH];
+    int changed = 0, chromium = 0;
+    DIR *d = opendir(app);
+    struct dirent *e;
+
+    if (!d) return 0;
+    if (!pc5_format(path, sizeof(path), "%s/Local State", app) && pc5_is_file(path)) chromium = 1;
+    if (!pc5_format(path, sizeof(path), "%s/GPUCache", app) && pc5_is_dir(path)) chromium = 1;
+    while ((e = readdir(d))) {
+        struct stat st;
+        if (e->d_name[0] == '.' || pc5_format(path, sizeof(path), "%s/%s", app, e->d_name) || stat(path, &st)) continue;
+        if (S_ISDIR(st.st_mode)) {
+            if (web_cache_cut_short(path)) changed += remove_files(path) ? 0 : 1;
+            DIR *inner = opendir(path);
+            struct dirent *f;
+            char deeper[PC5_PATH];
+            while (inner && (f = readdir(inner)))
+                if (f->d_name[0] != '.' && !pc5_format(deeper, sizeof(deeper), "%s/%s", path, f->d_name) &&
+                    pc5_is_dir(deeper) && web_cache_cut_short(deeper))
+                    changed += remove_files(deeper) ? 0 : 1;
+            if (inner) closedir(inner);
+        } else if (chromium && S_ISREG(st.st_mode) && st.st_size == 0 && pc5_ends_with_ci(e->d_name, ".json") &&
+                   !pc5_format(moved, sizeof(moved), "%s.pc5-empty", path) && !rename(path, moved)) {
+            changed++;
+        }
+    }
+    closedir(d);
+    return changed;
+}
+
+int pc5_prefix_web_files(const char *root, const char *prefix)
+{
+    static const char *const kinds[] = { "AppData/Roaming", "AppData/Local" };
+    char users[PC5_PATH], apps[PC5_PATH], app[PC5_PATH];
+    int changed = 0;
+
+    if (!prefix || !prefix[0] || !strcmp(prefix, "default") ||
+        pc5_format(users, sizeof(users), "%s/prefixes/%s/drive_c/users", root, prefix))
+        return 0;
+    DIR *d = opendir(users);
+    struct dirent *e;
+    if (!d) return 0;
+    while ((e = readdir(d))) {
+        if (e->d_name[0] == '.') continue;
+        for (size_t k = 0; k < sizeof(kinds) / sizeof(kinds[0]); k++) {
+            if (pc5_format(apps, sizeof(apps), "%s/%s/%s", users, e->d_name, kinds[k])) continue;
+            DIR *a = opendir(apps);
+            struct dirent *f;
+            while (a && (f = readdir(a)))
+                if (f->d_name[0] != '.' && !pc5_format(app, sizeof(app), "%s/%s", apps, f->d_name) && pc5_is_dir(app))
+                    changed += web_app_folder(app);
+            if (a) closedir(a);
+        }
+    }
+    closedir(d);
+    return changed;
+}
+
 /* Programs whose own check refuses Windows 10, by name, and the Windows they were made for. */
 static const struct { const char *program, *version; } program_versions[] = {
     { "Conviction_game.exe", "win7" },   /* Splinter Cell: Conviction's system check: "Operating System not supported" */
@@ -1628,6 +1726,8 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         if (arial) say(game, "PC5 prefix Arial files %s %d", arial > 0 ? "added" : "failed", arial > 0 ? arial : 0);
         int versions = pc5_prefix_versions(root, prefix);
         if (versions) say(game, "PC5 prefix Windows versions %s", versions > 0 ? "added" : "failed");
+        int web = pc5_prefix_web_files(root, prefix);
+        if (web) say(game, "PC5 prefix web game files cut short by an earlier start put right: %d", web);
         int runtimes = pc5_prefix_runtimes(root, prefix);
         if (runtimes) say(game, "PC5 prefix Visual C++ 2010-2013 runtimes %s", runtimes > 0 ? "recorded" : "failed");
         long processors = sysconf(_SC_NPROCESSORS_ONLN);

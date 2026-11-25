@@ -227,6 +227,13 @@ int pc5_prefix_arial(const char *root, const char *prefix, const char *app);
  * template's for the default prefix). 1 when it added some, 0 when it had them all, -1 on a
  * failure (tried again next time). */
 int pc5_prefix_versions(const char *root, const char *prefix);
+/* A web game's files an earlier start left cut short, put right before it starts: a Chromium disk
+ * cache (GPUCache, DawnWebGPUCache, Cache\Cache_Data) whose index is shorter than its header and
+ * table is emptied for Chromium to make again ("Unable to map Index file", then Riverfront Rumble's
+ * Electron stopped itself, #750), and in a Chromium profile's folder an empty .json is moved aside
+ * as <name>.json.pc5-empty (Noreya's "SyntaxError: Unexpected end of JSON input", #693). Under each
+ * user's AppData\Roaming and AppData\Local; not the default prefix. The number put right, 0 when none. */
+int pc5_prefix_web_files(const char *root, const char *prefix);
 /* Installer keys for the games that refuse to start without them ("The game is not properly
  * installed": Pro Evolution Soccer 6), known by a file beside program (the game's program, on
  * the console or on the USB drive it plays from): HKLM\Software\<key> and its Wow6432Node

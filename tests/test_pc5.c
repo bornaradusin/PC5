@@ -5983,6 +5983,44 @@ static void test_dotnet(void)
               "and why the one left was left, for the log: %s", pc5_prefix_infinity_aliases_why());
     }
 
+    /* An Electron game's files an earlier start left cut short (Riverfront Rumble #750, Noreya #693):
+     * a GPU cache whose index is only its header emptied, a whole one kept; an empty .json moved
+     * aside in a Chromium profile, one with something in it kept. */
+    {
+        char app[PC5_PATH], *index = malloc(368 + 4 * 0x10000 + 1);
+        path(app, sizeof(app), "%s/prefixes/game/drive_c/users/prospero/AppData/Roaming/Riverfront Rumble", root);
+        memset(index, 'a', 368 + 4 * 0x10000);
+        memcpy(index, "\xc3\xca\x03\xc1", 4);
+        index[368] = 0;
+        path(file, sizeof(file), "%s/GPUCache/index", app);
+        write_text(file, index);
+        path(file, sizeof(file), "%s/GPUCache/data_0", app);
+        write_text(file, "block");
+        index[368] = 'a';
+        index[368 + 4 * 0x10000] = 0;
+        path(file, sizeof(file), "%s/Cache/Cache_Data/index", app);
+        write_text(file, index);
+        free(index);
+        path(file, sizeof(file), "%s/Local State", app);
+        write_text(file, "{}");
+        path(file, sizeof(file), "%s/config.json", app);
+        write_text(file, "");
+        path(file, sizeof(file), "%s/settings.json", app);
+        write_text(file, "{\"volume\":1}");
+        CHECK(pc5_prefix_web_files(root, "game") == 2, "the cache cut short and the empty .json");
+        path(file, sizeof(file), "%s/GPUCache/index", app);
+        CHECK(!pc5_exists(file), "the cache cut short emptied");
+        path(file, sizeof(file), "%s/GPUCache/data_0", app);
+        CHECK(!pc5_exists(file), "all of it");
+        path(file, sizeof(file), "%s/Cache/Cache_Data/index", app);
+        CHECK(pc5_is_file(file), "a whole cache, two folders down, kept");
+        path(file, sizeof(file), "%s/config.json.pc5-empty", app);
+        CHECK(pc5_is_file(file), "the empty .json moved aside");
+        path(file, sizeof(file), "%s/settings.json", app);
+        CHECK(file_holds_text(file, "volume"), "one with something in it kept");
+        CHECK(pc5_prefix_web_files(root, "game") == 0, "and nothing the next time");
+    }
+
     /* The runtime: copied once, for a .NET program only. */
     path(file, sizeof(file), "%s/pc5/mono.list", app);
     write_text(file, "mono-2.0/\nmono-2.0/bin/\nmono-2.0/bin/libmono-2.0-x86_64.dll\nmono-2.0/lib/mono/4.5/mscorlib.dll\n");
