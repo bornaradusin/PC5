@@ -656,6 +656,8 @@ controller's speaker.
 | 414 | A game with Easy Anti-Cheat or BattlEye (Elden Ring, Fortnite's or any EAC game's copy) | PC5's message: "It runs Easy Anti-Cheat, an anti-cheat that needs Windows' own kernel..." | △ › Report a problem: "Likely cause: anti-cheat: ..." |
 | 415 | A Ubisoft Connect game (Assassin's Creed Unity's store copy) | PC5's message: "It needs Ubisoft Connect running beside it..." | the report: "Likely cause: needs store app: ..." |
 | 416 | A game that works (regression check for 414 and 415) | no message | — |
+| 417 | Necesse (#149's copy), △ › Controller › Xbox controller: press Y (Triangle) in game | the inventory opens and stays open; a second press closes it | `PW_WINE64 raw input controller for a Java game`; Necesse's `latest-log.txt` says `Detected 1 controllers` only |
+| 418 | A Java or Unity game without a `jre` folder that worked with Xbox controller (regression check for 417) | its controller as on 2.4.8 | no `for a Java game` line |
 
 ## Custom media navigation changes (pending on PS5)
 

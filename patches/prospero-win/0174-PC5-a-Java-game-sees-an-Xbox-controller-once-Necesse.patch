@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Wed, 25 Nov 2026 21:00:00 +0000
+Subject: [PATCH] PC5: a Java game sees an Xbox controller once (Necesse)
+
+GLFW, which reads a Java game's controllers (LWJGL), finds an Xbox controller through XInput and again through DirectInput, and leaves the second out only when raw input lists it as an XInput device. Necesse (#149) saw one controller as two ("Detected 1 controllers", then "Detected 2 controllers"), so each press of a button counted twice. A game with its own Java (a jre folder beside its program) now gets the controller listed in raw input in Xbox controller mode, as a Unity game does (PW_RAWINPUT_PAD, Wine patch 1033).
+---
+ native/wine64_main.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index 2188411..bae30b8 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -128,6 +128,27 @@ static int unity_game(const char *prefix, const char *executable)
+     return !stat(host, &st) && S_ISREG(st.st_mode);
+ }
+ 
++/* A Java game with its own Java beside its program (a "jre" folder: Necesse, and libGDX
++ * and LWJGL games packed the same way). GLFW, which reads their controllers, finds an Xbox
++ * controller through XInput and again through DirectInput, and leaves the second out only
++ * when raw input lists it as an XInput device (IG_): without that it saw one controller as
++ * two, and every press of a button counted twice (Necesse's inventory opened and closed). */
++static int java_game(const char *prefix, const char *executable)
++{
++    char windows[PW_APP_PATH_CAPACITY], host[PW_WINE_LIBRARY_PATH + PW_APP_PATH_CAPACITY + 16];
++    const char *slash = strrchr(executable, '\\');
++    size_t dir_length;
++    struct stat st;
++
++    if (!slash || (dir_length = (size_t)(slash - executable)) >= sizeof(windows)) return 0;
++    memcpy(windows, executable, dir_length);
++    windows[dir_length] = 0;
++    if (pw_wine_launch_host_dir(prefix, windows, host, sizeof(host) - 16)) return 0;
++    dir_length = strlen(host);
++    snprintf(host + dir_length, sizeof(host) - dir_length, "/jre");
++    return !stat(host, &st) && S_ISDIR(st.st_mode);
++}
++
+ /* Before anything else: /app0 is not visible once /data is granted. */
+ static void find_title_id(void)
+ {
+@@ -1894,6 +1915,10 @@ int main(int argc, char **argv)
+             if (unity_game(prefix, game->app.executable)) {
+                 extra[config.extra_env_count++] = (PwWineStartEnv){ "PW_RAWINPUT_PAD", "1" };
+                 PS5LOG_LOG("PW_WINE64 raw input controller for a Unity game");
++            } else if (java_game(prefix, game->app.executable)) {
++                /* so GLFW sees the XInput controller once (java_game) */
++                extra[config.extra_env_count++] = (PwWineStartEnv){ "PW_RAWINPUT_PAD", "1" };
++                PS5LOG_LOG("PW_WINE64 raw input controller for a Java game");
+             }
+         }
+         /* dualsense mode: Wine's xinput makes the DualSense a game finds
