@@ -146,6 +146,17 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
         if (!missing_dll[0] && (found = after(line, end, "err:module:import_dll Library ")) && after(line, end, ") not found"))
             word(found, end, missing_dll, sizeof(missing_dll));
         if (after(line, end, "err:module:loader_init Importing dlls for ") && after(line, end, "failed")) imports_failed = 1;
+        /* A .NET game that needs Managed DirectX, which Wine Mono doesn't have (Ceville, #737):
+         * "Could not load file or assembly 'Microsoft.DirectX.AudioVideoPlayback, Version=...".
+         * Other assemblies a game looks for and goes on without (XmlSerializers) are left out. */
+        if (!missing_dll[0] && (found = after(line, end, "Could not load file or assembly '")) &&
+            !strncmp(found, "Microsoft.DirectX", 17)) {
+            size_t n = 0;
+            while (found + n < end && found[n] != ',' && found[n] != '\'' && n + 5 < sizeof(missing_dll)) n++;
+            memcpy(missing_dll, found, n);
+            memcpy(missing_dll + n, ".dll", 5);
+            imports_failed = 1;
+        }
         if (!wrong_dll[0] && (found = after(line, end, "err:module:import_dll Loading library ")) &&
             after(line, end, "failed (error c000007b)"))
             word(found, end, wrong_dll, sizeof(wrong_dll));
@@ -225,6 +236,12 @@ void pc5_dll_from(const char *dll, char *out, size_t size)
     };
     const char *p = dll;
     if (size) out[0] = 0;
+    /* Managed DirectX 1.1 (Microsoft.DirectX.dll, Microsoft.DirectX.AudioVideoPlayback.dll):
+     * .NET's DirectX, from Microsoft's DirectX 9.0c redistributable. */
+    if (!strncmp(dll, "Microsoft.DirectX", 17)) {
+        snprintf(out, size, "Managed DirectX 1.1");
+        return;
+    }
     if (pc5_lower((unsigned char)p[0]) != 'm' || pc5_lower((unsigned char)p[1]) != 'f' || pc5_lower((unsigned char)p[2]) != 'c')
         return;
     p += 3;
@@ -599,6 +616,12 @@ void pc5_log_notes(const char *text, size_t length, Pc5Buf *out)
         if (last) word(last, alive_end, size, sizeof(size));
         pc5_buf_printf(out, "  At its last check: pictures shown %lld (Vulkan %lld), the last %s; sound blocks %lld, %lld of them audible.\n",
                        shown, vk, size[0] ? size : "?", audio, audible);
+        /* Those count what Windows drew and PC5's own loading pictures. A game drawing with
+         * Direct3D, OpenGL or Vulkan shows its own pictures through its swap chain, which
+         * neither counts: "Vulkan 4" there is not a game that stopped drawing (#745, #747). */
+        if (libs_n || dxvk[0] || vkd3d || zink)
+            pc5_buf_puts(out, "  (Those count what Windows drew and PC5's loading screen, not the pictures the game "
+                              "drew itself: those show as \"swapchain presents\" and in its fps.)\n");
     }
     if (locale[0]) pc5_buf_printf(out, "  The language it was given: %s.\n", locale);
     pc5_buf_printf(out, "  Started from %s.\n", tile ? "its tile on the console's home screen" : "PC5's library");

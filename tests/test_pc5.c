@@ -4844,6 +4844,9 @@ static void test_log_notes(void)
           "the memory: %s", notes);
     CHECK(strstr(notes, "  At its last check: pictures shown 5 (Vulkan 300), the last 1920x1080; sound blocks 100, 40 of them audible.\n"),
           "the picture and sound: %s", notes);
+    CHECK(strstr(notes, "  (Those count what Windows drew and PC5's loading screen, not the pictures the game drew itself: "
+                        "those show as \"swapchain presents\" and in its fps.)\n"),
+          "a game drawing with Direct3D: its own pictures aren't in those counts (#745, #747): %s", notes);
     CHECK(strstr(notes, "  The language it was given: tr_TR.UTF-8.\n") &&
               strstr(notes, "  Started from its tile on the console's home screen.\n"),
           "its language (Bastion's) and how it was started: %s", notes);
@@ -4984,6 +4987,19 @@ static void test_logs(void)
         CHECK(!from[0], "no such MFC: %s", from);
         pc5_dll_from("d3dx9_43.dll", from, sizeof(from));
         CHECK(!from[0], "not MFC: %s", from);
+        /* A .NET game that needs Managed DirectX, which Wine Mono doesn't have (Ceville, #737). */
+        CHECK(CLASSIFY("ceville", "REC seq=1 t=1.0 WINE System.TypeLoadException: Could not load type of field "
+                                  "'Ceville.MainForm:video' (0) due to: Could not load file or assembly "
+                                  "'Microsoft.DirectX.AudioVideoPlayback, Version=1.0.2902.0, Culture=neutral, "
+                                  "PublicKeyToken=31bf3856ad364e35' or one of its dependencies.\nREC seq=2 t=1.1 PW_WINE64 "
+                                  "session_end reason=wine-exit\n") == PC5_LOG_NO_PICTURE &&
+                  issue.cause == PC5_CAUSE_MISSING_DLL && !strcmp(issue.cause_what, "Microsoft.DirectX.AudioVideoPlayback.dll"),
+              "Managed DirectX it can't start without (#737): %d %d %s", (int)issue.problem, (int)issue.cause, issue.cause_what);
+        pc5_log_cause_text(&issue, cause, sizeof(cause));
+        CHECK(strstr(cause, "Microsoft.DirectX.AudioVideoPlayback.dll, from Managed DirectX 1.1"), "in words: %s", cause);
+        (void)CLASSIFY("xml", "REC seq=1 t=1.0 WINE Could not load file or assembly 'Game.XmlSerializers, Version=1.0.0.0' or "
+                              "one of its dependencies.\nREC seq=2 t=1.1 PW_WINE64 session_end reason=wine-exit\n");
+        CHECK(issue.cause == PC5_CAUSE_NONE, "an assembly a game goes on without isn't a cause: %d", (int)issue.cause);
     }
     /* The firmware a report names: the kernel's own, with the number libkernel answered beside it. */
     CHECK(CLASSIFY("gtaiv", "REC seq=1 t=1.0 PC5 system firmware=13.60 firmware_version=0x13590001 reported=13.59 "

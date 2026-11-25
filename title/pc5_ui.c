@@ -3334,6 +3334,9 @@ static void issue_message(Pc5Ui *ui)
         char from[40];
         const char *folder = index >= 0 && ui->library.games[index].bits == 32 ? "C:\\Windows\\SysWOW64"
                                                                                  : "C:\\Windows\\System32";
+        /* Managed DirectX isn't in System32: it is in .NET's own folder for it (#737). */
+        if (!strncmp(issue->cause_what, "Microsoft.DirectX", 17))
+            folder = "C:\\Windows\\Microsoft.NET\\DirectX for Managed Code\\1.0.2902.0";
         pc5_dll_from(issue->cause_what, from, sizeof(from));
         if (from[0])
             pc5_tf(why, sizeof(why), "It needs %s, part of %s, which the console doesn't have. Copy it from %s on a "
