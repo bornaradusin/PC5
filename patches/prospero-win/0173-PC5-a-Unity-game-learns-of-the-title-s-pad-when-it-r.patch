@@ -1,0 +1,145 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Wed, 25 Nov 2026 12:00:00 +0000
+Subject: [PATCH] PC5: a Unity game learns of the title's pad when it
+ registered without a window (Wine patch 1044)
+
+Yestersol (#684) loaded XInput with the Xbox controller setting and never polled it. A game that registers for controllers without a window now gets the pad's arrival at its focus window, as on Windows, and the log says what a game asks of the pad (its name, device info, preparsed data) and how it registered.
+---
+ ...ival-reaches-a-game-without-a-window.patch | 127 ++++++++++++++++++
+ 1 file changed, 127 insertions(+)
+ create mode 100644 wine/patches/1044-win32u-ps5-the-title-s-pad-s-arrival-reaches-a-game-without-a-window.patch
+
+diff --git a/wine/patches/1044-win32u-ps5-the-title-s-pad-s-arrival-reaches-a-game-without-a-window.patch b/wine/patches/1044-win32u-ps5-the-title-s-pad-s-arrival-reaches-a-game-without-a-window.patch
+new file mode 100644
+index 0000000..a7cd92b
+--- /dev/null
++++ b/wine/patches/1044-win32u-ps5-the-title-s-pad-s-arrival-reaches-a-game-without-a-window.patch
+@@ -0,0 +1,127 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Wed, 25 Nov 2026 12:00:00 +0000
++Subject: [PATCH] win32u: PS5: The title's pad's arrival reaches a game that
++ registered without a window.
++
++A PS5 title lists its Xbox controller in raw input for a Unity game
++(PW_RAWINPUT_PAD, 1033). Yestersol's Unity loaded XInput and never polled
++it: it never took the pad. A program that registers for game controllers
++with RIDEV_DEVNOTIFY learns of a device already there from its
++WM_INPUT_DEVICE_CHANGE GIDC_ARRIVAL; Wine posted that only to a
++registration's own window, while one without a window follows the
++keyboard focus. For the title's pad's usages (gamepad, joystick) it now
++goes to the focus window, or the foreground window, then.
++
++And what a game asks of the pad is written once each, in every log: a
++registration for controllers (usage, flags, window) and each of name,
++device info and preparsed data asked for, so a log tells which a game
++reads before it takes the pad.
++---
++ dlls/win32u/rawinput.c | 52 ++++++++++++++++++++++++++++++++++++++----
++ 1 file changed, 47 insertions(+), 5 deletions(-)
++
++diff --git a/dlls/win32u/rawinput.c b/dlls/win32u/rawinput.c
++index d7d5f46..d43a333 100644
++--- a/dlls/win32u/rawinput.c
+++++ b/dlls/win32u/rawinput.c
++@@ -25,6 +25,9 @@
++ 
++ #include <stdbool.h>
++ #include <pthread.h>
+++#ifdef WINE_PS5_USER_DRIVER
+++#include <stdio.h>
+++#endif
++ 
++ #include "win32u_private.h"
++ #include "ntuser_private.h"
++@@ -313,14 +316,19 @@ static void add_driver_device( HANDLE handle, DWORD type, const char *path )
++  * stays XInput's. It is in this list only: DirectInput, Windows.Gaming.Input
++  * and SDL look for devices elsewhere, and see nothing new. */
++ #define PW_TITLE_PAD_HANDLE ULongToHandle( 0x7ff05001 )
+++static BOOL title_pad_on(void)
+++{
+++    const char *value = getenv( "PW_RAWINPUT_PAD" );
+++    return value && !strcmp( value, "1" );
+++}
+++
++ static void add_title_pad(void)
++ {
++     static const RID_DEVICE_INFO_HID hid_info = {0x045e, 0x028e, 0x0114, HID_USAGE_PAGE_GENERIC,
++                                                  HID_USAGE_GENERIC_GAMEPAD};
++-    const char *value = getenv( "PW_RAWINPUT_PAD" );
++     struct device *device;
++ 
++-    if (!value || strcmp( value, "1" )) return;
+++    if (!title_pad_on()) return;
++     if (!(device = calloc( 1, sizeof(*device) ))) return;
++     asciiz_to_unicode( device->path, "\\\\?\\HID#VID_045E&PID_028E&IG_00#0&0&0&0#"
++                        "{4d1e55b2-f16f-11cf-88cb-001111000030}" );
++@@ -464,6 +472,23 @@ UINT WINAPI NtUserGetRawInputDeviceInfo( HANDLE handle, UINT command, void *data
++         return ~0u;
++     }
++ 
+++#ifdef WINE_PS5_USER_DRIVER
+++    /* What a game asks of the title's pad, once each, in every log: which of it a Unity game
+++     * reads before it takes the pad (Yestersol, whose +rawinput log lost that part). */
+++    if (handle == PW_TITLE_PAD_HANDLE)
+++    {
+++        static unsigned int asked;
+++        unsigned int bit = command == RIDI_DEVICENAME ? 1 : command == RIDI_DEVICEINFO ? 2 : 4;
+++
+++        if (!(asked & bit))
+++        {
+++            asked |= bit;
+++            fprintf( stderr, "wine-ps5: a game asked raw input for the title's pad's %s\n",
+++                     bit == 1 ? "name" : bit == 2 ? "device info" : "preparsed data, which it hasn't" );
+++        }
+++    }
+++#endif
+++
++     len = data_len = *data_size;
++     switch (command)
++     {
++@@ -658,7 +683,7 @@ BOOL process_rawinput_message( MSG *msg, UINT hw_id, const struct hardware_msg_d
++     return TRUE;
++ }
++ 
++-static void post_device_notifications( const RAWINPUTDEVICE *filter )
+++static void post_device_notifications( const RAWINPUTDEVICE *filter, HWND target )
++ {
++     ULONG usages = MAKELONG( filter->usUsagePage, filter->usUsage );
++     struct device *device;
++@@ -678,7 +703,7 @@ static void post_device_notifications( const RAWINPUTDEVICE *filter )
++             break;
++         }
++ 
++-        NtUserPostMessage( filter->hwndTarget, WM_INPUT_DEVICE_CHANGE, GIDC_ARRIVAL, (LPARAM)device->handle );
+++        NtUserPostMessage( target, WM_INPUT_DEVICE_CHANGE, GIDC_ARRIVAL, (LPARAM)device->handle );
++     }
++ }
++ 
++@@ -703,7 +728,24 @@ static void register_rawinput_device( const RAWINPUTDEVICE *device )
++     }
++     else
++     {
++-        if ((device->dwFlags & RIDEV_DEVNOTIFY) && device->hwndTarget) post_device_notifications( device );
+++        if ((device->dwFlags & RIDEV_DEVNOTIFY) && device->hwndTarget) post_device_notifications( device, device->hwndTarget );
+++#ifdef WINE_PS5_USER_DRIVER
+++        /* Without a window, raw input follows the keyboard focus, and so do its device notices
+++         * on Windows: a Unity game that registers for controllers that way learns of the title's
+++         * pad only from its arrival (Yestersol saw no controller, and never polled XInput). */
+++        else if ((device->dwFlags & RIDEV_DEVNOTIFY) && title_pad_on() && device->usUsagePage == HID_USAGE_PAGE_GENERIC &&
+++                 (device->usUsage == HID_USAGE_GENERIC_GAMEPAD || device->usUsage == HID_USAGE_GENERIC_JOYSTICK))
+++        {
+++            HWND focus = get_focus();
+++
+++            if (!focus) focus = NtUserGetForegroundWindow();
+++            if (focus) post_device_notifications( device, focus );
+++        }
+++        if (title_pad_on() && device->usUsagePage == HID_USAGE_PAGE_GENERIC &&
+++            (device->usUsage == HID_USAGE_GENERIC_GAMEPAD || device->usUsage == HID_USAGE_GENERIC_JOYSTICK))
+++            fprintf( stderr, "wine-ps5: a game registered raw input for controllers: usage %#x, flags %#x, "
+++                     "window %p\n", device->usUsage, (unsigned int)device->dwFlags, device->hwndTarget );
+++#endif
++         if (pos == end || pos->usUsagePage != device->usUsagePage || pos->usUsage != device->usUsage)
++         {
++             memmove( pos + 1, pos, (char *)end - (char *)pos );
