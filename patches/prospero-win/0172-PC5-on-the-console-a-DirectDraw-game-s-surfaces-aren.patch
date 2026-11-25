@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Wed, 25 Nov 2026 12:00:00 +0000
+Subject: [PATCH] PC5: on the console a DirectDraw game's surfaces aren't lost
+ on a deactivation (Wine patch 1043)
+
+Arcanum (#747) stopped drawing at its menu: a deactivation, a click on the desktop around its 800x600 window, lost its surfaces, and it polled IsLost about 18,000 times a second waiting to be activated again. The console has nothing to switch to, so DirectDraw leaves the device as it is there.
+---
+ ...deactivation-doesn-t-lose-the-device.patch | 50 +++++++++++++++++++
+ 1 file changed, 50 insertions(+)
+ create mode 100644 wine/patches/1043-ddraw-on-a-ps5-title-a-deactivation-doesn-t-lose-the-device.patch
+
+diff --git a/wine/patches/1043-ddraw-on-a-ps5-title-a-deactivation-doesn-t-lose-the-device.patch b/wine/patches/1043-ddraw-on-a-ps5-title-a-deactivation-doesn-t-lose-the-device.patch
+new file mode 100644
+index 0000000..af0b5eb
+--- /dev/null
++++ b/wine/patches/1043-ddraw-on-a-ps5-title-a-deactivation-doesn-t-lose-the-device.patch
+@@ -0,0 +1,50 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Wed, 25 Nov 2026 12:00:00 +0000
++Subject: [PATCH] ddraw: On a PS5 title, a deactivation doesn't lose the
++ device.
++
++The console shows one program and has nothing to switch to, so a
++deactivation is a click on the desktop around the game's window. Arcanum
++(800x600 on a 1920x1080 desktop) then stopped drawing: its surfaces were
++lost, and it polled IDirectDrawSurface7::IsLost about 18,000 times a
++second without a Restore, waiting to be activated again, while its sound
++and the pointer went on (+ddraw: no update_frontbuffer after the last
++picture, only IsLost).
++
++device_parent_activate now leaves the device as it is on a deactivation
++when WINE_PS5_NTDLL_DIR is set (the title's Wine starter sets it, as
++kernelbase's init_debugger reads it). Elsewhere nothing changes.
++---
++ dlls/ddraw/ddraw.c | 18 ++++++++++++++++++
++ 1 file changed, 18 insertions(+)
++
++diff --git a/dlls/ddraw/ddraw.c b/dlls/ddraw/ddraw.c
++index 8814c32..04bb532 100644
++--- a/dlls/ddraw/ddraw.c
+++++ b/dlls/ddraw/ddraw.c
++@@ -5046,6 +5046,24 @@ static void CDECL device_parent_activate(struct wined3d_device_parent *device_pa
++ 
++     TRACE("device_parent %p, activate %#x.\n", device_parent, activate);
++ 
+++    /* On a PS5 title (its Wine starter sets WINE_PS5_NTDLL_DIR, as kernelbase's
+++     * init_debugger reads it) the console shows one program and has nothing to
+++     * switch to, so a deactivation is a click on the desktop around the game's
+++     * window (Arcanum's 800x600 on a 1920x1080 desktop). Its surfaces were lost,
+++     * and a game that waits for them to come back, polling IsLost and restoring
+++     * them only when it is activated again, never drew another picture: there the
+++     * device stays as it is. */
+++    if (!activate)
+++    {
+++        static int on_ps5 = -1;
+++
+++        if (on_ps5 < 0) on_ps5 = GetEnvironmentVariableW( L"WINE_PS5_NTDLL_DIR", NULL, 0 ) > 0;
+++        if (on_ps5)
+++        {
+++            TRACE("deactivation ignored: the console has no other program to switch to.\n");
+++            return;
+++        }
+++    }
++     if (!activate)
++     {
++         ddraw->device_state = DDRAW_DEVICE_STATE_LOST;
