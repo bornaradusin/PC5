@@ -178,7 +178,7 @@ With ShadowMountPlus and elfldr running.
 
 | # | Do | Expect | Expect in the log |
 | --- | --- | --- | --- |
-| 77 | A game with local multiplayer, set to Xbox controller: start it, then turn on a second controller and sign in with it as another user | the game finds a second controller within a second; both control their own player | `PW_WINE64 display … players=up-to-4`, `PW_WINE64 players signed in: …`, `PW_WINE64 player 2 joined: user … handle=…` |
+| 77 | A game with local multiplayer, set to Xbox controller: start it, then turn on a second controller and sign in with it as another user | the game finds a second controller within a second; both control their own player | `PW_WINE64 display … players=up-to-4`, `PW_WINE64 players signed in: signed-in signed-in - -`, `PW_WINE64 player 2 joined: signed-in user 2 handle=…` (no console user numbers) |
 | 78 | The same, the game rumbling for player 2 | only player 2's controller rumbles, at Settings › In games › Vibration | `PW_WINE64 player 2 rumble left=… status=ok rc=0` |
 | 79 | Sign player 2 out while the game runs, then in again | the game loses the second controller, then finds it again | `PW_WINE64 player 2 left: user … signed out`, then `joined` again |
 | 80 | The same game set to DualSense, with two controllers | player 1 is the DualSense (PlayStation buttons), player 2 an Xbox controller | `players=up-to-4`, `player 2 joined` |
@@ -206,7 +206,7 @@ With ShadowMountPlus and elfldr running.
 
 | # | Do | Expect | Expect in the log |
 | --- | --- | --- | --- |
-| 90 | Open PC5 | its sound plays on the controller's speaker | `PC5 startup sound user=… init=0 port=…` (port not negative), then `played=… output=0` |
+| 90 | Open PC5 | its sound plays on the controller's speaker | `PC5 startup sound user=signed-in init=0 port=…` (port not negative), then `played=… output=0` |
 | 90a | Settings › In games › Startup sound: step through the sounds | each plays as it is chosen; Off plays nothing; the one left chosen plays when PC5 next opens | `PC5 settings … startup_sound=<name>` |
 | 90b | Put a `.wav` (44.1 kHz stereo) in `/data/prospero-win/sounds/`, open Settings | it is in the list under its name and plays | |
 | 90c | With games installed by 1.7.x, open the library and wait | each game's background fades in behind the covers once found; scrolling through games fades between them | `PC5 backgrounds to look for=…`, `PC5 background game=… from=Steam` (or GOG) |
@@ -458,7 +458,7 @@ controller's speaker.
 | 236 | Leave PC5 during a transfer, open it again, resume in FileZilla | the transfer resumes and finishes | |
 | 237 | Splinter Cell: Conviction's system check | it finds the sound device (and 2 GB of video memory) | `dxdiag` (with `+dxdiag`): `szHardwareID` asked for and given |
 | 238 | Heroes of Might and Magic: Olden Era › Start Game › a mode | its maps load (Story_maps listed), no "invalid handle" | `wine-ps5: L"Story_maps" looked up in directory … by its name, not its descriptor: status 0` |
-| 239 | Settings › Network › Username and Password set, then FileZilla with them, and with a wrong password | the right ones log in; a wrong one is refused ("530 Wrong username or password"), three wrong ones disconnect | `PC5 ftp login refused user=…` |
+| 239 | Settings › Network › Username and Password set, then FileZilla with them, and with a wrong password | the right ones log in; a wrong one is refused ("530 Wrong username or password"), three wrong ones disconnect | `PC5 ftp login refused (wrong user name or password)`, without what was typed |
 | 240 | A Godot 4 game on OpenGL (MegaMan X Regenesis) | it opens its window, no "Failed to create an OpenGL window" | |
 | 241 | LEGO The Lord of the Rings, and other games that crashed reading FFFFFFFF | they get past it | `wine-ps5: sgdt at … emulated (the console refuses it in programs, UMIP …)` |
 | 242 | A game's loading screens (one that loaded slowly before, a 2D game with many small files) | they load faster than in 2.0.2 | |
@@ -466,7 +466,7 @@ controller's speaker.
 | 244 | A game that crashes (one that froze on its crash before, Call of Juarez Gunslinger) | it closes and PC5 shows what went wrong, no freeze | |
 | 245 | A Source engine game | it starts, no hang at the start | |
 | 246 | Settings › Network › Web page On, open the address it shows on a phone | the page opens: PC5's version, free space, the games and the logs | `PC5 web on address=…:8125 install=…/INSTALL` |
-| 247 | Settings › Network › Username and Password set, open the page again | the browser asks for them; wrong ones are refused, the right ones open it | `PC5 web login refused user=…` for a wrong one |
+| 247 | Settings › Network › Username and Password set, open the page again | the browser asks for them; wrong ones are refused, the right ones open it | `PC5 web login refused (wrong user name)` or `(wrong password)` for a wrong one, without what was typed |
 | 248 | On a PC's browser: Send a game › Choose a folder, a game's installed folder | each file is sent with the bar moving; a few seconds after the last, PC5 asks to install it | `PC5 web received …`, `PC5 uploads ftp=… web=… install folder games=1` |
 | 249 | A game's Launch options on the page: type `-windowed`, Save, start the game | the game starts with it; the file is beside its program | `PC5 web wrote launch.txt for …`, the profile's arguments end with `-windowed` |
 | 250 | A game's Newest log, and a log under Logs | both download as zips that open | `PC5 web sent …zip` |
@@ -665,6 +665,7 @@ controller's speaker.
 | 423 | Necesse (Java) with Xbox controller (regression check for 421) | one controller, as on 2.4.9 | `raw input controller for a Java game` |
 | 424 | Noreya (#693's copy), its save.json empty | it starts past the "Critical Error" box | `PC5 web game settings cut short by an earlier start put back as shipped`; `save.json.pc5-broken` beside it |
 | 425 | Valor Mortis (an official copy): apply a setting in Options | no crash, no outdated-driver warning | — |
+| 427 | Any game that crashes with an Unreal Engine crash report (Valor Mortis, Werewolf), then △ › Manage › Report a problem | the report zip's `game/.../CrashContext.runtime-xml` has `<MachineId>000…` and `<LoginId>000…`, its ErrorMessage as before | the log has no number after `players signed in:` or `user=` |
 | 426 | Max Payne 3 (#262's copy), the apartment corridor fight | about 60 fps where it dipped to 50 | DXVK's config line has `d3d11.cachedDynamicResources = vi` |
 
 ## Custom media navigation changes (pending on PS5)
