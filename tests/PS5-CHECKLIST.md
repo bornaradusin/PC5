@@ -670,6 +670,7 @@ controller's speaker.
 | 428 | Icewind Dale II (#746's copy) played from a USB drive, its icewind2.ini with D:\ paths | it starts and finds its data; `icewind2.ini.pc5-old` beside it | `PC5 Infinity Engine [Alias] … C:\Games\Icewind Dale II` rewritten, not "left as they were" |
 | 429 | Noreya (#693's copy) with its GPUCache's data_0 emptied | it starts; the cache folder is made again | `PC5 web` cache cut short removed |
 | 430 | A game that runs the console out of memory (Connection The Nightmare Within, #773, the forest tunnel) | PC5 says it ended, the console ran out of memory | about.txt's cause `out of memory: …` |
+| 431 | Max Payne 3 (#262): in its graphics settings change DirectX 11 to 10.1, apply, Restart Now | no "Invalid handle": the game closes and starts again by itself, on DirectX 10.1 | `wine-ps5: … MaxPayne3.exe starts itself again: a restart`, then `PC5 hand-off: … starts the program its launcher started` |
 
 ## Custom media navigation changes (pending on PS5)
 

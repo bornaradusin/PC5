@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Thu, 26 Nov 2026 20:00:00 +0000
+Subject: [PATCH] PC5: a game starting itself again is handed off as a restart
+ (Wine patch 1047)
+
+A game that restarts itself (Max Payne 3 after its DirectX version is changed) started its own program again, which the console can't, and showed "Invalid handle". With no arguments or its own, that start is now handed off like a launcher's game, and the title starts the game again.
+---
+ ...elf-again-is-handed-off-as-a-restart.patch | 73 +++++++++++++++++++
+ 1 file changed, 73 insertions(+)
+ create mode 100644 wine/patches/1047-ntdll-ps5-a-game-starting-itself-again-is-handed-off-as-a-restart.patch
+
+diff --git a/wine/patches/1047-ntdll-ps5-a-game-starting-itself-again-is-handed-off-as-a-restart.patch b/wine/patches/1047-ntdll-ps5-a-game-starting-itself-again-is-handed-off-as-a-restart.patch
+new file mode 100644
+index 0000000..792b1da
+--- /dev/null
++++ b/wine/patches/1047-ntdll-ps5-a-game-starting-itself-again-is-handed-off-as-a-restart.patch
+@@ -0,0 +1,73 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Thu, 26 Nov 2026 20:00:00 +0000
++Subject: [PATCH] ntdll: PS5: a game starting itself again is handed off as a
++ restart.
++
++A game that restarts itself starts its own program again and ends, a
++second process, which a PS5 title can't have, so the start failed and the
++game showed an error (Max Payne 3 after its DirectX version is changed:
++"Invalid handle"). The running program itself was never handed off
++(patch 0923). It now is when the new start's arguments are none or its
++own: a restart, which the title then makes. With other arguments it is a
++worker of its own, and fails as before.
++---
++ dlls/ntdll/unix/process.c | 35 ++++++++++++++++++++++++++++++++++-
++ 1 file changed, 34 insertions(+), 1 deletion(-)
++
++diff --git a/dlls/ntdll/unix/process.c b/dlls/ntdll/unix/process.c
++index f087861..cfd1854 100644
++--- a/dlls/ntdll/unix/process.c
+++++ b/dlls/ntdll/unix/process.c
++@@ -769,6 +769,24 @@ static void ps5_utf8( const UNICODE_STRING *str, char *out, DWORD size )
++     for (char *p = out; *p; p++) if (*p == '\n' || *p == '\r') *p = ' ';
++ }
++ 
+++/* A command line's arguments: what follows its program, quoted or not, without the spaces
+++ * around them ("" for none). Trailing spaces are cut in place. */
+++static const char *ps5_arguments( char *line )
+++{
+++    char *p = line, *end;
+++
+++    if (*p == '"')
+++    {
+++        p = strchr( p + 1, '"' );
+++        p = p ? p + 1 : line + strlen( line );
+++    }
+++    else while (*p && *p != ' ' && *p != '\t') p++;
+++    while (*p == ' ' || *p == '\t') p++;
+++    end = p + strlen( p );
+++    while (end > p && (end[-1] == ' ' || end[-1] == '\t')) *--end = 0;
+++    return p;
+++}
+++
++ /* A game's launcher starts the game itself, a second process, which a PS5 title can't
++  * have. With PW_HANDOFF (a file) and PW_HANDOFF_DIR (the game's folder as a Windows path,
++  * ending in a backslash) in the environment, a Windows program in that folder, other than
++@@ -806,7 +824,22 @@ static void ps5_hand_off( const RTL_USER_PROCESS_PARAMETERS *params, const struc
++     if (pe_info->subsystem != IMAGE_SUBSYSTEM_WINDOWS_GUI) return;
++     ps5_utf8( &params->ImagePathName, image, sizeof(image) );
++     ps5_utf8( &peb->ProcessParameters->ImagePathName, current, sizeof(current) );
++-    if (!image[0] || !strcasecmp( image, current ) || strncasecmp( image, dir, strlen( dir ))) return;
+++    if (!image[0] || strncasecmp( image, dir, strlen( dir ))) return;
+++    /* The program running starting itself again: handed off only as a restart, with no
+++     * arguments or its own (Max Payne 3 after its DirectX version is changed); with others it
+++     * is a worker of its own, which fails as before. */
+++    if (!strcasecmp( image, current ))
+++    {
+++        char own[4096];
+++        const char *new_args, *own_args;
+++
+++        ps5_utf8( &params->CommandLine, command, sizeof(command) );
+++        ps5_utf8( &peb->ProcessParameters->CommandLine, own, sizeof(own) );
+++        new_args = ps5_arguments( command );
+++        own_args = ps5_arguments( own );
+++        if (*new_args && strcmp( new_args, own_args )) return;
+++        fprintf( stderr, "wine-ps5: %s starts itself again: a restart\n", image );
+++    }
++     name = strrchr( image, '\\' );
++     name = name ? name + 1 : image;
++     if (strrchr( name, '/' )) name = strrchr( name, '/' ) + 1;
++-- 
++2.56.1.windows.1
++
+-- 
+2.56.1.windows.1
+
