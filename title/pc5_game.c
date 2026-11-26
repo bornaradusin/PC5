@@ -1307,6 +1307,66 @@ int pc5_prefix_installs(const char *root, const char *prefix, const char *progra
     return added;
 }
 
+/* ---- a web game's settings beside its program ----------------------------------------- */
+
+/* Settings files a web game (Electron) keeps beside its program and rewrites as it runs, with
+ * what its store ships in them. A start that ended mid-write left one empty, and the game then
+ * stopped at every start ("SyntaxError: Unexpected end of JSON input"). */
+static const struct {
+    const char *marker;    /* the game's program, any case */
+    const char *file;      /* beside it */
+    const char *content;   /* as shipped */
+} web_settings[] = {
+    /* Noreya: The Gold Project (#693): loadNative reads save.json before its window opens. GOG's
+     * build manifest lists it as 19 bytes, md5 e5f43aabacdb862c53e3290608c2f1a5, which is this. */
+    { "Noreya The Gold Project.exe", "save.json", "{\"fullscreen\":true}" },
+};
+
+/* 1 when text (size bytes) can't be a whole JSON object or array: nothing in it, or cut short
+ * (it doesn't end with } or ]). */
+static int json_cut_short(const unsigned char *text, size_t size)
+{
+    while (size && (text[size - 1] <= ' ')) size--;
+    size_t start = 0;
+    while (start < size && text[start] <= ' ') start++;
+    return start == size || (text[start] != '{' && text[start] != '[') ||
+           (text[size - 1] != '}' && text[size - 1] != ']');
+}
+
+int pc5_prefix_web_settings(const char *program)
+{
+    char dir[PC5_PATH], asar[PC5_PATH], file[PC5_PATH], kept[PC5_PATH];
+    const char *slash = program ? strrchr(program, '/') : NULL;
+    int put = 0;
+
+    if (!slash || (size_t)(slash - program) >= sizeof(dir)) return 0;
+    memcpy(dir, program, (size_t)(slash - program));
+    dir[slash - program] = 0;
+    /* An Electron game: its app in resources/app.asar (or resources/app) beside its program. */
+    if (pc5_format(asar, sizeof(asar), "%s/resources", dir) || !pc5_is_dir(asar) ||
+        !(folder_has(asar, "app.asar") || folder_has(asar, "app")))
+        return 0;
+    for (size_t i = 0; i < sizeof(web_settings) / sizeof(web_settings[0]); i++) {
+        Pc5Buf text = { 0 };
+        if (pc5_casecmp(slash + 1, web_settings[i].marker) || !find_any_case(dir, web_settings[i].file, file, sizeof(file)) ||
+            pc5_read_file(file, &text, 1 << 20)) {
+            pc5_buf_free(&text);
+            continue;
+        }
+        int broken = json_cut_short(text.data, text.len);
+        /* The broken one kept once beside it (<name>.pc5-broken), then the shipped one written. */
+        if (broken && !pc5_format(kept, sizeof(kept), "%s.pc5-broken", file) &&
+            (pc5_exists(kept) || !pc5_write_file(kept, text.data, text.len)) &&
+            !pc5_write_file(file, web_settings[i].content, strlen(web_settings[i].content)))
+            put++;
+        else if (broken)
+            put = -1;
+        pc5_buf_free(&text);
+        if (put < 0) return -1;
+    }
+    return put;
+}
+
 /* ---- an Infinity Engine game's [Alias] paths ------------------------------------------------ */
 
 /* The Windows path windows (C:\..., any case, \ or / between its folders) on the console: 1 when
@@ -1821,6 +1881,8 @@ void pc5_game_begin(Pc5GameSession *game, const Pc5GameOps *ops, const char *roo
         if (!pc5_game_program(root, prefix, started, sizeof(started))) {
             int installs = pc5_prefix_installs(root, prefix, started);
             if (installs) say(game, "PC5 prefix installer keys %s", installs > 0 ? "added" : "failed");
+            int settings = pc5_prefix_web_settings(started);
+            if (settings) say(game, "PC5 web game settings cut short by an earlier start %s", settings > 0 ? "put back as shipped" : "couldn't be put back");
             Pc5Buf shown = { 0 };
             int aliases = pc5_prefix_infinity_aliases(root, prefix, started, &shown);
             if (aliases) say(game, "PC5 Infinity Engine [Alias] paths %s", aliases > 0 ? "put on the game's folder" : "failed");

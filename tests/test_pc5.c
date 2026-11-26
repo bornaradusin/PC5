@@ -3271,6 +3271,14 @@ static void test_known_games(void)
                                                                  "d3d9.weakRenderTargetFlushHint = True"),
           "GTA IV's DXVK option");
     CHECK(!pc5_known_dxvk("Game.exe") && !pc5_known_dxvk(NULL), "no DXVK options for another game");
+    CHECK(pc5_known_dxvk("Games/Max Payne 3/maxpayne3.exe") &&
+              !strcmp(pc5_known_dxvk("Games/Max Payne 3/maxpayne3.exe"), "d3d11.cachedDynamicResources = vi"),
+          "Max Payne 3's DXVK option, its name in any case (#262)");
+    {
+        char arguments[64] = "x";
+        pc5_known_arguments("Games/Max Payne 3/MaxPayne3.exe", "1920x1080", arguments, sizeof(arguments));
+        CHECK(!arguments[0], "and no launch options: %s", arguments);
+    }
 }
 
 static void test_api_keys(void)
@@ -5922,6 +5930,28 @@ static void test_dotnet(void)
         pc5_buf_free(&text);
         CHECK(pc5_prefix_installs(root, "default", program) == 0, "the default prefix is left alone");
         CHECK(pc5_prefix_installs(root, "missing", program) == 0, "no Windows yet: nothing done");
+
+        /* A web game's settings beside its program that a start left cut short, put back as shipped
+         * (Noreya's save.json, #693); a whole one, and another game's, left alone. */
+        path(program, sizeof(program), "%s/prefixes/noreya/drive_c/Games/Noreya/Noreya The Gold Project.exe", root);
+        write_text(program, "MZ");
+        path(file, sizeof(file), "%s/prefixes/noreya/drive_c/Games/Noreya/resources/app.asar", root);
+        write_text(file, "asar");
+        path(file, sizeof(file), "%s/prefixes/noreya/drive_c/Games/Noreya/save.json", root);
+        write_text(file, " \n");
+        CHECK(pc5_prefix_web_settings(program) == 1 && file_is(file, "{\"fullscreen\":true}"), "Noreya's save.json put back");
+        path(file, sizeof(file), "%s/prefixes/noreya/drive_c/Games/Noreya/save.json.pc5-broken", root);
+        CHECK(file_is(file, " \n"), "the broken one kept");
+        path(file, sizeof(file), "%s/prefixes/noreya/drive_c/Games/Noreya/save.json", root);
+        write_text(file, "{\"fullscreen\":false}");
+        CHECK(pc5_prefix_web_settings(program) == 0 && file_is(file, "{\"fullscreen\":false}"), "a whole one left alone");
+        write_text(file, "{\"fullscr");
+        CHECK(pc5_prefix_web_settings(program) == 1 && file_is(file, "{\"fullscreen\":true}"), "one cut short put back too");
+        path(file, sizeof(file), "%s/prefixes/noreya/drive_c/Games/Noreya/resources/app.asar", root);
+        unlink(file);
+        path(file, sizeof(file), "%s/prefixes/noreya/drive_c/Games/Noreya/save.json", root);
+        write_text(file, "");
+        CHECK(pc5_prefix_web_settings(program) == 0 && file_is(file, ""), "not a web game: left alone");
 
         /* A game's own settings, so it doesn't start its setup program (Brian Lara International
          * Cricket 2007's HardwareSetup.exe, #96): written once, and a player's own kept. */

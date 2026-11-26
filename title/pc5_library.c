@@ -425,6 +425,11 @@ static const struct {
      * weak hint to submit the queued work sooner, which played better. */
     { "GTAIV.exe", "-availablevidmem 1536 -nomemrestrict -norestrictions -refreshrate 60 -fullscreen", 1,
       "d3d9.weakRenderTargetFlushHint = True" },
+    /* Max Payne 3 (#262), Rockstar's RAGE engine like GTA V: its CPU-heavy scenes dipped to about
+     * 50 fps with the graphics chip 10 % busy. DXVK keeps its dynamic vertex and index buffers in
+     * memory the CPU reads fast, as DXVK's own profile does for GTA V, where it took a CPU-bound
+     * scene on RADV from about 55 to 110 fps (DXVK commit 977669c, issue #3311). */
+    { "MaxPayne3.exe", "", 0, "d3d11.cachedDynamicResources = vi" },
 };
 
 static int known_game(const char *program)

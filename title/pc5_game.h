@@ -241,6 +241,12 @@ int pc5_prefix_web_files(const char *root, const char *prefix);
  * key. 1 when it added some, 0 when it had them or the game needs none, -1 on a failure
  * (tried again next time). */
 int pc5_prefix_installs(const char *root, const char *prefix, const char *program);
+/* A web game's (Electron) settings file beside its program that an earlier start left cut short
+ * (empty, or not ending in } or ]) put back as its store ships it, the broken one kept as
+ * <name>.pc5-broken: Noreya's save.json, whose emptiness stopped every start with "SyntaxError:
+ * Unexpected end of JSON input" (#693). The number put back, 0 when none was broken, -1 on a
+ * failure. */
+int pc5_prefix_web_settings(const char *program);
 /* An Infinity Engine game (Baldur's Gate, Icewind Dale I and II, Planescape: Torment) finds its
  * data through the [Alias] section of its ini (baldur.ini, icewind.ini, icewind2.ini,
  * torment.ini): HD0:= the folder it was installed in, CD1:= to CD6:= where each disc's files are,
