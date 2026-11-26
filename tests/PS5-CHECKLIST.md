@@ -660,6 +660,12 @@ controller's speaker.
 | 418 | A Java or Unity game without a `jre` folder that worked with Xbox controller (regression check for 417) | its controller as on 2.4.8 | no `for a Java game` line |
 | 419 | Brian Lara International Cricket 2007 (#96's copy), a new install, both intro films in `Data/Movies` | it reaches its menu without HardwareSetup.exe or a hang at "Launching game", and plays a match | `PC5 prefix installer keys added`; `sting.wmv.pc5-skip` and `fmv_lara.wmv.pc5-skip` in `Data/Movies`; system.reg has `[Software\\Wow6432Node\\Codemasters\\International Cricket 2007]` |
 | 420 | Pro Evolution Soccer 6 (regression check for 419) | it starts as on 2.4.9 | its installer keys as before |
+| 421 | Yestersol (#684's copy), △ › Controller › Xbox controller | the controller moves its menu | `xinput: the controller is an Xbox 360 controller's HID collection`; Player.log in LocalLow has `Joystick connected ("Controller (XBOX 360 For Windows)")` |
+| 422 | A Unity game whose controller worked in Xbox controller mode, and one in DualSense mode (regression check for 421) | both as on 2.4.9 | DualSense mode: `xinput: the controller is a DualSense` |
+| 423 | Necesse (Java) with Xbox controller (regression check for 421) | one controller, as on 2.4.9 | `raw input controller for a Java game` |
+| 424 | Noreya (#693's copy), its save.json empty | it starts past the "Critical Error" box | `PC5 web game settings cut short by an earlier start put back as shipped`; `save.json.pc5-broken` beside it |
+| 425 | Valor Mortis (an official copy): apply a setting in Options | no crash, no outdated-driver warning | — |
+| 426 | Max Payne 3 (#262's copy), the apartment corridor fight | about 60 fps where it dipped to 50 | DXVK's config line has `d3d11.cachedDynamicResources = vi` |
 
 ## Custom media navigation changes (pending on PS5)
 
