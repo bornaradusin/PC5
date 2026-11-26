@@ -10,6 +10,7 @@ When a game doesn't work, its log is how the cause is found. This page gathers w
 - `log-<when>_<game>.zip`: each game's newest session, kept even when nothing went wrong. Playing the game again replaces it, so copy it first.
 - Each zip holds PC5's log of the session, `about.txt` (what PC5 saw, the program, the console's firmware, a summary of what the log shows, and for a game made for Steam how it meets Steam: the Steam emulator, its app ID, Steam's DRM, other Steam stand-ins in the folder) and the game's own logs and crash files (`game/…`; of a log larger than 2 MB, its start and its end). You don't need to look for the game's own logs: PC5 collects them.
 - Nothing is kept longer than seven days.
+- From 2.5.1 the logs keep nothing that identifies you or your console: no console user numbers, nothing typed at a refused FTP or web page sign-in, and a game's own log files have their machine and account IDs (Unreal's MachineId, LoginId, EpicAccountId and UserName, analytics session and user IDs) blanked with zeros. You don't need to edit a log before attaching it.
 
 See [Finding the log](Reporting-a-problem#finding-the-log) for the details.
 

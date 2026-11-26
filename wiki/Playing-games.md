@@ -171,6 +171,8 @@ Steam doesn't run on the console. A game that asks Steam's library (`steam_api.d
 
 A game whose program is wrapped in Steam's DRM (SteamStub) needs Steam itself, which the emulator can't stand in for: PC5 says so when you start it, instead of starting it. A copy of the game without it, such as one from GOG, can run.
 
+From 2.4.8, when a game stops because of copy protection the console can't run, PC5's message says which: an **anti-cheat** (Easy Anti-Cheat, BattlEye, EA Anti-Cheat, Vanguard and others, which need Windows' own kernel) or a **store's app** it needs (Ubisoft Connect, the EA app, Social Club, Battle.net, the Epic Games Launcher). A problem report's likely cause then starts with "anti-cheat" or "needs store app". A game that runs with one of them is left alone.
+
 To play a game from your own Steam library, see [Games from your Steam library](Installing-games#games-from-your-steam-library).
 
 ## Frame generation

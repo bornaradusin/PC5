@@ -50,6 +50,8 @@ From PC5 2.1.1, a few games get launch options from PC5 when they have no `launc
 
 GTA IV starts from `GTAIV.exe`, not `PlayGTAIV.exe`, which only opens the Rockstar Games Launcher. Current Steam and Rockstar copies of the Complete Edition still check for that launcher as they start and stop with a message that it's needed, so they don't run in PC5, like every game that needs a store's launcher; these options are for a copy that starts without it. Without them the game limits its settings to the video memory it finds. PC5 also gives it a DXVK option that makes it play more smoothly (`d3d9.weakRenderTargetFlushHint`). Mods such as the Ultimate ASI Loader (`dinput8.dll` beside `GTAIV.exe`) load as they do on a PC.
 
+Max Payne 3, on the same engine as GTA V, gets GTA V's DXVK option (`d3d11.cachedDynamicResources = vi`) from 2.5.0, so busy scenes no longer drop to about 50 fps.
+
 ## Changing or removing options
 
 - To change them, edit the line and start the game again.
@@ -94,6 +96,6 @@ From PC5 2.1.1, a Direct3D 9 game can show your own, sharper pictures in place o
 - `DXVK_TEXTURE_DUMP=dump` saves each texture the game loads, once, as a `.tga` file named after its contents, in a `dump` folder beside the game's `.exe`. Play the parts you want to change, then take the line out: it makes the game slower and fills the folder fast. `DXVK_CONFIG=d3d9.textureDumpMaxSize = 512` with it saves only textures up to 512 pixels wide and high.
 - `DXVK_TEXTURE_PACK=pack` shows `pack/<name>.png` (beside the game's `.exe`) in place of the texture of the same name: give an upscaled or edited copy of a dumped texture the dumped one's name, as a PNG, of any size.
 
-Only 2D textures in the usual colour formats are swapped. Setting `DXVK_CONFIG` in `env.txt` replaces PC5's own DXVK settings for the game (its video memory, and GTA IV's option), so add those to the same line, separated by `;`, if you still want them.
+Only 2D textures in the usual colour formats are swapped. Setting `DXVK_CONFIG` in `env.txt` replaces PC5's own DXVK settings for the game (its video memory, and GTA IV's and Max Payne 3's options), so add those to the same line, separated by `;`, if you still want them.
 
 See also [Files and folders](Files-and-folders) for where everything else is.
