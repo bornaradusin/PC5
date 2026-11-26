@@ -5036,6 +5036,13 @@ static void test_logs(void)
         static const char unity[] = "REC seq=100 t=2220.6 WINE 0024:trace:loaddll:build_module Loaded L\"C:\\\\Games\\\\Assassins "
                                     "Creed Unity\\\\uplay_r1_loader64.dll\" at 00000013FEF20000: native\n";
         snprintf(more_text, sizeof(more_text), "%sREC seq=101 t=2221.0 PW_WINE64 session_end reason=wine-exit\n", unity);
+        CHECK(CLASSIFY("cnwt", "REC seq=1 t=1.0 PW_WINE64 alive tick=60 sink_calls=1 frames_put=2 shown=1\n"
+                               "REC seq=2 t=600.0 STDOUT [ScePthread/System] Internal Memory is running out.\n"
+                               "REC seq=3 t=600.1 WINESERVER libc++abi: terminating due to uncaught exception of type "
+                               "std::bad_alloc: std::bad_alloc\n"
+                               "REC seq=4 t=600.2 PW_WINE64 restart to=launcher cycle=7 reason=wine-exit\n") == PC5_LOG_CRASHED &&
+                  issue.cause == PC5_CAUSE_OUT_OF_MEMORY,
+              "the console out of memory (#773): %d %d", (int)issue.problem, (int)issue.cause);
         CHECK(CLASSIFY("acu", more_text) == PC5_LOG_NO_PICTURE && issue.cause == PC5_CAUSE_STORE_APP &&
                   !strcmp(issue.cause_what, "Ubisoft Connect"),
               "a store's app it needs (#767): %d %d %s", (int)issue.problem, (int)issue.cause, issue.cause_what);

@@ -3363,6 +3363,10 @@ static void issue_message(Pc5Ui *ui)
         pc5_tf(why, sizeof(why), "It needs %s running beside it, which can't run on the console. A copy of the game "
                  "from a store that doesn't need its app may run.", issue->cause_what);
         break;
+    case PC5_CAUSE_OUT_OF_MEMORY:
+        pc5_tf(why, sizeof(why), "The console ran out of memory. Close other games and apps first, and try lower "
+                 "graphics settings in the game (textures, resolution, shadows).");
+        break;
     default:
         break;
     }

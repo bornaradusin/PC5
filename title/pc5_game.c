@@ -911,15 +911,45 @@ int pc5_prefix_arial(const char *root, const char *prefix, const char *app)
 
 /* ---- a web game's files cut short ----------------------------------------------------------- */
 
+/* 1 when one of dir's block files (data_0 … data_3) is cut short: smaller than its 8192-byte header,
+ * or without its magic (0xC104CAC3). Chromium can't map it and stops (Noreya, #693). */
+static int web_blocks_cut_short(const char *dir)
+{
+    for (int i = 0; i < 4; i++) {
+        char block[PC5_PATH];
+        unsigned char magic[4];
+        struct stat st;
+        if (pc5_format(block, sizeof(block), "%s/data_%d", dir, i) || stat(block, &st) || !S_ISREG(st.st_mode)) continue;
+        if (st.st_size < 8192) return 1;
+        int fd = open(block, O_RDONLY);
+        if (fd < 0) continue;
+        ssize_t got = read(fd, magic, sizeof(magic));
+        close(fd);
+        if (got != 4 || magic[0] != 0xc3 || magic[1] != 0xca || magic[2] != 0x04 || magic[3] != 0xc1) return 1;
+    }
+    return 0;
+}
+
 /* 1 when dir/index is a Chromium disk cache's index cut short: empty, or the block-file cache's
- * (magic 0xC103CAC3) shorter than its header and smallest table (368 + 4 * 0x10000 bytes). */
+ * (magic 0xC103CAC3) shorter than its header and smallest table (368 + 4 * 0x10000 bytes); or its
+ * block files are cut short, or data_0 is missing beside an index. */
 static int web_cache_cut_short(const char *dir)
 {
-    char index[PC5_PATH];
+    char index[PC5_PATH], data0[PC5_PATH];
     unsigned char magic[4];
     struct stat st;
 
     if (pc5_format(index, sizeof(index), "%s/index", dir) || stat(index, &st) || !S_ISREG(st.st_mode)) return 0;
+    if (web_blocks_cut_short(dir)) return 1;
+    if (!pc5_format(data0, sizeof(data0), "%s/data_0", dir) && st.st_size >= 4 && !pc5_exists(data0)) {
+        int fd0 = open(index, O_RDONLY);
+        if (fd0 >= 0) {
+            ssize_t got0 = read(fd0, magic, sizeof(magic));
+            close(fd0);
+            /* Only the block-file cache has data_N files; the simple cache's index has none. */
+            if (got0 == 4 && magic[0] == 0xc3 && magic[1] == 0xca && magic[2] == 0x03 && magic[3] == 0xc1) return 1;
+        }
+    }
     if (st.st_size < 4) return 1;
     int fd = open(index, O_RDONLY);
     if (fd < 0) return 0;
@@ -1369,6 +1399,11 @@ int pc5_prefix_web_settings(const char *program)
 
 /* ---- an Infinity Engine game's [Alias] paths ------------------------------------------------ */
 
+/* A game played from a USB drive is at C:\Games\<folder> only through Wine's link table: no folder
+ * of that name is under drive_c, so its paths are looked for in the game's real folder (#746). */
+static char alias_usb_windows[PC5_PATH];   /* C:\Games\<folder>, or "" */
+static char alias_usb_host[PC5_PATH];      /* where that is on the console */
+
 /* The Windows path windows (C:\..., any case, \ or / between its folders) on the console: 1 when
  * it is a folder under drive (the prefix's drive_c), each of its names matched in any case. */
 static int windows_folder_exists(const char *drive, const char *windows)
@@ -1379,6 +1414,12 @@ static int windows_folder_exists(const char *drive, const char *windows)
     if (pc5_lower((unsigned char)p[0]) != 'c' || p[1] != ':' || (p[2] && p[2] != '\\' && p[2] != '/')) return 0;
     if (strlen(drive) >= sizeof(at)) return 0;
     pc5_copy(at, sizeof(at), drive);
+    size_t usb = strlen(alias_usb_windows);
+    if (usb && !strncasecmp(windows, alias_usb_windows, usb) &&
+        (!windows[usb] || windows[usb] == '\\' || windows[usb] == '/')) {
+        pc5_copy(at, sizeof(at), alias_usb_host);
+        p = windows + usb - 2;   /* the walk below starts 2 past p, at the rest of the path */
+    }
     if (at[0] && at[strlen(at) - 1] == '/') at[strlen(at) - 1] = 0;
     for (p += 2; *p;) {
         size_t n = 0;
@@ -1564,6 +1605,7 @@ int pc5_prefix_infinity_aliases(const char *root, const char *prefix, const char
     int changed = 0;
 
     alias_why.len = 0;
+    alias_usb_windows[0] = alias_usb_host[0] = 0;
     if (!prefix || !prefix[0] || !strcmp(prefix, "default") || !slash) return 0;
     if (pc5_format(drive, sizeof(drive), "%s/prefixes/%s/drive_c/", root, prefix) ||
         (size_t)(slash - program) >= sizeof(dir))
@@ -1581,6 +1623,11 @@ int pc5_prefix_infinity_aliases(const char *root, const char *prefix, const char
         if (strncmp(dir, top, n) || (dir[n] && dir[n] != '/') ||
             pc5_format(inside, sizeof(inside), "Games/%s%s", info.folder, dir + n))
             return 0;
+        if (strlen(top) < sizeof(alias_usb_host) &&
+            !pc5_format(alias_usb_windows, sizeof(alias_usb_windows), "C:\\Games\\%s", info.folder))
+            pc5_copy(alias_usb_host, sizeof(alias_usb_host), top);
+        else
+            alias_usb_windows[0] = alias_usb_host[0] = 0;
     }
     if (pc5_format(game, sizeof(game), "C:\\%s\\", inside)) return 0;
     for (char *c = game; *c; c++) {

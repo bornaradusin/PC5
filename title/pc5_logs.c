@@ -121,6 +121,7 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
     const char *end_of_text = text + length, *line = text;
     double first_t = -1, last_t = -1;
     int ended = 0, launch_failed = 0, unhandled = 0, forced = 0, pc5_problem = 0, picture = 0, asked = 0, handed_off = 0;
+    int out_of_memory = 0;
     char crash[200] = "", problem[200] = "", installer[160] = "", copy_file[160] = "", missing_dll[64] = "",
          wrong_dll[64] = "";
     int no_opengl = 0, imports_failed = 0;
@@ -187,6 +188,12 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
                 }
         }
         if (after(line, end, "called without a rendering context")) no_opengl = 1;
+        /* The console out of memory (#773): its system says so, then a part of Wine that can't
+         * get memory stops everything ("libc++abi: terminating due to uncaught exception of type
+         * std::bad_alloc"), with no Windows crash, so the game is just gone. */
+        if (after(line, end, "Internal Memory is running out") ||
+            (after(line, end, "libc++abi: terminating") && after(line, end, "bad_alloc")))
+            out_of_memory = 1;
         /* A DLL nowhere to be found, and the program that couldn't load for it ("Importing dlls for
          * ... failed"), or one of the other kind (c000007b: a 32-bit DLL beside a 64-bit game). */
         if (!missing_dll[0] && (found = after(line, end, "err:module:import_dll Library ")) && after(line, end, ") not found"))
@@ -243,6 +250,8 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
     } else if (wrong_dll[0]) {
         issue->cause = PC5_CAUSE_WRONG_DLL;
         pc5_copy(issue->cause_what, sizeof(issue->cause_what), wrong_dll);
+    } else if (out_of_memory) {
+        issue->cause = PC5_CAUSE_OUT_OF_MEMORY;
     }
     issue->closed = ended;
     issue->ended = issue->time;
@@ -272,6 +281,9 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
          * reason the log shows (RV There Yet's starter, closed when vc_redist couldn't start). */
         issue->problem = PC5_LOG_CLOSED_EARLY;
     }
+    /* Out of memory ends the game with no crash of its own: it went wrong all the same. */
+    if (out_of_memory && issue->problem == PC5_LOG_FINE && !asked && strcmp(issue->profile, "launcher"))
+        issue->problem = PC5_LOG_CRASHED;
     if (!strcmp(issue->profile, "launcher")) issue->cause = PC5_CAUSE_NONE;
     /* Copy protection is the cause only of a game that failed: one that ran is fine as it is. */
     if (issue->problem == PC5_LOG_FINE && (issue->cause == PC5_CAUSE_ANTI_CHEAT || issue->cause == PC5_CAUSE_STORE_APP))
@@ -338,6 +350,9 @@ void pc5_log_cause_text(const Pc5LogIssue *issue, char *out, size_t size)
         break;
     case PC5_CAUSE_STORE_APP:
         snprintf(out, size, "needs store app: it needs %s running beside it, which can't run on the console", issue->cause_what);
+        break;
+    case PC5_CAUSE_OUT_OF_MEMORY:
+        snprintf(out, size, "out of memory: the console ran out of memory, and the game ended with it");
         break;
     default:
         if (size) out[0] = 0;

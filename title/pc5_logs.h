@@ -36,6 +36,7 @@ typedef enum Pc5LogCause {
     PC5_CAUSE_WRONG_DLL,      /* a DLL it loads is of the other kind, 32-bit for a 64-bit game (c000007b) */
     PC5_CAUSE_ANTI_CHEAT,     /* it loaded or started an anti-cheat (Easy Anti-Cheat), which needs Windows' kernel */
     PC5_CAUSE_STORE_APP,      /* it needs its store's app running (Ubisoft Connect's uplay_r1_loader64.dll) */
+    PC5_CAUSE_OUT_OF_MEMORY,  /* the console ran out of memory ("Internal Memory is running out", then bad_alloc) */
 } Pc5LogCause;
 
 typedef struct Pc5LogIssue {

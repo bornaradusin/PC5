@@ -40,6 +40,7 @@ When something doesn't work, PC5 usually says why in a message. This page lists 
 
 | Problem | What to do |
 | --- | --- |
+| The game goes back to PC5 with no error, and PC5 says the console ran out of memory | The game needed more memory than the console had left. Close other games and apps first, and lower the game's graphics settings (textures, resolution, shadows). From 2.5.2 PC5 says so; before, it said nothing went wrong. |
 | The game doesn't react to the controller | Change its controller mode: **△ › Controller**. Try **DualSense** if **Xbox controller** doesn't work, or **Keyboard & mouse** for a game without controller support. See [Controllers](Controllers). |
 | A Windows box appears before the game starts | With Xbox controller or DualSense, press **✕** to press its highlighted button, and use the D-pad to move between buttons. See [Controllers](Controllers#a-games-windows-pop-ups). |
 | A setting I changed did nothing | Settings and a game's controller, frame generation and launch options take effect the next time the game starts. Leave the game and start it again. |

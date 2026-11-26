@@ -667,6 +667,9 @@ controller's speaker.
 | 425 | Valor Mortis (an official copy): apply a setting in Options | no crash, no outdated-driver warning | — |
 | 427 | Any game that crashes with an Unreal Engine crash report (Valor Mortis, Werewolf), then △ › Manage › Report a problem | the report zip's `game/.../CrashContext.runtime-xml` has `<MachineId>000…` and `<LoginId>000…`, its ErrorMessage as before | the log has no number after `players signed in:` or `user=` |
 | 426 | Max Payne 3 (#262's copy), the apartment corridor fight | about 60 fps where it dipped to 50 | DXVK's config line has `d3d11.cachedDynamicResources = vi` |
+| 428 | Icewind Dale II (#746's copy) played from a USB drive, its icewind2.ini with D:\ paths | it starts and finds its data; `icewind2.ini.pc5-old` beside it | `PC5 Infinity Engine [Alias] … C:\Games\Icewind Dale II` rewritten, not "left as they were" |
+| 429 | Noreya (#693's copy) with its GPUCache's data_0 emptied | it starts; the cache folder is made again | `PC5 web` cache cut short removed |
+| 430 | A game that runs the console out of memory (Connection The Nightmare Within, #773, the forest tunnel) | PC5 says it ended, the console ran out of memory | about.txt's cause `out of memory: …` |
 
 ## Custom media navigation changes (pending on PS5)
 
