@@ -6117,6 +6117,18 @@ static void test_dotnet(void)
         path(file, sizeof(file), "%s/Cache/Cache_Data/index", app);
         write_text(file, index);
         free(index);
+        /* A whole cache has its block files beside the index, each with its 8192-byte header. */
+        {
+            char *block = malloc(8193);
+            memset(block, 'a', 8192);
+            memcpy(block, "ÃÊÁ", 4);
+            block[8192] = 0;
+            for (int i = 0; i < 4; i++) {
+                path(file, sizeof(file), "%s/Cache/Cache_Data/data_%d", app, i);
+                write_text(file, block);
+            }
+            free(block);
+        }
         path(file, sizeof(file), "%s/Local State", app);
         write_text(file, "{}");
         path(file, sizeof(file), "%s/config.json", app);
