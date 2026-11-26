@@ -8,13 +8,13 @@ Unity's legacy input opens a controller's HID path before it reads it through XI
 ---
  ...roller-as-an-xbox-360-hid-collection.patch | 400 ++++++++++++++++++
  1 file changed, 400 insertions(+)
- create mode 100644 wine/patches/1046-xinput1_3-ps5-the-title-s-controller-as-an-xbox-360-hid-collection.patch
+ create mode 100644 wine/patches/1046-xinput1-3-ps5-the-title-s-controller-as-an-xbox-360-hid-collection.patch
 
-diff --git a/wine/patches/1046-xinput1_3-ps5-the-title-s-controller-as-an-xbox-360-hid-collection.patch b/wine/patches/1046-xinput1_3-ps5-the-title-s-controller-as-an-xbox-360-hid-collection.patch
+diff --git a/wine/patches/1046-xinput1-3-ps5-the-title-s-controller-as-an-xbox-360-hid-collection.patch b/wine/patches/1046-xinput1-3-ps5-the-title-s-controller-as-an-xbox-360-hid-collection.patch
 new file mode 100644
 index 0000000..bf3446e
 --- /dev/null
-+++ b/wine/patches/1046-xinput1_3-ps5-the-title-s-controller-as-an-xbox-360-hid-collection.patch
++++ b/wine/patches/1046-xinput1-3-ps5-the-title-s-controller-as-an-xbox-360-hid-collection.patch
 @@ -0,0 +1,400 @@
 +From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 +From: prospero-win <prospero-win@invalid>
