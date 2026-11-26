@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Thu, 26 Nov 2026 12:00:00 +0000
+Subject: [PATCH] PC5: a Unity game in Xbox controller mode gets the controller
+ as a HID device
+
+PW_RAWINPUT_PAD=2 for a Unity game (Wine patch 1046: an Xbox 360 controller's HID collection it can open), 1 for a Java game, which reads only raw input's list (#149).
+---
+ native/wine64_main.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index bae30b8..da8ad6e 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -1913,8 +1913,10 @@ int main(int argc, char **argv)
+              * an XInput one through XInput: win32u lists the controller there
+              * for a Unity game (patch 1033); other games see no change. */
+             if (unity_game(prefix, game->app.executable)) {
+-                extra[config.extra_env_count++] = (PwWineStartEnv){ "PW_RAWINPUT_PAD", "1" };
+-                PS5LOG_LOG("PW_WINE64 raw input controller for a Unity game");
++                /* 2: a whole HID device (xinput1_3's dualsense.c as an Xbox 360 controller's
++                 * collection), which Unity's raw input opens before it reads XInput (#684). */
++                extra[config.extra_env_count++] = (PwWineStartEnv){ "PW_RAWINPUT_PAD", "2" };
++                PS5LOG_LOG("PW_WINE64 raw input controller for a Unity game: a HID device");
+             } else if (java_game(prefix, game->app.executable)) {
+                 /* so GLFW sees the XInput controller once (java_game) */
+                 extra[config.extra_env_count++] = (PwWineStartEnv){ "PW_RAWINPUT_PAD", "1" };

@@ -1,0 +1,418 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Wed, 25 Nov 2026 12:00:00 +0000
+Subject: [PATCH] PC5: a Unity game's Xbox controller is a HID device it can
+ open (Wine patch 1046)
+
+Unity's legacy input opens a controller's HID path before it reads it through XInput; PC5's raw input entry had nothing behind it, so Yestersol (#684) never saw the controller. xinput1_3 now makes the title's controller an Xbox 360 controller's HID collection (VID_045E&PID_028E&IG_00) for PW_RAWINPUT_PAD=2, as it makes the DualSense in dualsense mode.
+---
+ ...roller-as-an-xbox-360-hid-collection.patch | 400 ++++++++++++++++++
+ 1 file changed, 400 insertions(+)
+ create mode 100644 wine/patches/1046-xinput1_3-ps5-the-title-s-controller-as-an-xbox-360-hid-collection.patch
+
+diff --git a/wine/patches/1046-xinput1_3-ps5-the-title-s-controller-as-an-xbox-360-hid-collection.patch b/wine/patches/1046-xinput1_3-ps5-the-title-s-controller-as-an-xbox-360-hid-collection.patch
+new file mode 100644
+index 0000000..bf3446e
+--- /dev/null
++++ b/wine/patches/1046-xinput1_3-ps5-the-title-s-controller-as-an-xbox-360-hid-collection.patch
+@@ -0,0 +1,400 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Wed, 25 Nov 2026 12:00:00 +0000
++Subject: [PATCH] xinput1_3: PS5: The title's controller as an Xbox 360
++ controller's HID collection, for a Unity game.
++
++Unity's legacy input (2022.3's UnityPlayer.dll) lists controllers through raw
++input, then opens each one's path with CreateFile, reads its preparsed data and
++capabilities, and only then, for a path with IG_ in it, reads it through
++XInput. A PS5 title listed its controller in raw input alone (1033), with
++nothing behind the path to open, so Unity left it out and never asked XInput:
++Yestersol's Xbox controller did nothing.
++
++With PW_RAWINPUT_PAD=2, dualsense.c makes its device as an Xbox 360
++controller's HID collection instead of a DualSense: VID_045E&PID_028E&IG_00,
++"Controller (XBOX 360 For Windows)", winexinput.sys's report descriptor, the
++same registry keys, link and HID ioctls. It sends no reports: a game reads it
++through XInput, which has the title's controller. ntdll loads xinput1_3 at the
++start for it, as for the DualSense, and win32u's raw input entry stays for
++PW_RAWINPUT_PAD=1 only.
++---
++ dlls/ntdll/loader.c        |  11 +-
++ dlls/xinput1_3/dualsense.c | 205 +++++++++++++++++++++++++++++--------
++ 2 files changed, 171 insertions(+), 45 deletions(-)
++
++diff --git a/dlls/ntdll/loader.c b/dlls/ntdll/loader.c
++index fd03074..55d9376 100644
++--- a/dlls/ntdll/loader.c
+++++ b/dlls/ntdll/loader.c
++@@ -4449,7 +4449,7 @@ static void init_wow64( CONTEXT *context )
++  * directory: a game's own xinput1_3.dll has no DualSense. */
++ static void load_dualsense(void)
++ {
++-    static const WCHAR variable[] = L"PW_DUALSENSE";
+++    static const WCHAR variable[] = L"PW_DUALSENSE", pad[] = L"PW_RAWINPUT_PAD";
++     WCHAR value[2], path[MAX_PATH];
++     UNICODE_STRING name;
++     HMODULE module;
++@@ -4459,8 +4459,13 @@ static void load_dualsense(void)
++ #ifdef _WIN64
++     if (NtCurrentTeb()->WowTebOffset) return;  /* the 32-bit side does it */
++ #endif
++-    if (RtlQueryEnvironmentVariable( NULL, variable, wcslen( variable ), value, ARRAY_SIZE(value), &len ) ||
++-        len != 1 || value[0] != '1')
+++    /* PW_RAWINPUT_PAD=2 (a Unity game in xinput mode): xinput1_3 makes the title's controller
+++     * an Xbox 360 controller's HID collection, which Unity's raw input lists before it loads
+++     * any xinput, so it is made here as well. */
+++    if ((RtlQueryEnvironmentVariable( NULL, variable, wcslen( variable ), value, ARRAY_SIZE(value), &len ) ||
+++         len != 1 || value[0] != '1') &&
+++        (RtlQueryEnvironmentVariable( NULL, pad, wcslen( pad ), value, ARRAY_SIZE(value), &len ) ||
+++         len != 1 || value[0] != '2'))
++         return;
++     wcscpy( path, system_dir );
++     wcscat( path, L"xinput1_3.dll" );
++diff --git a/dlls/xinput1_3/dualsense.c b/dlls/xinput1_3/dualsense.c
++index 1c966a3..d02ed69 100644
++--- a/dlls/xinput1_3/dualsense.c
+++++ b/dlls/xinput1_3/dualsense.c
++@@ -65,13 +65,103 @@ WINE_DEFAULT_DEBUG_CHANNEL(xinput);
++ 
++ #define DS_HID_GUID     L"{4d1e55b2-f16f-11cf-88cb-001111000030}"
++ #define DS_HIDCLASS     L"{745a17a0-74d3-11d0-b6fe-00a0c90f57da}"
++-#define DS_HARDWARE     L"VID_054C&PID_0CE6&MI_03"
++-#define DS_SERIAL       L"1&5d5e2a1&0&0000"
++-#define DS_INSTANCE     L"HID\\" DS_HARDWARE L"\\" DS_SERIAL
++-#define DS_LINK         L"HID#" DS_HARDWARE L"#" DS_SERIAL L"#" DS_HID_GUID
++-#define DS_DEVICE       L"\\Device\\PwDualSense"
++-#define DS_ENUM_KEY     L"System\\CurrentControlSet\\Enum\\" DS_INSTANCE
++-#define DS_CLASS_KEY    L"System\\CurrentControlSet\\Control\\DeviceClasses\\" DS_HID_GUID L"\\##?#" DS_LINK
+++
+++/* Which controller the device is. A DualSense in dualsense mode (PW_DUALSENSE=1): its reports are
+++ * the Unix library's. An Xbox 360 controller's HID collection, as Windows lists it beside the
+++ * XInput device (PW_RAWINPUT_PAD=2, for a Unity game): Unity's raw input opens it, sees IG_ in
+++ * its path and then reads it through XInput, which has the title's controller, so it sends no
+++ * reports of its own (Yestersol, #684: with only a raw input entry and nothing to open behind
+++ * it, Unity left the controller out and never asked XInput). */
+++struct ds_profile
+++{
+++    const WCHAR *hardware;      /* VID_xxxx&PID_xxxx&... */
+++    const WCHAR *serial;
+++    const WCHAR *device;
+++    const WCHAR *hardware_ids;  /* REG_MULTI_SZ */
+++    DWORD hardware_ids_size;
+++    const WCHAR *product, *manufacturer;
+++    USHORT vendor, product_id, version;
+++    ULONG rawinput;             /* any but 1 and 2, which are the mouse's and the keyboard's */
+++    BOOL reports;               /* sends input reports, outputs and features (the Unix library's) */
+++    const char *name;
+++};
+++
+++static const WCHAR dualsense_ids[] =
+++    L"HID\\VID_054C&PID_0CE6&REV_0100&MI_03\0HID\\VID_054C&PID_0CE6&MI_03\0"
+++    L"HID\\VID_054C&UP:0001_U:0005\0HID_DEVICE_SYSTEM_GAME\0HID_DEVICE_UP:0001_U:0005\0HID_DEVICE\0";
+++static const WCHAR xbox360_ids[] =
+++    L"HID\\VID_045E&PID_028E&REV_0114&IG_00\0HID\\VID_045E&PID_028E&IG_00\0"
+++    L"HID\\VID_045E&UP:0001_U:0005\0HID_DEVICE_SYSTEM_GAME\0HID_DEVICE_UP:0001_U:0005\0HID_DEVICE\0";
+++
+++static const struct ds_profile dualsense_profile =
+++{
+++    L"VID_054C&PID_0CE6&MI_03", L"1&5d5e2a1&0&0000", L"\\Device\\PwDualSense", dualsense_ids,
+++    sizeof(dualsense_ids), L"DualSense Wireless Controller", L"Sony Interactive Entertainment",
+++    0x054c, 0x0ce6, 0x0100, 0x5c0e6, TRUE, "a DualSense",
+++};
+++static const struct ds_profile xbox360_profile =
+++{
+++    L"VID_045E&PID_028E&IG_00", L"1&2d595ca7&0&0000", L"\\Device\\PwXbox360", xbox360_ids,
+++    sizeof(xbox360_ids), L"Controller (XBOX 360 For Windows)", L"Microsoft",
+++    0x045e, 0x028e, 0x0114, 0x5c0e7, FALSE, "an Xbox 360 controller's HID collection",
+++};
+++
+++#include "../winexinput.sys/psh_hid_macros.h"
+++/* Windows' Xbox 360 HID collection, as winexinput.sys has it: X/Y, Rx/Ry, Z for both triggers,
+++ * 10 buttons and the hat, 14-byte reports without an id. */
+++static const BYTE xbox360_report_desc[] =
+++{
+++    USAGE_PAGE(1, HID_USAGE_PAGE_GENERIC),
+++    USAGE(1, HID_USAGE_GENERIC_GAMEPAD),
+++    COLLECTION(1, Application),
+++        USAGE(1, 0),
+++        COLLECTION(1, Physical),
+++            USAGE(1, HID_USAGE_GENERIC_X),
+++            USAGE(1, HID_USAGE_GENERIC_Y),
+++            LOGICAL_MAXIMUM(2, 0xffff),
+++            PHYSICAL_MAXIMUM(2, 0xffff),
+++            REPORT_SIZE(1, 16),
+++            REPORT_COUNT(1, 2),
+++            INPUT(1, Data|Var|Abs),
+++        END_COLLECTION,
+++        COLLECTION(1, Physical),
+++            USAGE(1, HID_USAGE_GENERIC_RX),
+++            USAGE(1, HID_USAGE_GENERIC_RY),
+++            REPORT_COUNT(1, 2),
+++            INPUT(1, Data|Var|Abs),
+++        END_COLLECTION,
+++        COLLECTION(1, Physical),
+++            USAGE(1, HID_USAGE_GENERIC_Z),
+++            REPORT_COUNT(1, 1),
+++            INPUT(1, Data|Var|Abs),
+++        END_COLLECTION,
+++        USAGE_PAGE(1, HID_USAGE_PAGE_BUTTON),
+++        USAGE_MINIMUM(1, 1),
+++        USAGE_MAXIMUM(1, 10),
+++        LOGICAL_MAXIMUM(1, 1),
+++        PHYSICAL_MAXIMUM(1, 1),
+++        REPORT_COUNT(1, 10),
+++        REPORT_SIZE(1, 1),
+++        INPUT(1, Data|Var|Abs),
+++        USAGE_PAGE(1, HID_USAGE_PAGE_GENERIC),
+++        USAGE(1, HID_USAGE_GENERIC_HATSWITCH),
+++        LOGICAL_MINIMUM(1, 1),
+++        LOGICAL_MAXIMUM(1, 8),
+++        PHYSICAL_MAXIMUM(2, 0x103b),
+++        REPORT_SIZE(1, 4),
+++        REPORT_COUNT(4, 1),
+++        UNIT(1, 0x0e /* none */),
+++        INPUT(1, Data|Var|Abs|Null),
+++        REPORT_COUNT(1, 18),
+++        REPORT_SIZE(1, 1),
+++        INPUT(1, Cnst|Var|Abs),
+++    END_COLLECTION,
+++};
+++#include "../winexinput.sys/pop_hid_macros.h"
+++
+++/* The profile's names, made at the start. */
+++static const struct ds_profile *profile;
+++static WCHAR ds_instance[96], ds_link[160], ds_enum_key[160], ds_class_key[288];
++ 
++ enum
++ {
++@@ -83,8 +173,6 @@ enum
++     DS_QUEUE_MIN = 2,
++     DS_QUEUE_MAX = 512,
++     DS_TICK_US = 4000,          /* a DualSense on USB sends 250 reports a second */
++-    DS_RAWINPUT_HANDLE = 0x5c0e6, /* any but 1 and 2, which are the mouse's and the keyboard's */
++-    DS_VERSION = 0x0100,
++ };
++ 
++ struct ds_read
++@@ -159,26 +247,24 @@ static HKEY create_key( HKEY root, const WCHAR *path )
++ 
++ static BOOL create_keys(void)
++ {
++-    static const WCHAR hardware_ids[] =
++-        L"HID\\VID_054C&PID_0CE6&REV_0100&MI_03\0HID\\" DS_HARDWARE L"\0"
++-        L"HID\\VID_054C&UP:0001_U:0005\0HID_DEVICE_SYSTEM_GAME\0HID_DEVICE_UP:0001_U:0005\0HID_DEVICE\0";
++     static const WCHAR compatible_ids[] = L"HID_DEVICE_SYSTEM_GAME\0HID_DEVICE_UP:0001_U:0005\0HID_DEVICE\0";
++-    static const WCHAR link[] = L"\\\\?\\" DS_LINK;
+++    WCHAR link[ARRAY_SIZE(ds_link) + 4];
++     const DWORD one = 1;
++     HKEY key, refstr, control;
++     BOOL ok;
++ 
++-    if (!(key = create_key( HKEY_LOCAL_MACHINE, DS_ENUM_KEY ))) return FALSE;
+++    swprintf( link, ARRAY_SIZE(link), L"\\\\?\\%s", ds_link );
+++    if (!(key = create_key( HKEY_LOCAL_MACHINE, ds_enum_key ))) return FALSE;
++     ok = set_string( key, L"ClassGUID", DS_HIDCLASS ) && set_string( key, L"Class", L"HIDClass" ) &&
++          set_string( key, L"DeviceDesc", L"HID-compliant game controller" ) &&
++          set_string( key, L"Mfg", L"(Standard system devices)" ) &&
++-         set_value( key, L"HardwareID", REG_MULTI_SZ, hardware_ids, sizeof(hardware_ids) ) &&
+++         set_value( key, L"HardwareID", REG_MULTI_SZ, profile->hardware_ids, profile->hardware_ids_size ) &&
++          set_value( key, L"CompatibleIDs", REG_MULTI_SZ, compatible_ids, sizeof(compatible_ids) );
++     RegCloseKey( key );
++     if (!ok) return FALSE;
++ 
++-    if (!(key = create_key( HKEY_LOCAL_MACHINE, DS_CLASS_KEY ))) return FALSE;
++-    ok = set_string( key, L"DeviceInstance", DS_INSTANCE );
+++    if (!(key = create_key( HKEY_LOCAL_MACHINE, ds_class_key ))) return FALSE;
+++    ok = set_string( key, L"DeviceInstance", ds_instance );
++     if (ok && (ok = (refstr = create_key( key, L"#" )) != NULL))
++     {
++         ok = set_string( refstr, L"SymbolicLink", link );
++@@ -195,18 +281,23 @@ static BOOL create_keys(void)
++ 
++ static void delete_keys(void)
++ {
++-    RegDeleteTreeW( HKEY_LOCAL_MACHINE, DS_CLASS_KEY );
++-    RegDeleteTreeW( HKEY_LOCAL_MACHINE, DS_ENUM_KEY );
+++    RegDeleteTreeW( HKEY_LOCAL_MACHINE, ds_class_key );
+++    RegDeleteTreeW( HKEY_LOCAL_MACHINE, ds_enum_key );
++ }
++ 
++ /* The device in the server, and the link the interface's path opens. */
++ static NTSTATUS create_device(void)
++ {
++-    static const WCHAR device[] = DS_DEVICE;
++-    UNICODE_STRING name = RTL_CONSTANT_STRING( L"\\??\\" DS_LINK ), target = RTL_CONSTANT_STRING( DS_DEVICE );
+++    const WCHAR *device = profile->device;
+++    WCHAR link[ARRAY_SIZE(ds_link) + 8];
+++    UNICODE_STRING name, target;
++     OBJECT_ATTRIBUTES attr;
++     NTSTATUS status;
++ 
+++    swprintf( link, ARRAY_SIZE(link), L"\\??\\%s", ds_link );
+++    RtlInitUnicodeString( &name, link );
+++    RtlInitUnicodeString( &target, device );
+++
++     SERVER_START_REQ( create_device_manager )
++     {
++         req->access     = SYNCHRONIZE;
++@@ -221,7 +312,7 @@ static NTSTATUS create_device(void)
++         req->rootdir  = 0;
++         req->manager  = wine_server_obj_handle( ds.manager );
++         req->user_ptr = wine_server_client_ptr( &ds );
++-        wine_server_add_data( req, device, sizeof(device) - sizeof(WCHAR) );
+++        wine_server_add_data( req, device, wcslen( device ) * sizeof(WCHAR) );
++         status = wine_server_call( req );
++     }
++     SERVER_END_REQ;
++@@ -308,7 +399,7 @@ static void send_report(void)
++     INPUT input = {.type = INPUT_HARDWARE};
++     struct ds_file *file;
++ 
++-    if (ds_call( unix_dualsense_input, &params )) return;
+++    if (!profile->reports || ds_call( unix_dualsense_input, &params )) return;
++     memcpy( ds.report, params.data, DS_INPUT_SIZE );
++ 
++     LIST_FOR_EACH_ENTRY( file, &ds.files, struct ds_file, entry )
++@@ -329,7 +420,7 @@ static void send_report(void)
++     input.hi.uMsg = WM_INPUT;
++     input.hi.wParamH = HIWORD(RIM_INPUT);
++     input.hi.wParamL = LOWORD(RIM_INPUT);
++-    hid->head.device = DS_RAWINPUT_HANDLE;
+++    hid->head.device = profile->rawinput;
++     hid->head.usage = MAKELONG(ds.collection->Usage, ds.collection->UsagePage);
++     hid->head.count = 1;
++     hid->head.length = DS_INPUT_SIZE;
++@@ -448,6 +539,7 @@ static NTSTATUS write_report( const BYTE *report, ULONG size, ULONG_PTR *info )
++     struct xinput_dualsense_output params = {0};
++ 
++     if (!size) return STATUS_INVALID_USER_BUFFER;
+++    if (!profile->reports) return STATUS_INVALID_PARAMETER;   /* an Xbox 360 collection has no output report */
++     if (report[0] != DS_OUTPUT_ID || size < ds.collection->OutputLength) return STATUS_INVALID_PARAMETER;
++     params.size = min( size, sizeof(params.data) );
++     memcpy( params.data, report, params.size );
++@@ -459,8 +551,8 @@ static NTSTATUS write_report( const BYTE *report, ULONG size, ULONG_PTR *info )
++ 
++ static NTSTATUS get_string( ULONG code, BYTE *out, ULONG out_size, ULONG_PTR *info )
++ {
++-    const WCHAR *string = code == IOCTL_HID_GET_PRODUCT_STRING ? L"DualSense Wireless Controller" :
++-                          code == IOCTL_HID_GET_MANUFACTURER_STRING ? L"Sony Interactive Entertainment" : L"";
+++    const WCHAR *string = code == IOCTL_HID_GET_PRODUCT_STRING ? profile->product :
+++                          code == IOCTL_HID_GET_MANUFACTURER_STRING ? profile->manufacturer : L"";
++ 
++     *info = (wcslen( string ) + 1) * sizeof(WCHAR);
++     if (*info > out_size) return STATUS_BUFFER_TOO_SMALL;
++@@ -517,12 +609,20 @@ static NTSTATUS hid_ioctl( struct ds_file *file, ULONG code, const BYTE *in, ULO
++         return STATUS_SUCCESS;
++     case IOCTL_HID_GET_INPUT_REPORT:
++         if (!out_size) return STATUS_INVALID_USER_BUFFER;
+++        if (!profile->reports)   /* read through XInput: a neutral report */
+++        {
+++            if (out_size < ds.collection->InputLength) return STATUS_INVALID_PARAMETER;
+++            memset( out, 0, ds.collection->InputLength );
+++            *info = ds.collection->InputLength;
+++            return STATUS_SUCCESS;
+++        }
++         if (out[0] != DS_INPUT_ID || out_size < ds.collection->InputLength) return STATUS_INVALID_PARAMETER;
++         memcpy( out, ds.report, DS_INPUT_SIZE );
++         *info = DS_INPUT_SIZE;
++         return STATUS_SUCCESS;
++     case IOCTL_HID_GET_FEATURE:
++         if (!out_size) return STATUS_INVALID_USER_BUFFER;
+++        if (!profile->reports) return STATUS_INVALID_PARAMETER;
++         feature.id = out[0];
++         if (ds_call( unix_dualsense_feature, &feature ) || !feature.size || out_size < feature.size)
++             return STATUS_INVALID_PARAMETER;
++@@ -532,6 +632,7 @@ static NTSTATUS hid_ioctl( struct ds_file *file, ULONG code, const BYTE *in, ULO
++         return STATUS_SUCCESS;
++     case IOCTL_HID_SET_FEATURE:
++         if (!in_size) return STATUS_INVALID_USER_BUFFER;
+++        if (!profile->reports) return STATUS_INVALID_PARAMETER;
++         feature.id = in[0];
++         if (ds_call( unix_dualsense_feature, &feature ) || !feature.size || in_size < feature.size)
++             return STATUS_INVALID_PARAMETER;
++@@ -541,7 +642,7 @@ static NTSTATUS hid_ioctl( struct ds_file *file, ULONG code, const BYTE *in, ULO
++         return write_report( in, in_size, info );
++     case IOCTL_HID_GET_WINE_RAWINPUT_HANDLE:
++         if (out_size < sizeof(ULONG)) return STATUS_BUFFER_OVERFLOW;
++-        *(ULONG *)out = DS_RAWINPUT_HANDLE;
+++        *(ULONG *)out = profile->rawinput;
++         *info = sizeof(ULONG);
++         return STATUS_SUCCESS;
++     default:
++@@ -760,32 +861,51 @@ void dualsense_start(void)
++     NTSTATUS status;
++     HANDLE thread;
++ 
++-    if (GetEnvironmentVariableW( L"PW_DUALSENSE", value, ARRAY_SIZE(value) ) != 1 || value[0] != '1') return;
+++    if (GetEnvironmentVariableW( L"PW_DUALSENSE", value, ARRAY_SIZE(value) ) == 1 && value[0] == '1')
+++        profile = &dualsense_profile;
+++    else if (GetEnvironmentVariableW( L"PW_RAWINPUT_PAD", value, ARRAY_SIZE(value) ) == 1 && value[0] == '2')
+++        profile = &xbox360_profile;
+++    else
+++        return;
+++    swprintf( ds_instance, ARRAY_SIZE(ds_instance), L"HID\\%s\\%s", profile->hardware, profile->serial );
+++    swprintf( ds_link, ARRAY_SIZE(ds_link), L"HID#%s#%s#%s", profile->hardware, profile->serial, DS_HID_GUID );
+++    swprintf( ds_enum_key, ARRAY_SIZE(ds_enum_key), L"System\\CurrentControlSet\\Enum\\%s", ds_instance );
+++    swprintf( ds_class_key, ARRAY_SIZE(ds_class_key),
+++              L"System\\CurrentControlSet\\Control\\DeviceClasses\\%s\\##?#%s", DS_HID_GUID, ds_link );
++ 
++-    if ((status = __wine_load_unix_lib( &name, &module, &ds.unix )))
+++    if (profile->reports)
++     {
++-        ERR( "no Unix library, status %#lx: no DualSense\n", status );
++-        return;
+++        if ((status = __wine_load_unix_lib( &name, &module, &ds.unix )))
+++        {
+++            ERR( "no Unix library, status %#lx: no DualSense\n", status );
+++            return;
+++        }
+++        if ((status = ds_call( unix_dualsense_init, NULL )))
+++        {
+++            ERR( "no title, status %#lx: no DualSense\n", status );
+++            return;
+++        }
+++        if (ds_call( unix_dualsense_descriptor, &descriptor )) descriptor.size = 0;
++     }
++-    if ((status = ds_call( unix_dualsense_init, NULL )))
+++    else
++     {
++-        ERR( "no title, status %#lx: no DualSense\n", status );
++-        return;
+++        memcpy( descriptor.data, xbox360_report_desc, sizeof(xbox360_report_desc) );
+++        descriptor.size = sizeof(xbox360_report_desc);
++     }
++-    if (ds_call( unix_dualsense_descriptor, &descriptor ) ||
+++    if (!descriptor.size ||
++         (status = HidP_GetCollectionDescription( descriptor.data, descriptor.size, PagedPool, &ds.desc )) !=
++         HIDP_STATUS_SUCCESS || ds.desc.CollectionDescLength != 1)
++     {
++-        ERR( "the report descriptor does not parse, status %#lx: no DualSense\n", status );
+++        ERR( "the report descriptor does not parse, status %#lx: no controller device\n", status );
++         return;
++     }
++     ds.collection = ds.desc.CollectionDesc;
++     ds.information.DescriptorSize = ds.collection->PreparsedDataLength;
++     ds.information.Polled = FALSE;
++-    ds.information.VendorID = 0x054c;
++-    ds.information.ProductID = 0x0ce6;
++-    ds.information.VersionNumber = DS_VERSION;
++-    if (!ds_call( unix_dualsense_input, &input )) memcpy( ds.report, input.data, DS_INPUT_SIZE );
+++    ds.information.VendorID = profile->vendor;
+++    ds.information.ProductID = profile->product_id;
+++    ds.information.VersionNumber = profile->version;
+++    if (profile->reports && !ds_call( unix_dualsense_input, &input )) memcpy( ds.report, input.data, DS_INPUT_SIZE );
++     if (!(ds.in = malloc( 4096 ))) return;
++     ds.in_capacity = 4096;
++ 
++@@ -808,8 +928,9 @@ void dualsense_start(void)
++         return;
++     }
++     CloseHandle( thread );
++-    MESSAGE( "xinput: the controller is a DualSense (054c:0ce6, %u-byte reports, %u bytes of preparsed data)\n",
++-             ds.collection->InputLength, ds.collection->PreparsedDataLength );
+++    MESSAGE( "xinput: the controller is %s (%04x:%04x, %u-byte reports, %u bytes of preparsed data)\n",
+++             profile->name, profile->vendor, profile->product_id, ds.collection->InputLength,
+++             ds.collection->PreparsedDataLength );
++ }
++ 
++ void dualsense_stop(void)
