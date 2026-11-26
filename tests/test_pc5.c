@@ -6121,7 +6121,7 @@ static void test_dotnet(void)
         {
             char *block = malloc(8193);
             memset(block, 'a', 8192);
-            memcpy(block, "ÃÊÁ", 4);
+            memcpy(block, "\xc3\xca\x04\xc1", 4);
             block[8192] = 0;
             for (int i = 0; i < 4; i++) {
                 path(file, sizeof(file), "%s/Cache/Cache_Data/data_%d", app, i);
