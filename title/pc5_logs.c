@@ -869,6 +869,36 @@ static void crash_message(const Pc5Buf *data, Pc5LogIssue *issue)
     if (n) issue->cause = PC5_CAUSE_CRASH_REPORT;
 }
 
+/* A game's own files go to GitHub in a report: the IDs they hold for the player's machine or
+ * account are zeros there, their length kept. Unreal's crash report's <MachineId>, <LoginId>,
+ * <EpicAccountId> and <UserName>, and an analytics log's "session_id", "user_id" and the like. */
+void pc5_logs_scrub_ids(unsigned char *data, size_t length)
+{
+    static const char *const tags[] = { "MachineId", "LoginId", "EpicAccountId", "UserName" };
+    static const char *const keys[] = { "session_id", "user_id", "device_id", "machine_id", "account_id",
+                                        "android_id", "google_aid", "ios_id", "uuid" };
+    char needle[48];
+
+    if (!data) return;
+    for (size_t t = 0; t < sizeof(tags) / sizeof(tags[0]); t++) {
+        size_t n = (size_t)snprintf(needle, sizeof(needle), "<%s>", tags[t]);
+        for (size_t at = 0; at + n <= length; at++) {
+            if (memcmp(data + at, needle, n)) continue;
+            for (size_t i = at + n; i < length && data[i] != '<' && data[i] != '\n'; i++) data[i] = '0';
+        }
+    }
+    for (size_t k = 0; k < sizeof(keys) / sizeof(keys[0]); k++) {
+        size_t n = (size_t)snprintf(needle, sizeof(needle), "\"%s\"", keys[k]);
+        for (size_t at = 0; at + n <= length; at++) {
+            if (memcmp(data + at, needle, n)) continue;
+            size_t i = at + n;
+            while (i < length && (data[i] == ' ' || data[i] == ':')) i++;
+            if (i >= length || data[i] != '"') continue;   /* a number or null: nothing to blank */
+            for (i++; i < length && data[i] != '"' && data[i] != '\n'; i++) data[i] = '0';
+        }
+    }
+}
+
 static void walk(Collect *c, const char *dir, const char *rel, int depth)
 {
     DIR *d = opendir(dir);
@@ -907,6 +937,7 @@ static void walk(Collect *c, const char *dir, const char *rel, int depth)
         int cut = 0;
         int unread = kind == 1 && size > GAME_TEXT_MAX ? (cut = 1, read_ends(full, size, GAME_TEXT_MAX, GAME_TEXT_HEAD, &data))
                                                      : read_end(full, size, kind == 1 ? GAME_TEXT_MAX : GAME_DUMP_MAX, &data, &cut);
+        if (!unread && kind == 1) pc5_logs_scrub_ids(data.data, data.len);
         if (!unread &&
             !pc5_format(name, sizeof(name), "game/%s", inner) &&
             !pc5_zip_add(c->zip, name, data.data, data.len, (int64_t)st.st_mtime + c->offset_s)) {

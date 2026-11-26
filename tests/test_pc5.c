@@ -4995,6 +4995,18 @@ static void test_logs(void)
         CHECK(!from[0], "no such MFC: %s", from);
         pc5_dll_from("d3dx9_43.dll", from, sizeof(from));
         CHECK(!from[0], "not MFC: %s", from);
+        /* A game's own files in a report: their IDs for the player's machine and account blanked,
+         * the rest as it was. */
+        {
+            char crash[] = "<MachineId>4D15193D43C82D1F</MachineId>\n<LoginId>4d15193d</LoginId>\n"
+                           "<ErrorMessage>EXCEPTION_ACCESS_VIOLATION</ErrorMessage>\n"
+                           "{\"session_id\":\"7aa3ae0b-e768\",\"user_id\": \"ab12\",\"level\":3,\"device_id\":null}";
+            pc5_logs_scrub_ids((unsigned char *)crash, strlen(crash));
+            CHECK(!strcmp(crash, "<MachineId>0000000000000000</MachineId>\n<LoginId>00000000</LoginId>\n"
+                                 "<ErrorMessage>EXCEPTION_ACCESS_VIOLATION</ErrorMessage>\n"
+                                 "{\"session_id\":\"0000000000000\",\"user_id\": \"0000\",\"level\":3,\"device_id\":null}"),
+                  "the IDs blanked, the crash itself kept: %s", crash);
+        }
         /* A .NET game that needs Managed DirectX, which Wine Mono doesn't have (Ceville, #737). */
         CHECK(CLASSIFY("ceville", "REC seq=1 t=1.0 WINE System.TypeLoadException: Could not load type of field "
                                   "'Ceville.MainForm:video' (0) due to: Could not load file or assembly "

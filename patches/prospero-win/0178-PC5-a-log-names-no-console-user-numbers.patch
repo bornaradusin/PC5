@@ -1,0 +1,88 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Thu, 26 Nov 2026 14:00:00 +0000
+Subject: [PATCH] PC5: a log names no console user numbers
+
+The keyboard and mouse lines, "players signed in", and a player joining, leaving or being refused logged the console's number for the signed-in user, which players redacted by hand before attaching logs to GitHub (#96, #262). They now say whether a user is signed in, and a joining player by their place in the signed-in list.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ native/pw_hid_ps5.c     |  9 +++++----
+ native/pw_players_ps5.c | 15 +++++++++------
+ 2 files changed, 14 insertions(+), 10 deletions(-)
+
+diff --git a/native/pw_hid_ps5.c b/native/pw_hid_ps5.c
+index e479c46..74e7374 100644
+--- a/native/pw_hid_ps5.c
++++ b/native/pw_hid_ps5.c
+@@ -91,8 +91,9 @@ static void open_keyboard(PwHidPs5 *hid)
+         logf_(hid, line);
+     }
+     if (handle >= 0 || !hid->keyboard_failed) {
+-        snprintf(line, sizeof(line), "keyboard module=%#x init=%#x open=%#x user=%d", (unsigned)module,
+-                 (unsigned)init_rc, (unsigned)handle, (int)hid->user_id);
++        /* whether a user is signed in, not the console's number for them: logs go to GitHub */
++        snprintf(line, sizeof(line), "keyboard module=%#x init=%#x open=%#x user=%s", (unsigned)module,
++                 (unsigned)init_rc, (unsigned)handle, hid->user_id >= 0 ? "signed-in" : "none");
+         logf_(hid, line);
+     }
+     hid->keyboard_failed = handle < 0;
+@@ -122,9 +123,9 @@ static void open_mouse(PwHidPs5 *hid)
+     }
+     if (handle >= 0) hid->mouse = handle;
+     if (handle >= 0 || !hid->mouse_failed) {
+-        snprintf(line, sizeof(line), "mouse module=%#x init=%#x open=%#x merged=%u user=%d",
++        snprintf(line, sizeof(line), "mouse module=%#x init=%#x open=%#x merged=%u user=%s",
+                  (unsigned)module, (unsigned)init_rc, (unsigned)handle, (unsigned)param[0],
+-                 (int)hid->user_id);
++                 hid->user_id >= 0 ? "signed-in" : "none");
+         logf_(hid, line);
+     }
+     hid->mouse_failed = handle < 0;
+diff --git a/native/pw_players_ps5.c b/native/pw_players_ps5.c
+index 06841f3..8e0f716 100644
+--- a/native/pw_players_ps5.c
++++ b/native/pw_players_ps5.c
+@@ -44,7 +44,8 @@ static void leave(PwPlayersPs5 *players,unsigned place,const char *why)
+     (void)pw_pad_ps5_close(&players->pads[place]);
+     players->pads[place].pad_handle=-1;
+     players->leaves++;
+-    snprintf(line,sizeof(line),"PW_WINE64 player %u left: user %d %s",place+1,(int)user,why);
++    (void)user;   /* the console's number for the user isn't logged: logs go to GitHub */
++    snprintf(line,sizeof(line),"PW_WINE64 player %u left: %s",place+1,why);
+     say(players,line);
+ }
+ 
+@@ -69,8 +70,9 @@ unsigned pw_players_ps5_update(PwPlayersPs5 *players,uint64_t now_us)
+     }
+     if(memcmp(list,players->signed_in,sizeof(list))) {
+         memcpy(players->signed_in,list,sizeof(list));
+-        snprintf(line,sizeof(line),"PW_WINE64 players signed in: %d %d %d %d",(int)list[0],(int)list[1],
+-                 (int)list[2],(int)list[3]);
++        /* which places have a user, not the console's numbers for them: logs go to GitHub */
++        snprintf(line,sizeof(line),"PW_WINE64 players signed in: %s %s %s %s",list[0]>=0?"signed-in":"-",
++                 list[1]>=0?"signed-in":"-",list[2]>=0?"signed-in":"-",list[3]>=0?"signed-in":"-");
+         say(players,line);
+     }
+     /* Places whose users signed out are let go first, so a user who signs in
+@@ -90,7 +92,8 @@ unsigned pw_players_ps5_update(PwPlayersPs5 *players,uint64_t now_us)
+         int status=pw_pad_ps5_open_user(pad,&players->ops,players->map,players->map_count,user);
+         if(status==PW_OK) {
+             players->joins++;players->refused[place]=-1;changed|=1u<<place;
+-            snprintf(line,sizeof(line),"PW_WINE64 player %u joined: user %d handle=%d",place+1,(int)user,
++            /* the user by their place in the signed-in list, not the console's number for them */
++            snprintf(line,sizeof(line),"PW_WINE64 player %u joined: signed-in user %d handle=%d",place+1,i+1,
+                      (int)pad->pad_handle);
+             say(players,line);
+         }
+@@ -98,8 +101,8 @@ unsigned pw_players_ps5_update(PwPlayersPs5 *players,uint64_t now_us)
+             players->refusals++;
+             if(players->refused[place]!=user) {
+                 players->refused[place]=user;
+-                snprintf(line,sizeof(line),"PW_WINE64 player %u: the console refused user %d's controller rc=%d",
+-                         place+1,(int)user,(int)pad->pad_handle);
++                snprintf(line,sizeof(line),"PW_WINE64 player %u: the console refused signed-in user %d's controller rc=%d",
++                         place+1,i+1,(int)pad->pad_handle);
+                 say(players,line);
+             }
+             memset(pad,0,sizeof(*pad));pad->pad_handle=-1;

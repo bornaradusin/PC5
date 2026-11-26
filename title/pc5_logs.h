@@ -62,6 +62,11 @@ Pc5LogProblem pc5_log_classify(const char *text, size_t length, Pc5LogIssue *iss
  * 2010's MFC" for mfc100u.dll; "" when PC5 doesn't know. */
 void pc5_dll_from(const char *dll, char *out, size_t size);
 
+/* A game's own text file, before it goes into a report on GitHub: the IDs it holds for the
+ * player's machine or account blanked with zeros, the length kept (Unreal's crash report's
+ * MachineId, LoginId, EpicAccountId and UserName; an analytics log's session_id, user_id ...). */
+void pc5_logs_scrub_ids(unsigned char *data, size_t length);
+
 /* What PC5 saw, in a few words ("stopped with an error"), for a report. */
 const char *pc5_log_problem_text(Pc5LogProblem problem);
 

@@ -414,7 +414,8 @@ static int logged_in(Conn *c)
     if (!colon) return 0;
     *colon = 0;
     if ((!user[0] || !strcmp(given, user)) && (!password[0] || !strcmp(colon + 1, password))) return 1;
-    say("PC5 web login refused user=%s", given);
+    /* what was wrong, not what was typed: logs go to GitHub */
+    say("PC5 web login refused (%s)", user[0] && strcmp(given, user) ? "wrong user name" : "wrong password");
     usleep(1000000);   /* slows guessing */
     return 0;
 }

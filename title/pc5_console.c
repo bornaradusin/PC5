@@ -331,8 +331,9 @@ static void *play_sound(void *argument)
             volume = ops.volume(port, AUDIO_VOLUME_FLAG_CH0, volumes);
         }
     }
-    snprintf(line, sizeof(line), "PC5 startup sound user=%d init=%d port=%d volume=%d percent=%d level=%d frames=%zu",
-             sound_user, init, port, volume, sound_volume, level, startup_sound.frames);
+    /* whether a user is signed in, not the console's number for them: logs go to GitHub */
+    snprintf(line, sizeof(line), "PC5 startup sound user=%s init=%d port=%d volume=%d percent=%d level=%d frames=%zu",
+             sound_user >= 0 ? "signed-in" : "none", init, port, volume, sound_volume, level, startup_sound.frames);
     plain_log(line);
     if (port >= 0) {
         while (played < startup_sound.frames && !atomic_load(&sound_stop)) {

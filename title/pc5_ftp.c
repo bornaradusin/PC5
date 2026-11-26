@@ -452,7 +452,8 @@ static void session_command(Session *s, char *command, char *arg, int *quit)
             reply(s, "230 Welcome: this is PC5's INSTALL folder");
         } else {
             s->logged_in = 0;
-            say("PC5 ftp login refused user=%s", s->user);
+            /* what was wrong, not what was typed: logs go to GitHub */
+            say("PC5 ftp login refused (%s)", s->user[0] ? "wrong user name or password" : "no user name");
             usleep(1000000);   /* slows guessing */
             reply(s, "530 Wrong username or password (they are in PC5: Settings, Network)");
             if (++s->failures >= 3) *quit = 1;
