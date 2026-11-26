@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Wed, 25 Nov 2026 12:00:00 +0000
+Subject: [PATCH] PC5: the AMD driver's Radeon Software version is in the
+ registry (Wine patch 1045)
+
+Games that check the GPU driver read RadeonSoftwareEdition and RadeonSoftwareVersion from the display adapter's class key, which Wine left out. Proton added them for Valor Mortis's GPU driver warning on AMD (ValveSoftware/wine 3f43b5ff6c15); #761 stops when its settings are applied, after that check.
+---
+ ...eon-software-version-in-the-registry.patch | 33 +++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+ create mode 100644 wine/patches/1045-win32u-set-radeon-software-version-in-the-registry.patch
+
+diff --git a/wine/patches/1045-win32u-set-radeon-software-version-in-the-registry.patch b/wine/patches/1045-win32u-set-radeon-software-version-in-the-registry.patch
+new file mode 100644
+index 0000000..52e7098
+--- /dev/null
++++ b/wine/patches/1045-win32u-set-radeon-software-version-in-the-registry.patch
+@@ -0,0 +1,33 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Wed, 25 Nov 2026 12:00:00 +0000
++Subject: [PATCH] win32u: Set Radeon Software version in the registry.
++
++AMD's driver names its edition and version in the display adapter's class key,
++and games that check the GPU driver read them. Valor Mortis warned of an
++outdated GPU driver on AMD and stopped when its settings were applied (PC5
++#761); Proton fixed its driver warning the same way. Taken from
++ValveSoftware/wine 3f43b5ff6c15.
++---
++ dlls/win32u/sysparams.c | 8 ++++++++
++ 1 file changed, 8 insertions(+)
++
++diff --git a/dlls/win32u/sysparams.c b/dlls/win32u/sysparams.c
++index 499a1e7..e0d24d0 100644
++--- a/dlls/win32u/sysparams.c
+++++ b/dlls/win32u/sysparams.c
++@@ -1653,6 +1653,14 @@ static BOOL write_gpu_to_registry( const struct gpu *gpu, const struct pci_id *p
++     set_reg_value( hkey, memory_sizeW, REG_DWORD, &value, sizeof(value) );
++ 
++     set_reg_ascii_value( hkey, "DriverVersion", driver_vendor_to_version( pci->vendor ) );
+++    /* AMD's driver names its edition and version here, and games that check the driver read
+++     * them (Valor Mortis warned of an outdated GPU driver, then stopped when its settings were
+++     * applied). As Proton sets them (ValveSoftware/wine 3f43b5ff6c15). */
+++    if (pci->vendor == 0x1002)
+++    {
+++        set_reg_ascii_value( hkey, "RadeonSoftwareEdition", "AMD Software: Adrenalin Edition" );
+++        set_reg_ascii_value( hkey, "RadeonSoftwareVersion", "28.10.10" );
+++    }
++     NtClose( hkey );
++ 
++ 
