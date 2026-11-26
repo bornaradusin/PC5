@@ -5923,6 +5923,39 @@ static void test_dotnet(void)
         CHECK(pc5_prefix_installs(root, "default", program) == 0, "the default prefix is left alone");
         CHECK(pc5_prefix_installs(root, "missing", program) == 0, "no Windows yet: nothing done");
 
+        /* A game's own settings, so it doesn't start its setup program (Brian Lara International
+         * Cricket 2007's HardwareSetup.exe, #96): written once, and a player's own kept. */
+        path(file, sizeof(file), "%s/prefixes/cricket/system.reg", root);
+        write_text(file, "WINE REGISTRY Version 2\n");
+        path(program, sizeof(program), "%s/prefixes/cricket/drive_c/Games/BLIC 2007/icc2007.exe", root);
+        write_text(program, "MZ");
+        path(file, sizeof(file), "%s/prefixes/cricket/drive_c/Games/BLIC 2007/DATA/movies/Sting.wmv", root);
+        write_text(file, "film");
+        path(file, sizeof(file), "%s/prefixes/cricket/drive_c/Games/BLIC 2007/DATA/movies/match.wmv", root);
+        write_text(file, "film");
+        CHECK(pc5_prefix_installs(root, "cricket", program) == 1, "the cricket game gets its settings");
+        path(file, sizeof(file), "%s/prefixes/cricket/drive_c/Games/BLIC 2007/DATA/movies/Sting.wmv.pc5-skip", root);
+        CHECK(pc5_is_file(file), "its intro film that hangs set aside, its name in any case");
+        path(file, sizeof(file), "%s/prefixes/cricket/drive_c/Games/BLIC 2007/DATA/movies/match.wmv", root);
+        CHECK(pc5_is_file(file), "another film kept");
+        path(file, sizeof(file), "%s/prefixes/cricket/system.reg", root);
+        CHECK(pc5_prefix_installs(root, "cricket", program) == 0, "only once");
+        CHECK(!pc5_read_file(file, &text, 16384) && !pc5_buf_terminate(&text) &&
+                  strstr((char *)text.data, "\n[Software\\\\Wow6432Node\\\\Codemasters\\\\International Cricket 2007]\n"
+                                            "\"Audio Mode\"=dword:00000001\n") &&
+                  strstr((char *)text.data, "\"Display Width\"=dword:00000780\n\"Fullscreen\"=dword:00000000\n") &&
+                  strstr((char *)text.data, "\n[Software\\\\Codemasters\\\\International Cricket 2007]\n"),
+              "its seven settings, both views: %s", text.data ? (char *)text.data : "");
+        pc5_buf_free(&text);
+        path(file, sizeof(file), "%s/prefixes/cricket2/system.reg", root);
+        write_text(file, "WINE REGISTRY Version 2\n\n[Software\\\\Wow6432Node\\\\Codemasters\\\\International Cricket 2007]\n"
+                         "\"Display Width\"=dword:00000a00\n");
+        path(program, sizeof(program), "%s/prefixes/cricket2/drive_c/Games/BLIC 2007/ICC2007.exe", root);
+        write_text(program, "MZ");
+        CHECK(pc5_prefix_installs(root, "cricket2", program) == 0 && file_holds_text(file, "dword:00000a00") &&
+                  !file_holds_text(file, "dword:00000780"),
+              "a player's own settings kept");
+
         /* Played from a USB drive: Windows sees its folder as C:\Games\<folder> all the same. */
         char drive[PC5_PATH];
         const char *usb_roots[] = { drive, NULL };

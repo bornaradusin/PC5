@@ -1157,6 +1157,63 @@ static const struct {
     { "PES6.exe", "KONAMIPES6\\\\PES6", "efgisp" },   /* Pro Evolution Soccer 6 and its settings.exe */
 };
 
+/* Games that start a setup program of their own when their settings aren't in the registry
+ * yet, which the console can't start (one program at a time), so they never reach their menu.
+ * Their settings as that setup program writes them, once: a player's own are never replaced. */
+static const struct {
+    const char *marker;   /* a file in the game's folder, any case */
+    const char *key;      /* under HKLM\Software (and Wow6432Node), with the registry's doubled backslashes */
+    const char *values;   /* the key's values, a line each, as the registry file has them */
+} settings_keys[] = {
+    /* Brian Lara International Cricket 2007 (#96): ICC2007.exe starts HardwareSetup.exe without
+     * them. 1920x1080 at 60 Hz, windowed, no multisampling: the player's values, which worked. */
+    { "ICC2007.exe", "Codemasters\\\\International Cricket 2007",
+      "\"Audio Mode\"=dword:00000001\n\"Display Format\"=dword:00000016\n\"Display Height\"=dword:00000438\n"
+      "\"Display Width\"=dword:00000780\n\"Fullscreen\"=dword:00000000\n\"MultiSample\"=dword:00000000\n"
+      "\"Refresh Rate\"=dword:0000003c\n" },
+};
+
+/* Films a game shows before its menu that hang on the console, set aside (renamed <name>.pc5-skip)
+ * so the game goes past them as it does when they are missing. Only an intro the game has no
+ * need of: the film is kept beside it, and putting the name back plays it again. */
+static const struct {
+    const char *marker;   /* a file in the game's folder, any case */
+    const char *film;     /* the film, from the game's folder, '/' between folders */
+} skipped_films[] = {
+    /* Brian Lara International Cricket 2007 (#96): Windows Media's DirectShow parser stops at
+     * its two intros, and the game never reaches its menu; without them it plays whole matches. */
+    { "ICC2007.exe", "Data/Movies/sting.wmv" },
+    { "ICC2007.exe", "Data/Movies/fmv_lara.wmv" },
+};
+
+/* path under dir ('/' between its names, each matched in any case) as found there, into out:
+ * 1 when it is there. */
+static int find_any_case(const char *dir, const char *path, char *out, size_t size)
+{
+    char name[256];
+    const char *p = path;
+
+    if (pc5_format(out, size, "%s", dir)) return 0;
+    while (*p) {
+        size_t n = 0;
+        while (*p && *p != '/' && n + 1 < sizeof(name)) name[n++] = *p++;
+        name[n] = 0;
+        while (*p == '/') p++;
+        DIR *d = opendir(out);
+        struct dirent *e;
+        int found = 0;
+        if (!d) return 0;
+        while (!found && (e = readdir(d)))
+            if (!strcasecmp(e->d_name, name)) {
+                size_t used = strlen(out);
+                found = !pc5_format(out + used, size - used, "/%s", e->d_name);
+            }
+        closedir(d);
+        if (!found) return 0;
+    }
+    return 1;
+}
+
 int pc5_prefix_installs(const char *root, const char *prefix, const char *program)
 {
     char system[PC5_PATH], drive[PC5_PATH], dir[PC5_PATH], value[PC5_PATH * 2], needle[160], text[PC5_PATH * 2 + 1024];
@@ -1221,6 +1278,30 @@ int pc5_prefix_installs(const char *root, const char *prefix, const char *progra
             used += (size_t)n;
         }
         if (append_text(system, text)) return -1;
+        added = 1;
+    }
+    for (size_t i = 0; i < sizeof(settings_keys) / sizeof(settings_keys[0]); i++) {
+        if (!folder_has(dir, settings_keys[i].marker)) continue;
+        if (pc5_format(needle, sizeof(needle), "[Software\\\\Wow6432Node\\\\%s]", settings_keys[i].key)) return -1;
+        int held = file_holds(system, needle);
+        if (held < 0) return -1;
+        if (held) continue;
+        size_t used = 0;
+        for (int wow = 0; wow < 2; wow++) {
+            int n = snprintf(text + used, sizeof(text) - used, "\n[Software\\\\%s%s]\n%s",
+                             wow ? "Wow6432Node\\\\" : "", settings_keys[i].key, settings_keys[i].values);
+            if (n < 0 || (size_t)n >= sizeof(text) - used) return -1;
+            used += (size_t)n;
+        }
+        if (append_text(system, text)) return -1;
+        added = 1;
+    }
+    for (size_t i = 0; i < sizeof(skipped_films) / sizeof(skipped_films[0]); i++) {
+        char film[PC5_PATH], aside[PC5_PATH];
+        if (!folder_has(dir, skipped_films[i].marker) || !find_any_case(dir, skipped_films[i].film, film, sizeof(film)) ||
+            !pc5_is_file(film) || pc5_format(aside, sizeof(aside), "%s.pc5-skip", film) || pc5_exists(aside))
+            continue;
+        if (rename(film, aside)) return -1;
         added = 1;
     }
     return added;
