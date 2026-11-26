@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Thu, 26 Nov 2026 19:00:00 +0000
+Subject: [PATCH] PC5: the player test expects the log lines without console
+ user numbers
+
+---
+ tests/test_pw_players_ps5.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/tests/test_pw_players_ps5.c b/tests/test_pw_players_ps5.c
+index 711d46f..45509c6 100644
+--- a/tests/test_pw_players_ps5.c
++++ b/tests/test_pw_players_ps5.c
+@@ -57,7 +57,7 @@ int main(void)
+     assert(pw_players_ps5_update(&players,5+PW_PLAYERS_PS5_SCAN_US)==(1u<<1));
+     PwPadPs5 *two=pw_players_ps5_pad(&players,1);
+     assert(two && two->user_id==55 && two->pad_handle==155 && opens==1);
+-    assert(strstr(last_line,"player 2 joined: user 55 handle=155"));
++    assert(strstr(last_line,"player 2 joined: signed-in user 3 handle=155"));
+     assert(pw_players_ps5_count(&players)==2);
+     /* Their controller reads like player 1's. */
+     sample=(PwPadPs5Data){.buttons=0x4000,.left_stick={10,250},.right_stick={0x80,0x80},.connected=1,
+@@ -72,7 +72,7 @@ int main(void)
+     int before=lines;
+     assert(pw_players_ps5_update(&players,20*PW_PLAYERS_PS5_SCAN_US)==(1u<<2));
+     assert(pw_players_ps5_pad(&players,2)->user_id==66 && !pw_players_ps5_pad(&players,3));
+-    assert(strstr(last_line,"player 4: the console refused user 77's controller") && players.refusals==1);
++    assert(strstr(last_line,"player 4: the console refused signed-in user 4's controller") && players.refusals==1);
+     int after=lines;
+     assert(after>before);
+     assert(!pw_players_ps5_update(&players,21*PW_PLAYERS_PS5_SCAN_US) && players.refusals==2 && lines==after);
+@@ -83,7 +83,7 @@ int main(void)
+     signed_in[2]=-1;
+     assert(pw_players_ps5_update(&players,23*PW_PLAYERS_PS5_SCAN_US)==(1u<<1));
+     assert(!pw_players_ps5_pad(&players,1) && closed[155]==1 && !motors[155][0] && !motors[155][1]);
+-    assert(strstr(last_line,"player 2 left: user 55 signed out"));
++    assert(strstr(last_line,"player 2 left: signed out"));
+     /* A new user takes the first free place, 2, while 3 and 4 keep theirs. */
+     signed_in[2]=88;
+     assert(pw_players_ps5_update(&players,24*PW_PLAYERS_PS5_SCAN_US)==(1u<<1));
+-- 
+2.56.1.windows.1
+
