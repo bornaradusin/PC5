@@ -4,7 +4,9 @@
  *
  * The controller is the game's Xbox controller (XInput), a DualSense as Windows sees
  * one plugged in (for games that read controllers another way, or know the
- * DualSense), or it plays the keyboard and mouse: then each button sends a key or a
+ * DualSense), or both of the first two at once, for a game that plays with XInput while a mod of
+ * it drives the DualSense over HID (GTA IV's adaptive-trigger mods, #739),
+ * or it plays the keyboard and mouse: then each button sends a key or a
  * mouse button, and each stick moves the pointer, sends four keys (its directions)
  * or does nothing. PC5 writes the
  * choice into the game's profile each time it starts ([input], which prospero-win
@@ -17,6 +19,7 @@
 typedef enum Pc5PadMode {
     PC5_PAD_XBOX,         /* the game's Xbox controller */
     PC5_PAD_DUALSENSE,    /* a DualSense, as on a PC */
+    PC5_PAD_XBOX_DUALSENSE, /* both: the game's Xbox controller, and the DualSense for a mod's HID (#739) */
     PC5_PAD_KEYBOARD,     /* keys and the mouse */
     PC5_PAD_MODES
 } Pc5PadMode;

@@ -1,0 +1,281 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bornaradusin <bornaradusin@users.noreply.github.com>
+Date: Fri, 27 Nov 2026 13:00:00 +0000
+Subject: [PATCH] PC5: the DualSense beside the Xbox controller (Wine patch
+ 1048)
+
+mode = xinput_dualsense (PW_GAME_INPUT_XINPUT_DUALSENSE) is both modes at once, for a game that plays with XInput while a mod of it drives the DualSense over HID (GTA IV's adaptive-trigger mods, #739). The title publishes the controller as XInput controller 0 and as the whole DualSense, and sets PW_DUALSENSE=2: Wine's xinput1_3 makes the DualSense as in dualsense mode, which a mod finds through SetupAPI and HID, without raw input, and DirectInput leaves it out (patch 1048), so the game has one controller. SDL_JOYSTICK_RAWINPUT=0 and SDL_JOYSTICK_HIDAPI=0 keep an SDL game on XInput. The game's rumble and the mod's motor levels don't stop each other: the controller plays the stronger of the two on each motor; the light bar and the triggers come from the mod's reports as in dualsense mode.
+---
+ native/wine64_main.c                          |  46 ++++++--
+ src/pw_game_profile.c                         |   1 +
+ src/pw_game_profile.h                         |   7 +-
+ tests/test_pw_game_profile.c                  |   3 +
+ ...dualsense-beside-the-xbox-controller.patch | 102 ++++++++++++++++++
+ 5 files changed, 149 insertions(+), 10 deletions(-)
+ create mode 100644 wine/patches/1048-xinput1-3-dinput-ps5-the-dualsense-beside-the-xbox-controller.patch
+
+diff --git a/native/wine64_main.c b/native/wine64_main.c
+index da8ad6e..2626953 100644
+--- a/native/wine64_main.c
++++ b/native/wine64_main.c
+@@ -1634,6 +1634,21 @@ static int start_thread(void (*entry)(void *), void *arg, size_t stack_bytes)
+     return status;
+ }
+ 
++/* xinput_dualsense mode: the motors are asked for twice, by the game's XInput rumble and by
++ * the output reports a mod sends the DualSense. Each keeps its last levels and the controller
++ * plays the stronger of the two on each motor, so neither stops the other's. */
++static int motors_mixed;
++static uint8_t xinput_motors[2], hid_motors[2];
++
++static int mixed_vibrate(PwPadPs5 *pad, uint8_t large, uint8_t small, int from_hid)
++{
++    if (!motors_mixed) return pw_pad_ps5_vibrate(pad, large, small);
++    uint8_t *mine = from_hid ? hid_motors : xinput_motors, *other = from_hid ? xinput_motors : hid_motors;
++    mine[0] = large;
++    mine[1] = small;
++    return pw_pad_ps5_vibrate(pad, mine[0] > other[0] ? mine[0] : other[0], mine[1] > other[1] ? mine[1] : other[1]);
++}
++
+ /* dualsense mode: what the game asked of its DualSense (patch 0475). The
+  * motors always; with PC5, at its Vibration strength, and the light bar and
+  * the triggers' effects, which once the game sets them replace PC5's own. */
+@@ -1660,7 +1675,12 @@ static void dualsense_effects(PwPadPs5 *pad, const PwDualSenseOutput *out, uint6
+         pc5_game_output(&pc5_game, pad->pad_handle, &pc5, &large, &small);
+     }
+ #endif
+-    int vibrate = pw_pad_ps5_vibrate(pad, large, small);
++    /* A report that leaves the motors alone keeps the mod's last levels beside the game's rumble. */
++    if (motors_mixed && !(out->set & PW_DUALSENSE_MOTORS)) {
++        large = hid_motors[0];
++        small = hid_motors[1];
++    }
++    int vibrate = mixed_vibrate(pad, large, small, 1);
+     if (!(*count)++ || vibrate != PW_OK)
+         PS5LOG_LOG("PW_WINE64 dualsense output set=%#x motors=%u/%u light=%02x%02x%02x triggers=%#x/%#x "
+                    "status=%s rc=%d", (unsigned)out->set, large, small, out->light[0], out->light[1], out->light[2],
+@@ -1724,7 +1744,7 @@ int main(int argc, char **argv)
+     enum { PC5_FIXED_ENV = 0 };
+ #endif
+     enum { WINE64_FIXED_ENV_COUNT = 7 + PC5_FIXED_ENV,
+-           WINE64_PROFILE_ENV_CAPACITY = 4 + PW_GAME_GRAPHICS_ENV_MAX + PW_GAME_RUNTIME_ENV_MAX + PW_GAME_CPU_ENV_MAX +
++           WINE64_PROFILE_ENV_CAPACITY = 5 + PW_GAME_GRAPHICS_ENV_MAX + PW_GAME_RUNTIME_ENV_MAX + PW_GAME_CPU_ENV_MAX +
+                                          PW_GAME_CLOCK_ENV_MAX + PW_GAME_DEBUG_ENV_MAX };
+     static PwWineStartEnv extra[WINE64_FIXED_ENV_COUNT + WINE64_PROFILE_ENV_CAPACITY] = {
+         { "WINEDEBUG", PW_WINE64_DEBUG },
+@@ -1907,7 +1927,15 @@ int main(int argc, char **argv)
+         /* xinput mode: SDL2 games (Half-Life) look for controllers through
+          * raw input first, which Wine on the PS5 has none of, and then skip
+          * XInput; this hint makes them read controller 0 through XInput. */
+-        if (game_input.mode == PW_GAME_INPUT_XINPUT) {
++        if (game_input.mode == PW_GAME_INPUT_XINPUT_DUALSENSE) {
++            /* xinput_dualsense mode: the game's Xbox controller through XInput, and the DualSense
++             * beside it for a mod's HID (Wine patch 1048: no raw input, not in DirectInput). SDL
++             * would find the DualSense through its own HID driver too: XInput only, one controller. */
++            extra[config.extra_env_count++] = (PwWineStartEnv){ "PW_DUALSENSE", "2" };
++            extra[config.extra_env_count++] = (PwWineStartEnv){ "SDL_JOYSTICK_RAWINPUT", "0" };
++            extra[config.extra_env_count++] = (PwWineStartEnv){ "SDL_JOYSTICK_HIDAPI", "0" };
++        }
++        else if (game_input.mode == PW_GAME_INPUT_XINPUT) {
+             extra[config.extra_env_count++] = (PwWineStartEnv){ "SDL_JOYSTICK_RAWINPUT", "0" };
+             /* Unity's own input finds controllers in raw input's list and reads
+              * an XInput one through XInput: win32u lists the controller there
+@@ -2006,7 +2034,8 @@ int main(int argc, char **argv)
+                    desktop[0] ? desktop : "default",
+                    scaling, view, game->display.show_fps, pw_result_name(input_status),
+                    game->input.preset[0] ? game->input.preset : "-",
+-                   game_input.mode == PW_GAME_INPUT_XINPUT ? "xinput" : game_input.mode == PW_GAME_INPUT_DUALSENSE ? "dualsense" : "keyboard", (int)game_input.mouse,
++                   game_input.mode == PW_GAME_INPUT_XINPUT ? "xinput" : game_input.mode == PW_GAME_INPUT_DUALSENSE ? "dualsense" :
++                   game_input.mode == PW_GAME_INPUT_XINPUT_DUALSENSE ? "xinput_dualsense" : "keyboard", (int)game_input.mouse,
+                    effective_dll_overrides[0] ? effective_dll_overrides : "-");
+         /* What Wine gives the game as NumberOfProcessors. */
+         PS5LOG_LOG("PW_WINE64 cpus online=%ld", sysconf(_SC_NPROCESSORS_ONLN));
+@@ -2066,7 +2095,7 @@ int main(int argc, char **argv)
+             (uintptr_t)pw_prx_lookup(start.descriptor, "pw_wine_post_input");
+         /* xinput mode: the DualSense is also the game's XInput controller
+          * 0, read by Wine's xinput (patch 0470); bindings still apply. */
+-        if (game_input.mode == PW_GAME_INPUT_XINPUT) {
++        if (game_input.mode == PW_GAME_INPUT_XINPUT || game_input.mode == PW_GAME_INPUT_XINPUT_DUALSENSE) {
+             set_pad = (void (*)(const PwWinePad *))
+                 (uintptr_t)pw_prx_lookup(start.descriptor, "pw_wine_set_pad");
+             rumble = (int (*)(uint32_t *, uint32_t *))
+@@ -2075,7 +2104,8 @@ int main(int argc, char **argv)
+         /* dualsense mode: the whole controller, touchpad and motion too,
+          * for the DualSense Wine's xinput makes (patch 0475), and what the
+          * game sends it: rumble, the light bar, the triggers' effects. */
+-        if (game_input.mode == PW_GAME_INPUT_DUALSENSE) {
++        if (game_input.mode == PW_GAME_INPUT_DUALSENSE || game_input.mode == PW_GAME_INPUT_XINPUT_DUALSENSE) {
++            motors_mixed = game_input.mode == PW_GAME_INPUT_XINPUT_DUALSENSE;
+             set_dualsense = (void (*)(const PwDualSenseState *))
+                 (uintptr_t)pw_prx_lookup(start.descriptor, "pw_wine_set_dualsense");
+             dualsense_output = (int (*)(PwDualSenseOutput *))
+@@ -2085,7 +2115,7 @@ int main(int argc, char **argv)
+          * users' controllers, as XInput controllers 1 to 3 (patch 0926). A
+          * keyboard game stays one player, so it doesn't take player 2's
+          * controller for its own. */
+-        if (game_input.mode == PW_GAME_INPUT_XINPUT || game_input.mode == PW_GAME_INPUT_DUALSENSE) {
++        if (game_input.mode != PW_GAME_INPUT_KEYBOARD) {
+             set_pad_at = (void (*)(uint32_t, const PwWinePad *))
+                 (uintptr_t)pw_prx_lookup(start.descriptor, "pw_wine_set_pad_at");
+             rumble_at = (int (*)(uint32_t, uint32_t *, uint32_t *))
+@@ -2392,7 +2422,7 @@ int main(int argc, char **argv)
+                 /* PC5's Vibration setting, and the triggers that follow the rumble. */
+                 if (pc5_game_on) pc5_game_rumble(&pc5_game, pad.pad_handle, left, right, &large, &small);
+ #endif
+-                int vibrate = pw_pad_ps5_vibrate(&pad, large, small);
++                int vibrate = mixed_vibrate(&pad, large, small, 0);
+                 if (!vibrations++ || vibrate != PW_OK)
+                     PS5LOG_LOG("PW_WINE64 rumble left=%u right=%u status=%s rc=%d mode_rc=%d", (unsigned)left,
+                                (unsigned)right, pw_result_name(vibrate), pad.vibration_rc, pad.vibration_mode_rc);
+diff --git a/src/pw_game_profile.c b/src/pw_game_profile.c
+index 674d962..c5c1c61 100644
+--- a/src/pw_game_profile.c
++++ b/src/pw_game_profile.c
+@@ -133,6 +133,7 @@ static int input_field(PwGameInput *input, const uint8_t *key, size_t key_length
+         if (is(v, n, "keyboard")) input->mode = PW_GAME_INPUT_KEYBOARD;
+         else if (is(v, n, "xinput")) input->mode = PW_GAME_INPUT_XINPUT;
+         else if (is(v, n, "dualsense")) input->mode = PW_GAME_INPUT_DUALSENSE;
++        else if (is(v, n, "xinput_dualsense")) input->mode = PW_GAME_INPUT_XINPUT_DUALSENSE;
+         else return PW_ERR_UNSUPPORTED;
+         input->set |= SET_MODE;
+         return PW_OK;
+diff --git a/src/pw_game_profile.h b/src/pw_game_profile.h
+index 6894923..340604e 100644
+--- a/src/pw_game_profile.h
++++ b/src/pw_game_profile.h
+@@ -123,8 +123,11 @@ typedef enum PwGameScaling { PW_GAME_SCALING_FIT = 0, PW_GAME_SCALING_INTEGER,
+                              PW_GAME_SCALING_STRETCH } PwGameScaling;
+ typedef enum PwGameView { PW_GAME_VIEW_WINDOW = 0, PW_GAME_VIEW_DESKTOP } PwGameView;
+ /* dualsense: the game sees the DualSense as Windows does a plugged-in one (a HID
+- * device), and no XInput controller; bindings still apply. */
+-typedef enum PwGameInputMode { PW_GAME_INPUT_KEYBOARD = 0, PW_GAME_INPUT_XINPUT, PW_GAME_INPUT_DUALSENSE } PwGameInputMode;
++ * device), and no XInput controller; bindings still apply. xinput_dualsense: both, the
++ * game's Xbox controller through XInput and the DualSense through SetupAPI and HID only,
++ * for a mod that drives the DualSense (Wine patch 1048). */
++typedef enum PwGameInputMode { PW_GAME_INPUT_KEYBOARD = 0, PW_GAME_INPUT_XINPUT, PW_GAME_INPUT_DUALSENSE,
++                               PW_GAME_INPUT_XINPUT_DUALSENSE } PwGameInputMode;
+ typedef enum PwGameStick { PW_GAME_STICK_NONE = 0, PW_GAME_STICK_LEFT, PW_GAME_STICK_RIGHT } PwGameStick;
+ typedef enum PwGameBindKind { PW_GAME_BIND_UNSET = 0, PW_GAME_BIND_NONE, PW_GAME_BIND_KEY,
+                               PW_GAME_BIND_MOUSE, PW_GAME_BIND_WHEEL } PwGameBindKind;
+diff --git a/tests/test_pw_game_profile.c b/tests/test_pw_game_profile.c
+index f08ba07..1ff651e 100644
+--- a/tests/test_pw_game_profile.c
++++ b/tests/test_pw_game_profile.c
+@@ -352,6 +352,9 @@ static void test_presets(void)
+     pw_game_input_init(&input);
+     assert(preset("[input]\nmode = dualsense\n", &input) == PW_OK && input.mode == PW_GAME_INPUT_DUALSENSE);
+     assert(preset("[input]\nmode = dualshock\n", &input) == PW_ERR_UNSUPPORTED);
++    pw_game_input_init(&input);
++    assert(preset("[input]\nmode = xinput_dualsense\n", &input) == PW_OK &&
++           input.mode == PW_GAME_INPUT_XINPUT_DUALSENSE);
+     assert(pw_game_button_mask(TOUCHPAD + 1) == PW_GAME_LEFT_STICK_UP);
+     assert(pw_game_button_mask(PW_GAME_BUTTON_COUNT - 1) == PW_GAME_RIGHT_STICK_RIGHT);
+     assert(pw_game_button_mask(PW_GAME_BUTTON_COUNT) == 0);
+diff --git a/wine/patches/1048-xinput1-3-dinput-ps5-the-dualsense-beside-the-xbox-controller.patch b/wine/patches/1048-xinput1-3-dinput-ps5-the-dualsense-beside-the-xbox-controller.patch
+new file mode 100644
+index 0000000..1175945
+--- /dev/null
++++ b/wine/patches/1048-xinput1-3-dinput-ps5-the-dualsense-beside-the-xbox-controller.patch
+@@ -0,0 +1,102 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: prospero-win <prospero-win@invalid>
++Date: Fri, 27 Nov 2026 13:00:00 +0000
++Subject: [PATCH] xinput1_3, dinput: PS5: the DualSense beside the Xbox
++ controller.
++
++With PW_DUALSENSE=2 the title's controller is the game's Xbox controller
++through XInput and, at the same time, the USB DualSense xinput1_3 makes
++(patch 0475), for a game that plays with XInput while a mod of it drives
++the DualSense over HID (GTA IV's adaptive-trigger mods, PC5 #739). The mod
++finds the DualSense through SetupAPI and HID as in dualsense mode. So that
++a game reading DirectInput or raw input doesn't find two controllers, the
++DualSense sends no raw input in this mode and DirectInput leaves it out;
++the Xbox controller stays there (patch 0927). ntdll loads xinput1_3 at the
++start for 2 as it does for 1 (patch 0476).
++---
++ dlls/dinput/joystick_hid.c |  9 +++++++++
++ dlls/ntdll/loader.c        |  5 +++--
++ dlls/xinput1_3/dualsense.c | 12 +++++++++++-
++ 3 files changed, 23 insertions(+), 3 deletions(-)
++
++diff --git a/dlls/dinput/joystick_hid.c b/dlls/dinput/joystick_hid.c
++index cb1c66b..c42d595 100644
++--- a/dlls/dinput/joystick_hid.c
+++++ b/dlls/dinput/joystick_hid.c
++@@ -1716,6 +1716,15 @@ static HRESULT hid_joystick_device_try_open( WCHAR *path, HANDLE *device, PHIDP_
++ 
++     if (!HidD_GetPreparsedData( device_file, &preparsed_data )) goto failed;
++     if (!HidD_GetAttributes( device_file, attrs )) goto failed;
+++    /* PW_DUALSENSE=2 (a PS5 title): the DualSense xinput1_3 makes is there for a mod's HID, beside
+++     * the Xbox controller the game has through XInput and here (title_pad.c), so DirectInput leaves
+++     * it out: one controller, not two. */
+++    if (attrs->VendorID == 0x054c && attrs->ProductID == 0x0ce6)
+++    {
+++        WCHAR value[4];
+++        if (GetEnvironmentVariableW( L"PW_DUALSENSE", value, ARRAY_SIZE(value) ) == 1 && value[0] == '2')
+++            goto failed;
+++    }
++     if (HidP_GetCaps( preparsed_data, caps ) != HIDP_STATUS_SUCCESS) goto failed;
++ 
++     switch (MAKELONG( caps->Usage, caps->UsagePage ))
++diff --git a/dlls/ntdll/loader.c b/dlls/ntdll/loader.c
++index 55d9376..87faf3a 100644
++--- a/dlls/ntdll/loader.c
+++++ b/dlls/ntdll/loader.c
++@@ -4443,7 +4443,8 @@ static void init_wow64( CONTEXT *context )
++ #endif
++ 
++ 
++-/* dualsense mode (PW_DUALSENSE=1, which a PS5 title sets): xinput1_3 makes
+++/* dualsense mode (PW_DUALSENSE=1, which a PS5 title sets, or 2 for the DualSense beside the
+++ * Xbox controller): xinput1_3 makes
++  * the title's controller a DualSense (its dualsense.c), which must be there
++  * before the game looks for controllers. It comes from the system
++  * directory: a game's own xinput1_3.dll has no DualSense. */
++@@ -4463,7 +4464,7 @@ static void load_dualsense(void)
++      * an Xbox 360 controller's HID collection, which Unity's raw input lists before it loads
++      * any xinput, so it is made here as well. */
++     if ((RtlQueryEnvironmentVariable( NULL, variable, wcslen( variable ), value, ARRAY_SIZE(value), &len ) ||
++-         len != 1 || value[0] != '1') &&
+++         len != 1 || (value[0] != '1' && value[0] != '2')) &&
++         (RtlQueryEnvironmentVariable( NULL, pad, wcslen( pad ), value, ARRAY_SIZE(value), &len ) ||
++          len != 1 || value[0] != '2'))
++         return;
++diff --git a/dlls/xinput1_3/dualsense.c b/dlls/xinput1_3/dualsense.c
++index d02ed69..0207ffb 100644
++--- a/dlls/xinput1_3/dualsense.c
+++++ b/dlls/xinput1_3/dualsense.c
++@@ -161,6 +161,11 @@ static const BYTE xbox360_report_desc[] =
++ 
++ /* The profile's names, made at the start. */
++ static const struct ds_profile *profile;
+++/* PW_DUALSENSE=2: the DualSense beside the Xbox controller XInput has, for a game that plays with
+++ * XInput while a mod of it drives the DualSense over HID (GTA IV's adaptive-trigger mods, #739).
+++ * The mod finds it through SetupAPI and HID as before; it sends no raw input, and DirectInput
+++ * leaves it out (dinput's joystick_hid.c), so a game reading those has one controller, not two. */
+++static BOOL beside_xinput;
++ static WCHAR ds_instance[96], ds_link[160], ds_enum_key[160], ds_class_key[288];
++ 
++ enum
++@@ -417,6 +422,7 @@ static void send_report(void)
++         else queue_push( file, ds.report );
++     }
++ 
+++    if (beside_xinput) return;
++     input.hi.uMsg = WM_INPUT;
++     input.hi.wParamH = HIWORD(RIM_INPUT);
++     input.hi.wParamL = LOWORD(RIM_INPUT);
++@@ -861,8 +867,12 @@ void dualsense_start(void)
++     NTSTATUS status;
++     HANDLE thread;
++ 
++-    if (GetEnvironmentVariableW( L"PW_DUALSENSE", value, ARRAY_SIZE(value) ) == 1 && value[0] == '1')
+++    if (GetEnvironmentVariableW( L"PW_DUALSENSE", value, ARRAY_SIZE(value) ) == 1 &&
+++        (value[0] == '1' || value[0] == '2'))
+++    {
++         profile = &dualsense_profile;
+++        beside_xinput = value[0] == '2';
+++    }
++     else if (GetEnvironmentVariableW( L"PW_RAWINPUT_PAD", value, ARRAY_SIZE(value) ) == 1 && value[0] == '2')
++         profile = &xbox360_profile;
++     else

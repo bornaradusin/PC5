@@ -671,6 +671,8 @@ controller's speaker.
 | 429 | Noreya (#693's copy) with its GPUCache's data_0 emptied | it starts; the cache folder is made again | `PC5 web` cache cut short removed |
 | 430 | A game that runs the console out of memory (Connection The Nightmare Within, #773, the forest tunnel) | PC5 says it ended, the console ran out of memory | about.txt's cause `out of memory: …` |
 | 431 | Max Payne 3 (#262): in its graphics settings change DirectX 11 to 10.1, apply, Restart Now | no "Invalid handle": the game closes and starts again by itself, on DirectX 10.1 | `wine-ps5: … MaxPayne3.exe starts itself again: a restart`, then `PC5 hand-off: … starts the program its launcher started` |
+| 432 | GTA IV Complete Edition with its DualSense adaptive-trigger mod (#739): △ › Controller › Xbox + DualSense, play | the game plays with the controller as before (Xbox buttons); the triggers' resistance and the light bar follow the mod; the game's rumble still plays | `PW_WINE64 profile … mode=xinput_dualsense`, `xinput: the controller is a DualSense (054c:0ce6, …)`, `PW_WINE64 dualsense output set=…` |
+| 433 | A game you know with Xbox controller, one with DualSense, and a DirectInput or SDL game with Xbox + DualSense | the first two as before; the third has one controller, not two (each press once) | |
 
 ## Custom media navigation changes (pending on PS5)
 
