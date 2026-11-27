@@ -1550,7 +1550,8 @@ static void usb_set_aside(const char *root, const char *prefix, char *out, size_
     if (free_name(dir, base, leaf, sizeof(leaf)) || pc5_join(out, size, dir, leaf) || rename(usb_dir, out)) out[0] = 0;
 }
 
-int pc5_remove_begin(Pc5Remove *remove, const char *root, const Pc5Game *game, const Pc5Library *library)
+/* Uninstalling, its own pictures left (pc5_remove_begin). */
+static int remove_begin(Pc5Remove *remove, const char *root, const Pc5Game *game, const Pc5Library *library)
 {
     char from[PC5_PATH], to[PC5_PATH], profile[PC5_PATH];
     int shared = 0;
@@ -1949,6 +1950,7 @@ static int keep_finish(const char *root, const char *id, const char *profile_fil
     return 0;
 }
 
+/* Its own pictures stay with its kept saves, for when it is installed again. */
 int pc5_remove_keep_saves(Pc5Remove *remove, const char *root, const Pc5Game *game, const Pc5Library *library)
 {
     char saves[PC5_PATH], from[PC5_PATH], keeping[PC5_PATH], removing[PC5_PATH];
@@ -4135,4 +4137,292 @@ int pc5_programs_toggle(const char *root, const char *id, const Pc5Offered *prog
         status = -1;
     pc5_buf_free(&text);
     return status ? -1 : found < 0;
+}
+
+/* ---- the player's own pictures, and cleaning up ----------------------------------------- */
+
+static const char *const own_picture_dirs[] = { "covers", "backgrounds", "loading" };
+enum { OWN_NAMES = 5 };
+typedef struct OwnNames {
+    char id[PC5_ID];
+    char n[OWN_NAMES][PC5_NAME];
+} OwnNames;
+
+static void put_name(OwnNames *names, int *count, const char *name)
+{
+    const char *slash = name ? strrchr(name, '/') : NULL;
+    if (slash) name = slash + 1;
+    if (name && name[0] && *count < OWN_NAMES) pc5_copy(names->n[(*count)++], PC5_NAME, name);
+}
+
+/* The names a game's own pictures go by (pc5_cover_own's): its folder's (on the console and on
+ * its USB drive), its name, its id and its prefix. */
+static void own_names(const char *root, const Pc5Game *game, OwnNames *names)
+{
+    Pc5Info info;
+    int count = 0;
+
+    memset(names, 0, sizeof(*names));
+    pc5_copy(names->id, sizeof(names->id), game->id);
+    if (!pc5_info_read(root, game->id, &info)) {
+        put_name(names, &count, info.folder);
+        put_name(names, &count, info.usb);
+    }
+    put_name(names, &count, game->title);
+    put_name(names, &count, game->id);
+    put_name(names, &count, game->prefix);
+}
+
+/* An image's name without its kind (.jpg, .jpeg, .png, any case) in base; -1 when it isn't one,
+ * or is hidden. */
+static int picture_base(const char *file, char *base, size_t size)
+{
+    const char *dot = strrchr(file, '.');
+    if (!dot || dot == file || file[0] == '.' ||
+        (pc5_casecmp(dot, ".jpg") && pc5_casecmp(dot, ".jpeg") && pc5_casecmp(dot, ".png")) ||
+        (size_t)(dot - file) >= size)
+        return -1;
+    memcpy(base, file, (size_t)(dot - file));
+    base[dot - file] = 0;
+    return 0;
+}
+
+static int names_have(const OwnNames *names, const char *base)
+{
+    for (int i = 0; i < OWN_NAMES; i++)
+        if (names->n[i][0] && !pc5_casecmp(names->n[i], base)) return 1;
+    return 0;
+}
+
+/* Every game's names in library but the one with skip_id (NULL: none); NULL when out of memory
+ * (count 0 for an empty library). */
+static OwnNames *library_names(const char *root, const Pc5Library *library, const char *skip_id, int *count)
+{
+    OwnNames *all = pc5_alloc(sizeof(*all) * (size_t)(library && library->count > 0 ? library->count : 1));
+    *count = 0;
+    if (!all) return NULL;
+    for (int i = 0; library && i < library->count; i++)
+        if (!skip_id || strcmp(library->games[i].id, skip_id)) own_names(root, &library->games[i], &all[(*count)++]);
+    return all;
+}
+
+static int any_names_have(const OwnNames *all, int count, const char *base)
+{
+    for (int i = 0; i < count; i++)
+        if (names_have(&all[i], base)) return 1;
+    return 0;
+}
+
+/* The game's own pictures (names) that no other game (others) goes by deleted; how many. */
+static int own_delete(const char *root, const OwnNames *names, const OwnNames *others, int other_count)
+{
+    int deleted = 0;
+    for (size_t d = 0; d < sizeof(own_picture_dirs) / sizeof(own_picture_dirs[0]); d++) {
+        char dir[PC5_PATH], path[PC5_PATH], base[PC5_PATH];
+        struct dirent *entry;
+        struct stat st;
+        DIR *folder;
+        Pc5Buf doomed = { 0 };
+        if (pc5_format(dir, sizeof(dir), "%s/%s", root, own_picture_dirs[d]) || !(folder = opendir(dir))) continue;
+        while ((entry = readdir(folder))) {
+            if (picture_base(entry->d_name, base, sizeof(base)) || !names_have(names, base) ||
+                any_names_have(others, other_count, base) || (d == 2 && !pc5_casecmp(base, "loading")))
+                continue;
+            if (pc5_buf_put(&doomed, entry->d_name, strlen(entry->d_name) + 1)) break;
+        }
+        closedir(folder);
+        for (size_t i = 0; i < doomed.len; i += strlen((char *)doomed.data + i) + 1)
+            if (!pc5_join(path, sizeof(path), dir, (char *)doomed.data + i) && !lstat(path, &st) && S_ISREG(st.st_mode) &&
+                !unlink(path))
+                deleted++;
+        pc5_buf_free(&doomed);
+    }
+    return deleted;
+}
+
+int pc5_own_pictures_delete(const char *root, const Pc5Game *game, const Pc5Library *library)
+{
+    OwnNames names;
+    int count, deleted;
+    OwnNames *others = library_names(root, library, game->id, &count);
+    if (!others) return 0;
+    own_names(root, game, &names);
+    deleted = own_delete(root, &names, others, count);
+    pc5_free(others);
+    return deleted;
+}
+
+int pc5_remove_begin(Pc5Remove *remove, const char *root, const Pc5Game *game, const Pc5Library *library)
+{
+    /* Its names before its notes go with it; its pictures only once it is uninstalled. */
+    OwnNames names;
+    int count;
+    OwnNames *others = library_names(root, library, game->id, &count);
+    own_names(root, game, &names);
+    int rc = remove_begin(remove, root, game, library);
+    if (!rc && others) own_delete(root, &names, others, count);
+    pc5_free(others);
+    return rc;
+}
+
+
+enum { CLEANUP_LOOK = 200000 };   /* entries looked at for sizes, at most */
+
+/* The bytes of what path holds (path itself when it is a file), links not followed. */
+static uint64_t tree_bytes(const char *path, int depth, int *budget)
+{
+    struct stat st;
+    uint64_t bytes = 0;
+    if (*budget <= 0 || lstat(path, &st)) return 0;
+    (*budget)--;
+    if (!S_ISDIR(st.st_mode)) return S_ISREG(st.st_mode) ? (uint64_t)st.st_size : 0;
+    if (depth <= 0) return 0;
+    DIR *dir = opendir(path);
+    struct dirent *entry;
+    char child[PC5_PATH];
+    if (!dir) return 0;
+    while ((entry = readdir(dir)) && *budget > 0)
+        if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..") && !pc5_join(child, sizeof(child), path, entry->d_name))
+            bytes += tree_bytes(child, depth - 1, budget);
+    closedir(dir);
+    return bytes;
+}
+
+/* What is in the Temp folder at relative in base (any case), the folder itself a real one, not
+ * a link, added to cleanup; the bytes added. */
+static uint64_t add_temp(Pc5Cleanup *cleanup, const char *base, const char *relative, int *budget, int *failed)
+{
+    char dir[PC5_PATH], child[PC5_PATH];
+    struct stat st;
+    struct dirent *entry;
+    DIR *folder;
+    uint64_t bytes = 0;
+
+    if (resolve_ci(base, relative, dir, sizeof(dir)) || lstat(dir, &st) || !S_ISDIR(st.st_mode) || !(folder = opendir(dir)))
+        return 0;
+    while ((entry = readdir(folder))) {
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..") || pc5_join(child, sizeof(child), dir, entry->d_name))
+            continue;
+        if (pc5_buf_put(&cleanup->paths, child, strlen(child) + 1)) { *failed = 1; break; }
+        bytes += tree_bytes(child, 32, budget);
+    }
+    closedir(folder);
+    return bytes;
+}
+
+int pc5_cleanup_scan(const char *root, const Pc5Library *library, Pc5Cleanup *cleanup)
+{
+    int budget = CLEANUP_LOOK, failed = 0, count = 0;
+    OwnNames *all = NULL;
+
+    memset(cleanup, 0, sizeof(*cleanup));
+    /* Each installed game's Windows once (games can share one), never one being worked on. */
+    for (int i = 0; library && i < library->count && !failed; i++) {
+        const char *prefix = library->games[i].prefix;
+        char drive[PC5_PATH], users[PC5_PATH], user[PC5_PATH];
+        int seen = 0;
+        uint64_t bytes = 0;
+        for (int j = 0; j < i; j++) seen |= !strcmp(library->games[j].prefix, prefix);
+        if (seen || !prefix[0] || prefix[0] == '.' || strchr(prefix, '/') ||
+            pc5_format(drive, sizeof(drive), "%s/prefixes/%s/drive_c", root, prefix) || !pc5_is_dir(drive))
+            continue;
+        bytes += add_temp(cleanup, drive, "windows/temp", &budget, &failed);
+        if (!resolve_ci(drive, "users", users, sizeof(users))) {
+            DIR *dir = opendir(users);
+            struct dirent *entry;
+            struct stat st;
+            while (dir && !failed && (entry = readdir(dir))) {
+                if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..") ||
+                    pc5_join(user, sizeof(user), users, entry->d_name) || lstat(user, &st) || !S_ISDIR(st.st_mode))
+                    continue;
+                bytes += add_temp(cleanup, user, "Temp", &budget, &failed);
+                bytes += add_temp(cleanup, user, "AppData/Local/Temp", &budget, &failed);
+            }
+            if (dir) closedir(dir);
+        }
+        if (bytes) cleanup->temp_games++;
+        cleanup->temp_bytes += bytes;
+    }
+    /* The player's own pictures that no installed game goes by, nor one whose saves are kept. */
+    if (!failed && !(all = library_names(root, library, NULL, &count))) failed = 1;
+    if (!failed) {
+        enum { KEPT = 256 };
+        Pc5Saves *saves = pc5_alloc(sizeof(*saves) * KEPT);
+        OwnNames *more = saves ? pc5_realloc(all, sizeof(*all) * (size_t)(count + KEPT)) : NULL;
+        if (!saves || !more) failed = 1;
+        else all = more;
+        int kept = failed ? 0 : pc5_saves_list(root, saves, KEPT);
+        for (int i = 0; i < kept; i++) {
+            OwnNames *names = &all[count++];
+            int n = 0;
+            memset(names, 0, sizeof(*names));
+            put_name(names, &n, saves[i].name);
+            put_name(names, &n, saves[i].title);
+            put_name(names, &n, saves[i].folder);
+        }
+        pc5_free(saves);
+    }
+    for (size_t d = 0; !failed && d < sizeof(own_picture_dirs) / sizeof(own_picture_dirs[0]); d++) {
+        char dir[PC5_PATH], path[PC5_PATH], base[PC5_PATH];
+        struct dirent *entry;
+        struct stat st;
+        DIR *folder;
+        if (pc5_format(dir, sizeof(dir), "%s/%s", root, own_picture_dirs[d]) || !(folder = opendir(dir))) continue;
+        while (!failed && (entry = readdir(folder))) {
+            if (picture_base(entry->d_name, base, sizeof(base)) || (d == 2 && !pc5_casecmp(base, "loading")) ||
+                any_names_have(all, count, base) || pc5_join(path, sizeof(path), dir, entry->d_name) || lstat(path, &st) ||
+                !S_ISREG(st.st_mode))
+                continue;
+            if (pc5_buf_put(&cleanup->paths, path, strlen(path) + 1)) { failed = 1; break; }
+            cleanup->pictures++;
+            cleanup->picture_bytes += (uint64_t)st.st_size;
+            /* The first few by name for the question, then "…". */
+            char *names = cleanup->picture_names;
+            size_t used = strlen(names), length = strlen(entry->d_name), room = sizeof(cleanup->picture_names);
+            static const char more[] = ", \xe2\x80\xa6";
+            if (strstr(names, more)) continue;
+            if (used + 2 + length + sizeof(more) <= room) {
+                if (used) memcpy(names + used, ", ", 2), used += 2;
+                memcpy(names + used, entry->d_name, length + 1);
+            } else if (used + sizeof(more) <= room) {
+                memcpy(names + used, more, sizeof(more));
+            }
+        }
+        closedir(folder);
+    }
+    pc5_free(all);
+    cleanup->bytes = cleanup->temp_bytes + cleanup->picture_bytes;
+    if (failed) {
+        pc5_cleanup_end(cleanup);
+        return -1;
+    }
+    return 0;
+}
+
+int pc5_cleanup_step(Pc5Cleanup *cleanup, int budget_ms)
+{
+    uint64_t until = pc5_now_ms() + (uint64_t)(budget_ms > 0 ? budget_ms : 1);
+    do {
+        if (cleanup->remove.top > 0 && !cleanup->remove.failed) {
+            pc5_remove_step(&cleanup->remove, (int)(until > pc5_now_ms() ? until - pc5_now_ms() : 1));
+            continue;
+        }
+        if (cleanup->remove.failed) {
+            cleanup->failed++;
+            cleanup->remove.failed = 0;
+            cleanup->remove.top = 0;
+        }
+        if (cleanup->at >= cleanup->paths.len) return 0;
+        const char *path = (const char *)cleanup->paths.data + cleanup->at;
+        cleanup->at += strlen(path) + 1;
+        if (pc5_tree_delete_begin(&cleanup->remove, path)) cleanup->failed++;
+    } while (pc5_now_ms() < until);
+    return cleanup->at < cleanup->paths.len || cleanup->remove.top > 0;
+}
+
+void pc5_cleanup_end(Pc5Cleanup *cleanup)
+{
+    pc5_buf_free(&cleanup->paths);
+    pc5_remove_end(&cleanup->remove);
+    cleanup->at = 0;
 }

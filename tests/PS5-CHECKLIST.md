@@ -688,3 +688,13 @@ controller's speaker.
 - Select a cover with a video: decoding starts without an intentional delay;
   the image stays visible until the first frame is ready. Rapidly switch covers,
   open settings and launch/return from a game; no stale clip or worker remains.
+
+## Clean up (2.5.4)
+
+| # | Do | Expect on screen | Expect in the log |
+| --- | --- | --- | --- |
+| CU1 | Put `x.tmp` in a game's `drive_c/users/prospero/AppData/Local/Temp/`, `Gone.jpg` in `/data/prospero-win/covers/`; Settings › Game maintenance › Clean up | "Clean up?" with the size, the Temp folders' share and `Gone.jpg`; Cancel chosen | `PC5 cleanup found temp=… in 1 games, pictures=1 (…)` |
+| CU2 | Cancel; then Clean up again and choose Clean up | back on Clean up; then "Cleaned up", "About … is free now" | `PC5 cleanup done bytes=… failed=0` |
+| CU3 | Start that game, and two others you know | each starts and plays as before, its saves and settings there | |
+| CU4 | Clean up once more | "Nothing to clean up" | `PC5 cleanup found temp=0 in 0 games, pictures=0 (0)` |
+| CU5 | Put `<game>.jpg` in `covers/` for an installed game, uninstall it with Delete all; for another, Keep saves | the first's picture is gone from `covers/`; the second's stays | |

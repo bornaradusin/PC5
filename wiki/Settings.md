@@ -38,6 +38,16 @@ Changes are saved at once, in `/data/prospero-win/pc5/settings.txt`. Settings fo
 | --- | --- |
 | Install games from USB | Copies one game, or several in a row, from a USB drive to the console. See [Installing games](Installing-games). |
 | Uninstall game | Lists your games to uninstall one, keeping its saves or not, then the saves kept from games uninstalled before, to delete them. See [Uninstalling a game](Installing-games#uninstalling-a-game). |
+| Clean up | Frees space without changing your games: empties their Temp folders and deletes your own pictures of games no longer installed. See [Clean up](#clean-up). |
+
+### Clean up
+
+**Clean up** (from 2.5.4) first looks, then says how much it would free and asks. **Cancel** is chosen by default; **Clean up** deletes:
+
+- **What is in each installed game's Temp folders**: `C:\windows\temp`, and `Temp` and `AppData\Local\Temp` in its users' folders. Games and their setups leave files there and seldom delete them. The folders themselves stay.
+- **Your own pictures of games no longer installed**: pictures in `covers/`, `backgrounds/` and `loading/` (see [Covers](Covers#using-your-own-cover)) named after no game that is installed and none whose saves are kept. PC5 lists them by name before it asks, so you can keep one you put there for a game you're about to install. `loading/loading.jpg` (or `.png`), for every game, always stays.
+
+Nothing else is touched: not a game's files, its saves and settings, its Windows or registry, its shader cache, PC5's own covers and backgrounds of it, [kept saves](Installing-games#keeping-a-games-saves), logs, your settings or your keys, nor anything an install or uninstall cut short is still using (PC5 finishes those as it opens).
 
 The [game compatibility list](Game-compatibility) has a tab of its own from 2.1.6: **Compatibility**, between Library and Install. It lists the games players have tried, how each ran and the settings that helped, with search (**L2**/**R2**), a filter by result (**□**) and each report's details. **△** refreshes it (it does so every minute while it's open), and the last list stays for when the console is offline. A report's QR code opens it on your phone, and **Share** opens the form to add a game of yours.
 

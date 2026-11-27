@@ -379,6 +379,40 @@ int pc5_tree_delete_begin(Pc5Remove *remove, const char *path);
 /* Another folder deleted after it (one on another drive). */
 int pc5_tree_delete_add(Pc5Remove *remove, const char *path);
 
+/* ---- the player's own pictures, and cleaning up ---------------------------------------
+ * The player's own pictures for a game are in covers/, backgrounds/ and loading/, named after
+ * the game's folder, its name or its id (pc5_cover_own); loading/loading.* is every game's.
+ * Uninstalling a game (pc5_remove_begin) deletes its own there, but not one named after another
+ * game still installed; keeping its saves (pc5_remove_keep_saves) keeps them, for when it is
+ * installed again. */
+/* Deletes game's own pictures (none another game in library shares); how many. */
+int pc5_own_pictures_delete(const char *root, const Pc5Game *game, const Pc5Library *library);
+
+/* Settings › Game maintenance › Clean up: what can go without changing an installed game:
+ *   - what is in the Temp folders of each installed game's Windows (C:\windows\temp,
+ *     C:\users\<user>\Temp and C:\users\<user>\AppData\Local\Temp), the folders themselves kept
+ *   - the player's own pictures named after no game installed, nor one whose saves are kept
+ *     (loading/loading.* stays)
+ * Nothing else: not a game's files, its Windows, saves or settings, kept saves (saves/), PC5's
+ * own pictures of a game, logs, or anything in a folder an install or uninstall is using
+ * (prefixes/.<name>). Links are deleted, never followed. */
+typedef struct Pc5Cleanup {
+    Pc5Buf paths;               /* what is deleted, NUL-separated */
+    size_t at;                  /* the next one */
+    uint64_t bytes;             /* what that frees */
+    uint64_t temp_bytes, picture_bytes;
+    int temp_games;             /* games with something in their Temp folders */
+    int pictures;               /* own pictures of games not installed */
+    char picture_names[128];    /* the first of them, ", " between */
+    uint32_t failed;            /* paths not (fully) deleted */
+    Pc5Remove remove;
+} Pc5Cleanup;
+/* What there is to clean up (cleanup zeroed first): 0, or -1 when out of memory. */
+int pc5_cleanup_scan(const char *root, const Pc5Library *library, Pc5Cleanup *cleanup);
+/* Deletes for about budget_ms; 1 while there is more. */
+int pc5_cleanup_step(Pc5Cleanup *cleanup, int budget_ms);
+void pc5_cleanup_end(Pc5Cleanup *cleanup);
+
 /* Finishes what a cut-short install or uninstall left: 1 while there is more
  * (call again), 0 when nothing is left. Also writes back the profile of a
  * PC5 game that has its folder but lost its profile. */

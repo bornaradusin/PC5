@@ -253,12 +253,14 @@ There are two ways:
 PC5 asks first. **Cancel** is chosen by default. For a game PC5 installed there are two ways to go ahead:
 
 - **Keep saves**: the game is deleted, and its saves and settings are kept for when you install it again. See [Keeping a game's saves](#keeping-a-games-saves).
-- **Delete all**: the game and everything it made go: its saves, its settings, its shader cache, its cover. There is no backup and no undo.
+- **Delete all**: the game and everything it made go: its saves, its settings, its shader cache, its cover, and from 2.5.4 your own pictures of it in `covers/`, `backgrounds/` and `loading/` (not one named after another game that is installed). There is no backup and no undo.
 
 ![Confirming an uninstall](images/uninstall-confirm.png)
 *Keep saves, or delete everything.*
 
-A game PC5 didn't install has **Uninstall** in place of the two. Either way, the game's [home screen tile's](Home-screen-tiles) folder is deleted with it.
+A game PC5 didn't install has **Uninstall** in place of the two, which deletes your own pictures of it as **Delete all** does. Either way, the game's [home screen tile's](Home-screen-tiles) folder is deleted with it. **Keep saves** keeps your own pictures of it, for when you install it again.
+
+For your own pictures left from games uninstalled before 2.5.4, and the games' Temp folders, use [Settings › Game maintenance › Clean up](Settings#clean-up).
 
 ### Keeping a game's saves
 

@@ -80,7 +80,7 @@ typedef enum Screen {
     S_FILES_TYPING, S_FILES_CONFLICT, S_FILES_DELETE, S_FILES_WORKING, S_TILE_ART, S_INSTALL_ASK, S_SETTINGS_TYPING, S_INSTALL_WHERE,
     S_PLAY_WHICH, S_FILES_EDIT, S_FILES_EDIT_MENU, S_FILES_EDIT_TYPING, S_FILES_EDIT_LEAVE,
     S_MUSIC_IMPORT, S_VIDEO_IMPORT, S_PHONE_QR, S_COMPAT_SEARCH, S_COMPAT_REPORT, S_MEDIA_OPTIONS, S_LOOK_CONFIRM, S_LOOK_WORK,
-    S_MEDIA_DELETE, S_COMPAT_SHARE, S_SETTING_ABOUT, S_RESET_CONFIRM, S_KNOWN_CONFIRM
+    S_MEDIA_DELETE, S_COMPAT_SHARE, S_SETTING_ABOUT, S_RESET_CONFIRM, S_KNOWN_CONFIRM, S_CLEANUP_CONFIRM, S_CLEANING
 } Screen;
 
 static const char *const screen_names[] = { "start", "covers", "library", "settings", "about", "scan", "sources",
@@ -94,7 +94,8 @@ static const char *const screen_names[] = { "start", "covers", "library", "setti
                                             "files-working", "tile-art", "install-ask", "settings-typing", "install-where",
                                             "play-which", "files-edit", "files-edit-menu", "files-edit-typing",
                                             "files-edit-leave", "music-import", "video-import", "phone-qr", "compat-search", "compat-report", "media-options", "look-confirm", "look-work",
-                                            "media-delete", "compat-share", "setting-about", "reset-confirm", "known-confirm" };
+                                            "media-delete", "compat-share", "setting-about", "reset-confirm", "known-confirm",
+                                            "cleanup-confirm", "cleaning" };
 
 /* One game of several being installed in a row. */
 typedef enum QueueState { Q_WAITING, Q_INSTALLED, Q_FAILED, Q_STOPPED, Q_SKIPPED } QueueState;
@@ -124,7 +125,7 @@ typedef enum SettingRow {
     SR_OVERLAY_SIZE, SR_VIBRATION, SR_LIGHT, SR_TRIGGERS, SR_TRIGGER_RUMBLE, SR_TRIGGER_RESISTANCE,
     SR_STARTUP_SOUND, SR_STARTUP_VOLUME, SR_KEEP_LOGS, SR_PICTURES, SR_CHECK_ON_OPEN, SR_CHECK_NOW, SR_UPDATE_NOW,
     SR_FILES, SR_FTP, SR_WEB, SR_PHONE_LIBRARY, SR_NETWORK, SR_REMOTE_USER, SR_REMOTE_PASSWORD, SR_LANGUAGE, SR_KEYBOARD,
-    SR_HIGH_REFRESH, SR_CHECK_COPIES, SR_OTHER_PROGRAMS,
+    SR_HIGH_REFRESH, SR_CHECK_COPIES, SR_OTHER_PROGRAMS, SR_CLEANUP,
     SR_SOURCE   /* a picture source: SR_SOURCE + its index (pc5_cover.h) */
 } SettingRow;
 
@@ -136,7 +137,7 @@ static const char *const page_titles[SETTING_PAGES] = { N_("Settings"), N_("In g
  * startup sound (system_row). */
 enum { ROW_MAINTENANCE = 0, ROW_GAMES = 1, ROW_OVERLAY = 2, ROW_FILES = 3, ROW_SYSTEM = 4, ROW_NETWORK = 5, ROW_ABOUT = 6 };
 /* Game maintenance's rows. */
-enum { ROW_INSTALL = 0, ROW_UNINSTALL = 1, ROW_COMPATIBILITY = 2 };
+enum { ROW_INSTALL = 0, ROW_UNINSTALL = 1, ROW_COMPATIBILITY = 2, ROW_CLEANUP = 3 };
 
 /* A page's rows: the triggers' strengths only while they are used, the startup sound's
  * volume only while there is one, Update now only while there is a newer PC5 it can install
@@ -179,6 +180,7 @@ static int page_rows(const Pc5Settings *set, int page, int offer_update, Setting
         rows[n++] = SR_INSTALL;
         rows[n++] = SR_UNINSTALL;
         rows[n++] = SR_CHECK_COPIES;
+        rows[n++] = SR_CLEANUP;
     } else if (page == PAGE_NETWORK) {
         rows[n++] = SR_FTP;
         rows[n++] = SR_WEB;
@@ -467,6 +469,7 @@ struct Pc5Ui {
     Screen upgrade_back;           /* where a stopped update goes back to */
     uint64_t upgrade_drawn;
     Pc5Remove remove;
+    Pc5Cleanup cleanup;               /* Game maintenance › Clean up: what it deletes */
     char removing_title[PC5_NAME];
 
     /* startup: finishing leftovers, then covers for the games without one */
@@ -1112,6 +1115,7 @@ void pc5_ui_destroy(Pc5Ui *ui)
     pc5_free(ui->pick);
     if (ui->installing) pc5_install_end(&ui->install);
     pc5_remove_end(&ui->remove);
+    pc5_cleanup_end(&ui->cleanup);
     if (ui->files_busy) pc5_files_end(&ui->files_job);
     pc5_files_list_free(&ui->files);
     pc5_free(ui->files_ticked);
@@ -2524,6 +2528,10 @@ static void setting_text(Pc5Ui *ui, SettingRow row, const char **label, char *ab
         pc5_copy(about, about_size, T("One QR code to choose any installed game and send its pictures, music or video"));
         pc5_copy(value, value_size, T("Open"));
         break;
+    case SR_CLEANUP:
+        *label = T("Clean up");
+        pc5_copy(about, about_size, T("Empties the games' Temp folders and deletes your own pictures of games no longer installed"));
+        break;
     case SR_COMPATIBILITY:
         *label = T("Game compatibility list");
         pc5_copy(about, about_size, T("Browse community reports, settings and saved offline results"));
@@ -3193,6 +3201,26 @@ static void settings_open(Pc5Ui *ui, int page, int row)
     ui->page = page;
     ui->menu = row;
     go(ui, S_SETTINGS);
+}
+
+/* Game maintenance › Clean up: what there is to delete (pc5_cleanup_scan), asked about first. */
+static void cleanup_open(Pc5Ui *ui)
+{
+    if (pc5_cleanup_scan(ui->root, &ui->library, &ui->cleanup)) {
+        message(ui, 0, T("Nothing was cleaned up"), T("Out of memory."), S_SETTINGS);
+        return;
+    }
+    say(ui, "PC5 cleanup found temp=%llu in %d games, pictures=%d (%llu)", (unsigned long long)ui->cleanup.temp_bytes,
+        ui->cleanup.temp_games, ui->cleanup.pictures, (unsigned long long)ui->cleanup.picture_bytes);
+    if (!ui->cleanup.paths.len) {
+        pc5_cleanup_end(&ui->cleanup);
+        message(ui, 1, T("Nothing to clean up"),
+                T("The games' Temp folders are empty, and each of your own pictures belongs to a game that is installed."),
+                S_SETTINGS);
+        return;
+    }
+    ui->button = 0;
+    go(ui, S_CLEANUP_CONFIRM);
 }
 
 /* PC5 can update itself here: the screens were given its drives and a way to download. */
@@ -5227,6 +5255,7 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
                 go(ui, S_UNINSTALL_LIST);
                 break;
             case SR_MAINTENANCE: settings_open(ui, PAGE_MAINTENANCE, 0); break;
+            case SR_CLEANUP: cleanup_open(ui); break;
             case SR_NETWORK: settings_open(ui, PAGE_NETWORK, 0); break;
             case SR_REMOTE_USER:
             case SR_REMOTE_PASSWORD: {
@@ -6084,6 +6113,18 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
         if ((k & PC5_KEY_RIGHT) && ui->button < 1) { ui->button++; ui->dirty = 1; }
         if ((k & back) || ((k & accept) && ui->now - ui->entered > 400)) known_answer(ui, (k & accept) && ui->button == 1);
         break;
+    case S_CLEANUP_CONFIRM:
+        /* Cancel, Clean up: back to its row, or the deleting begun. */
+        if ((k & PC5_KEY_LEFT) && ui->button > 0) { ui->button--; ui->dirty = 1; }
+        if ((k & PC5_KEY_RIGHT) && ui->button < 1) { ui->button++; ui->dirty = 1; }
+        if ((k & back) || ((k & accept) && ui->now - ui->entered > 400 && !ui->button)) {
+            pc5_cleanup_end(&ui->cleanup);
+            settings_open(ui, PAGE_MAINTENANCE, ROW_CLEANUP);
+        } else if ((k & accept) && ui->now - ui->entered > 400) {
+            say(ui, "PC5 cleanup begin bytes=%llu", (unsigned long long)ui->cleanup.bytes);
+            go(ui, S_CLEANING);
+        }
+        break;
     case S_RESET_CONFIRM:
         /* Cancel, Reset: back to its row, or the reset begun (begin_reset). */
         if ((k & PC5_KEY_LEFT) && ui->button > 0) { ui->button--; ui->dirty = 1; }
@@ -6093,6 +6134,20 @@ int pc5_ui_update(Pc5Ui *ui, const Pc5Input *input, uint64_t now_ms)
             go(ui, S_GAME_MENU);
         } else if ((k & accept) && ui->now - ui->entered > 400) {
             begin_reset(ui);
+        }
+        break;
+    case S_CLEANING:
+        if (pc5_cleanup_step(&ui->cleanup, 14)) { ui->dirty = 1; break; }
+        {
+            char title[200], body[400], size[32];
+            uint32_t failed = ui->cleanup.failed;
+            pc5_size_text(ui->cleanup.bytes, size, sizeof(size));
+            say(ui, "PC5 cleanup done bytes=%llu failed=%u", (unsigned long long)ui->cleanup.bytes, (unsigned)failed);
+            pc5_cleanup_end(&ui->cleanup);
+            pc5_copy(title, sizeof(title), failed ? T("Not everything was cleaned up") : T("Cleaned up"));
+            if (failed) pc5_tf(body, sizeof(body), "About %s is free now. Some files couldn't be deleted: try again later.", size);
+            else pc5_tf(body, sizeof(body), "About %s is free now. Your games, their saves and settings are as they were.", size);
+            message(ui, !failed, title, body, S_SETTINGS);
         }
         break;
     case S_REMOVING:
@@ -9285,6 +9340,34 @@ void pc5_ui_draw(Pc5Ui *ui, Pc5Canvas *c)
         confirm_dialog(ui, c, line, body, T("Not now"), T("Use them"), 0, thumb);
         break;
     }
+    case S_CLEANUP_CONFIRM: {
+        char body[900], total[32], temp[32], pictures[32], part[400];
+        settings_screen(ui, c);
+        pc5_size_text(ui->cleanup.bytes, total, sizeof(total));
+        pc5_size_text(ui->cleanup.temp_bytes, temp, sizeof(temp));
+        pc5_size_text(ui->cleanup.picture_bytes, pictures, sizeof(pictures));
+        size_t used;
+        pc5_tf(body, sizeof(body), "Frees about %s.", total);
+        if (ui->cleanup.temp_bytes) {
+            pc5_tf(part, sizeof(part), "The games' Temp folders: %s.", temp);
+            used = strlen(body);
+            snprintf(body + used, sizeof(body) - used, " %s", part);
+        }
+        if (ui->cleanup.pictures) {
+            /* TRANSLATORS: the first %s is a list of file names ("Neon Drift.jpg, Old Game.png"), the second a size. */
+            pc5_tf(part, sizeof(part), "Your own pictures of games no longer installed: %s (%s).", ui->cleanup.picture_names, pictures);
+            used = strlen(body);
+            snprintf(body + used, sizeof(body) - used, " %s", part);
+        }
+        used = strlen(body);
+        snprintf(body + used, sizeof(body) - used, " %s", T("Your games, their saves and settings stay."));
+        confirm_dialog(ui, c, T("Clean up?"), body, T("Cancel"), T("Clean up"), 1, NULL);
+        break;
+    }
+    case S_CLEANING:
+        settings_screen(ui, c);
+        busy_dialog(ui, c, T("Cleaning up"), T("Deleting temporary files and pictures no game uses"), 0);
+        break;
     case S_RESET_CONFIRM: {
         int index = pc5_library_find(&ui->library, ui->launch_id);
         const Pc5Picture *thumb = index >= 0 && ui->covers[index].state ? &ui->covers[index].picture : NULL;
