@@ -91,9 +91,9 @@ Choose a game in the library and press **△**. Its menu has what you change mos
 | Row | What it does |
 | --- | --- |
 | Play | Starts the game. |
-| Controller | What the game sees: **Xbox controller** (the default), **DualSense**, or **Keyboard & mouse**. Press **✕** or left / right to change it. See [Controllers](Controllers). |
+| Controller | What the game sees: **Xbox controller** (the default), **DualSense**, **Xbox + DualSense** (for a game with a DualSense mod) or **Keyboard & mouse**. Press **✕** or left / right to change it. See [Controllers](Controllers). |
 | Button mapping | Only with Keyboard & mouse: what each button and stick sends. See [Controllers](Controllers#button-mapping). |
-| Create button | Only with Xbox controller and DualSense: **Sent** (the default), the game sees the Create button (as Back on an Xbox controller), or **Not sent**, so the PS5's own screenshot doesn't press anything in the game. From 2.2.7. See [Controllers](Controllers). |
+| Create button | Only with Xbox controller, DualSense and Xbox + DualSense: **Sent** (the default), the game sees the Create button (as Back on an Xbox controller), or **Not sent**, so the PS5's own screenshot doesn't press anything in the game. From 2.2.7. See [Controllers](Controllers). |
 | Mouse pointer | **Normal** (the default): the pointer stays as the game shows it. **Auto-hide**: it hides when you haven't moved it or clicked for 5 seconds, for a game that leaves it in a corner. See [Controllers](Controllers). |
 | Graphics › | Graphics mode, frame generation, resolution, aspect ratio, game memory, graphics memory and stutter fix. See [Graphics](#graphics). |
 | Sound output | **Stereo** (the default), **5.1** or **7.1**: how many speakers the game is told the console has. With 5.1 or 7.1 the game plays each sound on its own speaker of a surround system, and the PS5 sends it on as it does its own games' sound. If the game is silent or sound only comes from the front, set it back to Stereo. Press **✕** or left / right to change it. From 2.2.2-test. |

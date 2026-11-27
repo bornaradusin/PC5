@@ -1,4 +1,4 @@
-PC5 lets each game see your controller in one of three ways: as an Xbox controller, as a DualSense plugged into a PC, or as a keyboard and mouse with a button mapping you choose. The choice is made in the game's menu and kept for that game. This page explains the three modes, the button mapping, playing with more than one player, leaving a game, and answering a game's Windows pop-ups.
+PC5 lets each game see your controller in one of four ways: as an Xbox controller, as a DualSense plugged into a PC, as both at once for a game with a DualSense mod, or as a keyboard and mouse with a button mapping you choose. The choice is made in the game's menu and kept for that game. This page explains the four modes, the button mapping, playing with more than one player, leaving a game, and answering a game's Windows pop-ups.
 
 ## Choosing a controller mode
 
@@ -10,6 +10,7 @@ PC5 lets each game see your controller in one of three ways: as an Xbox controll
 | --- | --- | --- |
 | Xbox controller | An Xbox controller (XInput). **The default.** | Most games from the last twenty years, which look for an Xbox controller. Games that read controllers through Windows.Gaming.Input, DirectInput or Windows' joystick API find it too, as Windows shows an Xbox 360 controller. |
 | DualSense | A DualSense plugged in by USB, as on a PC. The game gets the touchpad and the motion sensors, and its own rumble, light bar and adaptive trigger effects reach the controller. | Games that know the DualSense, or look for controllers another way (DirectInput, raw input, SDL). |
+| Xbox + DualSense | An Xbox controller, and the DualSense beside it for a mod (from 2.5.5). See [Xbox + DualSense](#xbox--dualsense). | Games that only know Xbox controllers, with a mod that adds the DualSense's adaptive triggers, light bar or rumble (GTA IV's). |
 | Keyboard & mouse | A keyboard and a mouse. Each button and stick direction sends the key or mouse button you choose in **Button mapping**. | Games without controller support. |
 
 Which one to try: start with **Xbox controller**. If the game doesn't react to the controller, try **DualSense**. If the game has no controller support at all, use **Keyboard & mouse**.
@@ -22,7 +23,7 @@ A USB keyboard types in the layout of PC5's language, which is the console's unl
 
 **Mouse pointer**, in the game's menu (press **△**), says whether the mouse pointer stays on screen as the game shows it (**Normal**, the default) or hides when you haven't moved it or clicked for 5 seconds (**Auto-hide**). That's for a game played with the controller that leaves the pointer sitting in a corner. When it hides, moving it (a stick, the touchpad or a mouse) or clicking shows it again at once. It is set for each game on its own.
 
-**Create button**, in the game's menu with **Xbox controller** or **DualSense** (from 2.2.7), says whether the game sees the controller's Create button: **Sent** (the default), as Back (Select) on an Xbox controller or as Create on a DualSense, or **Not sent**, so taking a screenshot with the PS5's own Create button doesn't press anything in the game. With **Keyboard & mouse**, **Button mapping** sets what Create sends (Nothing, for the same). It is set for each game on its own.
+**Create button**, in the game's menu with **Xbox controller**, **DualSense** or **Xbox + DualSense** (from 2.2.7), says whether the game sees the controller's Create button: **Sent** (the default), as Back (Select) on an Xbox controller or as Create on a DualSense, or **Not sent**, so taking a screenshot with the PS5's own Create button doesn't press anything in the game. With **Keyboard & mouse**, **Button mapping** sets what Create sends (Nothing, for the same). It is set for each game on its own.
 
 ## Keyboard & mouse
 
@@ -113,9 +114,20 @@ With **DualSense**, the game finds a DualSense as if it were plugged into a PC b
 - their own rumble, at the strength set in **Settings › In games › Vibration**;
 - their own light bar colour and adaptive trigger effects, from the moment the game sets them. Until then, PC5's **Light bar** and **Adaptive triggers** settings apply.
 
+## Xbox + DualSense
+
+Some PC mods add the DualSense's adaptive triggers, light bar and rumble to a game that only knows Xbox controllers: the game reads an Xbox controller, and the mod talks to the DualSense itself. **Xbox + DualSense** (from 2.5.5) gives them both:
+
+- the game sees the Xbox controller, as with **Xbox controller**: its buttons, its rumble;
+- the mod finds the DualSense as one plugged into a PC by USB, and its trigger effects and light bar colour reach the controller;
+- the game still has one controller: DirectInput, raw input and SDL see only the Xbox controller, so no press counts twice;
+- when the game and the mod both ask for rumble, each motor plays the stronger of the two.
+
+A mod that plays the DualSense's haptics as sound (through the controller's speaker, its audio) gets nothing from it: only the motors, the triggers and the light bar. For a game that knows the DualSense itself, choose **DualSense** instead.
+
 ## More than one player
 
-Up to four players can play a game with local multiplayer (split screen, couch co-op), each with their own controller, in **Xbox controller** and **DualSense** mode. On the PS5 each controller belongs to a signed-in user, so each player signs in:
+Up to four players can play a game with local multiplayer (split screen, couch co-op), each with their own controller, in **Xbox controller**, **DualSense** and **Xbox + DualSense** mode. On the PS5 each controller belongs to a signed-in user, so each player signs in:
 
 1. Turn on another controller and press its **PS** button.
 2. Sign in with it as another user on the console, or as a guest.
@@ -123,6 +135,7 @@ Up to four players can play a game with local multiplayer (split screen, couch c
 
 - With **Xbox controller**, the game finds up to four Xbox controllers, each with its own rumble.
 - With **DualSense**, player 1 is the DualSense, and players 2 to 4 are Xbox controllers.
+- With **Xbox + DualSense**, all four are Xbox controllers, and player 1's is also the DualSense a mod finds.
 - **Keyboard & mouse** is for one player.
 - Player 1 is whoever started PC5. Only player 1's controller leaves the game, opens the on-screen keyboard and gets PC5's light bar and adaptive triggers. Everyone's rumble follows **Settings › In games › Vibration**.
 - Which controller is which player, and whether a game has local multiplayer at all, is up to the game. Some games ask each player to press a button first.
